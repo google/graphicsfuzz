@@ -1,0 +1,88 @@
+/*
+ * Copyright 2018 The GraphicsFuzz Project Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+body {
+  overflow-x: scroll!important;
+}
+
+.invisible {
+  display: none;
+}
+
+.bound-cell-width {
+  max-width: 100px;
+}
+
+td.warnimg {
+  background-color: #ffccff;
+}
+
+td.warnimg img {
+  border: 3px solid blue;
+}
+
+td.wrongimg {
+  background-color: #ffff80;
+}
+
+td.wrongimg img {
+  border: 3px solid red;
+}
+
+td.nondet {
+  background-color: #eeccff;
+}
+
+td.nondet img {
+  border: 3px solid red;
+}
+
+td.gfz-error {
+  background-color: #ffb3b3;
+}
+
+div.resultmain {
+  margin-left: 2em;
+  margin-right: 2em;
+}
+
+/* old stuff */
+.white {
+  border-color: white;
+}
+
+.red {
+  border-color: red;
+}
+
+.purple {
+  border-color: mediumpurple;
+}
+
+.green {
+    border-color: green;
+}
+
+.worker-experiment {
+    border: 3px solid;
+    margin: auto;
+    height: 100px;
+    width: 100px;
+}
+
+.table-align-center {
+    text-align: center;
+}

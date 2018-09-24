@@ -1,0 +1,130 @@
+{
+  "iResolution": {
+    "func": "glUniform3f",
+    "args": [
+      256.0,
+      256.0,
+      0.0
+    ]
+  },
+  "iGlobalTime": {
+    "func": "glUniform1f",
+    "args": [
+      1234.0
+    ]
+  },
+  "iGlobalDelta": {
+    "func": "glUniform1f",
+    "args": [
+      1234.0
+    ]
+  },
+  "iGlobalFrame": {
+    "func": "glUniform1f",
+    "args": [
+      1234.0
+    ]
+  },
+  "iMouse": {
+    "func": "glUniform4f",
+    "args": [
+      231.0,
+      123.0,
+      0.0,
+      0.0
+    ]
+  },
+  "iDate": {
+    "func": "glUniform4f",
+    "args": [
+      2016.0,
+      9.0,
+      22.0,
+      61200.0
+    ]
+  },
+  "iSampleRate": {
+    "func": "glUniform1f",
+    "args": [
+      44100
+    ]
+  },
+  "injectionSwitch": {
+    "func": "glUniform2f",
+    "args": [
+      0.0,
+      1.0
+    ]
+  },
+  "GLF_live0time": {
+    "func": "glUniform1f",
+    "args": [
+      0.9290453
+    ]
+  },
+  "GLF_live2iGlobalTime": {
+    "func": "glUniform1f",
+    "args": [
+      0.9508524
+    ]
+  },
+  "GLF_live7time": {
+    "func": "glUniform1f",
+    "args": [
+      0.74332047
+    ]
+  },
+  "GLF_live7resolution": {
+    "func": "glUniform2f",
+    "args": [
+      0.27328682,
+      0.11134428
+    ]
+  },
+  "GLF_live4time": {
+    "func": "glUniform1f",
+    "args": [
+      0.13527822
+    ]
+  },
+  "GLF_live4mouse": {
+    "func": "glUniform2f",
+    "args": [
+      0.1300357,
+      0.31570727
+    ]
+  },
+  "GLF_live4resolution": {
+    "func": "glUniform2f",
+    "args": [
+      0.90502286,
+      0.06568891
+    ]
+  },
+  "GLF_live6time": {
+    "func": "glUniform1f",
+    "args": [
+      0.5299554
+    ]
+  },
+  "GLF_live6mouse": {
+    "func": "glUniform2f",
+    "args": [
+      0.22347277,
+      0.6706096
+    ]
+  },
+  "GLF_live5time": {
+    "func": "glUniform1f",
+    "args": [
+      0.5608267
+    ]
+  },
+  "GLF_live5resolution": {
+    "func": "glUniform2f",
+    "args": [
+      0.9097609,
+      0.73813945
+    ]
+  }
+}

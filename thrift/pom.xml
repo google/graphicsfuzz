@@ -1,0 +1,113 @@
+<!--
+Copyright 2018 The GraphicsFuzz Project Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>thrift</artifactId>
+  <name>thrift</name>
+  <packaging>pom</packaging>
+
+  <parent>
+    <groupId>com.graphicsfuzz</groupId>
+    <artifactId>parent-all</artifactId>
+    <version>1.0</version>
+    <relativePath>../parent-all/pom.xml</relativePath>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.github.mc-imperial</groupId>
+      <artifactId>thrift-compiler-binary</artifactId>
+      <type>zip</type>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>ant-contrib</groupId>
+      <artifactId>ant-contrib</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>1</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
+                <propertyregex property="os.shortname"
+                               input="${os.name}"
+                               regexp="(^[^ ]*).*"
+                               replace="\1"
+                               global="false"/>
+                <property name="thrift-compiler-dir" value="${project.build.directory}/thrift"/>
+                <property name="thrift-compiler-exec" value="${project.build.directory}/thrift/${os.shortname}/thrift"/>
+                <property name="gen-file-test" value="${project.build.directory}/gen-java/com/graphicsfuzz/server/thrift/Token.java"/>
+                <property name="thrift-input-file" value="${project.basedir}/src/main/thrift/FuzzerService.thrift"/>
+                <property name="thrift-compiler-zip" value="${com.github.mc-imperial:thrift-compiler-binary:zip}"/>
+
+                <outofdate>
+                  <sourcefiles path="${thrift-compiler-zip}"/>
+                  <targetfiles path="${thrift-compiler-dir}/touched.txt"/>
+                  <sequential>
+                    <delete dir="${thrift-compiler-dir}"/>
+                    <unzip src="${thrift-compiler-zip}" dest="${thrift-compiler-dir}"/>
+                    <chmod file="${thrift-compiler-dir}/**" perm="ugo+rx"/>
+                    <touch file="${thrift-compiler-dir}/touched.txt"/>
+                  </sequential>
+                </outofdate>
+
+                <outofdate>
+                  <sourcefiles path="${thrift-input-file}"/>
+                  <targetfiles path="${project.build.directory}/gen-touched.txt"/>
+                  <sequential>
+                    <echo message="Running thrift compiler ${thrift-compiler-exec}"/>
+                    <exec dir="${project.build.directory}" executable="${thrift-compiler-exec}">
+                      <arg line="-gen java -gen py -gen js -gen cocoa ${thrift-input-file}"/>
+                    </exec>
+                    <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}-java.zip" basedir="${project.build.directory}/gen-java"/>
+                    <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}-python.zip" basedir="${project.build.directory}/gen-py/graphicsfuzzserver"/>
+                    <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}-js.zip" basedir="${project.build.directory}/gen-js"/>
+                    <touch file="${project.build.directory}/gen-touched.txt"/>
+                  </sequential>
+                </outofdate>
+
+                <attachartifact file="${project.build.directory}/${project.artifactId}-${project.version}-java.zip" classifier="java" type="zip"/>
+                <attachartifact file="${project.build.directory}/${project.artifactId}-${project.version}-python.zip" classifier="python" type="zip"/>
+                <attachartifact file="${project.build.directory}/${project.artifactId}-${project.version}-js.zip" classifier="js" type="zip"/>
+
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>

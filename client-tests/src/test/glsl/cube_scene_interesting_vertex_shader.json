@@ -1,0 +1,22 @@
+{
+    "resolution":
+    {
+	"func": "glUniform2f",
+	"args": [ 256, 256 ]
+    },
+    "zero_point_one":
+    {
+	"func": "glUniform1f",
+	"args": [ 0.1 ]
+    },
+    "zero_point_five":
+    {
+	"func": "glUniform1f",
+	"args": [ 0.5 ]
+    },
+    "one":
+    {
+	"func": "glUniform1i",
+	"args": [ 1 ]
+    }
+}

@@ -1,0 +1,67 @@
+<!--
+Copyright 2018 The GraphicsFuzz Project Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.graphicsfuzz</groupId>
+  <artifactId>GraphicsFuzz</artifactId>
+  <version>1.0</version>
+  <packaging>pom</packaging>
+
+  <properties>
+    <!-- Default to UTF-8 otherwise Maven complains -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <modules>
+    <!-- Keep in alphabetical order -->
+    <module>android-client-dep</module>
+    <module>assembly-binaries</module>
+    <module>assembly-public</module>
+    <module>assembly</module>
+    <module>ast</module>
+    <module>checkstyle-config</module>
+    <module>client-tests</module>
+    <module>common-util</module>
+    <module>common</module>
+    <module>compare-asts</module>
+    <module>fuzzerserver</module>
+    <module>generate-and-run-shaders</module>
+    <module>generator</module>
+    <module>parent-all</module>
+    <module>parent-checkstyle</module>
+    <module>python</module>
+    <module>reducer</module>
+    <module>server-public</module>
+    <module>server-static-public</module>
+    <module>server-thrift-gen</module>
+    <module>server</module>
+    <module>shaders</module>
+    <module>shadersets-util</module>
+    <module>test-util</module>
+    <module>tester</module>
+    <module>third_party/alphanum-comparator</module>
+    <module>third_party/gif-sequence-writer</module>
+    <module>third_party/jquery-js</module>
+    <module>third_party/semantic-ui</module>
+    <module>third_party/thrift-js</module>
+    <module>third_party/thrift-py</module>
+    <module>thrift</module>
+    <module>tool</module>
+  </modules>
+
+
+</project>

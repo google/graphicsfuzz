@@ -1,0 +1,7 @@
+{
+    "num_groups": [ 1, 1, 1 ];
+    "buffer": {
+	"binding": 1,
+	"input": [ 20 ]
+    }
+}

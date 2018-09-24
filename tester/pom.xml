@@ -1,0 +1,151 @@
+<!--
+Copyright 2018 The GraphicsFuzz Project Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>tester</artifactId>
+  <name>tester</name>
+  <packaging>jar</packaging>
+
+  <parent>
+    <groupId>com.graphicsfuzz</groupId>
+    <artifactId>parent-checkstyle</artifactId>
+    <version>1.0</version>
+    <relativePath>../parent-checkstyle/pom.xml</relativePath>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>reducer</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>generator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.sourceforge.argparse4j</groupId>
+      <artifactId>argparse4j</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>ant-contrib</groupId>
+      <artifactId>ant-contrib</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+  </dependencies>
+
+  <!-- Profile to enable image tests. I.e. use `mvn -PimageTests` -->
+  <profiles>
+    <profile>
+      <id>imageTests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>false</skipTests>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <build>
+    <plugins>
+
+      <!-- Skip these tests by default. -->
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>run-ant</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
+
+                <property name="shaders-source" value="${project.basedir}/src/main/glsl"/>
+                <property name="shaders-zip" value="${project.build.directory}/${project.artifactId}-${project.version}-shaders.zip"/>
+
+                <outofdate>
+                  <sourcefiles>
+                    <fileset dir="${shaders-source}"/>
+                  </sourcefiles>
+                  <targetfiles>
+                    <pathelement location="${shaders-zip}"/>
+                  </targetfiles>
+                  <sequential>
+                    <delete file="${shaders-zip}"/>
+                    <zip destfile="${shaders-zip}" compress="false">
+                      <zipfileset dir="${shaders-source}"/>
+                    </zip>
+                  </sequential>
+                </outofdate>
+
+                <attachartifact file="${shaders-zip}" type="zip" classifier="shaders"/>
+              </target>
+            </configuration>
+          </execution>
+
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+</project>

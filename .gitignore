@@ -1,0 +1,21 @@
+
+
+.DS_Store
+
+# IntelliJ.
+*.iml
+/.idea/
+
+# Maven.
+target/
+dependency-reduced-pom.xml
+
+# Python
+*.pyc
+venv/
+
+# Temp.
+*~
+*.bak
+
+/envbuild.py

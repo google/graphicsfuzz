@@ -1,0 +1,53 @@
+<!--
+Copyright 2018 The GraphicsFuzz Project Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!doctype html>
+<html>
+<head>
+  <title>WebGL Client</title>
+  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <link rel="stylesheet" type="text/css" href="style.css">
+
+  <script src="thrift/thrift.js"></script>
+  <script src="gen-js/FuzzerService_types.js"></script>
+  <script src="gen-js/FuzzerService.js"></script>
+  <script type="text/javascript">
+   var isRunnerMulti = false;
+  </script>
+  <script type="text/javascript" src="render.js"></script>
+  <script type="text/javascript" src="runner.js"></script>
+
+</head>
+<body>
+<div class="grid">
+  <div class="row">
+    <div class="cell">
+      <canvas id="opengl-canvas0" class="opengl-canvas" style="border: none;" width="256" height="256"></canvas>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="cell shader_location_input">
+      <input type="text" class="runner_input" id="current_token0" placeholder="Current token:" readonly/><br/>
+      <input type="text" class="runner_input" id="rendered_shader0" placeholder="Rendered shader:" readonly/><br/>
+      <input type="text" class="runner_input" id="version" value="WebGL Context: " readonly/><br/>
+      <textarea id="console0" class="console" placeholder="Console" readonly></textarea>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

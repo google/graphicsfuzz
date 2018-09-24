@@ -1,0 +1,64 @@
+<!--
+Copyright 2018 The GraphicsFuzz Project Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<config>
+  <executableName>${app.executable}</executableName>
+  <mainClass>${app.mainclass}</mainClass>
+  <os>ios</os>
+  <arch>thumbv7</arch>
+  <target>ios</target>
+  <iosInfoPList>Info.plist.xml</iosInfoPList>
+  <resources>
+    <resource>
+      <directory>../android/assets</directory>
+      <includes>
+        <include>**</include>
+      </includes>
+      <skipPngCrush>true</skipPngCrush>
+    </resource>
+    <resource>
+      <directory>data</directory>
+    </resource>
+  </resources>
+  <forceLinkClasses>
+    <pattern>com.badlogic.gdx.scenes.scene2d.ui.*</pattern>
+    <pattern>com.badlogic.gdx.graphics.g3d.particles.**</pattern>
+    <pattern>com.android.okhttp.HttpHandler</pattern>
+    <pattern>com.android.okhttp.HttpsHandler</pattern>
+    <pattern>com.android.org.conscrypt.**</pattern>
+    <pattern>com.android.org.bouncycastle.jce.provider.BouncyCastleProvider</pattern>
+    <pattern>com.android.org.bouncycastle.jcajce.provider.keystore.BC$Mappings</pattern>
+    <pattern>com.android.org.bouncycastle.jcajce.provider.keystore.bc.BcKeyStoreSpi</pattern>
+    <pattern>com.android.org.bouncycastle.jcajce.provider.keystore.bc.BcKeyStoreSpi$Std</pattern>
+    <pattern>com.android.org.bouncycastle.jce.provider.PKIXCertPathValidatorSpi</pattern>
+    <pattern>com.android.org.bouncycastle.crypto.digests.AndroidDigestFactoryOpenSSL</pattern>
+    <pattern>org.apache.harmony.security.provider.cert.DRLCertFactory</pattern>
+    <pattern>org.apache.harmony.security.provider.crypto.CryptoProvider</pattern>
+    <pattern>com.graphicsfuzz.repackaged.**</pattern>
+  </forceLinkClasses>
+  <libs>
+      <lib>z</lib>
+  </libs>
+  <frameworks>
+    <framework>UIKit</framework>
+    <framework>OpenGLES</framework>
+    <framework>QuartzCore</framework>
+    <framework>CoreGraphics</framework>
+    <framework>OpenAL</framework>
+    <framework>AudioToolbox</framework>
+    <framework>AVFoundation</framework>
+  </frameworks>
+</config>

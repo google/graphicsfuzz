@@ -1,0 +1,541 @@
+<!--
+Copyright 2018 The GraphicsFuzz Project Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.graphicsfuzz</groupId>
+  <artifactId>parent-all</artifactId>
+  <version>1.0</version>
+  <name>parent-all</name>
+  <packaging>pom</packaging>
+
+  <!-- Additional repositories -->
+  <repositories>
+    <!-- JitPack lets you treat GitHub URLs as Maven repos.
+         When an artifact is requested, JitPack dynamically clones the repo,
+         runs `mvn package` and serves the result (which is then cached). Magic. -->
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://www.jitpack.io</url>
+    </repository>
+  </repositories>
+
+  <!-- Properties -->
+  <properties>
+    <!-- Default to UTF-8 otherwise Maven complains -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
+
+  <!-- Dependency versions -->
+  <dependencyManagement>
+    <dependencies>
+
+      <!-- binaries -->
+      <dependency>
+        <groupId>com.github.mc-imperial</groupId>
+        <artifactId>ogltesting-binaries</artifactId>
+        <version>753199b</version>
+        <type>zip</type>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.mc-imperial</groupId>
+        <artifactId>thrift-compiler-binary</artifactId>
+        <version>6e3ee39</version>
+        <type>zip</type>
+        <scope>provided</scope>
+      </dependency>
+
+
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr4</artifactId>
+        <version>4.5.3</version>
+      </dependency>
+
+      <dependency>
+        <groupId>ant-contrib</groupId>
+        <artifactId>ant-contrib</artifactId>
+        <version>1.0b3</version>
+        <exclusions>
+          <exclusion>
+            <groupId>ant</groupId>
+            <artifactId>ant</artifactId>
+          </exclusion>
+        </exclusions>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-servlet</artifactId>
+        <version>9.4.6.v20170531</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>9.4.6.v20170531</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-continuation</artifactId>
+        <version>9.4.6.v20170531</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.sourceforge.argparse4j</groupId>
+        <artifactId>argparse4j</artifactId>
+        <version>0.7.0</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpmime</artifactId>
+        <version>4.5.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>4.5.2</version>
+      </dependency>
+      <dependency>
+        <artifactId>httpcore</artifactId>
+        <groupId>org.apache.httpcomponents</groupId>
+        <version>4.4.4</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.5</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.5</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>2.6.2</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>1.7.21</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.21</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>2.7</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>2.7</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.thrift</groupId>
+        <artifactId>libthrift</artifactId>
+        <version>0.10.0</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>slf4j-api</artifactId>
+            <groupId>org.slf4j</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>httpclient</artifactId>
+            <groupId>org.apache.httpcomponents</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>httpcore</artifactId>
+            <groupId>org.apache.httpcomponents</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bytedeco.javacpp-presets</groupId>
+        <artifactId>opencv</artifactId>
+        <version>3.2.0-1.3</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bytedeco.javacpp-presets</groupId>
+        <artifactId>opencv</artifactId>
+        <version>3.2.0-1.3</version>
+        <classifier>linux-x86_64</classifier>
+      </dependency>
+      <dependency>
+        <groupId>org.bytedeco.javacpp-presets</groupId>
+        <artifactId>opencv</artifactId>
+        <version>3.2.0-1.3</version>
+        <classifier>macosx-x86_64</classifier>
+      </dependency>
+      <dependency>
+        <groupId>org.bytedeco.javacpp-presets</groupId>
+        <artifactId>opencv</artifactId>
+        <version>3.2.0-1.3</version>
+        <classifier>windows-x86_64</classifier>
+      </dependency>
+
+      <!-- third party open source projects -->
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>alphanum-comparator</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>gif-sequence-writer</artifactId>
+        <version>1.0</version>
+      </dependency>
+
+      <!-- GraphicsFuzz projects -->
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>android-client-dep</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>assembly</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>assembly-binaries</artifactId>
+        <version>1.0</version>
+        <type>zip</type>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>assembly-desktop-client</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>assembly-public</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>assembly-webglfuzz</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>ast</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>astfuzzer</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>checkstyle-config</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>client-tests</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>common</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>common-util</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>compare-asts</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>desktop-client</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>fuzzerserver</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>generate-and-run-shaders</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>generator</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>parent-checkstyle</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>python</artifactId>
+        <version>1.0</version>
+        <type>zip</type>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>reducer</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>security</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>server</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>server-public</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>server-static-public</artifactId>
+        <type>zip</type>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>server-thrift-gen</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>shaders</artifactId>
+        <version>1.0</version>
+        <type>zip</type>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>shadersets-util</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>tester</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>tester</artifactId>
+        <classifier>shaders</classifier>
+        <version>1.0</version>
+        <type>zip</type>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>test-util</artifactId>
+        <version>1.0</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>thrift</artifactId>
+        <version>1.0</version>
+        <type>zip</type>
+        <classifier>java</classifier>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>thrift</artifactId>
+        <version>1.0</version>
+        <type>zip</type>
+        <classifier>python</classifier>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>thrift</artifactId>
+        <version>1.0</version>
+        <type>zip</type>
+        <classifier>js</classifier>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>tool</artifactId>
+        <version>1.0</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>tool-webglfuzz</artifactId>
+        <version>1.0</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>webglfuzz</artifactId>
+        <version>1.0</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>semantic-ui</artifactId>
+        <version>2.0.7</version>
+        <type>zip</type>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>thrift-py</artifactId>
+        <version>1.0</version>
+        <type>zip</type>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>thrift-js</artifactId>
+        <version>1.0</version>
+        <type>zip</type>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>jquery-js</artifactId>
+        <version>1.0</version>
+        <type>zip</type>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+
+      <plugins>
+
+
+        <!-- build plugins -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.6.1</version>
+          <configuration>
+            <!-- DEFINED AS PROPERTIES INSTEAD:-->
+            <!--<source>1.8</source>-->
+            <!--<target>1.8</target>-->
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.20</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.0.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.0.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.0.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.antlr</groupId>
+          <artifactId>antlr4-maven-plugin</artifactId>
+          <version>4.5.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>2.17</version>
+          <dependencies>
+            <dependency>
+              <groupId>com.graphicsfuzz</groupId>
+              <artifactId>checkstyle-config</artifactId>
+              <version>1.0</version>
+            </dependency>
+            <dependency>
+              <groupId>com.puppycrawl.tools</groupId>
+              <artifactId>checkstyle</artifactId>
+              <version>8.0</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>1.8</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>3.0.0</version>
+        </plugin>
+
+        <plugin>
+          <groupId>pl.project13.maven</groupId>
+          <artifactId>git-commit-id-plugin</artifactId>
+          <version>2.2.2</version>
+        </plugin>
+
+      </plugins>
+
+    </pluginManagement>
+  </build>
+</project>
+

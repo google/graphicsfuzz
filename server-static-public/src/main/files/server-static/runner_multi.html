@@ -1,0 +1,41 @@
+<!--
+Copyright 2018 The GraphicsFuzz Project Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!doctype html>
+<html>
+<head>
+  <title>WebGL Client</title>
+  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <link rel="stylesheet" type="text/css" href="style.css">
+
+  <!-- TODO: get rid of jQuery -->
+  <script type="text/javascript" src="jquery/jquery-3.1.1.min.js"></script>
+
+  <script src="thrift/thrift.js"></script>
+  <script src="gen-js/FuzzerService_types.js"></script>
+  <script src="gen-js/FuzzerService.js"></script>
+  <script type="text/javascript">
+    var isRunnerMulti = true;
+  </script>
+  <script type="text/javascript" src="runner.js"></script>
+
+</head>
+<body>
+  <input id="version" class="multi_input multi_version_input" value="WebGL Context: "/>
+  <table id="table"></table>
+</body>
+</html>
+

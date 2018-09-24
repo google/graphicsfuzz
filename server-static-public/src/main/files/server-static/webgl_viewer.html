@@ -1,0 +1,119 @@
+<!--
+Copyright 2018 The GraphicsFuzz Project Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!doctype html>
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <title>WebGL Viewer</title>
+  <script type="text/javascript" src="jquery/jquery-3.1.1.min.js"></script>
+  <script type="text/javascript" src="webgl_viewer.js"></script>
+  <script type="text/javascript" src="render.js"></script>
+</head>
+<body>
+<div class="grid">
+
+  <div class="row">
+
+    <div class="cell">
+      <canvas id="opengl-canvas" style="border: none;" width="256" height="256"></canvas>
+    </div>
+
+  </div>
+
+  <div class="row">
+    <input type="text" class="viewer_input" id="version" value="WebGL Context: " readonly/><br/>
+    <div class="cell shader_location_input">
+
+      <textarea id="shader_source" placeholder="Source of fragment shader">
+        // Must be filled by JavaScript
+      </textarea>
+
+      <textarea id="uniforms_info" placeholder="Information about uniforms">
+"resolution": {
+    "func":  "glUniform2f",
+    "args": [
+        256.0,
+        256.0
+    ]
+}
+      </textarea>
+
+      <div>
+        <button id="start" title="Starts rendering fragment shader" onclick="startSafe()">Start
+          rendering
+        </button>
+        <button id="stop" title="Stops rendering" onclick="stop()">Stop rendering</button>
+      </div>
+
+      <textarea id="console" class="console" placeholder="Shader compilation output" readonly></textarea>
+
+    </div>
+
+  </div>
+
+</div>
+<script type="text/javascript">
+
+  webgl_context = "experimental-webgl"; // default
+  var query = window.location.search.substring(1);
+  var vars = query.split('&');
+  for (var i = 0; i < vars.length; i++) {
+    var pair = vars[i].split('=');
+    if (pair[0] == "context") {
+      webgl_context = pair[1]
+    }
+  }
+
+  document.getElementById("version").value = "WebGL Context: " + webgl_context;
+
+  switch (webgl_context) {
+    case "experimental-webgl":
+    document.getElementById("shader_source").value =
+      "#version 100\n" +
+      "// (WebGL 1) Paste fragment shader source here\n" +
+      "precision mediump float;\n" +
+      "\n" +
+      "uniform vec2 resolution;\n" +
+      "\n" +
+      "void main(void) {\n" +
+      "gl_FragColor = vec4(gl_FragCoord.x/resolution.x, gl_FragCoord.y/resolution.y, 1.0, 1.0);\n" +
+      "}\n"
+      break;
+
+    case undefined:
+    case "webgl2":
+    document.getElementById("shader_source").value =
+      "#version 300 es\n" +
+      "\n" +
+      "precision mediump float;\n" +
+      "\n" +
+      "out vec4 _GLF_color;\n" +
+      "\n" +
+      "uniform vec2 resolution;\n" +
+      "\n" +
+      "void main() {\n" +
+      "    _GLF_color = vec4(gl_FragCoord.x/resolution.x, gl_FragCoord.y/resolution.y, 1.0, 1.0);\n" +
+      "}\n"
+      break;
+
+    default:
+      document.getElementById("shader_source").value = "Invalid webgl_context\n";
+
+  }
+</script>
+</body>
+</html>

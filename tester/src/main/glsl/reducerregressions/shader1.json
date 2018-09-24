@@ -1,0 +1,119 @@
+{
+  "injectionSwitch": {
+    "func": "glUniform2f",
+    "args": [
+      0.0,
+      1.0
+    ]
+  },
+  "resolution": {
+    "func": "glUniform2f",
+    "args": [
+      256.0,
+      256.0
+    ]
+  },
+  "GLF_live3resolution": {
+    "func": "glUniform2f",
+    "args": [
+      0.9834428,
+      0.7698372
+    ]
+  },
+  "GLF_live8resolution": {
+    "func": "glUniform2f",
+    "args": [
+      0.51593924,
+      0.50025636
+    ]
+  },
+  "GLF_live8time": {
+    "func": "glUniform1f",
+    "args": [
+      0.57337534
+    ]
+  },
+  "GLF_live5injectionSwitch": {
+    "func": "glUniform2f",
+    "args": [
+      0.45492798,
+      0.58870804
+    ]
+  },
+  "GLF_live5resolution": {
+    "func": "glUniform2f",
+    "args": [
+      0.84467524,
+      0.1763115
+    ]
+  },
+  "GLF_live11time": {
+    "func": "glUniform1f",
+    "args": [
+      0.7571303
+    ]
+  },
+  "GLF_live11resolution": {
+    "func": "glUniform2f",
+    "args": [
+      0.3476835,
+      0.9983097
+    ]
+  },
+  "GLF_live12iGlobalTime": {
+    "func": "glUniform1f",
+    "args": [
+      0.34532416
+    ]
+  },
+  "GLF_live13iGlobalTime": {
+    "func": "glUniform1f",
+    "args": [
+      0.13704824
+    ]
+  },
+  "GLF_live14time": {
+    "func": "glUniform1f",
+    "args": [
+      0.956758
+    ]
+  },
+  "GLF_live14resolution": {
+    "func": "glUniform2f",
+    "args": [
+      0.900785,
+      0.4413479
+    ]
+  },
+  "GLF_live15shadowType": {
+    "func": "glUniform1i",
+    "args": [
+      17214
+    ]
+  },
+  "GLF_live15shadowIntensity": {
+    "func": "glUniform1f",
+    "args": [
+      0.52657604
+    ]
+  },
+  "GLF_live15shadowSharpness": {
+    "func": "glUniform1f",
+    "args": [
+      0.5558524
+    ]
+  },
+  "GLF_live15objY": {
+    "func": "glUniform1f",
+    "args": [
+      0.18376088
+    ]
+  },
+  "GLF_live17resolution": {
+    "func": "glUniform2f",
+    "args": [
+      0.89330274,
+      0.3829862
+    ]
+  }
+}

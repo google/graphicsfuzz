@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+Copyright 2018 The GraphicsFuzz Project Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Configuration>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss} %-5level t:%-23X{token} %logger{1} - %msg%n" />
+            <!-- <PatternLayout pattern="%d %-5p [%t] %C{2} (%F:%L) - %m%n"/> -->
+        </Console>
+        <!--<File name="File" fileName="processing/server.log">-->
+            <!--<PatternLayout pattern="%d{HH:mm:ss} %-5level t:%-23X{token} %logger{1} - %msg%n" />-->
+
+        <!--</File>-->
+
+        <RollingFile name="RollingFileA" fileName="processing/server.log"
+          filePattern="processing/%d{yyyy-MM-dd-HH}-server-%i.log.gz">
+            <PatternLayout>
+                <Pattern>%d{HH:mm:ss} %-5level t:%-23X{token} %logger{1} - %msg%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" />
+                <SizeBasedTriggeringPolicy size="250 MB"/>
+            </Policies>
+        </RollingFile>
+
+        <Routing name="RoutingA">
+            <Routes pattern="$${ctx:logfile}">
+
+                <!-- Chosen if logfile has no value (apparently) -->
+                <Route ref="RollingFileA" key="${ctx:logfile}"/>
+
+                <!-- Catch all -->
+                <Route>
+                    <File name="RollingFile-${ctx:logfile}" fileName="${ctx:logfile}">
+                        <PatternLayout>
+                            <Pattern>%d{HH:mm:ss} %-5level %logger{1} - %msg%n</Pattern>
+                        </PatternLayout>
+                    </File>
+                </Route>
+
+            </Routes>
+
+        </Routing>
+
+    </Appenders>
+    <Loggers>
+        <Logger name="org.apache.log4j.xml" level="info"/>
+        <Root level="info">
+            <AppenderRef ref="RoutingA"/>
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
