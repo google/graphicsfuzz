@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.server.webui;
 
-import com.graphicsfuzz.common.util.ReductionStepHelper;
+import com.graphicsfuzz.common.util.ReductionProgressHelper;
 import java.io.File;
 import java.util.Optional;
 
@@ -30,7 +30,7 @@ public class ReductionFilesHelper {
   static Optional<File> getLatestReductionImage(String token, String shaderset, String shader) {
     final File reductionDir = getReductionDir(token, shaderset, shader);
     final Optional<Integer> latestSuccessfulReductionStep =
-          ReductionStepHelper.getLatestReductionStepSuccess(reductionDir, "variant");
+          ReductionProgressHelper.getLatestReductionStepSuccess(reductionDir, "variant");
     if (!latestSuccessfulReductionStep.isPresent()) {
       return Optional.empty();
     }
@@ -45,10 +45,6 @@ public class ReductionFilesHelper {
       return Optional.empty();
     }
     return Optional.of(latestImage);
-  }
-
-  static File getReductionExceptionFile(String shader, File reductionDir) {
-    return new File(reductionDir, shader + "_exception.txt");
   }
 
 }

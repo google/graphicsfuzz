@@ -251,7 +251,7 @@ public class SimplePlan implements IReductionPlan {
       default:
         throw new RuntimeException("Unsupported shader kind: " + shaderKind);
     }
-    return new GlslReductionState(fragmentShader, vertexShader);
+    return new GlslReductionState(vertexShader, fragmentShader, originalState.getUniformsInfo());
   }
 
 }

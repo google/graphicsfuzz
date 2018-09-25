@@ -190,7 +190,10 @@ public class ReducerUnitTest {
     for (int i = 0; i < numIterations; i++) {
 
       GlslReductionState initialState = new GlslReductionState(
-            Optional.of(tu));
+          Optional.empty(),
+          Optional.of(tu),
+          new UniformsInfo(
+              new File(Helper.jsonFilenameForShader(shaderFile.getAbsolutePath()))));
       IReductionStateFileWriter fileWriter = new GlslReductionStateFileWriter(
           shadingLanguageVersion);
 
@@ -348,7 +351,10 @@ public class ReducerUnitTest {
     final ShadingLanguageVersion version = ShadingLanguageVersion.getGlslVersionFromShader(shaderFile);
     final IRandom generator = new RandomWrapper(0);
     final TranslationUnit tu = Helper.parse(shaderFile, true);
-    final GlslReductionState state = new GlslReductionState(Optional.of(tu));
+    final GlslReductionState state = new GlslReductionState(
+        Optional.empty(),
+        Optional.of(tu),
+        new UniformsInfo(new File(Helper.jsonFilenameForShader(shaderFile.getAbsolutePath()))));
     return new ReductionDriver(new ReductionOpportunityContext(false, version, generator, new IdGenerator()), false, state)
         .doReduction(FilenameUtils.removeExtension(shaderFile.getAbsolutePath()), 0,
           new GlslReductionStateFileWriter(version),
@@ -394,7 +400,7 @@ public class ReducerUnitTest {
     int numSteps = 20;
 
     Reduce.main(new String[] {
-          reference.getAbsolutePath(),
+          FilenameUtils.removeExtension(reference.getAbsolutePath()),
           "--swiftshader",
           "IDENTICAL",
           "--reduce_everywhere",
@@ -411,7 +417,7 @@ public class ReducerUnitTest {
     while (new File(output, Constants.REDUCTION_INCOMPLETE).exists()) {
       numSteps += 5;
       Reduce.main(new String[] {
-            reference.getAbsolutePath(),
+            FilenameUtils.removeExtension(reference.getAbsolutePath()),
             "--swiftshader",
             "IDENTICAL",
             "--reduce_everywhere",
@@ -479,7 +485,7 @@ public class ReducerUnitTest {
     assertEquals(0, referenceResult.res);
     final File output = temporaryFolder.newFolder();
     Reduce.main(new String[] {
-          reference.getAbsolutePath(),
+          FilenameUtils.removeExtension(reference.getAbsolutePath()),
           "--swiftshader",
           "IDENTICAL",
           "--reduce_everywhere",

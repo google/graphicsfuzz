@@ -22,6 +22,7 @@ import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.IReductionStateFileWriter;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import com.graphicsfuzz.reducer.glslreducers.GlslReductionState;
@@ -147,7 +148,9 @@ public class ReducerBugPoint {
       System.err.println("Trying iteration " + i);
 
       GlslReductionState initialState = new GlslReductionState(
-            Optional.of(interestingTranslationUnit));
+          Optional.empty(),
+          Optional.of(interestingTranslationUnit),
+          new UniformsInfo(interestingJson));
       IReductionStateFileWriter fileWriter = new GlslReductionStateFileWriter(
           shadingLanguageVersion);
 

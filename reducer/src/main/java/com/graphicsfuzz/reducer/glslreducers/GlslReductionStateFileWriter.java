@@ -24,6 +24,7 @@ import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.reducer.IReductionState;
 import com.graphicsfuzz.reducer.IReductionStateFileWriter;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.PrintStream;
 
 public class GlslReductionStateFileWriter implements IReductionStateFileWriter {
@@ -35,14 +36,16 @@ public class GlslReductionStateFileWriter implements IReductionStateFileWriter {
   }
 
   @Override
-  public void writeFileFromState(IReductionState state, String outputFilesPrefix)
+  public void writeFilesFromState(IReductionState state, String outputFilesPrefix)
         throws FileNotFoundException {
-    if (state.hasFragmentShader()) {
-      writeFile(state.getFragmentShader(), ShaderKind.FRAGMENT, outputFilesPrefix);
-    }
     if (state.hasVertexShader()) {
       writeFile(state.getVertexShader(), ShaderKind.VERTEX, outputFilesPrefix);
     }
+    if (state.hasFragmentShader()) {
+      writeFile(state.getFragmentShader(), ShaderKind.FRAGMENT, outputFilesPrefix);
+    }
+    Helper.emitUniformsInfo(state.getUniformsInfo(),
+        new PrintStream(new FileOutputStream(outputFilesPrefix + ".json")));
   }
 
   private void writeFile(TranslationUnit shader, ShaderKind shaderKind, String outputFilesPrefix)

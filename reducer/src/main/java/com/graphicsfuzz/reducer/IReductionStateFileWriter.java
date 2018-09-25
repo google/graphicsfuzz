@@ -20,7 +20,7 @@ import java.io.FileNotFoundException;
 
 public interface IReductionStateFileWriter {
 
-  void writeFileFromState(IReductionState state, String outputFilesPrefix)
+  void writeFilesFromState(IReductionState state, String outputFilesPrefix)
       throws FileNotFoundException;
 
 }

@@ -16,33 +16,14 @@
 
 package com.graphicsfuzz.common.util;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import org.apache.commons.io.FilenameUtils;
 
 public class FileHelper {
 
-  public static File fileWithAppendedString(File file, String extra) {
-    String ext = FilenameUtils.getExtension(file.toString());
-    String basename = FilenameUtils.removeExtension(file.toString());
-    return new File(basename + extra + "." + ext);
-  }
-
-  public static String firstLine(File file) throws IOException {
-    try (BufferedReader r = new BufferedReader(new FileReader(file));) {
-      return r.readLine();
-    }
-  }
-
   public static File replaceExtension(File file, String ext) {
     return new File(FilenameUtils.removeExtension(file.toString()) + ext);
-  }
-
-  public static File replaceDir(File file, File dir) {
-    return new File(dir, file.getName());
   }
 
   public static void checkExists(File file) throws FileNotFoundException {

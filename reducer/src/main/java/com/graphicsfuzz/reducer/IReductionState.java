@@ -23,8 +23,6 @@ import java.io.FileNotFoundException;
 
 public interface IReductionState {
 
-  UniformsInfo computeRemainingUniforms(File uniformsJson) throws FileNotFoundException;
-
   boolean hasFragmentShader();
 
   boolean hasVertexShader();
@@ -32,5 +30,7 @@ public interface IReductionState {
   TranslationUnit getFragmentShader();
 
   TranslationUnit getVertexShader();
+
+  UniformsInfo getUniformsInfo();
 
 }

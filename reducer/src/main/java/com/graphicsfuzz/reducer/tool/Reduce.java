@@ -16,6 +16,7 @@
 
 package com.graphicsfuzz.reducer.tool;
 
+import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.util.FileHelper;
@@ -24,7 +25,8 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
-import com.graphicsfuzz.common.util.ReductionStepHelper;
+import com.graphicsfuzz.common.util.ReductionProgressHelper;
+import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.IFileJudge;
 import com.graphicsfuzz.reducer.IReductionStateFileWriter;
 import com.graphicsfuzz.reducer.ReductionDriver;
@@ -43,6 +45,7 @@ import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.LocalShaderDispatcher;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Paths;
@@ -69,12 +72,13 @@ public class Reduce {
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("Reduce")
           .defaultHelp(true)
-          .description("Reduce a shader, driven by a criterion of interest.");
+          .description("Reduce a shader job, driven by a criterion of interest.");
 
     // Required arguments
-    parser.addArgument("fragment_shader")
-          .help("Path of fragment shader to be reduced.")
-          .type(File.class);
+    parser.addArgument("shader_job")
+          .help("Path of shader job to be reduced.  If path is p, shaders and meta data to "
+              + "be reduced will be p.frag, p.vert, p.json, etc.")
+          .type(String.class);
 
     parser.addArgument("reduction_kind")
           .help("Kind of reduction to be performed.  Options are:\n"
@@ -213,8 +217,6 @@ public class Reduce {
               parser);
       }
 
-      final File vertexShader = ns.get("vertex_shader");
-
       ReductionKind reductionKind = null;
       try {
         reductionKind = ReductionKind.valueOf(((String) ns.get("reduction_kind")).toUpperCase());
@@ -259,34 +261,34 @@ public class Reduce {
         LOGGER.warn("Warning: --swiftshader ignored, as --server is being used");
       }
 
-      File fragmentShader = ns.get("fragment_shader");
-      File referenceImage = ns.get("reference_image");
+      final String shaderJobPrefix = ns.get("shader_job");
+
+      final File reductionReferenceImage = ns.get("reference_image");
+      final File shaderJobVertex = new File(shaderJobPrefix + ".vert");
+      final File shaderJobFragment = new File(shaderJobPrefix + ".frag");
+      final File shaderJobJson = new File(shaderJobPrefix + ".json");
 
       // Check input files
-      FileHelper.checkExists(fragmentShader);
-      FileHelper.checkExists(FileHelper.replaceExtension(fragmentShader, ".json"));
-      FileHelper.checkExistsOrNull(referenceImage);
+      if (!shaderJobVertex.isFile() && !shaderJobFragment.isFile()) {
+        throw new FileNotFoundException("Cannot find vertex or fragment shader with prefix "
+            + shaderJobPrefix);
+      }
+      FileHelper.checkExists(shaderJobJson);
+      FileHelper.checkExistsOrNull(reductionReferenceImage);
       if (continuePreviousReduction) {
         FileHelper.checkExists(new File(workDir, Constants.REDUCTION_INCOMPLETE));
       }
 
       // Copy input files to output dir (unless they are in there already), and update variables.
-      File temp;
+      // TODO: why would the files be there already?
+      copyFileToWorkDirIfNeeded(shaderJobVertex, workDir);
+      copyFileToWorkDirIfNeeded(shaderJobFragment, workDir);
+      copyFileToWorkDirIfNeeded(shaderJobJson, workDir);
 
-      if (!FileUtils.directoryContains(workDir, fragmentShader)) {
-        temp = fragmentShader;
-        fragmentShader = Paths.get(workDir.toString(), fragmentShader.getName()).toFile();
-        FileUtils.copyFile(temp, fragmentShader);
-        FileUtils.copyFile(
-              FileHelper.replaceExtension(temp, ".json"),
-              FileHelper.replaceExtension(fragmentShader, ".json")
-        );
-      }
-
-      if (referenceImage != null && !FileUtils.directoryContains(workDir, referenceImage)) {
-        temp = referenceImage;
-        referenceImage = Paths.get(workDir.toString(), "reference_image.png").toFile();
-        FileUtils.copyFile(temp, referenceImage);
+      if (reductionReferenceImage != null && !FileUtils.directoryContains(workDir,
+          reductionReferenceImage)) {
+        FileUtils.copyFile(reductionReferenceImage,
+            ImageShaderFileJudge.getReferenceImageInWorkDir(workDir));
       }
 
       IFileJudge fileJudge;
@@ -316,25 +318,25 @@ public class Reduce {
                       stopOnError);
           break;
         case NOT_IDENTICAL:
-          fileJudge = new ImageShaderFileJudge(null, referenceImage, workDir,
+          fileJudge = new ImageShaderFileJudge(workDir,
                 new ExactImageFileComparator(false),
                 imageGenerator,
                 stopOnError);
           break;
         case IDENTICAL:
-          fileJudge = new ImageShaderFileJudge(null, referenceImage, workDir,
+          fileJudge = new ImageShaderFileJudge(workDir,
                 new ExactImageFileComparator(true),
                 imageGenerator,
                 stopOnError);
           break;
         case BELOW_THRESHOLD:
-          fileJudge = new ImageShaderFileJudge(null, referenceImage, workDir,
+          fileJudge = new ImageShaderFileJudge(workDir,
                 new HistogramImageFileComparator(threshold, false),
                 imageGenerator,
                 stopOnError);
           break;
         case ABOVE_THRESHOLD:
-          fileJudge = new ImageShaderFileJudge(null, referenceImage, workDir,
+          fileJudge = new ImageShaderFileJudge(workDir,
                 new HistogramImageFileComparator(threshold, true),
                 imageGenerator,
                 stopOnError);
@@ -356,23 +358,23 @@ public class Reduce {
       }
 
       doReductionHelper(
-            fragmentShader,
-            seed,
-            fileJudge,
-            workDir,
-            maxSteps,
-            reduceEverywhere,
-            continuePreviousReduction,
-            verbose);
+          shaderJobPrefix,
+          seed,
+          fileJudge,
+          workDir,
+          maxSteps,
+          reduceEverywhere,
+          continuePreviousReduction,
+          verbose);
 
     } catch (Throwable ex) {
 
-      File fragmentShader = ns.get("fragment_shader");
-      final String exceptionFilename = FilenameUtils.removeExtension(FilenameUtils
-            .getBaseName(fragmentShader.getAbsolutePath())) + "_exception.txt";
+      final String shaderJob = ns.get("shader_job");
+      final File exceptionFile =
+          ReductionProgressHelper.getReductionExceptionFile(shaderJob, workDir);
 
       FileUtils.writeStringToFile(
-            new File(workDir, exceptionFilename),
+            exceptionFile,
             ExceptionUtils.getStackTrace(ex),
             Charset.defaultCharset()
       );
@@ -381,24 +383,35 @@ public class Reduce {
     }
   }
 
+  private static void copyFileToWorkDirIfNeeded(File file, File workDir) throws IOException {
+    if (file.exists() && !FileUtils.directoryContains(workDir, file)) {
+      FileUtils.copyFile(file, Paths.get(workDir.toString(),
+          file.getName()).toFile());
+    }
+  }
+
   public static void doReductionHelperSafe(
-        File fragmentShader,
-        int seed,
-        IFileJudge fileJudge,
-        File workDir,
-        int stepLimit,
-        boolean reduceEverywhere,
-        boolean continuePreviousReduction,
-        boolean verbose) {
+      String shaderJobPrefix,
+      int seed,
+      IFileJudge fileJudge,
+      File workDir,
+      int stepLimit,
+      boolean reduceEverywhere,
+      boolean continuePreviousReduction,
+      boolean verbose) {
     try {
-      doReductionHelper(fragmentShader, seed, fileJudge, workDir, stepLimit, reduceEverywhere,
-            continuePreviousReduction,
-            verbose);
+      doReductionHelper(shaderJobPrefix,
+          seed,
+          fileJudge,
+          workDir,
+          stepLimit,
+          reduceEverywhere,
+          continuePreviousReduction,
+          verbose);
     } catch (Exception ex) {
       try {
         FileUtils.writeStringToFile(
-              new File(workDir,
-                    FilenameUtils.removeExtension(fragmentShader.getName()) + "_exception.txt"),
+            ReductionProgressHelper.getReductionExceptionFile(shaderJobPrefix, workDir),
               ExceptionUtils.getStackTrace(ex), Charset.defaultCharset());
       } catch (IOException exception) {
         throw new RuntimeException(exception);
@@ -407,23 +420,23 @@ public class Reduce {
   }
 
   public static void doReductionHelper(
-        File fragmentShader,
-        int seed,
-        IFileJudge fileJudge,
-        File workDir,
-        int stepLimit,
-        boolean reduceEverywhere,
-        boolean continuePreviousReduction,
-        boolean verbose)
-        throws IOException, ParseTimeoutException {
+      String shaderJobPrefix,
+      int seed,
+      IFileJudge fileJudge,
+      File workDir,
+      int stepLimit,
+      boolean reduceEverywhere,
+      boolean continuePreviousReduction,
+      boolean verbose)
+      throws IOException, ParseTimeoutException {
     final ShadingLanguageVersion shadingLanguageVersion =
-        ShadingLanguageVersion.getGlslVersionFromShader(fragmentShader);
+        getGlslVersionForShaderJob(shaderJobPrefix);
     final IRandom random = new RandomWrapper(seed);
     final IdGenerator idGenerator = new IdGenerator();
 
-    final int fileCountOffset = getFileCountOffset(fragmentShader, workDir,
+    final int fileCountOffset = getFileCountOffset(shaderJobPrefix, workDir,
           continuePreviousReduction);
-    final File startingShaderFile = getStartingShaderFile(fragmentShader, workDir,
+    final String startingShaderJobPrefix = getStartingShaderJobPrefix(shaderJobPrefix, workDir,
           continuePreviousReduction);
 
     if (continuePreviousReduction) {
@@ -431,8 +444,7 @@ public class Reduce {
       new File(workDir, Constants.REDUCTION_INCOMPLETE).delete();
     }
 
-    GlslReductionState initialState = new GlslReductionState(
-          Optional.of(Helper.parse(startingShaderFile, true)));
+    GlslReductionState initialState = createInitialReductionState(startingShaderJobPrefix);
     IReductionStateFileWriter fileWriter = new GlslReductionStateFileWriter(
         shadingLanguageVersion);
 
@@ -441,7 +453,7 @@ public class Reduce {
         shadingLanguageVersion,
           random,
           idGenerator), verbose, initialState)
-          .doReduction(FilenameUtils.removeExtension(fragmentShader.getAbsolutePath()),
+          .doReduction(shaderJobPrefix,
                 fileCountOffset,
                 fileWriter,
                 fileJudge,
@@ -449,29 +461,60 @@ public class Reduce {
                 stepLimit);
   }
 
-  private static File getStartingShaderFile(File fragmentShader, File workDir,
-        boolean continuePreviousReduction) {
-    if (!continuePreviousReduction) {
-      return fragmentShader;
-    }
-    final int latestSuccessfulReduction = ReductionStepHelper
-          .getLatestReductionStepSuccess(workDir,
-                FilenameUtils.removeExtension(fragmentShader.getName())).orElse(0);
-    if (latestSuccessfulReduction == 0) {
-      return fragmentShader;
-    }
-    return new File(workDir, ReductionDriver.getReductionStepFilenamePrefix(
-            FilenameUtils.removeExtension(fragmentShader.getName()),
-            latestSuccessfulReduction, Optional.of("success")) + ".frag");
+  private static GlslReductionState createInitialReductionState(String shaderJobPrefix)
+      throws IOException, ParseTimeoutException {
+    final File vertexShader = new File(shaderJobPrefix + ".vert");
+    final File fragmentShader = new File(shaderJobPrefix + ".frag");
+    final File json = new File(shaderJobPrefix + ".json");
+    return new GlslReductionState(
+        maybeParseShader(vertexShader),
+        maybeParseShader(fragmentShader),
+        new UniformsInfo(json));
   }
 
-  private static int getFileCountOffset(File fragmentShader, File workDir,
+  private static Optional<TranslationUnit> maybeParseShader(File vertexShader)
+      throws IOException, ParseTimeoutException {
+    return vertexShader.isFile()
+        ? Optional.of(Helper.parse(vertexShader, true))
+        : Optional.empty();
+  }
+
+  private static ShadingLanguageVersion getGlslVersionForShaderJob(String shaderJobPrefix)
+      throws IOException {
+    final File vertexShader = new File(shaderJobPrefix + ".vert");
+    if (vertexShader.isFile()) {
+      return ShadingLanguageVersion.getGlslVersionFromShader(vertexShader);
+    }
+    final File fragmentShader = new File(shaderJobPrefix + ".frag");
+    if (fragmentShader.isFile()) {
+      return ShadingLanguageVersion.getGlslVersionFromShader(fragmentShader);
+    }
+    throw new RuntimeException("Shader version not specified in vertex or fragment shader.");
+  }
+
+  private static String getStartingShaderJobPrefix(String shaderJobPrefix, File workDir,
+        boolean continuePreviousReduction) {
+    if (!continuePreviousReduction) {
+      return shaderJobPrefix;
+    }
+    final int latestSuccessfulReduction = ReductionProgressHelper
+          .getLatestReductionStepSuccess(workDir,
+                shaderJobPrefix).orElse(0);
+    if (latestSuccessfulReduction == 0) {
+      return shaderJobPrefix;
+    }
+    return ReductionDriver.getReductionStepFilenamePrefix(
+            shaderJobPrefix,
+            latestSuccessfulReduction, Optional.of("success"));
+  }
+
+  private static int getFileCountOffset(String shaderJobPrefix, File workDir,
         boolean continuePreviousReduction) {
     if (!continuePreviousReduction) {
       return 0;
     }
-    return ReductionStepHelper.getLatestReductionStepAny(workDir,
-          FilenameUtils.removeExtension(fragmentShader.getName())).orElse(0);
+    return ReductionProgressHelper.getLatestReductionStepAny(workDir,
+          shaderJobPrefix).orElse(0);
   }
 
 }
