@@ -54,6 +54,16 @@ public class UnwrapReductionOpportunitiesTest {
   }
 
   @Test
+  public void testNestedEmptyBlocks() throws Exception {
+    final String program = "void main() { { { } } }";
+    final TranslationUnit tu = Helper.parse(program, false);
+    List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(tu,
+        new ReductionOpportunityContext(false,
+            ShadingLanguageVersion.GLSL_440, new SameValueRandom(false, 0), null));
+    assertEquals(1, ops.size());
+  }
+
+  @Test
   public void misc() throws Exception {
     final String shader = "void main()\n"
           + "{\n"
