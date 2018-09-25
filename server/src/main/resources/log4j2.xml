@@ -17,52 +17,48 @@ limitations under the License.
 -->
 
 <Configuration>
-    <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss} %-5level t:%-23X{token} %logger{1} - %msg%n" />
-            <!-- <PatternLayout pattern="%d %-5p [%t] %C{2} (%F:%L) - %m%n"/> -->
-        </Console>
-        <!--<File name="File" fileName="processing/server.log">-->
-            <!--<PatternLayout pattern="%d{HH:mm:ss} %-5level t:%-23X{token} %logger{1} - %msg%n" />-->
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss} %-5level t:%-23X{token} %logger{1} - %msg%n"/>
+    </Console>
 
-        <!--</File>-->
+    <RollingFile name="RollingFileA" fileName="processing/server.log"
+                 filePattern="processing/old_logs/%d{yyyy-MM-dd-HH}-server-%i.log.gz">
+      <PatternLayout>
+        <Pattern>%d{HH:mm:ss} %-5level t:%-23X{token} %logger{1} - %msg%n</Pattern>
+      </PatternLayout>
+      <Policies>
+        <OnStartupTriggeringPolicy/>
+        <TimeBasedTriggeringPolicy interval="48"/>
+        <SizeBasedTriggeringPolicy size="250 MB"/>
+      </Policies>
+    </RollingFile>
 
-        <RollingFile name="RollingFileA" fileName="processing/server.log"
-          filePattern="processing/%d{yyyy-MM-dd-HH}-server-%i.log.gz">
+    <Routing name="RoutingA">
+      <Routes pattern="$${ctx:logfile}">
+
+        <!-- Chosen if logfile has no value (apparently) -->
+        <Route ref="RollingFileA" key="${ctx:logfile}"/>
+
+        <!-- Catch all -->
+        <Route>
+          <File name="RollingFile-${ctx:logfile}" fileName="${ctx:logfile}">
             <PatternLayout>
-                <Pattern>%d{HH:mm:ss} %-5level t:%-23X{token} %logger{1} - %msg%n</Pattern>
+              <Pattern>%d{HH:mm:ss} %-5level %logger{1} - %msg%n</Pattern>
             </PatternLayout>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1" />
-                <SizeBasedTriggeringPolicy size="250 MB"/>
-            </Policies>
-        </RollingFile>
+          </File>
+        </Route>
 
-        <Routing name="RoutingA">
-            <Routes pattern="$${ctx:logfile}">
+      </Routes>
 
-                <!-- Chosen if logfile has no value (apparently) -->
-                <Route ref="RollingFileA" key="${ctx:logfile}"/>
+    </Routing>
 
-                <!-- Catch all -->
-                <Route>
-                    <File name="RollingFile-${ctx:logfile}" fileName="${ctx:logfile}">
-                        <PatternLayout>
-                            <Pattern>%d{HH:mm:ss} %-5level %logger{1} - %msg%n</Pattern>
-                        </PatternLayout>
-                    </File>
-                </Route>
-
-            </Routes>
-
-        </Routing>
-
-    </Appenders>
-    <Loggers>
-        <Logger name="org.apache.log4j.xml" level="info"/>
-        <Root level="info">
-            <AppenderRef ref="RoutingA"/>
-            <AppenderRef ref="Console"/>
-        </Root>
-    </Loggers>
+  </Appenders>
+  <Loggers>
+    <Logger name="org.apache.log4j.xml" level="info"/>
+    <Root level="info">
+      <AppenderRef ref="RoutingA"/>
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
 </Configuration>
