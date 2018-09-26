@@ -63,14 +63,7 @@ limitations under the License.
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-    </dependency>
-    <dependency>
-      <artifactId>httpcore</artifactId>
-      <groupId>org.apache.httpcomponents</groupId>
-    </dependency>
+
 
   </dependencies>
 

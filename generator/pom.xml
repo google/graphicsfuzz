@@ -36,24 +36,12 @@ limitations under the License.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.antlr</groupId>
-      <artifactId>antlr4</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
@@ -87,6 +75,10 @@ limitations under the License.
       <groupId>org.bytedeco.javacpp-presets</groupId>
       <artifactId>opencv</artifactId>
       <classifier>windows-x86_64</classifier>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>ast</artifactId>
     </dependency>
   </dependencies>
 

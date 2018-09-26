@@ -33,6 +33,11 @@ limitations under the License.
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>ast</artifactId>
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
@@ -47,12 +52,12 @@ limitations under the License.
       <artifactId>generator</artifactId>
     </dependency>
     <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>util</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -66,11 +71,6 @@ limitations under the License.
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
     </dependency>
-    <dependency>
-      <groupId>net.sourceforge.argparse4j</groupId>
-      <artifactId>argparse4j</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>ant-contrib</groupId>
       <artifactId>ant-contrib</artifactId>

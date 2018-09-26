@@ -30,10 +30,7 @@ limitations under the License.
   </parent>
 
   <dependencies>
-    <dependency>
-      <groupId>com.graphicsfuzz</groupId>
-      <artifactId>util</artifactId>
-    </dependency>
+
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>test-util</artifactId>
@@ -53,17 +50,14 @@ limitations under the License.
       <artifactId>commons-io</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>net.sourceforge.argparse4j</groupId>
       <artifactId>argparse4j</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>
