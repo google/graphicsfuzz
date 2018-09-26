@@ -1312,6 +1312,8 @@ public class WebUi extends HttpServlet {
     args.add(reductionType);
     String referenceImage = request.getParameter("reference_image");
     String output = request.getParameter("output");
+    args.add("--metric");
+    args.add(request.getParameter("metric"));
     args.add("--output");
     args.add(output);
     if (!ReductionKind.NO_IMAGE.toString().equalsIgnoreCase(reductionType)) {
@@ -1984,6 +1986,15 @@ public class WebUi extends HttpServlet {
         "<option value='NOT_IDENTICAL'>Not Identical</option>",
         "<option value='IDENTICAL'>Identical</option>",
         "<option value='BELOW_THRESHOLD'>Below Threshold</option>",
+        "</select>",
+        "</td>",
+        "</tr>",
+        "<tr>",
+        "<td align='right'><p class='no_space'>Comparison metric:</p></td>",
+        "<td>",
+        "<select name='metric' class='reduce_col'>",
+        "<option value='HISTOGRAM_CHISQR'>HISTOGRAM_CHISQR</option>",
+        "<option value='PSNR'>PSNR</option>",
         "</select>",
         "</td>",
         "</tr>",
