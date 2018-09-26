@@ -334,4 +334,21 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
+  static IReductionOpportunityFinder<SimplifyExprReductionOpportunity>
+      foldConstantFinder() {
+    return new IReductionOpportunityFinder<SimplifyExprReductionOpportunity>() {
+      @Override
+      public List<SimplifyExprReductionOpportunity> findOpportunities(
+          TranslationUnit tu,
+          ReductionOpportunityContext context) {
+        return FoldConstantReductionOpportunities.findOpportunities(tu, context);
+      }
+
+      @Override
+      public String getName() {
+        return "foldConstant";
+      }
+    };
+  }
+
 }
