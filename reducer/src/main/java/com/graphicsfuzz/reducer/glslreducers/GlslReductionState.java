@@ -31,22 +31,16 @@ import java.util.stream.Collectors;
 
 public class GlslReductionState implements IReductionState {
 
-  private final Optional<TranslationUnit> fragmentShader;
   private final Optional<TranslationUnit> vertexShader;
+  private final Optional<TranslationUnit> fragmentShader;
+  private final UniformsInfo uniformsInfo;
 
-  public GlslReductionState(Optional<TranslationUnit> fragmentShader,
-      Optional<TranslationUnit> vertexShader) {
-    this.fragmentShader = fragmentShader;
+  public GlslReductionState(Optional<TranslationUnit> vertexShader,
+                            Optional<TranslationUnit> fragmentShader,
+                            UniformsInfo uniformsInfo) {
     this.vertexShader = vertexShader;
-  }
-
-  public GlslReductionState(Optional<TranslationUnit> fragmentShader) {
-    this(fragmentShader, Optional.empty());
-  }
-
-  @Override
-  public boolean hasFragmentShader() {
-    return fragmentShader.isPresent();
+    this.fragmentShader = fragmentShader;
+    this.uniformsInfo = uniformsInfo;
   }
 
   @Override
@@ -55,9 +49,8 @@ public class GlslReductionState implements IReductionState {
   }
 
   @Override
-  public TranslationUnit getFragmentShader() {
-    assert hasFragmentShader();
-    return fragmentShader.get();
+  public boolean hasFragmentShader() {
+    return fragmentShader.isPresent();
   }
 
   @Override
@@ -67,21 +60,14 @@ public class GlslReductionState implements IReductionState {
   }
 
   @Override
-  public UniformsInfo computeRemainingUniforms(File uniformsJson) throws FileNotFoundException {
-    assert fragmentShader.isPresent();
-    final UniformsInfo result = new UniformsInfo(
-          new File(uniformsJson.getAbsolutePath()));
+  public TranslationUnit getFragmentShader() {
+    assert hasFragmentShader();
+    return fragmentShader.get();
+  }
 
-    Set<String> remainingUniforms = new HashSet<>();
-    remainingUniforms.addAll(getUniforms(fragmentShader));
-    remainingUniforms.addAll(getUniforms(vertexShader));
-
-    for (String name : result.getUniformNames().stream()
-        .filter(item -> !remainingUniforms.contains(item)).collect(
-        Collectors.toList())) {
-      result.removeUniform(name);
-    }
-    return result;
+  @Override
+  public UniformsInfo getUniformsInfo() {
+    return uniformsInfo;
   }
 
   private Set<String> getUniforms(Optional<TranslationUnit> maybeTu) {

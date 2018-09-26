@@ -20,7 +20,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.transformreduce.Constants;
-import com.graphicsfuzz.common.util.ReductionStepHelper;
+import com.graphicsfuzz.common.util.ReductionProgressHelper;
 import com.graphicsfuzz.reducer.ReductionKind;
 import com.graphicsfuzz.server.thrift.CommandInfo;
 import com.graphicsfuzz.server.thrift.CommandResult;
@@ -937,13 +937,13 @@ public class WebUi extends HttpServlet {
       case EXCEPTION:
         htmlAppendLn("<p>Reduction failed with an exception:</p>",
             "<textarea readonly rows='25' cols='80'>\n",
-            getFileContents(ReductionFilesHelper.getReductionExceptionFile(shader,
+            getFileContents(ReductionProgressHelper.getReductionExceptionFile(shader,
                 ReductionFilesHelper.getReductionDir(token, shaderset, shader))),
             "</textarea>");
         break;
 
       case ONGOING:
-        final Optional<Integer> reductionStep = ReductionStepHelper
+        final Optional<Integer> reductionStep = ReductionProgressHelper
               .getLatestReductionStepAny(ReductionFilesHelper
                     .getReductionDir(token, shaderset, shader), "variant");
         htmlAppendLn("<p>Reduction not finished for this result: ",
@@ -1043,7 +1043,7 @@ public class WebUi extends HttpServlet {
       return ReductionStatus.NOTINTERESTING;
     }
 
-    if (ReductionFilesHelper.getReductionExceptionFile(shader, reductionDir).exists()) {
+    if (ReductionProgressHelper.getReductionExceptionFile(shader, reductionDir).exists()) {
       return ReductionStatus.EXCEPTION;
     }
 
@@ -1312,6 +1312,8 @@ public class WebUi extends HttpServlet {
     args.add(reductionType);
     String referenceImage = request.getParameter("reference_image");
     String output = request.getParameter("output");
+    args.add("--metric");
+    args.add(request.getParameter("metric"));
     args.add("--output");
     args.add(output);
     if (!ReductionKind.NO_IMAGE.toString().equalsIgnoreCase(reductionType)) {
@@ -1984,6 +1986,15 @@ public class WebUi extends HttpServlet {
         "<option value='NOT_IDENTICAL'>Not Identical</option>",
         "<option value='IDENTICAL'>Identical</option>",
         "<option value='BELOW_THRESHOLD'>Below Threshold</option>",
+        "</select>",
+        "</td>",
+        "</tr>",
+        "<tr>",
+        "<td align='right'><p class='no_space'>Comparison metric:</p></td>",
+        "<td>",
+        "<select name='metric' class='reduce_col'>",
+        "<option value='HISTOGRAM_CHISQR'>HISTOGRAM_CHISQR</option>",
+        "<option value='PSNR'>PSNR</option>",
         "</select>",
         "</td>",
         "</tr>",

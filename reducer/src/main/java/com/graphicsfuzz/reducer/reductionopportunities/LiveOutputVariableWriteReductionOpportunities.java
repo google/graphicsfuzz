@@ -17,6 +17,7 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
@@ -67,7 +68,12 @@ public class LiveOutputVariableWriteReductionOpportunities
 
   private static boolean isOutVariableBackup(DeclarationStmt declarationStmt) {
     return declarationStmt.getVariablesDeclaration().getDeclInfos()
-          .stream().anyMatch(vdi -> vdi.getName().startsWith(Constants.GLF_OUT_VAR_BACKUP_PREFIX));
+        .stream().map(VariableDeclInfo::getName)
+        .anyMatch(LiveOutputVariableWriteReductionOpportunities::isOutVariableBackup);
+  }
+
+  private static boolean isOutVariableBackup(String name) {
+    return name.startsWith(Constants.GLF_OUT_VAR_BACKUP_PREFIX);
   }
 
 }

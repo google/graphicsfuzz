@@ -27,6 +27,7 @@ import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
@@ -36,26 +37,26 @@ public class ImageShaderFileJudge implements IFileJudge {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ImageShaderFileJudge.class);
 
-  private File referenceShaderFile;
-  private File referenceShaderImage;
+  private static final String REFERENCE_IMAGE_NAME = "reference_image.png";
+
   private File workDir;
   private IImageFileComparator fileComparator;
   private IShaderDispatcher imageGenerator;
   private final boolean throwExceptionOnValidationError;
 
   public ImageShaderFileJudge(
-        File referenceShaderFile,
-        File referenceShaderImage,
         File workDir,
         IImageFileComparator fileComparator,
         IShaderDispatcher imageGenerator,
         boolean throwExceptionOnValidationError) {
-    this.referenceShaderFile = referenceShaderFile;
-    this.referenceShaderImage = referenceShaderImage;
     this.workDir = workDir;
     this.fileComparator = fileComparator;
     this.imageGenerator = imageGenerator;
     this.throwExceptionOnValidationError = throwExceptionOnValidationError;
+  }
+
+  public static File getReferenceImageInWorkDir(File workDir) {
+    return Paths.get(workDir.toString(), REFERENCE_IMAGE_NAME).toFile();
   }
 
   @Override
@@ -88,7 +89,7 @@ public class ImageShaderFileJudge implements IFileJudge {
                 outputText,
                 JobStatus.SAME_AS_REFERENCE.toString() + "\n",
                 StandardCharsets.UTF_8);
-          outputImage = referenceShaderImage;
+          outputImage = getReferenceImageInWorkDir(workDir);
           break;
         default:
           LOGGER.info("Failed to run get_image on shader. Not interesting.");
@@ -100,7 +101,7 @@ public class ImageShaderFileJudge implements IFileJudge {
       // Success or same as ref:
 
       // 3.
-      if (!fileComparator.areFilesInteresting(referenceShaderImage, outputImage)) {
+      if (!fileComparator.areFilesInteresting(getReferenceImageInWorkDir(workDir), outputImage)) {
         LOGGER.info("Shader image was not deemed interesting by file comparator. Not interesting.");
         return false;
       }

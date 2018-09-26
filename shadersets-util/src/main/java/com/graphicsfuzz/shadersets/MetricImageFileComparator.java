@@ -16,29 +16,46 @@
 
 package com.graphicsfuzz.shadersets;
 
+import com.graphicsfuzz.server.thrift.ImageComparisonMetric;
 import java.io.File;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HistogramImageFileComparator implements IImageFileComparator {
+public class MetricImageFileComparator implements IImageFileComparator {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(HistogramImageFileComparator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MetricImageFileComparator.class);
 
   private final double threshold;
   private final boolean above;
+  private final ImageComparisonMetric metric;
 
-  public HistogramImageFileComparator(double threshold, boolean above) {
+  public MetricImageFileComparator(double threshold, boolean above, ImageComparisonMetric metric) {
     this.threshold = threshold;
     this.above = above;
+    this.metric = metric;
   }
 
   @Override
   public boolean areFilesInteresting(File reference, File variant) {
     try {
       LOGGER.info("Comparing: {} and {}.", reference, variant);
-      double diff = ImageUtil.compareHistograms(
-          ImageUtil.getHistogram(reference.toString()), ImageUtil.getHistogram(variant.toString()));
+
+      double diff = 0.0;
+      switch (metric) {
+
+        case HISTOGRAM_CHISQR:
+          diff = ImageUtil.compareHistograms(
+              ImageUtil.getHistogram(reference.toString()),
+              ImageUtil.getHistogram(variant.toString()));
+          break;
+        case PSNR:
+          diff = ImageUtil.comparePSNR(reference, variant);
+          break;
+        default:
+          throw new RuntimeException("Unrecognised image comparison metric: " + metric.toString());
+      }
+
       boolean result = (above ? diff > threshold : diff < threshold);
       if (result) {
         LOGGER.info("Interesting");
@@ -48,8 +65,11 @@ public class HistogramImageFileComparator implements IImageFileComparator {
       LOGGER.info(": difference is " + diff);
       return result;
     } catch (IOException exception) {
-      LOGGER.info("Not interesting - exception occurred during histogram comparison.");
-      return false;
+      LOGGER.error(
+          "Exception occurred during image comparison using metric {}. {}",
+          metric.toString(),
+          exception);
+      throw new RuntimeException(exception);
     }
   }
 }

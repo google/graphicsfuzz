@@ -76,7 +76,8 @@ public class ReductionDriverTest {
 
     TranslationUnit tu = ParseHelper.parse(tempFile, false);
 
-    GlslReductionState state = new GlslReductionState(Optional.of(tu));
+    GlslReductionState state = new GlslReductionState(Optional.empty(), Optional.of(tu),
+        new UniformsInfo(tempJsonFile));
 
     IFileJudge pessimist = new IFileJudge() {
 
@@ -102,42 +103,6 @@ public class ReductionDriverTest {
         new ReductionOpportunityContext(false, version, generator, null),
         false, state).doReduction(getPrefix(tempFile), 0, new GlslReductionStateFileWriter(version),
         pessimist, testFolder.getRoot(), -1);
-
-  }
-
-  @Test
-  public void checkUniformIsRemoved() throws Exception {
-
-    File tempFile = testFolder.newFile("temp.frag");
-    File tempJsonFile = testFolder.newFile("temp.json");
-
-    String program = "uniform vec3 unused; void main() { }";
-
-    BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
-    bw.write(program);
-    bw.close();
-
-    BufferedWriter bwJson = new BufferedWriter(new FileWriter(tempJsonFile));
-    bwJson.write("{ \"unused\": { \"func\": \"glUniform3f\", \"args\": [ 1.0, 1.0, 1.0 ] } }");
-    bwJson.close();
-
-    ShadingLanguageVersion version = ShadingLanguageVersion.ESSL_100;
-    IRandom generator = new RandomWrapper(0);
-
-    TranslationUnit tu = ParseHelper.parse(tempFile, false);
-
-    GlslReductionState state = new GlslReductionState(Optional.of(tu));
-
-    IFileJudge optimist = (item -> true);
-
-    String finalFilePrefix = new ReductionDriver(new ReductionOpportunityContext(false, version, generator, null), false, state)
-        .doReduction(getPrefix(tempFile), 0, new GlslReductionStateFileWriter(version),
-        optimist, testFolder.getRoot(), -1);
-
-    UniformsInfo uniformsInfo = new UniformsInfo(
-        new File(finalFilePrefix + ".json"));
-
-    assertTrue(uniformsInfo.getUniformNames().isEmpty());
 
   }
 
@@ -241,7 +206,8 @@ public class ReductionDriverTest {
         ? Optional.of(Helper.parse(tempVertexShaderFile.get(), stripHeader))
         : Optional.empty();
 
-    GlslReductionState state = new GlslReductionState(Optional.of(tuFrag), tuVert);
+    GlslReductionState state = new GlslReductionState(tuVert,
+        Optional.of(tuFrag), new UniformsInfo(tempJsonFile));
 
     return new ReductionDriver(new ReductionOpportunityContext(reduceEverywhere, version, generator, new IdGenerator()), false, state)
         .doReduction(getPrefix(tempFragmentShaderFile), 0, new GlslReductionStateFileWriter(version),
@@ -272,7 +238,8 @@ public class ReductionDriverTest {
 
     final TranslationUnit tu = ParseHelper.parse(tempFile, false);
 
-    GlslReductionState state = new GlslReductionState(Optional.of(tu));
+    GlslReductionState state = new GlslReductionState(
+        Optional.empty(), Optional.of(tu), new UniformsInfo(tempJsonFile));
 
     IFileJudge referencesSinCosAnd3 = filesPrefix -> {
         try {
