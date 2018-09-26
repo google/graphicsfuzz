@@ -60,7 +60,8 @@ public final class ReductionOpportunities {
         IReductionOpportunityFinder.inlineInitializerFinder(),
         IReductionOpportunityFinder.inlineFunctionFinder(),
         IReductionOpportunityFinder.liveFragColorWriteFinder(),
-        IReductionOpportunityFinder.unusedParamFinder())) {
+        IReductionOpportunityFinder.unusedParamFinder(),
+        IReductionOpportunityFinder.foldConstantFinder())) {
       final List<? extends IReductionOpportunity> currentOpportunities = ros
             .findOpportunities(tu, context);
       if (ReductionDriver.DEBUG_REDUCER) {
