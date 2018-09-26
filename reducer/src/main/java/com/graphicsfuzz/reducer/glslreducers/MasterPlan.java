@@ -81,6 +81,7 @@ public class MasterPlan implements IReductionPlan {
         IReductionOpportunityFinder.functionFinder(),
         IReductionOpportunityFinder.declarationFinder(),
         IReductionOpportunityFinder.unusedParamFinder(),
+        IReductionOpportunityFinder.foldConstantFinder(),
     }) {
       plans.add(new SimplePlan(reductionOpportunityContext,
             shaderKind,

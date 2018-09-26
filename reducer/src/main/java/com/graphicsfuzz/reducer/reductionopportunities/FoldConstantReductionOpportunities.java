@@ -2,7 +2,14 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.expr.*;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
+import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
+import com.graphicsfuzz.common.ast.expr.ParenExpr;
+import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.expr.UnOp;
+import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import java.util.Arrays;
