@@ -120,7 +120,7 @@ public class WebUi extends HttpServlet {
     int nbVariantDone;
     int nbErrors;
     int nbSameImage;
-    int nbAcceptablyDifferentImage;
+    int nbSlightlyDifferentImage;
     int nbWrongImage;
 
     ShadersetExp(String name, String worker) throws FileNotFoundException {
@@ -140,7 +140,7 @@ public class WebUi extends HttpServlet {
             if (imageIsIdentical(info)) {
               nbSameImage++;
             } else if (imageIsAcceptable(info)) {
-              nbAcceptablyDifferentImage++;
+              nbSlightlyDifferentImage++;
             } else {
               nbWrongImage++;
             }
@@ -527,6 +527,7 @@ public class WebUi extends HttpServlet {
           "Variant done: ", Integer.toString(shadersetExp.nbVariantDone),
           " / ", Integer.toString(shadersetExp.nbVariants),
           " | Wrong images: ", Integer.toString(shadersetExp.nbWrongImage),
+          " | Slightly different images: ", Integer.toString(shadersetExp.nbSlightlyDifferentImage),
           " | Errors: ", Integer.toString(shadersetExp.nbErrors),
           "</div></a>");
     }
