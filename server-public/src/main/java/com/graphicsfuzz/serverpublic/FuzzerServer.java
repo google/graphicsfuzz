@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.serverpublic;
 
-import com.graphicsfuzz.common.util.ToolPaths;
+import com.graphicsfuzz.util.ToolPaths;
 import com.graphicsfuzz.server.FileDownloadServlet;
 import com.graphicsfuzz.server.FuzzerServiceImpl;
 import com.graphicsfuzz.server.FuzzerServiceManagerImpl;

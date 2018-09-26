@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.server;
 
-import com.graphicsfuzz.common.util.ToolPaths;
+import com.graphicsfuzz.util.ToolPaths;
 import com.graphicsfuzz.server.thrift.FuzzerService;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
 import com.graphicsfuzz.server.webui.WebUi;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.common.util;
+package com.graphicsfuzz.util;
 
 import java.io.File;
 import java.net.URISyntaxException;

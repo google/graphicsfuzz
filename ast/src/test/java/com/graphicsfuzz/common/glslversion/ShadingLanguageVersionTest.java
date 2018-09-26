@@ -19,9 +19,9 @@ package com.graphicsfuzz.common.glslversion;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import com.graphicsfuzz.common.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.common.util.ExecResult;
-import com.graphicsfuzz.common.util.ToolHelper;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

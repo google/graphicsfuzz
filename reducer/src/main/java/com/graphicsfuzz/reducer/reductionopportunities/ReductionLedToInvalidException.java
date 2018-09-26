@@ -17,7 +17,7 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.util.ExecResult;
+import com.graphicsfuzz.util.ExecResult;
 
 public class ReductionLedToInvalidException extends RuntimeException {
 

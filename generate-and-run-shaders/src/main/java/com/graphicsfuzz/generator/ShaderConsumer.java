@@ -17,10 +17,10 @@
 package com.graphicsfuzz.generator;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.common.util.ExecResult;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
-import com.graphicsfuzz.common.util.ToolHelper;
+import com.graphicsfuzz.util.ToolHelper;
 import com.graphicsfuzz.generator.tool.PrepareReference;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.JobStatus;

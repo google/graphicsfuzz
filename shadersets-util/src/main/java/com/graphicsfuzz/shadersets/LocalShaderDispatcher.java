@@ -16,9 +16,9 @@
 
 package com.graphicsfuzz.shadersets;
 
-import com.graphicsfuzz.common.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.common.util.ExecResult;
-import com.graphicsfuzz.common.util.ToolHelper;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolHelper;
 import com.graphicsfuzz.server.thrift.ComputeJobResult;
 import com.graphicsfuzz.server.thrift.FuzzerServiceConstants;
 import com.graphicsfuzz.server.thrift.ImageJobResult;

@@ -14,27 +14,29 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.common.util;
+package com.graphicsfuzz.util;
 
 import java.io.InputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class StreamGobblerBuffer extends StreamGobbler {
+public class StreamGobblerLogger extends StreamGobbler {
 
-  private final StringBuffer result;
+  private static final Logger LOGGER = LoggerFactory.getLogger(StreamGobblerLogger.class);
 
-  public StreamGobblerBuffer(InputStream inputStream) {
+  private final String prefix;
+
+  public StreamGobblerLogger(InputStream inputStream, String prefix) {
     super(inputStream);
-    this.result = new StringBuffer();
+    this.prefix = prefix;
   }
 
   @Override
   protected void handleLine(String line) {
-    result.append(line);
-    result.append(System.lineSeparator());
+    LOGGER.info(prefix + line);
   }
 
   public StringBuffer getResult() {
-    return result;
+    return null;
   }
-
 }

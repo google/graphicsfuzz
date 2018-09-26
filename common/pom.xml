@@ -53,11 +53,11 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
-      <artifactId>ast</artifactId>
+      <artifactId>alphanum-comparator</artifactId>
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
-      <artifactId>common-util</artifactId>
+      <artifactId>ast</artifactId>
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
