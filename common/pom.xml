@@ -35,10 +35,7 @@ limitations under the License.
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.antlr</groupId>
-      <artifactId>antlr4</artifactId>
-    </dependency>
+
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
@@ -65,53 +62,16 @@ limitations under the License.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.graphicsfuzz</groupId>
-      <artifactId>server-thrift-gen</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.bytedeco.javacpp-presets</groupId>
-      <artifactId>opencv</artifactId>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>util</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.bytedeco.javacpp-presets</groupId>
-      <artifactId>opencv</artifactId>
-      <classifier>linux-x86_64</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.bytedeco.javacpp-presets</groupId>
-      <artifactId>opencv</artifactId>
-      <classifier>macosx-x86_64</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.bytedeco.javacpp-presets</groupId>
-      <artifactId>opencv</artifactId>
-      <classifier>windows-x86_64</classifier>
+      <groupId>net.sourceforge.argparse4j</groupId>
+      <artifactId>argparse4j</artifactId>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-
-      <plugin>
-        <groupId>org.antlr</groupId>
-        <artifactId>antlr4-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>antlr</id>
-            <goals>
-              <goal>antlr4</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <visitor>true</visitor>
-        </configuration>
-      </plugin>
-
-    </plugins>
-  </build>
 </project>

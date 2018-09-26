@@ -41,10 +41,33 @@ limitations under the License.
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>generator</artifactId>
     </dependency>
-
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>shadersets-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>ast</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>server-thrift-gen</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.sourceforge.argparse4j</groupId>
+      <artifactId>argparse4j</artifactId>
     </dependency>
 
   </dependencies>

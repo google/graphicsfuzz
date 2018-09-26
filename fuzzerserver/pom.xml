@@ -43,11 +43,6 @@ limitations under the License.
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>server-thrift-gen</artifactId>
     </dependency>
-    
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -62,15 +57,27 @@ limitations under the License.
       <artifactId>log4j-core</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.graphicsfuzz</groupId>
-      <artifactId>shadersets-util</artifactId>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.thrift</groupId>
+      <artifactId>libthrift</artifactId>
+    </dependency>
+
 
   </dependencies>
 

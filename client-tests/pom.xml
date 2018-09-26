@@ -36,10 +36,33 @@ limitations under the License.
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>shadersets-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>server-thrift-gen</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.sourceforge.argparse4j</groupId>
+      <artifactId>argparse4j</artifactId>
     </dependency>
 
   </dependencies>
