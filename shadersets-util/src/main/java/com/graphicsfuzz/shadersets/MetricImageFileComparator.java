@@ -65,7 +65,10 @@ public class MetricImageFileComparator implements IImageFileComparator {
       LOGGER.info(": difference is " + diff);
       return result;
     } catch (IOException exception) {
-      LOGGER.error("Exception occurred during histogram comparison.", exception);
+      LOGGER.error(
+          "Exception occurred during image comparison using metric {}. {}",
+          metric.toString(),
+          exception);
       throw new RuntimeException(exception);
     }
   }
