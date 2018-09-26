@@ -53,6 +53,11 @@ public final class UniformsInfo {
           JsonObject.class);
   }
 
+  public UniformsInfo(String string) throws FileNotFoundException {
+    uniformsInfo = new Gson().fromJson(string,
+        JsonObject.class);
+  }
+
   public void addUniform(String name, BasicType basicType,
       Optional<Integer> arrayCount, List<? extends Number> values) {
     JsonObject info = new JsonObject();
