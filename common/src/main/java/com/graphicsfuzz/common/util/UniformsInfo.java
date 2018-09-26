@@ -172,9 +172,14 @@ public final class UniformsInfo {
     return result;
   }
 
-  public void addBindingToUniform(String uniformName, int number) {
+  public void addBinding(String uniformName, int number) {
     assert containsKey(uniformName);
     uniformsInfo.getAsJsonObject(uniformName).addProperty("binding", number);
+  }
+
+  public void removeBinding(String uniformName) {
+    assert hasBinding(uniformName);
+    uniformsInfo.getAsJsonObject(uniformName).remove("binding");
   }
 
   public List<String> getUniformNames() {

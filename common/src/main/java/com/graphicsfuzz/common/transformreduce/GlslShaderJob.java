@@ -3,10 +3,10 @@ package com.graphicsfuzz.common.transformreduce;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.LayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
-import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import java.util.ArrayList;
@@ -87,10 +87,12 @@ public class GlslShaderJob implements ShaderJob {
           // For now we are conservative and do not handle multiple declarations per uniform;
           // this should be trivial to handle in due course but we need to write proper tests for it.
           assert variablesDeclaration.getNumDecls() == 1;
+          // We cannot yet deal with adding bindings for uniform arrays.
+          assert !variablesDeclaration.getDeclInfo(0).hasArrayInfo();
           final String uniformName = variablesDeclaration.getDeclInfo(0).getName();
           assert uniformsInfo.containsKey(uniformName);
           if (!uniformsInfo.hasBinding(uniformName)) {
-            uniformsInfo.addBindingToUniform(uniformName, nextBinding);
+            uniformsInfo.addBinding(uniformName, nextBinding);
             nextBinding++;
           }
           final int binding = uniformsInfo.getBinding(uniformName);
@@ -103,6 +105,55 @@ public class GlslShaderJob implements ShaderJob {
                 Arrays.asList(qualifiedType.getWithoutQualifiers()),
                 Optional.empty())
           );
+        } else {
+          newTopLevelDeclarations.add(decl);
+        }
+      }
+      maybeTu.get().setTopLevelDeclarations(newTopLevelDeclarations);
+    }
+
+    // Add bindings to any uniforms not referenced in the shaders, so that we don't end up in
+    // a situation where some uniforms are unbound.
+    for (String uniformName : getUniformsInfo().getUniformNames()) {
+      if (!getUniformsInfo().hasBinding(uniformName)) {
+        getUniformsInfo().addBinding(uniformName, nextBinding++);
+      }
+    }
+  }
+
+  /**
+   * <p>This method works under the assumption that uniforms in the vertex and fragment
+   * shader are enclosed in uniform blocks, with associated bindings.  That is, there are no
+   * "plain" uniform declarations.</p>
+   *
+   * <p>The method removes all bindings and demotes the uniform blocks to plain uniforms.</p>
+   */
+  public void removeUniformBindings() {
+    for (String uniformName : getUniformsInfo().getUniformNames()) {
+      assert getUniformsInfo().hasBinding(uniformName);
+      getUniformsInfo().removeBinding(uniformName);
+    }
+    for (Optional<TranslationUnit> maybeTu : Arrays.asList(vertexShader, fragmentShader)) {
+      if (!maybeTu.isPresent()) {
+        continue;
+      }
+      final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
+      for (Declaration decl : maybeTu.get().getTopLevelDeclarations()) {
+        if (decl instanceof VariablesDeclaration) {
+          // We are assuming that there are no plain uniforms - all uniforms should be in
+          // interface blocks, which we shall remove.
+          assert !((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM);
+        }
+        if (decl instanceof InterfaceBlock && ((InterfaceBlock) decl).getInterfaceQualifier()
+            .equals(TypeQualifier.UNIFORM)) {
+          final InterfaceBlock interfaceBlock = (InterfaceBlock) decl;
+          // We are assuming that each uniform block wraps precisely one uniform.
+          assert interfaceBlock.getMemberNames().size() == 1;
+          final String uniformName = interfaceBlock.getMemberNames().get(0);
+          newTopLevelDeclarations.add(new VariablesDeclaration(
+              new QualifiedType(interfaceBlock.getMemberTypes().get(0).getWithoutQualifiers(),
+                  Arrays.asList(TypeQualifier.UNIFORM)),
+              new VariableDeclInfo(uniformName, null, null)));
         } else {
           newTopLevelDeclarations.add(decl);
         }
