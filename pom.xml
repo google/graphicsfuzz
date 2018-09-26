@@ -35,7 +35,6 @@ limitations under the License.
     <module>ast</module>
     <module>checkstyle-config</module>
     <module>client-tests</module>
-    <module>common-util</module>
     <module>common</module>
     <module>compare-asts</module>
     <module>fuzzerserver</module>
@@ -61,6 +60,7 @@ limitations under the License.
     <module>third_party/thrift-py</module>
     <module>thrift</module>
     <module>tool</module>
+    <module>util</module>
   </modules>
 
 

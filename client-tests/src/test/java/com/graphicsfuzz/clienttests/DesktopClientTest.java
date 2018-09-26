@@ -40,7 +40,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.graphicsfuzz.common.util.ToolPaths;
+import com.graphicsfuzz.util.ToolPaths;
 import com.graphicsfuzz.server.FuzzerServer;
 import com.graphicsfuzz.shadersets.RunComputeShader;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;

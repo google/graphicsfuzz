@@ -21,13 +21,13 @@ import static org.junit.Assert.assertNotNull;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.common.util.ExecResult;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.ToolHelper;
+import com.graphicsfuzz.util.ToolHelper;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import java.io.File;
 import java.io.FileOutputStream;

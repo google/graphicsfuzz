@@ -1,8 +1,8 @@
 package com.graphicsfuzz.reducer.util;
 
-import com.graphicsfuzz.common.util.ExecHelper;
-import com.graphicsfuzz.common.util.ExecResult;
-import com.graphicsfuzz.common.util.ToolHelper;
+import com.graphicsfuzz.util.ExecHelper;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.IOException;
 import org.slf4j.Logger;

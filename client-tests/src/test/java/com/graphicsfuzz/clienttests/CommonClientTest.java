@@ -30,7 +30,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.graphicsfuzz.common.util.ToolPaths;
+import com.graphicsfuzz.util.ToolPaths;
 import com.graphicsfuzz.shadersets.ImageUtil;
 import com.graphicsfuzz.shadersets.RunShaderSet;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;

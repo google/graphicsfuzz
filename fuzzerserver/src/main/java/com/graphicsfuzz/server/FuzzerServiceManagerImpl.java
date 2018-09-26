@@ -16,10 +16,6 @@
 
 package com.graphicsfuzz.server;
 
-import com.graphicsfuzz.common.util.ExecHelper;
-import com.graphicsfuzz.common.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.common.util.ExecResult;
-import com.graphicsfuzz.common.util.ToolPaths;
 import com.graphicsfuzz.server.thrift.CommandInfo;
 import com.graphicsfuzz.server.thrift.CommandResult;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
@@ -28,6 +24,10 @@ import com.graphicsfuzz.server.thrift.Job;
 import com.graphicsfuzz.server.thrift.ServerInfo;
 import com.graphicsfuzz.server.thrift.TokenNotFoundException;
 import com.graphicsfuzz.server.thrift.WorkerInfo;
+import com.graphicsfuzz.util.ExecHelper;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolPaths;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;

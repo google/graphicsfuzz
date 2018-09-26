@@ -32,7 +32,7 @@ limitations under the License.
   <dependencies>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
-      <artifactId>common-util</artifactId>
+      <artifactId>util</artifactId>
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>

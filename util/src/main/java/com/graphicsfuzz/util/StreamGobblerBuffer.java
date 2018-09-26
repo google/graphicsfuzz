@@ -14,34 +14,23 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.common.util;
+package com.graphicsfuzz.util;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 
-public class StreamGobbler extends Thread {
+public class StreamGobblerBuffer extends StreamGobbler {
 
-  private InputStream inputStream;
-  private StringBuffer result;
+  private final StringBuffer result;
 
-  public StreamGobbler(InputStream inputStream) {
-    this.inputStream = inputStream;
+  public StreamGobblerBuffer(InputStream inputStream) {
+    super(inputStream);
     this.result = new StringBuffer();
   }
 
-  public void run() {
-    try {
-      BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-      String line;
-      while ((line = br.readLine()) != null) {
-        result.append(line);
-        result.append("\n");
-      }
-    } catch (IOException exception) {
-      exception.printStackTrace();
-    }
+  @Override
+  protected void handleLine(String line) {
+    result.append(line);
+    result.append(System.lineSeparator());
   }
 
   public StringBuffer getResult() {

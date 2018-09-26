@@ -16,13 +16,13 @@
 
 package com.graphicsfuzz.serverpublic;
 
-import com.graphicsfuzz.common.util.ToolPaths;
 import com.graphicsfuzz.server.FileDownloadServlet;
 import com.graphicsfuzz.server.FuzzerServiceImpl;
 import com.graphicsfuzz.server.FuzzerServiceManagerImpl;
 import com.graphicsfuzz.server.LocalArtifactManager;
 import com.graphicsfuzz.server.thrift.FuzzerService;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
+import com.graphicsfuzz.util.ToolPaths;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.tester;
 
-import com.graphicsfuzz.common.util.ToolPaths;
+import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.nio.file.Paths;
 
