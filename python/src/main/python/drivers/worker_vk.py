@@ -116,6 +116,9 @@ def getImageVulkanAndroid(frag):
         else:
             time.sleep(0.1)
 
+    # Try to retrieve the log file in any case
+    adb('pull /sdcard/graphicsfuzz/log.txt')
+
     if not done:
         return False
 
@@ -134,6 +137,7 @@ def doImageJob(imageJob):
     fragFile = name + '.frag'
     jsonFile = name + '.json'
     png = 'image.png'
+    log = 'log.txt'
 
     res = tt.ImageJobResult()
 
@@ -144,10 +148,17 @@ def doImageJob(imageJob):
     writeToFile(imageJob.fragmentSource, fragFile)
     writeToFile(imageJob.uniformsInfo, jsonFile)
 
-    if os.path.isfile(png):
-        os.remove(png)
+    remove(png)
+    remove(log)
 
     getimage = getImageVulkanAndroid(fragFile)
+
+    # Try to get our own log file in any case
+    if os.path.exists('log.txt'):
+        res.log += '\n#### LOG START\n'
+        with open(log, 'r') as f:
+            res.log += f.read()
+        res.log += '\n#### LOG END\n'
 
     if not getimage:
         res.status = tt.JobStatus.CRASH
