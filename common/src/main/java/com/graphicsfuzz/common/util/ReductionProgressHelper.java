@@ -22,9 +22,9 @@ import java.util.Optional;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
-public final class ReductionStepHelper {
+public final class ReductionProgressHelper {
 
-  private ReductionStepHelper() {
+  private ReductionProgressHelper() {
     // Utility class
   }
 
@@ -39,17 +39,18 @@ public final class ReductionStepHelper {
   }
 
   static boolean isAReductionStepFile(String name, String shaderPrefix, boolean restrictToSuccess) {
-    if (!name.startsWith(shaderPrefix)) {
+    final String shaderPrefixBasename = FilenameUtils.getBaseName(shaderPrefix);
+    if (!name.startsWith(shaderPrefixBasename)) {
       return false;
     }
     if (!name.contains("reduced")) {
       return false;
     }
-    if (!name.endsWith("success.frag")) {
+    if (!name.endsWith("success.json")) {
       if (restrictToSuccess) {
         return false;
       }
-      if (!name.endsWith("fail.frag")) {
+      if (!name.endsWith("fail.json")) {
         return false;
       }
     }
@@ -69,23 +70,28 @@ public final class ReductionStepHelper {
 
   public static Optional<Integer> getLatestReductionStep(boolean restrictToSuccess,
         File reductionDir,
-        String shaderPrefix) {
-    final File[] fragmentShaders = reductionDir
-          .listFiles((dir, name) -> isAReductionStepFile(name, shaderPrefix, restrictToSuccess));
-    return Arrays.stream(fragmentShaders)
+        String shaderJobPrefix) {
+    final File[] jsonFiles = reductionDir
+          .listFiles((dir, name) -> isAReductionStepFile(name, shaderJobPrefix,
+              restrictToSuccess));
+    return Arrays.stream(jsonFiles)
           .map(item -> item.getName())
-          .max((item1, item2) -> compareReductionTemporaryFiles(item1, item2, shaderPrefix))
-          .flatMap(item -> Optional.of(getReductionStepFromFile(item, shaderPrefix)));
+          .max((item1, item2) -> compareReductionTemporaryFiles(item1, item2, shaderJobPrefix))
+          .flatMap(item -> Optional.of(getReductionStepFromFile(item, shaderJobPrefix)));
   }
 
   public static Optional<Integer> getLatestReductionStepAny(File reductionDir,
-        String shaderPrefix) {
-    return getLatestReductionStep(false, reductionDir, shaderPrefix);
+        String shaderJobPrefix) {
+    return getLatestReductionStep(false, reductionDir, shaderJobPrefix);
   }
 
   public static Optional<Integer> getLatestReductionStepSuccess(File reductionDir,
         String shaderPrefix) {
     return getLatestReductionStep(true, reductionDir, shaderPrefix);
+  }
+
+  public static File getReductionExceptionFile(String shaderJobPrefix, File reductionDir) {
+    return new File(reductionDir, shaderJobPrefix + ".exception");
   }
 
 }

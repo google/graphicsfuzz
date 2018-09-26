@@ -101,9 +101,8 @@ public class ReductionDriver {
         LOGGER.info("Result from initial state is interesting - proceeding with reduction.");
       }
 
-      final String variantName = FilenameUtils.getBaseName(initialFilePrefix);
-
-      final File initialFileJson = new File(initialFilePrefix + ".json");
+      final String variantName = Paths.get(workDir.getAbsolutePath(),
+          FilenameUtils.getBaseName(initialFilePrefix)).toString();
 
       boolean isInteresting = true;
       int stepCount = 0;
@@ -116,12 +115,9 @@ public class ReductionDriver {
         }
         ++stepCount;
         final int currentReductionAttempt = numReductionAttempts + fileCountOffset;
-        String outputFilesPrefix = Paths.get(workDir.getAbsolutePath(),
-            getReductionStepFilenamePrefix(variantName, currentReductionAttempt))
-            .toString();
-        fileWriter.writeFileFromState(newState, outputFilesPrefix);
-        Helper.emitUniformsInfo(newState.computeRemainingUniforms(initialFileJson),
-              new PrintStream(new FileOutputStream(outputFilesPrefix + ".json")));
+        String outputFilesPrefix = getReductionStepFilenamePrefix(variantName,
+            currentReductionAttempt);
+        fileWriter.writeFilesFromState(newState, outputFilesPrefix);
         isInteresting = isInterestingWithCache(judge, outputFilesPrefix);
         renameReductionStepFiles(isInteresting, variantName, currentReductionAttempt, workDir);
 
@@ -135,17 +131,13 @@ public class ReductionDriver {
 
       IReductionState finalState = getSimplifiedState();
 
-      String finalOutputFilePrefix = Paths.get(workDir.getAbsolutePath(),
-          variantName + "_reduced_final").toString();
-      fileWriter.writeFileFromState(finalState, finalOutputFilePrefix);
-      Helper.emitUniformsInfo(finalState.computeRemainingUniforms(initialFileJson),
-            new PrintStream(new FileOutputStream(
-                  finalOutputFilePrefix + ".json")));
+      String finalOutputFilePrefix = variantName + "_reduced_final";
+      fileWriter.writeFilesFromState(finalState, finalOutputFilePrefix);
 
       if (!judge.isInteresting(finalOutputFilePrefix)) {
         LOGGER.info(
               "Failed to simplify final reduction state! Reverting to the non-simplified state.");
-        fileWriter.writeFileFromState(finalState, finalOutputFilePrefix);
+        fileWriter.writeFilesFromState(finalState, finalOutputFilePrefix);
       }
 
       if (stoppedEarly) {
@@ -195,11 +187,14 @@ public class ReductionDriver {
         File workDir) throws IOException {
     for (String fileName : workDir.list((dir, name) -> FilenameUtils.removeExtension(name)
           .equals(getReductionStepFilenamePrefix(variantName, currentReductionAttempt)))) {
+      final File srcFile = new File(workDir, fileName);
+      final File dstFile = new File(workDir, getReductionStepFilenamePrefix(variantName,
+          currentReductionAttempt,
+          Optional.of(isInteresting ? "success" : "fail"))
+          + "." + FilenameUtils.getExtension(fileName));
       FileUtils.moveFile(
-            new File(workDir, fileName),
-            new File(workDir, getReductionStepFilenamePrefix(variantName, currentReductionAttempt,
-                  Optional.of(isInteresting ? "success" : "fail"))
-                  + "." + FilenameUtils.getExtension(fileName)));
+          srcFile,
+          dstFile);
     }
   }
 
@@ -298,13 +293,14 @@ public class ReductionDriver {
 
   public final GlslReductionState finaliseReduction() {
     // Do final cleanup pass to get rid of macros
-    // TODO: need to make this work for vertex shaders too.
+    final Optional<TranslationUnit> simplifiedVertexShader =
+        state.hasVertexShader() ? Optional.of(Simplify.simplify(state.getVertexShader()))
+            : Optional.empty();
     final Optional<TranslationUnit> simplifiedFragmentShader =
-        Optional.of(Simplify.simplify(state.getFragmentShader()));
-    Optional<TranslationUnit> vertexShader = state.hasVertexShader()
-        ? Optional.of(state.getVertexShader())
-        : Optional.empty();
-    return new GlslReductionState(simplifiedFragmentShader, vertexShader);
+        state.hasFragmentShader() ? Optional.of(Simplify.simplify(state.getFragmentShader()))
+            : Optional.empty();
+    return new GlslReductionState(simplifiedVertexShader, simplifiedFragmentShader,
+        state.getUniformsInfo());
   }
 
 
