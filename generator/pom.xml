@@ -80,6 +80,14 @@ limitations under the License.
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>ast</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
   </dependencies>
 
 </project>
