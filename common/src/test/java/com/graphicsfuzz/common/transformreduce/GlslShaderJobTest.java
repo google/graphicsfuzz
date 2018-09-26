@@ -10,13 +10,15 @@ import static org.junit.Assert.*;
 
 public class GlslShaderJobTest {
 
-  private static final String VERT_SHADER_NO_BINDINGS = "uniform float a;"
+  private static final String VERT_SHADER_NO_BINDINGS =
+        "uniform float a;"
       + "uniform float b;"
       + "uniform int c;"
       + "uniform vec2 d;"
       + "void main() { }";
 
-  private static final String FRAG_SHADER_NO_BINDINGS = "uniform float b;"
+  private static final String FRAG_SHADER_NO_BINDINGS = "" +
+        "uniform float b;"
       + "uniform int e;"
       + "uniform vec2 d;"
       + "uniform float f;"
@@ -62,18 +64,18 @@ public class GlslShaderJobTest {
       "  }" +
       "}";
 
-  private static final String VERT_SHADER_WITH_BINDINGS = "layout(set = 0, binding = 0) uniform " +
-      "buf0 { uniform float a; };"
-      + "layout(set = 0, binding = 1) uniform buf0 { float b; };"
-      + "layout(set = 0, binding = 2) uniform buf0 { uniform int c; };"
-      + "layout(set = 0, binding = 3) uniform buf0 { uniform vec2 d; };"
+  private static final String VERT_SHADER_WITH_BINDINGS =
+        "layout(set = 0, binding = 0) uniform buf0 { float a; };"
+      + "layout(set = 0, binding = 1) uniform buf1 { float b; };"
+      + "layout(set = 0, binding = 2) uniform buf2 { int c; };"
+      + "layout(set = 0, binding = 3) uniform buf3 { vec2 d; };"
       + "void main() { }";
 
-  private static final String FRAG_SHADER_WITH_BINDINGS = "layout(set = 0, binding = 1) uniform " +
-      "float b; };"
-      + "layout(set = 0, binding = 4) uniform buf0 { uniform int e; };"
-      + "layout(set = 0, binding = 3) uniform buf0 { uniform vec2 d; };"
-      + "layout(set = 0, binding = 5) uniform buf0 { uniform float f };;"
+  private static final String FRAG_SHADER_WITH_BINDINGS = "" +
+        "layout(set = 0, binding = 1) uniform buf1 { float b; };"
+      + "layout(set = 0, binding = 4) uniform buf4 { int e; };"
+      + "layout(set = 0, binding = 3) uniform buf3 { vec2 d; };"
+      + "layout(set = 0, binding = 5) uniform buf5 { float f; };"
       + "void main() { }";
 
   private static final String JSON_WITH_BINDINGS = "{" +

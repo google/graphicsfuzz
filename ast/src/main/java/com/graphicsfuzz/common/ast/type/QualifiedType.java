@@ -61,11 +61,6 @@ public class QualifiedType extends Type {
     return qualifiers.contains(qualifier);
   }
 
-  public void addQualifier(TypeQualifier qualifier) {
-    assert !hasQualifier(qualifier);
-    qualifiers.add(qualifier);
-  }
-
   public boolean hasQualifiers() {
     return !qualifiers.isEmpty();
   }
