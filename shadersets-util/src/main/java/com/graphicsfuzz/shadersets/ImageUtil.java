@@ -27,6 +27,18 @@ import org.bytedeco.javacpp.opencv_imgproc;
 
 public class ImageUtil {
 
+  public static opencv_core.Mat getImage(File file) throws FileNotFoundException {
+    if (!file.isFile()) {
+      throw new FileNotFoundException();
+    }
+
+    System.gc();
+
+    opencv_core.Mat mat = opencv_imgcodecs.imread(file.toString());
+    opencv_imgproc.cvtColor(mat, mat, opencv_imgproc.COLOR_BGR2HSV);
+    return mat;
+  }
+
   public static opencv_core.Mat getHistogram(String file) throws FileNotFoundException {
     if (!new File(file).isFile()) {
       throw new FileNotFoundException();
@@ -50,6 +62,12 @@ public class ImageUtil {
 
   public static double compareHistograms(opencv_core.Mat mat1, opencv_core.Mat mat2) {
     return opencv_imgproc.compareHist(mat1, mat2, opencv_imgproc.HISTCMP_CHISQR);
+  }
+
+  public static double comparePSNR(File file1, File file2) throws FileNotFoundException {
+    opencv_core.Mat image1 = getImage(file1);
+    opencv_core.Mat image2 = getImage(file2);
+    return opencv_core.PSNR(image1, image2);
   }
 
   public static boolean identicalImages(File file1, File file2) {

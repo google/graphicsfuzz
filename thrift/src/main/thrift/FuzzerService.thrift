@@ -62,6 +62,11 @@ enum ReductionKind {
     VALIDATOR_ERROR
 }
 
+enum ImageComparisonMetric {
+    HISTOGRAM_CHISQR,
+    PSNR
+}
+
 enum TokenError {
   SERVER_ERROR = 0,
   INVALID_PLATFORM_INFO,

@@ -37,10 +37,11 @@ import com.graphicsfuzz.reducer.glslreducers.GlslReductionState;
 import com.graphicsfuzz.reducer.glslreducers.GlslReductionStateFileWriter;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
+import com.graphicsfuzz.server.thrift.ImageComparisonMetric;
 import com.graphicsfuzz.shadersets.ExactImageFileComparator;
-import com.graphicsfuzz.shadersets.HistogramImageFileComparator;
 import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.LocalShaderDispatcher;
+import com.graphicsfuzz.shadersets.MetricImageFileComparator;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
 import java.io.File;
 import java.io.IOException;
@@ -95,6 +96,13 @@ public class Reduce {
                 + "   " + ReductionKind.ALWAYS_REDUCE
                 + "       Always reduces (useful for testing)\n")
           .type(String.class);
+
+    parser.addArgument("--metric")
+        .help("Metric to be used for image comparison.  Options are:\n"
+            + "   " + ImageComparisonMetric.HISTOGRAM_CHISQR + "\n"
+            + "   " + ImageComparisonMetric.PSNR + "\n")
+        .setDefault(ImageComparisonMetric.HISTOGRAM_CHISQR.toString())
+        .type(String.class);
 
     parser.addArgument("--reference_image")
           .help("Path to reference image for comparisons.")
@@ -224,6 +232,15 @@ public class Reduce {
               parser);
       }
 
+      ImageComparisonMetric metric = null;
+      try {
+        metric = ImageComparisonMetric.valueOf(((String) ns.get("metric")).toUpperCase());
+      } catch (IllegalArgumentException exception) {
+        throw new ArgumentParserException(
+            "unknown metric argument found: " + ns.get("metric"),
+            parser);
+      }
+
       final double threshold = ns.get("threshold");
       // TODO: integrate timeout into reducer
       @SuppressWarnings("UnusedAssignment") Integer timeout = ns.get("timeout");
@@ -329,13 +346,13 @@ public class Reduce {
           break;
         case BELOW_THRESHOLD:
           fileJudge = new ImageShaderFileJudge(null, referenceImage, workDir,
-                new HistogramImageFileComparator(threshold, false),
+                new MetricImageFileComparator(threshold, false, metric),
                 imageGenerator,
                 stopOnError);
           break;
         case ABOVE_THRESHOLD:
           fileJudge = new ImageShaderFileJudge(null, referenceImage, workDir,
-                new HistogramImageFileComparator(threshold, true),
+                new MetricImageFileComparator(threshold, true, metric),
                 imageGenerator,
                 stopOnError);
           break;
