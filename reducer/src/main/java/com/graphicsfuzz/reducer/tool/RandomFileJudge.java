@@ -16,15 +16,9 @@
 
 package com.graphicsfuzz.reducer.tool;
 
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.util.ToolHelper;
-import com.graphicsfuzz.reducer.FileJudgeException;
 import com.graphicsfuzz.reducer.IFileJudge;
 import com.graphicsfuzz.reducer.util.ShaderJudgeUtil;
-
-import java.io.File;
 import java.io.IOException;
 
 /**

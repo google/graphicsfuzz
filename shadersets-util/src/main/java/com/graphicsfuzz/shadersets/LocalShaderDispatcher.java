@@ -16,14 +16,14 @@
 
 package com.graphicsfuzz.shadersets;
 
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.util.ToolHelper;
 import com.graphicsfuzz.server.thrift.ComputeJobResult;
 import com.graphicsfuzz.server.thrift.FuzzerServiceConstants;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.JobStatus;
 import com.graphicsfuzz.server.thrift.ResultConstant;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.IOException;
 

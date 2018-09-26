@@ -16,10 +16,10 @@
 
 package com.graphicsfuzz.server;
 
-import com.graphicsfuzz.util.ToolPaths;
 import com.graphicsfuzz.server.thrift.FuzzerService;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
 import com.graphicsfuzz.server.webui.WebUi;
+import com.graphicsfuzz.util.ToolPaths;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

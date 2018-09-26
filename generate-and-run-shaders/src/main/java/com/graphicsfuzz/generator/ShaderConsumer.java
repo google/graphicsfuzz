@@ -17,10 +17,7 @@
 package com.graphicsfuzz.generator;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
-import com.graphicsfuzz.util.ToolHelper;
 import com.graphicsfuzz.generator.tool.PrepareReference;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.JobStatus;
@@ -29,6 +26,9 @@ import com.graphicsfuzz.shadersets.ImageData;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
 import com.graphicsfuzz.shadersets.RunShaderSet;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
