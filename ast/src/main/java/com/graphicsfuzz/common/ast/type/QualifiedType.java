@@ -35,7 +35,8 @@ public class QualifiedType extends Type {
     assert noDuplicateQualifiers(qualifiers);
 
     this.targetType = targetType;
-    this.qualifiers = qualifiers;
+    this.qualifiers = new ArrayList<>();
+    this.qualifiers.addAll(qualifiers);
   }
 
   private boolean noDuplicateQualifiers(List<TypeQualifier> qualifiers) {
@@ -58,6 +59,11 @@ public class QualifiedType extends Type {
   @Override
   public boolean hasQualifier(TypeQualifier qualifier) {
     return qualifiers.contains(qualifier);
+  }
+
+  public void addQualifier(TypeQualifier qualifier) {
+    assert !hasQualifier(qualifier);
+    qualifiers.add(qualifier);
   }
 
   public boolean hasQualifiers() {

@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class StructType extends Type {
+public class StructType extends UnqualifiedType {
 
   private String name;
   private final List<String> fieldNames;
@@ -132,16 +132,6 @@ public class StructType extends Type {
     return new TypeConstructorExpr(name,
         fieldTypes.stream().map(item -> item.getCanonicalConstant())
             .collect(Collectors.toList()));
-  }
-
-  @Override
-  public Type getWithoutQualifiers() {
-    return this;
-  }
-
-  @Override
-  public boolean hasQualifier(TypeQualifier qualifier) {
-    return false;
   }
 
   @Override

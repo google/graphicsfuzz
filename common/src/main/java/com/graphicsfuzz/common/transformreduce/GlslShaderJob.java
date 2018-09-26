@@ -1,8 +1,15 @@
 package com.graphicsfuzz.common.transformreduce;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.Declaration;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.type.LayoutQualifier;
+import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.util.UniformsInfo;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class GlslShaderJob implements ShaderJob {
 
@@ -57,6 +64,39 @@ public class GlslShaderJob implements ShaderJob {
     for (String uniformName : getUniformsInfo().getUniformNames()) {
       assert !getUniformsInfo().hasBinding(uniformName);
     }
+    int nextBinding = 0;
+
+    for (Optional<TranslationUnit> maybeTu : Arrays.asList(vertexShader, fragmentShader)) {
+      if (!maybeTu.isPresent()) {
+        continue;
+      }
+      for (VariablesDeclaration variablesDeclaration : maybeTu.get().getTopLevelDeclarations()
+          .stream()
+          .filter(item -> item instanceof VariablesDeclaration)
+          .map(item -> (VariablesDeclaration) item)
+          .filter(item -> item.getBaseType().hasQualifier(TypeQualifier.UNIFORM))
+          .collect(Collectors.toList())) {
+        // Check that there are no existing bindings.
+        final QualifiedType qualifiedType = (QualifiedType) variablesDeclaration.getBaseType();
+        assert !qualifiedType.getQualifiers()
+            .stream()
+            .anyMatch(item -> item instanceof LayoutQualifier);
+        // For now we are conservative and do not handle multiple declarations per uniform;
+        // this should be trivial to handle in due course but we need to write proper tests for it.
+        assert variablesDeclaration.getNumDecls() == 1;
+        final String uniformName = variablesDeclaration.getDeclInfo(0).getName();
+        assert uniformsInfo.containsKey(uniformName);
+        if (!uniformsInfo.hasBinding(uniformName)) {
+          uniformsInfo.addBindingToUniform(uniformName, nextBinding);
+          nextBinding++;
+        }
+        qualifiedType.addQualifier(new LayoutQualifier("set = 0, binding = "
+            + uniformsInfo.getBinding(uniformName)));
+      }
+
+    }
+
+
   }
 
 }

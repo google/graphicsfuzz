@@ -20,7 +20,7 @@ import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
-public class ArrayType extends Type {
+public class ArrayType extends UnqualifiedType {
 
   private Type baseType;
   private ArrayInfo arrayInfo;
@@ -75,16 +75,6 @@ public class ArrayType extends Type {
   @Override
   public Expr getCanonicalConstant() {
     throw new RuntimeException("No canonical constant for ArrayType");
-  }
-
-  @Override
-  public Type getWithoutQualifiers() {
-    return this;
-  }
-
-  @Override
-  public boolean hasQualifier(TypeQualifier qualifier) {
-    return false;
   }
 
 }
