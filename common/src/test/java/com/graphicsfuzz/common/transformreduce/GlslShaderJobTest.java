@@ -1,5 +1,6 @@
 package com.graphicsfuzz.common.transformreduce;
 
+import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import java.util.Optional;
@@ -132,7 +133,11 @@ public class GlslShaderJobTest {
 
     job.makeUniformBindings();
 
-    CompareA
+    CompareAsts.assertEqualAsts(VERT_SHADER_WITH_BINDINGS, job.getVertexShader());
+    CompareAsts.assertEqualAsts(FRAG_SHADER_WITH_BINDINGS, job.getFragmentShader());
+    assertEquals(new UniformsInfo(JSON_WITH_BINDINGS).toString(), job.getUniformsInfo().toString());
+
+
 
 
   }

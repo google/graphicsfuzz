@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.common.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.type.BasicType;
@@ -77,6 +79,29 @@ public class UniformsInfoTest {
     assertTrue(newUniformsInfo.toString().contains(wasC));
     assertTrue(newUniformsInfo.toString().contains(wasD));
     assertTrue(newUniformsInfo.toString().contains(wasE));
+  }
+
+  @Test
+  public void testBindings() {
+    final String uniforms = "{" +
+        "  \"a\": {" +
+        "    \"args\": [" +
+        "      1.0" +
+        "    ], " +
+        "    \"func\": \"glUniform1f\", " +
+        "    \"binding\": 0" +
+        "  }, " +
+        "  \"b\": {" +
+        "    \"args\": [" +
+        "      0.0" +
+        "    ], " +
+        "    \"func\": \"glUniform1f\"" +
+        "  }" +
+        "}";
+    final UniformsInfo uniformsInfo = new UniformsInfo(uniforms);
+    assertTrue(uniformsInfo.hasBinding("a"));
+    assertFalse(uniformsInfo.hasBinding("b"));
+    assertEquals(0, uniformsInfo.getBinding("a"));
   }
 
 

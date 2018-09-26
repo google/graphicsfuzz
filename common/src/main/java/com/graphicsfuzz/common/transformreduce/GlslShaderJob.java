@@ -54,7 +54,9 @@ public class GlslShaderJob implements ShaderJob {
    * If a uniform is declared in both shaders, the binding it is given is common to them.</p>
    */
   public void makeUniformBindings() {
-
+    for (String uniformName : getUniformsInfo().getUniformNames()) {
+      assert !getUniformsInfo().hasBinding(uniformName);
+    }
   }
 
 }

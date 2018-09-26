@@ -61,6 +61,11 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
+      <artifactId>compare-asts</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
       <artifactId>test-util</artifactId>
       <scope>test</scope>
     </dependency>
