@@ -19,6 +19,8 @@ package com.graphicsfuzz.reducer.tool;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.FileHelper;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
@@ -35,7 +37,6 @@ import com.graphicsfuzz.reducer.filejudge.FuzzingFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ImageGenErrorShaderFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ImageShaderFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ValidatorErrorShaderFileJudge;
-import com.graphicsfuzz.reducer.glslreducers.GlslReductionState;
 import com.graphicsfuzz.reducer.glslreducers.GlslReductionStateFileWriter;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
@@ -60,7 +61,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -461,7 +461,7 @@ public class Reduce {
       new File(workDir, Constants.REDUCTION_INCOMPLETE).delete();
     }
 
-    GlslReductionState initialState = createInitialReductionState(startingShaderJobPrefix);
+    ShaderJob initialState = createInitialReductionState(startingShaderJobPrefix);
     IReductionStateFileWriter fileWriter = new GlslReductionStateFileWriter(
         shadingLanguageVersion);
 
@@ -478,12 +478,12 @@ public class Reduce {
                 stepLimit);
   }
 
-  private static GlslReductionState createInitialReductionState(String shaderJobPrefix)
+  private static ShaderJob createInitialReductionState(String shaderJobPrefix)
       throws IOException, ParseTimeoutException {
     final File vertexShader = new File(shaderJobPrefix + ".vert");
     final File fragmentShader = new File(shaderJobPrefix + ".frag");
     final File json = new File(shaderJobPrefix + ".json");
-    return new GlslReductionState(
+    return new GlslShaderJob(
         maybeParseShader(vertexShader),
         maybeParseShader(fragmentShader),
         new UniformsInfo(json));

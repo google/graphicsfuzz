@@ -16,13 +16,13 @@
 
 package com.graphicsfuzz.reducer.glslreducers;
 
-import com.graphicsfuzz.reducer.IReductionState;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 
 public interface IReductionPlan {
 
   void update(boolean interesting);
 
-  IReductionState applyReduction(IReductionState state)
+  ShaderJob applyReduction(ShaderJob shaderJob)
       throws NoMoreToReduceException;
 
   void replenish();

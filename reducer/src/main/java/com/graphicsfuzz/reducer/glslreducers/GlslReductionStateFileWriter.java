@@ -19,9 +19,9 @@ package com.graphicsfuzz.reducer.glslreducers;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.reducer.IReductionState;
 import com.graphicsfuzz.reducer.IReductionStateFileWriter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -36,15 +36,15 @@ public class GlslReductionStateFileWriter implements IReductionStateFileWriter {
   }
 
   @Override
-  public void writeFilesFromState(IReductionState state, String outputFilesPrefix)
+  public void writeFilesFromState(ShaderJob shaderJob, String outputFilesPrefix)
         throws FileNotFoundException {
-    if (state.hasVertexShader()) {
-      writeFile(state.getVertexShader(), ShaderKind.VERTEX, outputFilesPrefix);
+    if (shaderJob.hasVertexShader()) {
+      writeFile(shaderJob.getVertexShader(), ShaderKind.VERTEX, outputFilesPrefix);
     }
-    if (state.hasFragmentShader()) {
-      writeFile(state.getFragmentShader(), ShaderKind.FRAGMENT, outputFilesPrefix);
+    if (shaderJob.hasFragmentShader()) {
+      writeFile(shaderJob.getFragmentShader(), ShaderKind.FRAGMENT, outputFilesPrefix);
     }
-    Helper.emitUniformsInfo(state.getUniformsInfo(),
+    Helper.emitUniformsInfo(shaderJob.getUniformsInfo(),
         new PrintStream(new FileOutputStream(outputFilesPrefix + ".json")));
   }
 

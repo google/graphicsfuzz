@@ -17,8 +17,9 @@
 package com.graphicsfuzz.reducer.glslreducers;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.reducer.IReductionState;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import com.graphicsfuzz.reducer.reductionopportunities.Compatibility;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
@@ -68,13 +69,13 @@ public class SimplePlan implements IReductionPlan {
   }
 
   @Override
-  public IReductionState applyReduction(IReductionState state)
+  public ShaderJob applyReduction(ShaderJob shaderJob)
       throws NoMoreToReduceException {
-    final TranslationUnit workingShader = getWorkingShader(state);
+    final TranslationUnit workingShader = getWorkingShader(shaderJob);
     int localPercentageToReduce = percentageToReduce;
     while (true) {
       if (attemptToTransform(workingShader, localPercentageToReduce)) {
-        return stateFromWorkingShader(workingShader, state);
+        return shaderJobFromWorkingShader(workingShader, shaderJob);
       }
       localPercentageToReduce /= 2;
       if (localPercentageToReduce > 0) {
@@ -218,7 +219,7 @@ public class SimplePlan implements IReductionPlan {
     percentageToReduce = Math.max(percentageToReduce, 1);
   }
 
-  private TranslationUnit getWorkingShader(IReductionState state) {
+  private TranslationUnit getWorkingShader(ShaderJob state) {
     TranslationUnit workingShader;
     switch (shaderKind) {
       case FRAGMENT:
@@ -233,13 +234,13 @@ public class SimplePlan implements IReductionPlan {
     return workingShader.cloneAndPatchUp();
   }
 
-  private IReductionState stateFromWorkingShader(TranslationUnit workingShader,
-      IReductionState originalState) {
-    Optional<TranslationUnit> fragmentShader = originalState.hasFragmentShader()
-        ? Optional.of(originalState.getFragmentShader())
+  private ShaderJob shaderJobFromWorkingShader(TranslationUnit workingShader,
+                                               ShaderJob originalShaderJob) {
+    Optional<TranslationUnit> fragmentShader = originalShaderJob.hasFragmentShader()
+        ? Optional.of(originalShaderJob.getFragmentShader())
         : Optional.empty();
-    Optional<TranslationUnit> vertexShader = originalState.hasVertexShader()
-        ? Optional.of(originalState.getVertexShader())
+    Optional<TranslationUnit> vertexShader = originalShaderJob.hasVertexShader()
+        ? Optional.of(originalShaderJob.getVertexShader())
         : Optional.empty();
     switch (shaderKind) {
       case FRAGMENT:
@@ -251,7 +252,7 @@ public class SimplePlan implements IReductionPlan {
       default:
         throw new RuntimeException("Unsupported shader kind: " + shaderKind);
     }
-    return new GlslReductionState(vertexShader, fragmentShader, originalState.getUniformsInfo());
+    return new GlslShaderJob(vertexShader, fragmentShader, originalShaderJob.getUniformsInfo());
   }
 
 }

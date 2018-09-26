@@ -26,6 +26,8 @@ import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.EmitShaderHelper;
 import com.graphicsfuzz.common.util.Helper;
@@ -36,7 +38,6 @@ import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
-import com.graphicsfuzz.reducer.glslreducers.GlslReductionState;
 import com.graphicsfuzz.reducer.glslreducers.GlslReductionStateFileWriter;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
@@ -76,7 +77,7 @@ public class ReductionDriverTest {
 
     TranslationUnit tu = ParseHelper.parse(tempFile, false);
 
-    GlslReductionState state = new GlslReductionState(Optional.empty(), Optional.of(tu),
+    ShaderJob state = new GlslShaderJob(Optional.empty(), Optional.of(tu),
         new UniformsInfo(tempJsonFile));
 
     IFileJudge pessimist = new IFileJudge() {
@@ -206,7 +207,7 @@ public class ReductionDriverTest {
         ? Optional.of(Helper.parse(tempVertexShaderFile.get(), stripHeader))
         : Optional.empty();
 
-    GlslReductionState state = new GlslReductionState(tuVert,
+    ShaderJob state = new GlslShaderJob(tuVert,
         Optional.of(tuFrag), new UniformsInfo(tempJsonFile));
 
     return new ReductionDriver(new ReductionOpportunityContext(reduceEverywhere, version, generator, new IdGenerator()), false, state)
@@ -238,7 +239,7 @@ public class ReductionDriverTest {
 
     final TranslationUnit tu = ParseHelper.parse(tempFile, false);
 
-    GlslReductionState state = new GlslReductionState(
+    ShaderJob state = new GlslShaderJob(
         Optional.empty(), Optional.of(tu), new UniformsInfo(tempJsonFile));
 
     IFileJudge referencesSinCosAnd3 = filesPrefix -> {
