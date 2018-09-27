@@ -1,0 +1,15 @@
+language: generic
+
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      sudo: required
+
+install:
+  - build/travis/1-install-deps-travis.sh
+  - export PATH="/data/bin:$PATH"
+
+script:
+  - build/travis/2-build-travis.sh
+
