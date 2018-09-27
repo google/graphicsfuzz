@@ -58,25 +58,6 @@ limitations under the License.
       <artifactId>argparse4j</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.bytedeco.javacpp-presets</groupId>
-      <artifactId>opencv</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.bytedeco.javacpp-presets</groupId>
-      <artifactId>opencv</artifactId>
-      <classifier>linux-x86_64</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.bytedeco.javacpp-presets</groupId>
-      <artifactId>opencv</artifactId>
-      <classifier>macosx-x86_64</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.bytedeco.javacpp-presets</groupId>
-      <artifactId>opencv</artifactId>
-      <classifier>windows-x86_64</classifier>
-    </dependency>
-    <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>ast</artifactId>
     </dependency>

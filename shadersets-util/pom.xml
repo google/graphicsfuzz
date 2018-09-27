@@ -60,16 +60,19 @@ limitations under the License.
       <groupId>org.bytedeco.javacpp-presets</groupId>
       <artifactId>opencv</artifactId>
       <classifier>linux-x86_64</classifier>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.bytedeco.javacpp-presets</groupId>
       <artifactId>opencv</artifactId>
       <classifier>macosx-x86_64</classifier>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.bytedeco.javacpp-presets</groupId>
       <artifactId>opencv</artifactId>
       <classifier>windows-x86_64</classifier>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>

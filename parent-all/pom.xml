@@ -61,7 +61,6 @@ limitations under the License.
         <artifactId>thrift-compiler-binary</artifactId>
         <version>6e3ee39</version>
         <type>zip</type>
-        <scope>provided</scope>
       </dependency>
 
 
@@ -87,7 +86,6 @@ limitations under the License.
             <artifactId>ant</artifactId>
           </exclusion>
         </exclusions>
-        <scope>provided</scope>
       </dependency>
 
       <dependency>
@@ -387,7 +385,6 @@ limitations under the License.
         <classifier>shaders</classifier>
         <version>1.0</version>
         <type>zip</type>
-        <scope>provided</scope>
       </dependency>
 
       <dependency>
