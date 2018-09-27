@@ -54,6 +54,7 @@ limitations under the License.
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>server-thrift-gen</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
@@ -78,11 +79,13 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.bytedeco</groupId>
       <artifactId>javacpp</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
