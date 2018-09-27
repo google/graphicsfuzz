@@ -71,11 +71,6 @@ limitations under the License.
             <configuration>
               <failOnWarning>true</failOnWarning>
               <ignoreNonCompile>true</ignoreNonCompile>
-              <ignoredDependencies>
-                <ignoredDependency>org.bytedeco.javacpp-presets:opencv</ignoredDependency>
-                <ignoredDependency>org.apache.logging.log4j:log4j-core</ignoredDependency>
-                <ignoredDependency>org.apache.logging.log4j:log4j-slf4j-impl</ignoredDependency>
-              </ignoredDependencies>
             </configuration>
           </execution>
         </executions>
