@@ -16,6 +16,7 @@
 
 import argparse
 import os
+import platform
 import shutil
 import sys
 import time
@@ -79,6 +80,29 @@ void main (void) {
 
 ################################################################################
 
+def prepareShaders(frag):
+    vulkanize.vulkanize(frag, 'test')
+    prepareVertFile()
+
+    host = platform.system()
+    binType = ''
+    if host == 'Linux' or host == 'Windows':
+        binType = host
+    else:
+        assert host == 'Darwin'
+        binType = 'Mac'
+    glslang = os.path.dirname(HERE) + '/../../bin/' + binType + '/glslangValidator'
+
+    # Frag
+    cmd = glslang + ' test.frag -V -o test.frag.spv'
+    subprocess.run(cmd, shell=True, check=True)
+
+    # Vert
+    cmd = glslang + ' test.vert -V -o test.vert.spv'
+    subprocess.run(cmd, shell=True, check=True)
+
+################################################################################
+
 def getImageVulkanAndroid(frag):
 
     app = 'vulkan.samples.T15_draw_cube'
@@ -87,13 +111,11 @@ def getImageVulkanAndroid(frag):
 
     remove('image.ppm')
     remove('image.png')
-
-    vulkanize.vulkanize(frag, 'test')
-
     adb('shell rm -rf /sdcard/graphicsfuzz/*')
 
-    prepareVertFile()
-    adb('push test.vert test.frag test.json /sdcard/graphicsfuzz/')
+    prepareShaders(frag)
+
+    adb('push test.vert.spv test.frag.spv test.json /sdcard/graphicsfuzz/')
 
     # clean logcat
     adb('logcat -b crash -b system -c')
