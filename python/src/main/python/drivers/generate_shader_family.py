@@ -152,12 +152,12 @@ def generated_shaders_too_large(args, variant_file_prefix):
       if args.verbose:
         print("Discarding " + ext + " shader of size " + str(num_bytes_variant) + " bytes; more than " + str(args.max_factor) + " times larger than reference of size " + str(num_bytes_reference))
       return True
-    
+
     if args.max_bytes is not None and num_bytes_variant > args.max_bytes:
       if args.verbose:
         print("Discarding " + ext + " shader of size " + str(num_bytes_variant) + " bytes; exceeds limit of " + str(args.max_bytes) + " bytes")
       return True
-    
+
   return False
 
 
@@ -165,14 +165,14 @@ def remove_if_exists(filename):
   if os.path.isfile(filename):
     os.remove(filename)
 
-    
+
 def move_if_exists(src, dst):
   print(src)
   print(dst)
   if os.path.isfile(src):
     shutil.move(src, dst)
 
-    
+
 def skip_due_to_invalid_shader(args, variant_file_prefix):
   variant_file_frag = variant_file_prefix + ".frag"
   variant_file_vert = variant_file_prefix + ".vert"
@@ -271,7 +271,7 @@ parser.add_argument("--require_license", action="store_true",
                     help="Require a license file to be provided alongside the reference and pass details through to generated shaders.")
 parser.add_argument("--generate_uniform_bindings", action="store_true",
                     help="Put all uniforms in uniform blocks and generate associated bindings.  Necessary for Vulkan compatibility.")
-parser.add_argument("--max_uniforms", type=int, action="store_true",
+parser.add_argument("--max_uniforms", type=int, action="store",
                     help="Ensure that no more than the given number of uniforms are included in generated shaders.  Necessary for Vulkan compatibility.")
 
 args = parser.parse_args()
