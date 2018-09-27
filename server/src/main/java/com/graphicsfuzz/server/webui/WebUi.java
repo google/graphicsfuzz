@@ -2125,19 +2125,40 @@ public class WebUi extends HttpServlet {
         "<tbody>");
     // Subsequent rows: results
     for (String worker: workers) {
-      String referencePngPath = WebUiConstants.WORKER_DIR + "/" + worker + "/"
-          + shaderFamily + "_exp/reference.png";
 
       htmlAppendLn("<tr>");
       if (showWorkerNames) {
         htmlAppendLn("<td>", worker, "</td>");
       }
-      if (new File(referencePngPath).exists()) {
-        htmlAppendLn("<td><img class='ui tiny image' src='/webui/file/",
-            referencePngPath, "'></td>");
+
+      // Reference result is separate as it doesn't contain a "identical" field, etc
+      // FIXME: make sure reference result has same format as variants to be able to refactor
+      String refHref = WebUiConstants.WORKER_DIR + "/" + worker + "/"
+          + shaderFamily + "_exp/reference";
+      File refInfoFile = new File(refHref + ".info.json");
+      String refPngPath = refHref + ".png";
+
+      htmlAppendLn("<td ");
+      if (refInfoFile.exists()) {
+        JsonObject refInfo = accessFileInfo.getResultInfo(refInfoFile);
+        String refStatus = refInfo.get("Status").getAsString();
+        if (refStatus.contentEquals("SUCCESS")) {
+          htmlAppendLn("class='selectable center aligned'><a href='/webui/result/",
+              refHref,
+              "'>",
+              "<img class='ui centered tiny image' src='/webui/file/", refPngPath, "'></a>");
+        } else {
+          htmlAppendLn("<td class='gfz-error bound-cell-width selectable center aligned'>",
+              "<a href='/webui/result/",
+              refHref,
+              "'>", refStatus.replace("_", " "), " ",
+              refInfo.get("stage").getAsString().replace("_", " "),
+              "</a>\n");
+        }
       } else {
-        htmlAppendLn("<td class='bound-cell-width center aligned'>No result</td>");
+        htmlAppendLn("class='bound-cell-width center aligned'>No result");
       }
+      htmlAppendLn("</td>");
 
       for (File f : variantFragFiles) {
         File infoFile = new File(WebUiConstants.WORKER_DIR + "/" + worker
@@ -2147,7 +2168,7 @@ public class WebUi extends HttpServlet {
           ReductionStatus reductionStatus = getReductionStatus(worker, shaderFamily,
               infoFile.getName().replace(".info.json", ""));
 
-          htmlVariantResultTableCell(infoFile, referencePngPath, reductionStatus);
+          htmlVariantResultTableCell(infoFile, refPngPath, reductionStatus);
         } else {
           htmlAppendLn("<td class='bound-cell-width center aligned'>No result</td>");
         }
