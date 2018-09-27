@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,12 +32,38 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.apache.commons.io.FilenameUtils;
 
-public class Helper {
+public final class Helper {
 
-  private static void emitDefines(PrintStream out, ShadingLanguageVersion version,
-        ShaderKind shaderKind,
-        Supplier<StringBuilder> extraMacros) {
-    EmitShaderHelper.emitDefines(out, version, shaderKind, extraMacros, Optional.empty());
+  private Helper() {
+    // Utility class
+  }
+
+  public static void emitShaderJob(ShaderJob shaderJob,
+                                   ShadingLanguageVersion shadingLanguageVersion,
+                                   String outputPrefix,
+                                   File outputFolder,
+                                   File licenseFile) throws IOException {
+    if (shaderJob.hasVertexShader()) {
+      emitShader(shadingLanguageVersion,
+          ShaderKind.VERTEX,
+          shaderJob.getVertexShader(),
+          readLicenseFile(licenseFile),
+          new PrintStream(new FileOutputStream(
+              new File(outputFolder, outputPrefix + ShaderKind.VERTEX.getFileExtension()))));
+    }
+
+    if (shaderJob.hasFragmentShader()) {
+      emitShader(shadingLanguageVersion,
+          ShaderKind.FRAGMENT,
+          shaderJob.getFragmentShader(),
+          readLicenseFile(licenseFile),
+          new PrintStream(new FileOutputStream(
+              new File(outputFolder, outputPrefix + ShaderKind.FRAGMENT.getFileExtension()))));
+    }
+
+    emitUniformsInfo(shaderJob.getUniformsInfo(), new PrintStream(
+        new FileOutputStream(
+            new File(outputFolder, outputPrefix + ".json"))));
   }
 
   public static void emitDefines(PrintStream out, ShadingLanguageVersion version,
@@ -142,7 +169,7 @@ public class Helper {
   }
 
   public static Optional<String> readLicenseFile(File licenseFile) throws IOException {
-    if (!licenseFile.isFile()) {
+    if (licenseFile == null || !licenseFile.isFile()) {
       return Optional.empty();
     }
     StringBuilder result = new StringBuilder();

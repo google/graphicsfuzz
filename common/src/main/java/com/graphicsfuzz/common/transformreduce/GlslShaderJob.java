@@ -78,14 +78,14 @@ public class GlslShaderJob implements ShaderJob {
         // For now we conservatively assume that there are no interface blocks, covering our
         // assumption that there are no existing bindings.
         assert !(decl instanceof InterfaceBlock);
-        if (decl instanceof VariablesDeclaration &&
-            ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
+        if (decl instanceof VariablesDeclaration
+            && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
           final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
           final QualifiedType qualifiedType = (QualifiedType) variablesDeclaration.getBaseType();
           // Conservatively assume that uniform is the only qualifier.
           assert qualifiedType.getQualifiers().size() == 1;
-          // For now we are conservative and do not handle multiple declarations per uniform;
-          // this should be trivial to handle in due course but we need to write proper tests for it.
+          // For now we are conservative and do not handle multiple declarations per uniform; this
+          // should be trivial to handle in due course but we need to write proper tests for it.
           assert variablesDeclaration.getNumDecls() == 1;
           // We cannot yet deal with adding bindings for uniform arrays.
           assert !variablesDeclaration.getDeclInfo(0).hasArrayInfo();
@@ -97,13 +97,13 @@ public class GlslShaderJob implements ShaderJob {
           }
           final int binding = uniformsInfo.getBinding(uniformName);
           newTopLevelDeclarations.add(
-            new InterfaceBlock(
-                Optional.of(new LayoutQualifier("set = 0, binding = " + binding)),
-                TypeQualifier.UNIFORM,
-                "buf" + binding,
-                Arrays.asList(uniformName),
-                Arrays.asList(qualifiedType.getWithoutQualifiers()),
-                Optional.empty())
+              new InterfaceBlock(
+                  Optional.of(new LayoutQualifier("set = 0, binding = " + binding)),
+                  TypeQualifier.UNIFORM,
+                  "buf" + binding,
+                  Arrays.asList(uniformName),
+                  Arrays.asList(qualifiedType.getWithoutQualifiers()),
+                  Optional.empty())
           );
         } else {
           newTopLevelDeclarations.add(decl);
