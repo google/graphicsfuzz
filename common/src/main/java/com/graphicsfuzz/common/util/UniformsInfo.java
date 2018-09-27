@@ -187,6 +187,10 @@ public final class UniformsInfo {
         .stream().map(item -> item.getKey()).collect(Collectors.toList());
   }
 
+  public int getNumUniforms() {
+    return uniformsInfo.entrySet().size();
+  }
+
   public void removeUniform(String name) {
     uniformsInfo.remove(name);
   }

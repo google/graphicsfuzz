@@ -78,6 +78,10 @@ def generate_variant(reference_prefix, inner_seed, output_prefix):
       cmd += [ "--aggressively_complicate_control_flow" ]
     if args.multi_pass:
       cmd += [ "--multi_pass" ]
+    if args.generate_uniform_bindings:
+      cmd += [ "--generate_uniform_bindings" ]
+    if args.max_uniforms is not None:
+      cmd += [ "--max_uniforms", str(args.max_uniforms) ]
     if args.verbose:
       print("Transform command: %s" % (" ".join(cmd)))
     generator_proc = subprocess.Popen(cmd, \
@@ -265,6 +269,10 @@ parser.add_argument("--replace_float_literals", action="store_true",
                     help="Replace floating-point literals with uniforms.")
 parser.add_argument("--require_license", action="store_true",
                     help="Require a license file to be provided alongside the reference and pass details through to generated shaders.")
+parser.add_argument("--generate_uniform_bindings", action="store_true",
+                    help="Put all uniforms in uniform blocks and generate associated bindings.  Necessary for Vulkan compatibility.")
+parser.add_argument("--max_uniforms", type=int, action="store_true",
+                    help="Ensure that no more than the given number of uniforms are included in generated shaders.  Necessary for Vulkan compatibility.")
 
 args = parser.parse_args()
 

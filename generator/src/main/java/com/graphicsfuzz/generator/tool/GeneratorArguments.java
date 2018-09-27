@@ -29,6 +29,8 @@ public class GeneratorArguments {
   private final boolean aggressivelyComplicateControlFlow;
   private final boolean replaceFloatLiterals;
   private final File donorsFolder;
+  private final boolean generateUniformBindings;
+  private final int maxUniforms;
   private final EnabledTransformations enabledTransformations;
 
   public GeneratorArguments(
@@ -40,6 +42,8 @@ public class GeneratorArguments {
         boolean aggressivelyComplicateControlFlow,
         boolean replaceFloatLiterals,
         File donorsFolder,
+        boolean generateUniformBindings,
+        int maxUniforms,
         EnabledTransformations enabledTransformations) {
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.seed = seed;
@@ -49,6 +53,8 @@ public class GeneratorArguments {
     this.aggressivelyComplicateControlFlow = aggressivelyComplicateControlFlow;
     this.replaceFloatLiterals = replaceFloatLiterals;
     this.donorsFolder = donorsFolder;
+    this.generateUniformBindings = generateUniformBindings;
+    this.maxUniforms = maxUniforms;
     this.enabledTransformations = enabledTransformations;
   }
 
@@ -84,6 +90,18 @@ public class GeneratorArguments {
     return donorsFolder;
   }
 
+  public boolean getGenerateUniformBindings() {
+    return generateUniformBindings;
+  }
+
+  public int getMaxUniforms() {
+    return maxUniforms;
+  }
+
+  public boolean limitUniforms() {
+    return getMaxUniforms() > 0;
+  }
+
   public EnabledTransformations getEnabledTransformations() {
     return enabledTransformations;
   }
@@ -98,6 +116,8 @@ public class GeneratorArguments {
     sb.append("aggressivelyComplicateControlFlow: " + aggressivelyComplicateControlFlow + "\n");
     sb.append("replaceFloatLiterals: " + replaceFloatLiterals + "\n");
     sb.append("donorsFolder: " + donorsFolder.getName() + "\n");
+    sb.append("generateUniformBindings: " + generateUniformBindings + "\n");
+    sb.append("maxUniforms: " + (limitUniforms() ? "-" : maxUniforms) + "\n");
     sb.append("enabledTransformations: " + enabledTransformations + "\n");
     return sb.toString();
   }

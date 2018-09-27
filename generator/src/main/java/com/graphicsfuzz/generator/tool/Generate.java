@@ -32,6 +32,7 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PruneUniforms;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.StripUnusedFunctions;
@@ -54,7 +55,6 @@ import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -161,10 +161,16 @@ public class Generate {
             + "compatibility.")
         .action(Arguments.storeTrue());
 
+    parser.addArgument("--max_uniforms")
+        .help("Ensure that generated shaders have no more than the given number of uniforms; "
+            + "required for Vulkan compatibility.")
+        .setDefault(0)
+        .type(Integer.class);
+
   }
 
-  public static StringBuilder generateVariant(ShaderJob shaderJob,
-                                                GeneratorArguments args) {
+  public static StringBuilder generateVariant(GlslShaderJob shaderJob,
+                                              GeneratorArguments args) {
     final StringBuilder result = new StringBuilder();
     final IRandom random = new RandomWrapper(args.getSeed());
 
@@ -180,6 +186,18 @@ public class Generate {
         ShaderKind.FRAGMENT,
         random.spawnChild(),
         args));
+
+    if (args.limitUniforms()) {
+      if (!(PruneUniforms.prune(shaderJob, args.getMaxUniforms(),
+          Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX)))) {
+        throw new RuntimeException("It was not possible to prune sufficient uniforms from a "
+            + "shader.");
+      }
+    }
+
+    if (args.getGenerateUniformBindings()) {
+      shaderJob.makeUniformBindings();
+    }
 
     return result;
 
@@ -292,11 +310,9 @@ public class Generate {
                 ns.getBoolean("aggressively_complicate_control_flow"),
                 ns.getBoolean("replace_float_literals"),
                 ns.get("donors"),
+                ns.get("generate_uniform_bindings"),
+                ns.get("max_uniforms"),
                 enabledTransformations));
-
-      if (ns.getBoolean("generate_uniform_bindings")) {
-        shaderJob.makeUniformBindings();
-      }
 
       final String outputPrefix = ns.get("output_prefix");
       final File outputFolder = ns.get("output_dir");

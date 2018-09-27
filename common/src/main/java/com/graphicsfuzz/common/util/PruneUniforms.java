@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
+import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
@@ -31,92 +32,126 @@ import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class PruneUniforms {
+public final class PruneUniforms {
 
-  private int remainingUniforms;
-
-  public PruneUniforms(TranslationUnit tu, UniformsInfo uniformsInfo,
-        int limit, List<String> prunablePrefixes) {
-    this.remainingUniforms = 0;
-    for (VariablesDeclaration decl : getUniforms(tu)) {
-      if (decl.getDeclInfos().stream()
-            .anyMatch(item -> !isPrunable(prunablePrefixes, item))) {
-        // At least one of the declarations is not prunable, so don't prune any of them.
-        remainingUniforms += decl.getNumDecls();
-      }
-    }
-    for (VariablesDeclaration decl : getUniforms(tu)) {
-      if (decl.getDeclInfos().stream()
-            .allMatch(item -> isPrunable(prunablePrefixes, item))) {
-        if (remainingUniforms + decl.getNumDecls() <= limit) {
-          remainingUniforms += decl.getNumDecls();
-        } else {
-          ((QualifiedType) decl.getBaseType()).removeQualifier(
-                TypeQualifier.UNIFORM);
-          for (VariableDeclInfo vdi : decl.getDeclInfos()) {
-            assert !vdi.hasInitializer();
-            vdi.setInitializer(makeInitializer(
-                  (BasicType) decl.getBaseType()
-                  .getWithoutQualifiers(),
-                  vdi.getArrayInfo(), uniformsInfo.getArgs(vdi.getName())));
-            uniformsInfo.removeUniform(vdi.getName());
-          }
-        }
-      }
-    }
-
+  private PruneUniforms() {
+    // Utility class
   }
 
-  private Initializer makeInitializer(BasicType baseType, ArrayInfo arrayInfo, List<Number> args) {
+  public static boolean prune(ShaderJob shaderJob,
+                              int limit, List<String> prunablePrefixes) {
+    final int numToPrune = shaderJob.getUniformsInfo().getNumUniforms() - limit;
+    if (numToPrune < 0) {
+      return true;
+    }
+    final List<String> candidatesForPruning = new ArrayList<>();
+    candidatesForPruning.addAll(shaderJob
+        .getUniformsInfo()
+        .getUniformNames()
+        .stream()
+        .filter(item -> isPrunable(prunablePrefixes, item))
+        .collect(Collectors.toList()));
+
+    // Sort in order to ensure determinism.
+    candidatesForPruning.sort(String::compareTo);
+
+    if (candidatesForPruning.size() < numToPrune) {
+      // Too few uniforms meet the criteria for pruning.
+      return false;
+    }
+
+    for (String uniformName : candidatesForPruning.subList(0, numToPrune)) {
+      if (shaderJob.hasVertexShader()) {
+        inlineUniform(shaderJob.getFragmentShader(), shaderJob.getUniformsInfo(), uniformName);
+      }
+      if (shaderJob.hasFragmentShader()) {
+        inlineUniform(shaderJob.getFragmentShader(), shaderJob.getUniformsInfo(), uniformName);
+      }
+      shaderJob.getUniformsInfo().removeUniform(uniformName);
+    }
+    return true;
+  }
+
+  private static void inlineUniform(TranslationUnit tu, UniformsInfo uniformsInfo,
+                                    String uniformName) {
+    boolean found = false; // For sanity-checking
+
+    final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
+    for (Declaration decl : tu.getTopLevelDeclarations()) {
+      if (decl instanceof VariablesDeclaration
+          && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
+        final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
+        for (int i = 0; i < variablesDeclaration.getNumDecls(); i++) {
+          final VariableDeclInfo declInfo = variablesDeclaration.getDeclInfo(i);
+          if (!declInfo.getName().equals(uniformName)) {
+            continue;
+          }
+          assert !found;
+          found = true;
+          assert !declInfo.hasInitializer();
+          final BasicType withoutQualifiers = (BasicType) variablesDeclaration.getBaseType()
+              .getWithoutQualifiers();
+          declInfo.setInitializer(makeInitializer(
+              withoutQualifiers,
+              declInfo.getArrayInfo(), uniformsInfo.getArgs(uniformName)));
+          final VariablesDeclaration newVariablesDeclaration = new VariablesDeclaration(
+              withoutQualifiers, declInfo);
+          variablesDeclaration.removeDeclInfo(i);
+
+          newTopLevelDeclarations.add(newVariablesDeclaration);
+          break;
+        }
+        if (variablesDeclaration.getNumDecls() > 0) {
+          // Keep the original variables declaration as it still has other uniforms.
+          newTopLevelDeclarations.add(variablesDeclaration);
+        }
+      } else {
+        newTopLevelDeclarations.add(decl);
+      }
+    }
+    tu.setTopLevelDeclarations(newTopLevelDeclarations);
+  }
+
+  private static boolean isPrunable(List<String> prunablePrefixes, String name) {
+    return prunablePrefixes.stream()
+        .anyMatch(name::startsWith);
+  }
+
+  private static Initializer makeInitializer(BasicType baseType,
+                                             ArrayInfo arrayInfo,
+                                             List<Number> args) {
     if (arrayInfo != null) {
       assert arrayInfo.getSize() * baseType.getNumElements() == args.size();
       List<Expr> argExprs = new ArrayList<>();
       for (int index = 0; index < arrayInfo.getSize(); index++) {
         argExprs.add(getTypeConstructorExpr(baseType,
-              args.subList(index * baseType.getNumElements(),
-                    (index + 1) * baseType.getNumElements())));
+            args.subList(index * baseType.getNumElements(),
+                (index + 1) * baseType.getNumElements())));
       }
       return new ScalarInitializer(new ArrayConstructorExpr(
-            new ArrayType(baseType.getWithoutQualifiers(), arrayInfo.clone()),
-            argExprs));
+          new ArrayType(baseType.getWithoutQualifiers(), arrayInfo.clone()),
+          argExprs));
     }
     return new ScalarInitializer(getTypeConstructorExpr(baseType, args));
   }
 
-  private TypeConstructorExpr getTypeConstructorExpr(BasicType baseType, List<Number> args) {
+  private static TypeConstructorExpr getTypeConstructorExpr(BasicType baseType, List<Number> args) {
     List<Expr> argExprs;
     if (baseType.getElementType() == BasicType.FLOAT) {
       argExprs = args.stream().map(item -> new FloatConstantExpr(item.toString()))
-            .collect(Collectors.toList());
+          .collect(Collectors.toList());
     } else {
       argExprs = args.stream().map(item -> new IntConstantExpr(item.toString()))
-            .collect(Collectors.toList());
+          .collect(Collectors.toList());
     }
     return new TypeConstructorExpr(baseType.toString(),
-          argExprs);
-  }
-
-  private boolean isPrunable(List<String> prunablePrefixes, VariableDeclInfo vdi) {
-    return prunablePrefixes.stream()
-          .anyMatch(item -> vdi.getName().startsWith(item));
-  }
-
-  private List<VariablesDeclaration> getUniforms(TranslationUnit tu) {
-    return tu.getTopLevelDeclarations().stream()
-          .filter(item -> item instanceof VariablesDeclaration)
-          .map(item -> (VariablesDeclaration) item)
-          .filter(item -> item.getBaseType().hasQualifier(TypeQualifier.UNIFORM))
-          .collect(Collectors.toList());
-  }
-
-  public static boolean prune(TranslationUnit tu, UniformsInfo uniformsInfo,
-        int limit, List<String> prunablePrefixes) {
-    return new PruneUniforms(tu, uniformsInfo, limit, prunablePrefixes)
-          .remainingUniforms <= limit;
+        argExprs);
   }
 
 }

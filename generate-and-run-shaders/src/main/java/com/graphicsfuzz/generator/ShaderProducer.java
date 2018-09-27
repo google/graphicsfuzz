@@ -91,6 +91,8 @@ public class ShaderProducer implements Runnable {
                   ns.getBoolean("aggressively_complicate_control_flow"),
                   replaceFloatLiterals,
                   donors,
+                  false,
+                  0,
                   enabledTransformations
               );
 
@@ -98,7 +100,7 @@ public class ShaderProducer implements Runnable {
           final File referenceJsonFile =
               new File(FilenameUtils.removeExtension(referenceFragment.getAbsolutePath())
                   + ".json");
-          final ShaderJob shaderJob = new GlslShaderJob(
+          final GlslShaderJob shaderJob = new GlslShaderJob(
               Optional.empty(),
               Optional.of(Helper.parse(
                   new File(referenceFragment.getAbsolutePath()), false)),
