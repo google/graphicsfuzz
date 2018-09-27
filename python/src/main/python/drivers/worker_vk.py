@@ -115,6 +115,13 @@ def getImageVulkanAndroid(frag):
 
     prepareShaders(frag)
 
+    # FIXME: Clean up preparation of shader files. Right now it's
+    # convenient to have a copy of the JSON with the original name of
+    # the variant, for debugging purpose, but otherwise it is a
+    # redundant file.
+    jsonFile = frag.replace('.frag', '.json')
+    shutil.copy(jsonFile, 'test.json')
+
     adb('push test.vert.spv test.frag.spv test.json /sdcard/graphicsfuzz/')
 
     # clean logcat
