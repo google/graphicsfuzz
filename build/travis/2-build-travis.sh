@@ -5,5 +5,4 @@ set -u
 
 mvn package -Dmaven.test.skip=true
 mvn clean
-mvn package -PimageTests
-
+mvn package
