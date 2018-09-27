@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.reducer;
+package com.graphicsfuzz.common.ast.type;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.util.UniformsInfo;
-import java.io.File;
-import java.io.FileNotFoundException;
+public abstract class UnqualifiedType extends Type {
 
-public interface IReductionState {
+  @Override
+  public final boolean hasQualifier(TypeQualifier qualifier) {
+    return false;
+  }
 
-  boolean hasFragmentShader();
-
-  boolean hasVertexShader();
-
-  TranslationUnit getFragmentShader();
-
-  TranslationUnit getVertexShader();
-
-  UniformsInfo getUniformsInfo();
+  @Override
+  public final UnqualifiedType getWithoutQualifiers() {
+    return this;
+  }
 
 }

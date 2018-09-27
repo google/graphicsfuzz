@@ -27,6 +27,8 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.EmitShaderHelper;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
@@ -56,7 +58,6 @@ import com.graphicsfuzz.reducer.CheckAstFeaturesFileJudge;
 import com.graphicsfuzz.reducer.IFileJudge;
 import com.graphicsfuzz.reducer.IReductionStateFileWriter;
 import com.graphicsfuzz.reducer.ReductionDriver;
-import com.graphicsfuzz.reducer.glslreducers.GlslReductionState;
 import com.graphicsfuzz.reducer.glslreducers.GlslReductionStateFileWriter;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
@@ -189,7 +190,7 @@ public class ReducerUnitTest {
 
     for (int i = 0; i < numIterations; i++) {
 
-      GlslReductionState initialState = new GlslReductionState(
+      ShaderJob initialState = new GlslShaderJob(
           Optional.empty(),
           Optional.of(tu),
           new UniformsInfo(
@@ -351,7 +352,7 @@ public class ReducerUnitTest {
     final ShadingLanguageVersion version = ShadingLanguageVersion.getGlslVersionFromShader(shaderFile);
     final IRandom generator = new RandomWrapper(0);
     final TranslationUnit tu = Helper.parse(shaderFile, true);
-    final GlslReductionState state = new GlslReductionState(
+    final ShaderJob state = new GlslShaderJob(
         Optional.empty(),
         Optional.of(tu),
         new UniformsInfo(new File(Helper.jsonFilenameForShader(shaderFile.getAbsolutePath()))));

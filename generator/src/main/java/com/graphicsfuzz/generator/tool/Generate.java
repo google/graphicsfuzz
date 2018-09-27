@@ -25,11 +25,14 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.StatsVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PruneUniforms;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.StripUnusedFunctions;
@@ -52,7 +55,6 @@ import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -70,9 +72,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Generate {
-
-  private static final boolean SHOW_STAGES = false; // Set to true for debugging
-  private static int stageCount = 0;
 
   private static Namespace parse(String[] args) {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("Generate")
@@ -156,46 +155,78 @@ public class Generate {
     parser.addArgument("--replace_float_literals")
           .help("Replace float literals with uniforms.")
           .action(Arguments.storeTrue());
+
+    parser.addArgument("--generate_uniform_bindings")
+        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
+            + "compatibility.")
+        .action(Arguments.storeTrue());
+
+    parser.addArgument("--max_uniforms")
+        .help("Ensure that generated shaders have no more than the given number of uniforms; "
+            + "required for Vulkan compatibility.")
+        .setDefault(0)
+        .type(Integer.class);
+
   }
 
-  public static void generateVariant(GeneratorArguments args) throws IOException,
-          ParseTimeoutException {
-    final UniformsInfo uniformsInfo = new UniformsInfo(args.getUniforms());
-    setInjectionSwitch(uniformsInfo);
+  public static StringBuilder generateVariant(GlslShaderJob shaderJob,
+                                              GeneratorArguments args) {
+    final StringBuilder result = new StringBuilder();
+    final IRandom random = new RandomWrapper(args.getSeed());
 
-    StringBuilder transformationsApplied = new StringBuilder();
+    setInjectionSwitch(shaderJob.getUniformsInfo());
 
-    if (args.hasReferenceFragmentShader()) {
-      generateShader(args, uniformsInfo, transformationsApplied,
-              ShaderKind.FRAGMENT, args.getReferenceFragmentShader());
+    result.append(transformShader(
+        shaderJob,
+        ShaderKind.VERTEX,
+        random.spawnChild(),
+        args));
+    result.append(transformShader(
+        shaderJob,
+        ShaderKind.FRAGMENT,
+        random.spawnChild(),
+        args));
+
+    if (args.limitUniforms()) {
+      if (!(PruneUniforms.prune(shaderJob, args.getMaxUniforms(),
+          Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX)))) {
+        throw new RuntimeException("It was not possible to prune sufficient uniforms from a "
+            + "shader.");
+      }
     }
 
-    if (args.hasReferenceVertexShader()) {
-      generateShader(args, uniformsInfo, transformationsApplied,
-              ShaderKind.VERTEX, args.getReferenceVertexShader());
+    if (args.getGenerateUniformBindings()) {
+      shaderJob.makeUniformBindings();
     }
 
-    Helper.emitUniformsInfo(uniformsInfo, new PrintStream(
-          new FileOutputStream(
-                new File(args.getOutputFolder(), args.getOutputPrefix() + ".json"))));
+    return result;
 
-    emitTransformationInfo(transformationsApplied, new PrintStream(
-          new FileOutputStream(
-                new File(args.getOutputFolder(), args.getOutputPrefix() + ".prob"))));
   }
 
-  private static void generateShader(GeneratorArguments args, UniformsInfo uniformsInfo,
-                                     StringBuilder transformationsApplied, ShaderKind shaderKind,
-                                     File shaderFile) throws IOException, ParseTimeoutException {
-    transformationsApplied.append("======\n" + shaderKind + ":\n");
-    final TranslationUnit referenceShader = getRecipientTranslationUnit(shaderFile);
+  private static StringBuilder transformShader(ShaderJob shaderJob,
+                                               ShaderKind shaderKind,
+                                               IRandom random,
+                                               GeneratorArguments args) {
+    StringBuilder result = new StringBuilder();
+    result.append("======\n" + shaderKind + ":\n");
+
+    TranslationUnit shaderToTransform;
+    if (shaderKind == ShaderKind.VERTEX && shaderJob.hasVertexShader()) {
+      shaderToTransform = shaderJob.getVertexShader();
+    } else if (shaderKind == ShaderKind.FRAGMENT && shaderJob.hasFragmentShader()) {
+      shaderToTransform = shaderJob.getFragmentShader();
+    } else {
+      result.append("No shader of this kind present.\n");
+      return result;
+    }
 
     if (args.getReplaceFloatLiterals()) {
-      FloatLiteralReplacer.replace(referenceShader, uniformsInfo, args.getShadingLanguageVersion());
+      FloatLiteralReplacer.replace(
+          shaderToTransform,
+          shaderJob.getUniformsInfo(),
+          args.getShadingLanguageVersion());
     }
-    uniformsInfo.zeroUnsetUniforms(referenceShader);
-
-    final IRandom generator = new RandomWrapper(args.getSeed());
+    shaderJob.getUniformsInfo().zeroUnsetUniforms(shaderToTransform);
 
     final GenerationParams generationParams =
             args.getSmall()
@@ -203,41 +234,48 @@ public class Generate {
                     : GenerationParams.normal(shaderKind);
 
     final TransformationProbabilities probabilities =
-            createProbabilities(args, generator);
+            createProbabilities(args, random);
 
-    transformationsApplied.append(probabilities);
+    result.append(probabilities);
 
     if (args.getAggressivelyComplicateControlFlow()) {
-      transformationsApplied.append(applyControlFlowComplication(args, referenceShader, generator,
-              generationParams,
-              probabilities));
+      result.append(applyControlFlowComplication(
+          args,
+          shaderToTransform,
+          random,
+          generationParams,
+          probabilities));
     } else if (args.getMultiPass()) {
-      transformationsApplied.append(applyTransformationsMultiPass(args, referenceShader,
-              generator, generationParams,
-              probabilities));
+      result.append(applyTransformationsMultiPass(
+          args,
+          shaderToTransform,
+          random,
+          generationParams,
+          probabilities));
     } else {
-      transformationsApplied.append(applyTransformationsRandomly(args, referenceShader,
-              generator, generationParams,
-              probabilities));
+      result.append(applyTransformationsRandomly(
+          args,
+          shaderToTransform,
+          random,
+          generationParams,
+          probabilities));
     }
 
     if (args.getSmall()) {
-      StripUnusedFunctions.strip(referenceShader);
-      StripUnusedGlobals.strip(referenceShader);
+      StripUnusedFunctions.strip(shaderToTransform);
+      StripUnusedGlobals.strip(shaderToTransform);
     }
 
-    randomiseUnsetUniforms(referenceShader, uniformsInfo, generator.spawnChild());
+    randomiseUnsetUniforms(shaderToTransform, shaderJob.getUniformsInfo(),
+        random.spawnChild());
 
-    Helper.emitShader(args.getShadingLanguageVersion(), shaderKind, referenceShader,
-            Helper.readLicenseFile(args.getLicense()),
-            new PrintStream(new FileOutputStream(
-                    new File(args.getOutputFolder(), args.getOutputPrefix()
-                            + shaderKind.getFileExtension()))));
+    return result;
+
   }
 
   public static void main(String[] args) throws IOException {
 
-    Namespace ns = parse(args);
+    final Namespace ns = parse(args);
 
     try {
 
@@ -246,21 +284,46 @@ public class Generate {
       final ShadingLanguageVersion shadingLanguageVersion = ns.get("webgl")
           ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
           : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
-      generateVariant(
-            new GeneratorArguments(shadingLanguageVersion,
-                  ns.get("reference_prefix"),
-                  ns.get("seed"),
-                  ns.getBoolean("small"),
-                  ns.getBoolean("avoid_long_loops"),
-                  ns.getBoolean("multi_pass"),
-                  ns.getBoolean("aggressively_complicate_control_flow"),
-                  ns.getBoolean("replace_float_literals"),
-                  ns.get("donors"),
-                  ns.get("output_dir"),
-                  ns.getString("output_prefix"),
-                enabledTransformations
-            )
+
+      final String referencePrefix = ns.get("reference_prefix");
+      final File vertexReference = new File(referencePrefix + ".vert");
+      final File fragmentReference = new File(referencePrefix + ".frag");
+      final File jsonReference = new File(referencePrefix + ".json");
+
+      final GlslShaderJob shaderJob = new GlslShaderJob(
+          vertexReference.isFile()
+              ? Optional.of(getReferenceTranslationUnit(vertexReference))
+              : Optional.empty(),
+          fragmentReference.isFile()
+              ? Optional.of(getReferenceTranslationUnit(fragmentReference))
+              : Optional.empty(),
+          new UniformsInfo(jsonReference)
       );
+
+      final StringBuilder generationInfo = generateVariant(
+          shaderJob,
+          new GeneratorArguments(shadingLanguageVersion,
+                ns.get("seed"),
+                ns.getBoolean("small"),
+                ns.getBoolean("avoid_long_loops"),
+                ns.getBoolean("multi_pass"),
+                ns.getBoolean("aggressively_complicate_control_flow"),
+                ns.getBoolean("replace_float_literals"),
+                ns.get("donors"),
+                ns.get("generate_uniform_bindings"),
+                ns.get("max_uniforms"),
+                enabledTransformations));
+
+      final String outputPrefix = ns.get("output_prefix");
+      final File outputFolder = ns.get("output_dir");
+      final File licenseFile = new File(referencePrefix + ".license");
+
+      Helper.emitShaderJob(shaderJob, shadingLanguageVersion, outputPrefix, outputFolder,
+          licenseFile);
+
+      emitTransformationInfo(generationInfo, new PrintStream(
+            new FileOutputStream(
+                new File(outputFolder, outputPrefix + ".prob"))));
 
     } catch (Throwable exception) {
       exception.printStackTrace();
@@ -368,8 +431,7 @@ public class Generate {
         TranslationUnit reference,
         IRandom generator,
         GenerationParams generationParams,
-        TransformationProbabilities probabilities)
-        throws FileNotFoundException {
+        TransformationProbabilities probabilities) {
     String result = "";
 
     final List<ITransformation> transformations = populateTransformations(args,
@@ -384,8 +446,6 @@ public class Generate {
       // opportunity and we have not applied any transformation yet.
       if ((transformations.isEmpty() && numTransformationsApplied == 0)
             || decideToApplyTransformation(generator, numTransformationsApplied)) {
-        showStage(reference, generationParams.getShaderKind(), transformation.getName(),
-                args.getShadingLanguageVersion());
         result += transformation.getName() + "\n";
         transformation.apply(reference, probabilities, args.getShadingLanguageVersion(),
               generator.spawnChild(),
@@ -493,21 +553,11 @@ public class Generate {
     uniformsInfo.setUniforms(tu, floatSupplier, intSupplier, uintSupplier, boolSupplier);
   }
 
-  public static TranslationUnit getRecipientTranslationUnit(File originalFile)
+  public static TranslationUnit getReferenceTranslationUnit(File referenceFile)
         throws IOException, ParseTimeoutException {
-    TranslationUnit original = ParseHelper.parse(originalFile, false);
+    TranslationUnit original = ParseHelper.parse(referenceFile, false);
     addInjectionSwitchIfNotPresent(original);
     return original;
-  }
-
-
-  private static void showStage(TranslationUnit shader, ShaderKind shaderKind, String stageName,
-        ShadingLanguageVersion shadingLanguageVersion) throws FileNotFoundException {
-    if (SHOW_STAGES) {
-      Helper.emitShader(shadingLanguageVersion, shaderKind, shader, new PrintStream(
-            new FileOutputStream("__stage_" + stageCount + "_" + stageName + ".frag")));
-      stageCount++;
-    }
   }
 
   public static void addInjectionSwitchIfNotPresent(TranslationUnit tu) {

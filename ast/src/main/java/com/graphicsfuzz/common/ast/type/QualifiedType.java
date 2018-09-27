@@ -35,7 +35,8 @@ public class QualifiedType extends Type {
     assert noDuplicateQualifiers(qualifiers);
 
     this.targetType = targetType;
-    this.qualifiers = qualifiers;
+    this.qualifiers = new ArrayList<>();
+    this.qualifiers.addAll(qualifiers);
   }
 
   private boolean noDuplicateQualifiers(List<TypeQualifier> qualifiers) {

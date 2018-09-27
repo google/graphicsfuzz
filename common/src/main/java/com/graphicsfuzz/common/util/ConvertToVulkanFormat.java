@@ -62,7 +62,7 @@ public class ConvertToVulkanFormat extends ScopeTreeBuilder {
       }
       final String interfaceName = getInterfaceIdentifierName();
       final String uniformName = variablesDeclaration.getDeclInfo(0).getName();
-      uniformsInfo.addBindingToUniform(uniformName, interfaceBlockCounter);
+      uniformsInfo.addBinding(uniformName, interfaceBlockCounter);
       assert !uniformToInterface.containsKey(uniformName);
       uniformToInterface.put(uniformName, interfaceName);
       assert !uniformToOriginalDecl.containsKey(uniformName);

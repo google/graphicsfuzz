@@ -140,7 +140,9 @@ public class ShaderConsumer implements Runnable {
           outputDir,
           outputPrefix,
           shadingLanguageVersion,
-          replaceFloatLiterals);
+          replaceFloatLiterals,
+          0,
+          false);
       final File outputFile = new File(outputDir, outputPrefix + ".frag");
       result.put(reference, outputFile);
       FileUtils.copyFile(license, new File(outputDir,

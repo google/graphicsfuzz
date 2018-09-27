@@ -53,6 +53,11 @@ public final class UniformsInfo {
           JsonObject.class);
   }
 
+  public UniformsInfo(String string) {
+    uniformsInfo = new Gson().fromJson(string,
+        JsonObject.class);
+  }
+
   public void addUniform(String name, BasicType basicType,
       Optional<Integer> arrayCount, List<? extends Number> values) {
     JsonObject info = new JsonObject();
@@ -167,14 +172,23 @@ public final class UniformsInfo {
     return result;
   }
 
-  public void addBindingToUniform(String uniformName, int number) {
+  public void addBinding(String uniformName, int number) {
     assert containsKey(uniformName);
     uniformsInfo.getAsJsonObject(uniformName).addProperty("binding", number);
+  }
+
+  public void removeBinding(String uniformName) {
+    assert hasBinding(uniformName);
+    uniformsInfo.getAsJsonObject(uniformName).remove("binding");
   }
 
   public List<String> getUniformNames() {
     return uniformsInfo.entrySet()
         .stream().map(item -> item.getKey()).collect(Collectors.toList());
+  }
+
+  public int getNumUniforms() {
+    return uniformsInfo.entrySet().size();
   }
 
   public void removeUniform(String name) {
@@ -195,12 +209,25 @@ public final class UniformsInfo {
 
   public List<Number> getArgs(String name) {
     final List<Number> result = new ArrayList<>();
-    final JsonArray args = ((JsonObject) uniformsInfo.get(name)).get("args")
+    final JsonArray args = lookupUniform(name).get("args")
           .getAsJsonArray();
     for (int i = 0; i < args.size(); i++) {
       result.add(args.get(i).getAsNumber());
     }
     return result;
+  }
+
+  public boolean hasBinding(String uniformName) {
+    return lookupUniform(uniformName).has("binding");
+  }
+
+  public int getBinding(String uniformName) {
+    assert hasBinding(uniformName);
+    return lookupUniform(uniformName).get("binding").getAsInt();
+  }
+
+  private JsonObject lookupUniform(String uniformName) {
+    return (JsonObject) uniformsInfo.get(uniformName);
   }
 
 }

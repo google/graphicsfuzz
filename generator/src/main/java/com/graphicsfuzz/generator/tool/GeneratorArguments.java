@@ -22,7 +22,6 @@ import java.io.File;
 public class GeneratorArguments {
 
   private final ShadingLanguageVersion shadingLanguageVersion;
-  private final String referencePrefix;
   private final int seed;
   private final boolean small;
   private final boolean avoidLongLoops;
@@ -30,13 +29,12 @@ public class GeneratorArguments {
   private final boolean aggressivelyComplicateControlFlow;
   private final boolean replaceFloatLiterals;
   private final File donorsFolder;
-  private final File outputFolder;
-  private final String outputPrefix;
+  private final boolean generateUniformBindings;
+  private final int maxUniforms;
   private final EnabledTransformations enabledTransformations;
 
   public GeneratorArguments(
         ShadingLanguageVersion shadingLanguageVersion,
-        String referencePrefix,
         int seed,
         boolean small,
         boolean avoidLongLoops,
@@ -44,11 +42,10 @@ public class GeneratorArguments {
         boolean aggressivelyComplicateControlFlow,
         boolean replaceFloatLiterals,
         File donorsFolder,
-        File outputFolder,
-        String outputPrefix,
+        boolean generateUniformBindings,
+        int maxUniforms,
         EnabledTransformations enabledTransformations) {
     this.shadingLanguageVersion = shadingLanguageVersion;
-    this.referencePrefix = referencePrefix;
     this.seed = seed;
     this.small = small;
     this.avoidLongLoops = avoidLongLoops;
@@ -56,33 +53,13 @@ public class GeneratorArguments {
     this.aggressivelyComplicateControlFlow = aggressivelyComplicateControlFlow;
     this.replaceFloatLiterals = replaceFloatLiterals;
     this.donorsFolder = donorsFolder;
-    this.outputFolder = outputFolder;
-    this.outputPrefix = outputPrefix;
+    this.generateUniformBindings = generateUniformBindings;
+    this.maxUniforms = maxUniforms;
     this.enabledTransformations = enabledTransformations;
   }
 
   public ShadingLanguageVersion getShadingLanguageVersion() {
     return shadingLanguageVersion;
-  }
-
-  public boolean hasReferenceFragmentShader() {
-    return getReferenceFragmentShader().exists();
-  }
-
-  public File getReferenceFragmentShader() {
-    return getFileFromPrefixWithExtension(".frag");
-  }
-
-  public boolean hasReferenceVertexShader() {
-    return getReferenceVertexShader().exists();
-  }
-
-  public File getReferenceVertexShader() {
-    return getFileFromPrefixWithExtension(".vert");
-  }
-
-  public File getUniforms() {
-    return getFileFromPrefixWithExtension(".json");
   }
 
   public int getSeed() {
@@ -113,16 +90,16 @@ public class GeneratorArguments {
     return donorsFolder;
   }
 
-  public File getOutputFolder() {
-    return outputFolder;
+  public boolean getGenerateUniformBindings() {
+    return generateUniformBindings;
   }
 
-  public String getOutputPrefix() {
-    return outputPrefix;
+  public int getMaxUniforms() {
+    return maxUniforms;
   }
 
-  public File getLicense() {
-    return getFileFromPrefixWithExtension(".license");
+  public boolean limitUniforms() {
+    return getMaxUniforms() > 0;
   }
 
   public EnabledTransformations getEnabledTransformations() {
@@ -133,27 +110,16 @@ public class GeneratorArguments {
   public final String toString() {
     final StringBuilder sb = new StringBuilder();
     sb.append("shadingLanguageVersion: " + shadingLanguageVersion + "\n");
-    sb.append("referenceFragmentShader: "
-        + (hasReferenceFragmentShader() ? getReferenceFragmentShader().getName() : "-") + "\n");
-    sb.append("referenceVertexShader: "
-        + (hasReferenceVertexShader() ? getReferenceVertexShader().getName() : "-") + "\n");
-    sb.append("uniforms: " + getUniforms().getName() + "\n");
-    sb.append("seed: " + seed + "\n");
     sb.append("small: " + small + "\n");
     sb.append("avoidLongLoops: " + avoidLongLoops + "\n");
     sb.append("multiPass: " + multiPass + "\n");
     sb.append("aggressivelyComplicateControlFlow: " + aggressivelyComplicateControlFlow + "\n");
     sb.append("replaceFloatLiterals: " + replaceFloatLiterals + "\n");
     sb.append("donorsFolder: " + donorsFolder.getName() + "\n");
-    sb.append("outputFolder: " + outputFolder.getName() + "\n");
-    sb.append("outputPrefix: " + outputPrefix + "\n");
-    sb.append("license: " + getLicense().getName() + "\n");
+    sb.append("generateUniformBindings: " + generateUniformBindings + "\n");
+    sb.append("maxUniforms: " + (limitUniforms() ? "-" : maxUniforms) + "\n");
     sb.append("enabledTransformations: " + enabledTransformations + "\n");
     return sb.toString();
-  }
-
-  private File getFileFromPrefixWithExtension(String extension) {
-    return new File(referencePrefix + extension);
   }
 
 }

@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.ast.type;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.expr.Expr;
+import java.util.List;
 
 public abstract class Type implements IAstNode {
 

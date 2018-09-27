@@ -81,7 +81,7 @@ public class GenerateTest {
     BufferedWriter bw = new BufferedWriter(new FileWriter(f));
     bw.write(program);
     bw.close();
-    final TranslationUnit tu = Generate.getRecipientTranslationUnit(f);
+    final TranslationUnit tu = Generate.getReferenceTranslationUnit(f);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(program, false)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }

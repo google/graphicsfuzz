@@ -59,8 +59,12 @@ parser.add_argument("--replace_float_literals", action="store_true",
                     help="Replace float literals with uniforms.")
 parser.add_argument("--multi_pass", action="store_true",
                     help="Apply multiple transformation passes.")
-parser.add_argument("--require-license", action="store_true",
+parser.add_argument("--require_license", action="store_true",
                     help="Require that each shader has an accompanying license, and use this during generation.")
+parser.add_argument("--generate_uniform_bindings", action="store_true",
+                    help="Put all uniforms in uniform blocks and generate associated bindings.  Necessary for Vulkan compatibility.")
+parser.add_argument("--max_uniforms", type=int, action="store",
+                    help="Ensure that no more than the given number of uniforms are included in generated shaders.  Necessary for Vulkan compatibility.")
 
 args = parser.parse_args()
 
@@ -118,6 +122,11 @@ for reference in glob.glob(args.references + os.sep + "*.frag"):
     cmd.append("--multi_pass")
   if args.require_license:
     cmd.append("--require_license")
+  if args.generate_uniform_bindings:
+    cmd.append("--generate_uniform_bindings")
+  if args.max_uniforms is not None:
+    cmd.append("--max_uniforms")
+    cmd.append(str(args.max_uniforms))
 
   if args.verbose:
       print("Generating a shader family: " + " ".join(cmd))

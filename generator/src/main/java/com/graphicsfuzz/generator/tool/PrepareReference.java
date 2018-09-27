@@ -18,17 +18,15 @@ package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.util.Helper;
-import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.FloatLiteralReplacer;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.util.Optional;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -40,7 +38,7 @@ public final class PrepareReference {
   private static Namespace parse(String[] args) {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("PrepareReference")
         .defaultHelp(true)
-        .description("Prepare a reference to work with GLFuzz.");
+        .description("Prepare a reference shader job to work with GraphicsFuzz.");
 
     // Required arguments
     parser.addArgument("reference_prefix")
@@ -65,6 +63,17 @@ public final class PrepareReference {
         .help("Use WebGL spec.")
         .action(Arguments.storeTrue());
 
+    parser.addArgument("--generate_uniform_bindings")
+        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
+            + "compatibility.")
+        .action(Arguments.storeTrue());
+
+    parser.addArgument("--max_uniforms")
+        .help("Check that reference doesn't have too many uniforms; required for Vulkan "
+            + "compatibility.")
+        .setDefault(0)
+        .type(Integer.class);
+
     try {
       return parser.parseArgs(args);
     } catch (ArgumentParserException exception) {
@@ -81,17 +90,18 @@ public final class PrepareReference {
 
     try {
 
-      final String referencePrefix = ns.getString("reference_prefix");
-      final boolean replaceFloatLiterals = ns.getBoolean("replace_float_literals");
       final ShadingLanguageVersion shadingLanguageVersion =
           ns.getBoolean("webgl")
               ? ShadingLanguageVersion.webGlFromVersionString(ns.getString("glsl_version"))
               : ShadingLanguageVersion.fromVersionString(ns.getString("glsl_version"));
-      final File workDir = new File(".");
-      final String outputPrefix = ns.getString("output_prefix");
 
-      prepareReference(referencePrefix, workDir, outputPrefix, shadingLanguageVersion,
-          replaceFloatLiterals);
+      prepareReference(ns.getString("reference_prefix"),
+          new File("."),
+          ns.getString("output_prefix"),
+          shadingLanguageVersion,
+          ns.getBoolean("replace_float_literals"),
+          ns.get("max_uniforms"),
+          ns.getBoolean("generate_uniform_bindings"));
 
     } catch (Throwable throwable) {
       throwable.printStackTrace();
@@ -100,57 +110,63 @@ public final class PrepareReference {
 
   }
 
-  public static void prepareReference(String referencePrefix, File workDir,
-      String outputPrefix, ShadingLanguageVersion shadingLanguageVersion,
-      boolean replaceFloatLiterals)
-        throws IOException, ParseTimeoutException {
+  public static void prepareReference(String referencePrefix,
+                                       File workDir,
+                                       String outputPrefix,
+                                       ShadingLanguageVersion shadingLanguageVersion,
+                                       boolean replaceFloatLiterals,
+                                       int maxUniforms,
+                                       boolean generateUniformBindings)
+      throws IOException, ParseTimeoutException {
+    final File jsonFile = new File(referencePrefix + ".json");
+    final File vertexShaderFile =
+        new File(referencePrefix + ShaderKind.VERTEX.getFileExtension());
+    final File fragmentShaderFile =
+        new File(referencePrefix + ShaderKind.FRAGMENT.getFileExtension());
 
-    final File uniforms = new File(referencePrefix + ".json");
-    final UniformsInfo uniformsInfo = new UniformsInfo(uniforms);
+    final GlslShaderJob shaderJob = new GlslShaderJob(
+        vertexShaderFile.isFile()
+            ? Optional.of(Helper.parse(vertexShaderFile, false))
+            : Optional.empty(),
+        fragmentShaderFile.isFile()
+            ? Optional.of(Helper.parse(fragmentShaderFile, false))
+            : Optional.empty(),
+        new UniformsInfo(jsonFile));
 
-    if (new File(referencePrefix + ShaderKind.FRAGMENT.getFileExtension()).isFile()) {
-      prepareReferenceShader(referencePrefix, ShaderKind.FRAGMENT, workDir, outputPrefix,
+    if (shaderJob.hasVertexShader()) {
+      prepareReferenceShader(shaderJob.getVertexShader(),
           shadingLanguageVersion,
           replaceFloatLiterals,
-          uniformsInfo);
+          shaderJob.getUniformsInfo());
     }
 
-    if (new File(referencePrefix + ShaderKind.VERTEX.getFileExtension()).isFile()) {
-      prepareReferenceShader(referencePrefix, ShaderKind.VERTEX, workDir, outputPrefix,
+    if (shaderJob.hasFragmentShader()) {
+      prepareReferenceShader(shaderJob.getFragmentShader(),
           shadingLanguageVersion,
           replaceFloatLiterals,
-          uniformsInfo);
+          shaderJob.getUniformsInfo());
     }
 
-    emitUniforms(workDir, outputPrefix, uniformsInfo);
+    if (maxUniforms > 0 && shaderJob.getUniformsInfo().getNumUniforms() > maxUniforms) {
+      throw new RuntimeException("Too many uniforms in reference shader job.");
+    }
 
+    if (generateUniformBindings) {
+      shaderJob.makeUniformBindings();
+    }
+
+    Helper.emitShaderJob(shaderJob, shadingLanguageVersion, outputPrefix, workDir,
+        new File(referencePrefix + ".license"));
   }
 
-  private static void prepareReferenceShader(String referencePrefix, ShaderKind shaderKind,
-      File workDir, String outputPrefix, ShadingLanguageVersion shadingLanguageVersion,
-      boolean replaceFloatLiterals,
-      UniformsInfo uniformsInfo)
-      throws IOException, ParseTimeoutException {
-    final File referenceShader = new File(referencePrefix + shaderKind.getFileExtension());
-    TranslationUnit tu = ParseHelper.parse(referenceShader, false);
+  private static void prepareReferenceShader(TranslationUnit tu,
+                                             ShadingLanguageVersion shadingLanguageVersion,
+                                             boolean replaceFloatLiterals,
+                                             UniformsInfo uniformsInfo) {
     uniformsInfo.zeroUnsetUniforms(tu);
     if (replaceFloatLiterals) {
-      // TODO: need to adjust this to take account of multiple shader kinds.
       FloatLiteralReplacer.replace(tu, uniformsInfo, shadingLanguageVersion);
     }
-    final File outputFile = new File(workDir, outputPrefix + shaderKind.getFileExtension());
-    Helper.emitShader(shadingLanguageVersion, shaderKind, tu,
-        Helper.readLicenseFile(new File(referencePrefix + ".license")),
-        outputFile);
-  }
-
-  private static void emitUniforms(File workDir, String outputPrefix,
-        UniformsInfo uniformsInfo)
-      throws FileNotFoundException {
-    PrintStream stream = new PrintStream(new FileOutputStream(
-        new File(workDir, outputPrefix + ".json")));
-    stream.println(uniformsInfo);
-    stream.close();
   }
 
 }

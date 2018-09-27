@@ -16,21 +16,14 @@
 
 package com.graphicsfuzz.common.ast.type;
 
-public abstract class BuiltinType extends Type {
+import java.util.ArrayList;
+import java.util.List;
 
-  @Override
-  public final Type getWithoutQualifiers() {
-    return this;
-  }
+public abstract class BuiltinType extends UnqualifiedType {
 
   @Override
   public final BuiltinType clone() {
     return this;
-  }
-
-  @Override
-  public boolean hasQualifier(TypeQualifier qualifier) {
-    return false;
   }
 
 }

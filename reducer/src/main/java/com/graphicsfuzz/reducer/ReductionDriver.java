@@ -18,8 +18,8 @@ package com.graphicsfuzz.reducer;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.Constants;
-import com.graphicsfuzz.common.util.Helper;
-import com.graphicsfuzz.reducer.glslreducers.GlslReductionState;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.reducer.glslreducers.IReductionPlan;
 import com.graphicsfuzz.reducer.glslreducers.MasterPlan;
 import com.graphicsfuzz.reducer.glslreducers.NoMoreToReduceException;
@@ -28,9 +28,7 @@ import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityConte
 import com.graphicsfuzz.reducer.util.Simplify;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Optional;
@@ -52,9 +50,9 @@ public class ReductionDriver {
   private final boolean verbose;
   private final IReductionPlan plan;
 
-  private IReductionState newState;
+  private ShaderJob newState;
 
-  private IReductionState state;
+  private ShaderJob state;
   private int numReductionAttempts;
   private int numSuccessfulReductions = -1;
 
@@ -62,8 +60,8 @@ public class ReductionDriver {
   private final Set<String> passHashes;
 
   public ReductionDriver(ReductionOpportunityContext reductionOpportunityContext,
-        boolean verbose,
-        IReductionState initialState) {
+                         boolean verbose,
+                         ShaderJob initialState) {
     this.verbose = verbose;
     this.plan = new MasterPlan(
           reductionOpportunityContext, verbose);
@@ -109,7 +107,7 @@ public class ReductionDriver {
       boolean stoppedEarly = false;
       while (true) {
         notifyNewStateInteresting(isInteresting);
-        IReductionState newState = doReductionStep();
+        ShaderJob newState = doReductionStep();
         if (newState == null) {
           break;
         }
@@ -129,7 +127,7 @@ public class ReductionDriver {
         }
       }
 
-      IReductionState finalState = getSimplifiedState();
+      ShaderJob finalState = getSimplifiedState();
 
       String finalOutputFilePrefix = variantName + "_reduced_final";
       fileWriter.writeFilesFromState(finalState, finalOutputFilePrefix);
@@ -213,7 +211,7 @@ public class ReductionDriver {
     return DigestUtils.md5Hex(combinedData);
   }
 
-  public IReductionState doReductionStep() {
+  public ShaderJob doReductionStep() {
     LOGGER.info("Trying reduction attempt " + numReductionAttempts + " (" + numSuccessfulReductions
           + " successful so far).");
     if (newState != null) {
@@ -221,7 +219,7 @@ public class ReductionDriver {
     }
     while (true) {
       try {
-        final IReductionState reductionStepResult = applyReduction(state);
+        final ShaderJob reductionStepResult = applyReduction(state);
         numReductionAttempts++;
         newState = reductionStepResult;
         return newState;
@@ -232,7 +230,7 @@ public class ReductionDriver {
     }
   }
 
-  private IReductionState applyReduction(IReductionState state) throws NoMoreToReduceException {
+  private ShaderJob applyReduction(ShaderJob state) throws NoMoreToReduceException {
     int attempts = 0;
     final int maxAttempts = 3;
     while (true) {
@@ -272,7 +270,7 @@ public class ReductionDriver {
     }
   }
 
-  private IReductionState getSimplifiedState() {
+  private ShaderJob getSimplifiedState() {
     if (newState != null) {
       throw new IllegalStateException("Called getSimplifiedState yet a newState is set.");
     }
@@ -291,7 +289,7 @@ public class ReductionDriver {
     newState = null;
   }
 
-  public final GlslReductionState finaliseReduction() {
+  public final ShaderJob finaliseReduction() {
     // Do final cleanup pass to get rid of macros
     final Optional<TranslationUnit> simplifiedVertexShader =
         state.hasVertexShader() ? Optional.of(Simplify.simplify(state.getVertexShader()))
@@ -299,7 +297,7 @@ public class ReductionDriver {
     final Optional<TranslationUnit> simplifiedFragmentShader =
         state.hasFragmentShader() ? Optional.of(Simplify.simplify(state.getFragmentShader()))
             : Optional.empty();
-    return new GlslReductionState(simplifiedVertexShader, simplifiedFragmentShader,
+    return new GlslShaderJob(simplifiedVertexShader, simplifiedFragmentShader,
         state.getUniformsInfo());
   }
 

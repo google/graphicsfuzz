@@ -16,11 +16,12 @@
 
 package com.graphicsfuzz.reducer;
 
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.io.FileNotFoundException;
 
 public interface IReductionStateFileWriter {
 
-  void writeFilesFromState(IReductionState state, String outputFilesPrefix)
+  void writeFilesFromState(ShaderJob shaderJob, String outputFilesPrefix)
       throws FileNotFoundException;
 
 }

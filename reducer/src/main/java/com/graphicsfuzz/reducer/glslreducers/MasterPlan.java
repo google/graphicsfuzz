@@ -16,8 +16,8 @@
 
 package com.graphicsfuzz.reducer.glslreducers;
 
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.reducer.IReductionState;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunityFinder;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import java.util.ArrayList;
@@ -99,13 +99,13 @@ public class MasterPlan implements IReductionPlan {
   }
 
   @Override
-  public IReductionState applyReduction(IReductionState state)
+  public ShaderJob applyReduction(ShaderJob shaderJob)
       throws NoMoreToReduceException {
     while (true) {
       if (currentPassSteps < MAX_STEPS_PER_PASS) {
         // Try the current slave plan.
         try {
-          final IReductionState result = getCurrentPlan().applyReduction(state);
+          final ShaderJob result = getCurrentPlan().applyReduction(shaderJob);
           currentPassSteps++;
           return result;
         } catch (NoMoreToReduceException exception) {
@@ -125,7 +125,7 @@ public class MasterPlan implements IReductionPlan {
           if (shaderKind == ShaderKind.VERTEX) {
             throw new NoMoreToReduceException();
           } else if (shaderKind == ShaderKind.FRAGMENT) {
-            if (!state.hasVertexShader()) {
+            if (!shaderJob.hasVertexShader()) {
               throw new NoMoreToReduceException();
             }
             LOGGER.info("Moving on to reducing vertex shader");

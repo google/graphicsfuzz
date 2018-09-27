@@ -18,6 +18,8 @@ package com.graphicsfuzz.reducer.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -25,7 +27,6 @@ import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.IReductionStateFileWriter;
 import com.graphicsfuzz.reducer.ReductionDriver;
-import com.graphicsfuzz.reducer.glslreducers.GlslReductionState;
 import com.graphicsfuzz.reducer.glslreducers.GlslReductionStateFileWriter;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import java.io.File;
@@ -147,7 +148,7 @@ public class ReducerBugPoint {
 
       System.err.println("Trying iteration " + i);
 
-      GlslReductionState initialState = new GlslReductionState(
+      ShaderJob initialState = new GlslShaderJob(
           Optional.empty(),
           Optional.of(interestingTranslationUnit),
           new UniformsInfo(interestingJson));

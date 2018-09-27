@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
@@ -152,8 +153,10 @@ public class PruneUniformsTest {
 
     final String expectedProgram = "int liveI[10] = int[10](int(1), int(2), int(3), int(4), int(5), int(6), int(7), int(8), int(9), int(10));"
           + "vec3 deadF[3] = vec3[3](vec3(1.0, 2.0, 3.0), vec3(4.0, 5.0, 6.0), vec3(7.0, 8.0, 9.0));"
-          + "vec2 liveG = vec2(256.0, 257.0), deadH = vec2(258.0, 259.0);"
-          + "uint liveA = uint(25), liveB = uint(26);"
+          + "vec2 deadH = vec2(258.0, 259.0);"
+          + "vec2 liveG = vec2(256.0, 257.0);"
+          + "uint liveA = uint(25);"
+          + "uint liveB = uint(26);"
           + "bvec3 liveC[3] = bvec3[3](bvec3(0, 1, 0), bvec3(1, 0, 1), bvec3(0, 1, 0));"
           + "void main() {"
           + "}";
@@ -176,7 +179,10 @@ public class PruneUniformsTest {
     final UniformsInfo uniformsInfo = new UniformsInfo(uniformsFile);
     final TranslationUnit tu = ParseHelper.parse(program, false);
 
-    assertTrue(PruneUniforms.prune(tu, uniformsInfo, limit, prefixList));
+    assertTrue(PruneUniforms.prune(
+        new GlslShaderJob(Optional.empty(), Optional.of(tu), uniformsInfo),
+        limit,
+        prefixList));
 
     final File shaderFile = temporaryFolder.newFile("shader.frag");
     Helper.emitShader(ShadingLanguageVersion.ESSL_300, ShaderKind.FRAGMENT,

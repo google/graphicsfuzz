@@ -78,7 +78,7 @@ public class TestGenerate {
     List<TranslationUnit> translationUnits = new ArrayList<>();
     for (File originalShaderFile : originalShaderFiles) {
       LOGGER.info("Parsing {}", originalShaderFile);
-      translationUnits.add(Generate.getRecipientTranslationUnit(originalShaderFile));
+      translationUnits.add(Generate.getReferenceTranslationUnit(originalShaderFile));
     }
 
     for (int tu = 0; tu < translationUnits.size(); ++tu) {
