@@ -18,6 +18,7 @@ package com.graphicsfuzz.reducer.filejudge;
 
 import com.graphicsfuzz.reducer.FileJudgeException;
 import com.graphicsfuzz.reducer.IFileJudge;
+import java.io.File;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ public class ValidatorErrorShaderFileJudge implements IFileJudge {
   }
 
   @Override
-  public boolean isInteresting(String filesPrefix) throws FileJudgeException {
+  public boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException {
 
     throw new RuntimeException();
 

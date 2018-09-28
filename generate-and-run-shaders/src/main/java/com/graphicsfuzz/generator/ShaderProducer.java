@@ -100,7 +100,7 @@ public class ShaderProducer implements Runnable {
           final File referenceJsonFile =
               new File(FilenameUtils.removeExtension(referenceFragment.getAbsolutePath())
                   + ".json");
-          final GlslShaderJob shaderJob = new GlslShaderJob(
+          final ShaderJob shaderJob = new GlslShaderJob(
               Optional.empty(),
               Optional.of(Helper.parse(
                   new File(referenceFragment.getAbsolutePath()), false)),

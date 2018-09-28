@@ -169,7 +169,7 @@ public class Generate {
 
   }
 
-  public static StringBuilder generateVariant(GlslShaderJob shaderJob,
+  public static StringBuilder generateVariant(ShaderJob shaderJob,
                                               GeneratorArguments args) {
     final StringBuilder result = new StringBuilder();
     final IRandom random = new RandomWrapper(args.getSeed());
@@ -290,7 +290,7 @@ public class Generate {
       final File fragmentReference = new File(referencePrefix + ".frag");
       final File jsonReference = new File(referencePrefix + ".json");
 
-      final GlslShaderJob shaderJob = new GlslShaderJob(
+      final ShaderJob shaderJob = new GlslShaderJob(
           vertexReference.isFile()
               ? Optional.of(getReferenceTranslationUnit(vertexReference))
               : Optional.empty(),
