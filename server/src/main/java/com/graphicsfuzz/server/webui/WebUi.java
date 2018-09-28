@@ -1305,65 +1305,64 @@ public class WebUi extends HttpServlet {
       throws IOException, ServletException {
     response.setContentType("text/html");
 
-    List<String> args = new ArrayList<>();
+    final List<String> args = new ArrayList<>();
     args.add("reduce_variant");
-    String shaderPath = request.getParameter("shader_path");
-    args.add(shaderPath);
-    String reductionType = request.getParameter("reduction_type");
+    final String shaderPath = request.getParameter("shader_path");
+    args.add(FilenameUtils.removeExtension(shaderPath));
+    final String reductionType = request.getParameter("reduction_type");
     args.add(reductionType);
-    String referenceImage = request.getParameter("reference_image");
-    String output = request.getParameter("output");
     args.add("--metric");
     args.add(request.getParameter("metric"));
     args.add("--output");
+    final String output = request.getParameter("output");
     args.add(output);
     if (!ReductionKind.NO_IMAGE.toString().equalsIgnoreCase(reductionType)) {
       args.add("--reference_image");
-      args.add(referenceImage);
+      args.add(request.getParameter("reference_image"));
     }
-    String token = request.getParameter("token");
     args.add("--token");
+    final String token = request.getParameter("token");
     args.add(token);
     args.add("--server");
     args.add("http://localhost:8080/manageAPI");
-    String threshold = request.getParameter("threshold");
+    final String threshold = request.getParameter("threshold");
     if (threshold != null) {
       args.add("--threshold");
       args.add(threshold);
     }
-    String errorRegex = request.getParameter("error_regex");
+    final String errorRegex = request.getParameter("error_regex");
     if (errorRegex != null) {
       args.add("--error_string");
       args.add(errorRegex);
     }
-    String reduceEverywhere = request.getParameter("reduce_everywhere");
+    final String reduceEverywhere = request.getParameter("reduce_everywhere");
     if (reduceEverywhere != null) {
       if (reduceEverywhere.equals("on")) {
         args.add("--reduce_everywhere");
       }
     }
-    String skipRender = request.getParameter("skip_render");
+    final String skipRender = request.getParameter("skip_render");
     if (skipRender != null) {
       if (skipRender.equals("on")) {
         args.add("--skip_render");
       }
     }
-    String timeout = request.getParameter("timeout");
+    final String timeout = request.getParameter("timeout");
     if (timeout != null) {
       args.add("--timeout");
       args.add(timeout);
     }
-    String maxSteps = request.getParameter("max_steps");
+    final String maxSteps = request.getParameter("max_steps");
     if (maxSteps != null) {
       args.add("--max_steps");
       args.add(maxSteps);
     }
-    String retryLimit = request.getParameter("retry_limit");
+    final String retryLimit = request.getParameter("retry_limit");
     if (retryLimit != null) {
       args.add("--retry_limit");
       args.add(retryLimit);
     }
-    String seed = request.getParameter("seed");
+    final String seed = request.getParameter("seed");
     if (seed != null) {
       args.add("--seed");
       args.add(seed);

@@ -48,7 +48,7 @@ public class RandomFileJudge implements IFileJudge {
   @Override
   public boolean isInteresting(File workDir, String shaderJobShortName) {
     try {
-      if (!ShaderJudgeUtil.shadersAreValid(shaderJobShortName, throwExceptionOnInvalid)) {
+      if (!ShaderJudgeUtil.shadersAreValid(workDir, shaderJobShortName, throwExceptionOnInvalid)) {
         return false;
       }
     } catch (IOException | InterruptedException ex) {
