@@ -83,7 +83,7 @@ public class Main extends ApplicationAdapter {
   private JsonObject uniformDict;
 
 
-  private final String defaultVertexShader300es = ""
+  private static final String defaultVertexShader300es = ""
       + "#version 300 es\n"
       + "in vec3 " + ShaderProgram.POSITION_ATTRIBUTE + ";\n"
       + "\n"
@@ -91,15 +91,13 @@ public class Main extends ApplicationAdapter {
       + "    gl_Position = vec4(" + ShaderProgram.POSITION_ATTRIBUTE + ", 1.0);\n"
       + "}";
 
-  private final String defaultVertexShader100 = ""
+  private static final String defaultVertexShader100 = ""
       + "#version 100\n"
       + "attribute vec3 " + ShaderProgram.POSITION_ATTRIBUTE + ";\n"
       + "\n"
       + "void main(void) {\n"
       + "    gl_Position = vec4(" + ShaderProgram.POSITION_ATTRIBUTE + ", 1.0);\n"
       + "}";
-
-  private String defaultVertexShader = defaultVertexShader100;
 
   private Job job;
   private TimingInfo timingInfo;
@@ -154,25 +152,7 @@ public class Main extends ApplicationAdapter {
 
   // Sanity check
 
-  private final String sanityFragmentSource300es = ""
-      + "#version 300 es\n"
-      + "#ifdef GL_ES\n"
-      + "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
-      + "precision highp float;\n"
-      + "precision highp int;\n"
-      + "#else\n"
-      + "precision mediump float;\n"
-      + "precision mediump int;\n"
-      + "#endif\n"
-      + "#endif\n"
-      + "layout(location = 0) out vec4 _GLF_color;\n"
-      + "uniform vec2 resolution;\n"
-      + "void main()\n"
-      + "{\n"
-      + "  _GLF_color = vec4(gl_FragCoord.x/resolution.x, gl_FragCoord.y/resolution.y, 1.0, 1.0);\n"
-      + "}\n";
-
-  private final String sanityFragmentSource100 = ""
+  private static final String sanityFragmentSource100 = ""
           + "#version 100\n"
           + "#ifdef GL_ES\n"
           + "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
@@ -189,7 +169,7 @@ public class Main extends ApplicationAdapter {
           + "  gl_FragColor = vec4(gl_FragCoord.x/resolution.x, gl_FragCoord.y/resolution.y, 1.0, 1.0);\n"
           + "}\n";
 
-  private String sanityFragmentSource = sanityFragmentSource100;
+  //private String sanityFragmentSource = sanityFragmentSource100;
 
   private final String sanityUniformsInfo = ""
       + "{\n"
@@ -252,18 +232,6 @@ public class Main extends ApplicationAdapter {
     Gdx.graphics.getGL20().glEnable(GL20.GL_TEXTURE_2D);
     Gdx.graphics.getGL20().glEnable(GL20.GL_DEPTH_TEST);
     Gdx.graphics.getGL20().glDepthFunc(GL20.GL_LESS);
-
-    // If on mobile and OpenGL ES 3, change the default shaders to version 300 es.
-    switch (Gdx.app.getType()) {
-      case Android:
-      case iOS:
-        if (gl30 != null) {
-          defaultVertexShader = defaultVertexShader300es;
-          sanityFragmentSource = sanityFragmentSource300es;
-        }
-      default:
-        break;
-    }
 
     standardMesh = buildFullScreenQuadMesh();
 
@@ -768,7 +736,12 @@ public class Main extends ApplicationAdapter {
       case SANITY_INIT_PREPARE:
         Gdx.app.log("Main", "SANITY_INIT_PREPARE");
         clearProgram();
-        prepareProgram(defaultVertexShader, sanityFragmentSource, sanityUniformsInfo, false);
+        // For sanity checking, always use GLSL ES 100 shaders.  It really should not matter,
+        // and we can rely on all platforms supporting these.
+        prepareProgram(defaultVertexShader100,
+                sanityFragmentSource100,
+                sanityUniformsInfo,
+                false);
         sanityCounter = 0;
         updateState(WorkerState.SANITY_INIT_RENDER);
         break;
@@ -796,14 +769,9 @@ public class Main extends ApplicationAdapter {
         appendTimedErrMsg(state.toString());
         Gdx.app.log("Main","IMAGE_PREPARE");
         try {
-          String vertexSource;
-          if (job.imageJob.isSetVertexSource()) {
-            vertexSource = job.imageJob.vertexSource;
-          } else {
-            // We used to check the fragment shader version,
-            // but it seems like we stopped doing that once we added a vertex shader to an image job.
-            vertexSource = defaultVertexShader;
-          }
+          final String vertexSource = job.imageJob.isSetVertexSource()
+                  ? job.imageJob.vertexSource
+                  : chooseDefaultVertexShader(job.imageJob.fragmentSource);
           prepareProgram(vertexSource, job.imageJob.fragmentSource,
               job.imageJob.uniformsInfo,false);
           updateState(WorkerState.IMAGE_VALIDATE_PROGRAM);
@@ -959,7 +927,11 @@ public class Main extends ApplicationAdapter {
         persistentData.setBool(Constants.PERSISTENT_KEY_SANITY, false);
         clearProgram();
         try {
-          prepareProgram(defaultVertexShader, sanityFragmentSource, sanityUniformsInfo,false);
+          // For sanity checking, it should suffice to use shaders with version GLSL 100 ES.
+          prepareProgram(defaultVertexShader100,
+                  sanityFragmentSource100,
+                  sanityUniformsInfo,
+                  false);
         } catch (PrepareShaderException e) {
           Gdx.app.log("Main", "Sanity preparation failed");
           persistentData.appendErrMsg("ERROR PREPARE_SANITY");
@@ -1397,5 +1369,13 @@ public class Main extends ApplicationAdapter {
     return mesh;
   }
 
+  private static String chooseDefaultVertexShader(String fragmentSource) {
+    if (fragmentSource.startsWith("#version 100")) {
+      return defaultVertexShader100;
+    }
+    // TODO: This evidently won't be the right choice if the version string in the fragment shader is something
+    // different from "#version 300 es".
+    return defaultVertexShader300es;
+  }
 
 }
