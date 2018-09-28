@@ -122,8 +122,8 @@ def getImageVulkanAndroid(frag):
 
     adb('push test.vert.spv test.frag.spv test.json /sdcard/graphicsfuzz/')
 
-    # clean logcat
-    adb('logcat -b crash -b system -c')
+    # clean all buffers of logcat
+    adb('logcat -b all -c')
 
     runtestcmd = 'shell am start -W'
     runtestcmd += ' -n ' + app + '/android.app.NativeActivity'
@@ -215,7 +215,7 @@ def doImageJob(imageJob):
         res.log += '\n#### LOG END\n'
 
     # Always add ADB logcat
-    adb('logcat -b crash -b system -d > logcat.txt')
+    adb('logcat -b crash -b system -b main -b events -d > logcat.txt')
     res.log += '\n#### ADB LOGCAT START\n'
     with open('logcat.txt', 'r') as f:
         res.log += f.read()
