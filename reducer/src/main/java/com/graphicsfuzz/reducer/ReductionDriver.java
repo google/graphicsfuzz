@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.reducer.glslreducers.IReductionPlan;
 import com.graphicsfuzz.reducer.glslreducers.MasterPlan;
 import com.graphicsfuzz.reducer.glslreducers.NoMoreToReduceException;
@@ -29,7 +30,6 @@ import com.graphicsfuzz.reducer.util.Simplify;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -48,9 +48,15 @@ public class ReductionDriver {
   private static final int NUM_INITIAL_TRIES = 5;
 
   private final boolean verbose;
+
+  private final ReductionOpportunityContext context;
+
   private final IReductionPlan plan;
 
   private ShaderJob newState;
+
+  // This is used for Vulkan compatibility.
+  private final boolean requiresUniformBindings;
 
   private ShaderJob state;
   private int numReductionAttempts;
@@ -59,22 +65,30 @@ public class ReductionDriver {
   private final Set<String> failHashes;
   private final Set<String> passHashes;
 
-  public ReductionDriver(ReductionOpportunityContext reductionOpportunityContext,
+  public ReductionDriver(ReductionOpportunityContext context,
                          boolean verbose,
                          ShaderJob initialState) {
     this.verbose = verbose;
-    this.plan = new MasterPlan(
-          reductionOpportunityContext, verbose);
+    this.context = context;
+    this.plan = new MasterPlan(context, verbose);
+    this.state = null;
     this.newState = initialState;
+    this.requiresUniformBindings = this.newState.hasUniformBindings();
     this.failHashes = new HashSet<>();
     this.passHashes = new HashSet<>();
+
+    if (this.newState.hasUniformBindings()) {
+      // We eliminate uniform bindings while applying reduction steps, and re-introduce them
+      // each time we emit shaders.
+      this.newState.removeUniformBindings();
+    }
+
   }
 
   public String doReduction(
-        String initialFilePrefix,
+        String shaderJobShortName,
         int fileCountOffset, // Used when continuing a reduction - added on to the number associated
         // with each reduction step during the current reduction.
-        IReductionStateFileWriter fileWriter,
         IFileJudge judge,
         File workDir,
         int stepLimit) throws IOException {
@@ -82,11 +96,11 @@ public class ReductionDriver {
     try {
 
       if (fileCountOffset > 0) {
-        LOGGER.info("Continuing reduction for {}", initialFilePrefix);
+        LOGGER.info("Continuing reduction for {}", shaderJobShortName);
       } else {
-        LOGGER.info("Starting reduction for {}", initialFilePrefix);
+        LOGGER.info("Starting reduction for {}", shaderJobShortName);
         for (int i = 1; ; i++) {
-          if (judge.isInteresting(initialFilePrefix)) {
+          if (judge.isInteresting(workDir, shaderJobShortName)) {
             break;
           }
           LOGGER.info("Result from initial state is not interesting (attempt " + i + ")");
@@ -99,9 +113,6 @@ public class ReductionDriver {
         LOGGER.info("Result from initial state is interesting - proceeding with reduction.");
       }
 
-      final String variantName = Paths.get(workDir.getAbsolutePath(),
-          FilenameUtils.getBaseName(initialFilePrefix)).toString();
-
       boolean isInteresting = true;
       int stepCount = 0;
       boolean stoppedEarly = false;
@@ -113,11 +124,15 @@ public class ReductionDriver {
         }
         ++stepCount;
         final int currentReductionAttempt = numReductionAttempts + fileCountOffset;
-        String outputFilesPrefix = getReductionStepFilenamePrefix(variantName,
+        String currentShaderJobShortName = getReductionStepShaderJobShortName(
+            shaderJobShortName,
             currentReductionAttempt);
-        fileWriter.writeFilesFromState(newState, outputFilesPrefix);
-        isInteresting = isInterestingWithCache(judge, outputFilesPrefix);
-        renameReductionStepFiles(isInteresting, variantName, currentReductionAttempt, workDir);
+        writeState(newState, workDir, currentShaderJobShortName);
+        isInteresting = isInterestingWithCache(judge, workDir, currentShaderJobShortName);
+        renameReductionStepFiles(isInteresting,
+            shaderJobShortName,
+            currentReductionAttempt,
+            workDir);
 
         if (stepLimit > -1 && stepCount >= stepLimit) {
           LOGGER.info("Stopping reduction due to hitting step limit {}.", stepLimit);
@@ -129,13 +144,13 @@ public class ReductionDriver {
 
       ShaderJob finalState = getSimplifiedState();
 
-      String finalOutputFilePrefix = variantName + "_reduced_final";
-      fileWriter.writeFilesFromState(finalState, finalOutputFilePrefix);
+      String finalOutputFilePrefix = shaderJobShortName + "_reduced_final";
+      writeState(finalState, workDir, finalOutputFilePrefix);
 
-      if (!judge.isInteresting(finalOutputFilePrefix)) {
+      if (!judge.isInteresting(workDir, finalOutputFilePrefix)) {
         LOGGER.info(
               "Failed to simplify final reduction state! Reverting to the non-simplified state.");
-        fileWriter.writeFilesFromState(finalState, finalOutputFilePrefix);
+        writeState(state, workDir, finalOutputFilePrefix);
       }
 
       if (stoppedEarly) {
@@ -149,16 +164,22 @@ public class ReductionDriver {
     }
   }
 
-  private boolean isInterestingWithCache(IFileJudge judge, String outputFilesPrefix)
+  private void writeState(ShaderJob state, File workDir, String outputFilesPrefix)
+      throws IOException {
+    Helper.emitShaderJob(state, context.getShadingLanguageVersion(),
+        outputFilesPrefix, workDir, null);
+  }
+
+  private boolean isInterestingWithCache(IFileJudge judge, File workDir, String outputFilesPrefix)
         throws FileJudgeException, IOException {
-    final String hash = getMD5(outputFilesPrefix);
+    final String hash = getMD5(workDir, outputFilesPrefix);
     if (failHashes.contains(hash)) {
       return false;
     }
     if (passHashes.contains(hash)) {
       throw new RuntimeException("Reduction loop detected!");
     }
-    boolean result = judge.isInteresting(outputFilesPrefix);
+    boolean result = judge.isInteresting(workDir, outputFilesPrefix);
     if (result) {
       passHashes.add(hash);
     } else {
@@ -167,26 +188,28 @@ public class ReductionDriver {
     return result;
   }
 
-  public static String getReductionStepFilenamePrefix(String variantName,
-        int currentReductionAttempt,
-        Optional<String> successIndicator) {
-    return variantName + "_reduced_" + String.format("%04d", currentReductionAttempt)
+  public static String getReductionStepShaderJobShortName(String variantPrefix,
+                                                          int currentReductionAttempt,
+                                                          Optional<String> successIndicator) {
+    return variantPrefix + "_reduced_" + String.format("%04d", currentReductionAttempt)
           + successIndicator
           .flatMap(item -> Optional.of("_" + item))
           .orElse("");
   }
 
-  private String getReductionStepFilenamePrefix(String variantName, int currentReductionAttempt) {
-    return getReductionStepFilenamePrefix(variantName, currentReductionAttempt, Optional.empty());
+  private String getReductionStepShaderJobShortName(String variantPrefix,
+                                                    int currentReductionAttempt) {
+    return getReductionStepShaderJobShortName(variantPrefix, currentReductionAttempt,
+        Optional.empty());
   }
 
-  private void renameReductionStepFiles(boolean isInteresting, String variantName,
+  private void renameReductionStepFiles(boolean isInteresting, String variantPrefix,
         int currentReductionAttempt,
         File workDir) throws IOException {
     for (String fileName : workDir.list((dir, name) -> FilenameUtils.removeExtension(name)
-          .equals(getReductionStepFilenamePrefix(variantName, currentReductionAttempt)))) {
+          .equals(getReductionStepShaderJobShortName(variantPrefix, currentReductionAttempt)))) {
       final File srcFile = new File(workDir, fileName);
-      final File dstFile = new File(workDir, getReductionStepFilenamePrefix(variantName,
+      final File dstFile = new File(workDir, getReductionStepShaderJobShortName(variantPrefix,
           currentReductionAttempt,
           Optional.of(isInteresting ? "success" : "fail"))
           + "." + FilenameUtils.getExtension(fileName));
@@ -196,9 +219,10 @@ public class ReductionDriver {
     }
   }
 
-  private String getMD5(String filesPrefix) throws IOException {
-    final File vertexShaderFile = new File(filesPrefix + ".vert");
-    final File fragmentShaderFile = new File(filesPrefix + ".frag");
+  private String getMD5(File workDir, String filesPrefix) throws IOException {
+    final File vertexShaderFile = new File(workDir, filesPrefix + ".vert");
+    final File fragmentShaderFile = new File(workDir,filesPrefix + ".frag");
+    assert vertexShaderFile.exists() || fragmentShaderFile.exists();
     byte[] vertexData = vertexShaderFile.exists()
         ? FileUtils.readFileToByteArray(vertexShaderFile)
         : new byte[0];

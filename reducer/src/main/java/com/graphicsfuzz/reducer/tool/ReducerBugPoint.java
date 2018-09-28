@@ -25,9 +25,7 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.UniformsInfo;
-import com.graphicsfuzz.reducer.IReductionStateFileWriter;
 import com.graphicsfuzz.reducer.ReductionDriver;
-import com.graphicsfuzz.reducer.glslreducers.GlslReductionStateFileWriter;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import java.io.File;
 import java.io.FileFilter;
@@ -152,8 +150,6 @@ public class ReducerBugPoint {
           Optional.empty(),
           Optional.of(interestingTranslationUnit),
           new UniformsInfo(interestingJson));
-      IReductionStateFileWriter fileWriter = new GlslReductionStateFileWriter(
-          shadingLanguageVersion);
 
       try {
 
@@ -165,7 +161,6 @@ public class ReducerBugPoint {
               10,
               1), verbose, initialState)
               .doReduction(FilenameUtils.removeExtension(interestingFile.getAbsolutePath()), 0,
-                    fileWriter,
                     new RandomFileJudge(generator, 10,
                           ns.getBoolean("exception_on_invalid")),
                     workDir,

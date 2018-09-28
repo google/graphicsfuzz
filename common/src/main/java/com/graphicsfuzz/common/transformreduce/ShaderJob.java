@@ -15,4 +15,10 @@ public interface ShaderJob {
 
   UniformsInfo getUniformsInfo();
 
+  void makeUniformBindings();
+
+  void removeUniformBindings();
+
+  boolean hasUniformBindings();
+
 }

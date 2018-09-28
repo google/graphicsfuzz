@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.tool;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.reducer.IFileJudge;
 import com.graphicsfuzz.reducer.util.ShaderJudgeUtil;
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -45,9 +46,9 @@ public class RandomFileJudge implements IFileJudge {
   }
 
   @Override
-  public boolean isInteresting(String filesPrefix) {
+  public boolean isInteresting(File workDir, String shaderJobShortName) {
     try {
-      if (!ShaderJudgeUtil.shadersAreValid(filesPrefix, throwExceptionOnInvalid)) {
+      if (!ShaderJudgeUtil.shadersAreValid(shaderJobShortName, throwExceptionOnInvalid)) {
         return false;
       }
     } catch (IOException | InterruptedException ex) {
