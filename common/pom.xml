@@ -74,9 +74,5 @@ limitations under the License.
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>util</artifactId>
     </dependency>
-    <dependency>
-      <groupId>net.sourceforge.argparse4j</groupId>
-      <artifactId>argparse4j</artifactId>
-    </dependency>
   </dependencies>
 </project>
