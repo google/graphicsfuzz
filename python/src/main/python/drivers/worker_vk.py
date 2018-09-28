@@ -30,8 +30,6 @@ sys.path.append(
     os.path.dirname(os.path.dirname(HERE))
 )
 
-import vulkanize
-
 from fuzzer_service import FuzzerService
 import fuzzer_service.ttypes as tt
 from thrift.transport import THttpClient, TTransport
@@ -81,7 +79,7 @@ void main (void) {
 ################################################################################
 
 def prepareShaders(frag):
-    vulkanize.vulkanize(frag, 'test')
+    shutil.copy(frag, 'test.frag')
     prepareVertFile()
 
     host = platform.system()
