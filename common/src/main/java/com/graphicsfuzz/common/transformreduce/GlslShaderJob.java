@@ -63,6 +63,7 @@ public class GlslShaderJob implements ShaderJob {
    * <p>The method then puts every uniform in its own uniform block and assigns bindings.
    * If a uniform is declared in both shaders, the binding it is given is common to them.</p>
    */
+  @Override
   public void makeUniformBindings() {
     for (String uniformName : getUniformsInfo().getUniformNames()) {
       assert !getUniformsInfo().hasBinding(uniformName);
@@ -128,6 +129,7 @@ public class GlslShaderJob implements ShaderJob {
    *
    * <p>The method removes all bindings and demotes the uniform blocks to plain uniforms.</p>
    */
+  @Override
   public void removeUniformBindings() {
     for (String uniformName : getUniformsInfo().getUniformNames()) {
       assert getUniformsInfo().hasBinding(uniformName);
@@ -160,6 +162,16 @@ public class GlslShaderJob implements ShaderJob {
       }
       maybeTu.get().setTopLevelDeclarations(newTopLevelDeclarations);
     }
+  }
+
+  @Override
+  public boolean hasUniformBindings() {
+    for (String uniformName : getUniformsInfo().getUniformNames()) {
+      // We maintain the invariant that either all or no uniforms have bindings, so it suffices
+      // to check the first one we come across.
+      return getUniformsInfo().hasBinding(uniformName);
+    }
+    return false;
   }
 
 }

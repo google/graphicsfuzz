@@ -39,28 +39,24 @@ public class ImageShaderFileJudge implements IFileJudge {
 
   private static final String REFERENCE_IMAGE_NAME = "reference_image.png";
 
-  private File workDir;
   private IImageFileComparator fileComparator;
   private IShaderDispatcher imageGenerator;
   private final boolean throwExceptionOnValidationError;
 
-  public ImageShaderFileJudge(
-        File workDir,
-        IImageFileComparator fileComparator,
+  public ImageShaderFileJudge(IImageFileComparator fileComparator,
         IShaderDispatcher imageGenerator,
         boolean throwExceptionOnValidationError) {
-    this.workDir = workDir;
     this.fileComparator = fileComparator;
     this.imageGenerator = imageGenerator;
     this.throwExceptionOnValidationError = throwExceptionOnValidationError;
   }
 
   public static File getReferenceImageInWorkDir(File workDir) {
-    return Paths.get(workDir.toString(), REFERENCE_IMAGE_NAME).toFile();
+    return new File(workDir, REFERENCE_IMAGE_NAME);
   }
 
   @Override
-  public boolean isInteresting(String filesPrefix) throws FileJudgeException {
+  public boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException {
 
     // 1. Shader files validate.
     // 2. Generate image.
@@ -68,15 +64,17 @@ public class ImageShaderFileJudge implements IFileJudge {
 
     try {
       // 1.
-      if (!ShaderJudgeUtil.shadersAreValid(filesPrefix, throwExceptionOnValidationError)) {
+      if (!ShaderJudgeUtil.shadersAreValid(shaderJobShortName, throwExceptionOnValidationError)) {
         return false;
       }
       // 2.
 
-      File outputImage = new File(workDir, FilenameUtils.getBaseName(filesPrefix) + ".png");
-      File outputText = new File(workDir, FilenameUtils.getBaseName(filesPrefix) + ".txt");
+      File outputImage = new File(workDir, FilenameUtils.getBaseName(shaderJobShortName) + ".png");
+      File outputText = new File(workDir, FilenameUtils.getBaseName(shaderJobShortName) + ".txt");
       ImageJobResult imageRes = imageGenerator
-            .getImage(filesPrefix, outputImage, false);
+            .getImage(Paths.get(workDir.getAbsolutePath(), shaderJobShortName).toString(),
+                outputImage,
+                false);
 
       switch (imageRes.getStatus()) {
         case SUCCESS:

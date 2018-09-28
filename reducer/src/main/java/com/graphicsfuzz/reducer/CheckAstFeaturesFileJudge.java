@@ -37,13 +37,14 @@ public class CheckAstFeaturesFileJudge implements IFileJudge {
   }
 
   @Override
-  public boolean isInteresting(String filesPrefix) throws FileJudgeException {
+  public boolean isInteresting(File workDir, String shaderJobShortName) {
     try {
-      final TranslationUnit tu = Helper.parse(new File(filesPrefix + shaderKind.getFileExtension()),
+      final TranslationUnit tu =
+          Helper.parse(new File(workDir, shaderJobShortName + shaderKind.getFileExtension()),
           true);
       return visitorSuppliers.stream().allMatch(item -> item.get().check(tu));
     } catch (IOException | ParseTimeoutException exception) {
-      return false;
+      throw new RuntimeException(exception);
     }
   }
 

@@ -34,18 +34,15 @@ public class ImageGenErrorShaderFileJudge implements IFileJudge {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ImageGenErrorShaderFileJudge.class);
 
-  private File workingDir;
   private Pattern pattern;
   private IShaderDispatcher imageGenerator;
   private final boolean skipRender;
   private final boolean throwExceptionOnValidationError;
 
-  public ImageGenErrorShaderFileJudge(File workingDir,
-        Pattern pattern,
+  public ImageGenErrorShaderFileJudge(Pattern pattern,
         IShaderDispatcher imageGenerator,
         boolean skipRender,
         boolean throwExceptionOnValidationError) {
-    this.workingDir = workingDir;
     this.pattern = pattern;
     this.imageGenerator = imageGenerator;
     this.skipRender = skipRender;
@@ -53,25 +50,26 @@ public class ImageGenErrorShaderFileJudge implements IFileJudge {
   }
 
   @Override
-  public boolean isInteresting(String filesPrefix) throws FileJudgeException {
+  public boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException {
 
     // 1. Shader file validates.
     // 2. Generate image.
 
     try {
-      if (!ShaderJudgeUtil.shadersAreValid(filesPrefix, throwExceptionOnValidationError)) {
+      if (!ShaderJudgeUtil.shadersAreValid(shaderJobShortName, throwExceptionOnValidationError)) {
         return false;
       }
       // 2.
-      File outputImage = new File(workingDir, filesPrefix + ".png");
+      File outputImage = new File(workDir, shaderJobShortName + ".png");
 
-      ImageJobResult imageRes = imageGenerator.getImage(filesPrefix, outputImage, skipRender);
+      ImageJobResult imageRes = imageGenerator.getImage(shaderJobShortName, outputImage,
+          skipRender);
       if (outputImage.isFile()) {
         outputImage.delete();
       }
 
-      File outputText = new File(workingDir,
-          filesPrefix + ".txt");
+      File outputText = new File(workDir,
+          shaderJobShortName + ".txt");
 
       switch (imageRes.getStatus()) {
         case SUCCESS:

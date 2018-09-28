@@ -91,8 +91,10 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     if (isZeroFloat(thisHandSide)) {
       addReplaceWithExpr(parent, child, thatHandSide);
     }
-    if (typer.lookupType(child).getWithoutQualifiers()
-        .equals(typer.lookupType(thatHandSide).getWithoutQualifiers())) {
+    final Type childType = typer.lookupType(child);
+    final Type thatHandSideType = typer.lookupType(thatHandSide);
+    if (childType != null && thatHandSideType != null
+        && childType.getWithoutQualifiers().equals(thatHandSideType.getWithoutQualifiers())) {
       if (isZeroFloatVecOrSquareMat(thisHandSide)) {
         addReplaceWithExpr(parent, child, thatHandSide);
       }
@@ -106,8 +108,10 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     if (isOneFloat(thisHandSide)) {
       addReplaceWithExpr(parent, child, thatHandSide);
     }
-    if (typer.lookupType(child).getWithoutQualifiers()
-        .equals(typer.lookupType(thisHandSide).getWithoutQualifiers())) {
+    final Type childType = typer.lookupType(child);
+    final Type thisHandSideType = typer.lookupType(thisHandSide);
+    if (childType != null && thisHandSideType != null
+        && childType.getWithoutQualifiers().equals(thisHandSideType.getWithoutQualifiers())) {
       if (isOneFloatVec(thisHandSide) || isIdentityMatrix(thisHandSide)) {
         addReplaceWithExpr(parent, child, thatHandSide);
       }
@@ -121,8 +125,10 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     if (isZeroFloat(thisHandSide)) {
       addReplaceWithZero(parent, child);
     }
-    if (typer.lookupType(child).getWithoutQualifiers()
-        .equals(typer.lookupType(thatHandSide).getWithoutQualifiers())) {
+    final Type childType = typer.lookupType(child);
+    final Type thatHandSideType = typer.lookupType(thatHandSide);
+    if (childType != null && thatHandSideType != null
+        && childType.getWithoutQualifiers().equals(thatHandSideType.getWithoutQualifiers())) {
       if (isZeroFloatVecOrSquareMat(thisHandSide)) {
         addReplaceWithZero(parent, child);
       }
@@ -136,8 +142,10 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     if (isZeroFloat(rhs)) {
       addReplaceWithExpr(parent, child, lhs);
     }
-    if (typer.lookupType(child).getWithoutQualifiers()
-        .equals(typer.lookupType(lhs).getWithoutQualifiers())) {
+    final Type childType = typer.lookupType(child);
+    final Type lhsType = typer.lookupType(lhs);
+    if (childType != null && lhsType != null
+        && childType.getWithoutQualifiers().equals(lhsType.getWithoutQualifiers())) {
       if (isZeroFloatVecOrSquareMat(rhs)) {
         addReplaceWithExpr(parent, child, lhs);
       }
@@ -151,8 +159,10 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     if (isZeroFloat(lhs)) {
       addReplaceWithExpr(parent, child, new ParenExpr(new UnaryExpr(rhs, UnOp.MINUS)));
     }
-    if (typer.lookupType(child).getWithoutQualifiers()
-        .equals(typer.lookupType(rhs).getWithoutQualifiers())) {
+    final Type childType = typer.lookupType(child);
+    final Type rhsType = typer.lookupType(rhs);
+    if (childType != null && rhsType != null
+        && childType.getWithoutQualifiers().equals(rhsType.getWithoutQualifiers())) {
       if (isZeroFloatVecOrSquareMat(lhs)) {
         addReplaceWithExpr(parent, child, new ParenExpr(new UnaryExpr(rhs, UnOp.MINUS)));
       }
@@ -166,8 +176,10 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     if (isOneFloat(rhs)) {
       addReplaceWithExpr(parent, child, lhs);
     }
-    if (typer.lookupType(child).getWithoutQualifiers()
-        .equals(typer.lookupType(lhs).getWithoutQualifiers())) {
+    final Type childType = typer.lookupType(child);
+    final Type lhsType = typer.lookupType(lhs);
+    if (childType != null && lhsType != null
+        && childType.getWithoutQualifiers().equals(lhsType.getWithoutQualifiers())) {
       if (isOneFloatVec(rhs)) {
         addReplaceWithExpr(parent, child, lhs);
       }
@@ -239,9 +251,9 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       return false;
     }
     final TypeConstructorExpr tce = (TypeConstructorExpr) expr;
-    final Type type = typer.lookupType(expr);
+    final Type exprType = typer.lookupType(expr);
     if (!Arrays.asList(BasicType.MAT2X2, BasicType.MAT3X3, BasicType.MAT4X4)
-        .contains(type)) {
+        .contains(exprType)) {
       return false;
     }
     if (tce.getNumArgs() == 1 && isOneFloat(tce.getArg(0))) {
@@ -249,7 +261,7 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     }
 
     // Check whether the matrix constructor has the exact form of an identity matrix.
-    final int dim = (int) Math.sqrt(((BasicType) type).getNumElements());
+    final int dim = (int) Math.sqrt(((BasicType) exprType).getNumElements());
     if (tce.getNumArgs() != dim * dim) {
       return false;
     }

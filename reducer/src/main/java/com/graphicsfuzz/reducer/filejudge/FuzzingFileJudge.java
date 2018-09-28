@@ -28,21 +28,18 @@ import org.apache.commons.io.FileUtils;
 
 public class FuzzingFileJudge implements IFileJudge {
 
-  private final File workingDir;
   private final File crashes;
   private final IShaderDispatcher imageGenerator;
 
   private int canonicalHash = 256;
 
-  public FuzzingFileJudge(File workingDir,
-        File corpus, IShaderDispatcher imageGenerator) {
-    this.workingDir = workingDir;
+  public FuzzingFileJudge(File corpus, IShaderDispatcher imageGenerator) {
     this.crashes = new File(corpus, "crashes");
     this.imageGenerator = imageGenerator;
   }
 
   @Override
-  public boolean isInteresting(String filesPrefix) throws FileJudgeException {
+  public boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException {
     throw new RuntimeException();
     /*
     try {

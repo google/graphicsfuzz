@@ -16,8 +16,10 @@
 
 package com.graphicsfuzz.reducer;
 
+import java.io.File;
+
 public interface IFileJudge {
 
-  boolean isInteresting(String filesPrefix) throws FileJudgeException;
+  boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException;
 
 }

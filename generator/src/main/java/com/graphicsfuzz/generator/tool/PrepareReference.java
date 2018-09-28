@@ -19,6 +19,7 @@ package com.graphicsfuzz.generator.tool;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -124,7 +125,7 @@ public final class PrepareReference {
     final File fragmentShaderFile =
         new File(referencePrefix + ShaderKind.FRAGMENT.getFileExtension());
 
-    final GlslShaderJob shaderJob = new GlslShaderJob(
+    final ShaderJob shaderJob = new GlslShaderJob(
         vertexShaderFile.isFile()
             ? Optional.of(Helper.parse(vertexShaderFile, false))
             : Optional.empty(),

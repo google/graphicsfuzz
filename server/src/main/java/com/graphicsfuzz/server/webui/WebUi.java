@@ -938,8 +938,8 @@ public class WebUi extends HttpServlet {
       case EXCEPTION:
         htmlAppendLn("<p>Reduction failed with an exception:</p>",
             "<textarea readonly rows='25' cols='80'>\n",
-            getFileContents(ReductionProgressHelper.getReductionExceptionFile(shader,
-                ReductionFilesHelper.getReductionDir(token, shaderset, shader))),
+            getFileContents(ReductionProgressHelper.getReductionExceptionFile(
+                ReductionFilesHelper.getReductionDir(token, shaderset, shader), shader)),
             "</textarea>");
         break;
 
@@ -1044,7 +1044,7 @@ public class WebUi extends HttpServlet {
       return ReductionStatus.NOTINTERESTING;
     }
 
-    if (ReductionProgressHelper.getReductionExceptionFile(shader, reductionDir).exists()) {
+    if (ReductionProgressHelper.getReductionExceptionFile(reductionDir, shader).exists()) {
       return ReductionStatus.EXCEPTION;
     }
 
