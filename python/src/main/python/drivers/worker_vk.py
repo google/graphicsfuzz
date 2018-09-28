@@ -125,7 +125,7 @@ def getImageVulkanAndroid(frag):
     # clean logcat
     adb('logcat -b crash -b system -c')
 
-    runtestcmd = 'shell am start'
+    runtestcmd = 'shell am start -W'
     runtestcmd += ' -n ' + app + '/android.app.NativeActivity'
 
     print('* Will run: ' + runtestcmd)
@@ -138,19 +138,33 @@ def getImageVulkanAndroid(frag):
     crash = False
     done = False
 
+    # Busy-wait on the worker (not ideal, but there is no simple way to receive
+    # a signal when the app is done)
     while time.time() < deadline:
 
-        retcode = adb('shell pidof ' + app + ' > /dev/null')
-        if retcode == 1:
-            crash = True
-            break
+        # Begin the busy-wait loop by sleeping to let the app start
+        # properly. Apparently the -W flag of adb is not enough to be sure the
+        # app has started, which can lead to failure to detect pid for this app
+        # although it is being started.
+        time.sleep(0.1)
 
         retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE')
         if retcode == 0:
             done = True
             break
-        else:
-            time.sleep(0.1)
+
+        retcode = adb('shell pidof ' + app + ' > /dev/null')
+        if retcode == 1:
+
+            # double check that no DONE file is present
+            retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE')
+            if retcode == 0:
+                done = True
+                break
+
+            # No pid, and no DONE file, this looks like a crash indeed.
+            crash = True
+            break
 
     # Try to retrieve the log file in any case
     adb('pull /sdcard/graphicsfuzz/log.txt')
