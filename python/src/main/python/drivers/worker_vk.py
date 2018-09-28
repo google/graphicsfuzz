@@ -30,8 +30,6 @@ sys.path.append(
     os.path.dirname(os.path.dirname(HERE))
 )
 
-import vulkanize
-
 from fuzzer_service import FuzzerService
 import fuzzer_service.ttypes as tt
 from thrift.transport import THttpClient, TTransport
@@ -81,7 +79,7 @@ void main (void) {
 ################################################################################
 
 def prepareShaders(frag):
-    vulkanize.vulkanize(frag, 'test')
+    shutil.copy(frag, 'test.frag')
     prepareVertFile()
 
     host = platform.system()
@@ -124,10 +122,10 @@ def getImageVulkanAndroid(frag):
 
     adb('push test.vert.spv test.frag.spv test.json /sdcard/graphicsfuzz/')
 
-    # clean logcat
-    adb('logcat -b crash -b system -c')
+    # clean all buffers of logcat
+    adb('logcat -b all -c')
 
-    runtestcmd = 'shell am start'
+    runtestcmd = 'shell am start -W'
     runtestcmd += ' -n ' + app + '/android.app.NativeActivity'
 
     print('* Will run: ' + runtestcmd)
@@ -140,19 +138,33 @@ def getImageVulkanAndroid(frag):
     crash = False
     done = False
 
+    # Busy-wait on the worker (not ideal, but there is no simple way to receive
+    # a signal when the app is done)
     while time.time() < deadline:
 
-        retcode = adb('shell pidof ' + app + ' > /dev/null')
-        if retcode == 1:
-            crash = True
-            break
+        # Begin the busy-wait loop by sleeping to let the app start
+        # properly. Apparently the -W flag of adb is not enough to be sure the
+        # app has started, which can lead to failure to detect pid for this app
+        # although it is being started.
+        time.sleep(0.1)
 
         retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE')
         if retcode == 0:
             done = True
             break
-        else:
-            time.sleep(0.1)
+
+        retcode = adb('shell pidof ' + app + ' > /dev/null')
+        if retcode == 1:
+
+            # double check that no DONE file is present
+            retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE')
+            if retcode == 0:
+                done = True
+                break
+
+            # No pid, and no DONE file, this looks like a crash indeed.
+            crash = True
+            break
 
     # Try to retrieve the log file in any case
     adb('pull /sdcard/graphicsfuzz/log.txt')
@@ -203,7 +215,7 @@ def doImageJob(imageJob):
         res.log += '\n#### LOG END\n'
 
     # Always add ADB logcat
-    adb('logcat -b crash -b system -d > logcat.txt')
+    adb('logcat -b crash -b system -b main -b events -d > logcat.txt')
     res.log += '\n#### ADB LOGCAT START\n'
     with open('logcat.txt', 'r') as f:
         res.log += f.read()
