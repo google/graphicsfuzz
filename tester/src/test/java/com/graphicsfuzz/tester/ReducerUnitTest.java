@@ -249,7 +249,9 @@ public class ReducerUnitTest {
     final File shaderFile = Paths.get(TestShadersDirectory.getTestShadersDirectory(),
         "reducerregressions", "misc1.frag").toFile();
     final String outputFilesPrefix = runReductionOnShader(shaderFile, involvesSpecificBinaryOperator);
-    PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(new File(outputFilesPrefix + ".frag"), true));
+    PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(new File(temporaryFolder.getRoot(),
+            outputFilesPrefix + ".frag"),
+        true));
     // TODO: assert something about the result.
   }
 
