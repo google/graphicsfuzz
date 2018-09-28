@@ -108,6 +108,10 @@ def prepare_reference_shaders(reference_prefix, output_file_prefix, glsl_version
       cmd += [ "--replace_float_literals" ]
     if args.webgl:
       cmd += [ "--webgl" ]
+    if args.generate_uniform_bindings:
+      cmd += [ "--generate_uniform_bindings" ]
+    if args.max_uniforms is not None:
+      cmd += [ "--max_uniforms", str(args.max_uniforms - 1) ] # We subtract 1 because we need to be able to add injectionSwitch
     if args.verbose:
       print("Reference preparation command: %s" % (" ".join(cmd)))
     prepare_reference_proc = subprocess.Popen(cmd, \
