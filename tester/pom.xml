@@ -38,18 +38,22 @@ limitations under the License.
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>ast</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>common</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>reducer</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>generator</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
@@ -59,14 +63,12 @@ limitations under the License.
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>util</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
