@@ -14,10 +14,13 @@ public class ShaderJudgeUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(ShaderJudgeUtil.class);
 
   @SuppressWarnings("RedundantIfStatement")
-  public static boolean shadersAreValid(String shaderFilesPrefix, boolean throwExceptionOnInvalid)
+  public static boolean shadersAreValid(File workDir,
+                                        String shaderFilesPrefix,
+                                        boolean throwExceptionOnInvalid)
       throws IOException, InterruptedException {
-    final File fragmentShaderFile = new File(shaderFilesPrefix + ".frag");
-    final File vertexShaderFile = new File(shaderFilesPrefix + ".vert");
+    final File fragmentShaderFile = new File(workDir,shaderFilesPrefix + ".frag");
+    final File vertexShaderFile = new File(workDir,shaderFilesPrefix + ".vert");
+    assert fragmentShaderFile.isFile() || vertexShaderFile.isFile();
     if (fragmentShaderFile.isFile() && !shaderIsValid(fragmentShaderFile,
         throwExceptionOnInvalid)) {
       return false;
