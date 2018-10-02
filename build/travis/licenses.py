@@ -279,6 +279,92 @@ def get_extras():
             'skipped': '',
         },
 
+        'libgdx': {
+            'comment': '',
+            'name': 'LibGDX',
+            'url': 'https://github.com/libgdx/libgdx',
+            'license_url': 'https://raw.githubusercontent.com/libgdx/libgdx'
+                           '/621682e916ab7934edb7d25c88e8a1fac4b216dd/LICENSE',
+            'license_file': '',
+            'skipped': '',
+        },
+
+
+        'ar.com.hjg:pngj': {
+            'comment': 'License specified in Maven package.',
+            'name': 'PNGJ',
+            'url': 'https://github.com/leonbloy/pngj',
+            'license_url': 'http://www.apache.org/licenses/LICENSE-2.0.txt',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'com.android.support': {
+            'comment': '',
+            'name': 'Android support libraries',
+            'url': 'https://source.android.com/',
+            'license_url': '',
+            'license_file': 'build/licenses/android-support-libraries.txt',
+            'skipped': '',
+        },
+
+        'lwjgl3': {
+            'comment': '',
+            'name': 'LWJGL - Lightweight Java Game Library 3',
+            'url': 'https://github.com/LWJGL/lwjgl3',
+            'license_url': 'https://raw.githubusercontent.com/LWJGL/lwjgl3'
+                           '/e17a1f9872a8ca3a6f00acb4341f2df0ac0c27b7/LICENSE.md',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'jemalloc': {
+            'comment': '',
+            'name': 'jemalloc',
+            'url': 'https://github.com/jemalloc/jemalloc',
+            'license_url': 'https://raw.githubusercontent.com/jemalloc/jemalloc'
+                           '/115ce93562ab76f90a2509bf0640bc7df6b2d48f/COPYING',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'jna': {
+            'comment': '',
+            'name': 'jna',
+            'url': 'https://github.com/java-native-access/jna',
+            'license_url': 'https://raw.githubusercontent.com/java-native-access/jna'
+                           '/0463bc0504efd29f07c5d22ec7c6be56b358ac77/AL2.0',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'org.zeroturnaround:zt-exec': {
+            'comment': '',
+            'name': 'zt-exec',
+            'url': 'https://github.com/zeroturnaround/zt-exec',
+            'license_url': [
+                'https://raw.githubusercontent.com/zeroturnaround/zt-exec'
+                '/6c3b93b99bf3c69c9f41d6350bf7707005b6a4cd/NOTICE.txt',
+                'https://raw.githubusercontent.com/zeroturnaround/zt-exec'
+                '/6c3b93b99bf3c69c9f41d6350bf7707005b6a4cd/LICENSE',
+            ],
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'org.zeroturnaround:zt-process-killer': {
+            'comment': '',
+            'name': 'zt-process-killer',
+            'url': 'https://github.com/zeroturnaround/zt-process-killer',
+            'license_url': '',
+            'license_file': 'build/licenses/zt-process-killer.txt',
+            'skipped': '',
+        },
+
+
+
+
+
 
 
 
