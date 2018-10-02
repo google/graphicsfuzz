@@ -23,12 +23,14 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ZeroCannedRandom;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -642,6 +644,318 @@ public class ReductionOpportunitiesTest {
     ops.get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
+  }
+
+  @Test
+  public void testInterplayBetweenVectorizationAndIdentity() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("void main() {"
+        + "  float a;"
+        + "  float b;"
+        + "  vec2 GLF_merged2_0_1_1_1_1_1ab;"
+        + "  GLF_merged2_0_1_1_1_1_1ab.x = 5.0;"
+        + "  GLF_merged2_0_1_1_1_1_1ab.y = _GLF_IDENTITY(GLF_merged2_0_1_1_1_1_1ab, GLF_merged2_0_1_1_1_1_1ab + vec2(0.0)).x;"
+        + "}", false);
+    {
+      List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu,
+          new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+      assertEquals(0, ops.size());
+    }
+    {
+      List<MutationReductionOpportunity> ops = MutationReductionOpportunities.findOpportunities(tu,
+          new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+      assertEquals(1, ops.size());
+      ops.get(0).applyReduction();
+      CompareAsts.assertEqualAsts("void main() {"
+          + "  float a;"
+          + "  float b;"
+          + "  vec2 GLF_merged2_0_1_1_1_1_1ab;"
+          + "  GLF_merged2_0_1_1_1_1_1ab.x = 5.0;"
+          + "  GLF_merged2_0_1_1_1_1_1ab.y = GLF_merged2_0_1_1_1_1_1ab.x;"
+          + "}", tu);
+    }
+    {
+      List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu,
+          new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+      assertEquals(2, ops.size());
+      ops.get(0).applyReduction();
+      ops.get(1).applyReduction();
+      CompareAsts.assertEqualAsts("void main() {"
+          + "  float a;"
+          + "  float b;"
+          + "  vec2 GLF_merged2_0_1_1_1_1_1ab;"
+          + "  a = 5.0;"
+          + "  b = a;"
+          + "}", tu);
+    }
+    {
+      List<DeclarationReductionOpportunity> ops = DeclarationReductionOpportunities.findOpportunities(tu,
+          new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+      assertEquals(1, ops.size());
+      ops.get(0).applyReduction();
+      CompareAsts.assertEqualAsts("void main() {"
+          + "  float a;"
+          + "  float b;"
+          + "  a = 5.0;"
+          + "  b = a;"
+          + "}", tu);
+    }
+
+
+  }
+
+  @Test
+  public void reduceNestedVectors() throws Exception {
+    final String original =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
+            + "    float b = 2;\n"
+            + "    GLF_merged2_0_1_1_1_1_1bc.x = b;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = GLF_merged2_0_1_1_1_1_1bc.x;\n"
+            + "    float c = 3;\n"
+            + "    GLF_merged2_0_1_1_1_1_1bc.y = c;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = GLF_merged2_0_1_1_1_1_1bc.y;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
+            + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
+            + "}\n";
+    final TranslationUnit tu = Helper.parse(original, false);
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+        new ZeroCannedRandom(), null));
+    assertEquals(4, ops.size());
+
+    // (1) remove b from GLF_merged2_0_1_1_1_1_1bc
+    final String expected1 =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
+            + "    float b = 2;\n"
+            + "    b = b;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = b;\n"
+            + "    float c = 3;\n"
+            + "    GLF_merged2_0_1_1_1_1_1bc.y = c;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = GLF_merged2_0_1_1_1_1_1bc.y;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
+            + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
+            + "}\n";
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_1_1_1_1_1bc") && item.getComponentName().equals("b")).findAny().get().applyReduction();
+    CompareAsts.assertEqualAsts(expected1, tu);
+
+    // (2) remove GLF_merged3_0_1_1_1_1_1_2_1_1abc from GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca
+    final String expected2 =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
+            + "    float b = 2;\n"
+            + "    b = b;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
+            + "    float c = 3;\n"
+            + "    GLF_merged2_0_1_1_1_1_1bc.y = c;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = GLF_merged2_0_1_1_1_1_1bc.y;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
+            + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "}\n";
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca") && item.getComponentName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc")).findAny().get().applyReduction();
+    CompareAsts.assertEqualAsts(expected2, tu);
+
+    // (3) remove c from GLF_merged2_0_1_1_1_1_1bc
+    final String expected3 =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
+            + "    float b = 2;\n"
+            + "    b = b;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
+            + "    float c = 3;\n"
+            + "    c = c;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
+            + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "}\n";
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_1_1_1_1_1bc") && item.getComponentName().equals("c")).findAny().get().applyReduction();
+    CompareAsts.assertEqualAsts(expected3, tu);
+
+    // (4) remove a from GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca
+    final String expected4 =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1;\n"
+            + "    a = a;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = a;\n"
+            + "    float b = 2;\n"
+            + "    b = b;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
+            + "    float c = 3;\n"
+            + "    c = c;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
+            + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "}\n";
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca") && item.getComponentName().equals("a")).findAny().get().applyReduction();
+    CompareAsts.assertEqualAsts(expected4, tu);
+
+    // (5) remove dud statements (assignments of form t = t, and side-effect free expression
+    //     statements)
+    final String expected5 =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = a;\n"
+            + "    float b = 2;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
+            + "    float c = 3;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
+            + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "}\n";
+    List<StmtReductionOpportunity> stmtOps = StmtReductionOpportunities.findOpportunities(tu,
+        new ReductionOpportunityContext(false,
+        ShadingLanguageVersion.GLSL_440,
+        new ZeroCannedRandom(), null));
+    assertEquals(7, stmtOps.size());
+    for (StmtReductionOpportunity op : stmtOps) {
+      op.applyReduction();
+    }
+    CompareAsts.assertEqualAsts(expected5, tu);
+
+    ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+        new ZeroCannedRandom(), null));
+    assertEquals(3, ops.size());
+
+    // (6) remove a from GLF_merged3_0_1_1_1_1_1_2_1_1abc
+    final String expected6 =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1;\n"
+            + "    a = a;\n"
+            + "    float b = 2;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
+            + "    float c = 3;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
+            + "    return a;\n"
+            + "}\n";
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc") && item.getComponentName().equals("a")).findAny().get().applyReduction();
+    CompareAsts.assertEqualAsts(expected6, tu);
+
+    // (7) remove b from GLF_merged3_0_1_1_1_1_1_2_1_1abc
+    final String expected7 =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1;\n"
+            + "    a = a;\n"
+            + "    float b = 2;\n"
+            + "    b = b;\n"
+            + "    float c = 3;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
+            + "    return a;\n"
+            + "}\n";
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc") && item.getComponentName().equals("b")).findAny().get().applyReduction();
+    CompareAsts.assertEqualAsts(expected7, tu);
+
+    // (8) remove c from GLF_merged3_0_1_1_1_1_1_2_1_1abc
+    final String expected8 =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1;\n"
+            + "    a = a;\n"
+            + "    float b = 2;\n"
+            + "    b = b;\n"
+            + "    float c = 3;\n"
+            + "    c = c;\n"
+            + "    return a;\n"
+            + "}\n";
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc") && item.getComponentName().equals("c")).findAny().get().applyReduction();
+    CompareAsts.assertEqualAsts(expected8, tu);
+
+    // (9) remove dud statements
+    final String expected9 =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1;\n"
+            + "    float b = 2;\n"
+            + "    float c = 3;\n"
+            + "    return a;\n"
+            + "}\n";
+    stmtOps = StmtReductionOpportunities.findOpportunities(tu,
+        new ReductionOpportunityContext(false,
+            ShadingLanguageVersion.GLSL_440,
+            new ZeroCannedRandom(), null));
+    assertEquals(3, stmtOps.size());
+    for (StmtReductionOpportunity op : stmtOps) {
+      op.applyReduction();
+    }
+    CompareAsts.assertEqualAsts(expected9, tu);
+
+    // (10) remove unused declarations
+    final String expected10 =
+        "void main()\n"
+            + "{\n"
+            + "    float a = 1;\n"
+            + "    float b = 2;\n"
+            + "    float c = 3;\n"
+            + "    return a;\n"
+            + "}\n";
+    List<DeclarationReductionOpportunity> declOps = DeclarationReductionOpportunities.findOpportunities(tu,
+        new ReductionOpportunityContext(false,
+            ShadingLanguageVersion.GLSL_440,
+            new ZeroCannedRandom(), null));
+    assertEquals(3, stmtOps.size());
+    for (DeclarationReductionOpportunity op : declOps) {
+      op.applyReduction();
+    }
+    CompareAsts.assertEqualAsts(expected10, tu);
+
   }
 
 }
