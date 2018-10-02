@@ -32,6 +32,8 @@ public class ExactImageFileComparator implements IImageFileComparator {
   @Override
   public boolean areFilesInteresting(File reference, File variant) {
     try {
+      assert reference.exists();
+      assert variant.exists();
       boolean equalContent = FileUtils.contentEquals(reference, variant);
       if (!equalContent && identicalIsInteresting) {
         System.err.println("Not interesting: images do not match");

@@ -166,8 +166,16 @@ public class ReductionDriver {
 
   private void writeState(ShaderJob state, File workDir, String outputFilesPrefix)
       throws IOException {
+    if (requiresUniformBindings) {
+      assert !state.hasUniformBindings();
+      state.makeUniformBindings();
+    }
     Helper.emitShaderJob(state, context.getShadingLanguageVersion(),
         outputFilesPrefix, workDir, null);
+    if (requiresUniformBindings) {
+      assert state.hasUniformBindings();
+      state.removeUniformBindings();
+    }
   }
 
   private boolean isInterestingWithCache(IFileJudge judge, File workDir, String outputFilesPrefix)

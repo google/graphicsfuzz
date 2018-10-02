@@ -142,6 +142,13 @@ public final class VectorizationReductionOpportunity extends AbstractReductionOp
     if (!componentIsUsed()) {
       return false;
     }
+    // (4) Check that every usage of the vector variable is a field lookup.  The vectorization
+    //     transformation ensures this is the case after it is applied, and we can only
+    //     reduce in this scenario.  If other transformations have manipulated the vector
+    //     then they need to be reversed first.
+    if (vectorIsUsedWithoutFieldLookup()) {
+      return false;
+    }
 
     return true;
   }
@@ -196,6 +203,33 @@ public final class VectorizationReductionOpportunity extends AbstractReductionOp
       }
     }
     return false;
+  }
+
+  private boolean vectorIsUsedWithoutFieldLookup() {
+    return
+      new ScopeTreeBuilder() {
+        private boolean vectorUsedDirectly = false;
+        @Override
+        public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+          super.visitVariableIdentifierExpr(variableIdentifierExpr);
+          if (parentMap.getParent(variableIdentifierExpr) instanceof MemberLookupExpr) {
+            return;
+          }
+          if (!variableIdentifierExpr.getName().equals(vectorVariableDeclInfo.getName())) {
+            return;
+          }
+          final ScopeEntry se = currentScope.lookupScopeEntry(variableIdentifierExpr.getName());
+          if (se != null && se.hasVariableDeclInfo()
+                && se.getVariableDeclInfo() == vectorVariableDeclInfo) {
+            vectorUsedDirectly = true;
+          }
+        }
+
+        private boolean isVectorUsedDirectly(TranslationUnit tu) {
+          visit(tu);
+          return vectorUsedDirectly;
+        }
+      }.isVectorUsedDirectly(tu);
   }
 
   /**
