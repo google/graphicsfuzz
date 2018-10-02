@@ -18,3 +18,4 @@ set -x
 set -e
 set -u
 
+sudo apt-get install python3.6

@@ -165,6 +165,16 @@ limitations under the License.
               <silent>true</silent>
             </configuration>
           </execution>
+          <execution>
+            <id>list-dep-1</id>
+            <goals>
+              <goal>list</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <outputFile>${project.build.directory}/dependencies.txt</outputFile>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
 
@@ -180,7 +190,7 @@ limitations under the License.
             <configuration>
               <target>
                 <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
-
+                <echoproperties/>
                 <property name="touched-file" value="${project.build.directory}/touched.txt"/>
 
                 <property name="assembly-zip" value="${project.build.directory}/${project.artifactId}-${project.version}.zip"/>
