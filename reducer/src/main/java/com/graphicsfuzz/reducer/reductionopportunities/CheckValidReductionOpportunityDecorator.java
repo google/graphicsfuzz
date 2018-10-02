@@ -49,14 +49,7 @@ public class CheckValidReductionOpportunityDecorator implements IReductionOpport
 
   @Override
   public void applyReduction() {
-    final ShaderJob before = new GlslShaderJob(
-        shaderJob.hasVertexShader()
-            ? Optional.of(shaderJob.getVertexShader().cloneAndPatchUp())
-            : Optional.empty(),
-        shaderJob.hasFragmentShader()
-            ? Optional.of(shaderJob.getFragmentShader().cloneAndPatchUp())
-            : Optional.empty(),
-        new UniformsInfo(shaderJob.getUniformsInfo().toString()));
+    final ShaderJob before = shaderJob.clone();
     delegate.applyReduction();
     final String prefix = "temp_to_validate";
     try {

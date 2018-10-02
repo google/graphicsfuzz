@@ -43,4 +43,16 @@ public class CompareAsts {
           PrettyPrinterVisitor.prettyPrintAsString(second));
   }
 
+  public static boolean isEqualAsts(String first, String second) throws IOException,
+      ParseTimeoutException {
+    return PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first, false))
+        .equals(
+            PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second, false)));
+  }
+
+  public static boolean isEqualAsts(String first, TranslationUnit second) throws IOException,
+      ParseTimeoutException {
+    return isEqualAsts(first, PrettyPrinterVisitor.prettyPrintAsString(second));
+  }
+
 }

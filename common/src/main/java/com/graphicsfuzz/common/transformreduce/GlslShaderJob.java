@@ -185,4 +185,17 @@ public class GlslShaderJob implements ShaderJob {
     }
     return result;
   }
+
+  @Override
+  public GlslShaderJob clone() {
+    return new GlslShaderJob(
+        hasVertexShader()
+            ? Optional.of(getVertexShader().cloneAndPatchUp())
+            : Optional.empty(),
+        hasFragmentShader()
+            ? Optional.of(getFragmentShader().cloneAndPatchUp())
+            : Optional.empty(),
+        new UniformsInfo(getUniformsInfo().toString()));
+  }
+
 }
