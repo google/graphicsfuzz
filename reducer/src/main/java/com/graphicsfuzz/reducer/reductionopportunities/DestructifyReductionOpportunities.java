@@ -18,7 +18,10 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -33,8 +36,16 @@ public class DestructifyReductionOpportunities extends ScopeTreeBuilder {
   }
 
   static List<DestructifyReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<DestructifyReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu) {
     DestructifyReductionOpportunities finder = new DestructifyReductionOpportunities(tu);
     finder.visit(tu);
     return finder.opportunities;

@@ -30,7 +30,7 @@ public class FunctionReductionOpportunitiesTest {
     String program = "void notCalled() { }"
         + "void main() { }";
     TranslationUnit tu = Helper.parse(program, false);
-    assertEquals(1, FunctionReductionOpportunities.findOpportunities(tu,
+    assertEquals(1, FunctionReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, null, null))
     .size());
   }

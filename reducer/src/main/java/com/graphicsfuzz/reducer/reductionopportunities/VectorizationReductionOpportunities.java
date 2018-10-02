@@ -21,6 +21,9 @@ import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.transformreduce.MergeSet;
 import com.graphicsfuzz.common.transformreduce.MergedVariablesComponentData;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
 import java.util.List;
 
 public class VectorizationReductionOpportunities
@@ -40,13 +43,22 @@ public class VectorizationReductionOpportunities
   /**
    * Find all vectorization opportunities for the given translation unit.
    *
-   * @param tu The translation unit to be searched.
+   * @param shaderJob The shader job to be searched.
    * @param context Includes info such as whether we reduce everywhere or only reduce injections
    * @return The opportunities that can be reduced
    */
   static List<VectorizationReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<VectorizationReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu,
+      ReductionOpportunityContext context) {
     VectorizationReductionOpportunities finder =
           new VectorizationReductionOpportunities(tu, context);
     finder.visit(tu);

@@ -41,6 +41,7 @@ import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
+import com.graphicsfuzz.reducer.reductionopportunities.MakeShaderJobFromFragmentShader;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import java.io.BufferedWriter;
@@ -97,7 +98,7 @@ public class ReductionDriverTest {
       }
     };
 
-    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(tu,
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, version, generator, new IdGenerator()));
     assertEquals(2, ops.size());
 

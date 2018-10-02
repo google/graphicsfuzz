@@ -39,7 +39,7 @@ public class DestructifyReductionOpportunitiesTest {
           + "  _GLF_struct_1 _GLF_struct_replacement_2 = _GLF_struct_1(1.0);\n"
           + "}\n";
     final TranslationUnit tu = Helper.parse(program, false);
-    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false,
+    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
     // There should be no opportunities as there is already a variable called 'dist' in scope
     assertEquals(0, ops.size());
@@ -68,7 +68,7 @@ public class DestructifyReductionOpportunitiesTest {
           + "  }\n"
           + "}\n";
     final TranslationUnit tu = Helper.parse(program, false);
-    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(tu,
+    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
     // There should be one opportunity as variable dist is in a different scope and not used in this scope.
@@ -92,7 +92,7 @@ public class DestructifyReductionOpportunitiesTest {
           + "  }\n"
           + "}\n";
     final TranslationUnit tu = Helper.parse(program, false);
-    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(tu,
+    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
     // There should be no opportunities as there is already a variable called 'dist' in scope,
@@ -125,7 +125,7 @@ public class DestructifyReductionOpportunitiesTest {
           + "  GLF_live6p2 = abs(GLF_live6p2) / dot(GLF_live6p2, GLF_live6p2) - GLF_live6formuparam;\n"
           + "}\n";
     final TranslationUnit tu = Helper.parse(program, false);
-    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false,
+    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
     // There should be no opportunities as there is already a variable called 'dist' in scope,
     // and it is used.

@@ -19,6 +19,9 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
 import java.util.List;
 
 public class MutationReductionOpportunities
@@ -63,8 +66,17 @@ public class MutationReductionOpportunities
   }
 
   static List<MutationReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<MutationReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu,
+      ReductionOpportunityContext context) {
     MutationReductionOpportunities finder = new MutationReductionOpportunities(tu,
           context);
     finder.visit(tu);

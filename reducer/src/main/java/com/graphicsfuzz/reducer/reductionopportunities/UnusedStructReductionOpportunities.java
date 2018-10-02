@@ -25,6 +25,10 @@ import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.StructType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,16 +45,25 @@ public class UnusedStructReductionOpportunities extends StandardVisitor {
   /**
    * Finds all opportunities to remove unreferenced structs from the translation unit.
    *
-   * @param tu The translation unit to be analysed
+   * @param shaderJob The shader job to be analysed
    * @return The opportunities for struct removal
    */
   static List<FunctionOrStructReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<FunctionOrStructReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu) {
     UnusedStructReductionOpportunities unusedStructReductionOpportunities =
-          new UnusedStructReductionOpportunities();
+        new UnusedStructReductionOpportunities();
     unusedStructReductionOpportunities.visit(tu);
-    return unusedStructReductionOpportunities.getReductionOpportunitiesForUnusedStructs(tu);
+    return unusedStructReductionOpportunities
+        .getReductionOpportunitiesForUnusedStructs(tu);
   }
 
   @Override

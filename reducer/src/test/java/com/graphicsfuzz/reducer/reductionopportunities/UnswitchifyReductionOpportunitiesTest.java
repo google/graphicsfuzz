@@ -32,7 +32,7 @@ public class UnswitchifyReductionOpportunitiesTest {
     final String program = "void foo(int x) { switch(x) { case 0: default: break; } }";
     final TranslationUnit tu = Helper.parse(program, false);
     List<UnswitchifyReductionOpportunity> ops =
-        UnswitchifyReductionOpportunities.findOpportunities(tu,
+        UnswitchifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
               new ReductionOpportunityContext(false,
               ShadingLanguageVersion.GLSL_130,
                     new RandomWrapper(0),

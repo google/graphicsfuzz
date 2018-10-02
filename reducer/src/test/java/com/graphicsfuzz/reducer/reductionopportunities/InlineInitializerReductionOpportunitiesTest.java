@@ -34,7 +34,7 @@ public class InlineInitializerReductionOpportunitiesTest {
     final String expected = "const int x = 2; void main() { int y = (2) + 3; }";
     final TranslationUnit tu = ParseHelper.parse(program, false);
     final List<InlineInitializerReductionOpportunity> ops =
-          InlineInitializerReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(true,
+          InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(true,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();

@@ -20,6 +20,9 @@ import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
 import java.util.List;
 
 public class CompoundExprToSubExprReductionOpportunities
@@ -63,8 +66,17 @@ public class CompoundExprToSubExprReductionOpportunities
   }
 
   static List<SimplifyExprReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu,
+      ReductionOpportunityContext context) {
     CompoundExprToSubExprReductionOpportunities finder =
           new CompoundExprToSubExprReductionOpportunities(tu,
                 context);

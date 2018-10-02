@@ -18,6 +18,9 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
 import java.util.List;
 
 public class UnswitchifyReductionOpportunities
@@ -32,13 +35,22 @@ public class UnswitchifyReductionOpportunities
   /**
    * Find all switch removal opportunities for the given translation unit.
    *
-   * @param tu The translation unit to be searched.
+   * @param shaderJob The shader job to be searched.
    * @param context Includes info such as whether we reduce everywhere or only reduce injections
    * @return The opportunities that can be reduced
    */
   static List<UnswitchifyReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<UnswitchifyReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu,
+      ReductionOpportunityContext context) {
     UnswitchifyReductionOpportunities finder =
           new UnswitchifyReductionOpportunities(tu, context);
     finder.visit(tu);

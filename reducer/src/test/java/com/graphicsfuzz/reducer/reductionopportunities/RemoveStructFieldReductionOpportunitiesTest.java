@@ -47,7 +47,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = Helper.parse(program, false);
 
     assertEquals(2, RemoveStructFieldReductionOpportunities
-          .findOpportunities(tu, new ReductionOpportunityContext(false, null, null, null)).size());
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null)).size());
 
   }
 
@@ -66,7 +66,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
 
     TranslationUnit tu = Helper.parse(program, false);
 
-    assertEquals(0, RemoveStructFieldReductionOpportunities.findOpportunities(tu,
+    assertEquals(0, RemoveStructFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, null, null, null)).size());
 
   }
@@ -98,7 +98,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
           + "}\n";
     TranslationUnit tu = Helper.parse(shader, false);
     List<RemoveStructFieldReductionOpportunity> ops = RemoveStructFieldReductionOpportunities
-        .findOpportunities(tu,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
               new ReductionOpportunityContext(true, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -132,7 +132,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = Helper.parse(program, false);
 
     final List<RemoveStructFieldReductionOpportunity> ops = RemoveStructFieldReductionOpportunities
-          .findOpportunities(tu, new ReductionOpportunityContext(false, null, null, null));
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
     assertEquals(2, ops
           .size());
     ops.stream().filter(item -> item.getFieldToRemove().equals("_f0"))

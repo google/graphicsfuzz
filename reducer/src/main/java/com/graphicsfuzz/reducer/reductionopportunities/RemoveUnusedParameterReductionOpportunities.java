@@ -21,9 +21,12 @@ import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 
+import com.graphicsfuzz.common.util.ListConcat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +47,15 @@ public class RemoveUnusedParameterReductionOpportunities
     extends ReductionOpportunitiesBase<RemoveUnusedParameterReductionOpportunity> {
 
   static List<RemoveUnusedParameterReductionOpportunity> findOpportunities(
+      ShaderJob shaderJob,
+      ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<RemoveUnusedParameterReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
       ReductionOpportunityContext context) {
     RemoveUnusedParameterReductionOpportunities finder =

@@ -19,8 +19,12 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.common.util.UniformsInfo;
+import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
@@ -31,32 +35,54 @@ import java.util.Optional;
 public class CheckValidReductionOpportunityDecorator implements IReductionOpportunity {
 
   private final IReductionOpportunity delegate;
-  private final TranslationUnit tu;
+  private final ShaderJob shaderJob;
   private final ShadingLanguageVersion shadingLanguageVersion;
 
 
   public CheckValidReductionOpportunityDecorator(IReductionOpportunity delegate,
-        TranslationUnit tu, ShadingLanguageVersion shadingLanguageVersion) {
+                                                 ShaderJob shaderJob,
+                                                 ShadingLanguageVersion shadingLanguageVersion) {
     this.delegate = delegate;
-    this.tu = tu;
+    this.shaderJob = shaderJob;
     this.shadingLanguageVersion = shadingLanguageVersion;
   }
 
   @Override
   public void applyReduction() {
-    final TranslationUnit tuBefore = tu.cloneAndPatchUp();
+    final ShaderJob before = new GlslShaderJob(
+        shaderJob.hasVertexShader()
+            ? Optional.of(shaderJob.getVertexShader().cloneAndPatchUp())
+            : Optional.empty(),
+        shaderJob.hasFragmentShader()
+            ? Optional.of(shaderJob.getFragmentShader().cloneAndPatchUp())
+            : Optional.empty(),
+        new UniformsInfo(shaderJob.getUniformsInfo().toString()));
     delegate.applyReduction();
-    final String filename = "temp_to_validate.frag";
+    final String prefix = "temp_to_validate";
     try {
-      Helper.emitShader(shadingLanguageVersion, ShaderKind.FRAGMENT, tu, Optional.empty(),
-          new File(filename));
-      ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
-            new File(filename));
-      if (execResult.res != 0) {
-        throw new ReductionLedToInvalidException(tuBefore, tu, execResult, delegate);
+      Helper.emitShaderJob(
+          shaderJob,
+          shadingLanguageVersion,
+          prefix,
+          new File("."),
+          null);
+      if (shaderJob.hasVertexShader()) {
+        checkShaderIsValid(before, prefix, ".vert");
+      }
+      if (shaderJob.hasFragmentShader()) {
+        checkShaderIsValid(before, prefix, ".frag");
       }
     } catch (InterruptedException | IOException exception) {
       throw new RuntimeException(exception);
+    }
+  }
+
+  private void checkShaderIsValid(ShaderJob before, String prefix, String extension)
+      throws IOException, InterruptedException {
+    ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
+          new File(prefix + extension));
+    if (execResult.res != 0) {
+      throw new ReductionLedToInvalidException(before, shaderJob, execResult, delegate);
     }
   }
 

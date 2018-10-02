@@ -18,12 +18,15 @@ package com.graphicsfuzz.reducer.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.reductionopportunities.Compatibility;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
@@ -38,6 +41,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -130,11 +134,17 @@ public class ReducerBugPointBasic {
 
       TranslationUnit current = lastGoodButLeadingToBad.cloneAndPatchUp();
 
+      // TODO: this code was written pre vertex shader support, and does not take
+      // account of uniforms.
+      // If it still proves useful as a debugging tool, it could do with updating.
+      final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+          Optional.of(current), new UniformsInfo());
+
       while (true) {
         final TranslationUnit prev = current.cloneAndPatchUp();
         List<IReductionOpportunity> ops;
         try {
-          ops = ReductionOpportunities.getReductionOpportunities(current,
+          ops = ReductionOpportunities.getReductionOpportunities(shaderJob,
                 new ReductionOpportunityContext(reduceEverywhere,
                     shadingLanguageVersion, generator, idGenerator));
         } catch (Exception exception) {

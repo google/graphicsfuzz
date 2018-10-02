@@ -283,7 +283,7 @@ public class FoldConstantReductionOpportunitiesTest {
   private void check(String before, int numOps, String after) throws IOException, ParseTimeoutException {
     final TranslationUnit tu = Helper.parse(before, false);
     final List<SimplifyExprReductionOpportunity> ops = FoldConstantReductionOpportunities
-        .findOpportunities(tu, new ReductionOpportunityContext(false,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false,
             ShadingLanguageVersion.ESSL_100, null, null));
     ops.forEach(item -> item.applyReduction());
     CompareAsts.assertEqualAsts(after, tu);

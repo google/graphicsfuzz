@@ -58,7 +58,7 @@ public class VectorizationReductionOpportunitiesTest {
           + "  }\n"
           + "}\n";
     final TranslationUnit tu = Helper.parse(shader, false);
-    final List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440, new RandomWrapper(0), null));
+    final List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440, new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
@@ -75,7 +75,7 @@ public class VectorizationReductionOpportunitiesTest {
                 + "    bool c;\n"
                 + "}\n";
     final TranslationUnit tu = Helper.parse(original, false);
-    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(0, ops.size());
   }
@@ -94,7 +94,7 @@ public class VectorizationReductionOpportunitiesTest {
                 + "  }\n"
                 + "}\n";
     final TranslationUnit tu = Helper.parse(original, false);
-    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(0, ops.size());
   }
@@ -127,7 +127,7 @@ public class VectorizationReductionOpportunitiesTest {
                 + "  }\n"
                 + "}\n";
     final TranslationUnit tu = Helper.parse(original, false);
-    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -176,7 +176,7 @@ public class VectorizationReductionOpportunitiesTest {
                 + "  }\n"
                 + "}\n";
     final TranslationUnit tu = Helper.parse(original, false);
-    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(2, ops.size());
     ops = ops.stream().filter(item -> item.getComponentType() == BasicType.FLOAT).collect(Collectors.toList());
@@ -217,7 +217,7 @@ public class VectorizationReductionOpportunitiesTest {
                 + "    c;\n"
                 + "}\n";
     final TranslationUnit tu = Helper.parse(original, false);
-    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu,
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(2, ops.size());
@@ -227,7 +227,7 @@ public class VectorizationReductionOpportunitiesTest {
     ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_1_1_1_1_1bc")
           && item.getComponentName().equals("c")).findAny().get().applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected2, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
-    ops = VectorizationReductionOpportunities.findOpportunities(tu,
+    ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(0, ops.size());
@@ -271,7 +271,7 @@ public class VectorizationReductionOpportunitiesTest {
           + "}\n";
     final TranslationUnit tu = Helper.parse(shader, false);
     final IRandom cannedRandom = new ZeroCannedRandom();
-    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440, cannedRandom, null));
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440, cannedRandom, null));
     assertEquals(3, ops.size());
     ops.stream().filter(item -> item.getComponentName().equals("P")).findAny().get().applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected1, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
@@ -279,7 +279,7 @@ public class VectorizationReductionOpportunitiesTest {
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected2, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
     ops.stream().filter(item -> item.getComponentName().equals("GLF_merged2_0_1_1_1_1_1PQ")).findAny().get().applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected3, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
-    ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440, cannedRandom, null));
+    ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440, cannedRandom, null));
     assertEquals(0, ops.size());
   }
 
@@ -321,7 +321,7 @@ public class VectorizationReductionOpportunitiesTest {
           + "}\n";
     final TranslationUnit tu = Helper.parse(shader, false);
     final IRandom cannedRandom = new CannedRandom(2);
-    final List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440, cannedRandom, null));
+    final List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440, cannedRandom, null));
     ops.stream().filter(item -> item.getComponentName().equals("a")).findAny().get().applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected1, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
     ops.stream().filter(item -> item.getComponentName().equals("c")).findAny().get().applyReduction();
@@ -367,7 +367,7 @@ public class VectorizationReductionOpportunitiesTest {
           + "  Q;\n"
           + "}\n";
     final TranslationUnit tu = Helper.parse(shader, false);
-    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(3, ops.size());
     ops.stream().filter(item -> item.getComponentName().equals("GLF_merged2_0_1_1_1_1_1PQ")).findAny().get().applyReduction();
@@ -406,12 +406,12 @@ public class VectorizationReductionOpportunitiesTest {
                 + "    b;\n"
                 + "}\n";
     final TranslationUnit tu = Helper.parse(original, false);
-    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(2, ops.size());
     ops.get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected1, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
-    ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+    ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -452,12 +452,12 @@ public class VectorizationReductionOpportunitiesTest {
                 + "    b = b + c;\n"
                 + "}\n";
     final TranslationUnit tu = Helper.parse(original, false);
-    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(2, ops.size());
     ops.stream().filter(item -> item.getComponentName().equals("b")).findAny().get().applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected1, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
-    ops = VectorizationReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+    ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
           new ZeroCannedRandom(), null));
     assertEquals(1, ops.size());
     ops.stream().filter(item -> item.getComponentName().equals("c")).findAny().get().applyReduction();

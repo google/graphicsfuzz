@@ -23,8 +23,11 @@ import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.Typer;
+import com.graphicsfuzz.common.util.ListConcat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -52,11 +55,20 @@ public class FunctionReductionOpportunities extends StandardVisitor {
 
   /**
    * Find all function/struct reduction opportunities for the given translation unit.
-   * @param tu The translation unit to be searched.
+   * @param shaderJob The shader job to be searched.
    * @param context Relevant details including the version of GLSL being used
    * @return The opportunities that can be reduced
    */
   static List<FunctionOrStructReductionOpportunity> findOpportunities(
+      ShaderJob shaderJob,
+      ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<FunctionOrStructReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
       ReductionOpportunityContext context) {
     FunctionReductionOpportunities finder =

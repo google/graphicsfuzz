@@ -48,7 +48,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final TranslationUnit tu = Helper.parse(program, false);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities
-              .findOpportunities(tu, new ReductionOpportunityContext(false, null, null, null));
+              .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(reducedProgram, false)),
@@ -73,7 +73,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final String expected = "void main() { { } };";
     final TranslationUnit tu = Helper.parse(program, false);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
-      LiveOutputVariableWriteReductionOpportunities.findOpportunities(tu,
+      LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReductionOpportunityContext(false, null, null, null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -94,7 +94,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final String expected = "void main() { { } };";
     final TranslationUnit tu = Helper.parse(program, false);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
-          LiveOutputVariableWriteReductionOpportunities.findOpportunities(tu,
+          LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                 new ReductionOpportunityContext(false, null, null, null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -116,7 +116,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final String expected = "void main() { { } };";
     final TranslationUnit tu = Helper.parse(program, false);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
-          LiveOutputVariableWriteReductionOpportunities.findOpportunities(tu,
+          LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                 new ReductionOpportunityContext(false, null, null, null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();

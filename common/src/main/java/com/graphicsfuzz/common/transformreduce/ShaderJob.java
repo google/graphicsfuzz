@@ -2,6 +2,7 @@ package com.graphicsfuzz.common.transformreduce;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.UniformsInfo;
+import java.util.List;
 
 public interface ShaderJob {
 
@@ -20,5 +21,7 @@ public interface ShaderJob {
   void removeUniformBindings();
 
   boolean hasUniformBindings();
+
+  List<TranslationUnit> getShaders();
 
 }

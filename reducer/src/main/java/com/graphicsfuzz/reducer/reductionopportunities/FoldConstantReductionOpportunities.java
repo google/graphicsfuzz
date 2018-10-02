@@ -12,6 +12,8 @@ import com.graphicsfuzz.common.ast.expr.UnOp;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -187,6 +189,15 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
   }
 
   static List<SimplifyExprReductionOpportunity> findOpportunities(
+      ShaderJob shaderJob,
+      ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
       ReductionOpportunityContext context) {
     FoldConstantReductionOpportunities finder = new FoldConstantReductionOpportunities(tu,

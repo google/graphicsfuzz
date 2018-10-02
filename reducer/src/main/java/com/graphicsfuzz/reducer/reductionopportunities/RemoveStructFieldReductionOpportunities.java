@@ -21,7 +21,10 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.StructType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -37,8 +40,16 @@ public class RemoveStructFieldReductionOpportunities extends ScopeTreeBuilder {
   }
 
   static List<RemoveStructFieldReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<RemoveStructFieldReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu) {
     RemoveStructFieldReductionOpportunities finder =
           new RemoveStructFieldReductionOpportunities(tu);
     return finder.opportunities;

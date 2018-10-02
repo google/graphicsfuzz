@@ -21,8 +21,12 @@ import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.inliner.Inliner;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class InlineFunctionReductionOpportunities extends StandardVisitor {
 
@@ -31,10 +35,19 @@ public class InlineFunctionReductionOpportunities extends StandardVisitor {
   private final ReductionOpportunityContext context;
 
   static List<InlineFunctionReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<InlineFunctionReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu,
+      ReductionOpportunityContext context) {
     InlineFunctionReductionOpportunities finder = new InlineFunctionReductionOpportunities(
-          tu, context);
+        tu, context);
     finder.visit(tu);
     return finder.opportunities;
   }

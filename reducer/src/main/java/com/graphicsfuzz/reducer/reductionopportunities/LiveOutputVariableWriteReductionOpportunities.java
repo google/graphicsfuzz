@@ -22,6 +22,9 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,8 +32,17 @@ public class LiveOutputVariableWriteReductionOpportunities
     extends ReductionOpportunitiesBase<LiveOutputVariableWriteReductionOpportunity> {
 
   static List<LiveOutputVariableWriteReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<LiveOutputVariableWriteReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu,
+      ReductionOpportunityContext context) {
     LiveOutputVariableWriteReductionOpportunities finder =
           new LiveOutputVariableWriteReductionOpportunities(tu, context);
     finder.visit(tu);

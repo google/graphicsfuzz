@@ -24,9 +24,12 @@ import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.LoopStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.ContainsTopLevelContinue;
+import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.SideEffectChecker;
+import java.util.Arrays;
 import java.util.List;
 
 public class CompoundToBlockReductionOpportunities
@@ -42,8 +45,17 @@ public class CompoundToBlockReductionOpportunities
   }
 
   static List<CompoundToBlockReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<CompoundToBlockReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu,
+      ReductionOpportunityContext context) {
     CompoundToBlockReductionOpportunities finder =
           new CompoundToBlockReductionOpportunities(tu, context);
     finder.visit(tu);

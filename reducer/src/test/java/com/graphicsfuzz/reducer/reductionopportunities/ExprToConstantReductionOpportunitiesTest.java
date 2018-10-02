@@ -33,7 +33,7 @@ public class ExprToConstantReductionOpportunitiesTest {
   public void testOut() throws Exception {
     final String prog = "void f(out int x) { } void main() { int a; f(a); }";
     TranslationUnit tu = Helper.parse(prog, false);
-    List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(tu,
+    List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(true, ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0), null));
     for (SimplifyExprReductionOpportunity op : ops) {
@@ -46,7 +46,7 @@ public class ExprToConstantReductionOpportunitiesTest {
   public void testInOut() throws Exception {
     final String prog = "void f(inout int x) { } void main() { int a; f(a); }";
     TranslationUnit tu = Helper.parse(prog, false);
-    List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(tu,
+    List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(true, ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0), null));
     for (SimplifyExprReductionOpportunity op : ops) {
@@ -60,7 +60,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     final String prog = "void f(in int x) { } void main() { int a; f(a); }";
     final String expectedProg = "void f(in int x) { } void main() { int a; f(1); }";
     TranslationUnit tu = Helper.parse(prog, false);
-    List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(tu,
+    List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(true, ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0), null));
     for (SimplifyExprReductionOpportunity op : ops) {
@@ -73,7 +73,7 @@ public class ExprToConstantReductionOpportunitiesTest {
   public void testSingleLiveVariable() throws Exception {
     final String program = "void main() { int GLF_live3_a; GLF_live3_a; }";
     final TranslationUnit tu = Helper.parse(program, false);
-    final List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(tu,
+    final List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, null, null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
