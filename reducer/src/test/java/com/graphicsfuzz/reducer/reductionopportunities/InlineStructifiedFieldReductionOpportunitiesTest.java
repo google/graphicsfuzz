@@ -73,8 +73,8 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "}\n";
 
     TranslationUnit tu = Helper.parse(program, false);
-    assertEquals(1, InlineStructifiedFieldReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, null, null, null)).size());
-    InlineStructifiedFieldReductionOpportunities.findOpportunities(tu,
+    assertEquals(1, InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null)).size());
+    InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, null, null, null)).get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(programAfter, false)),
       PrettyPrinterVisitor.prettyPrintAsString(tu));
@@ -108,7 +108,7 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
 
     TranslationUnit tu = Helper.parse(program, false).cloneAndPatchUp();
 
-    List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(tu, new ReductionOpportunityContext(false, null, null, null));
+    List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
     assertEquals(3, ops.size());
 
     File tempFile = testFolder.newFile("temp.frag");
@@ -149,7 +149,7 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
 
     TranslationUnit tu = Helper.parse(program, false).cloneAndPatchUp();
 
-    List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(tu,
+    List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, null, null, null));
     assertEquals(1, ops.size());
 

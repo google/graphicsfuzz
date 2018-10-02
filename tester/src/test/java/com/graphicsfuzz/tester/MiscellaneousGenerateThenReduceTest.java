@@ -21,11 +21,13 @@ import static org.junit.Assert.assertEquals;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.SameValueRandom;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.transformation.controlflow.AddWrappingConditionalStmts;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
@@ -34,6 +36,7 @@ import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Test;
 
 public class MiscellaneousGenerateThenReduceTest {
@@ -68,7 +71,7 @@ public class MiscellaneousGenerateThenReduceTest {
 
     while(true) {
       List<IReductionOpportunity> ops = ReductionOpportunities
-          .getReductionOpportunities(tu,
+          .getReductionOpportunities(new GlslShaderJob(Optional.empty(), Optional.of(tu), new UniformsInfo()),
                 new ReductionOpportunityContext(false, shadingLanguageVersion,
               new SameValueRandom(false, 0), new IdGenerator()));
       if (ops.isEmpty()) {

@@ -17,7 +17,6 @@
 package com.graphicsfuzz.reducer.glslreducers;
 
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunityFinder;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import java.util.ArrayList;
@@ -38,7 +37,6 @@ public class MasterPlan implements IReductionPlan {
   private int currentPassSteps;
   private boolean somePassMadeProgress;
 
-  private ShaderKind shaderKind;
   private List<IReductionPlan> plans;
 
   public MasterPlan(
@@ -50,7 +48,6 @@ public class MasterPlan implements IReductionPlan {
     this.passIndex = 0;
     this.currentPassSteps = 0;
     this.somePassMadeProgress = false;
-    this.shaderKind = ShaderKind.FRAGMENT;
     resetPlans();
 
   }
@@ -84,7 +81,6 @@ public class MasterPlan implements IReductionPlan {
         IReductionOpportunityFinder.foldConstantFinder(),
     }) {
       plans.add(new SimplePlan(reductionOpportunityContext,
-            shaderKind,
             verbose,
             ops));
     }
@@ -122,21 +118,7 @@ public class MasterPlan implements IReductionPlan {
         // We've done all the passes.
         if (!somePassMadeProgress) {
           // No pass made progress; we have reached a fixed-point for this shader kind.
-          if (shaderKind == ShaderKind.VERTEX) {
-            throw new NoMoreToReduceException();
-          } else if (shaderKind == ShaderKind.FRAGMENT) {
-            if (!shaderJob.hasVertexShader()) {
-              throw new NoMoreToReduceException();
-            }
-            LOGGER.info("Moving on to reducing vertex shader");
-            shaderKind = ShaderKind.VERTEX;
-            resetPlans();
-            fullPassesCompleted = 0;
-            passIndex = 0;
-            somePassMadeProgress = false;
-          } else {
-            throw new RuntimeException("Unknown shader kind " + shaderKind);
-          }
+          throw new NoMoreToReduceException();
         } else {
           fullPassesCompleted++;
           passIndex = 0;

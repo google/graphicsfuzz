@@ -16,10 +16,9 @@
 
 package com.graphicsfuzz.reducer.glslreducers;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import com.graphicsfuzz.reducer.reductionopportunities.Compatibility;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
@@ -36,7 +35,6 @@ public class SimplePlan implements IReductionPlan {
   private static final Logger LOGGER = LoggerFactory.getLogger(SimplePlan.class);
 
   private final ReductionOpportunityContext reductionOpportunityContext;
-  private final ShaderKind shaderKind;
   private final boolean verbose;
   private final IReductionOpportunityFinder<?> opportunitiesFinder;
 
@@ -46,11 +44,9 @@ public class SimplePlan implements IReductionPlan {
 
   SimplePlan(
         ReductionOpportunityContext reductionOpportunityContext,
-        ShaderKind shaderKind,
         boolean verbose,
         IReductionOpportunityFinder<?> opportunitiesFinder) {
     this.reductionOpportunityContext = reductionOpportunityContext;
-    this.shaderKind = shaderKind;
     this.verbose = verbose;
     this.opportunitiesFinder = opportunitiesFinder;
     this.percentageToReduce = reductionOpportunityContext.getMaxPercentageToReduce();
@@ -71,11 +67,11 @@ public class SimplePlan implements IReductionPlan {
   @Override
   public ShaderJob applyReduction(ShaderJob shaderJob)
       throws NoMoreToReduceException {
-    final TranslationUnit workingShader = getWorkingShader(shaderJob);
+    final ShaderJob workingShaderJob = getWorkingShaderJob(shaderJob);
     int localPercentageToReduce = percentageToReduce;
     while (true) {
-      if (attemptToTransform(workingShader, localPercentageToReduce)) {
-        return shaderJobFromWorkingShader(workingShader, shaderJob);
+      if (attemptToTransform(workingShaderJob, localPercentageToReduce)) {
+        return workingShaderJob;
       }
       localPercentageToReduce /= 2;
       if (localPercentageToReduce > 0) {
@@ -86,14 +82,14 @@ public class SimplePlan implements IReductionPlan {
     }
   }
 
-  private boolean attemptToTransform(TranslationUnit workingShader, int localPercentageToReduce) {
+  private boolean attemptToTransform(ShaderJob shaderJob, int localPercentageToReduce) {
     LOGGER.info("Looking for opportunities of kind: " + opportunitiesFinder.getName());
     if (verbose) {
       LOGGER.info("Applying " + localPercentageToReduce + "% reduction");
     }
 
     final List<? extends IReductionOpportunity> initialReductionOpportunities =
-          getSortedReductionOpportunities(workingShader);
+          getSortedReductionOpportunities(shaderJob);
 
     // We don't want to initially take any of the opportunities that were previously ineffective
     // when we took them first.  So find out the initial opportunities that do apply - get their
@@ -147,7 +143,7 @@ public class SimplePlan implements IReductionPlan {
 
       final List<? extends IReductionOpportunity> currentReductionOpportunities =
             opportunitiesFinder.findOpportunities(
-                  workingShader, reductionOpportunityContext);
+                  shaderJob, reductionOpportunityContext);
       if (currentReductionOpportunities.isEmpty()) {
         break;
       }
@@ -170,10 +166,10 @@ public class SimplePlan implements IReductionPlan {
   }
 
   private List<? extends IReductionOpportunity> getSortedReductionOpportunities(
-        TranslationUnit workingShader) {
+        ShaderJob shaderJob) {
     // Get the available reduction opportunities.
     final List<? extends IReductionOpportunity> initialReductionOpportunities =
-          opportunitiesFinder.findOpportunities(workingShader, reductionOpportunityContext);
+          opportunitiesFinder.findOpportunities(shaderJob, reductionOpportunityContext);
 
     initialReductionOpportunities.sort((first, second) -> first.depth().compareTo(second.depth()));
     return initialReductionOpportunities;
@@ -219,40 +215,15 @@ public class SimplePlan implements IReductionPlan {
     percentageToReduce = Math.max(percentageToReduce, 1);
   }
 
-  private TranslationUnit getWorkingShader(ShaderJob state) {
-    TranslationUnit workingShader;
-    switch (shaderKind) {
-      case FRAGMENT:
-        workingShader = state.getFragmentShader();
-        break;
-      case VERTEX:
-        workingShader = state.getVertexShader();
-        break;
-      default:
-        throw new RuntimeException("Unsupported shader kind: " + shaderKind);
-    }
-    return workingShader.cloneAndPatchUp();
-  }
-
-  private ShaderJob shaderJobFromWorkingShader(TranslationUnit workingShader,
-                                               ShaderJob originalShaderJob) {
-    Optional<TranslationUnit> fragmentShader = originalShaderJob.hasFragmentShader()
-        ? Optional.of(originalShaderJob.getFragmentShader())
-        : Optional.empty();
-    Optional<TranslationUnit> vertexShader = originalShaderJob.hasVertexShader()
-        ? Optional.of(originalShaderJob.getVertexShader())
-        : Optional.empty();
-    switch (shaderKind) {
-      case FRAGMENT:
-        fragmentShader = Optional.of(workingShader);
-        break;
-      case VERTEX:
-        vertexShader = Optional.of(workingShader);
-        break;
-      default:
-        throw new RuntimeException("Unsupported shader kind: " + shaderKind);
-    }
-    return new GlslShaderJob(vertexShader, fragmentShader, originalShaderJob.getUniformsInfo());
+  private ShaderJob getWorkingShaderJob(ShaderJob shaderJob) {
+    return new GlslShaderJob(
+        shaderJob.hasVertexShader()
+            ? Optional.of(shaderJob.getVertexShader().cloneAndPatchUp())
+            : Optional.empty(),
+        shaderJob.hasFragmentShader()
+            ? Optional.of(shaderJob.getFragmentShader().cloneAndPatchUp())
+            : Optional.empty(),
+        new UniformsInfo(shaderJob.getUniformsInfo().toString()));
   }
 
 }

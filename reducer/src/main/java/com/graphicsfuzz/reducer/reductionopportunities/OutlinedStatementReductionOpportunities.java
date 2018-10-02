@@ -25,7 +25,10 @@ import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,8 +44,16 @@ public class OutlinedStatementReductionOpportunities extends StandardVisitor {
   }
 
   static List<OutlinedStatementReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<OutlinedStatementReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu) {
     OutlinedStatementReductionOpportunities finder =
           new OutlinedStatementReductionOpportunities(tu);
     finder.visit(tu);

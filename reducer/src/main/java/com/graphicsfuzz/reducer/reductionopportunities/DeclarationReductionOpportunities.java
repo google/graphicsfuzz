@@ -23,7 +23,10 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -135,13 +138,22 @@ public class DeclarationReductionOpportunities
   /**
    * Find all unused declaration opportunities for the given translation unit.
    *
-   * @param tu The translation unit to be searched.
+   * @param shaderJob The shader job to be searched.
    * @param context Determines info such as whether we reduce everywhere or only reduce injections
    * @return The declaration opportunities that can be reduced
    */
   static List<DeclarationReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<DeclarationReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu,
+      ReductionOpportunityContext context) {
     DeclarationReductionOpportunities finder =
           new DeclarationReductionOpportunities(tu, context);
     finder.visit(tu);

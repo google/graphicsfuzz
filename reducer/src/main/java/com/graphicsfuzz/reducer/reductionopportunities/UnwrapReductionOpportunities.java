@@ -24,6 +24,9 @@ import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.LoopStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
 import java.util.List;
 
 public class UnwrapReductionOpportunities
@@ -36,13 +39,22 @@ public class UnwrapReductionOpportunities
   /**
    * Find all unwrap opportunities for the given translation unit.
    *
-   * @param tu The translation unit to be searched.
+   * @param shaderJob The shader job to be searched.
    * @param context Includes info such as whether we reduce everywhere or only reduce injections
    * @return The opportunities that can be reduced
    */
   static List<UnwrapReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<UnwrapReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu,
+      ReductionOpportunityContext context) {
     UnwrapReductionOpportunities finder =
           new UnwrapReductionOpportunities(tu, context);
     finder.visit(tu);

@@ -16,30 +16,30 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.util.ExecResult;
 
 public class ReductionLedToInvalidException extends RuntimeException {
 
-  private final TranslationUnit tuBefore;
-  private final TranslationUnit tuAfter;
+  private final ShaderJob before;
+  private final ShaderJob after;
   private final ExecResult execResult;
   private final IReductionOpportunity reductionOpportunity;
 
-  public ReductionLedToInvalidException(TranslationUnit tuBefore, TranslationUnit tuAfter,
+  public ReductionLedToInvalidException(ShaderJob before, ShaderJob after,
         ExecResult execResult, IReductionOpportunity reductionOpportunity) {
-    this.tuBefore = tuBefore;
-    this.tuAfter = tuAfter;
+    this.before = before;
+    this.after = after;
     this.execResult = execResult;
     this.reductionOpportunity = reductionOpportunity;
   }
 
-  public TranslationUnit getTuBefore() {
-    return tuBefore;
+  public ShaderJob getShaderJobBefore() {
+    return before;
   }
 
-  public TranslationUnit getTuAfter() {
-    return tuAfter;
+  public ShaderJob getShaderJobAfter() {
+    return after;
   }
 
   public ExecResult getExecResult() {

@@ -111,8 +111,9 @@ public class ReducerUnitTest {
     final IdGenerator idGenerator = new IdGenerator();
 
     for (int step = 0; step < 10; step++) {
-      List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(tu,
-            new ReductionOpportunityContext(false, shadingLanguageVersion, generator, idGenerator));
+      List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+          new GlslShaderJob(Optional.empty(), Optional.of(tu), new UniformsInfo()),
+          new ReductionOpportunityContext(false, shadingLanguageVersion, generator, idGenerator));
       if (ops.isEmpty()) {
         break;
       }

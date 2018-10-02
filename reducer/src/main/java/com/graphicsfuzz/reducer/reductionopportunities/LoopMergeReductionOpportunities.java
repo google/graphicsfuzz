@@ -27,7 +27,10 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -41,8 +44,16 @@ public class LoopMergeReductionOpportunities extends ScopeTreeBuilder {
   }
 
   static List<LoopMergeReductionOpportunity> findOpportunities(
-        TranslationUnit tu,
+        ShaderJob shaderJob,
         ReductionOpportunityContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<LoopMergeReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu) {
     LoopMergeReductionOpportunities finder = new LoopMergeReductionOpportunities();
     finder.visit(tu);
     return finder.opportunities;

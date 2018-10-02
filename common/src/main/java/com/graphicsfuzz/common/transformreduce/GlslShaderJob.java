@@ -174,4 +174,15 @@ public class GlslShaderJob implements ShaderJob {
     return false;
   }
 
+  @Override
+  public List<TranslationUnit> getShaders() {
+    final List<TranslationUnit> result = new ArrayList<>();
+    if (hasVertexShader()) {
+      result.add(getVertexShader());
+    }
+    if (hasFragmentShader()) {
+      result.add(getFragmentShader());
+    }
+    return result;
+  }
 }

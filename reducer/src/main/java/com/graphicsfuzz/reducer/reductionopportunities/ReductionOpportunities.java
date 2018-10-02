@@ -17,6 +17,7 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,11 +35,11 @@ public final class ReductionOpportunities {
    * version.  There is an option to reduce *everywhere*, rather than just reducing GLFuzz
    * transformations.
    *
-   * @param tu The translation unit to be analysed for reduction opportunities
+   * @param shaderJob The shader job to be analysed for reduction opportunities
    * @param context Information to shape the opportunities that are gathered
    */
   public static List<IReductionOpportunity> getReductionOpportunities(
-        TranslationUnit tu, ReductionOpportunityContext context) {
+      ShaderJob shaderJob, ReductionOpportunityContext context) {
     final List<IReductionOpportunity> opportunities = new ArrayList<>();
     for (IReductionOpportunityFinder<?> ros : Arrays.asList(
         IReductionOpportunityFinder.loopMergeFinder(),
@@ -63,10 +64,10 @@ public final class ReductionOpportunities {
         IReductionOpportunityFinder.unusedParamFinder(),
         IReductionOpportunityFinder.foldConstantFinder())) {
       final List<? extends IReductionOpportunity> currentOpportunities = ros
-            .findOpportunities(tu, context);
+            .findOpportunities(shaderJob, context);
       if (ReductionDriver.DEBUG_REDUCER) {
         opportunities.addAll(currentOpportunities.stream()
-              .map(item -> new CheckValidReductionOpportunityDecorator(item, tu,
+              .map(item -> new CheckValidReductionOpportunityDecorator(item, shaderJob,
                     context.getShadingLanguageVersion()))
               .collect(Collectors.toList()));
       } else {
