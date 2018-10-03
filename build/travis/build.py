@@ -27,10 +27,13 @@ def go():
 
     os.mkdir("out")
 
+    # Build with no tests.
     subprocess.check_call(["mvn", "package", "-Dmaven.test.skip=true"])
 
     # Generate third party licenses file.
     licenses.go()
+
+    # Copy license files.
 
     shutil.copy2(
         "OPEN_SOURCE_LICENSES.TXT",
@@ -47,9 +50,11 @@ def go():
         path("assembly", "src", "main", "scripts", "LICENSE.TXT")
     )
 
+    # Rebuild with tests.
     subprocess.check_call(["mvn", "clean"])
     subprocess.check_call(["mvn", "package"])  # TODO: Enable image tests.
 
+    # Copy output.
     shutil.copy2(
         path("assembly", "target", "assembly-1.0.zip"),
         path("out", "server.zip")
@@ -63,6 +68,7 @@ def go():
     subprocess.call(
         ["./gradlew", "desktop:dist"])
 
+    # Copy desktop worker.
     shutil.copy2(
         path("desktop", "build", "libs", "desktop-1.0.jar"),
         path(source_root, "out", "desktop-worker.jar")

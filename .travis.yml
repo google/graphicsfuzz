@@ -28,3 +28,5 @@ install:
 script:
   - python3.6 build/travis/build.py
 
+after_success:
+  - python3.6 build/travis/release.py

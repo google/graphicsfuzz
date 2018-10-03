@@ -25,10 +25,18 @@ def go():
     repo_name = "google/graphicsfuzz"
     log_depth = 3
 
-    if "COMMIT_HASH" not in os.environ:
-        print("Please define COMMIT_HASH")
+    if "TRAVIS_BRANCH" not in os.environ or os.environ["TRAVIS_BRANCH"] != "master":
+        print("Skipping release because this is not the master branch.")
+        sys.exit(0)
+
+    if "TRAVIS_PULL_REQUEST" in os.environ and os.environ["TRAVIS_PULL_REQUEST"] != "false":
+        print("Skipping release because this is a pull request.")
+        sys.exit(0)
+
+    if "TRAVIS_COMMIT" not in os.environ:
+        print("Please define TRAVIS_COMMIT")
         sys.exit(1)
-    commit_hash = os.environ["COMMIT_HASH"]
+    commit_hash = os.environ["TRAVIS_COMMIT"]
 
     if not os.path.isdir("out"):
         print("Failing release because 'out' directory was not found.")
