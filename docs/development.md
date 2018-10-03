@@ -127,13 +127,13 @@ The libgdx worker supports desktop, Android, and iOS platforms, but you must per
 From the root of the repo:
 
 ```shell
-# The worker requires some dependencies
-# to be installed to the local maven repo.
+# The worker requires some dependencies to be manually built.
+# If you did `mvn package`, these will have been built already.
 # These are not just used for Android, despite the name.
-mvn -am -pl android-client-dep install
+mvn -am -pl android-client-dep package
 
 # Note that when the Thrift spec is changed, you must
-# call the above to update libgdx dependencies.
+# call the above to rebuild the dependencies.
 ```
 
 ### Building the libgdx worker for desktop

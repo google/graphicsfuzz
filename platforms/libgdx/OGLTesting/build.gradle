@@ -79,13 +79,15 @@ project(":ios") {
     }
 }
 
+assert file("../../../android-client-dep/target/android-client-dep-1.0.jar").exists()
+
 project(":core") {
     apply plugin: "java"
 
 
     dependencies {
         compile "com.badlogicgames.gdx:gdx:$gdxVersion"
-        compile "com.graphicsfuzz:android-client-dep:1.0"
+        compile files("../../../../android-client-dep/target/android-client-dep-1.0.jar")
         compile "ar.com.hjg:pngj:2.1.0"
     }
 }
