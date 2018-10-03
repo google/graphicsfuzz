@@ -103,7 +103,7 @@ def prepareShaders(frag):
 
 def getImageVulkanAndroid(frag):
 
-    app = 'vulkan.samples.T15_draw_cube'
+    app = 'vulkan.samples.vulkan_worker'
 
     print('## ' + frag)
 
