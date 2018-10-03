@@ -33,12 +33,12 @@ def go():
     licenses.go()
 
     shutil.copy2(
-        "OPEN_SOURCE_LICENSES.txt",
+        "OPEN_SOURCE_LICENSES.TXT",
         path("out", "OPEN_SOURCE_LICENSES.TXT")
     )
 
     shutil.copy2(
-        "OPEN_SOURCE_LICENSES.txt",
+        "OPEN_SOURCE_LICENSES.TXT",
         path("assembly", "src", "main", "scripts", "OPEN_SOURCE_LICENSES.TXT")
     )
 
