@@ -39,8 +39,8 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
           return;
         case "cos":
           assert maybeFce.get().getNumArgs() == 1;
-          if (isOneFloat(maybeFce.get().getArg(0))) {
-            addReplaceWithZero(parent, child);
+          if (isZeroFloat(maybeFce.get().getArg(0))) {
+            addReplaceWithOne(parent, child);
           }
           return;
         default:
@@ -295,8 +295,16 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     return new FloatConstantExpr("0.0");
   }
 
+  private Expr makeOneFloat() {
+    return new FloatConstantExpr("1.0");
+  }
+
   private void addReplaceWithZero(IAstNode parent, Expr child) {
     addReplaceWithExpr(parent, child, makeZeroFloat());
+  }
+
+  private void addReplaceWithOne(IAstNode parent, Expr child) {
+    addReplaceWithExpr(parent, child, makeOneFloat());
   }
 
   private void addReplaceWithExpr(IAstNode parent, Expr child, Expr newChild) {

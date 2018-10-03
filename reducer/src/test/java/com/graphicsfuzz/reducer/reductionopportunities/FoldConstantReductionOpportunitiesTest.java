@@ -19,8 +19,8 @@ public class FoldConstantReductionOpportunitiesTest {
   }
 
   @Test
-  public void testCos1() throws Exception {
-    check("void main() { cos(1.0); }", 1, "void main() { 0.0; }");
+  public void testCos0() throws Exception {
+    check("void main() { cos(0.0); }", 1, "void main() { 1.0; }");
   }
 
   @Test
