@@ -354,7 +354,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
   }
 
   static IReductionOpportunityFinder<SimplifyExprReductionOpportunity>
-  inlineUniformFinder() {
+      inlineUniformFinder() {
     return new IReductionOpportunityFinder<SimplifyExprReductionOpportunity>() {
       @Override
       public List<SimplifyExprReductionOpportunity> findOpportunities(
