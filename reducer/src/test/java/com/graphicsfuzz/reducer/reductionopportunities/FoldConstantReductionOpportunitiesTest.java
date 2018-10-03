@@ -315,6 +315,38 @@ public class FoldConstantReductionOpportunitiesTest {
         );
   }
 
+  @Test
+  public void testSimplifyVectorLookup() throws Exception {
+    check("" +
+            "int glob;" +
+            "uint foo() { glob++; return 0u; }" +
+            "void main() {" +
+            "int a, b, c;" +
+            "float d, e, f;" +
+            "uint g, h, i;" +
+            "vec2(1.0, 0.0).x;" +
+            "vec3(1.0, d, f).g;" +
+            "ivec4(5, 2, a, b + 2).q;" +
+            "ivec3(a++, 2, 3, 4).t;" +
+            "uvec4(g, h, 5u, 3u).w;" +
+            "uvec4(foo(), h, 5u, 3u).w;" +
+            "}",
+            4,
+        "int glob;" +
+            "uint foo() { glob++; return 0u; }" +
+            "void main() {" +
+            "int a, b, c;" +
+            "float d, e, f;" +
+            "uint g, h, i;" +
+            "(1.0);" +
+            "(d);" +
+            "(b + 2);" +
+            "ivec3(a++, 2, 3, 4).t;" +
+            "(3u);" +
+            "uvec4(foo(), h, 5u, 3u).w;" +
+            "}");
+  }
+
   private void check(String before, int numOps, String after) throws IOException, ParseTimeoutException {
     final TranslationUnit tu = Helper.parse(before, false);
     final List<SimplifyExprReductionOpportunity> ops = FoldConstantReductionOpportunities

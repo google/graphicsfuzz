@@ -18,6 +18,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.SideEffectChecker;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -110,6 +111,68 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       findRemoveParenOpportunities(parent, child, maybeParen.get().getExpr());
     }
 
+    Optional<MemberLookupExpr> maybeMemberLookup = asMemberLookupExpr(child);
+    if (maybeMemberLookup.isPresent()) {
+      findReplaceTypeConstructorWithElementOpportunities(parent, child,
+          maybeMemberLookup.get());
+    }
+
+  }
+
+  private void findReplaceTypeConstructorWithElementOpportunities(
+      IAstNode parent,
+      Expr child,
+      MemberLookupExpr memberLookupExpr) {
+    if (!(memberLookupExpr.getStructure() instanceof TypeConstructorExpr)) {
+      return;
+    }
+    final TypeConstructorExpr tce = (TypeConstructorExpr) memberLookupExpr.getStructure();
+    if (!Arrays.asList("x", "y", "z", "w", "r", "g", "b", "a", "s", "t", "p", "q")
+      .contains(memberLookupExpr.getMember())) {
+      return; // We could handle swizzles, but for now we do not.
+    }
+    final Type structureType = typer.lookupType(memberLookupExpr.getStructure());
+    if (structureType == null || !(structureType instanceof BasicType)) {
+      return;
+    }
+    final BasicType basicType = (BasicType) structureType;
+    if (!BasicType.allVectorTypes().contains(basicType)) {
+      return;
+    }
+    if (basicType.getNumElements() != tce.getNumArgs()) {
+      return; // We could of course handle cases such as vec2(0.0).x resolving to 0.0; but for
+              // now we do not.
+    }
+    if (!SideEffectChecker.isSideEffectFree(tce, context.getShadingLanguageVersion())) {
+      return; // We do not want to eliminate side-effects from elements of the vector that we
+              // are not popping out.
+    }
+    int index;
+    switch (memberLookupExpr.getMember()) {
+      case "x":
+      case "r":
+      case "s":
+        index = 0;
+        break;
+      case "y":
+      case "g":
+      case "t":
+        index = 1;
+        break;
+      case "z":
+      case "b":
+      case "p":
+        index = 2;
+        break;
+      case "w":
+      case "a":
+      case "q":
+        index = 3;
+        break;
+      default:
+        throw new RuntimeException("Should be unreachable.");
+    }
+    addReplaceWithExpr(parent, child, new ParenExpr(tce.getArg(index)));
   }
 
   private void findRemoveParenOpportunities(IAstNode parent, Expr child, Expr expr) {
@@ -273,6 +336,12 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
   private Optional<ParenExpr> asParenExpr(Expr expr) {
     return expr instanceof ParenExpr
         ? Optional.of((ParenExpr) expr)
+        : Optional.empty();
+  }
+
+  private Optional<MemberLookupExpr> asMemberLookupExpr(Expr expr) {
+    return expr instanceof MemberLookupExpr
+        ? Optional.of((MemberLookupExpr) expr)
         : Optional.empty();
   }
 
