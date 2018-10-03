@@ -128,7 +128,7 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     }
     final TypeConstructorExpr tce = (TypeConstructorExpr) memberLookupExpr.getStructure();
     if (!Arrays.asList("x", "y", "z", "w", "r", "g", "b", "a", "s", "t", "p", "q")
-      .contains(memberLookupExpr.getMember())) {
+        .contains(memberLookupExpr.getMember())) {
       return; // We could handle swizzles, but for now we do not.
     }
     final Type structureType = typer.lookupType(memberLookupExpr.getStructure());
@@ -140,12 +140,12 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       return;
     }
     if (basicType.getNumElements() != tce.getNumArgs()) {
-      return; // We could of course handle cases such as vec2(0.0).x resolving to 0.0; but for
-              // now we do not.
+      // We could handle cases such as vec2(0.0).x resolving to 0.0; but for now we do not.
+      return;
     }
     if (!SideEffectChecker.isSideEffectFree(tce, context.getShadingLanguageVersion())) {
-      return; // We do not want to eliminate side-effects from elements of the vector that we
-              // are not popping out.
+      // We mustn't eliminate side-effects from elements of the vector that we are not popping out.
+      return;
     }
     int index;
     switch (memberLookupExpr.getMember()) {
