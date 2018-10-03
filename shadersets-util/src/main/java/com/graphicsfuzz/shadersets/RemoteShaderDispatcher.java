@@ -116,6 +116,8 @@ public class RemoteShaderDispatcher implements IShaderDispatcher {
     final File vertexFile = new File(shaderFilesPrefix + ".vert");
     final File primitivesFile = new File(shaderFilesPrefix + ".primitives");
 
+    assert uniformsFile.exists();
+
     imageJob.setUniformsInfo(FileUtils.readFileToString(uniformsFile, Charset.defaultCharset()));
 
     if (fragmentFile.isFile()) {

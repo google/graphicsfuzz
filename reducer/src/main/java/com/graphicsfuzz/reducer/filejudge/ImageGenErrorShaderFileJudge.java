@@ -25,8 +25,10 @@ import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,16 +64,16 @@ public class ImageGenErrorShaderFileJudge implements IFileJudge {
         return false;
       }
       // 2.
-      File outputImage = new File(workDir, shaderJobShortName + ".png");
-
-      ImageJobResult imageRes = imageGenerator.getImage(shaderJobShortName, outputImage,
-          skipRender);
+      File outputImage = new File(workDir, FilenameUtils.getBaseName(shaderJobShortName) + ".png");
+      ImageJobResult imageRes = imageGenerator
+          .getImage(Paths.get(workDir.getAbsolutePath(), shaderJobShortName).toString(),
+              outputImage,
+              skipRender);
       if (outputImage.isFile()) {
         outputImage.delete();
       }
 
-      File outputText = new File(workDir,
-          shaderJobShortName + ".txt");
+      File outputText = new File(workDir, FilenameUtils.getBaseName(shaderJobShortName) + ".txt");
 
       switch (imageRes.getStatus()) {
         case SUCCESS:
