@@ -6,6 +6,7 @@ import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.UnOp;
@@ -83,6 +84,30 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
         default:
           return;
       }
+    }
+
+    Optional<UnaryExpr> maybeUe = asUnaryExpr(child);
+    if (maybeUe.isPresent()) {
+      final Expr arg = maybeUe.get().getExpr();
+      switch (maybeUe.get().getOp()) {
+        case PLUS:
+          findFoldPlusMinusZeroOpportunities(parent, child, arg);
+          return;
+        case MINUS:
+          findFoldPlusMinusZeroOpportunities(parent, child, arg);
+          return;
+        default:
+          return;
+      }
+    }
+  }
+
+  private void findFoldPlusMinusZeroOpportunities(IAstNode parent, Expr child, Expr arg) {
+    if (isZeroFloat(arg)) {
+      addReplaceWithExpr(parent, child, makeZeroFloat());
+    }
+    if (isZeroInt(arg)) {
+      addReplaceWithExpr(parent, child, makeZeroInt());
     }
   }
 
@@ -218,6 +243,12 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
         : Optional.empty();
   }
 
+  private Optional<UnaryExpr> asUnaryExpr(Expr expr) {
+    return expr instanceof UnaryExpr
+        ? Optional.of((UnaryExpr) expr)
+        : Optional.empty();
+  }
+
   private boolean isZeroFloat(Expr expr) {
     return isFloatValue(expr, Arrays.asList("0.0", "0."));
   }
@@ -291,12 +322,27 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     return true;
   }
 
+  private boolean isZeroInt(Expr expr) {
+    return isIntValue(expr, Arrays.asList("0"));
+  }
+
+  private boolean isIntValue(Expr expr, List<String> values) {
+    if (!(expr instanceof IntConstantExpr)) {
+      return false;
+    }
+    return values.contains(((IntConstantExpr) expr).getValue());
+  }
+
   private Expr makeZeroFloat() {
     return new FloatConstantExpr("0.0");
   }
 
   private Expr makeOneFloat() {
     return new FloatConstantExpr("1.0");
+  }
+
+  private Expr makeZeroInt() {
+    return new IntConstantExpr("0");
   }
 
   private void addReplaceWithZero(IAstNode parent, Expr child) {

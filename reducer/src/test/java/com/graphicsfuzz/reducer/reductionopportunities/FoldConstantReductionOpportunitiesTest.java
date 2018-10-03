@@ -280,6 +280,11 @@ public class FoldConstantReductionOpportunitiesTest {
             + "}");
   }
 
+  @Test
+  public void testUnaryPlusOrMinusZeroToZero() throws Exception {
+    check("void main() { -0.0; +0.0; -0; +0; }", 4, "void main() { 0.0; 0.0; 0; 0; }");
+  }
+
   private void check(String before, int numOps, String after) throws IOException, ParseTimeoutException {
     final TranslationUnit tu = Helper.parse(before, false);
     final List<SimplifyExprReductionOpportunity> ops = FoldConstantReductionOpportunities
