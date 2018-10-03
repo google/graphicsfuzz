@@ -18,7 +18,7 @@ language: generic
 matrix:
   include:
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
 
 install:
