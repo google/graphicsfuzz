@@ -26,5 +26,7 @@ install:
   - export PATH="/data/bin:$PATH"
 
 script:
-  - build/travis/2-build-travis.sh
+  - python3.6 build/travis/build.py
 
+after_success:
+  - python3.6 build/travis/release.py

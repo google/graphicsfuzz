@@ -19,3 +19,5 @@ venv/
 *.bak
 
 /envbuild.py
+
+/OPEN_SOURCE_LICENSES.TXT

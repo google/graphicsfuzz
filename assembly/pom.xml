@@ -165,6 +165,29 @@ limitations under the License.
               <silent>true</silent>
             </configuration>
           </execution>
+          <execution>
+            <id>list-dep-1</id>
+            <goals>
+              <goal>list</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <outputFile>${project.build.directory}/dependencies.txt</outputFile>
+            </configuration>
+          </execution>
+          <execution>
+            <id>src-dep-1</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>javax.servlet</includeGroupIds>
+              <classifier>sources</classifier>
+              <failOnMissingClassifierArtifact>true</failOnMissingClassifierArtifact>
+              <outputDirectory>${project.build.directory}/sources</outputDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
 
@@ -180,7 +203,6 @@ limitations under the License.
             <configuration>
               <target>
                 <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
-
                 <property name="touched-file" value="${project.build.directory}/touched.txt"/>
 
                 <property name="assembly-zip" value="${project.build.directory}/${project.artifactId}-${project.version}.zip"/>
@@ -211,6 +233,7 @@ limitations under the License.
                     <pathelement location="${git-file}"/>
                     <fileset dir="${project.basedir}/src/main/scripts"/>
                     <fileset dir="${project.build.directory}/dependency"/>
+                    <fileset dir="${project.build.directory}/sources"/>
                   </sourcefiles>
                   <targetfiles path="${touched-file}"/>
                   <sequential>
@@ -228,6 +251,7 @@ limitations under the License.
                       <zipfileset src="${com.graphicsfuzz:semantic-ui:zip}" prefix="server-static/semantic"/>
                       <zipfileset dir="${project.basedir}/src/main/scripts"/>
                       <zipfileset dir="${project.build.directory}/dependency" prefix="jar"/>
+                      <zipfileset dir="${project.build.directory}/sources" prefix="sources"/>
                       <file file="${git-file}"/>
                     </zip>
                     <unzip src="${assembly-zip}" dest="${assembly-dir}"/>
