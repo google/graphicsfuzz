@@ -55,9 +55,6 @@ def go():
         path("out", "server.zip")
     )
 
-    # Install libgdx client dependencies.
-    subprocess.check_call(["mvn", "-am", "-pl", "repos/gf-private/android-client-dep", "install"])
-
     source_root = os.path.abspath(".")
 
     os.chdir(path("platforms", "libgdx", "OGLTesting"))
