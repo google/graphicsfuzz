@@ -18,6 +18,6 @@ set -x
 set -e
 set -u
 
-sudo add-apt-repository ppa:jonathonf/python-3.6 -y
+sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt-get update -q
 sudo apt-get install python3.6 -y
