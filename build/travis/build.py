@@ -17,6 +17,7 @@
 import os
 import subprocess
 import shutil
+import licenses
 
 path = os.path.join
 
@@ -25,6 +26,24 @@ def go():
     os.environ["GRADLE_OPTS"] = "-Dorg.gradle.daemon=false"
 
     os.mkdir("out")
+
+    # Generate third party licenses file.
+    licenses.go()
+
+    shutil.copy2(
+        "OPEN_SOURCE_LICENSES.txt",
+        path("out", "OPEN_SOURCE_LICENSES.TXT")
+    )
+
+    shutil.copy2(
+        "OPEN_SOURCE_LICENSES.txt",
+        path("assembly", "src", "main", "scripts", "OPEN_SOURCE_LICENSES.TXT")
+    )
+
+    shutil.copy2(
+        "LICENSE",
+        path("assembly", "src", "main", "scripts", "LICENSE.TXT")
+    )
 
     subprocess.check_call(["mvn", "package", "-Dmaven.test.skip=true"])
     subprocess.check_call(["mvn", "clean"])
@@ -35,14 +54,14 @@ def go():
         path("out", "server.zip")
     )
 
-    # install libgdx client dependencies
+    # Install libgdx client dependencies.
     subprocess.check_call(["mvn", "-am", "-pl", "repos/gf-private/android-client-dep", "install"])
 
     source_root = os.path.abspath(".")
 
     os.chdir(path("platforms", "libgdx", "OGLTesting"))
 
-    # build desktop worker
+    # Build desktop worker.
     subprocess.call(
         ["./gradlew", "desktop:dist"])
 
@@ -51,7 +70,9 @@ def go():
         path(source_root, "out", "desktop-worker.jar")
     )
 
-    
+    # TODO: Android worker.
+
+    os.chdir(source_root)
 
 
 if __name__ == "__main__":

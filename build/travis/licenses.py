@@ -17,7 +17,9 @@
 import os
 import io
 import sys
-from typing import Dict
+import typing
+import http.client
+import urllib.request
 
 path = os.path.join
 
@@ -26,8 +28,10 @@ def get_extras():
     return {
 
         'angle': {
+            'name': 'ANGLE - Almost Native Graphics Layer Engine',
             'license': 'BSD License',
             'url': 'https://github.com/google/angle',
+            'license_file': '',
             'license_url': 'https://raw.githubusercontent.com/google/angle/a0ccea1e8d1f2b7620db08c7cbbac7d01cfc38d6/LICENSE',
             'skipped': '',
         },
@@ -35,6 +39,7 @@ def get_extras():
         'spirv-headers': {
             'name': 'SPIR-V Headers',
             'url': 'https://github.com/KhronosGroup/SPIRV-Headers',
+            'license_file': '',
             'license_url': 'https://raw.githubusercontent.com/KhronosGroup/SPIRV-Headers/d5b2e1255f706ce1f88812217e9a554f299848af/LICENSE',
             'skipped': '',
         },
@@ -43,6 +48,7 @@ def get_extras():
             'comment': 'Used by angle',
             'name': 'libpng',
             'url': 'http://libpng.org/pub/png/libpng.html',
+            'license_file': '',
             'license_url': 'http://libpng.org/pub/png/src/libpng-LICENSE.txt',
             'skipped': '',
         },
@@ -256,12 +262,12 @@ def get_extras():
             'comment': '',
             'name': 'Max Sills\' GLSL shaders',
             'url':
-               [
-                   'https://www.shadertoy.com/view/4sy3D3',
-                   'https://www.shadertoy.com/view/MtdGzf',
-                   'https://www.shadertoy.com/view/llKGRc',
-                   'https://www.shadertoy.com/view/lsKXDW',
-               ],
+                [
+                    'https://www.shadertoy.com/view/4sy3D3',
+                    'https://www.shadertoy.com/view/MtdGzf',
+                    'https://www.shadertoy.com/view/llKGRc',
+                    'https://www.shadertoy.com/view/lsKXDW',
+                ],
             'license_url': '',
             'license_file': 'build/licenses/max-sills-shaders.txt',
             'skipped': '',
@@ -270,10 +276,7 @@ def get_extras():
         'valters-mednis-shaders': {
             'comment': '',
             'name': 'Valters Mednis\' GLSL shaders',
-            'url':
-                [
-                    'https://www.shadertoy.com/view/ltVGWG',
-                ],
+            'url':'https://www.shadertoy.com/view/ltVGWG',
             'license_url': '',
             'license_file': 'build/licenses/valters-mednis-shaders.txt',
             'skipped': '',
@@ -451,7 +454,10 @@ def get_maven_dependencies_populated():
             'name': 'jQuery',
             'url': 'https://jquery.org/',
             'license_url': '',
-            'license_file': 'third_party/jquery-js/LICENSE',
+            'license_file': [
+                'third_party/jquery-js/LICENSE.txt',
+                'third_party/jquery-js/AUTHORS.txt',
+            ],
             'skipped': '',
         },
         'com.graphicsfuzz:python': {
@@ -780,7 +786,9 @@ def get_maven_dependencies_populated():
     }
 
 
-def read_maven_dependencies(dependencies_dict: Dict[str, Dict], dependencies_file: str):
+def read_maven_dependencies(
+        dependencies_dict: typing.Dict[str, typing.Dict],
+        dependencies_file: str):
 
     with io.open(dependencies_file, 'r') as fin:
         for line in fin:
@@ -793,20 +801,101 @@ def read_maven_dependencies(dependencies_dict: Dict[str, Dict], dependencies_fil
                 dependencies_dict[dependency] = dict()
 
 
+def write_license_from_file(fout: typing.TextIO, license_file: str) -> None:
+    fout.write("\n")
+    fout.write("\n")
+    with io.open(license_file, 'r') as fin:
+        contents = fin.read()
+        fout.write(contents)
+
+
+def write_license_from_url(fout: typing.TextIO, url: str) -> None:
+    fout.write("\n")
+    fout.write("\n")
+    response: http.client.HTTPResponse
+    with urllib.request.urlopen(url) as response:
+        contents = response.read()
+        fout.write(contents.decode())
+
+
 def go():
-    maven_dependencies: Dict[str, Dict] = dict()
+    maven_dependencies: typing.Dict[str, typing.Dict] = dict()
     read_maven_dependencies(maven_dependencies, path("assembly", "target", "dependencies.txt"))
-    maven_dependencies_populated = get_maven_dependencies_populated()
-    extras = get_extras()
+    dependencies_populated = get_maven_dependencies_populated()
+    dependencies_populated.update(get_extras())
 
     # Check for new maven dependencies for which we have not provided license information.
     for dep in maven_dependencies:
-        if dep not in maven_dependencies_populated:
+        if dep not in dependencies_populated:
             print("Missing dependency " + dep)
             sys.exit(1)
 
+    # Write a THIRD_PARTY file.
+    with io.open("OPEN_SOURCE_LICENSES.TXT", "w", newline='\r\n') as fout:
+
+        fout.write("\n")
+        fout.write("Summary of projects:\n\n")
+
+        for (dep, details) in dependencies_populated.items():
+            print("Dependency: " + dep)
+            if len(details["skipped"]) > 0:
+                print("Skipping (" + details["skipped"] + ")")
+                continue
+
+            fout.write("  " + details["name"] + " (" + dep + ") ")
+            project_url = details["url"]
+            if isinstance(project_url, list):
+                for url in project_url:
+                    fout.write(url + " ")
+            else:
+                fout.write(project_url)
+
+            fout.write("\n")
+
+        fout.write("\n")
+        fout.write("All projects and licenses:\n")
 
 
+
+        for (dep, details) in dependencies_populated.items():
+            print("Dependency: " + dep)
+            if len(details["skipped"]) > 0:
+                print("Skipping (" + details["skipped"] + ")")
+                continue
+
+            fout.write("\n\n")
+            fout.write("Name: " + details["name"] + "\n")
+            fout.write("Short name: " + dep + "\n")
+
+            project_url = details["url"]
+            if isinstance(project_url, list):
+                fout.write("Project URL: ")
+                for url in project_url:
+                    fout.write(url + " ")
+            else:
+                fout.write("Project URL: " + project_url)
+
+            fout.write("\n")
+
+            license_url = details["license_url"]
+            license_file = details["license_file"]
+
+            # license_url xor license_file should be present.
+            assert (len(license_url) == 0) != (len(license_file) == 0)
+
+            if len(license_url) > 0:
+                if isinstance(license_url, list):
+                    for url in license_url:
+                        write_license_from_url(fout, url)
+                else:
+                    write_license_from_url(fout, license_url)
+
+            if len(license_file) > 0:
+                if isinstance(license_file, list):
+                    for license_file_inner in license_file:
+                        write_license_from_file(fout, license_file_inner)
+                else:
+                    write_license_from_file(fout, license_file)
 
 
 if __name__ == "__main__":
