@@ -27,6 +27,8 @@ def go():
 
     os.mkdir("out")
 
+    subprocess.check_call(["mvn", "package", "-Dmaven.test.skip=true"])
+
     # Generate third party licenses file.
     licenses.go()
 
@@ -45,7 +47,6 @@ def go():
         path("assembly", "src", "main", "scripts", "LICENSE.TXT")
     )
 
-    subprocess.check_call(["mvn", "package", "-Dmaven.test.skip=true"])
     subprocess.check_call(["mvn", "clean"])
     subprocess.check_call(["mvn", "package"])  # TODO: Enable image tests.
 
