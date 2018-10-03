@@ -285,6 +285,36 @@ public class FoldConstantReductionOpportunitiesTest {
     check("void main() { -0.0; +0.0; -0; +0; }", 4, "void main() { 0.0; 0.0; 0; 0; }");
   }
 
+  @Test
+  public void testRemoveParens() throws Exception {
+    check("void main() {" +
+            "int x;" +
+            "vec2 v;" +
+            "(x);" +
+            "(x + y) * z;" +
+            "(v).x;" +
+            "(v.x);" +
+            "(v + vec2(2.0)).x;" +
+            "(1.0);" +
+            "(vec2(1.0));" +
+            "(sin(3.0));" +
+            "}",
+        6,
+        "void main() {" +
+            "int x;" +
+            "vec2 v;" +
+            "x;" +
+            "(x + y) * z;" +
+            "v.x;" +
+            "v.x;" +
+            "(v + vec2(2.0)).x;" +
+            "1.0;" +
+            "vec2(1.0);" +
+            "sin(3.0);" +
+            "}"
+        );
+  }
+
   private void check(String before, int numOps, String after) throws IOException, ParseTimeoutException {
     final TranslationUnit tu = Helper.parse(before, false);
     final List<SimplifyExprReductionOpportunity> ops = FoldConstantReductionOpportunities

@@ -3,14 +3,17 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.UnOp;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -18,6 +21,7 @@ import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import jdk.nashorn.internal.ir.FunctionCall;
 
 public final class FoldConstantReductionOpportunities extends SimplifyExprReductionOpportunities {
 
@@ -99,6 +103,23 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
         default:
           return;
       }
+    }
+
+    Optional<ParenExpr> maybeParen = asParenExpr(child);
+    if (maybeParen.isPresent()) {
+      findRemoveParenOpportunities(parent, child, maybeParen.get().getExpr());
+    }
+
+  }
+
+  private void findRemoveParenOpportunities(IAstNode parent, Expr child, Expr expr) {
+    if (expr instanceof ConstantExpr
+        || expr instanceof VariableIdentifierExpr
+        || expr instanceof ParenExpr
+        || expr instanceof FunctionCallExpr
+        || expr instanceof MemberLookupExpr
+        || expr instanceof TypeConstructorExpr) {
+      addReplaceWithExpr(parent, child, expr);
     }
   }
 
@@ -246,6 +267,12 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
   private Optional<UnaryExpr> asUnaryExpr(Expr expr) {
     return expr instanceof UnaryExpr
         ? Optional.of((UnaryExpr) expr)
+        : Optional.empty();
+  }
+
+  private Optional<ParenExpr> asParenExpr(Expr expr) {
+    return expr instanceof ParenExpr
+        ? Optional.of((ParenExpr) expr)
         : Optional.empty();
   }
 
