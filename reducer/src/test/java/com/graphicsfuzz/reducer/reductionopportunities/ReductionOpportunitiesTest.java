@@ -42,9 +42,9 @@ public class ReductionOpportunitiesTest {
   public void testDeadConditionalNotReplaced() throws IOException, ParseTimeoutException {
     // Regression test for a bug where the guard of a dead conditional was being replaced by "true"
     String prog = "void main() {" +
-      "if(" + Constants.GLF_DEAD + "(" + Constants.GLF_IDENTITY + "(false, true && ("
+      "if(" + Constants.GLF_DEAD + "(" + Constants.GLF_IDENTITY + "(false, true && "
         + Constants.GLF_IDENTITY + "(false, (true ? false : " + Constants.GLF_FUZED
-        + "(true))))))) {"
+        + "(true)))))) {"
         + "  }"
         + "}\n";
 

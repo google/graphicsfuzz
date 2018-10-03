@@ -28,13 +28,12 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -130,7 +129,7 @@ public final class PruneUniforms {
       assert arrayInfo.getSize() * baseType.getNumElements() == args.size();
       List<Expr> argExprs = new ArrayList<>();
       for (int index = 0; index < arrayInfo.getSize(); index++) {
-        argExprs.add(getTypeConstructorExpr(baseType,
+        argExprs.add(getBasicTypeLiteralExpr(baseType,
             args.subList(index * baseType.getNumElements(),
                 (index + 1) * baseType.getNumElements())));
       }
@@ -138,17 +137,23 @@ public final class PruneUniforms {
           new ArrayType(baseType.getWithoutQualifiers(), arrayInfo.clone()),
           argExprs));
     }
-    return new ScalarInitializer(getTypeConstructorExpr(baseType, args));
+    return new ScalarInitializer(getBasicTypeLiteralExpr(baseType, args));
   }
 
-  private static TypeConstructorExpr getTypeConstructorExpr(BasicType baseType, List<Number> args) {
+  public static Expr getBasicTypeLiteralExpr(BasicType baseType, List<Number> args) {
     List<Expr> argExprs;
     if (baseType.getElementType() == BasicType.FLOAT) {
       argExprs = args.stream().map(item -> new FloatConstantExpr(item.toString()))
           .collect(Collectors.toList());
+    } else if (baseType.getElementType() == BasicType.UINT) {
+      argExprs = args.stream().map(item -> new UIntConstantExpr(item.toString() + "u"))
+          .collect(Collectors.toList());
     } else {
       argExprs = args.stream().map(item -> new IntConstantExpr(item.toString()))
           .collect(Collectors.toList());
+    }
+    if (argExprs.size() == 1) {
+      return argExprs.get(0);
     }
     return new TypeConstructorExpr(baseType.toString(),
         argExprs);

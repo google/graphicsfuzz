@@ -3,20 +3,26 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.UnOp;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.SideEffectChecker;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import jdk.nashorn.internal.ir.FunctionCall;
 
 public final class FoldConstantReductionOpportunities extends SimplifyExprReductionOpportunities {
 
@@ -39,8 +45,8 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
           return;
         case "cos":
           assert maybeFce.get().getNumArgs() == 1;
-          if (isOneFloat(maybeFce.get().getArg(0))) {
-            addReplaceWithZero(parent, child);
+          if (isZeroFloat(maybeFce.get().getArg(0))) {
+            addReplaceWithOne(parent, child);
           }
           return;
         default:
@@ -83,6 +89,109 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
         default:
           return;
       }
+    }
+
+    Optional<UnaryExpr> maybeUe = asUnaryExpr(child);
+    if (maybeUe.isPresent()) {
+      final Expr arg = maybeUe.get().getExpr();
+      switch (maybeUe.get().getOp()) {
+        case PLUS:
+          findFoldPlusMinusZeroOpportunities(parent, child, arg);
+          return;
+        case MINUS:
+          findFoldPlusMinusZeroOpportunities(parent, child, arg);
+          return;
+        default:
+          return;
+      }
+    }
+
+    Optional<ParenExpr> maybeParen = asParenExpr(child);
+    if (maybeParen.isPresent()) {
+      findRemoveParenOpportunities(parent, child, maybeParen.get().getExpr());
+    }
+
+    Optional<MemberLookupExpr> maybeMemberLookup = asMemberLookupExpr(child);
+    if (maybeMemberLookup.isPresent()) {
+      findReplaceTypeConstructorWithElementOpportunities(parent, child,
+          maybeMemberLookup.get());
+    }
+
+  }
+
+  private void findReplaceTypeConstructorWithElementOpportunities(
+      IAstNode parent,
+      Expr child,
+      MemberLookupExpr memberLookupExpr) {
+    if (!(memberLookupExpr.getStructure() instanceof TypeConstructorExpr)) {
+      return;
+    }
+    final TypeConstructorExpr tce = (TypeConstructorExpr) memberLookupExpr.getStructure();
+    if (!Arrays.asList("x", "y", "z", "w", "r", "g", "b", "a", "s", "t", "p", "q")
+        .contains(memberLookupExpr.getMember())) {
+      return; // We could handle swizzles, but for now we do not.
+    }
+    final Type structureType = typer.lookupType(memberLookupExpr.getStructure());
+    if (structureType == null || !(structureType instanceof BasicType)) {
+      return;
+    }
+    final BasicType basicType = (BasicType) structureType;
+    if (!BasicType.allVectorTypes().contains(basicType)) {
+      return;
+    }
+    if (basicType.getNumElements() != tce.getNumArgs()) {
+      // We could handle cases such as vec2(0.0).x resolving to 0.0; but for now we do not.
+      return;
+    }
+    if (!SideEffectChecker.isSideEffectFree(tce, context.getShadingLanguageVersion())) {
+      // We mustn't eliminate side-effects from elements of the vector that we are not popping out.
+      return;
+    }
+    int index;
+    switch (memberLookupExpr.getMember()) {
+      case "x":
+      case "r":
+      case "s":
+        index = 0;
+        break;
+      case "y":
+      case "g":
+      case "t":
+        index = 1;
+        break;
+      case "z":
+      case "b":
+      case "p":
+        index = 2;
+        break;
+      case "w":
+      case "a":
+      case "q":
+        index = 3;
+        break;
+      default:
+        throw new RuntimeException("Should be unreachable.");
+    }
+    addReplaceWithExpr(parent, child, new ParenExpr(tce.getArg(index)));
+  }
+
+  private void findRemoveParenOpportunities(IAstNode parent, Expr child, Expr expr) {
+    if (expr instanceof ConstantExpr
+        || expr instanceof VariableIdentifierExpr
+        || expr instanceof ParenExpr
+        || expr instanceof FunctionCallExpr
+        || expr instanceof MemberLookupExpr
+        || expr instanceof TypeConstructorExpr) {
+      addReplaceWithExpr(parent, child, expr);
+    }
+  }
+
+  private void findFoldPlusMinusZeroOpportunities(IAstNode parent, Expr child, Expr arg) {
+    if (isZeroFloat(arg)) {
+      addReplaceWithExpr(parent, child, makeZeroFloat());
+    }
+    if (isZeroInt(arg)) {
+      addReplaceWithExpr(parent, child, makeZeroInt());
     }
   }
 
@@ -218,6 +327,24 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
         : Optional.empty();
   }
 
+  private Optional<UnaryExpr> asUnaryExpr(Expr expr) {
+    return expr instanceof UnaryExpr
+        ? Optional.of((UnaryExpr) expr)
+        : Optional.empty();
+  }
+
+  private Optional<ParenExpr> asParenExpr(Expr expr) {
+    return expr instanceof ParenExpr
+        ? Optional.of((ParenExpr) expr)
+        : Optional.empty();
+  }
+
+  private Optional<MemberLookupExpr> asMemberLookupExpr(Expr expr) {
+    return expr instanceof MemberLookupExpr
+        ? Optional.of((MemberLookupExpr) expr)
+        : Optional.empty();
+  }
+
   private boolean isZeroFloat(Expr expr) {
     return isFloatValue(expr, Arrays.asList("0.0", "0."));
   }
@@ -291,12 +418,35 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     return true;
   }
 
+  private boolean isZeroInt(Expr expr) {
+    return isIntValue(expr, Arrays.asList("0"));
+  }
+
+  private boolean isIntValue(Expr expr, List<String> values) {
+    if (!(expr instanceof IntConstantExpr)) {
+      return false;
+    }
+    return values.contains(((IntConstantExpr) expr).getValue());
+  }
+
   private Expr makeZeroFloat() {
     return new FloatConstantExpr("0.0");
   }
 
+  private Expr makeOneFloat() {
+    return new FloatConstantExpr("1.0");
+  }
+
+  private Expr makeZeroInt() {
+    return new IntConstantExpr("0");
+  }
+
   private void addReplaceWithZero(IAstNode parent, Expr child) {
     addReplaceWithExpr(parent, child, makeZeroFloat());
+  }
+
+  private void addReplaceWithOne(IAstNode parent, Expr child) {
+    addReplaceWithExpr(parent, child, makeOneFloat());
   }
 
   private void addReplaceWithExpr(IAstNode parent, Expr child, Expr newChild) {

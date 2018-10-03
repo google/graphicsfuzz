@@ -19,8 +19,8 @@ public class FoldConstantReductionOpportunitiesTest {
   }
 
   @Test
-  public void testCos1() throws Exception {
-    check("void main() { cos(1.0); }", 1, "void main() { 0.0; }");
+  public void testCos0() throws Exception {
+    check("void main() { cos(0.0); }", 1, "void main() { 1.0; }");
   }
 
   @Test
@@ -278,6 +278,73 @@ public class FoldConstantReductionOpportunitiesTest {
             + "a - mat4(0.0);" // Should not be simplified to a
             + " mat3(0.0) - a;" // Should not be simplified to -a
             + "}");
+  }
+
+  @Test
+  public void testUnaryPlusOrMinusZeroToZero() throws Exception {
+    check("void main() { -0.0; +0.0; -0; +0; }", 4, "void main() { 0.0; 0.0; 0; 0; }");
+  }
+
+  @Test
+  public void testRemoveParens() throws Exception {
+    check("void main() {" +
+            "int x;" +
+            "vec2 v;" +
+            "(x);" +
+            "(x + y) * z;" +
+            "(v).x;" +
+            "(v.x);" +
+            "(v + vec2(2.0)).x;" +
+            "(1.0);" +
+            "(vec2(1.0));" +
+            "(sin(3.0));" +
+            "}",
+        6,
+        "void main() {" +
+            "int x;" +
+            "vec2 v;" +
+            "x;" +
+            "(x + y) * z;" +
+            "v.x;" +
+            "v.x;" +
+            "(v + vec2(2.0)).x;" +
+            "1.0;" +
+            "vec2(1.0);" +
+            "sin(3.0);" +
+            "}"
+        );
+  }
+
+  @Test
+  public void testSimplifyVectorLookup() throws Exception {
+    check("" +
+            "int glob;" +
+            "uint foo() { glob++; return 0u; }" +
+            "void main() {" +
+            "int a, b, c;" +
+            "float d, e, f;" +
+            "uint g, h, i;" +
+            "vec2(1.0, 0.0).x;" +
+            "vec3(1.0, d, f).g;" +
+            "ivec4(5, 2, a, b + 2).q;" +
+            "ivec3(a++, 2, 3, 4).t;" +
+            "uvec4(g, h, 5u, 3u).w;" +
+            "uvec4(foo(), h, 5u, 3u).w;" +
+            "}",
+            4,
+        "int glob;" +
+            "uint foo() { glob++; return 0u; }" +
+            "void main() {" +
+            "int a, b, c;" +
+            "float d, e, f;" +
+            "uint g, h, i;" +
+            "(1.0);" +
+            "(d);" +
+            "(b + 2);" +
+            "ivec3(a++, 2, 3, 4).t;" +
+            "(3u);" +
+            "uvec4(foo(), h, 5u, 3u).w;" +
+            "}");
   }
 
   private void check(String before, int numOps, String after) throws IOException, ParseTimeoutException {

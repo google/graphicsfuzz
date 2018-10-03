@@ -71,7 +71,7 @@ public class PruneUniformsTest {
           + "}\n";
 
     final String expectedProgram = "uniform float a;"
-          + "float prune_b = float(23.0);"
+          + "float prune_b = 23.0;"
           + "uniform int c;"
           + "void main() {"
           + "}";
@@ -151,12 +151,12 @@ public class PruneUniformsTest {
           + "  }\n"
           + "}\n";
 
-    final String expectedProgram = "int liveI[10] = int[10](int(1), int(2), int(3), int(4), int(5), int(6), int(7), int(8), int(9), int(10));"
+    final String expectedProgram = "int liveI[10] = int[10](1, 2, 3, 4, 5, 6, 7, 8, 9, 10);"
           + "vec3 deadF[3] = vec3[3](vec3(1.0, 2.0, 3.0), vec3(4.0, 5.0, 6.0), vec3(7.0, 8.0, 9.0));"
           + "vec2 deadH = vec2(258.0, 259.0);"
           + "vec2 liveG = vec2(256.0, 257.0);"
-          + "uint liveA = uint(25);"
-          + "uint liveB = uint(26);"
+          + "uint liveA = 25u;"
+          + "uint liveB = 26u;"
           + "bvec3 liveC[3] = bvec3[3](bvec3(0, 1, 0), bvec3(1, 0, 1), bvec3(0, 1, 0));"
           + "void main() {"
           + "}";

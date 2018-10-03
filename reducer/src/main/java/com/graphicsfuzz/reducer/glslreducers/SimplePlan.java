@@ -67,7 +67,7 @@ public class SimplePlan implements IReductionPlan {
   @Override
   public ShaderJob applyReduction(ShaderJob shaderJob)
       throws NoMoreToReduceException {
-    final ShaderJob workingShaderJob = getWorkingShaderJob(shaderJob);
+    final ShaderJob workingShaderJob = shaderJob.clone();
     int localPercentageToReduce = percentageToReduce;
     while (true) {
       if (attemptToTransform(workingShaderJob, localPercentageToReduce)) {
@@ -213,17 +213,6 @@ public class SimplePlan implements IReductionPlan {
       percentageToReduce /= 2;
     }
     percentageToReduce = Math.max(percentageToReduce, 1);
-  }
-
-  private ShaderJob getWorkingShaderJob(ShaderJob shaderJob) {
-    return new GlslShaderJob(
-        shaderJob.hasVertexShader()
-            ? Optional.of(shaderJob.getVertexShader().cloneAndPatchUp())
-            : Optional.empty(),
-        shaderJob.hasFragmentShader()
-            ? Optional.of(shaderJob.getFragmentShader().cloneAndPatchUp())
-            : Optional.empty(),
-        new UniformsInfo(shaderJob.getUniformsInfo().toString()));
   }
 
 }

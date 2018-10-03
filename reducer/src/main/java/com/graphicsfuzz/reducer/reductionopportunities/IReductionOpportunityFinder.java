@@ -353,4 +353,21 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
+  static IReductionOpportunityFinder<SimplifyExprReductionOpportunity>
+      inlineUniformFinder() {
+    return new IReductionOpportunityFinder<SimplifyExprReductionOpportunity>() {
+      @Override
+      public List<SimplifyExprReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReductionOpportunityContext context) {
+        return InlineUniformReductionOpportunities.findOpportunities(shaderJob, context);
+      }
+
+      @Override
+      public String getName() {
+        return "inlineUniforms";
+      }
+    };
+  }
+
 }
