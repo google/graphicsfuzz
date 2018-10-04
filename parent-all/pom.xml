@@ -52,7 +52,7 @@ limitations under the License.
       <dependency>
         <groupId>com.github.mc-imperial</groupId>
         <artifactId>ogltesting-binaries</artifactId>
-        <version>bc4f2ac3</version>
+        <version>22a57aa</version>
         <type>zip</type>
       </dependency>
 
