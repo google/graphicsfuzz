@@ -332,10 +332,10 @@ this corresponds to the queue of *commands* to which this command
 will be queued.
 Generally,
 commands (executable scripts or binaries,
-such as `run_shader_set` or `reduce_variant`) in a command queue
+such as `run_shader_family` or `reduce_variant`) in a command queue
 will queue jobs to the corresponding worker's job queue
 or, in some cases, commands to the same command queue.
-Commands like `reduce_variant` and `run_shader_set`
+Commands like `reduce_variant` and `run_shader_family`
 are intercepted by the server so that a corresponding
 Java method is executed directly in the server process,
 instead of launching a separate process.

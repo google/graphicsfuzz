@@ -48,9 +48,9 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RunShaderSet {
+public class RunShaderFamily {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(RunShaderSet.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RunShaderFamily.class);
 
   public static void main(String[] args) {
     try {
@@ -69,7 +69,7 @@ public class RunShaderSet {
       FuzzerServiceManager.Iface managerOverride)
       throws ShaderDispatchException, InterruptedException, IOException, ArgumentParserException {
 
-    ArgumentParser parser = ArgumentParsers.newArgumentParser("RunShaderSet")
+    ArgumentParser parser = ArgumentParsers.newArgumentParser("RunShaderFamily")
         .defaultHelp(true)
         .description("Get images for all shaders in a shader set.");
 
@@ -91,15 +91,15 @@ public class RunShaderSet {
         .setDefault(new File("."))
         .type(File.class);
 
-    parser.addArgument("shader_set_directory")
-        .help("Shader set directory")
-        .type(File.class);
+    parser.addArgument("shader_family")
+        .help("Shader family directory, or prefix of single shader job")
+        .type(String.class);
 
 
     Namespace ns = parser.parseArgs(args);
 
     final boolean verbose = ns.get("verbose");
-    final File shaderSetFile = ns.get("shader_set_directory");
+    final String shaderFamily = ns.get("shader_family");
     final String server = ns.get("server");
     final String token = ns.get("token");
     final File outputDir = ns.get("output");
@@ -127,24 +127,24 @@ public class RunShaderSet {
 
     FileUtils.forceMkdir(outputDir);
 
-    if (!shaderSetFile.isDirectory()) {
-      if (!shaderSetFile.isFile() || !shaderSetFile.getName().endsWith(".frag")) {
+    if (!new File(shaderFamily).isDirectory()) {
+      if (!new File(shaderFamily + ".json").exists()) {
         throw new ArgumentParserException(
-            "Shader set must be a directory or a single .frag shader.", parser);
+            "Shader family must be a directory or the prefix of a single shader job.", parser);
       }
       // Special case: run get image on a single shader.
-      runShader(outputDir, FilenameUtils.removeExtension(shaderSetFile.getName()), imageGenerator,
+      runShader(outputDir, shaderFamily, imageGenerator,
           Optional.empty());
       return;
     }
 
-    IShaderSet shaderSet = new LocalShaderSet(shaderSetFile);
+    IShaderSet shaderSet = new LocalShaderSet(new File(shaderFamily));
 
-    runShaderSet(shaderSet, outputDir, imageGenerator);
+    runShaderFamily(shaderSet, outputDir, imageGenerator);
   }
 
-  public static int runShaderSet(IShaderSet shaderSet, File workDir,
-      IShaderDispatcher imageGenerator)
+  public static int runShaderFamily(IShaderSet shaderSet, File workDir,
+                                    IShaderDispatcher imageGenerator)
       throws ShaderDispatchException, InterruptedException, IOException {
 
     int numShadersRun = 0;

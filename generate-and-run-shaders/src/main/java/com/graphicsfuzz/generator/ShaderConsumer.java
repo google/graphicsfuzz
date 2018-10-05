@@ -24,7 +24,7 @@ import com.graphicsfuzz.server.thrift.JobStatus;
 import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.ImageData;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
-import com.graphicsfuzz.shadersets.RunShaderSet;
+import com.graphicsfuzz.shadersets.RunShaderFamily;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
@@ -86,7 +86,7 @@ public class ShaderConsumer implements Runnable {
         final File preparedReferenceShader =
               referenceShaderToPreparedReferenceShader.get(reference);
         final ImageJobResult referenceResult =
-              RunShaderSet.runShader(
+              RunShaderFamily.runShader(
                     outputDir,
                     FilenameUtils.removeExtension(preparedReferenceShader.getName()),
                     imageGenerator,
@@ -113,7 +113,7 @@ public class ShaderConsumer implements Runnable {
                 new File(outputDir, "invalid_" + outputFilenamePrefix + ".frag"));
           continue;
         }
-        RunShaderSet.runShader(
+        RunShaderFamily.runShader(
               outputDir,
               FilenameUtils.removeExtension(generatedShader.getVariant().getName()),
               imageGenerator,
