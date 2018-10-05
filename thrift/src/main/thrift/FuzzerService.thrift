@@ -254,7 +254,7 @@ service FuzzerService {
 * Each command is literally a command;
 * the command is run with the arguments given.
 * E.g.
-*   - run_shader_family shaderfamily/bbb --output processing/greylaptop/bbb_exp/
+*   - run_shader_family shaderfamilies/bbb --output processing/greylaptop/bbb_exp/
 *
 * The commands will typically queue jobs to a job queue for workers.
 *
