@@ -23,10 +23,18 @@ import android.util.Log;
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
 import com.graphicsfuzz.repackaged.com.google.gson.JsonObject;
+import com.graphicsfuzz.repackaged.org.apache.commons.io.FileUtils;
+import com.graphicsfuzz.server.thrift.ImageJob;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
 
 public class AndroidLauncher extends AndroidApplication {
 
-  Main main = null;
+	Main main = null;
+	private static final boolean USE_GLES3 = true;
+	private static final boolean STANDALONE = false;
 
 	@Override
 	protected void onPause() {
@@ -212,6 +220,21 @@ public class AndroidLauncher extends AndroidApplication {
 
 		main.programBinaryGetter = new AndroidProgramBinaryGetter();
 
+		if (STANDALONE) {
+			ImageJob standaloneRenderJob = new ImageJob();
+			try {
+				standaloneRenderJob
+						.setName("standalone")
+						.setFragmentSource(FileUtils.readFileToString(new File("/sdcard/graphicsfuzz/test.frag"), Charset.defaultCharset()))
+						.setVertexSource(FileUtils.readFileToString(new File("/sdcard/graphicsfuzz/test.vert"), Charset.defaultCharset()))
+						.setUniformsInfo(FileUtils.readFileToString(new File("/sdcard/graphicsfuzz/test.json"), Charset.defaultCharset()));
+			} catch (IOException exception) {
+				throw new RuntimeException(exception);
+			}
+
+			main.standaloneRenderJob = standaloneRenderJob;
+			main.standaloneOutputFilename = "/sdcard/graphicsfuzz/image.png";
+		}
 
 		config.depth = 24;
 		config.stencil = 8;
@@ -225,7 +248,7 @@ public class AndroidLauncher extends AndroidApplication {
 		config.useAccelerometer = false;
 		config.useImmersiveMode = true;
 //		config.hideStatusBar = true;
-		config.useGL30 = true;
+		config.useGL30 = USE_GLES3;
 		initialize(main, config);
 	}
 }

@@ -100,7 +100,7 @@ public class Main extends ApplicationAdapter {
       + "}";
 
   private Job job;
-  private TimingInfo timingInfo;
+  private TimingInfo timingInfo = new TimingInfo();
 
   // persistentData must be set by launcher
   public PersistentData persistentData = null;
@@ -301,7 +301,6 @@ public class Main extends ApplicationAdapter {
     if (jobGetter == null) {
       try {
         jobGetter = new JobGetter(url);
-        timingInfo = new TimingInfo();
         // Sets all fields to 0
         timingInfo.clear();
         resetBackoff();
