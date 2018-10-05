@@ -101,33 +101,7 @@ public class GenerateAndRunShadersTest {
       );
       throw new RuntimeException("Exception expected.");
     } catch (IllegalArgumentException exception) {
-      assertEquals("Shader a.frag has no associated JSON file.", exception.getMessage());
-    }
-  }
-
-  @Test
-  public void testMissingLicense() throws Exception {
-    final File donors = temporaryFolder.newFolder();
-    final File references = temporaryFolder.newFolder();
-    final String outputDir = new File(temporaryFolder.getRoot(), "output").getAbsolutePath();
-
-    new File(references, "a.frag").createNewFile();
-    new File(references, "a.json").createNewFile();
-
-    try {
-      GenerateAndRunShaders.main(
-            new String[]{
-                references.getAbsolutePath(),
-                donors.getAbsolutePath(),
-                outputDir,
-                "dummy_server",
-                "dummy_token",
-                "100"
-            }
-      );
-      throw new RuntimeException("Exception expected.");
-    } catch (IllegalArgumentException exception) {
-      assertEquals("Shader a.frag has no associated license file.", exception.getMessage());
+      assertEquals("No shader jobs found.", exception.getMessage());
     }
   }
 

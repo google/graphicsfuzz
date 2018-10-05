@@ -21,111 +21,132 @@ import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.tool.EnabledTransformations;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.tool.GeneratorArguments;
+import com.graphicsfuzz.generator.tool.PrepareReference;
 import java.io.File;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ShaderProducer implements Runnable {
 
-  private final int limit;
-  private final BlockingQueue<ReferenceVariantPair> queue;
-  private final File outputDir;
-  private final List<File> referenceFragmentShaders;
-  private final ShadingLanguageVersion shadingLanguageVersion;
-  private final boolean replaceFloatLiterals;
-  private final Namespace ns;
-  private final File donors;
+  private static final Logger LOGGER = LoggerFactory.getLogger(ShaderProducer.class);
 
-  public ShaderProducer(
+  private final int limit;
+  private final List<String> shaderJobPrefixes;
+  private final IRandom generator;
+  private final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue;
+  private final File referencesDir;
+  private final ShadingLanguageVersion shadingLanguageVersion;
+  private final Namespace ns;
+  private final File donorsDir;
+
+  ShaderProducer(
         int limit,
-        BlockingQueue<ReferenceVariantPair> queue,
-        File outputDir,
-        List<File> referenceFragmentShaders,
+        List<String> shaderJobPrefixes,
+        IRandom generator,
+        BlockingQueue<Pair<ShaderJob, ShaderJob>> queue,
+        File referencesDir,
         ShadingLanguageVersion shadingLanguageVersion,
-        boolean replaceFloatLiterals,
-        File donors,
+        File donorsDir,
         Namespace ns) {
     this.limit = limit;
+    this.shaderJobPrefixes = shaderJobPrefixes;
+    this.generator = generator;
     this.queue = queue;
-    this.outputDir = outputDir;
-    this.referenceFragmentShaders = referenceFragmentShaders;
+    this.referencesDir = referencesDir;
     this.shadingLanguageVersion = shadingLanguageVersion;
-    this.replaceFloatLiterals = replaceFloatLiterals;
-    this.donors = donors;
+    this.donorsDir = donorsDir;
     this.ns = ns;
   }
 
   @Override
   public void run() {
-    try {
-      final IRandom generator = new RandomWrapper(ns.get("seed"));
+    assert referencesDir.isDirectory();
+    assert donorsDir.isDirectory();
 
-      final EnabledTransformations enabledTransformations =
-            Generate.getTransformationDisablingFlags(ns);
+    final EnabledTransformations enabledTransformations =
+        Generate.getTransformationDisablingFlags(ns);
 
-      int sent = 0;
-      int counter = 0;
-      while (sent < limit) {
-        final int index = counter++;
-        final File referenceFragment = referenceFragmentShaders
-            .get(index % referenceFragmentShaders.size());
-        final String outputFilenamePrefix = String.format("%04d", index)
-              + "_" + FilenameUtils.getBaseName(referenceFragment.getName());
+    final GeneratorArguments generatorArguments =
+        new GeneratorArguments(shadingLanguageVersion,
+            generator.nextInt(Integer.MAX_VALUE),
+            ns.getBoolean("small"),
+            ns.getBoolean("avoid_long_loops"),
+            ns.getBoolean("multi_pass"),
+            ns.getBoolean("aggressively_complicate_control_flow"),
+            ns.getBoolean("replace_float_literals"),
+            donorsDir,
+            ns.getBoolean("generate_uniform_bindings"),
+            ns.getInt("max_uniforms"),
+            enabledTransformations
+        );
 
-        final GeneratorArguments generatorArguments =
-              new GeneratorArguments(shadingLanguageVersion,
-                  generator.nextInt(Integer.MAX_VALUE),
-                  ns.getBoolean("small"),
-                  ns.getBoolean("avoid_long_loops"),
-                  ns.getBoolean("multi_pass"),
-                  ns.getBoolean("aggressively_complicate_control_flow"),
-                  replaceFloatLiterals,
-                  donors,
-                  false,
-                  0,
-                  enabledTransformations
-              );
+    int sent = 0;
+    for (int counter = 0; sent < limit; counter++) {
+      final String referenceShaderJobPrefix = shaderJobPrefixes
+          .get(counter % shaderJobPrefixes.size());
 
+      try {
+        LOGGER.info("Preparing shader job pair based on " + referenceShaderJobPrefix + ".");
+        final ShaderJob referenceShaderJob = Helper.parseShaderJob(referencesDir,
+            referenceShaderJobPrefix, false);
+        final ShaderJob variantShaderJob = referenceShaderJob.clone();
+        PrepareReference.prepareReference(
+            referenceShaderJob,
+            shadingLanguageVersion,
+            generatorArguments.getReplaceFloatLiterals(),
+            generatorArguments.getMaxUniforms(),
+            generatorArguments.getGenerateUniformBindings());
+        Generate.generateVariant(variantShaderJob, generatorArguments);
         try {
-          final File referenceJsonFile =
-              new File(FilenameUtils.removeExtension(referenceFragment.getAbsolutePath())
-                  + ".json");
-          final ShaderJob shaderJob = new GlslShaderJob(
-              Optional.empty(),
-              Optional.of(Helper.parse(
-                  new File(referenceFragment.getAbsolutePath()), false)),
-              new UniformsInfo(referenceJsonFile));
-          Generate.generateVariant(shaderJob, generatorArguments);
-          Helper.emitShaderJob(shaderJob, shadingLanguageVersion, outputFilenamePrefix,
-              outputDir, null);
-        } catch (Exception | AssertionError exception) {
-          // Something went wrong - grab the details and move on.
-          FileUtils.writeStringToFile(
-                new File(outputDir, outputFilenamePrefix + ".error"),
-                exception.toString(), StandardCharsets.UTF_8);
-          continue;
+          queue.put(new ImmutablePair<>(referenceShaderJob, variantShaderJob));
+        } catch (InterruptedException exception) {
+          LOGGER.error("Problem putting to queue.", exception);
+          throw new RuntimeException(exception);
         }
-        final File generatedShader = new File(outputDir, outputFilenamePrefix + ".frag");
-        assert generatedShader.exists();
-        final File generatedShaderFlags = new File(FilenameUtils.removeExtension(generatedShader
-              .getAbsolutePath()) + ".flags");
-        FileUtils.writeStringToFile(generatedShaderFlags, generatorArguments.toString(),
-              StandardCharsets.UTF_8);
-        queue.put(new ReferenceVariantPair(referenceFragment, generatedShader));
         sent++;
+        LOGGER.info("Sent shader job pair.");
+      } catch (ParseTimeoutException | IOException | AssertionError exception) {
+        // Something went wrong - log the details and move on.
+        LOGGER.error("Error during generation.", exception);
+        continue;
       }
-    } catch (Throwable exception) {
-      throw new RuntimeException(exception);
     }
   }
+
+  private static List<ShaderJob> populateReferenceShaderJobs(File shadersDir)
+      throws IOException, ParseTimeoutException {
+    assert shadersDir.exists() && shadersDir.isDirectory();
+    final List<ShaderJob> result = new ArrayList<>();
+    for (File uniformsJson : shadersDir.listFiles((dir, name) -> name.endsWith(".json"))) {
+      final File vertexShader = new File(FilenameUtils.removeExtension(uniformsJson.getName())
+          + ".vert");
+      final File fragmentShader = new File(FilenameUtils.removeExtension(uniformsJson.getName())
+          + ".frag");
+      result.add(new GlslShaderJob(
+          vertexShader.exists()
+              ? Optional.of(Helper.parse(vertexShader, false))
+              : Optional.empty(),
+          fragmentShader.exists()
+              ? Optional.of(Helper.parse(fragmentShader, false))
+              : Optional.empty(),
+          new UniformsInfo(uniformsJson)));
+    }
+    return result;
+  }
+
+
 }
