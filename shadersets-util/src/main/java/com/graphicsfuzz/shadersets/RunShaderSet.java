@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,8 +52,7 @@ public class RunShaderSet {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RunShaderSet.class);
 
-  public static void main(String[] args)
-      throws ShaderDispatchException, InterruptedException, IOException {
+  public static void main(String[] args) {
     try {
       mainHelper(args, null);
     } catch (ArgumentParserException exception) {
@@ -133,7 +133,8 @@ public class RunShaderSet {
             "Shader set must be a directory or a single .frag shader.", parser);
       }
       // Special case: run get image on a single shader.
-      runShader(shaderSetFile, outputDir, imageGenerator, Optional.empty());
+      runShader(outputDir, FilenameUtils.removeExtension(shaderSetFile.getName()), imageGenerator,
+          Optional.empty());
       return;
     }
 
@@ -151,7 +152,9 @@ public class RunShaderSet {
     IShaderSetExperiment experiment = new LocalShaderSetExperiement(workDir.toString(), shaderSet);
 
     if (experiment.getReferenceImage() == null && experiment.getReferenceTextFile() == null) {
-      runShader(shaderSet.getReference(), workDir, imageGenerator, Optional.empty());
+      runShader(workDir, FilenameUtils.removeExtension(shaderSet.getReference().getName()),
+          imageGenerator,
+          Optional.empty());
       ++numShadersRun;
     }
 
@@ -179,7 +182,7 @@ public class RunShaderSet {
         LOGGER.info("Skipping {} because we already have a result.", variant);
       } else {
         try {
-          runShader(variant, workDir, imageGenerator,
+          runShader(workDir, FilenameUtils.removeExtension(variant.getName()), imageGenerator,
               Optional.of(new ImageData(experiment.getReferenceImage())));
         } catch (Exception err) {
           LOGGER.error("runShader() raise exception on {}", variant);
@@ -191,17 +194,16 @@ public class RunShaderSet {
     return numShadersRun;
   }
 
-  public static ImageJobResult runShader(File shader, File workDir,
+  public static ImageJobResult runShader(File workDir, String shaderJobPrefix,
       IShaderDispatcher imageGenerator, Optional<ImageData> referenceImage)
       throws ShaderDispatchException, InterruptedException, IOException {
 
-    String rawname = FilenameUtils.removeExtension(shader.getName());
-    File outputImage = new File(workDir, rawname + ".png");
-    File outputText = new File(workDir, rawname + ".txt");
+    final File outputImage = new File(workDir, shaderJobPrefix + ".png");
+    final File outputText = new File(workDir, shaderJobPrefix + ".txt");
 
-    LOGGER.info("Shader set experiment: {} ", shader);
+    LOGGER.info("Shader set experiment: {} ", shaderJobPrefix);
     ImageJobResult res = imageGenerator.getImage(
-        FilenameUtils.removeExtension(shader.getAbsolutePath()), outputImage, false);
+        Paths.get(workDir.getAbsolutePath(), shaderJobPrefix).toString(), outputImage, false);
 
     if (res.isSetLog()) {
       FileUtils.writeStringToFile(outputText, res.getLog(), Charset.defaultCharset());
@@ -215,9 +217,9 @@ public class RunShaderSet {
     if (res.isSetPNG() && res.isSetPNG2()) {
       // we can dump both images
       File outputNondet1 = new File(workDir,
-          FilenameUtils.removeExtension(shader.getName()) + "_nondet1.png");
+          Paths.get(workDir.getAbsolutePath(), shaderJobPrefix + "_nondet1.png").toString());
       File outputNondet2 = new File(workDir,
-          FilenameUtils.removeExtension(shader.getName()) + "_nondet2.png");
+          Paths.get(workDir.getAbsolutePath(), shaderJobPrefix + "_nondet2.png").toString());
       FileUtils.writeByteArrayToFile(outputNondet1, res.getPNG());
       FileUtils.writeByteArrayToFile(outputNondet2, res.getPNG2());
 
@@ -230,7 +232,7 @@ public class RunShaderSet {
         BufferedImage img2 = ImageIO.read(
             new ByteArrayInputStream(res.getPNG2()));
         File gifFile = new File(workDir,
-              FilenameUtils.removeExtension(shader.getName()) + ".gif");
+              shaderJobPrefix + ".gif");
         ImageOutputStream gifOutput = new FileImageOutputStream(gifFile);
         GifSequenceWriter gifWriter = new GifSequenceWriter(gifOutput, img1.getType(), 500, true);
         gifWriter.writeToSequence(nondetImg);
@@ -245,8 +247,7 @@ public class RunShaderSet {
     }
 
     // Dump job info in JSON
-    File outputJson = new File(workDir,
-        FilenameUtils.removeExtension(shader.getName()) + ".info.json");
+    File outputJson = new File(workDir,shaderJobPrefix + ".info.json");
     JsonObject infoJson = makeInfoJson(res, outputImage, referenceImage);
     FileUtils.writeStringToFile(outputJson,
         JsonHelper.jsonToString(infoJson), Charset.defaultCharset());
