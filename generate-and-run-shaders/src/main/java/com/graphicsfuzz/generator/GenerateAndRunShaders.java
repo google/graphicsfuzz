@@ -27,12 +27,18 @@ import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -77,6 +83,15 @@ public class GenerateAndRunShaders {
     // Optional arguments
     Generate.addGeneratorCommonArguments(parser);
 
+    parser.addArgument("--ignore_crash_strings")
+        .help("File containing crash strings to ignore, one per line.")
+        .type(File.class);
+
+    parser.addArgument("--only_variants")
+        .help("Only run variant shaders (so sacrifice finding wrong images in favour of crashes.")
+        .type(Boolean.class)
+        .action(Arguments.storeTrue());
+
     try {
       return parser.parseArgs(args);
     } catch (ArgumentParserException exception) {
@@ -88,7 +103,7 @@ public class GenerateAndRunShaders {
   }
 
   public static void main(String[] args)
-        throws IOException, ParseTimeoutException, InterruptedException, ShaderDispatchException {
+      throws IOException, InterruptedException {
     final Namespace ns = parse(args);
     final File referencesDir = ns.get("references");
     if (!referencesDir.exists()) {
@@ -109,24 +124,47 @@ public class GenerateAndRunShaders {
     final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue =
         new LinkedBlockingQueue<>();
 
-    new Thread(new ShaderConsumer(
+    final File crashStringsToIgnoreFile = ns.get("ignore_crash_strings");
+    final Set<String> crashStringsToIgnore = new HashSet<>();
+    if (crashStringsToIgnoreFile != null) {
+      crashStringsToIgnore.addAll(FileUtils.readLines(crashStringsToIgnoreFile,
+          StandardCharsets.UTF_8));
+    }
+
+    final List<String> shaderJobPrefixes =
+        Arrays.stream(referencesDir.listFiles((dir, name) -> name.endsWith(".json")))
+            .map(item -> FilenameUtils.removeExtension(item.getName()))
+            .collect(Collectors.toList());
+    if (shaderJobPrefixes.isEmpty()) {
+      throw new IllegalArgumentException("No shader jobs found.");
+    }
+
+    final Thread consumer = new Thread(new ShaderConsumer(
           LIMIT,
           queue,
           outputDir,
           ns.get("server"),
           ns.get("token"),
-          shadingLanguageVersion
-    )).start();
+          shadingLanguageVersion,
+          crashStringsToIgnore,
+          ns
+    ));
+    consumer.start();
 
-    new Thread(new ShaderProducer(
+    final Thread producer = new Thread(new ShaderProducer(
           LIMIT,
+          shaderJobPrefixes,
           new RandomWrapper(ns.get("seed")),
           queue,
           referencesDir,
           shadingLanguageVersion,
           donors,
           ns
-    )).start();
+    ));
+    producer.start();
+
+    consumer.join();
+    producer.join();
 
   }
 

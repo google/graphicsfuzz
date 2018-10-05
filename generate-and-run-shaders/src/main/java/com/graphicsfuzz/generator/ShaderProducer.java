@@ -47,6 +47,7 @@ public class ShaderProducer implements Runnable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ShaderProducer.class);
 
   private final int limit;
+  private final List<String> shaderJobPrefixes;
   private final IRandom generator;
   private final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue;
   private final File referencesDir;
@@ -56,6 +57,7 @@ public class ShaderProducer implements Runnable {
 
   ShaderProducer(
         int limit,
+        List<String> shaderJobPrefixes,
         IRandom generator,
         BlockingQueue<Pair<ShaderJob, ShaderJob>> queue,
         File referencesDir,
@@ -63,6 +65,7 @@ public class ShaderProducer implements Runnable {
         File donorsDir,
         Namespace ns) {
     this.limit = limit;
+    this.shaderJobPrefixes = shaderJobPrefixes;
     this.generator = generator;
     this.queue = queue;
     this.referencesDir = referencesDir;
@@ -75,10 +78,7 @@ public class ShaderProducer implements Runnable {
   public void run() {
     assert referencesDir.isDirectory();
     assert donorsDir.isDirectory();
-    final List<String> shaderJobPrefixes =
-        Arrays.stream(referencesDir.listFiles((dir, name) -> name.endsWith(".json")))
-            .map(item -> FilenameUtils.removeExtension(item.getName()))
-            .collect(Collectors.toList());
+
     final EnabledTransformations enabledTransformations =
         Generate.getTransformationDisablingFlags(ns);
 

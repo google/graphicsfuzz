@@ -70,6 +70,7 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.commons.io.FilenameUtils;
 
 public class Generate {
 
@@ -295,7 +296,8 @@ public class Generate {
           : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
 
       final String referencePrefix = ns.get("reference_prefix");
-      final ShaderJob shaderJob = Helper.parseShaderJob(new File("."), referencePrefix, false);
+
+      final ShaderJob shaderJob = Helper.parseShaderJob(referencePrefix, false);
 
       final StringBuilder generationInfo = generateVariant(
           shaderJob,

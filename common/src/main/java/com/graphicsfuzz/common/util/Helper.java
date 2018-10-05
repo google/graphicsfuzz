@@ -188,6 +188,15 @@ public final class Helper {
         new UniformsInfo(referenceUniforms));
   }
 
+  public static ShaderJob parseShaderJob(String shaderJobPrefix,
+                                         boolean stripHeader) throws IOException,
+      ParseTimeoutException {
+    String path = FilenameUtils.getFullPath(shaderJobPrefix);
+    path = path.equals("") ? "." : path;
+    return parseShaderJob(new File(path), FilenameUtils.getName(shaderJobPrefix), stripHeader);
+  }
+
+
   public static Optional<String> readLicenseFile(File licenseFile) throws IOException {
     if (licenseFile == null || !licenseFile.isFile()) {
       return Optional.empty();
