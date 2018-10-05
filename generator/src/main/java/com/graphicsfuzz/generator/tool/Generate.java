@@ -295,7 +295,7 @@ public class Generate {
           : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
 
       final String referencePrefix = ns.get("reference_prefix");
-      final ShaderJob shaderJob = Helper.parseShaderJob(new File("."), referencePrefix);
+      final ShaderJob shaderJob = Helper.parseShaderJob(new File("."), referencePrefix, false);
 
       final StringBuilder generationInfo = generateVariant(
           shaderJob,

@@ -169,7 +169,8 @@ public final class Helper {
     return ParseHelper.parse(shader, stripHeader);
   }
 
-  public static ShaderJob parseShaderJob(File workDir, String shaderJobPrefix) throws IOException,
+  public static ShaderJob parseShaderJob(File workDir, String shaderJobPrefix,
+                                         boolean stripHeader) throws IOException,
       ParseTimeoutException {
     final File referenceUniforms =
         new File(workDir, shaderJobPrefix + ".json");
@@ -179,10 +180,10 @@ public final class Helper {
         new File(workDir, shaderJobPrefix + ".frag");
     return new GlslShaderJob(
         referenceVert.exists()
-            ? Optional.of(Helper.parse(referenceVert, false))
+            ? Optional.of(Helper.parse(referenceVert, stripHeader))
             : Optional.empty(),
         referenceFrag.exists()
-            ? Optional.of(Helper.parse(referenceFrag, false))
+            ? Optional.of(Helper.parse(referenceFrag, stripHeader))
             : Optional.empty(),
         new UniformsInfo(referenceUniforms));
   }

@@ -104,7 +104,7 @@ public class ShaderProducer implements Runnable {
       try {
         LOGGER.info("Preparing shader job pair based on " + referenceShaderJobPrefix + ".");
         final ShaderJob referenceShaderJob = Helper.parseShaderJob(referencesDir,
-            referenceShaderJobPrefix);
+            referenceShaderJobPrefix, false);
         final ShaderJob variantShaderJob = referenceShaderJob.clone();
         PrepareReference.prepareReference(
             referenceShaderJob,
