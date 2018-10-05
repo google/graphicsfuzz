@@ -47,6 +47,8 @@ project(":desktop") {
     }
 }
 
+assert file("../../../android-client-dep/target/android-client-dep-1.0.jar").exists()
+
 project(":android") {
    apply plugin: "android"
 
@@ -61,6 +63,7 @@ project(":android") {
        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
        compile "com.android.support:appcompat-v7:23.4.0"
+       compile files("../../../../android-client-dep/target/android-client-dep-1.0.jar")
 
    }
 }
@@ -78,8 +81,6 @@ project(":ios") {
         compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios"
     }
 }
-
-assert file("../../../android-client-dep/target/android-client-dep-1.0.jar").exists()
 
 project(":core") {
     apply plugin: "java"
