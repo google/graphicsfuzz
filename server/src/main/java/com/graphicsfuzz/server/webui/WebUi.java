@@ -1776,7 +1776,7 @@ public class WebUi extends HttpServlet {
       }
     } catch (Exception exception) {
       exception.printStackTrace();
-      throw new ServletException("GET method failed, request was: " + request.toString());
+      throw new ServletException("GET method failed, request was: " + request.toString(), exception);
     }
   }
 
