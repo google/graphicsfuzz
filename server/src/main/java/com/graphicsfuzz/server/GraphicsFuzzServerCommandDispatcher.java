@@ -19,7 +19,7 @@ package com.graphicsfuzz.server;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.reducer.tool.Reduce;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager.Iface;
-import com.graphicsfuzz.shadersets.RunShaderSet;
+import com.graphicsfuzz.shadersets.RunShaderFamily;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import java.io.IOException;
 import java.util.List;
@@ -32,8 +32,8 @@ public class GraphicsFuzzServerCommandDispatcher implements ICommandDispatcher {
         throws ShaderDispatchException, ArgumentParserException, InterruptedException,
         IOException, ParseTimeoutException {
     switch (command.get(0)) {
-      case "run_shader_set":
-        RunShaderSet.mainHelper(
+      case "run_shader_family":
+        RunShaderFamily.mainHelper(
               command.subList(1, command.size()).toArray(new String[0]),
               fuzzerServiceManager
         );
