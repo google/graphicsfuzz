@@ -254,7 +254,7 @@ service FuzzerService {
 * Each command is literally a command;
 * the command is run with the arguments given.
 * E.g.
-*   - run_shader_family shadersets/bbb --output processing/greylaptop/bbb_exp/
+*   - run_shader_family shaderfamily/bbb --output processing/greylaptop/bbb_exp/
 *
 * The commands will typically queue jobs to a job queue for workers.
 *
@@ -275,9 +275,9 @@ service FuzzerServiceManager {
   * Queues a command to a worker's command queue.
   **/
   void queueCommand(
-    // E.g. "Run shaderset bbb"
+    // E.g. "Run shader family bbb"
     1 : string name,
-    // E.g. run_shader_family shadersets/bbb --output processing/greylaptop/bbb_exp/
+    // E.g. run_shader_family shaderfamilies/bbb --output processing/greylaptop/bbb_exp/
     2 : list<string> command,
     // This should generally be set to the token.
     3 : string queueName,
