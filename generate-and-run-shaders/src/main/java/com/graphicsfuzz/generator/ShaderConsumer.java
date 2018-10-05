@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
+import com.graphicsfuzz.server.thrift.JobStatus;
 import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
 import com.graphicsfuzz.shadersets.RunShaderFamily;
@@ -29,6 +30,7 @@ import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import org.apache.commons.io.FileUtils;
@@ -106,20 +108,56 @@ public class ShaderConsumer implements Runnable {
         continue;
       }
 
-      maybeLogCrash(referenceResult, referenceShaderJob);
-      maybeLogCrash(variantResult, variantShaderJob);
-      maybeLogWrongImage(referenceResult, variantResult, referenceShaderJob, variantShaderJob);
+      final String counterString = String.format("%04d", received);
 
-      //throw new RuntimeException("Decide what to do with the results!");
-
+      try {
+        maybeLogFailure(referenceResult.get(), referencePrefix, counterString);
+        maybeLogFailure(variantResult.get(), variantPrefix, counterString);
+        maybeLogWrongImage(referenceResult.get(),
+            variantResult.get(),
+            referencePrefix,
+            variantPrefix,
+            counterString);
+      } catch (IOException exception) {
+        LOGGER.error(
+            "A problem occurred when logging failures; defeats the point of the exercise.",
+            exception);
+        throw new RuntimeException(exception);
+      }
     }
   }
 
-  private void maybeLogCrash(Optional<ImageJobResult> referenceResult, ShaderJob referenceShaderJob) {
-    // TODO: implement.
+  private void maybeLogFailure(ImageJobResult shaderJobResult, String prefix, String counter)
+      throws IOException {
+    switch (shaderJobResult.getStatus()) {
+      case CRASH:
+      case COMPILE_ERROR:
+      case LINK_ERROR:
+      case TIMEOUT:
+      case UNEXPECTED_ERROR:
+      case SANITY_ERROR:
+      case NONDET:
+        final File triageDirectory = new File(outputDir, shaderJobResult.getStatus().toString());
+        if (!triageDirectory.exists()) {
+          triageDirectory.mkdir();
+          throw new RuntimeException();
+        } else {
+          assert triageDirectory.isDirectory();
+        }
+        for (File file : outputDir.listFiles((dir, name) -> name.startsWith(prefix))) {
+          FileUtils.copyFile(file, new File(triageDirectory, counter + file.getName()));
+        }
+        return;
+      default:
+        return;
+    }
   }
 
-  private void maybeLogWrongImage(Optional<ImageJobResult> referenceResult, Optional<ImageJobResult> variantResult, ShaderJob referenceShaderJob, ShaderJob variantShaderJob) {
+  private void maybeLogWrongImage(ImageJobResult referenceResult,
+                                  ImageJobResult variantResult,
+                                  String referencePrefix,
+                                  String variantPrefix,
+                                  String counter) {
     // TODO: implement.
   }
 
