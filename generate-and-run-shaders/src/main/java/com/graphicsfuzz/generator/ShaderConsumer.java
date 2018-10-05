@@ -19,13 +19,8 @@ package com.graphicsfuzz.generator;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
-import com.graphicsfuzz.common.util.ParseTimeoutException;
-import com.graphicsfuzz.generator.tool.PrepareReference;
-import com.graphicsfuzz.server.thrift.ImageJob;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
-import com.graphicsfuzz.server.thrift.JobStatus;
 import com.graphicsfuzz.shadersets.IShaderDispatcher;
-import com.graphicsfuzz.shadersets.ImageData;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
 import com.graphicsfuzz.shadersets.RunShaderFamily;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
@@ -34,13 +29,9 @@ import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +70,7 @@ public class ShaderConsumer implements Runnable {
         token);
 
     for (int received = 0; received < limit; received++) {
+      LOGGER.info("Consuming shader job " + received);
       Pair<ShaderJob, ShaderJob> shaderPair;
       try {
         shaderPair = queue.take();
@@ -87,15 +79,29 @@ public class ShaderConsumer implements Runnable {
         throw new RuntimeException(exception);
       }
 
+      final String referencePrefix = "temp_reference";
+      final String variantPrefix = "temp_variant";
+
+      final File[] files = outputDir.listFiles((dir, name) -> name.startsWith(referencePrefix)
+          || name.startsWith(variantPrefix));
+      for (File toDelete :
+          files) {
+        if (!toDelete.delete()) {
+          final String message = "Problem deleting file " + toDelete.getName();
+          LOGGER.error(message);
+          throw new RuntimeException(message);
+        }
+      }
+
       final ShaderJob referenceShaderJob = shaderPair.getLeft();
       final Optional<ImageJobResult> referenceResult = runShaderJob(referenceShaderJob,
-          "reference", imageGenerator);
+          referencePrefix, imageGenerator);
       if (!referenceResult.isPresent()) {
         continue;
       }
       final ShaderJob variantShaderJob = shaderPair.getRight();
       final Optional<ImageJobResult> variantResult = runShaderJob(variantShaderJob,
-          "variant", imageGenerator);
+          variantPrefix, imageGenerator);
       if (!variantResult.isPresent()) {
         continue;
       }
@@ -104,7 +110,7 @@ public class ShaderConsumer implements Runnable {
       maybeLogCrash(variantResult, variantShaderJob);
       maybeLogWrongImage(referenceResult, variantResult, referenceShaderJob, variantShaderJob);
 
-      throw new RuntimeException("Decide what to do with the results!");
+      //throw new RuntimeException("Decide what to do with the results!");
 
     }
   }
@@ -117,30 +123,55 @@ public class ShaderConsumer implements Runnable {
     // TODO: implement.
   }
 
-  private Optional<ImageJobResult> runShaderJob(ShaderJob shaderJob, String referenceOrVariant,
+  private Optional<ImageJobResult> runShaderJob(ShaderJob shaderJob, String prefix,
                                IShaderDispatcher imageGenerator) {
-    final String tempPrefix = "temp_" + referenceOrVariant;
+    // Emit the shader job.
     try {
       Helper.emitShaderJob(shaderJob, shadingLanguageVersion,
-          tempPrefix,
+          prefix,
           outputDir,
           null);
     } catch (IOException exception) {
-      LOGGER.error("Could not emit " + referenceOrVariant + " shader job.",
+      LOGGER.error("Could not emit " + prefix + " shader job.",
           exception);
       return Optional.empty();
     }
 
+    // Validate the shader job.
+    try {
+      if (shaderJob.hasVertexShader() && !validShader(prefix + ".vert")) {
+        return Optional.empty();
+      }
+      if (shaderJob.hasFragmentShader() && !validShader(prefix + ".frag")) {
+        return Optional.empty();
+      }
+    } catch (InterruptedException | IOException exception) {
+      LOGGER.error("Problem validating " + prefix + " shader job.", exception);
+      return Optional.empty();
+    }
+
+    // Run the shader job.
     try {
       return Optional.of(RunShaderFamily.runShader(outputDir,
-          tempPrefix,
+          prefix,
           imageGenerator,
           Optional.empty()));
     } catch (InterruptedException | IOException | ShaderDispatchException exception) {
-      LOGGER.error("Problem running " + referenceOrVariant + " shader job.",
-          exception);
+      LOGGER.error("Problem running " + prefix + " shader job.", exception);
       return Optional.empty();
     }
+  }
+
+  private boolean validShader(String filename) throws IOException, InterruptedException {
+    final ExecResult validatorResult =
+        ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
+            new File(outputDir, filename));
+    if (validatorResult.res != 0) {
+      LOGGER.error("Shader job " + filename + " is not valid: "
+          + validatorResult.stdout + validatorResult.stderr);
+      return false;
+    }
+    return true;
   }
 
 }

@@ -26,6 +26,7 @@ import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.tool.EnabledTransformations;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.tool.GeneratorArguments;
+import com.graphicsfuzz.generator.tool.PrepareReference;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -102,21 +103,15 @@ public class ShaderProducer implements Runnable {
 
       try {
         LOGGER.info("Preparing shader job pair based on " + referenceShaderJobPrefix + ".");
-        final File referenceUniforms =
-            new File(referenceShaderJobPrefix + ".json");
-        final File referenceVert =
-            new File(referenceShaderJobPrefix + ".vert");
-        final File referenceFrag =
-            new File(referenceShaderJobPrefix + ".frag");
-        final ShaderJob referenceShaderJob = new GlslShaderJob(
-            referenceVert.exists()
-                ? Optional.of(Helper.parse(referenceVert, false))
-                : Optional.empty(),
-            referenceFrag.exists()
-                ? Optional.of(Helper.parse(referenceFrag, false))
-                : Optional.empty(),
-            new UniformsInfo(referenceUniforms));
+        final ShaderJob referenceShaderJob = Helper.parseShaderJob(referencesDir,
+            referenceShaderJobPrefix);
         final ShaderJob variantShaderJob = referenceShaderJob.clone();
+        PrepareReference.prepareReference(
+            referenceShaderJob,
+            shadingLanguageVersion,
+            generatorArguments.getReplaceFloatLiterals(),
+            generatorArguments.getMaxUniforms(),
+            generatorArguments.getGenerateUniformBindings());
         Generate.generateVariant(variantShaderJob, generatorArguments);
         try {
           queue.put(new ImmutablePair<>(referenceShaderJob, variantShaderJob));

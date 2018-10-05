@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.io.BufferedReader;
 import java.io.File;
@@ -166,6 +167,24 @@ public final class Helper {
   public static TranslationUnit parse(File shader, boolean stripHeader)
       throws IOException,ParseTimeoutException {
     return ParseHelper.parse(shader, stripHeader);
+  }
+
+  public static ShaderJob parseShaderJob(File workDir, String shaderJobPrefix) throws IOException,
+      ParseTimeoutException {
+    final File referenceUniforms =
+        new File(workDir, shaderJobPrefix + ".json");
+    final File referenceVert =
+        new File(workDir, shaderJobPrefix + ".vert");
+    final File referenceFrag =
+        new File(workDir, shaderJobPrefix + ".frag");
+    return new GlslShaderJob(
+        referenceVert.exists()
+            ? Optional.of(Helper.parse(referenceVert, false))
+            : Optional.empty(),
+        referenceFrag.exists()
+            ? Optional.of(Helper.parse(referenceFrag, false))
+            : Optional.empty(),
+        new UniformsInfo(referenceUniforms));
   }
 
   public static Optional<String> readLicenseFile(File licenseFile) throws IOException {

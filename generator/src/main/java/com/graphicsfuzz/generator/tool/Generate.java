@@ -180,6 +180,9 @@ public class Generate {
     final StringBuilder result = new StringBuilder();
     final IRandom random = new RandomWrapper(args.getSeed());
 
+    for (TranslationUnit shader : shaderJob.getShaders()) {
+      addInjectionSwitchIfNotPresent(shader);
+    }
     setInjectionSwitch(shaderJob.getUniformsInfo());
 
     result.append(transformShader(
@@ -292,19 +295,7 @@ public class Generate {
           : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
 
       final String referencePrefix = ns.get("reference_prefix");
-      final File vertexReference = new File(referencePrefix + ".vert");
-      final File fragmentReference = new File(referencePrefix + ".frag");
-      final File jsonReference = new File(referencePrefix + ".json");
-
-      final ShaderJob shaderJob = new GlslShaderJob(
-          vertexReference.isFile()
-              ? Optional.of(getReferenceTranslationUnit(vertexReference))
-              : Optional.empty(),
-          fragmentReference.isFile()
-              ? Optional.of(getReferenceTranslationUnit(fragmentReference))
-              : Optional.empty(),
-          new UniformsInfo(jsonReference)
-      );
+      final ShaderJob shaderJob = Helper.parseShaderJob(new File("."), referencePrefix);
 
       final StringBuilder generationInfo = generateVariant(
           shaderJob,
@@ -559,21 +550,12 @@ public class Generate {
     uniformsInfo.setUniforms(tu, floatSupplier, intSupplier, uintSupplier, boolSupplier);
   }
 
-  public static TranslationUnit getReferenceTranslationUnit(File referenceFile)
-        throws IOException, ParseTimeoutException {
-    TranslationUnit original = ParseHelper.parse(referenceFile, false);
-    addInjectionSwitchIfNotPresent(original);
-    return original;
-  }
-
   public static void addInjectionSwitchIfNotPresent(TranslationUnit tu) {
     if (alreadyDeclaresInjectionSwitch(tu)) {
       return;
     }
-
-    List<TypeQualifier> qualifiers = new ArrayList<>();
-    qualifiers.add(TypeQualifier.UNIFORM);
-    tu.addDeclaration(new VariablesDeclaration(new QualifiedType(BasicType.VEC2, qualifiers),
+    tu.addDeclaration(new VariablesDeclaration(new QualifiedType(BasicType.VEC2,
+        Arrays.asList(TypeQualifier.UNIFORM)),
           new VariableDeclInfo(Constants.INJECTION_SWITCH, null, null)));
   }
 
