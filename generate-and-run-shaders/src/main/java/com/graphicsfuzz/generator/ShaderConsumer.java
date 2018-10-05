@@ -87,8 +87,8 @@ public class ShaderConsumer implements Runnable {
               referenceShaderToPreparedReferenceShader.get(reference);
         final ImageJobResult referenceResult =
               RunShaderSet.runShader(
-                    preparedReferenceShader,
                     outputDir,
+                    FilenameUtils.removeExtension(preparedReferenceShader.getName()),
                     imageGenerator,
                     Optional.empty());
         if (referenceResult.status != JobStatus.SUCCESS) {
@@ -113,8 +113,9 @@ public class ShaderConsumer implements Runnable {
                 new File(outputDir, "invalid_" + outputFilenamePrefix + ".frag"));
           continue;
         }
-        RunShaderSet.runShader(generatedShader.getVariant(),
+        RunShaderSet.runShader(
               outputDir,
+              FilenameUtils.removeExtension(generatedShader.getVariant().getName()),
               imageGenerator,
               Optional.of(referenceToImageData.get(generatedShader.getReference())));
       }
