@@ -17,8 +17,11 @@
 package com.graphicsfuzz.generator;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.generator.tool.PrepareReference;
+import com.graphicsfuzz.server.thrift.ImageJob;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.JobStatus;
 import com.graphicsfuzz.shadersets.IShaderDispatcher;
@@ -38,118 +41,106 @@ import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ShaderConsumer implements Runnable {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(ShaderConsumer.class);
+
   private final int limit;
-  private final BlockingQueue<ReferenceVariantPair> queue;
+  private final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue;
   private final File outputDir;
   private final String server;
   private final String token;
-  private final List<File> referenceShaders;
   private final ShadingLanguageVersion shadingLanguageVersion;
-  private final boolean replaceFloatLiterals;
 
   public ShaderConsumer(
-        int limit,
-        BlockingQueue<ReferenceVariantPair> queue,
-        File outputDir,
-        String server,
-        String token,
-        List<File> referenceShaders,
-        ShadingLanguageVersion shadingLanguageVersion,
-        boolean replaceFloatLiterals) {
+      int limit,
+      BlockingQueue<Pair<ShaderJob, ShaderJob>> queue,
+      File outputDir,
+      String server,
+      String token,
+      ShadingLanguageVersion shadingLanguageVersion) {
     this.limit = limit;
     this.queue = queue;
     this.outputDir = outputDir;
     this.server = server;
     this.token = token;
-    this.referenceShaders = referenceShaders;
     this.shadingLanguageVersion = shadingLanguageVersion;
-    this.replaceFloatLiterals = replaceFloatLiterals;
   }
 
   @Override
   public void run() {
 
-    try {
+    final IShaderDispatcher imageGenerator = new RemoteShaderDispatcher(
+        server + "/manageAPI",
+        token);
 
-      final IShaderDispatcher imageGenerator = new RemoteShaderDispatcher(
-            server + "/manageAPI",
-            token);
-      final Map<File, ImageData> referenceToImageData = new HashMap<>();
-      final Map<File, File> referenceShaderToPreparedReferenceShader =
-            prepareReferenceShaders(referenceShaders, outputDir,
-                shadingLanguageVersion, replaceFloatLiterals);
-
-      for (File reference : referenceShaders) {
-        final File preparedReferenceShader =
-              referenceShaderToPreparedReferenceShader.get(reference);
-        final ImageJobResult referenceResult =
-              RunShaderFamily.runShader(
-                    outputDir,
-                    FilenameUtils.removeExtension(preparedReferenceShader.getName()),
-                    imageGenerator,
-                    Optional.empty());
-        if (referenceResult.status != JobStatus.SUCCESS) {
-          throw new RuntimeException("Error rendering reference shader "
-                + preparedReferenceShader.getAbsolutePath());
-        }
-        final File referenceImage = new File(
-              FilenameUtils.removeExtension(preparedReferenceShader.getAbsolutePath()) + ".png");
-        assert referenceImage.exists();
-        referenceToImageData.put(reference,
-              new ImageData(referenceImage));
+    for (int received = 0; received < limit; received++) {
+      Pair<ShaderJob, ShaderJob> shaderPair;
+      try {
+        shaderPair = queue.take();
+      } catch (InterruptedException exception) {
+        LOGGER.error("Problem taking from queue.", exception);
+        throw new RuntimeException(exception);
       }
 
-      for (int received = 0; received < limit; received++) {
-        final ReferenceVariantPair generatedShader = queue.take();
-        final String outputFilenamePrefix
-              = FilenameUtils.removeExtension(generatedShader.getVariant().getName());
-        final ExecResult execResult = ToolHelper.runValidatorOnShader(
-              RedirectType.TO_BUFFER, generatedShader.getVariant());
-        if (execResult.res != 0) {
-          FileUtils.moveFile(generatedShader.getVariant(),
-                new File(outputDir, "invalid_" + outputFilenamePrefix + ".frag"));
-          continue;
-        }
-        RunShaderFamily.runShader(
-              outputDir,
-              FilenameUtils.removeExtension(generatedShader.getVariant().getName()),
-              imageGenerator,
-              Optional.of(referenceToImageData.get(generatedShader.getReference())));
+      final ShaderJob referenceShaderJob = shaderPair.getLeft();
+      final Optional<ImageJobResult> referenceResult = runShaderJob(referenceShaderJob,
+          "reference", imageGenerator);
+      if (!referenceResult.isPresent()) {
+        continue;
       }
-    } catch (InterruptedException | IOException | ShaderDispatchException
-          | ParseTimeoutException exception) {
-      throw new RuntimeException(exception);
+      final ShaderJob variantShaderJob = shaderPair.getRight();
+      final Optional<ImageJobResult> variantResult = runShaderJob(variantShaderJob,
+          "variant", imageGenerator);
+      if (!variantResult.isPresent()) {
+        continue;
+      }
+
+      maybeLogCrash(referenceResult, referenceShaderJob);
+      maybeLogCrash(variantResult, variantShaderJob);
+      maybeLogWrongImage(referenceResult, variantResult, referenceShaderJob, variantShaderJob);
+
+      throw new RuntimeException("Decide what to do with the results!");
+
     }
   }
 
-  private static Map<File, File> prepareReferenceShaders(List<File> references,
-        File outputDir,
-        ShadingLanguageVersion shadingLanguageVersion,
-        boolean replaceFloatLiterals) throws IOException, ParseTimeoutException {
-    final Map<File, File> result = new HashMap<>();
-    for (File reference : references) {
-      final String referencePrefix = FilenameUtils.removeExtension(
-          reference.getAbsolutePath());
-      final File uniforms = new File(referencePrefix + ".json");
-      final File license = new File(referencePrefix + ".license");
-      final String outputPrefix = FilenameUtils.getBaseName(reference.getName());
-      PrepareReference.prepareReference(
-          referencePrefix,
+  private void maybeLogCrash(Optional<ImageJobResult> referenceResult, ShaderJob referenceShaderJob) {
+    // TODO: implement.
+  }
+
+  private void maybeLogWrongImage(Optional<ImageJobResult> referenceResult, Optional<ImageJobResult> variantResult, ShaderJob referenceShaderJob, ShaderJob variantShaderJob) {
+    // TODO: implement.
+  }
+
+  private Optional<ImageJobResult> runShaderJob(ShaderJob shaderJob, String referenceOrVariant,
+                               IShaderDispatcher imageGenerator) {
+    final String tempPrefix = "temp_" + referenceOrVariant;
+    try {
+      Helper.emitShaderJob(shaderJob, shadingLanguageVersion,
+          tempPrefix,
           outputDir,
-          outputPrefix,
-          shadingLanguageVersion,
-          replaceFloatLiterals,
-          0,
-          false);
-      final File outputFile = new File(outputDir, outputPrefix + ".frag");
-      result.put(reference, outputFile);
-      FileUtils.copyFile(license, new File(outputDir,
-            FilenameUtils.removeExtension(reference.getName()) + ".license"));
+          null);
+    } catch (IOException exception) {
+      LOGGER.error("Could not emit " + referenceOrVariant + " shader job.",
+          exception);
+      return Optional.empty();
     }
-    return result;
+
+    try {
+      return Optional.of(RunShaderFamily.runShader(outputDir,
+          tempPrefix,
+          imageGenerator,
+          Optional.empty()));
+    } catch (InterruptedException | IOException | ShaderDispatchException exception) {
+      LOGGER.error("Problem running " + referenceOrVariant + " shader job.",
+          exception);
+      return Optional.empty();
+    }
   }
 
 }

@@ -169,6 +169,12 @@ public class Generate {
 
   }
 
+  /**
+   * Mutates the given shader job into a variant.
+   * @param shaderJob The shader job to be mutated.
+   * @param args Arguments to control generation.
+   * @return Details of the transformations that were applied.
+   */
   public static StringBuilder generateVariant(ShaderJob shaderJob,
                                               GeneratorArguments args) {
     final StringBuilder result = new StringBuilder();

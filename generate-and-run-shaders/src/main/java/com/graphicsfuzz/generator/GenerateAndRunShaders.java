@@ -17,13 +17,19 @@
 package com.graphicsfuzz.generator;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -32,6 +38,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class GenerateAndRunShaders {
 
@@ -98,11 +105,9 @@ public class GenerateAndRunShaders {
     final ShadingLanguageVersion shadingLanguageVersion = ns.get("webgl")
         ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
         : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
-    final boolean replaceFloatLiterals = ns.getBoolean("replace_float_literals");
 
-    final List<File> referenceShaders = populateReferenceShaders(referencesDir);
-
-    final BlockingQueue<ReferenceVariantPair> queue = new LinkedBlockingQueue<>();
+    final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue =
+        new LinkedBlockingQueue<>();
 
     new Thread(new ShaderConsumer(
           LIMIT,
@@ -110,45 +115,19 @@ public class GenerateAndRunShaders {
           outputDir,
           ns.get("server"),
           ns.get("token"),
-          referenceShaders,
-        shadingLanguageVersion,
-          replaceFloatLiterals
+          shadingLanguageVersion
     )).start();
 
     new Thread(new ShaderProducer(
           LIMIT,
+          new RandomWrapper(ns.get("seed")),
           queue,
-          outputDir,
-          referenceShaders,
-        shadingLanguageVersion,
-          replaceFloatLiterals,
+          referencesDir,
+          shadingLanguageVersion,
           donors,
           ns
     )).start();
 
   }
-
-  private static List<File> populateReferenceShaders(File shaders)
-        throws IOException, ParseTimeoutException {
-    final List<File> files = new ArrayList<>();
-    for (File shader : shaders.listFiles((dir, name) -> name.endsWith(".frag"))) {
-      final File uniforms = new File(FilenameUtils
-            .removeExtension(shader.getAbsolutePath()) + ".json");
-      if (!uniforms
-            .exists()) {
-        throw new IllegalArgumentException("Shader " + shader.getName()
-              + " has no associated JSON file.");
-      }
-      final String license = FilenameUtils.removeExtension(shader.getAbsolutePath()) + ".license";
-      if (!new File(license)
-            .exists()) {
-        throw new IllegalArgumentException("Shader " + shader.getName()
-              + " has no associated license file.");
-      }
-      files.add(shader);
-    }
-    return files;
-  }
-
 
 }
