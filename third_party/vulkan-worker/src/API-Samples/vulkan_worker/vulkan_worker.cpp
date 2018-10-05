@@ -130,7 +130,9 @@ void dumpPhysicalDeviceProperties(struct sample_info& info) {
     // Depends on init_enumerate_device()
     VkPhysicalDeviceProperties *prop = &info.gpu_props;
     FILE *f = fopen("/sdcard/graphicsfuzz/vkPhysicalDeviceProperties.txt", "w");
-    fprintf(f, "Name: %s\n", prop->deviceName);
+    fprintf(f, "VendorID: %u\n", prop->vendorID);
+    fprintf(f, "DeviceID: %u\n", prop->deviceID);
+    fprintf(f, "DeviceName: %s\n", prop->deviceName);
     fprintf(f, "DriverVersion: %u\n", prop->driverVersion);
     uint32_t api = prop->apiVersion;
     fprintf(f, "APIVersion: %d.%d.%d\n", VK_VERSION_MAJOR(api), VK_VERSION_MINOR(api), VK_VERSION_PATCH(api));
