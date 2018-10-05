@@ -28,7 +28,7 @@ sys.argv.pop(0)
 file_dir = os.path.dirname(os.path.abspath(__file__))
 install_dir = path.join(file_dir, os.pardir, os.pardir)
 cmd = ["java", "-cp", path.join(install_dir, "jar", "tool-1.0.jar"),
-       "com.graphicsfuzz.shadersets.RunShaderSet"] + sys.argv
+       "com.graphicsfuzz.shadersets.RunShaderFamily"] + sys.argv
 print(" ".join(cmd))
 ret_code = subprocess.call(cmd)
 sys.exit(ret_code)

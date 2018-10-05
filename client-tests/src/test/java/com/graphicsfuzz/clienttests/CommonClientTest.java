@@ -21,6 +21,7 @@ import static junit.framework.TestCase.assertTrue;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.graphicsfuzz.shadersets.RunShaderFamily;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -32,7 +33,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import com.graphicsfuzz.util.ToolPaths;
 import com.graphicsfuzz.shadersets.ImageUtil;
-import com.graphicsfuzz.shadersets.RunShaderSet;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 
 public abstract class CommonClientTest {
@@ -123,7 +123,7 @@ public abstract class CommonClientTest {
         Paths.get(getTestShadersDirectory(), fragmentShader).toString(),
         "--token", TOKEN, "--server", "http://localhost:8080", "--output",
         outputDir.getAbsolutePath()};
-    RunShaderSet.mainHelper(
+    RunShaderFamily.mainHelper(
         args, null
     );
     return outputDir;

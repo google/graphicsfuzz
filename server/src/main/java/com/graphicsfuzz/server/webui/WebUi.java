@@ -1131,7 +1131,7 @@ public class WebUi extends HttpServlet {
         for (String shaderset : shadersets) {
           msg.append("Experiment ").append(shaderset).append(" on worker ").append(worker);
           List<String> commands = new ArrayList<>();
-          commands.add("run_shader_set");
+          commands.add("run_shader_family");
           commands.add("--server");
           commands.add("http://localhost:8080/manageAPI");
           commands.add("--token");
@@ -1139,8 +1139,8 @@ public class WebUi extends HttpServlet {
           commands.add("--output");
           commands.add("processing/" + worker + "/" + shaderset + "_exp/");
           commands.add(WebUiConstants.SHADERSET_DIR + "/" + shaderset);
-          fuzzerServiceManagerProxy.queueCommand("run_shader_set: " + shaderset, commands, worker,
-              "processing/" + worker + "/" + shaderset + "_exp/command.log");
+          fuzzerServiceManagerProxy.queueCommand("run_shader_family: " + shaderset, commands,
+              worker,"processing/" + worker + "/" + shaderset + "_exp/command.log");
           msg.append(" started successfully!\\n");
         }
       }
@@ -1541,7 +1541,7 @@ public class WebUi extends HttpServlet {
 
     if (workers != null && workers.length > 0) {
       List<String> commands = new ArrayList<>();
-      commands.add("run_shader_set");
+      commands.add("run_shader_family");
       commands.add(shaderPath);
       System.out.println(shaderPath);
       commands.add("--server");
@@ -1554,7 +1554,7 @@ public class WebUi extends HttpServlet {
         commands.add("processing/" + worker + "/" + shaderset + "_exp/");
         try {
           fuzzerServiceManagerProxy
-              .queueCommand("run_shader_set: " + shaderPath, commands, worker,
+              .queueCommand("run_shader_family: " + shaderPath, commands, worker,
                   "processing/" + worker + "/" + shaderset + "_exp/command.log");
         } catch (TException exception) {
           err404(request, response, exception.getMessage());
