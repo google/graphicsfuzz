@@ -191,7 +191,7 @@ public class RunShaderFamily {
               experimentOutDir,
               FilenameUtils.removeExtension(variant.toString()),
               imageGenerator,
-              Optional.of(new ImageData(experiment.getReferenceImage())));d
+              Optional.of(new ImageData(experiment.getReferenceImage())));
 
         } catch (Exception err) {
           LOGGER.error("runShader() raise exception on {}", variant);
