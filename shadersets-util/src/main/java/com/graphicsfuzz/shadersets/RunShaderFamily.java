@@ -143,16 +143,21 @@ public class RunShaderFamily {
     runShaderFamily(shaderSet, outputDir, imageGenerator);
   }
 
-  public static int runShaderFamily(IShaderSet shaderSet, File workDir,
+  public static int runShaderFamily(IShaderSet shaderSet, File experimentOutDir,
                                     IShaderDispatcher imageGenerator)
       throws ShaderDispatchException, InterruptedException, IOException {
 
     int numShadersRun = 0;
 
-    IShaderSetExperiment experiment = new LocalShaderSetExperiement(workDir.toString(), shaderSet);
+    IShaderSetExperiment experiment =
+        new LocalShaderSetExperiement(
+            experimentOutDir.toString(),
+            shaderSet);
 
     if (experiment.getReferenceImage() == null && experiment.getReferenceTextFile() == null) {
-      runShader(workDir, FilenameUtils.removeExtension(shaderSet.getReference().getName()),
+      runShader(
+          experimentOutDir,
+          FilenameUtils.removeExtension(shaderSet.getReference().toString()),
           imageGenerator,
           Optional.empty());
       ++numShadersRun;
@@ -182,8 +187,12 @@ public class RunShaderFamily {
         LOGGER.info("Skipping {} because we already have a result.", variant);
       } else {
         try {
-          runShader(workDir, FilenameUtils.removeExtension(variant.getName()), imageGenerator,
+          runShader(
+              experimentOutDir,
+              FilenameUtils.removeExtension(variant.toString()),
+              imageGenerator,
               Optional.of(new ImageData(experiment.getReferenceImage())));
+
         } catch (Exception err) {
           LOGGER.error("runShader() raise exception on {}", variant);
           err.printStackTrace();
@@ -194,16 +203,19 @@ public class RunShaderFamily {
     return numShadersRun;
   }
 
-  public static ImageJobResult runShader(File workDir, String shaderJobPrefix,
-      IShaderDispatcher imageGenerator, Optional<ImageData> referenceImage)
+  public static ImageJobResult runShader(
+      File outputDir,
+      String shaderJobPrefix,
+      IShaderDispatcher imageGenerator,
+      Optional<ImageData> referenceImage)
       throws ShaderDispatchException, InterruptedException, IOException {
 
-    final File outputImage = new File(workDir, shaderJobPrefix + ".png");
-    final File outputText = new File(workDir, shaderJobPrefix + ".txt");
+    final String shaderName = new File(shaderJobPrefix).getName();
+    final File outputImage = new File(outputDir, shaderName + ".png");
+    final File outputText = new File(outputDir, shaderName + ".txt");
 
     LOGGER.info("Shader set experiment: {} ", shaderJobPrefix);
-    ImageJobResult res = imageGenerator.getImage(
-        Paths.get(workDir.getAbsolutePath(), shaderJobPrefix).toString(), outputImage, false);
+    ImageJobResult res = imageGenerator.getImage(shaderJobPrefix, outputImage, false);
 
     if (res.isSetLog()) {
       FileUtils.writeStringToFile(outputText, res.getLog(), Charset.defaultCharset());
@@ -216,10 +228,8 @@ public class RunShaderFamily {
     // but also in case of Sanity error after a nondet.
     if (res.isSetPNG() && res.isSetPNG2()) {
       // we can dump both images
-      File outputNondet1 = new File(workDir,
-          Paths.get(workDir.getAbsolutePath(), shaderJobPrefix + "_nondet1.png").toString());
-      File outputNondet2 = new File(workDir,
-          Paths.get(workDir.getAbsolutePath(), shaderJobPrefix + "_nondet2.png").toString());
+      File outputNondet1 = new File(outputDir, shaderName + "_nondet1.png");
+      File outputNondet2 = new File(outputDir, shaderName + "_nondet2.png");
       FileUtils.writeByteArrayToFile(outputNondet1, res.getPNG());
       FileUtils.writeByteArrayToFile(outputNondet2, res.getPNG2());
 
@@ -231,8 +241,7 @@ public class RunShaderFamily {
             new ByteArrayInputStream(res.getPNG()));
         BufferedImage img2 = ImageIO.read(
             new ByteArrayInputStream(res.getPNG2()));
-        File gifFile = new File(workDir,
-              shaderJobPrefix + ".gif");
+        File gifFile = new File(outputDir,shaderName + ".gif");
         ImageOutputStream gifOutput = new FileImageOutputStream(gifFile);
         GifSequenceWriter gifWriter = new GifSequenceWriter(gifOutput, img1.getType(), 500, true);
         gifWriter.writeToSequence(nondetImg);
@@ -247,7 +256,7 @@ public class RunShaderFamily {
     }
 
     // Dump job info in JSON
-    File outputJson = new File(workDir,shaderJobPrefix + ".info.json");
+    File outputJson = new File(outputDir,shaderName + ".info.json");
     JsonObject infoJson = makeInfoJson(res, outputImage, referenceImage);
     FileUtils.writeStringToFile(outputJson,
         JsonHelper.jsonToString(infoJson), Charset.defaultCharset());
