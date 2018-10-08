@@ -78,7 +78,7 @@ void main (void) {
 
 ################################################################################
 
-def prepareShaders(frag):
+def prepareShaders(args, frag):
     shutil.copy(frag, 'test.frag')
     prepareVertFile()
 
@@ -95,13 +95,19 @@ def prepareShaders(frag):
     cmd = glslang + ' test.frag -V -o test.frag.spv'
     subprocess.run(cmd, shell=True, check=True)
 
+    # Optimize
+    if args.spirvopt:
+        cmd = os.path.dirname(HERE) + '/../../bin/' + binType + '/spirv-opt ' + args.spirvopt + ' test.frag.spv -o test.frag.spv.opt'
+        subprocess.run(cmd, shell=True, check=True)
+        shutil.move('test.frag.spv.opt', 'test.frag.spv')
+
     # Vert
     cmd = glslang + ' test.vert -V -o test.vert.spv'
     subprocess.run(cmd, shell=True, check=True)
 
 ################################################################################
 
-def getImageVulkanAndroid(frag):
+def getImageVulkanAndroid(args, frag):
 
     app = 'vulkan.samples.vulkan_worker'
 
@@ -111,7 +117,7 @@ def getImageVulkanAndroid(frag):
     remove('image.png')
     adb('shell rm -rf /sdcard/graphicsfuzz/*')
 
-    prepareShaders(frag)
+    prepareShaders(args, frag)
 
     # FIXME: Clean up preparation of shader files. Right now it's
     # convenient to have a copy of the JSON with the original name of
@@ -186,7 +192,7 @@ def getImageVulkanAndroid(frag):
 
 ################################################################################
 
-def doImageJob(imageJob):
+def doImageJob(args, imageJob):
     name = imageJob.name.replace('.frag','')
     fragFile = name + '.frag'
     jsonFile = name + '.json'
@@ -205,7 +211,7 @@ def doImageJob(imageJob):
     remove(png)
     remove(log)
 
-    getimageResult = getImageVulkanAndroid(fragFile)
+    getimageResult = getImageVulkanAndroid(args, fragFile)
 
     # Try to get our own log file in any case
     if os.path.exists('log.txt'):
@@ -296,6 +302,10 @@ parser.add_argument(
     default='http://localhost:8080',
     help='Server URL (default: http://localhost:8080 )')
 
+parser.add_argument(
+    '--spirvopt',
+    help='Enable spirv-opt with these optimisation flags (e.g. --spirvopt=-O)')
+
 args = parser.parse_args()
 
 print('token: ' + args.token)
@@ -336,7 +346,7 @@ while True:
         else:
             assert(job.imageJob != None)
             print("#### Image job: " + job.imageJob.name)
-            job.imageJob.result = doImageJob(job.imageJob)
+            job.imageJob.result = doImageJob(args, job.imageJob)
             print("Send back, results status: {}".format(job.imageJob.result.status))
             service.jobDone(token, job)
 
