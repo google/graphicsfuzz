@@ -433,6 +433,14 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': 'internal project',
         },
+        'com.graphicsfuzz:generate-and-run-shaders': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'internal project',
+        },
         'com.graphicsfuzz:generator': {
             'comment': '',
             'name': '',

@@ -73,20 +73,6 @@ public class GenerateTest {
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Test
-  public void getRecipientTranslationUnit() throws Exception {
-
-    final String program = "uniform vec2 injectionSwitch;"
-        + "void main() { }";
-    File f = temporaryFolder.newFile("ex.frag");
-    BufferedWriter bw = new BufferedWriter(new FileWriter(f));
-    bw.write(program);
-    bw.close();
-    final TranslationUnit tu = Generate.getReferenceTranslationUnit(f);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(program, false)),
-        PrettyPrinterVisitor.prettyPrintAsString(tu));
-  }
-
-  @Test
   public void testSynthetic() throws Exception {
     final String program = "uniform vec2 injectionSwitch;\n"
         + "\n"

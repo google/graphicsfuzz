@@ -134,6 +134,18 @@ public final class PrepareReference {
             : Optional.empty(),
         new UniformsInfo(jsonFile));
 
+    prepareReference(shaderJob, shadingLanguageVersion, replaceFloatLiterals, maxUniforms,
+        generateUniformBindings);
+
+    Helper.emitShaderJob(shaderJob, shadingLanguageVersion, outputPrefix, workDir,
+        new File(referencePrefix + ".license"));
+  }
+
+  public static void prepareReference(ShaderJob shaderJob,
+                                      ShadingLanguageVersion shadingLanguageVersion,
+                                      boolean replaceFloatLiterals,
+                                      int maxUniforms,
+                                      boolean generateUniformBindings) {
     if (shaderJob.hasVertexShader()) {
       prepareReferenceShader(shaderJob.getVertexShader(),
           shadingLanguageVersion,
@@ -155,9 +167,6 @@ public final class PrepareReference {
     if (generateUniformBindings) {
       shaderJob.makeUniformBindings();
     }
-
-    Helper.emitShaderJob(shaderJob, shadingLanguageVersion, outputPrefix, workDir,
-        new File(referencePrefix + ".license"));
   }
 
   private static void prepareReferenceShader(TranslationUnit tu,

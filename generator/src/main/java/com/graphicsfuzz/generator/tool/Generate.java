@@ -25,13 +25,10 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.StatsVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
-import com.graphicsfuzz.common.util.ParseHelper;
-import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.PruneUniforms;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -169,11 +166,20 @@ public class Generate {
 
   }
 
+  /**
+   * Mutates the given shader job into a variant.
+   * @param shaderJob The shader job to be mutated.
+   * @param args Arguments to control generation.
+   * @return Details of the transformations that were applied.
+   */
   public static StringBuilder generateVariant(ShaderJob shaderJob,
                                               GeneratorArguments args) {
     final StringBuilder result = new StringBuilder();
     final IRandom random = new RandomWrapper(args.getSeed());
 
+    for (TranslationUnit shader : shaderJob.getShaders()) {
+      addInjectionSwitchIfNotPresent(shader);
+    }
     setInjectionSwitch(shaderJob.getUniformsInfo());
 
     result.append(transformShader(
@@ -286,19 +292,8 @@ public class Generate {
           : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
 
       final String referencePrefix = ns.get("reference_prefix");
-      final File vertexReference = new File(referencePrefix + ".vert");
-      final File fragmentReference = new File(referencePrefix + ".frag");
-      final File jsonReference = new File(referencePrefix + ".json");
 
-      final ShaderJob shaderJob = new GlslShaderJob(
-          vertexReference.isFile()
-              ? Optional.of(getReferenceTranslationUnit(vertexReference))
-              : Optional.empty(),
-          fragmentReference.isFile()
-              ? Optional.of(getReferenceTranslationUnit(fragmentReference))
-              : Optional.empty(),
-          new UniformsInfo(jsonReference)
-      );
+      final ShaderJob shaderJob = Helper.parseShaderJob(referencePrefix, false);
 
       final StringBuilder generationInfo = generateVariant(
           shaderJob,
@@ -553,21 +548,12 @@ public class Generate {
     uniformsInfo.setUniforms(tu, floatSupplier, intSupplier, uintSupplier, boolSupplier);
   }
 
-  public static TranslationUnit getReferenceTranslationUnit(File referenceFile)
-        throws IOException, ParseTimeoutException {
-    TranslationUnit original = ParseHelper.parse(referenceFile, false);
-    addInjectionSwitchIfNotPresent(original);
-    return original;
-  }
-
   public static void addInjectionSwitchIfNotPresent(TranslationUnit tu) {
     if (alreadyDeclaresInjectionSwitch(tu)) {
       return;
     }
-
-    List<TypeQualifier> qualifiers = new ArrayList<>();
-    qualifiers.add(TypeQualifier.UNIFORM);
-    tu.addDeclaration(new VariablesDeclaration(new QualifiedType(BasicType.VEC2, qualifiers),
+    tu.addDeclaration(new VariablesDeclaration(new QualifiedType(BasicType.VEC2,
+        Arrays.asList(TypeQualifier.UNIFORM)),
           new VariableDeclInfo(Constants.INJECTION_SWITCH, null, null)));
   }
 
