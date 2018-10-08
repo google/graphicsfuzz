@@ -121,13 +121,24 @@ def getImageVulkanAndroid(args, frag):
         cmd = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/spirv-opt ' + args.spirvopt + ' test.frag.spv -o test.frag.spv.opt'
         try:
             print('Calling spirv-opt')
-            subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True)
-        except CalledProcessError as err:
+            subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True, timeout=10)
+        except subprocess.CalledProcessError as err:
             # spirv-opt failed, early return
             with open('log.txt', 'w') as f:
                 f.write('Error triggered by spirv-opt\n')
                 f.write('COMMAND:\n' + err.cmd + '\n')
                 f.write('RETURNCODE: ' + str(err.returncode) + '\n')
+                if err.stdout:
+                    f.write('STDOUT:\n' + err.stdout + '\n')
+                if err.stderr:
+                    f.write('STDERR:\n' + err.stderr + '\n')
+            return 'err_spirvopt'
+        except subprocess.TimeoutExpired as err:
+            # spirv-opt timed out, early return
+            with open('log.txt', 'w') as f:
+                f.write('Timeout from spirv-opt\n')
+                f.write('COMMAND:\n' + err.cmd + '\n')
+                f.write('TIMEOUT: ' + str(err.timeout) + ' sec\n')
                 if err.stdout:
                     f.write('STDOUT:\n' + err.stdout + '\n')
                 if err.stderr:
