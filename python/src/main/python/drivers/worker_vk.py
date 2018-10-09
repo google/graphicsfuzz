@@ -78,28 +78,25 @@ void main (void) {
 
 ################################################################################
 
-def prepareShaders(args, frag):
+def getBinType():
+    host = platform.system()
+    if host == 'Linux' or host == 'Windows':
+        return host
+    else:
+        assert host == 'Darwin'
+        return 'Mac'
+
+################################################################################
+
+def prepareShaders(frag):
     shutil.copy(frag, 'test.frag')
     prepareVertFile()
 
-    host = platform.system()
-    binType = ''
-    if host == 'Linux' or host == 'Windows':
-        binType = host
-    else:
-        assert host == 'Darwin'
-        binType = 'Mac'
-    glslang = os.path.dirname(HERE) + '/../../bin/' + binType + '/glslangValidator'
+    glslang = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/glslangValidator'
 
     # Frag
     cmd = glslang + ' test.frag -V -o test.frag.spv'
     subprocess.run(cmd, shell=True, check=True)
-
-    # Optimize
-    if args.spirvopt:
-        cmd = os.path.dirname(HERE) + '/../../bin/' + binType + '/spirv-opt ' + args.spirvopt + ' test.frag.spv -o test.frag.spv.opt'
-        subprocess.run(cmd, shell=True, check=True)
-        shutil.move('test.frag.spv.opt', 'test.frag.spv')
 
     # Vert
     cmd = glslang + ' test.vert -V -o test.vert.spv'
@@ -117,7 +114,38 @@ def getImageVulkanAndroid(args, frag):
     remove('image.png')
     adb('shell rm -rf /sdcard/graphicsfuzz/*')
 
-    prepareShaders(args, frag)
+    prepareShaders(frag)
+
+    # Optimize
+    if args.spirvopt:
+        cmd = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/spirv-opt ' + args.spirvopt + ' test.frag.spv -o test.frag.spv.opt'
+        try:
+            print('Calling spirv-opt')
+            subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True, timeout=10)
+        except subprocess.CalledProcessError as err:
+            # spirv-opt failed, early return
+            with open('log.txt', 'w') as f:
+                f.write('Error triggered by spirv-opt\n')
+                f.write('COMMAND:\n' + err.cmd + '\n')
+                f.write('RETURNCODE: ' + str(err.returncode) + '\n')
+                if err.stdout:
+                    f.write('STDOUT:\n' + err.stdout + '\n')
+                if err.stderr:
+                    f.write('STDERR:\n' + err.stderr + '\n')
+            return 'err_spirvopt'
+        except subprocess.TimeoutExpired as err:
+            # spirv-opt timed out, early return
+            with open('log.txt', 'w') as f:
+                f.write('Timeout from spirv-opt\n')
+                f.write('COMMAND:\n' + err.cmd + '\n')
+                f.write('TIMEOUT: ' + str(err.timeout) + ' sec\n')
+                if err.stdout:
+                    f.write('STDOUT:\n' + err.stdout + '\n')
+                if err.stderr:
+                    f.write('STDERR:\n' + err.stderr + '\n')
+            return 'err_spirvopt'
+
+        shutil.move('test.frag.spv.opt', 'test.frag.spv')
 
     # FIXME: Clean up preparation of shader files. Right now it's
     # convenient to have a copy of the JSON with the original name of
@@ -219,6 +247,11 @@ def doImageJob(args, imageJob):
         with open(log, 'r') as f:
             res.log += f.read()
         res.log += '\n#### LOG END\n'
+
+    # Early return if something failed even before we started the app
+    if getimageResult == 'err_spirvopt':
+        res.status = tt.JobStatus.UNEXPECTED_ERROR
+        return res
 
     # Always add ADB logcat
     adb('logcat -b crash -b system -b main -b events -d > logcat.txt')
