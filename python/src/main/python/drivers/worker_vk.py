@@ -41,6 +41,7 @@ from thrift.protocol import TBinaryProtocol
 
 TIMEOUT_SPIRVOPT=120
 TIMEOUT_APP=30
+TIMEOUT_ADB_CMD=5
 
 ################################################################################
 
@@ -66,8 +67,13 @@ def adb(adbargs, serial=None):
 
     adbcmd += ' ' + adbargs
 
-    p = subprocess.run(adbcmd, shell=True)
-    return p.returncode
+    try:
+        p = subprocess.run(adbcmd, shell=True, timeout=TIMEOUT_ADB_CMD)
+    except subprocess.TimeoutExpired as err:
+        print('ERROR: adb command timed out: ' + err.cmd)
+        return 1
+    else:
+        return p.returncode
 
 ################################################################################
 
