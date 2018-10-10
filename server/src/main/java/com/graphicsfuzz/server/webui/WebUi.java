@@ -393,11 +393,18 @@ public class WebUi extends HttpServlet {
     htmlAppendLn("</div></div>");
 
     // Server log
+    String serverLog = getFileContents(new File(WebUiConstants.WORKER_DIR + "/server.log"));
+    // Some logs may be in the megabytes, which makes the page load time very long.
+    // To avoid this, truncate long logs to show only the last 10k characters.
+    final int maxLogCharacters = 10000;
+    if (serverLog.length() > maxLogCharacters) {
+      serverLog = serverLog.substring(serverLog.length() - maxLogCharacters);
+    }
     htmlAppendLn(
         "<div class='ui segment'>\n",
         "<h3>Server Log</h3>\n",
-        "<textarea id='ServerLog' readonly rows='20' cols='100'>",
-        getFileContents(new File(WebUiConstants.WORKER_DIR + "/server.log")),
+        "<textarea id='ServerLog' readonly rows='20' cols='160'>",
+        serverLog,
         "</textarea></div>");
 
     htmlFooter();
