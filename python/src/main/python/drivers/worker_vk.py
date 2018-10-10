@@ -225,9 +225,13 @@ def getImageVulkanAndroid(args, frag):
 
     # Get the image and convert it to PNG
     adb('pull /sdcard/graphicsfuzz/image.ppm')
-    subprocess.run('convert image.ppm image.png', shell=True)
-
-    return 'success'
+    if os.path.exists('image.ppm'):
+        subprocess.run('convert image.ppm image.png', shell=True)
+        return 'success'
+    else:
+        with open('log.txt', 'a') as f:
+            f.write('\nWEIRD ERROR: No crash detected but no image found on device ??\n')
+        return 'unexpected_error'
 
 ################################################################################
 
@@ -265,16 +269,21 @@ def doImageJob(args, imageJob):
         return res
 
     # Always add ADB logcat
-    adb('logcat -b crash -b system -b main -b events -d > logcat.txt')
     res.log += '\n#### ADB LOGCAT START\n'
-    with open('logcat.txt', 'r') as f:
-        res.log += f.read()
+    adb('logcat -b crash -b system -b main -b events -d > logcat.txt')
+    if os.path.exists('logcat.txt'):
+        with open('logcat.txt', 'r') as f:
+            res.log += f.read()
+    else:
+        res.log += 'Cannot even retrieve ADB logcat ??'
     res.log += '\n#### ADB LOGCAT END\n'
 
     if getimageResult == 'crash':
         res.status = tt.JobStatus.CRASH
     elif getimageResult == 'timeout':
         res.status = tt.JobStatus.TIMEOUT
+    elif getimageResult == 'unexpected_error':
+        res.status = tt.JobStatus.UNEXPECTED_ERROR
     else:
         assert(getimageResult == 'success')
         res.status = tt.JobStatus.SUCCESS
