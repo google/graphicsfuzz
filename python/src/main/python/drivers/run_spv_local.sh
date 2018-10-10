@@ -21,11 +21,12 @@ BIN="${HERE}/../../bin/${OS}"
 temp="_tmp"
 
 usage() {
-  echo "Usage: `basename $0` shader.frag.spv"
+  echo "Usage: `basename $0` shader.frag.[asm,spv]"
   echo "Arguments:"
-  echo "  shader.frag.spv: textual SPIR-V file"
+  echo "     shader.frag.asm: SPIR-V file in textual assembly format"
+  echo "  or shader.frag.spv: SPIR-V file in binary format"
   echo "  Expected: the companion shader.json"
-  echo "  Optional: the companion shader.vert.spv"
+  echo "  Optional: the companion shader.vert.[asm,spv]"
   echo "Results: shader.{log,adb.log,ppm,png}"
   echo "Warning: this script works on temporary files named: ${temp}*"
   exit 1
@@ -39,20 +40,63 @@ then
   usage
 fi
 
-wd=`dirname $frag`
-base=`basename $frag .frag.spv`
-
-if test ! -f ${wd}/${frag}
+if test ! -f ${frag}
 then
   echo "Error: cannot find file: $frag"
   usage
 fi
 
+# Detect type of frag
+is_asm=false
+if test "`basename $frag .asm`.asm" = "`basename $frag`"
+then
+  is_asm=true
+elif test "`basename $frag .spv`.spv" != "`basename $frag`"
+then
+  echo "Error: argument is neither .asm nor .spv file"
+  usage
+fi
+
+if ${is_asm}
+then
+  base=`basename $frag .frag.asm`
+else
+  base=`basename $frag .frag.spv`
+fi
+
+wd=`dirname $frag`
+
 set -e
 set -u
 
-# Prepare vertex
-if test ! -f ${wd}/${base}.vert.spv
+# Prepare fragment
+if ${is_asm}
+then
+  $BIN/spirv-as ${frag} -o ${temp}.frag.spv
+else
+  cp ${frag} ${temp}.frag.spv
+fi
+
+# Prepare vertex: look for asm only if frag is an asm
+rm -f ${temp}.vert.spv
+
+if ${is_asm}
+then
+  if test -f ${wd}/${base}.vert.asm
+  then
+    $BIN/spirv-as ${wd}/${base}.vert.asm -o ${temp}.vert.spv
+  fi
+fi
+
+if test ! -f ${temp}.vert.spv
+then
+  if test -f ${wd}/${base}.vert.spv
+  then
+    cp ${wd}/${base}.vert.spv ${temp}.vert.spv
+  fi
+fi
+
+if test ! -f ${temp}.vert.spv
 then
   (
     cat << EOF
@@ -64,12 +108,7 @@ void main (void) {
 }
 EOF
   ) | ${BIN}/glslangValidator --stdin -V -S vert -o ${temp}.vert.spv
-else
-  ${BIN}/spirv-as ${wd}/${base}.vert.spv -o ${temp}.vert.spv
 fi
-
-# Assemble fragment
-${BIN}/spirv-as ${frag} -o ${temp}.frag.spv
 
 # Make sure the app can read/write on /sdcard/
 adb shell pm grant vulkan.samples.vulkan_worker android.permission.READ_EXTERNAL_STORAGE
