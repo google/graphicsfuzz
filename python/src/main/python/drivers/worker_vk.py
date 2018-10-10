@@ -37,6 +37,12 @@ from thrift.Thrift import TApplicationException
 from thrift.protocol import TBinaryProtocol
 
 ################################################################################
+# Timeouts, in seconds
+
+TIMEOUT_SPIRVOPT=120
+TIMEOUT_APP=30
+
+################################################################################
 
 def writeToFile(content, filename):
     with open(filename, 'w') as f:
@@ -121,7 +127,7 @@ def getImageVulkanAndroid(args, frag):
         cmd = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/spirv-opt ' + args.spirvopt + ' test.frag.spv -o test.frag.spv.opt'
         try:
             print('Calling spirv-opt')
-            subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True, timeout=10)
+            subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True, timeout=TIMEOUT_SPIRVOPT)
         except subprocess.CalledProcessError as err:
             # spirv-opt failed, early return
             with open('log.txt', 'w') as f:
@@ -159,15 +165,14 @@ def getImageVulkanAndroid(args, frag):
     # clean all buffers of logcat
     adb('logcat -b all -c')
 
-    runtestcmd = 'shell am start -W'
+    runtestcmd = 'shell am start'
     runtestcmd += ' -n ' + app + '/android.app.NativeActivity'
 
     print('* Will run: ' + runtestcmd)
     adb(runtestcmd)
 
     # Wait for DONE file, or timeout
-    timeoutSec = 30
-    deadline = time.time() + timeoutSec
+    deadline = time.time() + TIMEOUT_APP
 
     crash = False
     done = False
