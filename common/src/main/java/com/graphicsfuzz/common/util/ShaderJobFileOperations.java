@@ -949,10 +949,10 @@ public class ShaderJobFileOperations {
         FilenameUtils.removeExtension(shaderJobFile.toString());
 
     File[] relatedFiles =
-        (File[]) Stream.of(".json", ".vert", ".frag", ".comp", ".primitives", ".prob", ".license")
+        Stream.of(".json", ".vert", ".frag", ".comp", ".primitives", ".prob", ".license")
             .map(ext -> new File(fileNoExtension + ext))
             .filter(this::isFile)
-            .toArray();
+            .toArray(File[]::new);
 
     return relatedFiles;
   }
@@ -965,10 +965,10 @@ public class ShaderJobFileOperations {
         FileHelper.removeEnd(shaderResultFile.toString(), ".info.json");
 
     File[] relatedFiles =
-        (File[]) Stream.of(".info.json", ".txt", ".png")
+        Stream.of(".info.json", ".txt", ".png")
             .map(ext -> new File(fileNoExtension + ext))
             .filter(this::isFile)
-            .toArray();
+            .toArray(File[]::new);
 
     return relatedFiles;
   }
