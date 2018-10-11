@@ -503,11 +503,15 @@ public class ShaderJobFileOperations {
     // Write shader job file:
     writeShaderJobFileFromImageJob(imageJob, shaderJobFileTemp);
 
+    if (!imageJob.isSetSkipRender()) {
+      throw new RuntimeException("Internal error: skipRender was null, but it should be set.");
+    }
+
     // Run shader job file:
     return runGetImageOnShaderJobFile(
         shaderJobFileTemp,
         useSwiftShader,
-        imageJob.isSetSkipRender());
+        imageJob.isSkipRender());
   }
 
   /**
@@ -1025,7 +1029,7 @@ public class ShaderJobFileOperations {
       ShaderJobFileOperations fileOps,
       Optional<File> referenceShaderResultFile) throws IOException {
 
-    assertIsShaderJobFile(shaderJobResultFile);
+    assertIsShaderJobResultFile(shaderJobResultFile);
 
     String shaderJobResultNoExtension =
         FileHelper.removeEnd(shaderJobResultFile.toString(), ".info.json");

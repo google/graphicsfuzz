@@ -45,7 +45,7 @@ public class ExactImageFileComparator implements IImageFileComparator {
 
       boolean equalContent = fileOps.areImagesOfShaderResultsIdentical(
           shaderResultFileReference,
-          shaderResultFileReference);
+          shaderResultFileVariant);
 
       if (!equalContent && identicalIsInteresting) {
         LOGGER.info("Not interesting: images do not match");
