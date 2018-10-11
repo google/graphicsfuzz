@@ -57,6 +57,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageOutputStream;
@@ -942,36 +943,32 @@ public class ShaderJobFileOperations {
 
   private File[] getShaderJobFileRelatedFiles(File shaderJobFile) throws IOException {
     assertIsShaderJobFile(shaderJobFile);
-
-    File shaderDir = getParent(shaderJobFile);
-
     assertExists(shaderJobFile);
 
-    String fileNameNoExtension =
-        FilenameUtils.removeExtension(shaderJobFile.getName());
+    String fileNoExtension =
+        FilenameUtils.removeExtension(shaderJobFile.toString());
 
     File[] relatedFiles =
-        listFiles(
-            shaderDir,
-            (dir, name) -> name.startsWith(fileNameNoExtension + "."));
+        (File[]) Stream.of(".json", ".vert", ".frag", ".comp", ".primitives", ".prob", ".license")
+            .map(ext -> new File(fileNoExtension + ext))
+            .filter(this::isFile)
+            .toArray();
 
     return relatedFiles;
   }
 
   private File[] getShaderResultFileRelatedFiles(File shaderResultFile) throws IOException {
     assertIsShaderJobResultFile(shaderResultFile);
-
-    File resultDir = getParent(shaderResultFile);
-
     assertExists(shaderResultFile);
 
-    String fileNameNoExtension =
-        FileHelper.removeEnd(shaderResultFile.getName(), ".info.json");
+    String fileNoExtension =
+        FileHelper.removeEnd(shaderResultFile.toString(), ".info.json");
 
     File[] relatedFiles =
-        listFiles(
-            resultDir,
-            (dir, name) -> name.startsWith(fileNameNoExtension + "."));
+        (File[]) Stream.of(".info.json", ".txt", ".png")
+            .map(ext -> new File(fileNoExtension + ext))
+            .filter(this::isFile)
+            .toArray();
 
     return relatedFiles;
   }
