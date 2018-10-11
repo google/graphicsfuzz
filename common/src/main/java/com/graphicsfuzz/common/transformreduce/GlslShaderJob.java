@@ -19,40 +19,36 @@ public class GlslShaderJob implements ShaderJob {
   private final Optional<TranslationUnit> vertexShader;
   private final Optional<TranslationUnit> fragmentShader;
   private final UniformsInfo uniformsInfo;
+  private final Optional<String> license;
 
   public GlslShaderJob(Optional<TranslationUnit> vertexShader,
-                            Optional<TranslationUnit> fragmentShader,
-                            UniformsInfo uniformsInfo) {
+                       Optional<TranslationUnit> fragmentShader,
+                       UniformsInfo uniformsInfo,
+                       Optional<String> license) {
     this.vertexShader = vertexShader;
     this.fragmentShader = fragmentShader;
     this.uniformsInfo = uniformsInfo;
+    this.license = license;
   }
 
   @Override
-  public boolean hasVertexShader() {
-    return vertexShader.isPresent();
+  public Optional<TranslationUnit> getVertexShader() {
+    return vertexShader;
   }
 
   @Override
-  public boolean hasFragmentShader() {
-    return fragmentShader.isPresent();
-  }
-
-  @Override
-  public TranslationUnit getVertexShader() {
-    assert hasVertexShader();
-    return vertexShader.get();
-  }
-
-  @Override
-  public TranslationUnit getFragmentShader() {
-    assert hasFragmentShader();
-    return fragmentShader.get();
+  public Optional<TranslationUnit> getFragmentShader() {
+    return fragmentShader;
   }
 
   @Override
   public UniformsInfo getUniformsInfo() {
     return uniformsInfo;
+  }
+
+  @Override
+  public Optional<String> getLicense() {
+    return license;
   }
 
   /**
@@ -177,11 +173,11 @@ public class GlslShaderJob implements ShaderJob {
   @Override
   public List<TranslationUnit> getShaders() {
     final List<TranslationUnit> result = new ArrayList<>();
-    if (hasVertexShader()) {
-      result.add(getVertexShader());
+    if (getVertexShader().isPresent()) {
+      result.add(getVertexShader().get());
     }
-    if (hasFragmentShader()) {
-      result.add(getFragmentShader());
+    if (getFragmentShader().isPresent()) {
+      result.add(getFragmentShader().get());
     }
     return result;
   }
@@ -189,13 +185,14 @@ public class GlslShaderJob implements ShaderJob {
   @Override
   public GlslShaderJob clone() {
     return new GlslShaderJob(
-        hasVertexShader()
-            ? Optional.of(getVertexShader().cloneAndPatchUp())
+        getVertexShader().isPresent()
+            ? Optional.of(getVertexShader().get().cloneAndPatchUp())
             : Optional.empty(),
-        hasFragmentShader()
-            ? Optional.of(getFragmentShader().cloneAndPatchUp())
+        getFragmentShader().isPresent()
+            ? Optional.of(getFragmentShader().get().cloneAndPatchUp())
             : Optional.empty(),
-        new UniformsInfo(getUniformsInfo().toString()));
+        new UniformsInfo(getUniformsInfo().toString()),
+        getLicense());
   }
 
 }

@@ -180,7 +180,7 @@ public class PruneUniformsTest {
     final TranslationUnit tu = ParseHelper.parse(program, false);
 
     assertTrue(PruneUniforms.prune(
-        new GlslShaderJob(Optional.empty(), Optional.of(tu), uniformsInfo),
+        new GlslShaderJob(Optional.empty(), Optional.of(tu), uniformsInfo, Optional.empty()),
         limit,
         prefixList));
 

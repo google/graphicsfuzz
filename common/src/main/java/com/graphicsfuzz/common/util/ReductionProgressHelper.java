@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 import org.apache.commons.io.FilenameUtils;
@@ -64,26 +65,32 @@ public final class ReductionProgressHelper {
     return FilenameUtils.removeExtension(name).split("_");
   }
 
-  public static Optional<Integer> getLatestReductionStep(boolean restrictToSuccess,
-        File workDir,
-        String shaderJobShortName) {
-    final File[] jsonFiles = workDir
-          .listFiles((dir, name) -> isAReductionStepFile(name, shaderJobShortName,
-              restrictToSuccess));
+  public static Optional<Integer> getLatestReductionStep(
+      boolean restrictToSuccess,
+      File workDir,
+      String shaderJobShortName,
+      ShaderJobFileOperations fileOps) throws IOException {
+
+    File[] jsonFiles =
+        fileOps
+            .listShaderJobFiles(
+                workDir,
+                (dir, name) -> isAReductionStepFile(name, shaderJobShortName, restrictToSuccess));
+
     return Arrays.stream(jsonFiles)
-          .map(item -> item.getName())
+          .map(File::getName)
           .max((item1, item2) -> compareReductionTemporaryFiles(item1, item2, shaderJobShortName))
           .flatMap(item -> Optional.of(getReductionStepFromFile(item, shaderJobShortName)));
   }
 
   public static Optional<Integer> getLatestReductionStepAny(File workDir,
-        String shaderJobShortName) {
-    return getLatestReductionStep(false, workDir, shaderJobShortName);
+        String shaderJobShortName, ShaderJobFileOperations fileOps) throws IOException {
+    return getLatestReductionStep(false, workDir, shaderJobShortName, fileOps);
   }
 
   public static Optional<Integer> getLatestReductionStepSuccess(File workDir,
-        String shaderJobShortName) {
-    return getLatestReductionStep(true, workDir, shaderJobShortName);
+        String shaderJobShortName, ShaderJobFileOperations fileOps) throws IOException {
+    return getLatestReductionStep(true, workDir, shaderJobShortName, fileOps);
   }
 
   public static File getReductionExceptionFile(File workDir, String shaderJobShortName) {

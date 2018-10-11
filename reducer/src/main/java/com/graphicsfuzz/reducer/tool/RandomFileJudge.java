@@ -17,8 +17,8 @@
 package com.graphicsfuzz.reducer.tool;
 
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.IFileJudge;
-import com.graphicsfuzz.reducer.util.ShaderJudgeUtil;
 import java.io.File;
 import java.io.IOException;
 
@@ -32,10 +32,15 @@ public class RandomFileJudge implements IFileJudge {
   private final IRandom generator;
   private final int threshold;
   private final boolean throwExceptionOnInvalid;
+  private final ShaderJobFileOperations fileOps;
 
   private static final int LIMIT = 100;
 
-  public RandomFileJudge(IRandom generator, int threshold, boolean throwExceptionOnInvalid) {
+  public RandomFileJudge(
+      IRandom generator,
+      int threshold,
+      boolean throwExceptionOnInvalid,
+      ShaderJobFileOperations fileOps) {
     if (threshold < 0 || threshold >= LIMIT) {
       throw new IllegalArgumentException("Threshold must be in range [0, " + (LIMIT - 1) + "]");
     }
@@ -43,12 +48,16 @@ public class RandomFileJudge implements IFileJudge {
     this.generator = generator;
     this.threshold = threshold;
     this.throwExceptionOnInvalid = throwExceptionOnInvalid;
+    this.fileOps = fileOps;
   }
 
   @Override
-  public boolean isInteresting(File workDir, String shaderJobShortName) {
+  public boolean isInteresting(
+      File shaderJobFile,
+      File shaderResultFileOutput
+  ) {
     try {
-      if (!ShaderJudgeUtil.shadersAreValid(workDir, shaderJobShortName, throwExceptionOnInvalid)) {
+      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnInvalid)) {
         return false;
       }
     } catch (IOException | InterruptedException ex) {

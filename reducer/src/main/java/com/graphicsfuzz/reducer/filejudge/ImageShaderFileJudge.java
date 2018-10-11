@@ -16,9 +16,11 @@
 
 package com.graphicsfuzz.reducer.filejudge;
 
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.FileJudgeException;
 import com.graphicsfuzz.reducer.IFileJudge;
-import com.graphicsfuzz.reducer.util.ShaderJudgeUtil;
+import com.graphicsfuzz.server.thrift.ImageComparisonMetric;
+import com.graphicsfuzz.server.thrift.ImageJob;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.JobStatus;
 import com.graphicsfuzz.shadersets.IImageFileComparator;
@@ -26,10 +28,7 @@ import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,26 +36,29 @@ public class ImageShaderFileJudge implements IFileJudge {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ImageShaderFileJudge.class);
 
-  private static final String REFERENCE_IMAGE_NAME = "reference_image.png";
-
-  private IImageFileComparator fileComparator;
   private IShaderDispatcher imageGenerator;
   private final boolean throwExceptionOnValidationError;
+  private final ShaderJobFileOperations fileOps;
+  private final File referenceShaderResultFile;
+  private final IImageFileComparator fileComparator;
 
-  public ImageShaderFileJudge(IImageFileComparator fileComparator,
-        IShaderDispatcher imageGenerator,
-        boolean throwExceptionOnValidationError) {
-    this.fileComparator = fileComparator;
+  public ImageShaderFileJudge(
+      File referenceShaderResultFile,
+      IShaderDispatcher imageGenerator,
+      boolean throwExceptionOnValidationError,
+      IImageFileComparator fileComparator,
+      ShaderJobFileOperations fileOps) {
     this.imageGenerator = imageGenerator;
     this.throwExceptionOnValidationError = throwExceptionOnValidationError;
-  }
-
-  public static File getReferenceImageInWorkDir(File workDir) {
-    return new File(workDir, REFERENCE_IMAGE_NAME);
+    this.referenceShaderResultFile = referenceShaderResultFile;
+    this.fileComparator = fileComparator;
+    this.fileOps = fileOps;
   }
 
   @Override
-  public boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException {
+  public boolean isInteresting(
+      File shaderJobFile,
+      File shaderResultFileOutput) throws FileJudgeException {
 
     // 1. Shader files validate.
     // 2. Generate image.
@@ -64,44 +66,37 @@ public class ImageShaderFileJudge implements IFileJudge {
 
     try {
       // 1.
-      if (!ShaderJudgeUtil.shadersAreValid(workDir,
-          shaderJobShortName,
-          throwExceptionOnValidationError)) {
+      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnValidationError)) {
         return false;
       }
       // 2.
 
-      File outputImage = new File(workDir, FilenameUtils.getBaseName(shaderJobShortName) + ".png");
-      File outputText = new File(workDir, FilenameUtils.getBaseName(shaderJobShortName) + ".txt");
-      ImageJobResult imageRes = imageGenerator
-            .getImage(Paths.get(workDir.getAbsolutePath(), shaderJobShortName).toString(),
-                outputImage,
-                false);
+      // Read shader job into an image job.
+      ImageJob imageJob = new ImageJob();
+      fileOps.readShaderJobFileToImageJob(shaderJobFile, imageJob);
+      imageJob.setSkipRender(false);
+
+      // Run the image job.
+      ImageJobResult imageRes = imageGenerator.getImage(imageJob);
+
+      // Write the shader result file.
+      fileOps.writeShaderResultToFile(imageRes, shaderResultFileOutput, Optional.empty());
 
       switch (imageRes.getStatus()) {
         case SUCCESS:
-          if (imageRes.isSetPNG()) {
-            FileUtils.writeByteArrayToFile(outputImage, imageRes.getPNG());
-          }
           break;
         case SAME_AS_REFERENCE:
-          FileUtils.writeStringToFile(
-                outputText,
-                JobStatus.SAME_AS_REFERENCE.toString() + "\n",
-                StandardCharsets.UTF_8);
-          outputImage = getReferenceImageInWorkDir(workDir);
-          break;
+          throw new IllegalStateException("No longer supported: " + JobStatus.SAME_AS_REFERENCE);
         default:
-          LOGGER.info("Failed to run get_image on shader. Not interesting.");
-          FileUtils.writeStringToFile(outputText, imageRes.getLog(),
-              StandardCharsets.UTF_8);
+          LOGGER.info("Failed to run shader. Not interesting.");
           return false;
       }
 
-      // Success or same as ref:
+      // Success:
 
       // 3.
-      if (!fileComparator.areFilesInteresting(getReferenceImageInWorkDir(workDir), outputImage)) {
+
+      if (!fileComparator.areFilesInteresting(referenceShaderResultFile, shaderResultFileOutput)) {
         LOGGER.info("Shader image was not deemed interesting by file comparator. Not interesting.");
         return false;
       }

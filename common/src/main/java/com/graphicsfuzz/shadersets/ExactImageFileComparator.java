@@ -16,38 +16,49 @@
 
 package com.graphicsfuzz.shadersets;
 
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.io.File;
 import java.io.IOException;
-import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExactImageFileComparator implements IImageFileComparator {
 
-  private final boolean identicalIsInteresting;
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExactImageFileComparator.class);
 
-  public ExactImageFileComparator(boolean identicalIsInteresting) {
+  private final boolean identicalIsInteresting;
+  private final ShaderJobFileOperations fileOps;
+
+  public ExactImageFileComparator(
+      boolean identicalIsInteresting,
+      ShaderJobFileOperations fileOps) {
     this.identicalIsInteresting = identicalIsInteresting;
+    this.fileOps = fileOps;
   }
 
-
   @Override
-  public boolean areFilesInteresting(File reference, File variant) {
+  public boolean areFilesInteresting(
+      File shaderResultFileReference,
+      File shaderResultFileVariant) {
+
     try {
-      assert reference.exists();
-      assert variant.exists();
-      boolean equalContent = FileUtils.contentEquals(reference, variant);
+
+      boolean equalContent = fileOps.areImagesOfShaderResultsIdentical(
+          shaderResultFileReference,
+          shaderResultFileReference);
+
       if (!equalContent && identicalIsInteresting) {
-        System.err.println("Not interesting: images do not match");
+        LOGGER.info("Not interesting: images do not match");
         return false;
       }
       if (equalContent && !identicalIsInteresting) {
-        System.err.println("Not interesting: images match");
+        LOGGER.info("Not interesting: images match");
         return false;
       }
       return true;
     } catch (IOException exception) {
-      System.err.println("Not interesting: exception while comparing files - "
-          + exception.getMessage());
-      return false;
+      LOGGER.error("Not interesting: exception while comparing files", exception);
+      throw new RuntimeException(exception);
     }
   }
 }

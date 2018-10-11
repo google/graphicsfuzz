@@ -32,6 +32,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
@@ -47,6 +48,13 @@ import org.apache.commons.io.FileUtils;
 public class ParseHelper {
 
   static final String END_OF_HEADER = "// END OF GENERATED HEADER";
+
+  public static Optional<TranslationUnit> maybeParseShader(File shader, boolean stripHeader)
+      throws IOException, ParseTimeoutException {
+    return shader.isFile()
+        ? Optional.of(parse(shader, stripHeader))
+        : Optional.empty();
+  }
 
   public static synchronized TranslationUnit parse(File file, boolean stripHeader)
         throws IOException, ParseTimeoutException {

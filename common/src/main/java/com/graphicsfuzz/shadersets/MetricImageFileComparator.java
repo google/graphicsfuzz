@@ -16,9 +16,10 @@
 
 package com.graphicsfuzz.shadersets;
 
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.server.thrift.ImageComparisonMetric;
 import java.io.File;
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,42 +30,31 @@ public class MetricImageFileComparator implements IImageFileComparator {
   private final double threshold;
   private final boolean above;
   private final ImageComparisonMetric metric;
+  private final ShaderJobFileOperations fileOps;
 
-  public MetricImageFileComparator(double threshold, boolean above, ImageComparisonMetric metric) {
+  public MetricImageFileComparator(
+      double threshold,
+      boolean above,
+      ImageComparisonMetric metric,
+      ShaderJobFileOperations fileOps) {
     this.threshold = threshold;
     this.above = above;
     this.metric = metric;
+    this.fileOps = fileOps;
   }
 
   @Override
-  public boolean areFilesInteresting(File reference, File variant) {
+  public boolean areFilesInteresting(File shaderResultFileReference, File shaderResultFileVariant) {
     try {
-      LOGGER.info("Comparing: {} and {}.", reference, variant);
 
-      double diff = 0.0;
-      switch (metric) {
+      return fileOps.areImagesOfShaderResultsSimilar(
+          shaderResultFileReference,
+          shaderResultFileVariant,
+          metric,
+          threshold,
+          above);
 
-        case HISTOGRAM_CHISQR:
-          diff = ImageUtil.compareHistograms(
-              ImageUtil.getHistogram(reference.toString()),
-              ImageUtil.getHistogram(variant.toString()));
-          break;
-        case PSNR:
-          diff = ImageUtil.comparePSNR(reference, variant);
-          break;
-        default:
-          throw new RuntimeException("Unrecognised image comparison metric: " + metric.toString());
-      }
-
-      boolean result = (above ? diff > threshold : diff < threshold);
-      if (result) {
-        LOGGER.info("Interesting");
-      } else {
-        LOGGER.info("Not interesting");
-      }
-      LOGGER.info(": difference is " + diff);
-      return result;
-    } catch (IOException exception) {
+    } catch (FileNotFoundException exception) {
       LOGGER.error(
           "Exception occurred during image comparison using metric {}. {}",
           metric.toString(),

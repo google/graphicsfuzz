@@ -32,7 +32,7 @@ public class WebGlClientTest extends CommonClientTest {
     server = new Thread(() -> {
       try {
         final FuzzerServer fuzzerServer = new FuzzerServer(
-            serverWorkDir.getAbsolutePath(), 8080);
+            serverWorkDir.getAbsolutePath(), 8080, fileOps);
         fuzzerServer.start();
       } catch (Exception exception) {
         throw new RuntimeException(exception);

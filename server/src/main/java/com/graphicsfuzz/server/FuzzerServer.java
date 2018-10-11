@@ -16,6 +16,7 @@
 
 package com.graphicsfuzz.server;
 
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.server.thrift.FuzzerService;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
 import com.graphicsfuzz.server.webui.WebUi;
@@ -45,22 +46,21 @@ public final class FuzzerServer {
 
   private final int port;
 
-  public FuzzerServer(int port) {
-    this("", port);
+  private final ShaderJobFileOperations fileOps;
+
+  public FuzzerServer(int port, ShaderJobFileOperations fileOps) {
+    this("", port, fileOps);
   }
 
-  public FuzzerServer(String workingDir, int port) {
+  public FuzzerServer(String workingDir, int port, ShaderJobFileOperations fileOps) {
     this.workingDir = workingDir;
     this.port = port;
+    this.fileOps = fileOps;
   }
 
   public void start() throws Exception {
 
     FuzzerServiceImpl fuzzerService = new FuzzerServiceImpl(
-        new LocalArtifactManager(
-            Paths.get(workingDir, shaderSetsDir).toString(),
-            Paths.get(workingDir, processingDir).toString()
-        ),
         Paths.get(workingDir, processingDir).toString(),
         executorService);
 
@@ -92,7 +92,7 @@ public final class FuzzerServer {
       context.addServlet(shManager, "/manageAPI");
     }
 
-    context.addServlet(new ServletHolder(new WebUi()), "/webui/*");
+    context.addServlet(new ServletHolder(new WebUi(fileOps)), "/webui/*");
 
     final String staticDir = ToolPaths.getStaticDir();
     context.addServlet(

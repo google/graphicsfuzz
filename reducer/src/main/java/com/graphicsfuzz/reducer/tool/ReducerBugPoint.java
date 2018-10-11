@@ -24,6 +24,8 @@ import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
@@ -33,6 +35,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Random;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -55,7 +58,7 @@ public class ReducerBugPoint {
 
     // Required arguments
     parser.addArgument("shader")
-          .help("Path of shader to be analysed.")
+          .help("Path of shader job file (.json) to be analysed.")
           .type(File.class);
 
     parser.addArgument("--output")
@@ -120,25 +123,23 @@ public class ReducerBugPoint {
 
     final IRandom generator = new RandomWrapper(seed);
 
-    final File interestingFile = new File("interesting.frag");
-    final File interestingJson = new File(Helper.jsonFilenameForShader(
-          interestingFile.getAbsolutePath()));
-    if (interestingFile.exists()) {
-      interestingFile.delete();
-    }
-    if (interestingJson.exists()) {
-      interestingJson.delete();
+    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+    final File interestingShaderJobFile = new File("interesting.frag");
+
+    if (fileOps.doesShaderJobExist(interestingShaderJobFile)) {
+      fileOps.deleteShaderJobFile(interestingShaderJobFile);
     }
 
-    final File originalShaderFile = ns.get("shader");
-    FileUtils.copyFile(originalShaderFile, interestingFile);
-    FileUtils.copyFile(new File(Helper.jsonFilenameForShader(originalShaderFile.getAbsolutePath())),
-          interestingJson);
+    final File originalShaderJobFile = ns.get("shader");
+
+    fileOps.copyShaderJobFileTo(originalShaderJobFile, interestingShaderJobFile, false);
 
     final ShadingLanguageVersion shadingLanguageVersion =
-        ShadingLanguageVersion.getGlslVersionFromShader(interestingFile);
+        ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(
+            fileOps.getFirstTwoLinesOfShader(interestingShaderJobFile, ShaderKind.FRAGMENT));
 
-    TranslationUnit interestingTranslationUnit = Helper.parse(interestingFile, true);
+    ShaderJob initialState = fileOps.readShaderJobFile(interestingShaderJobFile, true);
 
     for (int i = 0; i < maxIterations; i++) {
 
@@ -146,51 +147,52 @@ public class ReducerBugPoint {
 
       System.err.println("Trying iteration " + i);
 
-      ShaderJob initialState = new GlslShaderJob(
-          Optional.empty(),
-          Optional.of(interestingTranslationUnit),
-          new UniformsInfo(interestingJson));
-
       try {
 
-        new ReductionDriver(new ReductionOpportunityContext(
-              reduceEverywhere,
-            shadingLanguageVersion,
-              generator,
-              null,
-              10,
-              1), verbose, initialState)
-              .doReduction(FilenameUtils.removeExtension(interestingFile.getAbsolutePath()), 0,
-                    new RandomFileJudge(generator, 10,
-                          ns.getBoolean("exception_on_invalid")),
-                    workDir,
-                    STEP_LIMIT);
+        new ReductionDriver(
+            new ReductionOpportunityContext(
+                reduceEverywhere,
+                shadingLanguageVersion,
+                generator,
+                null,
+                10,
+                1),
+            verbose,
+            fileOps,
+            initialState
+        ).doReduction(
+            FilenameUtils.removeExtension(interestingShaderJobFile.getAbsolutePath()),
+            0,
+            new RandomFileJudge(
+                generator,
+                10,
+                ns.getBoolean("exception_on_invalid"), fileOps),
+            workDir,
+            STEP_LIMIT);
 
       } catch (Throwable throwable) {
         if (!throwable.toString().contains(expectedString)) {
           System.err.println("Exception does not contain required string:");
           System.err.println(throwable);
         } else {
-          final FileFilter fileFilter = new WildcardFileFilter("*success.frag");
-          File[] files = workDir.listFiles(fileFilter);
+          File[] files =
+              fileOps.listShaderJobFiles(workDir, (dir, name) -> name.endsWith("success.info"));
           if (files.length == 0) {
             continue;
           }
           final File maxSuccess =
                 Arrays.stream(files)
-                      .max((item1, item2) -> Integer.compare(getStep(item1), getStep(item2))).get();
+                      .max(Comparator.comparingInt(ReducerBugPoint::getStep)).get();
 
-          FileUtils.copyFile(maxSuccess, interestingFile);
-          interestingJson.delete();
-          FileUtils.copyFile(new File(Helper.jsonFilenameForShader(maxSuccess.getAbsolutePath())),
-                interestingJson);
+          fileOps.deleteShaderJobFile(interestingShaderJobFile);
+          fileOps.copyShaderJobFileTo(maxSuccess, interestingShaderJobFile, true);
 
-          interestingTranslationUnit = Helper.parse(interestingFile, true);
+          initialState = fileOps.readShaderJobFile(interestingShaderJobFile, true);
 
           i = 0;
         }
       } finally {
-        FileUtils.deleteDirectory(workDir);
+        fileOps.deleteDirectory(workDir);
       }
     }
   }

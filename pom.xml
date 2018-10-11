@@ -49,7 +49,6 @@ limitations under the License.
     <module>server-thrift-gen</module>
     <module>server</module>
     <module>shaders</module>
-    <module>shadersets-util</module>
     <module>test-util</module>
     <module>tester</module>
     <module>third_party/alphanum-comparator</module>

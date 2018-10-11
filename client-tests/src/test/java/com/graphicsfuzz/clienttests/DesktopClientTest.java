@@ -42,7 +42,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import com.graphicsfuzz.util.ToolPaths;
 import com.graphicsfuzz.server.FuzzerServer;
-import com.graphicsfuzz.shadersets.RunComputeShader;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 
 public class DesktopClientTest extends CommonClientTest {
@@ -53,7 +52,7 @@ public class DesktopClientTest extends CommonClientTest {
     server = new Thread(() -> {
       try {
         final FuzzerServer fuzzerServer = new FuzzerServer(
-            serverWorkDir.getAbsolutePath(), 8080);
+            serverWorkDir.getAbsolutePath(), 8080, fileOps);
         fuzzerServer.start();
       } catch (Exception exception) {
         throw new RuntimeException(exception);
@@ -179,9 +178,10 @@ public class DesktopClientTest extends CommonClientTest {
         Paths.get(getTestShadersDirectory(), computeShader).toString(),
         "--token", TOKEN, "--server", "http://localhost:8080", "--output",
         outputDir.getAbsolutePath()};
-    RunComputeShader.mainHelper(
-        args, null
-    );
+    // TODO: use RunShaderFamily.
+//    RunComputeShader.mainHelper(
+//        args, null
+//    );
     return outputDir;
   }
 

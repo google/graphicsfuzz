@@ -47,14 +47,10 @@ public interface ShadingLanguageVersion {
   ShadingLanguageVersion WEBGL_SL = WebGlSl.INSTANCE;
   ShadingLanguageVersion WEBGL2_SL = WebGl2Sl.INSTANCE;
 
-  static ShadingLanguageVersion getGlslVersionFromShader(File shaderFilename)
+  static ShadingLanguageVersion getGlslVersionFromFirstTwoLines(String[] lines)
         throws IOException {
-    BufferedReader br = new BufferedReader(new FileReader(shaderFilename));
-    final String firstLine = br.readLine();
-    final String secondLine = br.readLine();
-    br.close();
-    String[] components = firstLine.trim().split(" ");
-    if (!firstLine.startsWith("#version") || components.length < 2) {
+    String[] components = lines[0].trim().split(" ");
+    if (!lines[0].startsWith("#version") || components.length < 2) {
       final String message = "File must specify a version on the first line, using #version";
       System.err
             .println(message);
@@ -65,7 +61,7 @@ public interface ShadingLanguageVersion {
     for (int i = 2; i < components.length; i++) {
       version += " " + components[i];
     }
-    if (secondLine.startsWith("//WebGL")) {
+    if (lines[1].startsWith("//WebGL")) {
       return webGlFromVersionString(version);
     }
     return fromVersionString(version);

@@ -67,14 +67,12 @@ public interface IAstNode extends Cloneable {
    */
   default String getText() {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    PrintStream stream = new PrintStream(baos);
-    try {
+
+    try (PrintStream stream = new PrintStream(baos)) {
       new PrettyPrinterVisitor(stream).visit(this);
       return baos.toString("UTF8");
     } catch (UnsupportedEncodingException exception) {
       return "<unknown>";
-    } finally {
-      stream.close();
     }
   }
 

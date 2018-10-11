@@ -22,6 +22,8 @@ import static org.junit.Assert.assertTrue;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.common.util.Helper;
@@ -40,6 +42,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.Rule;
@@ -74,6 +77,10 @@ public class GenerateTest {
 
   @Test
   public void testSynthetic() throws Exception {
+
+    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    // TODO: Use fileOps more.
+
     final String program = "uniform vec2 injectionSwitch;\n"
         + "\n"
         + "void main()\n"
@@ -140,22 +147,18 @@ public class GenerateTest {
 
     File outputDir = temporaryFolder.getRoot();
 
-    String prefix = "output";
+    File outputShaderJobFile = new File(outputDir, "output.json");
 
     File donors = temporaryFolder.newFolder("donors");
 
-    Generate.main(new String[]{"--seed", "0",
-        FilenameUtils.removeExtension(shaderFile.getAbsolutePath()),
-        donors.getAbsolutePath(),
+    Generate.mainHelper(new String[]{"--seed", "0",
+        jsonFile.toString(),
+        donors.toString(),
         "100",
-        prefix,
-        "--output_dir",
-        outputDir.getAbsolutePath()
+        outputShaderJobFile.toString(),
     });
 
-    ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
-        new File(outputDir, prefix + ".frag"));
-    assertEquals(0, result.res);
+    fileOps.areShadersValid(outputShaderJobFile, true);
 
   }
 
@@ -183,6 +186,10 @@ public class GenerateTest {
 
   @Test
   public void testFragVertAndUniformsPassedThrough() throws Exception {
+
+    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    // TODO: Use fileOps more.
+
     final String dummyFragment = "void main()\n"
         + "{\n"
         + "  float iAmAFragmentShader;"
@@ -211,36 +218,30 @@ public class GenerateTest {
 
     File outputDir = temporaryFolder.getRoot();
 
-    String prefix = "output";
+    File outputShaderJobFile = new File(outputDir, "output.json");
 
     File donors = temporaryFolder.newFolder("donors");
 
-    Generate.main(new String[]{"--seed", "0",
-        FilenameUtils.removeExtension(fragmentShaderFile.getAbsolutePath()),
-        donors.getAbsolutePath(),
+    Generate.mainHelper(new String[]{"--seed", "0",
+        jsonFile.toString(),
+        donors.toString(),
         "100",
-        prefix,
-        "--output_dir",
-        outputDir.getAbsolutePath()
+        outputShaderJobFile.toString()
     });
 
-    {
-      final File generatedFragment = new File(outputDir, prefix + ".frag");
-      assertTrue(FileUtils.readFileToString(generatedFragment, StandardCharsets.UTF_8)
-          .contains("iAmAFragmentShader"));
-      ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
-          generatedFragment);
-      assertEquals(0, result.res);
-    }
+    fileOps.areShadersValid(outputShaderJobFile, true);
 
-    {
-      final File generatedVertex = new File(outputDir, prefix + ".vert");
-      assertTrue(FileUtils.readFileToString(generatedVertex, StandardCharsets.UTF_8)
-          .contains("iAmAVertexShader"));
-      ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
-          generatedVertex);
-      assertEquals(0, result.res);
-    }
+    assertTrue(
+        fileOps
+            .getShaderContents(outputShaderJobFile, ShaderKind.FRAGMENT)
+            .contains("iAmAFragmentShader")
+    );
+
+    assertTrue(
+        fileOps
+            .getShaderContents(outputShaderJobFile, ShaderKind.VERTEX)
+            .contains("iAmAVertexShader")
+    );
 
   }
 
@@ -254,7 +255,11 @@ public class GenerateTest {
     testValidityOfVertexShaderTransformations(Arrays.asList("--enable_only", "jump"), 5);
   }
 
-  private void testValidityOfVertexShaderTransformations(List<String> extraArgs, int repeatCount) throws IOException, InterruptedException {
+  private void testValidityOfVertexShaderTransformations(List<String> extraArgs, int repeatCount) throws IOException, InterruptedException, ParseTimeoutException, ArgumentParserException {
+
+    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    // TODO: Use fileOps more.
+
     File vertexShaderFile = temporaryFolder.newFile("shader.vert");
     File jsonFile = temporaryFolder.newFile("shader.json");
     BufferedWriter bw = new BufferedWriter(new FileWriter(vertexShaderFile));
@@ -265,31 +270,31 @@ public class GenerateTest {
     bw.close();
 
     final File outputDir = temporaryFolder.getRoot();
-    final String prefix = "output";
+    final File outputShaderJobFile = new File(outputDir, "output.json");
     final File donors = temporaryFolder.newFolder("donors");
 
     for (int seed = 0; seed < repeatCount; seed++) {
       final List<String> args = new ArrayList<>();
-      args.addAll(Arrays.asList("--seed", new Integer(seed).toString(),
-          FilenameUtils.removeExtension(vertexShaderFile.getAbsolutePath()),
-          donors.getAbsolutePath(),
-          "300 es",
-          prefix,
-          "--output_dir",
-          outputDir.getAbsolutePath()));
+      args.addAll(
+          Arrays.asList(
+              "--seed", Integer.toString(seed),
+              jsonFile.toString(),
+              donors.toString(),
+              "300 es",
+              outputShaderJobFile.toString()
+          )
+      );
 
       args.addAll(extraArgs);
 
-      Generate.main(args.toArray(new String[0]));
+      Generate.mainHelper(args.toArray(new String[0]));
 
-      {
-        final File generatedVertex = new File(outputDir, prefix + ".vert");
-        assertTrue(FileUtils.readFileToString(generatedVertex, StandardCharsets.UTF_8)
-            .contains("iAmAVertexShader"));
-        ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
-            generatedVertex);
-        assertEquals(0, result.res);
-      }
+      assertTrue(
+          fileOps
+              .getShaderContents(outputShaderJobFile, ShaderKind.VERTEX)
+              .contains("iAmAVertexShader")
+      );
+      fileOps.areShadersValid(outputShaderJobFile, true);
     }
 
   }

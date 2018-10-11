@@ -20,7 +20,7 @@ import com.badlogic.gdx.Gdx;
 import com.graphicsfuzz.repackaged.com.google.gson.JsonObject;
 import com.graphicsfuzz.repackaged.com.google.gson.JsonParser;
 import com.graphicsfuzz.repackaged.org.apache.thrift.TException;
-import com.graphicsfuzz.server.thrift.ComputeJobResult;
+import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.Job;
 import com.graphicsfuzz.server.thrift.JobStage;
 import com.graphicsfuzz.server.thrift.JobStatus;
@@ -73,11 +73,11 @@ public abstract class ComputeJobManager {
       case COMPUTE_REPLY_JOB:
         persistentData.setStage(JobStage.COMPUTE_REPLY_JOB);
         Gdx.app.log("ComputeJobManager", "COMPUTE_REPLY_JOB");
-        if (!job.getComputeJob().isSetResult()) {
-          job.getComputeJob().setResult(
-              new ComputeJobResult().setStatus(JobStatus.SKIPPED));
+        if (!job.getImageJob().isSetResult()) {
+          job.getImageJob().setResult(
+              new ImageJobResult().setStatus(JobStatus.SKIPPED));
         }
-        job.getComputeJob().getResult().setLog(persistentData.getString(Constants.PERSISTENT_KEY_ERROR_MSG));
+        job.getImageJob().getResult().setLog(persistentData.getString(Constants.PERSISTENT_KEY_ERROR_MSG));
         jobGetter.replyJob(job);
         persistentData.reset();
         return WorkerState.GET_JOB;
@@ -90,11 +90,11 @@ public abstract class ComputeJobManager {
     persistentData.setStage(JobStage.COMPUTE_EXECUTE);
     Gdx.app.log("ComputeJobManager", "COMPUTE_EXECUTE");
     JsonObject computeShaderResult = executeComputeShader();
-    job.getComputeJob().setResult(
-        new ComputeJobResult()
+    job.getImageJob().setResult(
+        new ImageJobResult()
             .setStage(JobStage.COMPUTE_EXECUTE)
             .setStatus(JobStatus.SUCCESS)
-            .setOutputs(computeShaderResult.toString()));
+            .setComputeOutputs(computeShaderResult.toString()));
   }
 
   private void handleComputePrepare(WorkerState state, PersistentData persistentData,
@@ -104,8 +104,8 @@ public abstract class ComputeJobManager {
     reset();
     try {
       prepareComputeShader(
-          job.computeJob.computeSource,
-          job.computeJob.environment);
+          job.imageJob.computeSource,
+          job.imageJob.computeInfo);
     } catch (PrepareShaderException exception) {
       JobStatus status = JobStatus.UNEXPECTED_ERROR;
       if (exception.resultConstant == ResultConstant.COMPILE_ERROR) {
@@ -113,8 +113,8 @@ public abstract class ComputeJobManager {
       } else if (exception.resultConstant == ResultConstant.LINK_ERROR) {
         status = JobStatus.LINK_ERROR;
       }
-      job.getComputeJob().setResult(
-          new ComputeJobResult()
+      job.getImageJob().setResult(
+          new ImageJobResult()
               .setStage(JobStage.COMPUTE_PREPARE)
               .setStatus(status));
       persistentData.appendErrMsg(status.toString() + " " + state.toString() + "\n"
@@ -125,7 +125,7 @@ public abstract class ComputeJobManager {
     }
   }
 
-  void prepareComputeShader(String computeShaderSource, String environmentJson)
+  private void prepareComputeShader(String computeShaderSource, String environmentJson)
       throws PrepareShaderException {
     createAndCompileComputeShader(computeShaderSource);
     if (!compilationSucceeded()) {

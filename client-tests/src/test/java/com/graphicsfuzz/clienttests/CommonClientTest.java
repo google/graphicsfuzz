@@ -21,6 +21,7 @@ import static junit.framework.TestCase.assertTrue;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.shadersets.RunShaderFamily;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -40,6 +41,7 @@ public abstract class CommonClientTest {
   static final String TOKEN = "test_worker";
   static Process worker;
   static Thread server;
+  static final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();

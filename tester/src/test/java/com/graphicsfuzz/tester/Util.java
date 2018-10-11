@@ -16,23 +16,21 @@
 
 package com.graphicsfuzz.tester;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.FileHelper;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.util.ToolHelper;
 import com.graphicsfuzz.common.util.UniformsInfo;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +40,11 @@ import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacpp.opencv_imgcodecs;
+import org.junit.Assert;
 import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public final class Util {
 
@@ -58,29 +60,40 @@ public final class Util {
   }
 
   static Mat renderShaderIfNeeded(ShadingLanguageVersion shadingLanguageVersion, File originalShader,
-      TemporaryFolder temporaryFolder, boolean stripHeader)
+      TemporaryFolder temporaryFolder, boolean stripHeader, ShaderJobFileOperations fileOps)
       throws IOException, InterruptedException, ParseTimeoutException {
     if (!referenceFileToImage.containsKey(originalShader.getName())) {
-      referenceFileToImage.put(originalShader.getName(),
-          validateAndGetImage(ParseHelper.parse(originalShader, stripHeader),
-                Optional.empty(),
-                originalShader.getName() + ".reference.frag", shadingLanguageVersion,
-                ShaderKind.FRAGMENT, temporaryFolder)
+      referenceFileToImage.put(
+          originalShader.getName(),
+          validateAndGetImage(
+              ParseHelper.parse(originalShader, stripHeader),
+              Optional.empty(),
+              originalShader.getName() + ".reference.frag",
+              shadingLanguageVersion,
+              ShaderKind.FRAGMENT,
+              temporaryFolder,
+              fileOps)
           );
     }
     return referenceFileToImage.get(originalShader.getName());
   }
 
-  static Mat validateAndGetImage(File shaderFile,
-        TemporaryFolder temporaryFolder)
-        throws IOException, InterruptedException {
+  static Mat validateAndGetImage(
+      File shaderFile,
+      TemporaryFolder temporaryFolder,
+      ShaderJobFileOperations fileOps)
+      throws IOException, InterruptedException {
+
     validate(shaderFile);
-    return getImage(shaderFile, temporaryFolder);
+    return getImage(shaderFile, temporaryFolder, fileOps);
   }
 
-  static Mat getImage(File shaderFile, TemporaryFolder temporaryFolder)
-        throws IOException, InterruptedException {
-    final Optional<String> shaderTranslatorArg = getShaderTranslatorArg(shaderFile);
+  static Mat getImage(
+      File shaderFile,
+      TemporaryFolder temporaryFolder,
+      ShaderJobFileOperations fileOps) throws IOException, InterruptedException {
+
+    final Optional<String> shaderTranslatorArg = getShaderTranslatorArg(shaderFile, fileOps);
     if (shaderTranslatorArg.isPresent()) {
       final ExecResult shaderTranslatorResult = ToolHelper
             .runShaderTranslatorOnShader(RedirectType.TO_BUFFER, shaderFile,
@@ -98,9 +111,20 @@ public final class Util {
     }
   }
 
-  private static Optional<String> getShaderTranslatorArg(File shaderFile) throws IOException {
+  private static Optional<String> getShaderTranslatorArg(
+      File shaderFile,
+      ShaderJobFileOperations fileOps) throws IOException {
     Optional<String> shaderTranslatorArgs;
-    final ShadingLanguageVersion shadingLanguageVersionFromShader = ShadingLanguageVersion.getGlslVersionFromShader(shaderFile);
+
+    // Using fileOps here, even though the rest of the code does not use it yet.
+    Assert.assertTrue(shaderFile.getName().endsWith(".frag"));
+    final File shaderJobFile = FileHelper.replaceExtension(shaderFile, ".json");
+
+    final ShadingLanguageVersion shadingLanguageVersionFromShader =
+        ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(
+            fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
+    // TODO: Use fileOps.
+
     if (shadingLanguageVersionFromShader == ShadingLanguageVersion.ESSL_300
         || shadingLanguageVersionFromShader == ShadingLanguageVersion.WEBGL2_SL) {
       shaderTranslatorArgs = Optional.of("-s=w2");
@@ -112,37 +136,63 @@ public final class Util {
     return shaderTranslatorArgs;
   }
 
-  static Mat validateAndGetImage(TranslationUnit tu, Optional<UniformsInfo> uniforms, String fileName, ShadingLanguageVersion shadingLanguageVersion,
+  static Mat validateAndGetImage(
+      TranslationUnit tu,
+      Optional<UniformsInfo> uniforms,
+      String fileName,
+      ShadingLanguageVersion shadingLanguageVersion,
       ShaderKind shaderKind,
-      TemporaryFolder temporaryFolder)
+      TemporaryFolder temporaryFolder,
+      ShaderJobFileOperations fileOps)
       throws IOException, InterruptedException {
-    File tempFile = writeShaderAndUniformsToFile(tu, uniforms, fileName, shadingLanguageVersion, shaderKind,
-          temporaryFolder);
-    return validateAndGetImage(tempFile, temporaryFolder);
+
+    // Using fileOps here, even though the rest of the code does not yet use it.
+    Assert.assertEquals(shaderKind, ShaderKind.FRAGMENT);
+    Assert.assertTrue(fileName.endsWith(".frag"));
+    Assert.assertTrue(uniforms.isPresent());
+
+    final ShaderJob shaderJob = new GlslShaderJob(
+        Optional.empty(),
+        Optional.of(tu),
+        uniforms.get(),
+        Optional.empty()
+    );
+
+    final File shaderJobFileOutput = new File(
+        temporaryFolder.getRoot(),
+        FilenameUtils.removeExtension(fileName) + ".json");
+
+    fileOps.writeShaderJobFile(shaderJob, shadingLanguageVersion, shaderJobFileOutput);
+
+    // TODO: Use fileOps more.
+
+    final File tempFile = FileHelper.replaceExtension(shaderJobFileOutput, ".frag");
+
+    return validateAndGetImage(tempFile, temporaryFolder, fileOps);
   }
 
-  static File writeShaderAndUniformsToFile(TranslationUnit tu,
-        Optional<UniformsInfo> uniforms, String fileName, ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
-        TemporaryFolder temporaryFolder) throws IOException {
-    File tempFile = new File(temporaryFolder.getRoot(), fileName);
-    if (tempFile.exists()) {
-      tempFile.delete();
-    }
-    Helper.emitShader(shadingLanguageVersion, shaderKind, tu,
-        new PrintStream(new FileOutputStream(tempFile)));
-    if (uniforms.isPresent()) {
-      final File uniformsFile = new File(
-            FilenameUtils.removeExtension(tempFile.getAbsolutePath()) + ".json");
-      if (uniformsFile.exists()) {
-        uniformsFile.delete();
-      }
-      Helper.emitUniformsInfo(uniforms.get(), new PrintStream(new FileOutputStream(
-            uniformsFile
-      )));
-    }
-    return tempFile;
-  }
+//  static File writeShaderAndUniformsToFile(TranslationUnit tu,
+//        Optional<UniformsInfo> uniforms, String fileName, ShadingLanguageVersion shadingLanguageVersion,
+//        ShaderKind shaderKind,
+//        TemporaryFolder temporaryFolder) throws IOException {
+//    File tempFile = new File(temporaryFolder.getRoot(), fileName);
+//    if (tempFile.exists()) {
+//      tempFile.delete();
+//    }
+//    Helper.emitShader(shadingLanguageVersion, shaderKind, tu,
+//        new PrintStream(new FileOutputStream(tempFile)));
+//    if (uniforms.isPresent()) {
+//      final File uniformsFile = new File(
+//            FilenameUtils.removeExtension(tempFile.getAbsolutePath()) + ".json");
+//      if (uniformsFile.exists()) {
+//        uniformsFile.delete();
+//      }
+//      Helper.emitUniformsInfo(uniforms.get(), new PrintStream(new FileOutputStream(
+//            uniformsFile
+//      )));
+//    }
+//    return tempFile;
+//  }
 
   static Mat getImageUsingSwiftshader(File shaderFile, TemporaryFolder temporaryFolder) throws IOException, InterruptedException {
     File imageFile = temporaryFolder.newFile();

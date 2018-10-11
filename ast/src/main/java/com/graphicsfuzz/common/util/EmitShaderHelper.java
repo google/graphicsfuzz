@@ -82,7 +82,6 @@ public final class EmitShaderHelper {
     emitDefines(stream, shadingLanguageVersion, shaderKind, extraMacros, license);
     PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier);
     ppv.visit(shader);
-    stream.close();
   }
 
   public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
@@ -93,11 +92,17 @@ public final class EmitShaderHelper {
         int indentationWidth,
         Supplier<String> newlineSupplier,
         Supplier<StringBuilder> extraMacros) throws FileNotFoundException {
-    emitShader(shadingLanguageVersion, shaderKind, shader, license,
-          new PrintStream(new FileOutputStream(outputFile)),
+    try (PrintStream stream = new PrintStream(new FileOutputStream(outputFile))) {
+      emitShader(
+          shadingLanguageVersion,
+          shaderKind,
+          shader,
+          license,
+          stream,
           indentationWidth,
           newlineSupplier,
           extraMacros);
+    }
   }
 
   public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
@@ -105,11 +110,13 @@ public final class EmitShaderHelper {
         TranslationUnit shader,
         Optional<String> license,
         File outputFile) throws FileNotFoundException {
-    emitShader(shadingLanguageVersion, shaderKind, shader, license,
-        new PrintStream(new FileOutputStream(outputFile)),
-        PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-        PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-        () -> new StringBuilder());
+    try (PrintStream stream = new PrintStream(new FileOutputStream(outputFile))) {
+      emitShader(shadingLanguageVersion, shaderKind, shader, license,
+          stream,
+          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
+          () -> new StringBuilder());
+    }
   }
 
 }

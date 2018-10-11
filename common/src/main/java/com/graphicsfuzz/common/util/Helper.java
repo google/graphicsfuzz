@@ -39,34 +39,6 @@ public final class Helper {
     // Utility class
   }
 
-  public static void emitShaderJob(ShaderJob shaderJob,
-                                   ShadingLanguageVersion shadingLanguageVersion,
-                                   String outputPrefix,
-                                   File outputFolder,
-                                   File licenseFile) throws IOException {
-    if (shaderJob.hasVertexShader()) {
-      emitShader(shadingLanguageVersion,
-          ShaderKind.VERTEX,
-          shaderJob.getVertexShader(),
-          readLicenseFile(licenseFile),
-          new PrintStream(new FileOutputStream(
-              new File(outputFolder, outputPrefix + ShaderKind.VERTEX.getFileExtension()))));
-    }
-
-    if (shaderJob.hasFragmentShader()) {
-      emitShader(shadingLanguageVersion,
-          ShaderKind.FRAGMENT,
-          shaderJob.getFragmentShader(),
-          readLicenseFile(licenseFile),
-          new PrintStream(new FileOutputStream(
-              new File(outputFolder, outputPrefix + ShaderKind.FRAGMENT.getFileExtension()))));
-    }
-
-    emitUniformsInfo(shaderJob.getUniformsInfo(), new PrintStream(
-        new FileOutputStream(
-            new File(outputFolder, outputPrefix + ".json"))));
-  }
-
   public static void emitDefines(PrintStream out, ShadingLanguageVersion version,
         ShaderKind shaderKind,
         boolean defineMacros) {
@@ -143,18 +115,6 @@ public final class Helper {
           defineMacros ? Helper::glfMacros : () -> new StringBuilder());
   }
 
-  public static void emitUniformsInfo(UniformsInfo uniformsInfo, PrintStream stream) {
-    stream.println(uniformsInfo);
-    stream.close();
-  }
-
-  public static void emitUniformsInfo(UniformsInfo uniformsInfo, File file)
-        throws FileNotFoundException {
-    PrintStream stream = new PrintStream(new FileOutputStream(file));
-    stream.println(uniformsInfo);
-    stream.close();
-  }
-
   public static String jsonFilenameForShader(String shader) {
     return FilenameUtils.removeExtension(shader) + ".json";
   }
@@ -168,34 +128,6 @@ public final class Helper {
       throws IOException,ParseTimeoutException {
     return ParseHelper.parse(shader, stripHeader);
   }
-
-  public static ShaderJob parseShaderJob(File workDir, String shaderJobPrefix,
-                                         boolean stripHeader) throws IOException,
-      ParseTimeoutException {
-    final File referenceUniforms =
-        new File(workDir, shaderJobPrefix + ".json");
-    final File referenceVert =
-        new File(workDir, shaderJobPrefix + ".vert");
-    final File referenceFrag =
-        new File(workDir, shaderJobPrefix + ".frag");
-    return new GlslShaderJob(
-        referenceVert.exists()
-            ? Optional.of(Helper.parse(referenceVert, stripHeader))
-            : Optional.empty(),
-        referenceFrag.exists()
-            ? Optional.of(Helper.parse(referenceFrag, stripHeader))
-            : Optional.empty(),
-        new UniformsInfo(referenceUniforms));
-  }
-
-  public static ShaderJob parseShaderJob(String shaderJobPrefix,
-                                         boolean stripHeader) throws IOException,
-      ParseTimeoutException {
-    String path = FilenameUtils.getFullPath(shaderJobPrefix);
-    path = path.equals("") ? "." : path;
-    return parseShaderJob(new File(path), FilenameUtils.getName(shaderJobPrefix), stripHeader);
-  }
-
 
   public static Optional<String> readLicenseFile(File licenseFile) throws IOException {
     if (licenseFile == null || !licenseFile.isFile()) {

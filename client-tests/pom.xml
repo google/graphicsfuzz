@@ -42,11 +42,6 @@ limitations under the License.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.graphicsfuzz</groupId>
-      <artifactId>shadersets-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <scope>test</scope>
@@ -92,6 +87,12 @@ limitations under the License.
       <groupId>org.bytedeco.javacpp-presets</groupId>
       <artifactId>opencv</artifactId>
       <classifier>windows-x86_64</classifier>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>common</artifactId>
       <scope>test</scope>
     </dependency>
 

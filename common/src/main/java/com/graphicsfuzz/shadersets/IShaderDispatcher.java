@@ -16,28 +16,14 @@
 
 package com.graphicsfuzz.shadersets;
 
-import com.graphicsfuzz.server.thrift.ComputeJobResult;
+import com.graphicsfuzz.server.thrift.ImageJob;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
-import java.io.File;
 
 public interface IShaderDispatcher {
 
   /**
-   * Gets an image from the shaders prefixed shaderFilesPrefix.
-   * If the returned ImageJobResult.getStatus() == SUCCESS,
-   * then the image will EITHER be in ImageJobResult.getImageContents() OR
-   * have been written to tempImageFile.
+   * Gets an ImageJobResult from the shaderJobFile.
    */
-  ImageJobResult getImage(
-      String shaderFilesPrefix,
-      File tempImageFile,
-      boolean skipRender) throws ShaderDispatchException, InterruptedException;
-
-  /**
-   * Gets a result from computeShaderFile.
-   */
-  ComputeJobResult dispatchCompute(
-      File computeShaderFile,
-      boolean skipExecution) throws ShaderDispatchException, InterruptedException;
+  ImageJobResult getImage(ImageJob imageJob) throws ShaderDispatchException, InterruptedException;
 
 }
