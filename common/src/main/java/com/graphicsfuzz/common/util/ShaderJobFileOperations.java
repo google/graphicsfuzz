@@ -445,15 +445,22 @@ public class ShaderJobFileOperations {
 
     String shaderFileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
 
-    final File uniformsFile = new File(shaderFileNoExtension + ".json");
+    final File infoFile = new File(shaderFileNoExtension + ".json");
     //noinspection deprecation: fine inside this class.
     final File fragmentFile = getUnderlyingShaderFile(shaderJobFile, ShaderKind.FRAGMENT);
     //noinspection deprecation: fine inside this class.
     final File vertexFile = getUnderlyingShaderFile(shaderJobFile, ShaderKind.VERTEX);
     final File primitivesFile = new File(shaderFileNoExtension + ".primitives");
+    final File computeFile = new File(shaderFileNoExtension + ".comp");
 
+    // Special case: compute shader job.
+    if (isFile(computeFile)) {
+      imageJob.setComputeSource(readFileToString(computeFile));
+      imageJob.setComputeInfo(readFileToString(infoFile));
+      return;
+    }
 
-    imageJob.setUniformsInfo(readFileToString(uniformsFile));
+    imageJob.setUniformsInfo(readFileToString(infoFile));
 
     if (isFile(fragmentFile)) {
       imageJob.setFragmentSource(readFileToString(fragmentFile));
@@ -647,6 +654,19 @@ public class ShaderJobFileOperations {
     String outputShaderJobFileNoExtension =
         FilenameUtils.removeExtension(outputShaderJobFile.toString());
 
+    // Special case: compute shader job.
+    if (imageJob.isSetComputeSource()) {
+      writeStringToFile(
+          new File(outputShaderJobFileNoExtension + ".json"),
+          imageJob.getComputeInfo());
+
+      writeStringToFile(
+          new File(outputShaderJobFileNoExtension + ".comp"),
+          imageJob.getComputeSource());
+
+      return;
+    }
+
     writeStringToFile(
         new File(outputShaderJobFileNoExtension + ".json"),
         imageJob.getUniformsInfo());
@@ -800,6 +820,7 @@ public class ShaderJobFileOperations {
       boolean copy) throws IOException {
     // TODO: Should we only move/copy particular files?
     assertIsJson(shaderJobFileSource);
+    assertIsJson(shaderJobFileDest);
 
     // Copy:
     //
@@ -842,6 +863,7 @@ public class ShaderJobFileOperations {
       boolean copy) throws IOException {
     // TODO: Should we only move/copy particular files?
     assertIsJsonInfo(shaderResultFileSource);
+    assertIsJsonInfo(shaderResultFileDest);
 
     // Copy:
     //
@@ -1005,12 +1027,37 @@ public class ShaderJobFileOperations {
     String shaderJobResultNoExtension =
         FileHelper.removeEnd(shaderJobResultFile.toString(), ".info.json");
 
+    // Special case: compute shader job.
+
+    if (shaderResult.isSetComputeOutputs()) {
+
+      JsonObject infoJson = new JsonObject();
+      if (shaderResult.isSetStatus()) {
+        infoJson.addProperty("Status", shaderResult.getStatus().toString());
+      }
+      if (shaderResult.isSetLog()) {
+        infoJson.addProperty("Log", shaderResult.getLog());
+      }
+      if (shaderResult.isSetComputeOutputs()) {
+        infoJson.add(
+            "Outputs", new Gson().fromJson(shaderResult.getComputeOutputs(), JsonObject.class));
+      }
+
+      fileOps.writeStringToFile(
+          new File(shaderJobResultNoExtension + ".info.json"),
+          infoJson.toString());
+
+      return;
+    }
+
     final File outputImage = new File(shaderJobResultNoExtension + ".png");
-    final File outputText = new File(shaderJobResultNoExtension + ".txt");
 
     if (shaderResult.isSetLog()) {
-      fileOps.writeStringToFile(outputText, shaderResult.getLog());
+      fileOps.writeStringToFile(
+          new File(shaderJobResultNoExtension + ".txt"),
+          shaderResult.getLog());
     }
+
     if (shaderResult.isSetPNG()) {
       fileOps.writeByteArrayToFile(outputImage, shaderResult.getPNG());
     }

@@ -255,9 +255,9 @@ public class Reduce {
       final String server = ns.get("server");
       final String token = ns.get("token");
 
-      final Boolean usingSwiftshader = ns.get("swiftshader");
+      final boolean usingSwiftshader = ns.get("swiftshader");
 
-      final Boolean continuePreviousReduction = ns.get("continue_previous_reduction");
+      final boolean continuePreviousReduction = ns.get("continue_previous_reduction");
 
       if (managerOverride != null && (server == null || token == null)) {
         throw new ArgumentParserException(
