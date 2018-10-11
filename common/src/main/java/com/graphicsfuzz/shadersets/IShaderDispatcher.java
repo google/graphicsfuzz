@@ -22,7 +22,7 @@ import com.graphicsfuzz.server.thrift.ImageJobResult;
 public interface IShaderDispatcher {
 
   /**
-   * Gets an ImageJobResult from the shaderJobFile.
+   * Gets an ImageJobResult from the imageJob.
    */
   ImageJobResult getImage(ImageJob imageJob) throws ShaderDispatchException, InterruptedException;
 
