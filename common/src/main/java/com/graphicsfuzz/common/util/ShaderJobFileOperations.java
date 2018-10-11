@@ -135,7 +135,7 @@ public class ShaderJobFileOperations {
       File shaderJobFile,
       boolean throwExceptionOnInvalid)
       throws IOException, InterruptedException {
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
 
     String shaderJobFileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
 
@@ -165,7 +165,7 @@ public class ShaderJobFileOperations {
   // For now, ShaderJobForWorker is ImageJob.
 
   public void assertShaderJobRequiredFilesExist(File shaderJobFile) throws FileNotFoundException {
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
     String shaderJobFileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
 
     assertExists(shaderJobFile);
@@ -223,7 +223,7 @@ public class ShaderJobFileOperations {
   }
 
   public void deleteShaderJobFile(File shaderJobFile) throws IOException {
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
 
     // We conservatively delete specific files, instead of deleting all related files
     // returned from getShaderResultFileRelatedFiles().
@@ -240,7 +240,7 @@ public class ShaderJobFileOperations {
   }
 
   public void deleteShaderJobResultFile(File shaderJobResultFile) throws IOException {
-    assertIsJsonInfo(shaderJobResultFile);
+    assertIsShaderJobResultFile(shaderJobResultFile);
 
     // We conservatively delete specific files, instead of deleting all related files
     // returned from getShaderResultFileRelatedFiles().
@@ -261,12 +261,12 @@ public class ShaderJobFileOperations {
   }
 
   public boolean doesShaderJobExist(File shaderJobFile) {
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
     return shaderJobFile.isFile();
   }
 
   public boolean doesShaderJobResultFileExist(File shaderJobResultFile) {
-    assertIsJsonInfo(shaderJobResultFile);
+    assertIsShaderJobResultFile(shaderJobResultFile);
     return shaderJobResultFile.isFile();
   }
 
@@ -313,7 +313,7 @@ public class ShaderJobFileOperations {
   }
 
   public long getShaderLength(File shaderJobFile, ShaderKind shaderKind) {
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
     //noinspection deprecation: Fine in this class.
     return getUnderlyingShaderFile(shaderJobFile, shaderKind).length();
   }
@@ -332,7 +332,7 @@ public class ShaderJobFileOperations {
   public File getUnderlyingShaderFile(
       File shaderJobFile,
       ShaderKind shaderKind) {
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
     String shaderJobFileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
 
     switch (shaderKind) {
@@ -424,7 +424,7 @@ public class ShaderJobFileOperations {
   public ShaderJob readShaderJobFile(File shaderJobFile, boolean stripHeader)
       throws IOException, ParseTimeoutException {
 
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
 
     String shaderJobFilePrefix = FilenameUtils.removeExtension(shaderJobFile.toString());
     final File vertexShaderFile = new File(shaderJobFilePrefix + ".vert");
@@ -441,7 +441,7 @@ public class ShaderJobFileOperations {
 
   public void readShaderJobFileToImageJob(File shaderJobFile, ImageJob imageJob)
       throws IOException {
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
 
     String shaderFileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
 
@@ -601,7 +601,7 @@ public class ShaderJobFileOperations {
       File shaderJobFile,
       String outputFileExtension,
       String outputContents) throws FileNotFoundException {
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
 
     String outputFileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
     try (PrintStream stream = ps(new File(outputFileNoExtension + outputFileExtension))) {
@@ -618,7 +618,7 @@ public class ShaderJobFileOperations {
       final ShadingLanguageVersion shadingLanguageVersion,
       final File outputShaderJobFile) throws FileNotFoundException {
 
-    assertIsJson(outputShaderJobFile);
+    assertIsShaderJobFile(outputShaderJobFile);
 
     String outputFileNoExtension = FilenameUtils.removeExtension(outputShaderJobFile.toString());
 
@@ -649,7 +649,7 @@ public class ShaderJobFileOperations {
       final ImageJob imageJob,
       final File outputShaderJobFile) throws IOException {
 
-    assertIsJson(outputShaderJobFile);
+    assertIsShaderJobFile(outputShaderJobFile);
 
     String outputShaderJobFileNoExtension =
         FilenameUtils.removeExtension(outputShaderJobFile.toString());
@@ -712,15 +712,18 @@ public class ShaderJobFileOperations {
     FileUtils.writeStringToFile(file, contents, Charset.defaultCharset());
   }
 
-  private static void assertIsJson(File shaderJobFile) {
-    if (!shaderJobFile.getName().endsWith(".json")) {
-      throw new IllegalArgumentException("shaderJobFile: must be a .json file.");
+  private static void assertIsShaderJobFile(File shaderJobFile) {
+    if (!shaderJobFile.getName().endsWith(".json")
+        || shaderJobFile.getName().endsWith(".info.json")) {
+      throw new IllegalArgumentException(
+          "shaderJobFile: must be a .json file (and not .info.json):" + shaderJobFile);
     }
   }
 
-  private static void assertIsJsonInfo(File shaderJobResultFile) {
+  private static void assertIsShaderJobResultFile(File shaderJobResultFile) {
     if (!shaderJobResultFile.getName().endsWith(".info.json")) {
-      throw new IllegalArgumentException("shaderJobResultFile: must be a .info.json file.");
+      throw new IllegalArgumentException(
+          "shaderJobResultFile: must be a .info.json file" + shaderJobResultFile);
     }
   }
 
@@ -801,7 +804,7 @@ public class ShaderJobFileOperations {
   }
 
   private void assertImagesExist(File shaderJobResultFile) throws FileNotFoundException {
-    assertIsJson(shaderJobResultFile);
+    assertIsShaderJobFile(shaderJobResultFile);
     String fileNoExtension = FileHelper.removeEnd(shaderJobResultFile.toString(), ".info.json");
     File imageFile = new File(fileNoExtension + ".png");
     if (!isFile(imageFile)) {
@@ -819,8 +822,8 @@ public class ShaderJobFileOperations {
       boolean replaceExisting,
       boolean copy) throws IOException {
     // TODO: Should we only move/copy particular files?
-    assertIsJson(shaderJobFileSource);
-    assertIsJson(shaderJobFileDest);
+    assertIsShaderJobFile(shaderJobFileSource);
+    assertIsShaderJobFile(shaderJobFileDest);
 
     // Copy:
     //
@@ -862,8 +865,8 @@ public class ShaderJobFileOperations {
       boolean replaceExisting,
       boolean copy) throws IOException {
     // TODO: Should we only move/copy particular files?
-    assertIsJsonInfo(shaderResultFileSource);
-    assertIsJsonInfo(shaderResultFileDest);
+    assertIsShaderJobResultFile(shaderResultFileSource);
+    assertIsShaderJobResultFile(shaderResultFileDest);
 
     // Copy:
     //
@@ -902,7 +905,7 @@ public class ShaderJobFileOperations {
   }
 
   private String getMD5(File shaderJobFile) throws IOException {
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
 
     String fileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
     final File vertexShaderFile = new File(fileNoExtension + ".vert");
@@ -934,7 +937,7 @@ public class ShaderJobFileOperations {
   }
 
   private File[] getShaderJobFileRelatedFiles(File shaderJobFile) throws IOException {
-    assertIsJson(shaderJobFile);
+    assertIsShaderJobFile(shaderJobFile);
 
     File shaderDir = getParent(shaderJobFile);
 
@@ -952,7 +955,7 @@ public class ShaderJobFileOperations {
   }
 
   private File[] getShaderResultFileRelatedFiles(File shaderResultFile) throws IOException {
-    assertIsJsonInfo(shaderResultFile);
+    assertIsShaderJobResultFile(shaderResultFile);
 
     File resultDir = getParent(shaderResultFile);
 
@@ -970,7 +973,7 @@ public class ShaderJobFileOperations {
   }
 
   private File getUnderlyingImageFileFromShaderJobResultFile(File shaderJobResultFile) {
-    assertIsJsonInfo(shaderJobResultFile);
+    assertIsShaderJobResultFile(shaderJobResultFile);
     String shaderJobFileWithoutExtension =
         FileHelper.removeEnd(shaderJobResultFile.toString(), ".info.json");
     return new File(shaderJobFileWithoutExtension + ".png");
@@ -1022,7 +1025,7 @@ public class ShaderJobFileOperations {
       ShaderJobFileOperations fileOps,
       Optional<File> referenceShaderResultFile) throws IOException {
 
-    assertIsJson(shaderJobResultFile);
+    assertIsShaderJobFile(shaderJobResultFile);
 
     String shaderJobResultNoExtension =
         FileHelper.removeEnd(shaderJobResultFile.toString(), ".info.json");
