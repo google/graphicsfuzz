@@ -433,8 +433,10 @@ public class ReducerUnitTest {
     final File reference = temporaryFolder.newFile("reference.frag");
     final File referenceJson = temporaryFolder.newFile("reference.json");
     final File referenceImage = temporaryFolder.newFile("reference.png");
+    final File referenceJsonFakeResult = temporaryFolder.newFile("reference.info.json");
     FileUtils.writeStringToFile(reference, program, StandardCharsets.UTF_8);
     FileUtils.writeStringToFile(referenceJson, "{ }", StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(referenceJsonFakeResult, "{ }", StandardCharsets.UTF_8);
 
     final ExecResult referenceResult = ToolHelper.runSwiftshaderOnShader(RedirectType.TO_LOG,
           reference, referenceImage, false);
@@ -444,30 +446,30 @@ public class ReducerUnitTest {
 
     int numSteps = 20;
 
-    Reduce.main(new String[] {
-          FilenameUtils.removeExtension(reference.getAbsolutePath()),
+    Reduce.mainHelper(new String[] {
+          referenceJson.getAbsolutePath(),
           "--swiftshader",
           "IDENTICAL",
           "--reduce_everywhere",
-          "--reference_image",
-          referenceImage.getAbsolutePath(),
+          "--reference",
+          referenceJsonFakeResult.getAbsolutePath(),
           "--max_steps",
           String.valueOf(numSteps),
           "--seed",
           "0",
           "--output",
           output.getAbsolutePath()
-    });
+    }, null);
 
     while (new File(output, Constants.REDUCTION_INCOMPLETE).exists()) {
       numSteps += 5;
-      Reduce.main(new String[] {
-            FilenameUtils.removeExtension(reference.getAbsolutePath()),
+      Reduce.mainHelper(new String[] {
+            referenceJson.getAbsolutePath(),
             "--swiftshader",
             "IDENTICAL",
             "--reduce_everywhere",
-            "--reference_image",
-            referenceImage.getAbsolutePath(),
+            "--reference",
+            referenceJsonFakeResult.getAbsolutePath(),
             "--max_steps",
             String.valueOf(numSteps),
             "--seed",
@@ -475,7 +477,7 @@ public class ReducerUnitTest {
             "--output",
             output.getAbsolutePath(),
             "--continue_previous_reduction"
-      });
+      }, null);
     }
 
     final File[] finalResults = output.listFiles((dir, file)
@@ -521,21 +523,23 @@ public class ReducerUnitTest {
                 + "}";
     final File reference = temporaryFolder.newFile("reference.frag");
     final File referenceJson = temporaryFolder.newFile("reference.json");
+    final File referenceJsonFakeResult = temporaryFolder.newFile("reference.info.json");
     final File referenceImage = temporaryFolder.newFile("reference.png");
     FileUtils.writeStringToFile(reference, program, StandardCharsets.UTF_8);
     FileUtils.writeStringToFile(referenceJson, "{ }", StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(referenceJsonFakeResult, "{ }", StandardCharsets.UTF_8);
 
     final ExecResult referenceResult = ToolHelper.runSwiftshaderOnShader(RedirectType.TO_LOG,
           reference, referenceImage, false);
     assertEquals(0, referenceResult.res);
     final File output = temporaryFolder.newFolder();
     Reduce.main(new String[] {
-          FilenameUtils.removeExtension(reference.getAbsolutePath()),
+          referenceJson.getAbsolutePath(),
           "--swiftshader",
           "IDENTICAL",
           "--reduce_everywhere",
-          "--reference_image",
-          referenceImage.getAbsolutePath(),
+          "--reference",
+          referenceJsonFakeResult.getAbsolutePath(),
           "--max_steps",
           "-1",
           "--seed",
