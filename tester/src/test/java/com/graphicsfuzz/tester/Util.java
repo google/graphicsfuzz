@@ -171,29 +171,6 @@ public final class Util {
     return validateAndGetImage(tempFile, temporaryFolder, fileOps);
   }
 
-//  static File writeShaderAndUniformsToFile(TranslationUnit tu,
-//        Optional<UniformsInfo> uniforms, String fileName, ShadingLanguageVersion shadingLanguageVersion,
-//        ShaderKind shaderKind,
-//        TemporaryFolder temporaryFolder) throws IOException {
-//    File tempFile = new File(temporaryFolder.getRoot(), fileName);
-//    if (tempFile.exists()) {
-//      tempFile.delete();
-//    }
-//    Helper.emitShader(shadingLanguageVersion, shaderKind, tu,
-//        new PrintStream(new FileOutputStream(tempFile)));
-//    if (uniforms.isPresent()) {
-//      final File uniformsFile = new File(
-//            FilenameUtils.removeExtension(tempFile.getAbsolutePath()) + ".json");
-//      if (uniformsFile.exists()) {
-//        uniformsFile.delete();
-//      }
-//      Helper.emitUniformsInfo(uniforms.get(), new PrintStream(new FileOutputStream(
-//            uniformsFile
-//      )));
-//    }
-//    return tempFile;
-//  }
-
   static Mat getImageUsingSwiftshader(File shaderFile, TemporaryFolder temporaryFolder) throws IOException, InterruptedException {
     File imageFile = temporaryFolder.newFile();
     ExecResult res =
