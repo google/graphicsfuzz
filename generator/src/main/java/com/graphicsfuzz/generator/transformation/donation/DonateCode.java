@@ -390,7 +390,7 @@ public abstract class DonateCode implements ITransformation {
 
   private List<String> getStructNames(List<Declaration> toBeAdded) {
     return toBeAdded.stream().filter(item -> item instanceof StructDeclaration)
-          .map(item -> ((StructDeclaration) item).getType().getName())
+          .map(item -> ((StructDeclaration) item).getStructType().getName())
           .collect(Collectors.toList());
   }
 
@@ -475,9 +475,10 @@ public abstract class DonateCode implements ITransformation {
   }
 
   private Set<String> getStructNamesFromShader(TranslationUnit tu) {
-    return tu.getTopLevelDeclarations().stream().filter(item -> item instanceof StructDeclaration)
-          .map(item -> ((StructDeclaration) item).getType().getName())
-          .collect(Collectors.toSet());
+    return tu.getStructDecls()
+        .stream()
+        .map(item -> item.getStructType().getName())
+        .collect(Collectors.toSet());
   }
 
   /**

@@ -22,12 +22,12 @@ import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.type.ArrayType;
+import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.type.StructType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 
 public class UnusedStructReductionOpportunities extends StandardVisitor {
 
-  private final Set<String> referencedStructs;
+  private final Set<StructType> referencedStructs;
 
   private UnusedStructReductionOpportunities() {
     this.referencedStructs = new HashSet<>();
@@ -69,18 +69,13 @@ public class UnusedStructReductionOpportunities extends StandardVisitor {
   @Override
   public void visitStructDeclaration(StructDeclaration structDeclaration) {
     super.visitStructDeclaration(structDeclaration);
-    for (Type t : structDeclaration.getType().getFieldTypes()) {
-      if (t.getWithoutQualifiers() instanceof StructType) {
-        referencedStructs.add(((StructType) t.getWithoutQualifiers()).getName());
-      }
+    for (String field : structDeclaration.getFieldNames()) {
+      checkForReferencedStructs(structDeclaration.getFieldType(field));
     }
-  }
-
-  @Override
-  public void visitStructType(StructType structType) {
-    super.visitStructType(structType);
-    for (String field : structType.getFieldNames()) {
-      checkForReferencedStructs(structType.getFieldType(field));
+    for (Type t : structDeclaration.getFieldTypes()) {
+      if (t.getWithoutQualifiers() instanceof StructType) {
+        referencedStructs.add(((StructType) t.getWithoutQualifiers()));
+      }
     }
   }
 
@@ -100,7 +95,7 @@ public class UnusedStructReductionOpportunities extends StandardVisitor {
   public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
     super.visitTypeConstructorExpr(typeConstructorExpr);
     // This will add non-struct typenames such as "float" and "vec2", but it doesn't matter
-    referencedStructs.add(typeConstructorExpr.getTypename());
+    referencedStructs.add(new NamedStructType(typeConstructorExpr.getTypename()));
   }
 
   private void checkForReferencedStructs(Type baseType) {
@@ -110,22 +105,19 @@ public class UnusedStructReductionOpportunities extends StandardVisitor {
   private List<FunctionOrStructReductionOpportunity> getReductionOpportunitiesForUnusedStructs(
         TranslationUnit tu) {
     return tu.getTopLevelDeclarations().stream().filter(decl -> decl instanceof StructDeclaration
-          && !referencedStructs.contains(((StructDeclaration) decl).getType().getName()))
+          && !referencedStructs.contains(((StructDeclaration) decl).getStructType()))
           .map(decl -> new FunctionOrStructReductionOpportunity(tu, decl, getVistitationDepth()))
           .collect(Collectors.toList());
   }
 
-  private Set<String> getReferencedStructTypeNames(Type type) {
-    Set<String> result = new HashSet<>();
+  private Set<StructType> getReferencedStructTypeNames(Type type) {
+    Set<StructType> result = new HashSet<>();
     Type typeOfInterest = type.getWithoutQualifiers();
     if (typeOfInterest instanceof ArrayType) {
       typeOfInterest = ((ArrayType) typeOfInterest).getBaseType().getWithoutQualifiers();
     }
     if (typeOfInterest instanceof StructType) {
-      result.add(((StructType) typeOfInterest).getName());
-      for (Type fieldType : ((StructType) typeOfInterest).getFieldTypes()) {
-        result.addAll(getReferencedStructTypeNames(fieldType));
-      }
+      result.add((StructType) typeOfInterest);
     }
     return result;
   }

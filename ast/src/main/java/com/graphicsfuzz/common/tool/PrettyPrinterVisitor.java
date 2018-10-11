@@ -59,13 +59,14 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
+import com.graphicsfuzz.common.ast.type.AnonymousStructType;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.AtomicIntType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.ImageType;
+import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
-import com.graphicsfuzz.common.ast.type.StructType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -466,8 +467,13 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   }
 
   @Override
-  public void visitStructType(StructType structType) {
-    out.append(structType.getName());
+  public void visitConcreteStructNameType(NamedStructType concreteStructNameType) {
+    out.append(concreteStructNameType.getName());
+  }
+
+  @Override
+  public void visitAnonymousStructNameType(AnonymousStructType anonymousStructNameType) {
+    // Do nothing: the name is anonymous.
   }
 
   @Override
@@ -493,13 +499,18 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitStructDeclaration(StructDeclaration structDeclaration) {
-    out.append("struct " + structDeclaration.getType().getName() + " {" + newLine());
+    out.append("struct ");
+    visit(structDeclaration.getStructType());
+    if (structDeclaration.getStructType() instanceof NamedStructType) {
+      out.append(" ");
+    }
+    out.append("{" + newLine());
     increaseIndent();
-    for (String name : structDeclaration.getType().getFieldNames()) {
+    for (String name : structDeclaration.getFieldNames()) {
       out.append(indent());
-      visit(structDeclaration.getType().getFieldType(name));
+      visit(structDeclaration.getFieldType(name));
       out.append(" " + name);
-      processArrayInfo(structDeclaration.getType().getFieldType(name));
+      processArrayInfo(structDeclaration.getFieldType(name));
       out.append(";" + newLine());
     }
     decreaseIndent();

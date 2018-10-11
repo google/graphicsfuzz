@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import static org.junit.Assert.assertEquals;
 
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.Expr;
@@ -27,7 +28,7 @@ import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import java.io.ByteArrayOutputStream;
@@ -41,13 +42,13 @@ public class RemoveStructFieldReductionOpportunityTest {
   @Test
   public void applyReduction() throws Exception {
 
-    StructType bar = new StructType("bar",
+    StructDeclaration bar = new StructDeclaration(new NamedStructType("bar"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.VEC2, BasicType.VEC3));
 
-    StructType foo = new StructType("foo",
+    StructDeclaration foo = new StructDeclaration(new NamedStructType("foo"),
         Arrays.asList("a", "b", "c"),
-        Arrays.asList(BasicType.FLOAT, bar, bar));
+        Arrays.asList(BasicType.FLOAT, bar.getStructType(), bar.getStructType()));
 
     Expr barConstructor = new TypeConstructorExpr("bar", Arrays.asList(
         new TypeConstructorExpr("vec2", Arrays.asList(new FloatConstantExpr("0.0"),
@@ -64,7 +65,7 @@ public class RemoveStructFieldReductionOpportunityTest {
     VariableDeclInfo v2 = new VariableDeclInfo("v2", null,
         new ScalarInitializer(fooConstructor.clone()));
 
-    DeclarationStmt declarationStmt = new DeclarationStmt(new VariablesDeclaration(foo,
+    DeclarationStmt declarationStmt = new DeclarationStmt(new VariablesDeclaration(foo.getStructType(),
         Arrays.asList(v1, v2)));
 
     BlockStmt b = new BlockStmt(

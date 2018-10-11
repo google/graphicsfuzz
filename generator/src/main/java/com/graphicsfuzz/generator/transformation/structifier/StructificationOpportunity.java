@@ -28,6 +28,7 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.type.StructType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -107,7 +108,7 @@ public class StructificationOpportunity {
         // All these new structs are now available to us for further fields.
         subStructs.addAll(newStructs);
         // The first struct in the list is the type of the field we are currently generating.
-        fieldTypes.add(newStructs.get(0).getType());
+        fieldTypes.add(newStructs.get(0).getStructType());
       } else {
         // Grab a basic type.
         while (true) {
@@ -125,8 +126,9 @@ public class StructificationOpportunity {
     // The result is the struct we have generated, followed by all the sub-structs gathered on the
     // way.
     List<StructDeclaration> result = new ArrayList<>();
-    result.add(new StructDeclaration(new StructType(Constants.STRUCTIFICATION_STRUCT_PREFIX
-          + idGenerator.freshId(), fieldNames, fieldTypes)));
+    result.add(new StructDeclaration(
+        new NamedStructType(Constants.STRUCTIFICATION_STRUCT_PREFIX
+          + idGenerator.freshId()), fieldNames, fieldTypes));
     result.addAll(subStructs);
     return result;
   }
@@ -140,22 +142,22 @@ public class StructificationOpportunity {
 
     final String enclosingStructVariableName = Constants.GLF_STRUCT_REPLACEMENT
           + idGenerator.freshId();
-    final StructType enclosingStructType = generatedStructs.get(0).getType();
+    final StructDeclaration enclosingStruct = generatedStructs.get(0);
 
     Expr structifiedExpr = insertFieldIntoStruct(
-          enclosingStructVariableName, enclosingStructType, generator);
+          enclosingStructVariableName, enclosingStruct, generator);
 
     // Rename all occurrences of the variable in the block.
     structifyBlock(structifiedExpr);
     // Then rename the variable at its declaration site.
-    structifyDeclaration(enclosingStructVariableName, enclosingStructType);
+    structifyDeclaration(enclosingStructVariableName, enclosingStruct);
 
   }
 
   private void structifyDeclaration(String enclosingStructVariableName,
-        StructType enclosingStructType) {
+        StructDeclaration enclosingStructType) {
     declToTransform.getVariablesDeclaration()
-          .setBaseType(enclosingStructType);
+          .setBaseType(enclosingStructType.getStructType());
     final VariableDeclInfo declInfo = declToTransform.getVariablesDeclaration().getDeclInfo(0);
     declInfo.setName(enclosingStructVariableName);
     if (declInfo.hasInitializer()) {
@@ -168,19 +170,21 @@ public class StructificationOpportunity {
     }
   }
 
-  private Expr makeInitializationExpr(StructType structType, Expr originalInitializer) {
+  private Expr makeInitializationExpr(StructDeclaration structDeclaration,
+                                      Expr originalInitializer) {
     List<Expr> args = new ArrayList<>();
-    for (int i = 0; i < structType.getNumFields(); i++) {
-      if (structType.getFieldName(i).startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
-        final Type fieldType = structType.getFieldType(i);
+    for (int i = 0; i < structDeclaration.getNumFields(); i++) {
+      if (structDeclaration.getFieldName(i).startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
+        final Type fieldType = structDeclaration.getFieldType(i);
         args.add(fieldType instanceof StructType
-              ? makeInitializationExpr((StructType) fieldType, originalInitializer)
-              : fieldType.getCanonicalConstant());
+            ? makeInitializationExpr(tu.getStructDecl((StructType) fieldType),
+                originalInitializer)
+            : fieldType.getCanonicalConstant());
       } else {
         args.add(originalInitializer);
       }
     }
-    return new TypeConstructorExpr(structType.getName(),
+    return new TypeConstructorExpr(structDeclaration.getStructType().getName(),
           args);
   }
 
@@ -208,19 +212,19 @@ public class StructificationOpportunity {
   }
 
   private Expr insertFieldIntoStruct(String enclosingStructName,
-        StructType enclosingStructType, IRandom generator) {
+        StructDeclaration enclosingStruct, IRandom generator) {
     Expr result = new VariableIdentifierExpr(enclosingStructName);
-    StructType currentStructType = enclosingStructType;
+    StructDeclaration currentStruct = enclosingStruct;
     while (true) {
-      Map<String, StructType> structFields = getStructFields(currentStructType);
+      Map<String, StructDeclaration> structFields = getStructFields(currentStruct);
       if (!structFields.keySet().isEmpty() && generator.nextBoolean()) {
         String fieldName = structFields.keySet().stream().collect(Collectors.toList())
               .get(generator.nextInt(structFields.size()));
         result = new MemberLookupExpr(result, fieldName);
-        currentStructType = structFields.get(fieldName);
+        currentStruct = structFields.get(fieldName);
       } else {
         // Choose random position at which to insert the field.
-        currentStructType.insertField(generator.nextInt(currentStructType.getNumFields() + 1),
+        currentStruct.insertField(generator.nextInt(currentStruct.getNumFields() + 1),
               declToTransform.getVariablesDeclaration().getDeclInfo(0).getName(),
               declToTransform.getVariablesDeclaration().getBaseType());
         result = new MemberLookupExpr(result, declToTransform.getVariablesDeclaration()
@@ -230,12 +234,12 @@ public class StructificationOpportunity {
     }
   }
 
-  private Map<String, StructType> getStructFields(StructType type) {
-    return type.getFieldNames().stream()
-          .filter(item -> type.getFieldType(item) instanceof StructType)
+  private Map<String, StructDeclaration> getStructFields(StructDeclaration struct) {
+    return struct.getFieldNames().stream()
+          .filter(item -> struct.getFieldType(item) instanceof StructType)
           .collect(Collectors.toMap(
               item -> item,
-              item -> (StructType) type.getFieldType(item))
+              item -> tu.getStructDecl((StructType) struct.getFieldType(item)))
           );
   }
 

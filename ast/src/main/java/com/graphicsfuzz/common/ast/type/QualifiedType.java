@@ -69,7 +69,7 @@ public class QualifiedType extends Type {
     return targetType;
   }
 
-  public void setTargetType(StructType targetType) {
+  public void setTargetType(Type targetType) {
     this.targetType = targetType;
   }
 

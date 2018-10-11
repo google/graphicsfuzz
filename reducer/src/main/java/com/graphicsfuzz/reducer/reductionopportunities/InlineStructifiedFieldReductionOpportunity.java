@@ -17,9 +17,10 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
@@ -40,20 +41,23 @@ import java.util.Map;
  */
 public class InlineStructifiedFieldReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final StructType outerStruct;
+  private final StructDeclaration outerStruct;
+  private final StructDeclaration innerStruct;
   private final String fieldToInline;
   private final TranslationUnit tu;
 
-  public InlineStructifiedFieldReductionOpportunity(StructType outerStruct,
-      String fieldToInline, TranslationUnit tu,
-      VisitationDepth depth) {
+  public InlineStructifiedFieldReductionOpportunity(StructDeclaration outerStruct,
+                                                    StructDeclaration innerStruct,
+                                                    String fieldToInline, TranslationUnit tu,
+                                                    VisitationDepth depth) {
     super(depth);
     this.outerStruct = outerStruct;
+    this.innerStruct = innerStruct;
     this.fieldToInline = fieldToInline;
     this.tu = tu;
     assert fieldToInline.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX);
     assert outerStruct.getFieldType(fieldToInline).getWithoutQualifiers()
-        instanceof StructType : "Can only inline a struct field of a struct";
+        instanceof NamedStructType : "Can only inline a struct field of a struct";
   }
 
   @Override
@@ -63,8 +67,6 @@ public class InlineStructifiedFieldReductionOpportunity extends AbstractReductio
     final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_100);
 
     final int indexOfInlinedField = outerStruct.getFieldIndex(fieldToInline);
-    final StructType innerStruct = (StructType) outerStruct.getFieldType(fieldToInline)
-        .getWithoutQualifiers();
     outerStruct.removeField(fieldToInline);
 
     final Map<String, String> oldToNewFieldNames = new HashMap<>();
@@ -84,7 +86,7 @@ public class InlineStructifiedFieldReductionOpportunity extends AbstractReductio
       @Override
       public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
         super.visitTypeConstructorExpr(typeConstructorExpr);
-        if (typeConstructorExpr.getTypename().equals(outerStruct.getName())) {
+        if (typeConstructorExpr.getTypename().equals(outerStruct.getStructType().getName())) {
           TypeConstructorExpr oldArg =
               (TypeConstructorExpr) typeConstructorExpr.removeArg(indexOfInlinedField);
           for (int i = 0; i < oldArg.getNumArgs(); i++) {
@@ -101,22 +103,22 @@ public class InlineStructifiedFieldReductionOpportunity extends AbstractReductio
           return;
         }
         if (!(recordedType
-            .getWithoutQualifiers() instanceof StructType)) {
+            .getWithoutQualifiers() instanceof NamedStructType)) {
           // The structure might be a vector or matrix, or we might not have a type.
           return;
         }
-        StructType structType = (StructType) recordedType
+        final NamedStructType structType = (NamedStructType) recordedType
             .getWithoutQualifiers();
-        if (!structType.equals(innerStruct)) {
+        if (!structType.equals(innerStruct.getStructType())) {
           return;
         }
         if (!(memberLookupExpr.getStructure() instanceof MemberLookupExpr)) {
           return;
         }
         MemberLookupExpr outerMemberLookupExpr = (MemberLookupExpr) memberLookupExpr.getStructure();
-        if (!((StructType) typer.lookupType(outerMemberLookupExpr.getStructure())
-            .getWithoutQualifiers())
-            .equals(outerStruct)) {
+        if (!typer.lookupType(outerMemberLookupExpr.getStructure())
+            .getWithoutQualifiers()
+            .equals(outerStruct.getStructType())) {
           return;
         }
         if (!(outerMemberLookupExpr.getMember().equals(fieldToInline))) {
@@ -130,10 +132,6 @@ public class InlineStructifiedFieldReductionOpportunity extends AbstractReductio
     }.visit(tu);
   }
 
-  String getOuterStructName() {
-    return outerStruct.getName();
-  }
-
   @Override
   public boolean preconditionHolds() {
     if (!outerStruct.hasField(fieldToInline)) {
@@ -141,5 +139,9 @@ public class InlineStructifiedFieldReductionOpportunity extends AbstractReductio
       return false;
     }
     return true;
+  }
+
+  public String getOuterStructName() {
+    return outerStruct.getStructType().getName();
   }
 }

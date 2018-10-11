@@ -26,9 +26,11 @@ import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.type.StructType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
@@ -55,9 +57,9 @@ public class Obfuscator extends ScopeTreeBuilder {
   private final IRandom generator;
 
   private final Map<String, String> functionRenaming;
-  private final Map<String, String> structRenaming;
-  private final List<StructType> structs;
-  private final Map<String, Map<String, String>> structFieldRenaming;
+  private final Map<String, String> namedStructRenaming;
+  private final List<StructDeclaration> structDeclarations;
+  private final Map<StructType, Map<String, String>> structFieldRenaming;
   private final Map<VariableDeclInfo, String> varDeclMapping;
   private final Map<ParameterDecl, String> paramDeclMapping;
   private final Map<String, String> uniformMapping;
@@ -70,8 +72,8 @@ public class Obfuscator extends ScopeTreeBuilder {
     this.maxIdUsed = 0;
     this.generator = generator;
     this.functionRenaming = new HashMap<>();
-    this.structRenaming = new HashMap<>();
-    this.structs = new ArrayList<>();
+    this.namedStructRenaming = new HashMap<>();
+    this.structDeclarations = new ArrayList<>();
     this.structFieldRenaming = new HashMap<>();
     this.varDeclMapping = new HashMap<>();
     this.paramDeclMapping = new HashMap<>();
@@ -84,23 +86,25 @@ public class Obfuscator extends ScopeTreeBuilder {
   public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
     super.visitTypeConstructorExpr(typeConstructorExpr);
     final String typename = typeConstructorExpr.getTypename();
-    if (structRenaming.containsKey(typename)) {
-      typeConstructorExpr.setTypename(structRenaming.get(typename));
+    if (namedStructRenaming.containsKey(typename)) {
+      typeConstructorExpr.setTypename(namedStructRenaming.get(typename));
     }
   }
 
   @Override
   public void visitStructDeclaration(StructDeclaration structDeclaration) {
     super.visitStructDeclaration(structDeclaration);
-    final String oldName = structDeclaration.getType().getName();
-    final String newName = renameStruct(oldName);
-    structRenaming.put(oldName, newName);
-    structs.add(structDeclaration.getType());
+    if (structDeclaration.getStructType() instanceof NamedStructType) {
+      final String oldName = structDeclaration.getStructType().getName();
+      final String newName = renameStruct(oldName);
+      namedStructRenaming.put(oldName, newName);
+    }
+    structDeclarations.add(structDeclaration);
     final Map<String, String> fieldRenaming = new HashMap<>();
-    for (String fieldName : structDeclaration.getType().getFieldNames()) {
+    for (String fieldName : structDeclaration.getFieldNames()) {
       fieldRenaming.put(fieldName, renameStructField(fieldName));
     }
-    structFieldRenaming.put(oldName, fieldRenaming);
+    structFieldRenaming.put(structDeclaration.getStructType(), fieldRenaming);
   }
 
   @Override
@@ -225,7 +229,7 @@ public class Obfuscator extends ScopeTreeBuilder {
   private ImmutablePair<TranslationUnit, UniformsInfo> obfuscate(
         TranslationUnit tu, UniformsInfo uniformsInfo,
         ShadingLanguageVersion shadingLanguageVersion) {
-    TranslationUnit clonedTu = tu.cloneAndPatchUp();
+    TranslationUnit clonedTu = tu.clone();
     this.typer = new Typer(clonedTu, shadingLanguageVersion);
     visit(clonedTu);
     for (VariableDeclInfo declInfo : varDeclMapping.keySet()) {
@@ -236,17 +240,23 @@ public class Obfuscator extends ScopeTreeBuilder {
       assert paramDeclMapping.containsKey(parameterDecl);
       parameterDecl.setName(paramDeclMapping.get(parameterDecl));
     }
-    for (StructType structType : structs) {
-      assert structRenaming.containsKey(structType.getName());
-      final String oldName = structType.getName();
-      final String newName = structRenaming.get(oldName);
-      structType.setName(newName);
-      for (int i = 0; i < structType.getNumFields(); i++) {
-        assert structFieldRenaming.get(oldName).containsKey(structType.getFieldName(i));
-        structType.setFieldName(i, structFieldRenaming.get(oldName)
-              .get(structType.getFieldName(i)));
+    for (StructDeclaration structDeclaration : structDeclarations) {
+      final StructType structType = structDeclaration.getStructType();
+      for (int i = 0; i < structDeclaration.getNumFields(); i++) {
+        assert structFieldRenaming.get(structType)
+            .containsKey(structDeclaration.getFieldName(i));
+        structDeclaration.setFieldName(i, structFieldRenaming.get(structType)
+              .get(structDeclaration.getFieldName(i)));
       }
     }
+
+    new StandardVisitor() {
+      @Override
+      public void visitConcreteStructNameType(NamedStructType concreteStructNameType) {
+        concreteStructNameType.setName(namedStructRenaming.get(concreteStructNameType.getName()));
+      }
+    }.visit(tu);
+
     for (String name : uniformsInfo.getUniformNames()) {
       if (!uniformMapping.containsKey(name)) {
         uniformMapping.put(name, renameVariable(name));

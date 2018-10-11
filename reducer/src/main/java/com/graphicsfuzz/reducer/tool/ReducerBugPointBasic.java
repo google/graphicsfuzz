@@ -132,7 +132,7 @@ public class ReducerBugPointBasic {
 
     for (int i = 0; i < maxIterations; i++) {
 
-      TranslationUnit current = lastGoodButLeadingToBad.cloneAndPatchUp();
+      TranslationUnit current = lastGoodButLeadingToBad.clone();
 
       // TODO: this code was written pre vertex shader support, and does not take
       // account of uniforms.
@@ -141,7 +141,7 @@ public class ReducerBugPointBasic {
           Optional.of(current), new UniformsInfo());
 
       while (true) {
-        final TranslationUnit prev = current.cloneAndPatchUp();
+        final TranslationUnit prev = current.clone();
         List<IReductionOpportunity> ops;
         try {
           ops = ReductionOpportunities.getReductionOpportunities(shaderJob,
@@ -166,7 +166,7 @@ public class ReducerBugPointBasic {
           System.err.println("Exception occurred while applying a reduction opportunity.");
           if (exception.toString().contains(expectedString)) {
             lastGoodButLeadingToBad = prev;
-            current = lastGoodButLeadingToBad.cloneAndPatchUp();
+            current = lastGoodButLeadingToBad.clone();
             emitShader(lastGoodButLeadingToBad, "leads_to_exception_" + exceptionCount
                   + ".frag", shadingLanguageVersion);
             emitException(exception, "leads_to_exception_" + exceptionCount + ".txt");
@@ -190,7 +190,7 @@ public class ReducerBugPointBasic {
                 shadingLanguageVersion);
             invalidCount++;
             lastGoodButLeadingToBad = prev;
-            current = lastGoodButLeadingToBad.cloneAndPatchUp();
+            current = lastGoodButLeadingToBad.clone();
           }
         }
       }

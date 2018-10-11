@@ -36,6 +36,7 @@ import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.StructType;
 import com.graphicsfuzz.common.ast.type.Type;
@@ -57,7 +58,7 @@ public class Typer extends ScopeTreeBuilder {
 
   private Map<String, Set<FunctionPrototype>> userDefinedFunctions;
 
-  private Map<String, StructType> structTypeMap;
+  private Map<StructType, StructDeclaration> structDeclarationMap;
 
   private ShadingLanguageVersion shadingLanguageVersion;
 
@@ -68,7 +69,7 @@ public class Typer extends ScopeTreeBuilder {
   public Typer(IAstNode node, ShadingLanguageVersion shadingLanguageVersion) {
     this.types = new HashMap<>();
     this.userDefinedFunctions = new HashMap<>();
-    this.structTypeMap = new HashMap<>();
+    this.structDeclarationMap = new HashMap<>();
     this.shadingLanguageVersion = shadingLanguageVersion;
     visit(node);
   }
@@ -278,11 +279,13 @@ public class Typer extends ScopeTreeBuilder {
         types.put(typeConstructorExpr, BasicType.MAT4X4);
         return;
       default:
-        if (structTypeMap.containsKey(typeConstructorExpr.getTypename())) {
-          types.put(typeConstructorExpr, structTypeMap.get(typeConstructorExpr.getTypename()));
+        final NamedStructType maybeStructType =
+            new NamedStructType(typeConstructorExpr.getTypename());
+        if (structDeclarationMap.containsKey(maybeStructType)) {
+          types.put(typeConstructorExpr, maybeStructType);
           return;
         }
-        return; // We cannot type the constructor.
+        throw new RuntimeException("Unknown type constructor " + typeConstructorExpr.getTypename());
     }
   }
 
@@ -428,7 +431,7 @@ public class Typer extends ScopeTreeBuilder {
 
     if (structureType.getWithoutQualifiers() instanceof StructType) {
       types.put(memberLookupExpr,
-          ((StructType) structureType.getWithoutQualifiers())
+          structDeclarationMap.get(structureType.getWithoutQualifiers())
               .getFieldType(memberLookupExpr.getMember()));
     }
 
@@ -488,12 +491,8 @@ public class Typer extends ScopeTreeBuilder {
   @Override
   public void visitStructDeclaration(StructDeclaration structDeclaration) {
     super.visitStructDeclaration(structDeclaration);
-    final StructType structType = structDeclaration.getType();
-    if (structTypeMap.containsKey(structType.getName())) {
-      assert structTypeMap.get(structType.getName()) == structType
-          : "We should not be duplicating struct types";
-    }
-    structTypeMap.put(structType.getName(), structType);
+    assert !structDeclarationMap.containsKey(structDeclaration.getStructType());
+    structDeclarationMap.put(structDeclaration.getStructType(), structDeclaration);
   }
 
   @Override

@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
@@ -28,7 +29,7 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.transformreduce.Constants;
@@ -81,29 +82,33 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
 
   private StructifiedVariableInfo findOriginalVariableInfo() {
     return findOriginalVariableInfo(
-        (StructType) declaration.getVariablesDeclaration().getBaseType().getWithoutQualifiers(),
+        (NamedStructType) declaration.getVariablesDeclaration().getBaseType()
+            .getWithoutQualifiers(),
         Optional.ofNullable((ScalarInitializer) declaration.getVariablesDeclaration()
             .getDeclInfo(0).getInitializer()))
         .get();
   }
 
-  private Optional<StructifiedVariableInfo> findOriginalVariableInfo(StructType type,
+  private Optional<StructifiedVariableInfo> findOriginalVariableInfo(
+      NamedStructType type,
       Optional<ScalarInitializer> initializer) {
 
-    for (int i = 0; i < type.getNumFields(); i++) {
+    final StructDeclaration structDeclaration = tu.getStructDecl(type);
+
+    for (int i = 0; i < structDeclaration.getNumFields(); i++) {
 
       final int currentIndex = i;
       final Optional<ScalarInitializer> componentInitializer = initializer.map(item ->
           new ScalarInitializer(((TypeConstructorExpr) item.getExpr())
               .getArg(currentIndex)));
 
-      if (type.getFieldName(i).startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
+      if (structDeclaration.getFieldName(i).startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
         // It is not the desired field, but...
-        Type fieldTypeWithoutQualifiers = type.getFieldType(i).getWithoutQualifiers();
-        if (fieldTypeWithoutQualifiers instanceof StructType) {
+        Type fieldTypeWithoutQualifiers = structDeclaration.getFieldType(i).getWithoutQualifiers();
+        if (fieldTypeWithoutQualifiers instanceof NamedStructType) {
           // If it is a struct field then the desired field might be in a sub-struct.
           Optional<StructifiedVariableInfo> possibleResult =
-              findOriginalVariableInfo((StructType) fieldTypeWithoutQualifiers,
+              findOriginalVariableInfo((NamedStructType) fieldTypeWithoutQualifiers,
                   componentInitializer);
           if (possibleResult.isPresent()) {
             return possibleResult;
@@ -115,8 +120,8 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
         }
       } else {
         // It is the desired field!
-        return Optional.of(new StructifiedVariableInfo(type.getFieldName(i),
-            type.getFieldType(i),
+        return Optional.of(new StructifiedVariableInfo(structDeclaration.getFieldName(i),
+            structDeclaration.getFieldType(i),
             componentInitializer));
       }
     }

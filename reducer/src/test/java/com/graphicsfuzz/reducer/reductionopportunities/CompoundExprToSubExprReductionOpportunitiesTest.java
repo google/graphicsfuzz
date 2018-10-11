@@ -88,7 +88,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
           getOps(tu, reduceEverywhere);
     final Set<String> actualSet = new HashSet<>();
     for (int i = 0; i < ops.size(); i++) {
-      final TranslationUnit clonedTu = tu.cloneAndPatchUp();
+      final TranslationUnit clonedTu = tu.clone();
       List<SimplifyExprReductionOpportunity> clonedOps =
             getOps(clonedTu, reduceEverywhere);
       assertEquals(ops.size(), clonedOps.size());

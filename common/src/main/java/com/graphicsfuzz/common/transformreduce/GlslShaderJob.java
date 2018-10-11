@@ -190,10 +190,10 @@ public class GlslShaderJob implements ShaderJob {
   public GlslShaderJob clone() {
     return new GlslShaderJob(
         hasVertexShader()
-            ? Optional.of(getVertexShader().cloneAndPatchUp())
+            ? Optional.of(getVertexShader().clone())
             : Optional.empty(),
         hasFragmentShader()
-            ? Optional.of(getFragmentShader().cloneAndPatchUp())
+            ? Optional.of(getFragmentShader().clone())
             : Optional.empty(),
         new UniformsInfo(getUniformsInfo().toString()));
   }
