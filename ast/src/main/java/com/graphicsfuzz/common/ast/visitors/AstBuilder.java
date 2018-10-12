@@ -169,12 +169,10 @@ import org.antlr.v4.runtime.misc.Pair;
 public class AstBuilder extends GLSLBaseVisitor<Object> {
 
   private final List<Declaration> topLevelDeclarations;
-  private int anonymousStructCounter;
   private final Set<StructNameType> structs;
 
   private AstBuilder() {
     this.topLevelDeclarations = new ArrayList<>();
-    this.anonymousStructCounter = 0;
     this.structs = new HashSet<>();
   }
 
