@@ -393,11 +393,18 @@ public class WebUi extends HttpServlet {
     htmlAppendLn("</div></div>");
 
     // Server log
+    String serverLog = getFileContents(new File(WebUiConstants.WORKER_DIR + "/server.log"));
+    // Some logs may be in the megabytes, which makes the page load time very long.
+    // To avoid this, truncate long logs to show only the last 10k characters.
+    final int maxLogCharacters = 10000;
+    if (serverLog.length() > maxLogCharacters) {
+      serverLog = serverLog.substring(serverLog.length() - maxLogCharacters);
+    }
     htmlAppendLn(
         "<div class='ui segment'>\n",
         "<h3>Server Log</h3>\n",
-        "<textarea id='ServerLog' readonly rows='20' cols='100'>",
-        getFileContents(new File(WebUiConstants.WORKER_DIR + "/server.log")),
+        "<textarea id='ServerLog' readonly rows='25' cols='160'>",
+        serverLog,
         "</textarea></div>");
 
     htmlFooter();
@@ -785,7 +792,7 @@ public class WebUi extends HttpServlet {
     String shaderContents = getFileContents(new File(shaderPath.toString()));
 
     htmlAppendLn("</div><div class='ui segment'><h3>Shader source code</h3>\n",
-        "<textarea readonly rows='25' cols='80'>");
+        "<textarea readonly rows='25' cols='160'>");
     htmlAppendLn(shaderContents);
     htmlAppendLn("</textarea>");
 
@@ -793,7 +800,7 @@ public class WebUi extends HttpServlet {
 
     htmlAppendLn("<div class='ui divider'></div>",
         "<p>Uniform values:</p>",
-        "<textarea readonly rows='25' cols='80'>");
+        "<textarea readonly rows='25' cols='160'>");
     htmlAppendLn(jsonContents);
     htmlAppendLn("</textarea>");
 
@@ -885,7 +892,7 @@ public class WebUi extends HttpServlet {
     htmlAppendLn("</div>\n",
         "<div class='ui segment'>\n",
         "<h3>Run log</h3>\n",
-        "<textarea readonly rows='12' cols='80'>");
+        "<textarea readonly rows='25' cols='160'>");
     htmlAppendLn(getFileContents(new File(shaderExperimentDir + resultFilename + ".txt")));
     htmlAppendLn("</textarea>\n",
         "</div>");
@@ -953,7 +960,7 @@ public class WebUi extends HttpServlet {
 
       case EXCEPTION:
         htmlAppendLn("<p>Reduction failed with an exception:</p>",
-            "<textarea readonly rows='25' cols='80'>\n",
+            "<textarea readonly rows='25' cols='160'>\n",
             getFileContents(ReductionProgressHelper.getReductionExceptionFile(
                 ReductionFilesHelper.getReductionDir(token, shaderset, shader), shader)),
             "</textarea>");
@@ -993,7 +1000,7 @@ public class WebUi extends HttpServlet {
           "command.log");
     if (logFile.exists()) {
       htmlAppendLn("<p>Contents of reduction log file:</p>",
-          "<textarea readonly rows='25' cols='80'>\n",
+          "<textarea readonly rows='25' cols='160'>\n",
           getFileContents(logFile),
           "</textarea>");
     }
@@ -1032,7 +1039,7 @@ public class WebUi extends HttpServlet {
       case 1:
         // files differ
         htmlAppendLn("<p>Differences in reduced shader:</p>",
-            "<textarea readonly rows='25' cols='80'>\n",
+            "<textarea readonly rows='25' cols='160'>\n",
             commandResult.getOutput(),
             "</textarea>");
         break;
@@ -1040,7 +1047,7 @@ public class WebUi extends HttpServlet {
         // probably a diff error
         htmlAppendLn("<p>Attempt to diff shaders failed with exit code ",
             Integer.toString(commandResult.getExitCode()), "</p>",
-            "<textarea readonly rows='25' cols='80'>\n",
+            "<textarea readonly rows='25' cols='160'>\n",
             commandResult.getError(),
             "</textarea>");
     }
