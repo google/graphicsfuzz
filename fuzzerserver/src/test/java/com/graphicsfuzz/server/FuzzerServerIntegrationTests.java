@@ -57,12 +57,9 @@ public class FuzzerServerIntegrationTests {
   @Before
   public void setupServices() throws IOException {
     final String processing = testFolder.newFolder("processing").toString();
-    final IArtifactManager artifactManager = new LocalArtifactManager(
-        testFolder.newFolder("shaderfamilies").toString(), processing);
+
     this.executorService = Executors.newCachedThreadPool();
-    final FuzzerServiceImpl fuzzerServiceImpl = new FuzzerServiceImpl(
-        artifactManager, processing, executorService
-    );
+    final FuzzerServiceImpl fuzzerServiceImpl = new FuzzerServiceImpl(processing, executorService);
     this.fuzzerService = fuzzerServiceImpl;
     this.fuzzerServiceManager = new FuzzerServiceManagerImpl(fuzzerServiceImpl,
           (command, manager) -> {

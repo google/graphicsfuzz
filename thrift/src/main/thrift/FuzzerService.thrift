@@ -169,36 +169,27 @@ struct ImageJobResult {
     6 : optional binary PNG
     // Provide a second image, e.g. in case of NONDET
     7 : optional binary PNG2
+
+    8 : optional string computeOutputs // JSON representing outputs
+    9 : optional string computeOutputs2 // JSON representing outputs
 }
 
 struct ImageJob {
-    1 : optional string name; // e.g. the variant name. Useful to identify a job in logs, etc.
-    2 : optional string fragmentSource;
-    3 : optional string vertexSource;
-    4 : optional string uniformsInfo;         // contents of the uniform JSON file
-    5 : optional list<double> points;         // unused for now
-    6 : optional list<double> texturePoints;  // unused for now
-    7 : optional binary textureBinary;        // unused for now
-    8 : optional bool skipRender = false;
-    9 : optional ImageJobResult result;
-}
+    1  : optional string name; // e.g. the variant name. Useful to identify a job in logs, etc.
 
-struct ComputeJobResult {
-    10 : optional JobStatus status
-    20 : optional string log
-    // Last stage that was attempted (but not completed)
-    30 : optional JobStage stage = JobStage.NOT_STARTED
-    40 : optional bool passSanityCheck
-    50 : optional string outputs // JSON representing outputs
-    // Provide a second result, e.g. in case of NONDET
-    60 : optional string outputs2
-}
+    2  : optional string fragmentSource;
+    3  : optional string vertexSource;
+    10 : optional string computeSource;
 
-struct ComputeJob {
-    10 : optional string name;
-    20 : optional string computeSource;
-    30 : optional string environment;          // JSON containing everything the compute shader needs in order to run
-    40 : optional ComputeJobResult result;     // we should get rid of this when we get rid of ImageJobResult, but copying for uniformity for now
+    // contents of the uniform JSON file
+    4  : optional string uniformsInfo;
+    11 : optional string computeInfo;
+
+    5  : optional list<double> points;         // unused for now
+    6  : optional list<double> texturePoints;  // unused for now
+    7  : optional binary textureBinary;        // unused for now
+    8  : optional bool skipRender = false;
+    9  : optional ImageJobResult result;
 }
 
 // The server does not expect a reply for a NoJob
@@ -213,8 +204,7 @@ struct Job {
     1 : required i64 jobId,
     2 : optional NoJob noJob,
     3 : optional ImageJob imageJob,
-    4 : optional ComputeJob computeJob,
-    5 : optional SkipJob skipJob,
+    4 : optional SkipJob skipJob,
 }
 
 struct CommandResult {

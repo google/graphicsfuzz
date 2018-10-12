@@ -35,6 +35,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class PruneUniforms {
@@ -66,15 +67,22 @@ public final class PruneUniforms {
     }
 
     for (String uniformName : candidatesForPruning.subList(0, numToPrune)) {
-      if (shaderJob.hasVertexShader()) {
-        inlineUniform(shaderJob.getFragmentShader(), shaderJob.getUniformsInfo(), uniformName);
-      }
-      if (shaderJob.hasFragmentShader()) {
-        inlineUniform(shaderJob.getFragmentShader(), shaderJob.getUniformsInfo(), uniformName);
-      }
+      inlineUniform(shaderJob.getVertexShader(), shaderJob.getUniformsInfo(), uniformName);
+      inlineUniform(shaderJob.getFragmentShader(), shaderJob.getUniformsInfo(), uniformName);
       shaderJob.getUniformsInfo().removeUniform(uniformName);
     }
+
     return true;
+  }
+
+  private static void inlineUniform(
+      Optional<TranslationUnit> tu,
+      UniformsInfo uniformsInfo,
+      String uniformName) {
+    if (!tu.isPresent()) {
+      return;
+    }
+    inlineUniform(tu.get(), uniformsInfo, uniformName);
   }
 
   private static void inlineUniform(TranslationUnit tu, UniformsInfo uniformsInfo,

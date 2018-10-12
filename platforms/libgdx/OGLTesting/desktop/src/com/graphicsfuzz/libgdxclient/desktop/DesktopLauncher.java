@@ -20,6 +20,17 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration.HdpiMode;
 import com.badlogic.gdx.graphics.GL30;
+import com.graphicsfuzz.libgdxclient.Main;
+import com.graphicsfuzz.libgdxclient.PersistentData;
+import com.graphicsfuzz.repackaged.org.apache.commons.io.FilenameUtils;
+import com.graphicsfuzz.server.thrift.ImageJob;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.commons.io.FileUtils;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -27,21 +38,11 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.impl.Arguments;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.commons.io.FileUtils;
-import com.graphicsfuzz.libgdxclient.Main;
-import com.graphicsfuzz.libgdxclient.PersistentData;
-import com.graphicsfuzz.repackaged.org.apache.commons.io.FilenameUtils;
-import com.graphicsfuzz.server.thrift.ComputeJob;
-import com.graphicsfuzz.server.thrift.ImageJob;
 
 public class DesktopLauncher {
 
@@ -125,13 +126,15 @@ public class DesktopLauncher {
 			server = "http://localhost:8080";
 		}
 
+		ImageJob standaloneRenderJob = null;
+
 		if(frag != null) {
 
 			if (comp != null) {
 				throw new RuntimeException("Cannot pass both --frag and --comp");
 			}
 
-			ImageJob standaloneRenderJob = new ImageJob();
+			standaloneRenderJob = new ImageJob();
 
 			File fragFile = new File(frag);
 			standaloneRenderJob.setName(fragFile.getName());
@@ -144,30 +147,25 @@ public class DesktopLauncher {
 			if (vertexFile.isFile()) {
 				standaloneRenderJob.setVertexSource(FileUtils.readFileToString(vertexFile));
 			}
-
-			start(server, standaloneRenderJob, output);
-			return;
 		}
 
 		if(comp != null) {
-
-			ComputeJob standaloneComputeJob = new ComputeJob();
-
+			standaloneRenderJob = new ImageJob();
 			File compFile = new File(comp);
-			standaloneComputeJob.setName(compFile.getName());
-			standaloneComputeJob.setComputeSource(FileUtils.readFileToString(compFile));
+			standaloneRenderJob.setName(compFile.getName());
+			standaloneRenderJob.setComputeSource(FileUtils.readFileToString(compFile));
 			File environmentFile = new File(FilenameUtils.removeExtension(comp) + ".json");
 			String environmentInfo = FileUtils.readFileToString(environmentFile);
-			standaloneComputeJob.setEnvironment(environmentInfo);
+			standaloneRenderJob.setComputeInfo(environmentInfo);
+		}
 
-			start(server, standaloneComputeJob, output);
+		// If doing a standalone shader job, or if the "start" flag was passed, start running.
+		if(standaloneRenderJob != null || start) {
+			start(server, standaloneRenderJob, null, shortBackoff);
 			return;
 		}
 
-		if(start) {
-			start(server, null, null, null, shortBackoff);
-			return;
-		}
+		// Otherwise, the current process will be the parent "monitor" process and the child will do the actual work.
 
 		List<String> cmd = new ArrayList<>();
 		cmd.addAll(Arrays.asList("java", "-XX:ErrorFile=" + JVMCrashLogFilename, "-jar", jarPath, "-start"));
@@ -188,7 +186,8 @@ public class DesktopLauncher {
 
 			StringBuilder errMsgBuilder = new StringBuilder();
 
-			BufferedReader errorReader = new BufferedReader(new InputStreamReader(p.getErrorStream(), "UTF-8"));
+			BufferedReader errorReader =
+					new BufferedReader(new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8));
 			String line;
 
 			errMsgBuilder.setLength(0);
@@ -219,25 +218,14 @@ public class DesktopLauncher {
 		}
 	}
 
-	private static void start(String server, ImageJob standaloneRenderJob, String output) {
-		start(server, standaloneRenderJob, null, output, false);
-	}
-
-	private static void start(String server, ComputeJob standaloneComputeJob, String output) {
-		start(server, null, standaloneComputeJob, output, false);
-	}
-
-	private static void start(String server,
-				ImageJob standaloneRenderJob,
-				ComputeJob standaloneComputeJob,
-				String output, boolean shortBackoff) {
+	private static void start(
+			String server,
+			ImageJob standaloneRenderJob,
+			String output,
+			boolean shortBackoff) {
 		Main main = new Main();
 		if(standaloneRenderJob != null) {
 			main.standaloneRenderJob = standaloneRenderJob;
-			main.standaloneOutputFilename = output;
-		}
-		if(standaloneComputeJob != null) {
-			main.standaloneComputeJob = standaloneComputeJob;
 			main.standaloneOutputFilename = output;
 		}
 		if(shortBackoff){

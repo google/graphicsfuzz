@@ -45,7 +45,7 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
   private final BlockStmt block;
   private final TranslationUnit tu;
 
-  // A hack to guard against mutations; we need a better solution.
+  // A quick fix to guard against mutations; we need a better solution.
   private final int originalNumVariables;
 
   public DestructifyReductionOpportunity(DeclarationStmt declaration,

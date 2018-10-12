@@ -49,7 +49,6 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
   private static final Logger LOGGER = LoggerFactory.getLogger(FuzzerServiceImpl.class);
   private final SessionMap sessions = new SessionMap();
 
-  private final IArtifactManager shaderSetManager;
   private final String processingDir;
 
   private final ExecutorService executorService;
@@ -59,11 +58,9 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
   private final Pattern validTokenPattern = Pattern.compile("[a-zA-Z_0-9-]+");
 
   public FuzzerServiceImpl(
-      IArtifactManager shaderSetManager,
       String processingDir,
       ExecutorService executorService) {
 
-    this.shaderSetManager = shaderSetManager;
     this.processingDir = processingDir;
     this.executorService = executorService;
 
@@ -73,10 +70,6 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
 
   public WorkQueue getReductionWorkQueue() {
     return reductionWorkQueue;
-  }
-
-  public IArtifactManager getArtifactsManager() {
-    return shaderSetManager;
   }
 
   public SessionMap getSessionMap() {

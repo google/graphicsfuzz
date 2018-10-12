@@ -27,6 +27,7 @@ import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -35,6 +36,8 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 
 public class CompoundToBlockReductionOpportunitiesTest {
+
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @Test
   public void testUnderUnreachableSwitch() throws IOException, ParseTimeoutException {
@@ -420,21 +423,29 @@ public class CompoundToBlockReductionOpportunitiesTest {
       actualSet.add(PrettyPrinterVisitor.prettyPrintAsString(clonedTu));
     }
     final Set<String> expectedSet = new HashSet<>();
-    for (int i = 0; i < expected.length; i++) {
+    for (String anExpected : expected) {
       expectedSet.add(PrettyPrinterVisitor
-            .prettyPrintAsString(Helper.parse(expected[i], false)));
+          .prettyPrintAsString(Helper.parse(anExpected, false)));
     }
     assertEquals(expectedSet, actualSet);
   }
 
   private List<CompoundToBlockReductionOpportunity> getOps(TranslationUnit tu,
         boolean reduceEverywhere) {
-    return ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReductionOpportunityContext(reduceEverywhere, ShadingLanguageVersion.GLSL_440,
-        new RandomWrapper(0), new IdGenerator())).stream()
-    .filter(item -> item instanceof CompoundToBlockReductionOpportunity)
-    .map(item -> (CompoundToBlockReductionOpportunity) item)
-    .collect(Collectors.toList());
+    return ReductionOpportunities.
+        getReductionOpportunities(
+            MakeShaderJobFromFragmentShader.make(tu),
+            new ReductionOpportunityContext(
+                reduceEverywhere,
+                ShadingLanguageVersion.GLSL_440,
+                new RandomWrapper(0),
+                new IdGenerator()
+            ),
+            fileOps
+        ).stream()
+        .filter(item -> item instanceof CompoundToBlockReductionOpportunity)
+        .map(item -> (CompoundToBlockReductionOpportunity) item)
+        .collect(Collectors.toList());
   }
 
 }

@@ -19,7 +19,6 @@ package com.graphicsfuzz.serverpublic;
 import com.graphicsfuzz.server.FileDownloadServlet;
 import com.graphicsfuzz.server.FuzzerServiceImpl;
 import com.graphicsfuzz.server.FuzzerServiceManagerImpl;
-import com.graphicsfuzz.server.LocalArtifactManager;
 import com.graphicsfuzz.server.thrift.FuzzerService;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
 import com.graphicsfuzz.util.ToolPaths;
@@ -55,10 +54,6 @@ public final class FuzzerServer {
   public void start() throws Exception {
 
     FuzzerServiceImpl fuzzerService = new FuzzerServiceImpl(
-        new LocalArtifactManager(
-            Paths.get(workingDir, shaderSetsDir).toString(),
-            Paths.get(workingDir, processingDir).toString()
-        ),
         Paths.get(workingDir, processingDir).toString(),
         executorService);
 

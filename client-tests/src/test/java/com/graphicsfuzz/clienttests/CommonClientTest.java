@@ -21,6 +21,7 @@ import static junit.framework.TestCase.assertTrue;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.shadersets.RunShaderFamily;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,6 +29,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.apache.commons.io.FilenameUtils;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -40,6 +42,7 @@ public abstract class CommonClientTest {
   static final String TOKEN = "test_worker";
   static Process worker;
   static Thread server;
+  static final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -120,7 +123,7 @@ public abstract class CommonClientTest {
       throws ShaderDispatchException, InterruptedException, IOException, ArgumentParserException {
     final File outputDir = temporaryFolder.newFolder();
     String[] args = {
-        Paths.get(getTestShadersDirectory(), fragmentShader).toString(),
+        FilenameUtils.removeExtension(Paths.get(getTestShadersDirectory(), fragmentShader).toString()) + ".json",
         "--token", TOKEN, "--server", "http://localhost:8080", "--output",
         outputDir.getAbsolutePath()};
     RunShaderFamily.mainHelper(

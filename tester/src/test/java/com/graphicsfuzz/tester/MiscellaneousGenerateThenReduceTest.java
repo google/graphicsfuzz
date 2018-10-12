@@ -26,6 +26,7 @@ import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.SameValueRandom;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.transformation.controlflow.AddWrappingConditionalStmts;
@@ -40,6 +41,9 @@ import java.util.Optional;
 import org.junit.Test;
 
 public class MiscellaneousGenerateThenReduceTest {
+
+  // TODO: Use ShaderJobFileOperations everywhere.
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @Test
   public void testControlFlowWrapElimination1() throws Exception {
@@ -71,9 +75,10 @@ public class MiscellaneousGenerateThenReduceTest {
 
     while(true) {
       List<IReductionOpportunity> ops = ReductionOpportunities
-          .getReductionOpportunities(new GlslShaderJob(Optional.empty(), Optional.of(tu), new UniformsInfo()),
+          .getReductionOpportunities(new GlslShaderJob(Optional.empty(), Optional.of(tu),
+                  new UniformsInfo(), Optional.empty()),
                 new ReductionOpportunityContext(false, shadingLanguageVersion,
-              new SameValueRandom(false, 0), new IdGenerator()));
+              new SameValueRandom(false, 0), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
         break;
       }

@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.util.ReductionProgressHelper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.ReductionKind;
 import com.graphicsfuzz.server.thrift.CommandInfo;
 import com.graphicsfuzz.server.thrift.CommandResult;
@@ -90,6 +91,12 @@ public class WebUi extends HttpServlet {
 
   private final FilenameFilter shaderFamilyExperimentFilter =
       (dir, name) -> name.endsWith("_exp");
+
+  private final ShaderJobFileOperations fileOps;
+
+  public WebUi(ShaderJobFileOperations fileOps) {
+    this.fileOps = fileOps;
+  }
 
   class Shaderset {
     final String name;
@@ -801,7 +808,7 @@ public class WebUi extends HttpServlet {
       throws IOException, ServletException, TException {
     response.setContentType("text/html");
 
-    //Get result path
+    // Get result path
     final String[] path = request.getPathInfo().split("/");
     if (path.length != 6) {
       err404(request, response, "Path to result " + request.getPathInfo() + " invalid!");
@@ -810,11 +817,12 @@ public class WebUi extends HttpServlet {
     final String token = path[3];
     final String shaderExp = path[4];
     final String resultFilename = path[5];
-    final String prefix = WebUiConstants.WORKER_DIR + "/" + token + "/" + shaderExp + "/";
-    final String resultPath = prefix + resultFilename;
+    final String shaderExperimentDir =
+        WebUiConstants.WORKER_DIR + "/" + token + "/" + shaderExp + "/";
+    final String variantResultJobFileNoExtension = shaderExperimentDir + resultFilename;
 
-    File infoFile = new File(prefix, resultFilename + ".info.json");
-    if (! infoFile.isFile()) {
+    File infoFile = new File(shaderExperimentDir, resultFilename + ".info.json");
+    if (!infoFile.isFile()) {
       err404(request, response, "Invalid result path: cannot find corresponding info file");
       return;
     }
@@ -832,28 +840,31 @@ public class WebUi extends HttpServlet {
         "Status: <b>", status, "</b></p>");
 
     htmlAppendLn("<form method='post' id='deleteForm'>\n",
-        "<input type='hidden' name='path' value='", resultPath, "'/>\n",
+        "<input type='hidden' name='path' value='", variantResultJobFileNoExtension, "'/>\n",
         "<input type='hidden' name='type' value='delete'/>\n",
         "<input type='hidden' name='num_back' value='2'/>\n",
         "<div class='ui button'",
-        " onclick=\"checkAndSubmit('Confirm deletion of ", resultPath, "', deleteForm)\">",
+        " onclick=\"checkAndSubmit('Confirm deletion of ",
+        variantResultJobFileNoExtension,
+        "', deleteForm)\">",
         "Delete this result</div>\n",
         "</form>",
         "<div class='ui divider'></div>");
 
-    String referencePngPath = resultPath.replace(resultFilename, "reference.png");
+    String referencePngPath =
+        variantResultJobFileNoExtension.replace(resultFilename, "reference.png");
 
     htmlAppendLn("<p>Reference image:</p>",
         "<img src='/webui/file/", referencePngPath, "'>");
 
-    String pngPath = prefix + resultFilename + ".png";
+    String pngPath = shaderExperimentDir + resultFilename + ".png";
     File pngFile = new File(pngPath);
     if (pngFile.exists()) {
       htmlAppendLn("<p>Result image:</p>",
           "<img src='/webui/file/", pngPath, "'>");
     }
 
-    String gifPath = prefix + resultFilename + ".gif";
+    String gifPath = shaderExperimentDir + resultFilename + ".gif";
     File gifFile = new File(gifPath);
     if (gifFile.exists()) {
       htmlAppendLn("<p>Results non-deterministic animation:</p>",
@@ -875,12 +886,12 @@ public class WebUi extends HttpServlet {
         "<div class='ui segment'>\n",
         "<h3>Run log</h3>\n",
         "<textarea readonly rows='12' cols='80'>");
-    htmlAppendLn(getFileContents(new File(prefix + resultFilename + ".txt")));
+    htmlAppendLn(getFileContents(new File(shaderExperimentDir + resultFilename + ".txt")));
     htmlAppendLn("</textarea>\n",
         "</div>");
 
     // Get result file
-    File result = new File(resultPath.toString());
+    File result = new File(variantResultJobFileNoExtension);
 
     // Information/links for result
     String shaderset = result.getParentFile().getName();
@@ -888,13 +899,13 @@ public class WebUi extends HttpServlet {
 
     String shader = FilenameUtils.removeExtension(result.getName());
     String shaderDir = "shaderfamilies/" + shaderset + "/";
-    File referenceRes = new File(result.getParentFile(), "reference.png");
+    File referenceRes = new File(result.getParentFile(), "reference.info.json");
 
     String workerName = result.getParentFile().getParentFile().getName();
     File reductionDir = new File(result.getParentFile().getParentFile(),
         shaderset + "_" + shader + "_inv");
 
-    //Get results from reductions
+    // Get results from reductions
 
     htmlAppendLn("<div class='ui segment'>\n",
         "<h3>Reduction results</h3>");
@@ -908,8 +919,13 @@ public class WebUi extends HttpServlet {
       htmlAppendLn("<button class='ui button' onclick='toggleDiv(this)'",
           " data-hide='reduce-menu'>Reduce result</button>",
           "<div class='reduce-menu invisible'>");
-      htmlReductionForm(shaderDir + shader + ".frag", reductionDir.getPath(), workerName,
-          referenceRes.getPath(), result.getPath(), status);
+      htmlReductionForm(
+          shaderDir + shader + ".json",
+          reductionDir.getPath(),
+          workerName,
+          referenceRes.getPath(),
+          result.getPath(),
+          status);
       htmlAppendLn("</div>");
     } else {
       htmlAppendLn("<p><form method='post' id='deleteReductionForm'>\n",
@@ -946,11 +962,15 @@ public class WebUi extends HttpServlet {
       case ONGOING:
         final Optional<Integer> reductionStep = ReductionProgressHelper
               .getLatestReductionStepAny(ReductionFilesHelper
-                    .getReductionDir(token, shaderset, shader), "variant");
-        htmlAppendLn("<p>Reduction not finished for this result: ",
-            (reductionStep.isPresent() ? "made " + reductionStep.get() + " step(s)"
-                : "no steps made yet"),
-            ".</p>");
+                    .getReductionDir(token, shaderset, shader), "variant", fileOps);
+        htmlAppendLn(
+            "<p>Reduction not finished for this result: ",
+            (reductionStep
+                .map(integer -> "made " + integer + " step(s)")
+                .orElse("no steps made yet")
+            ),
+            ".</p>"
+        );
         break;
 
       case FINISHED:
@@ -1051,9 +1071,9 @@ public class WebUi extends HttpServlet {
     return ReductionStatus.ONGOING;
   }
 
-  //Page to setup running a shader on workers
+  // Page to setup running a shader on workers
   private void startRunShader(HttpServletRequest request, HttpServletResponse response)
-      throws IOException, ServletException, TException {
+      throws IOException, TException {
     response.setContentType("text/html");
 
     htmlHeader("Run shader");
@@ -1080,7 +1100,8 @@ public class WebUi extends HttpServlet {
         "<form class='ui form' method='post'>\n",
         "<h4>Select workers</h4>\n",
         "<input type='hidden' name='type' value='run_shader'>",
-        "<input type='hidden' name='shaderpath' value='", shaderPath.toString(), "'>\n",
+        "<input type='hidden' name='shaderpath' value='",
+        FilenameUtils.removeExtension(shaderPath.toString()) + ".json", "'>\n",
         "<button class='ui basic black button' type='button'",
         " onclick=\"applyAllCheckboxes('workercheck', true)\">Select all workers</button>\n",
         "<button class='ui basic black button' type='button'",
@@ -1302,13 +1323,13 @@ public class WebUi extends HttpServlet {
 
   //POST - Link to start reductions on a result
   private void reduce(HttpServletRequest request, HttpServletResponse response)
-      throws IOException, ServletException {
+      throws IOException {
     response.setContentType("text/html");
 
     final List<String> args = new ArrayList<>();
     args.add("reduce_variant");
-    final String shaderPath = request.getParameter("shader_path");
-    args.add(FilenameUtils.removeExtension(shaderPath));
+    final String shaderJobFilePath = request.getParameter("shader_path");
+    args.add(shaderJobFilePath);
     final String reductionType = request.getParameter("reduction_type");
     args.add(reductionType);
     args.add("--metric");
@@ -1317,7 +1338,7 @@ public class WebUi extends HttpServlet {
     final String output = request.getParameter("output");
     args.add(output);
     if (!ReductionKind.NO_IMAGE.toString().equalsIgnoreCase(reductionType)) {
-      args.add("--reference_image");
+      args.add("--reference");
       args.add(request.getParameter("reference_image"));
     }
     args.add("--token");
@@ -1371,12 +1392,12 @@ public class WebUi extends HttpServlet {
     String message;
     try {
       fuzzerServiceManagerProxy.queueCommand(
-          args.get(0) + ":" + shaderPath, args, token, output + "/command.log");
+          args.get(0) + ":" + shaderJobFilePath, args, token, output + "/command.log");
       message = "Reduction started successfully!";
     } catch (TException exception) {
       message = "Reduction failed (is worker live?):\\n" + exception.getMessage();
     }
-    reduceReference(shaderPath, token);
+    reduceReference(shaderJobFilePath, token);
 
     html.setLength(0);
     htmlAppendLn("<script>\n",
@@ -1387,37 +1408,37 @@ public class WebUi extends HttpServlet {
     response.getWriter().println(html);
   }
 
-  private void reduceReference(String shaderPath, String worker) {
-    File shader = new File(shaderPath);
-    File reference;
-    if (!shader.getName().startsWith("reference")) {
-      reference = new File(shader.getParentFile().getParentFile(), "reference.frag");
+  private void reduceReference(String shaderJobFilePath, String worker) {
+    File shaderJobFile = new File(shaderJobFilePath);
+    File referenceShaderJobFile;
+    if (!shaderJobFile.getName().startsWith("reference")) {
+      referenceShaderJobFile =
+          new File(shaderJobFile.getParentFile().getParentFile(), "reference.json");
     } else {
-      reference = shader;
+      referenceShaderJobFile = shaderJobFile;
     }
-    String shaderset = reference.getParentFile().getName();
+    String shaderset = referenceShaderJobFile.getParentFile().getName();
     File reductionDir =
         new File(WebUiConstants.WORKER_DIR + "/" + worker, shaderset
               + "_reference_inv");
     if (reductionDir.isDirectory()) {
       return;
     }
-    File referenceImage =
+    File referenceResult =
         new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderset + "_exp",
-              "reference.png");
+              "reference.info.json");
     List<String> args = new ArrayList<>();
     args.add("reduce_variant");
-    args.add(reference.getPath());
+    args.add(referenceShaderJobFile.getPath());
     args.add("IDENTICAL");
     args.add("--output");
     args.add(reductionDir.getPath());
-    args.add("--reference_image");
-    args.add(referenceImage.getPath());
+    args.add("--reference");
+    args.add(referenceResult.getPath());
     args.add("--token");
     args.add(worker);
     args.add("--server");
     args.add("http://localhost:8080/manageAPI");
-    System.out.println(args);
     try {
       fuzzerServiceManagerProxy.queueCommand(
           "Reference Reduction: " + shaderset,
@@ -1425,8 +1446,7 @@ public class WebUi extends HttpServlet {
           worker,
           new File(reductionDir, "command.log").toString());
     } catch (TException exception) {
-      System.out.println("Reference reduction " + shaderset + " failed!");
-      System.out.println(exception.getMessage());
+      throw new RuntimeException(exception);
     }
   }
 
@@ -1533,8 +1553,11 @@ public class WebUi extends HttpServlet {
   private void runShader(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
     response.setContentType("text/html");
+    // e.g. shaderfamilies/family1/variant2.json
     String shaderPath = request.getParameter("shaderpath");
+    // e.g. shaderfamilies/family1/variant2.json
     File shader = new File(shaderPath);
+    // e.g. family1
     String shaderset = shader.getParentFile().getName();
     String[] workers = request.getParameterValues("workercheck");
     String javascript = getResourceContent("goBack.js");
@@ -1543,7 +1566,6 @@ public class WebUi extends HttpServlet {
       List<String> commands = new ArrayList<>();
       commands.add("run_shader_family");
       commands.add(shaderPath);
-      System.out.println(shaderPath);
       commands.add("--server");
       commands.add("http://localhost:8080");
       StringBuilder msg = new StringBuilder();
@@ -1958,8 +1980,13 @@ public class WebUi extends HttpServlet {
   }
 
   // Hugues: This is way too complex, do something *simpler* using semantic-ui
-  private void htmlReductionForm(String shaderPath, String output, String token,
-      String referencePngPath, String variantPath, String resultStatus) {
+  private void htmlReductionForm(
+      String shaderJobFilePath,
+      String output,
+      String token,
+      String referenceResultPath,
+      String variantShaderJobResultFileNoExtension,
+      String resultStatus) {
     final boolean crash = resultStatus.equals("CRASH");
 
     htmlAppendLn(
@@ -1967,7 +1994,7 @@ public class WebUi extends HttpServlet {
         "<fieldset>",
         "<legend>Reduction Options</legend>",
         "<input type='hidden' name='type' value='reduce'>",
-        "<input type='hidden' name='shader_path' value='", shaderPath, "'>",
+        "<input type='hidden' name='shader_path' value='", shaderJobFilePath, "'>",
         "<input type='hidden' name='output' value='", output, "'>",
         "<input type='hidden' name='token' value='", token, "'>",
         "<table><tr>",
@@ -2016,12 +2043,12 @@ public class WebUi extends HttpServlet {
         "</tr>",
         "<tr>",
         "<td class='row_top row_right' rowspan='2'><p class='no_space'>Reference Image:</p></td>",
-        "<td><input type='radio' value='", referencePngPath, "' checked='checked'",
+        "<td><input type='radio' value='", referenceResultPath, "' checked='checked'",
         " name='reference_image'/><p class='no_space'>    Reference</p></td>",
         "</tr>",
         "<tr align='left'>",
-        "<td><input type='radio' value='", variantPath,
-        ".png' name='reference_image'/><p class='no_space'>    Variant</p></td>",
+        "<td><input type='radio' value='", variantShaderJobResultFileNoExtension,
+        ".info.json' name='reference_image'/><p class='no_space'>    Variant</p></td>",
         "</tr>",
         "</table>",
         "</td>",

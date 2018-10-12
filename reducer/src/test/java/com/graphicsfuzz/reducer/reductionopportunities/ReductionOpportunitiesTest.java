@@ -30,6 +30,7 @@ import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ZeroCannedRandom;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,6 +38,8 @@ import java.util.List;
 import org.junit.Test;
 
 public class ReductionOpportunitiesTest {
+
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @Test
   public void testDeadConditionalNotReplaced() throws IOException, ParseTimeoutException {
@@ -52,7 +55,7 @@ public class ReductionOpportunitiesTest {
     List<IReductionOpportunity> opportunities =
         ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
               new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(), new IdGenerator()));
+            new RandomWrapper(), new IdGenerator()), fileOps);
     // There should be no ExprToConstant reduction opportunity, because the expressions do not occur
     // under dead code, and the fuzzed expression is too simple to be reduced.
     assertFalse(opportunities.stream().anyMatch(item -> item instanceof SimplifyExprReductionOpportunity));
@@ -66,7 +69,7 @@ public class ReductionOpportunitiesTest {
     ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false,
         ShadingLanguageVersion.ESSL_100,
-        new RandomWrapper(), new IdGenerator()));
+        new RandomWrapper(), new IdGenerator()), fileOps);
   }
 
   private void stressTestStructification(String variantProgram, String reducedProgram) throws Exception{
@@ -95,7 +98,8 @@ public class ReductionOpportunitiesTest {
     while (true) {
       List<IReductionOpportunity> ops
           = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(), new IdGenerator()));
+            new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
         break;
       }
@@ -413,7 +417,8 @@ public class ReductionOpportunitiesTest {
     List<Integer> indicesOfExprToConstOps = new ArrayList<>();
     {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+            new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0), new IdGenerator()), fileOps);
       for (int i = 0; i < ops.size(); i++) {
         if (ops.get(i) instanceof SimplifyExprReductionOpportunity) {
           indicesOfExprToConstOps.add(i);
@@ -429,13 +434,13 @@ public class ReductionOpportunitiesTest {
         List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
               MakeShaderJobFromFragmentShader.make(aClone),
               new ReductionOpportunityContext(false,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()), fileOps);
         ((SimplifyExprReductionOpportunity) ops.get(index)).applyReduction();
       }
       for (IReductionOpportunity op :
           ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(aClone),
             new ReductionOpportunityContext(false,
-          ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()))) {
+          ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()), fileOps)) {
         if (op instanceof LoopMergeReductionOpportunity) {
           op.applyReduction();
         }
@@ -496,7 +501,7 @@ public class ReductionOpportunitiesTest {
     TranslationUnit tu = Helper.parse(program, false);
     int numOps = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false,
-        ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator())).size();
+        ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()), fileOps).size();
 
     for (int i = 0; i < numOps; i++) {
       for (int j = 0; j < numOps; j++) {
@@ -507,7 +512,7 @@ public class ReductionOpportunitiesTest {
         List<IReductionOpportunity> ops =
             ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(aClone),
                   new ReductionOpportunityContext(false,
-                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()), fileOps);
 
         if (Compatibility.compatible(ops.get(i).getClass(), ops.get(j).getClass())) {
           ops.get(i).applyReduction();
@@ -525,7 +530,7 @@ public class ReductionOpportunitiesTest {
     while (true) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
             MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
-            new RandomWrapper(0), new IdGenerator()));
+            new RandomWrapper(0), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
         break;
       }
@@ -567,7 +572,7 @@ public class ReductionOpportunitiesTest {
     while (true) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReductionOpportunityContext(false,
-            ShadingLanguageVersion.GLSL_440, new RandomWrapper(), new IdGenerator()));
+            ShadingLanguageVersion.GLSL_440, new RandomWrapper(), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
         break;
       }

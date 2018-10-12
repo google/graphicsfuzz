@@ -32,6 +32,7 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.typing.Typer;
@@ -269,8 +270,6 @@ public class Obfuscator extends ScopeTreeBuilder {
         throws IOException, ParseTimeoutException, InterruptedException {
     final File shader = new File(args[0]);
     final String licenseFilename = args[1];
-    final ShadingLanguageVersion shadingLanguageVersion =
-        ShadingLanguageVersion.getGlslVersionFromShader(shader);
     ExecResult execResult = new ExecHelper().exec(
           RedirectType.TO_BUFFER,
           null,
@@ -278,31 +277,16 @@ public class Obfuscator extends ScopeTreeBuilder {
           "cpp",
           "-P",
           args[0]);
+    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-    final TranslationUnit tu = Helper.parse(execResult.stdout.toString(),
-          false);
-    final UniformsInfo uniformsInfo = new UniformsInfo(
-          new File(Helper.jsonFilenameForShader(args[0])));
-    ImmutablePair<TranslationUnit, UniformsInfo> obfuscated =
-          obfuscate(tu, uniformsInfo, new RandomWrapper(Integer.parseInt(args[2])),
-              shadingLanguageVersion);
-    final String obfuscatedFilename = "obfuscated.frag";
-    final Supplier<String> newlineSupplier = new Supplier<String>() {
+    ShaderJob shaderJob = fileOps.readShaderJobFile(
+        new File(args[0]),
+        false
+    );
 
-      private int count;
+    // TODO: Reimplement obfuscator if needed.
 
-      @Override
-      public String get() {
-        return (count++ % 10) == 0 ? "\n" : " ";
-      }
-    };
-
-    Helper.emitShader(shadingLanguageVersion, ShaderKind.FRAGMENT, obfuscated.getLeft(),
-          Helper.readLicenseFile(new File(licenseFilename)),
-          new File(obfuscatedFilename), 0, newlineSupplier, false);
-    Helper.emitUniformsInfo(obfuscated.getRight(),
-          new PrintStream(new FileOutputStream(
-                new File(Helper.jsonFilenameForShader(obfuscatedFilename)))));
+    throw new RuntimeException("Obfuscator no longer implemented.");
   }
 
 }

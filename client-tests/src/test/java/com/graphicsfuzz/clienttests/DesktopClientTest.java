@@ -24,6 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.graphicsfuzz.shadersets.RunShaderFamily;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -36,13 +37,13 @@ import java.util.Iterator;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import com.graphicsfuzz.util.ToolPaths;
 import com.graphicsfuzz.server.FuzzerServer;
-import com.graphicsfuzz.shadersets.RunComputeShader;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 
 public class DesktopClientTest extends CommonClientTest {
@@ -53,7 +54,7 @@ public class DesktopClientTest extends CommonClientTest {
     server = new Thread(() -> {
       try {
         final FuzzerServer fuzzerServer = new FuzzerServer(
-            serverWorkDir.getAbsolutePath(), 8080);
+            serverWorkDir.getAbsolutePath(), 8080, fileOps);
         fuzzerServer.start();
       } catch (Exception exception) {
         throw new RuntimeException(exception);
@@ -148,7 +149,8 @@ public class DesktopClientTest extends CommonClientTest {
   public void compileFailComputeES() throws Exception {
     File outputDir = runComputeShader("compile_fail.comp", temporaryFolder);
     checkStatus(new File(outputDir, "compile_fail.info.json"), "COMPILE_ERROR");
-    checkComputeShaderLogContains(new File(outputDir, "compile_fail.info.json"), "undeclared");
+    // This is driver-dependent:
+    // checkComputeShaderLogContains(new File(outputDir, "compile_fail.info.json"), "undeclared");
   }
 
   @Test
@@ -176,12 +178,14 @@ public class DesktopClientTest extends CommonClientTest {
       throws IOException, InterruptedException, ArgumentParserException, ShaderDispatchException {
     final File outputDir = temporaryFolder.newFolder();
     String[] args = {
-        Paths.get(getTestShadersDirectory(), computeShader).toString(),
+        FilenameUtils.removeExtension(
+            Paths.get(getTestShadersDirectory(), computeShader).toString()) + ".json",
         "--token", TOKEN, "--server", "http://localhost:8080", "--output",
-        outputDir.getAbsolutePath()};
-    RunComputeShader.mainHelper(
-        args, null
-    );
+        outputDir.getAbsolutePath()
+    };
+
+    RunShaderFamily.mainHelper(args, null);
+
     return outputDir;
   }
 

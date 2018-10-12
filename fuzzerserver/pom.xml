@@ -37,10 +37,6 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
-      <artifactId>common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.graphicsfuzz</groupId>
       <artifactId>server-thrift-gen</artifactId>
     </dependency>
     <dependency>

@@ -14,21 +14,10 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.common.util;
+package com.graphicsfuzz.shadersets;
 
 import java.io.File;
-import java.util.stream.Stream;
 
-public interface IShaderSetExperiment {
-
-  File getReferenceImage();
-
-  File getReferenceTextFile();
-
-  Stream<File> getVariantImages();
-
-  Stream<File> getVariantTextFiles();
-
-  IShaderSet getShaderSet();
-
+public interface IImageFileComparator {
+  boolean areFilesInteresting(File shaderResultFileReference, File shaderResultFileVariant);
 }

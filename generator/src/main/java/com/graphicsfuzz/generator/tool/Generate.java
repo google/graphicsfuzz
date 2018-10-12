@@ -26,11 +26,12 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.StatsVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.PruneUniforms;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.StripUnusedFunctions;
 import com.graphicsfuzz.common.util.StripUnusedGlobals;
@@ -67,18 +68,22 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Generate {
 
-  private static Namespace parse(String[] args) {
+  private static final Logger LOGGER = LoggerFactory.getLogger(Generate.class);
+
+  private static Namespace parse(String[] args) throws ArgumentParserException {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("Generate")
           .defaultHelp(true)
           .description("Generate a shader.");
 
     // Required arguments
-    parser.addArgument("reference_prefix")
-        .help("Prefix associated with reference shaders and accompanying metadata.")
-        .type(String.class);
+    parser.addArgument("reference_json")
+        .help("Input reference shader json file.")
+        .type(File.class);
 
     parser.addArgument("donors")
           .help("Path of folder of donor shaders.")
@@ -88,27 +93,13 @@ public class Generate {
           .help("Version of GLSL to target.")
           .type(String.class);
 
-    parser.addArgument("output_prefix")
-          .help("Prefix of target file name, e.g. \"foo\" if fragment shader is to be "
-              + "\"foo.frag\".")
-          .type(String.class);
-
-    // TODO: add other shader kinds, such as geometry, in due course.
+    parser.addArgument("output")
+          .help("Output shader job file file (.json.")
+          .type(File.class);
 
     addGeneratorCommonArguments(parser);
 
-    parser.addArgument("--output_dir")
-          .help("Directory for output.")
-          .type(File.class)
-          .setDefault(new File("."));
-
-    try {
-      return parser.parseArgs(args);
-    } catch (ArgumentParserException exception) {
-      exception.getParser().handleError(exception);
-      System.exit(1);
-      return null;
-    }
+    return parser.parseArgs(args);
 
   }
 
@@ -217,10 +208,10 @@ public class Generate {
     result.append("======\n" + shaderKind + ":\n");
 
     TranslationUnit shaderToTransform;
-    if (shaderKind == ShaderKind.VERTEX && shaderJob.hasVertexShader()) {
-      shaderToTransform = shaderJob.getVertexShader();
-    } else if (shaderKind == ShaderKind.FRAGMENT && shaderJob.hasFragmentShader()) {
-      shaderToTransform = shaderJob.getFragmentShader();
+    if (shaderKind == ShaderKind.VERTEX && shaderJob.getVertexShader().isPresent()) {
+      shaderToTransform = shaderJob.getVertexShader().get();
+    } else if (shaderKind == ShaderKind.FRAGMENT && shaderJob.getFragmentShader().isPresent()) {
+      shaderToTransform = shaderJob.getFragmentShader().get();
     } else {
       result.append("No shader of this kind present.\n");
       return result;
@@ -279,51 +270,58 @@ public class Generate {
 
   }
 
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) {
+    try {
+      mainHelper(args);
+    } catch (Throwable exception) {
+      LOGGER.error("", exception);
+      System.exit(1);
+    }
+  }
+
+  public static void mainHelper(String[] args)
+      throws IOException, ParseTimeoutException, ArgumentParserException {
 
     final Namespace ns = parse(args);
 
-    try {
+    final EnabledTransformations enabledTransformations
+          = getTransformationDisablingFlags(ns);
+    final ShadingLanguageVersion shadingLanguageVersion = ns.get("webgl")
+        ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
+        : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
 
-      final EnabledTransformations enabledTransformations
-            = getTransformationDisablingFlags(ns);
-      final ShadingLanguageVersion shadingLanguageVersion = ns.get("webgl")
-          ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
-          : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
+    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-      final String referencePrefix = ns.get("reference_prefix");
+    final File referenceFile = ns.get("reference_json");
 
-      final ShaderJob shaderJob = Helper.parseShaderJob(referencePrefix, false);
+    // This is mutated into the variant.
+    final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceFile, false);
+    final StringBuilder generationInfo = generateVariant(
+        variantShaderJob,
+        new GeneratorArguments(shadingLanguageVersion,
+              ns.get("seed"),
+              ns.getBoolean("small"),
+              ns.getBoolean("avoid_long_loops"),
+              ns.getBoolean("multi_pass"),
+              ns.getBoolean("aggressively_complicate_control_flow"),
+              ns.getBoolean("replace_float_literals"),
+              ns.get("donors"),
+              ns.get("generate_uniform_bindings"),
+              ns.get("max_uniforms"),
+              enabledTransformations));
 
-      final StringBuilder generationInfo = generateVariant(
-          shaderJob,
-          new GeneratorArguments(shadingLanguageVersion,
-                ns.get("seed"),
-                ns.getBoolean("small"),
-                ns.getBoolean("avoid_long_loops"),
-                ns.getBoolean("multi_pass"),
-                ns.getBoolean("aggressively_complicate_control_flow"),
-                ns.getBoolean("replace_float_literals"),
-                ns.get("donors"),
-                ns.get("generate_uniform_bindings"),
-                ns.get("max_uniforms"),
-                enabledTransformations));
+    final File outputShaderJobFile = ns.get("output");
 
-      final String outputPrefix = ns.get("output_prefix");
-      final File outputFolder = ns.get("output_dir");
-      final File licenseFile = new File(referencePrefix + ".license");
+    fileOps.writeShaderJobFile(
+        variantShaderJob,
+        shadingLanguageVersion,
+        outputShaderJobFile);
 
-      Helper.emitShaderJob(shaderJob, shadingLanguageVersion, outputPrefix, outputFolder,
-          licenseFile);
+    fileOps.writeAdditionalInfo(
+        outputShaderJobFile,
+        ".prob",
+        generationInfo.toString());
 
-      emitTransformationInfo(generationInfo, new PrintStream(
-            new FileOutputStream(
-                new File(outputFolder, outputPrefix + ".prob"))));
-
-    } catch (Throwable exception) {
-      exception.printStackTrace();
-      System.exit(1);
-    }
   }
 
   public static EnabledTransformations getTransformationDisablingFlags(Namespace ns) {
@@ -531,12 +529,6 @@ public class Generate {
       result += transformation.getName() + "\n";
     }
     return result;
-  }
-
-  private static void emitTransformationInfo(StringBuilder transformationsApplied,
-                                             PrintStream stream) {
-    stream.println(transformationsApplied.toString());
-    stream.close();
   }
 
   public static void randomiseUnsetUniforms(TranslationUnit tu, UniformsInfo uniformsInfo,
