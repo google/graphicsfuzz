@@ -19,31 +19,55 @@ package com.graphicsfuzz.reducer.tool;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.reducer.util.Simplify;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Simplifier {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(Simplifier.class);
+
   public static void main(String[] args) throws IOException, ParseTimeoutException {
     if (args.length != 1) {
-      System.err.println("Usage: Simplifier <file>");
+      System.err.println("Usage: Simplifier <file>.json");
       System.exit(1);
     }
-    File inputFile = new File(args[0]);
-    TranslationUnit tu = ParseHelper.parse(inputFile, true);
-    tu = Simplify.simplify(tu);
+    File inputShaderJobFile = new File(args[0]);
+    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    ShaderJob shaderJob = fileOps.readShaderJobFile(inputShaderJobFile, true);
 
-    PrintStream ps = System.out;
-    Helper.emitDefines(ps, ShadingLanguageVersion.getGlslVersionFromShader(inputFile),
+    // TODO: Warning: assumes only fragment shader.
+    LOGGER.warn("WARNING: assumes only fragment shaders.");
+
+    shaderJob = new GlslShaderJob(
+        Optional.empty(),
+        shaderJob.getFragmentShader().map(Simplify::simplify),
+        shaderJob.getUniformsInfo(),
+        shaderJob.getLicense()
+    );
+
+    String[] firstTwoLines =
+        fileOps.getFirstTwoLinesOfShader(inputShaderJobFile, ShaderKind.FRAGMENT);
+
+
+    PrintStream ps = fileOps.getStdOut();
+    Helper.emitDefines(
+        ps,
+        ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(firstTwoLines),
         ShaderKind.FRAGMENT,
-            true);
-    new PrettyPrinterVisitor(ps).visit(tu);
+        true);
+    new PrettyPrinterVisitor(ps).visit(shaderJob.getFragmentShader().get());
     ps.flush();
   }
 }

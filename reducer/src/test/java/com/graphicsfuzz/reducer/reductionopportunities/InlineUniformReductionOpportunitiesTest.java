@@ -62,7 +62,8 @@ public class InlineUniformReductionOpportunitiesTest {
     uniformsInfo.addUniform("v", BasicType.VEC2, Optional.empty(), Arrays.asList(2.2, 2.3));
     uniformsInfo.addUniform("u", BasicType.UINT, Optional.empty(), Arrays.asList(17));
 
-    ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), Optional.of(tu), uniformsInfo);
+    ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), Optional.of(tu), uniformsInfo,
+        Optional.empty());
 
     shaderJob = checkCanReduceToTarget(shaderJob, 8,
         "uniform float f;" +
@@ -205,7 +206,7 @@ public class InlineUniformReductionOpportunitiesTest {
                   ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
       assertEquals(expectedSize, ops.size());
       ops.get(i).applyReduction();
-      if (CompareAsts.isEqualAsts(target, temp.getFragmentShader())) {
+      if (CompareAsts.isEqualAsts(target, temp.getFragmentShader().get())) {
         return temp;
       }
     }

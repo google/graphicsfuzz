@@ -20,35 +20,27 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.reductionopportunities.Compatibility;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public class ReducerBugPointBasic {
 
@@ -59,7 +51,7 @@ public class ReducerBugPointBasic {
 
     // Required arguments
     parser.addArgument("shader")
-          .help("Path of shader to be analysed.")
+          .help("Path of shader job file (.json) to be analysed.")
           .type(File.class);
 
     // Optional arguments
@@ -102,14 +94,18 @@ public class ReducerBugPointBasic {
 
     final Namespace ns = parse(args);
 
-    final File shader = ns.get("shader");
+    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+    final File shaderJobFile = ns.get("shader");
 
     final ShadingLanguageVersion shadingLanguageVersion =
-        ShadingLanguageVersion.getGlslVersionFromShader(shader);
+        ShadingLanguageVersion
+            .getGlslVersionFromFirstTwoLines(
+                fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
 
     final IRandom generator = new RandomWrapper(ns.get("seed"));
 
-    final TranslationUnit originalShader = Helper.parse(shader, true);
+    final ShaderJob originalShaderJob = fileOps.readShaderJobFile(shaderJobFile, true);
 
     final int maxIterations = ns.get("max_iterations");
 
@@ -123,7 +119,7 @@ public class ReducerBugPointBasic {
 
     final IdGenerator idGenerator = new IdGenerator();
 
-    TranslationUnit lastGoodButLeadingToBad = originalShader;
+    ShaderJob lastGoodButLeadingToBadShaderJob = originalShaderJob;
 
     int exceptionCount = 0;
     int invalidCount = 0;
@@ -132,24 +128,45 @@ public class ReducerBugPointBasic {
 
     for (int i = 0; i < maxIterations; i++) {
 
-      TranslationUnit current = lastGoodButLeadingToBad.cloneAndPatchUp();
+      ShaderJob current = new GlslShaderJob(
+          lastGoodButLeadingToBadShaderJob.getVertexShader()
+              .map(TranslationUnit::cloneAndPatchUp),
+          lastGoodButLeadingToBadShaderJob.getFragmentShader()
+              .map(TranslationUnit::cloneAndPatchUp),
+          lastGoodButLeadingToBadShaderJob.getUniformsInfo(),
+          lastGoodButLeadingToBadShaderJob.getLicense()
+      );
 
       // TODO: this code was written pre vertex shader support, and does not take
       // account of uniforms.
       // If it still proves useful as a debugging tool, it could do with updating.
-      final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
-          Optional.of(current), new UniformsInfo());
+      // Paul: partially updated during refactor, but not tested and still makes assumptions
+      // about frag files.
 
       while (true) {
-        final TranslationUnit prev = current.cloneAndPatchUp();
+        final ShaderJob prev = new GlslShaderJob(
+            current.getVertexShader().map(TranslationUnit::cloneAndPatchUp),
+            current.getFragmentShader().map(TranslationUnit::cloneAndPatchUp),
+            current.getUniformsInfo(),
+            current.getLicense()
+        );
         List<IReductionOpportunity> ops;
         try {
-          ops = ReductionOpportunities.getReductionOpportunities(shaderJob,
-                new ReductionOpportunityContext(reduceEverywhere,
-                    shadingLanguageVersion, generator, idGenerator));
+          ops = ReductionOpportunities.getReductionOpportunities(
+              current,
+              new ReductionOpportunityContext(
+                  reduceEverywhere,
+                  shadingLanguageVersion,
+                  generator,
+                  idGenerator),
+              fileOps);
+
         } catch (Exception exception) {
-          recordThrowsExceptionWhenGettingReductionOpportunities(current, exception,
-              shadingLanguageVersion);
+          recordThrowsExceptionWhenGettingReductionOpportunities(
+              current,
+              exception,
+              shadingLanguageVersion,
+              fileOps);
           break;
         }
         System.out.println(ops.size());
@@ -165,32 +182,55 @@ public class ReducerBugPointBasic {
         } catch (Exception exception) {
           System.err.println("Exception occurred while applying a reduction opportunity.");
           if (exception.toString().contains(expectedString)) {
-            lastGoodButLeadingToBad = prev;
-            current = lastGoodButLeadingToBad.cloneAndPatchUp();
-            emitShader(lastGoodButLeadingToBad, "leads_to_exception_" + exceptionCount
-                  + ".frag", shadingLanguageVersion);
-            emitException(exception, "leads_to_exception_" + exceptionCount + ".txt");
+            lastGoodButLeadingToBadShaderJob = prev;
+            current = new GlslShaderJob(
+                lastGoodButLeadingToBadShaderJob
+                    .getVertexShader().map(TranslationUnit::cloneAndPatchUp),
+                lastGoodButLeadingToBadShaderJob
+                    .getFragmentShader().map(TranslationUnit::cloneAndPatchUp),
+                lastGoodButLeadingToBadShaderJob.getUniformsInfo(),
+                lastGoodButLeadingToBadShaderJob.getLicense()
+            );
+
+            fileOps.writeShaderJobFile(
+                lastGoodButLeadingToBadShaderJob,
+                shadingLanguageVersion,
+                new File("leads_to_exception_" + exceptionCount + ".json")
+            );
+
+            emitException(exception, "leads_to_exception_" + exceptionCount + ".txt", fileOps);
             exceptionCount++;
           } else {
             System.err.println("The exception was not interesting as it did not contain \""
                   + expectedString + "\"");
-            System.out.println(exception);
+            System.out.println(exception.toString());
           }
           continue;
         }
-        if (invalid(current, shadingLanguageVersion)) {
+        if (invalid(current, shadingLanguageVersion, fileOps)) {
           System.err.println("Invalid shader after reduction step.");
           if (ignoreInvalid) {
             System.err.println("Ignoring it and backtracking.");
             current = prev;
           } else {
-            emitShader(prev, "leads_to_invalid_" + invalidCount + "_before.frag",
-                shadingLanguageVersion);
-            emitShader(current, "leads_to_invalid_" + invalidCount + "_after.frag",
-                shadingLanguageVersion);
+            fileOps.writeShaderJobFile(
+                prev,
+                shadingLanguageVersion,
+                new File("leads_to_invalid_" + invalidCount + "_before.json"));
+            fileOps.writeShaderJobFile(
+                current,
+                shadingLanguageVersion,
+                new File("leads_to_invalid_" + invalidCount + "_after.json"));
             invalidCount++;
-            lastGoodButLeadingToBad = prev;
-            current = lastGoodButLeadingToBad.cloneAndPatchUp();
+            lastGoodButLeadingToBadShaderJob = prev;
+            current = new GlslShaderJob(
+                lastGoodButLeadingToBadShaderJob
+                    .getVertexShader().map(TranslationUnit::cloneAndPatchUp),
+                lastGoodButLeadingToBadShaderJob
+                    .getFragmentShader().map(TranslationUnit::cloneAndPatchUp),
+                lastGoodButLeadingToBadShaderJob.getUniformsInfo(),
+                lastGoodButLeadingToBadShaderJob.getLicense()
+            );
           }
         }
       }
@@ -221,48 +261,66 @@ public class ReducerBugPointBasic {
     return result;
   }
 
-  private static boolean invalid(TranslationUnit translationUnit,
-      ShadingLanguageVersion shadingLanguageVersion)
+  private static boolean invalid(
+      ShaderJob shaderJob,
+      ShadingLanguageVersion shadingLanguageVersion,
+      ShaderJobFileOperations fileOps)
         throws IOException, InterruptedException {
-    final String filename = "temp_to_validate.frag";
-    emitShader(translationUnit, filename, shadingLanguageVersion);
-    ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
-          new File(filename));
-    return execResult.res != 0;
+    File tempShaderJobFile = new File("temp_to_validate.json");
+    fileOps.writeShaderJobFile(
+        shaderJob,
+        shadingLanguageVersion,
+        tempShaderJobFile);
+    return fileOps.areShadersValid(tempShaderJobFile, false);
   }
 
-  private static void emitException(Exception exception, String filename)
-        throws FileNotFoundException {
-    exception.printStackTrace(new PrintStream(new FileOutputStream(filename)));
-  }
-
-  private static void emitShader(TranslationUnit translationUnit, String filename,
-        ShadingLanguageVersion shadingLanguageVersion)
-        throws FileNotFoundException {
-    Helper.emitShader(shadingLanguageVersion, ShaderKind.FRAGMENT, translationUnit,
-          new PrintStream(new FileOutputStream(filename)));
+  private static void emitException(
+      Exception exception,
+      String filename,
+      ShaderJobFileOperations fileOps) throws IOException {
+    String stacktrace = ExceptionUtils.getStackTrace(exception);
+    fileOps.writeStringToFile(new File(filename), stacktrace);
   }
 
   private static void recordThrowsExceptionWhenGettingReductionOpportunities(
-        TranslationUnit translationUnit, Exception exception,
-        ShadingLanguageVersion shadingLanguageVersion) throws IOException, ParseTimeoutException {
-    emitShader(translationUnit, "temp.frag", shadingLanguageVersion);
-    TranslationUnit reparsed = Helper.parse(new File("temp.frag"),
-          true);
-    new ReportAstDifferences(translationUnit, reparsed);
-    final File maybeExistingFile = new File("problem_getting_reduction_opportunities.frag");
-    if (!maybeExistingFile.exists()
-          || maybeExistingFile.length() > new File("temp.frag").length()) {
-      if (maybeExistingFile.exists()) {
-        maybeExistingFile.delete();
+        ShaderJob shaderJob,
+        Exception exception,
+        ShadingLanguageVersion shadingLanguageVersion,
+        ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException {
+    File tempShaderJobFile = new File("temp.json");
+
+    fileOps.writeShaderJobFile(
+        shaderJob,
+        shadingLanguageVersion,
+        tempShaderJobFile
+    );
+
+    ShaderJob reparsedShaderJob = fileOps.readShaderJobFile(
+        tempShaderJobFile,
+        true
+    );
+
+    new ReportAstDifferences(
+        shaderJob.getFragmentShader().get(),
+        reparsedShaderJob.getFragmentShader().get());
+
+    final File maybeExistingFile = new File("problem_getting_reduction_opportunities.json");
+
+    if (!fileOps.doesShaderJobExist(maybeExistingFile)
+          || (fileOps.getShaderLength(maybeExistingFile, ShaderKind.FRAGMENT)
+              > fileOps.getShaderLength(tempShaderJobFile, ShaderKind.FRAGMENT))) {
+
+      if (fileOps.doesShaderJobExist(maybeExistingFile)) {
+        fileOps.deleteShaderJobFile(maybeExistingFile);
       }
-      FileUtils.moveFile(new File("temp.frag"), maybeExistingFile);
+      fileOps.moveShaderJobFileTo(tempShaderJobFile, maybeExistingFile, true);
       final File maybeExistingExceptionFile =
             new File("problem_getting_reduction_opportunities.txt");
-      if (maybeExistingExceptionFile.exists()) {
-        maybeExistingExceptionFile.delete();
+      if (fileOps.isFile(maybeExistingExceptionFile)) {
+        fileOps.deleteFile(maybeExistingExceptionFile);
       }
-      exception.printStackTrace(new PrintStream(new FileOutputStream(maybeExistingExceptionFile)));
+      String stacktrace = ExceptionUtils.getStackTrace(exception);
+      fileOps.writeStringToFile(maybeExistingExceptionFile, stacktrace);
     }
   }
 

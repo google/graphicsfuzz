@@ -32,12 +32,14 @@ import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.EmitShaderHelper;
+import com.graphicsfuzz.common.util.FileHelper;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
@@ -60,6 +62,8 @@ import org.junit.rules.TemporaryFolder;
 
 public class ReductionDriverTest {
 
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
   @Rule
   public TemporaryFolder testFolder = new TemporaryFolder();
 
@@ -79,8 +83,11 @@ public class ReductionDriverTest {
 
     TranslationUnit tu = ParseHelper.parse(tempFile, false);
 
-    ShaderJob state = new GlslShaderJob(Optional.empty(), Optional.of(tu),
-        new UniformsInfo(tempJsonFile));
+    ShaderJob state = new GlslShaderJob(
+        Optional.empty(),
+        Optional.of(tu),
+        new UniformsInfo(tempJsonFile),
+        Optional.empty());
 
     IFileJudge pessimist = new IFileJudge() {
 
@@ -89,7 +96,10 @@ public class ReductionDriverTest {
       boolean first = true;
 
       @Override
-      public boolean isInteresting(File unused, String shaderJobShortName) throws FileJudgeException {
+      public boolean isInteresting(
+          File shaderJobFile,
+          File shaderResultFileOutput
+      ) {
         if (first) {
           first = false;
           return true;
@@ -98,14 +108,25 @@ public class ReductionDriverTest {
       }
     };
 
-    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(false, version, generator, new IdGenerator()));
+    List<IReductionOpportunity> ops =
+        ReductionOpportunities.
+            getReductionOpportunities(
+                MakeShaderJobFromFragmentShader.make(tu),
+                new ReductionOpportunityContext(false, version, generator, new IdGenerator()),
+                fileOps);
     assertEquals(2, ops.size());
 
     new ReductionDriver(
-        new ReductionOpportunityContext(false, version, generator, null),
-        false, state).doReduction(getPrefix(tempFile), 0,
-        pessimist, testFolder.getRoot(), -1);
+        new ReductionOpportunityContext(
+            false,
+            version,
+            generator,
+            null
+        ),
+        false,
+        fileOps,
+        state
+    ).doReduction(getPrefix(tempFile), 0, pessimist, testFolder.getRoot(), -1);
 
   }
 
@@ -125,14 +146,16 @@ public class ReductionDriverTest {
     IFileJudge judge = new IFileJudge() {
       private int count = 0;
       @Override
-      public boolean isInteresting(File unused, String shaderJobShortName) throws FileJudgeException {
+      public boolean isInteresting(
+          File shaderJobFile,
+          File shaderResultFileOutput) {
         count++;
         return count == 3;
       }
     };
 
-    final String finalFilePrefix = reduce(judge, "void main() { }", "{ }",
-          false, false);
+    final String finalFilePrefix =
+        reduce(judge, "void main() { }", "{ }", false, false);
     assertNotNull(finalFilePrefix);
   }
 
@@ -141,7 +164,9 @@ public class ReductionDriverTest {
     IFileJudge judge = new IFileJudge() {
       private int count = 0;
       @Override
-      public boolean isInteresting(File unused, String shaderJobShortName) throws FileJudgeException {
+      public boolean isInteresting(
+          File shaderJobFile,
+          File shaderResultFileOutput) {
         count++;
         return count == 10;
       }
@@ -211,9 +236,9 @@ public class ReductionDriverTest {
         : Optional.empty();
 
     ShaderJob state = new GlslShaderJob(tuVert,
-        Optional.of(tuFrag), new UniformsInfo(tempJsonFile));
+        Optional.of(tuFrag), new UniformsInfo(tempJsonFile), Optional.empty());
 
-    return new ReductionDriver(new ReductionOpportunityContext(reduceEverywhere, version, generator, new IdGenerator()), false, state)
+    return new ReductionDriver(new ReductionOpportunityContext(reduceEverywhere, version, generator, new IdGenerator()), false, fileOps, state)
         .doReduction(getPrefix(tempFragmentShaderFile), 0,
           judge, testFolder.getRoot(), stepLimit);
   }
@@ -243,12 +268,12 @@ public class ReductionDriverTest {
     final TranslationUnit tu = ParseHelper.parse(tempFile, false);
 
     ShaderJob state = new GlslShaderJob(
-        Optional.empty(), Optional.of(tu), new UniformsInfo(tempJsonFile));
+        Optional.empty(), Optional.of(tu), new UniformsInfo(tempJsonFile), Optional.empty());
 
-    IFileJudge referencesSinCosAnd3 = (workDir, filesPrefix) -> {
+    IFileJudge referencesSinCosAnd3 = (shaderJobFile, shaderResultFileOutput) -> {
         try {
           final String contents = FileUtils.readFileToString(
-              new File(workDir,filesPrefix + ".frag"), StandardCharsets.UTF_8);
+              FileHelper.replaceExtension(shaderJobFile, ".frag"), StandardCharsets.UTF_8);
           return contents.contains("float GLF_live3_x = 3.0 + sin(7.0);") && contents.contains("float GLF_live3_y = GLF_live3_x + cos(8.0);")
                       || contents.contains("float GLF_live3_x = 3.0 + sin(7.0);") && contents.contains("float GLF_live3_y = (3.0 + sin(7.0)) + cos(8.0);")
                       || contents.contains("float GLF_live3_x = 3.0;") && contents.contains("float GLF_live3_y = (3.0 + sin(7.0)) + cos(8.0);")
@@ -259,7 +284,7 @@ public class ReductionDriverTest {
         }
       };
 
-    final String reducedFilesPrefix = new ReductionDriver(new ReductionOpportunityContext(false, version, generator, null), false, state)
+    final String reducedFilesPrefix = new ReductionDriver(new ReductionOpportunityContext(false, version, generator, null), false, fileOps, state)
         .doReduction(getPrefix(tempFile), 0,
           referencesSinCosAnd3, testFolder.getRoot(), -1);
 
@@ -271,12 +296,14 @@ public class ReductionDriverTest {
 
   @Test
   public void testLiveGLFragColorWriteOpportunity() throws Exception {
-    IFileJudge judge = (workDir, filesPrefix) -> {
+    IFileJudge judge = (shaderJobFile, shaderResultFileOutput) -> {
       try {
-        return FileUtils.readFileToString(
-            new File(workDir,filesPrefix + ".frag"), StandardCharsets.UTF_8).contains("if(true)");
+        return
+            FileUtils.readFileToString(
+                FileHelper.replaceExtension(shaderJobFile, ".frag"), StandardCharsets.UTF_8
+            ).contains("if(true)");
       } catch (IOException exception) {
-        throw new RuntimeException();
+        throw new RuntimeException(exception);
       }
     };
     final String backupName = Constants.GLF_OUT_VAR_BACKUP_PREFIX + "color";
@@ -316,7 +343,7 @@ public class ReductionDriverTest {
                       trigger();
                     }
                   }
-                }), ShaderKind.FRAGMENT);
+                }), ShaderKind.FRAGMENT, fileOps);
 
     final String resultFilesPrefix = reduce(judge,
           EmitShaderHelper.getDefinesString(ShadingLanguageVersion.ESSL_100,
@@ -351,7 +378,7 @@ public class ReductionDriverTest {
                       trigger();
                     }
                   }
-                }), ShaderKind.FRAGMENT);
+                }), ShaderKind.FRAGMENT, fileOps);
 
     final String resultFilesPrefix = reduce(judge,
           EmitShaderHelper.getDefinesString(ShadingLanguageVersion.ESSL_100,
@@ -391,7 +418,9 @@ public class ReductionDriverTest {
       private boolean first = true;
 
       @Override
-      public boolean isInteresting(File unused, String shaderJobShortName) throws FileJudgeException {
+      public boolean isInteresting(
+          File shaderJobFile,
+          File shaderResultFileOutput) throws FileJudgeException {
         boolean result = first;
         first = false;
         return result;
@@ -458,12 +487,12 @@ public class ReductionDriverTest {
 
     final IFileJudge checkVertexShader = new IFileJudge() {
       @Override
-      public boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException {
+      public boolean isInteresting(
+          File shaderJobFile,
+          File shaderResultFileOutput) throws FileJudgeException {
         try {
-          return FileUtils.readFileToString(
-                new File(workDir, shaderJobShortName + ".vert"),
-              StandardCharsets.UTF_8)
-              .contains("shouldNotBeRemoved");
+          String vertexContents = fileOps.getShaderContents(shaderJobFile, ShaderKind.VERTEX);
+          return vertexContents.contains("shouldNotBeRemoved");
         } catch (IOException e) {
           throw new FileJudgeException(e);
         }
@@ -491,11 +520,12 @@ public class ReductionDriverTest {
 
     final IFileJudge checkVertexShader = new IFileJudge() {
       @Override
-      public boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException {
+      public boolean isInteresting(
+          File shaderJobFile,
+          File shaderResultFileOutput) throws FileJudgeException {
         try {
-          return FileUtils.readFileToString(
-              new File(workDir, shaderJobShortName + ".frag"),
-              StandardCharsets.UTF_8)
+          return fileOps
+              .getShaderContents(shaderJobFile, ShaderKind.FRAGMENT)
               .contains("shouldNotBeRemoved");
         } catch (IOException e) {
           throw new FileJudgeException(e);
@@ -530,19 +560,19 @@ public class ReductionDriverTest {
     uniformsInfo.addUniform("b", BasicType.FLOAT, Optional.empty(), Arrays.asList(2.0));
     ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         Optional.of(fragShader),
-        uniformsInfo);
+        uniformsInfo, Optional.empty());
     shaderJob.makeUniformBindings();
 
     final File workDir = testFolder.getRoot();
-    Helper.emitShaderJob(shaderJob, ShadingLanguageVersion.ESSL_300,
-        "temp", workDir, null);
+    final File tempShaderJobFile = new File(workDir, "temp.json");
+    fileOps.writeShaderJobFile(shaderJob, ShadingLanguageVersion.ESSL_300, tempShaderJobFile);
 
     final String resultsPrefix = new ReductionDriver(new ReductionOpportunityContext(true,
         ShadingLanguageVersion.ESSL_300,
         new RandomWrapper(0),
         new IdGenerator()),
         false,
-        shaderJob)
+        fileOps, shaderJob)
         .doReduction("temp", 0,
             (unused, item) -> true, workDir, 100);
 

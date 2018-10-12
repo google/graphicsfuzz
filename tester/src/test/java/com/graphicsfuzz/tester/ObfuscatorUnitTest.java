@@ -22,6 +22,7 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.Obfuscator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import java.io.File;
@@ -35,6 +36,9 @@ import org.junit.rules.TemporaryFolder;
 
 public class ObfuscatorUnitTest {
 
+  // TODO: Use ShaderJobFileOperations everywhere.
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -43,7 +47,9 @@ public class ObfuscatorUnitTest {
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_100;
     final IRandom generator = new RandomWrapper(0);
     for (File originalShader : Util.getReferences()) {
-      final Mat originalImage = Util.renderShaderIfNeeded(shadingLanguageVersion, originalShader, temporaryFolder, false);
+      final Mat originalImage =
+          Util.renderShaderIfNeeded(
+              shadingLanguageVersion, originalShader, temporaryFolder, false, fileOps);
       final TranslationUnit tu = ParseHelper.parse(originalShader, false);
       ImmutablePair<TranslationUnit, UniformsInfo> obfuscated
             = Obfuscator.obfuscate(tu,
@@ -51,9 +57,15 @@ public class ObfuscatorUnitTest {
                   new File(FilenameUtils.removeExtension(originalShader.getAbsolutePath()) + ".json")),
             generator,
             ShadingLanguageVersion.ESSL_100);
-      final Mat obfuscatedImage = Util.validateAndGetImage(obfuscated.getLeft(),
-            Optional.of(obfuscated.getRight()),
-            originalShader.getName() + ".obfuscated.frag", shadingLanguageVersion, ShaderKind.FRAGMENT, temporaryFolder);
+      final Mat obfuscatedImage =
+          Util.validateAndGetImage(
+              obfuscated.getLeft(),
+              Optional.of(obfuscated.getRight()),
+              originalShader.getName() + ".obfuscated.frag",
+              shadingLanguageVersion,
+              ShaderKind.FRAGMENT,
+              temporaryFolder,
+              fileOps);
       Util.assertImagesEquals(originalImage, obfuscatedImage);
     }
   }

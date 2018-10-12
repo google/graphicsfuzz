@@ -17,7 +17,9 @@
 package com.graphicsfuzz.server.webui;
 
 import com.graphicsfuzz.common.util.ReductionProgressHelper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 
 public class ReductionFilesHelper {
@@ -27,10 +29,19 @@ public class ReductionFilesHelper {
           + shaderSet + "_" + shader + "_inv");
   }
 
-  static Optional<File> getLatestReductionImage(String token, String shaderset, String shader) {
+  static Optional<File> getLatestReductionImage(
+      String token,
+      String shaderset,
+      String shader,
+      ShaderJobFileOperations fileOps) throws IOException {
+
     final File reductionDir = getReductionDir(token, shaderset, shader);
     final Optional<Integer> latestSuccessfulReductionStep =
-          ReductionProgressHelper.getLatestReductionStepSuccess(reductionDir, "variant");
+          ReductionProgressHelper.getLatestReductionStepSuccess(
+              reductionDir,
+              "variant",
+              fileOps);
+
     if (!latestSuccessfulReductionStep.isPresent()) {
       return Optional.empty();
     }

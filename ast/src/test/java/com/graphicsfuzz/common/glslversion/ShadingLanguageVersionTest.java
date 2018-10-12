@@ -73,31 +73,30 @@ public class ShadingLanguageVersionTest {
   }
 
   @Test
-  public void testGetShaderVersionFromFile() throws Exception {
-    final Map<String, ShadingLanguageVersion> expected = new HashMap<>();
-    expected.put("#version 110\n"
-        + "void main() { }", ShadingLanguageVersion.GLSL_110);
-    expected.put("#version 330\n"
-        + "void main() { }", ShadingLanguageVersion.GLSL_330);
-    expected.put("#version 450\n"
-        + "void main() { }", ShadingLanguageVersion.GLSL_450);
-    expected.put("#version 100\n"
-        + "void main() { }", ShadingLanguageVersion.ESSL_100);
-    expected.put("#version 300 es\n"
-        + "void main() { }", ShadingLanguageVersion.ESSL_300);
-    expected.put("#version 310 es\n"
-        + "void main() { }", ShadingLanguageVersion.ESSL_310);
-    expected.put("#version 100\n"
-        + "//WebGL\n"
-        + "void main() { }", ShadingLanguageVersion.WEBGL_SL);
-    expected.put("#version 300 es\n"
-        + "//WebGL\n"
-        + "void main() { }", ShadingLanguageVersion.WEBGL2_SL);
-    for (String prog : expected.keySet()) {
-      final File temp = temporaryFolder.newFile();
-      FileUtils.writeStringToFile(temp, prog, StandardCharsets.UTF_8);
-      assertEquals(expected.get(prog), ShadingLanguageVersion.getGlslVersionFromShader(temp));
-      temp.delete();
+  public void testGetGlslVersionFromFirstTwoLines() throws Exception {
+    final Map<String[], ShadingLanguageVersion> expected = new HashMap<>();
+    expected.put(
+        new String [] {"#version 110", "void main() { }"},
+        ShadingLanguageVersion.GLSL_110);
+    expected.put(
+        new String [] {"#version 330", "void main() { }"}, ShadingLanguageVersion.GLSL_330);
+    expected.put(
+        new String [] {"#version 450", "void main() { }"}, ShadingLanguageVersion.GLSL_450);
+    expected.put(
+        new String [] {"#version 100", "void main() { }"}, ShadingLanguageVersion.ESSL_100);
+    expected.put(
+        new String [] {"#version 300 es", "void main() { }"}, ShadingLanguageVersion.ESSL_300);
+    expected.put(
+        new String [] {"#version 310 es", "void main() { }"}, ShadingLanguageVersion.ESSL_310);
+    expected.put(
+        new String [] {"#version 100", "//WebGL", "void main() { }"},
+        ShadingLanguageVersion.WEBGL_SL);
+    expected.put(
+        new String [] {"#version 300 es", "//WebGL", "void main() { }"},
+        ShadingLanguageVersion.WEBGL2_SL);
+    for (String[] lines : expected.keySet()) {
+      assertEquals(expected.get(lines),
+          ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(lines));
     }
   }
 

@@ -17,20 +17,19 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.util.ExecResult;
 
 public class ReductionLedToInvalidException extends RuntimeException {
 
   private final ShaderJob before;
   private final ShaderJob after;
-  private final ExecResult execResult;
   private final IReductionOpportunity reductionOpportunity;
 
-  public ReductionLedToInvalidException(ShaderJob before, ShaderJob after,
-        ExecResult execResult, IReductionOpportunity reductionOpportunity) {
+  public ReductionLedToInvalidException(
+      ShaderJob before,
+      ShaderJob after,
+      IReductionOpportunity reductionOpportunity) {
     this.before = before;
     this.after = after;
-    this.execResult = execResult;
     this.reductionOpportunity = reductionOpportunity;
   }
 
@@ -40,10 +39,6 @@ public class ReductionLedToInvalidException extends RuntimeException {
 
   public ShaderJob getShaderJobAfter() {
     return after;
-  }
-
-  public ExecResult getExecResult() {
-    return execResult;
   }
 
   public IReductionOpportunity getReductionOpportunity() {

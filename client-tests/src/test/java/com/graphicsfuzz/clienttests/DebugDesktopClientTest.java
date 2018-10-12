@@ -16,6 +16,7 @@
 
 package com.graphicsfuzz.clienttests;
 
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.io.File;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,13 +28,15 @@ public class DebugDesktopClientTest {
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
   @Test
   public void someTest() throws Exception {
     File serverWorkDir = temporaryFolder.newFolder();
     Thread server = new Thread(() -> {
       try {
         final FuzzerServer fuzzerServer = new FuzzerServer(
-              serverWorkDir.getAbsolutePath(), 8080);
+              serverWorkDir.getAbsolutePath(), 8080, fileOps);
         fuzzerServer.start();
       } catch (Exception exception) {
         throw new RuntimeException(exception);

@@ -38,7 +38,6 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -50,7 +49,6 @@ import java.util.List;
 import com.graphicsfuzz.repackaged.com.google.gson.JsonObject;
 import com.graphicsfuzz.repackaged.org.apache.commons.io.output.ByteArrayOutputStream;
 import com.graphicsfuzz.repackaged.org.apache.thrift.TException;
-import com.graphicsfuzz.server.thrift.ComputeJob;
 import com.graphicsfuzz.server.thrift.ImageJob;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.Job;
@@ -128,7 +126,6 @@ public class Main extends ApplicationAdapter {
   public GL30 gl30;
 
   public ImageJob standaloneRenderJob;
-  public ComputeJob standaloneComputeJob;
   public String standaloneOutputFilename;
 
   public final int waitFramesDuringRender = 5;
@@ -236,12 +233,11 @@ public class Main extends ApplicationAdapter {
     standardMesh = buildFullScreenQuadMesh();
 
     if(standaloneRenderJob != null) {
-      updateState(WorkerState.IMAGE_STANDALONE_PREPARE);
-      return;
-    }
-
-    if(standaloneComputeJob != null) {
-      updateState(WorkerState.COMPUTE_STANDALONE_PREPARE);
+      if (standaloneRenderJob.isSetComputeSource()) {
+        updateState(WorkerState.COMPUTE_STANDALONE_PREPARE);
+      } else {
+        updateState(WorkerState.IMAGE_STANDALONE_PREPARE);
+      }
       return;
     }
 
@@ -508,15 +504,15 @@ public class Main extends ApplicationAdapter {
 
     if (job.isSetImageJob()) {
       otherPNG = null;
-      updateState(WorkerState.IMAGE_PREPARE);
+      if (job.getImageJob().isSetComputeSource()) {
+        Gdx.app.log("Main", "Compute job.");
+        updateState(WorkerState.COMPUTE_PREPARE);
+      } else {
+        updateState(WorkerState.IMAGE_PREPARE);
+      }
       return;
     }
 
-    if (job.isSetComputeJob()) {
-      Gdx.app.log("Main", "Compute job.");
-      updateState(WorkerState.COMPUTE_PREPARE);
-      return;
-    }
 
     throw new RuntimeException("Unknown job type");
 
@@ -1074,8 +1070,12 @@ public class Main extends ApplicationAdapter {
         break;
       case COMPUTE_STANDALONE_PREPARE:
       case COMPUTE_STANDALONE_EXECUTE:
-        updateState(computeJobManager.handle(state, persistentData, null,
-              new Job().setComputeJob(standaloneComputeJob)));
+        updateState(
+            computeJobManager.handle(
+                state,
+                persistentData,
+                null,
+                new Job().setImageJob(standaloneRenderJob)));
         break;
       case COMPUTE_STANDALONE_IDLE:
         updateState(WorkerState.COMPUTE_STANDALONE_IDLE);

@@ -60,10 +60,10 @@ def kill_generator(generator_proc):
 def generate_variant(reference_prefix, inner_seed, output_prefix):
     cmd = ["java", "-ea",
            "com.graphicsfuzz.generator.tool.Generate",
-           reference_prefix,
+           reference_prefix + ".json",
            args.donors,
            args.glsl_version,
-           output_prefix,
+           output_prefix + ".json",
            "--seed",
            str(inner_seed) ]
     if args.webgl:
@@ -100,9 +100,11 @@ def generate_variant(reference_prefix, inner_seed, output_prefix):
 
 
 def prepare_reference_shaders(reference_prefix, output_file_prefix, glsl_version):
-    cmd = ["java", "-ea", \
+    cmd = ["java",
+           "-ea",
            "com.graphicsfuzz.generator.tool.PrepareReference",
-           reference_prefix, output_file_prefix,
+           reference_prefix + ".json",
+           output_file_prefix + ".json",
            glsl_version ]
     if args.replace_float_literals:
       cmd += [ "--replace_float_literals" ]

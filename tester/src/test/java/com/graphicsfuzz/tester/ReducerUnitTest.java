@@ -30,6 +30,8 @@ import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.EmitShaderHelper;
+import com.graphicsfuzz.common.util.FileHelper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.common.util.Helper;
@@ -77,11 +79,15 @@ import java.util.function.Supplier;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacpp.opencv_core.Mat;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class ReducerUnitTest {
+
+  // TODO: Use ShaderJobFileOperations everywhere.
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -99,7 +105,13 @@ public class ReducerUnitTest {
   private void testGenerateAndReduce(File originalShader, List<ITransformationSupplier> transformations,
       RandomWrapper generator) throws Exception {
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_100;
-    final Mat referenceImage = Util.renderShaderIfNeeded(shadingLanguageVersion, originalShader, temporaryFolder, false);
+    final Mat referenceImage =
+        Util.renderShaderIfNeeded(
+            shadingLanguageVersion,
+            originalShader,
+            temporaryFolder,
+            false,
+            fileOps);
     final UniformsInfo uniformsInfo = new UniformsInfo(
           new File(Helper.jsonFilenameForShader(originalShader.getAbsolutePath())));
     final TranslationUnit tu = generateSizeLimitedShader(originalShader, transformations, generator,
@@ -112,16 +124,24 @@ public class ReducerUnitTest {
 
     for (int step = 0; step < 10; step++) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
-          new GlslShaderJob(Optional.empty(), Optional.of(tu), new UniformsInfo()),
-          new ReductionOpportunityContext(false, shadingLanguageVersion, generator, idGenerator));
+          new GlslShaderJob(Optional.empty(), Optional.of(tu), new UniformsInfo(), Optional.empty()),
+          new ReductionOpportunityContext(false, shadingLanguageVersion, generator, idGenerator),
+          fileOps);
       if (ops.isEmpty()) {
         break;
       }
       System.err.println("Step: " + step + "; ops: " + ops.size());
       ops.get(generator.nextInt(ops.size())).applyReduction();
 
-      final Mat variantImage = Util.validateAndGetImage(tu, Optional.of(uniformsInfo), originalShader.getName() + "_reduced_" + step + ".frag",
-          shadingLanguageVersion, ShaderKind.FRAGMENT, temporaryFolder);
+      final Mat variantImage =
+          Util.validateAndGetImage(
+              tu,
+              Optional.of(uniformsInfo),
+              originalShader.getName() + "_reduced_" + step + ".frag",
+              shadingLanguageVersion,
+              ShaderKind.FRAGMENT,
+              temporaryFolder,
+              fileOps);
       Util.assertImagesEquals(referenceImage, variantImage);
     }
 
@@ -181,8 +201,18 @@ public class ReducerUnitTest {
         int threshold,
         boolean throwExceptionOnInvalid) throws Exception {
 
-    final File shaderFile = Paths.get(TestShadersDirectory.getTestShadersDirectory(), "reducerregressions", shader).toFile();
-    final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.getGlslVersionFromShader(shaderFile);
+    final File shaderFile =
+        Paths.get(TestShadersDirectory.getTestShadersDirectory(), "reducerregressions", shader).toFile();
+
+    // Introducing shaderJobFile even though the rest of the code does not use it yet.
+    final File shaderJobFile = FileHelper.replaceExtension(shaderFile, ".json");
+
+    final ShadingLanguageVersion shadingLanguageVersion =
+        ShadingLanguageVersion
+            .getGlslVersionFromFirstTwoLines(
+                fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
+
+    // TODO: Use shaderJobFile.
     final TranslationUnit tu = Helper.parse(shaderFile, true);
 
     IRandom generator = new RandomWrapper(4);
@@ -193,15 +223,16 @@ public class ReducerUnitTest {
           Optional.empty(),
           Optional.of(tu),
           new UniformsInfo(
-              new File(Helper.jsonFilenameForShader(shaderFile.getAbsolutePath()))));
+              new File(Helper.jsonFilenameForShader(shaderFile.getAbsolutePath()))),
+          Optional.empty());
 
       final String shaderJobShortName = FilenameUtils.removeExtension(shaderFile.getName());
 
       new ReductionDriver(new ReductionOpportunityContext(false,
           shadingLanguageVersion, generator,
-            new IdGenerator()), false, initialState)
+            new IdGenerator()), false, fileOps, initialState)
             .doReduction(shaderJobShortName, 0,
-                  new RandomFileJudge(generator, threshold, throwExceptionOnInvalid),
+                  new RandomFileJudge(generator, threshold, throwExceptionOnInvalid, fileOps),
                   temporaryFolder.newFolder(),
                   100);
     }
@@ -245,7 +276,7 @@ public class ReducerUnitTest {
                   trigger();
                 }
               }
-            }), ShaderKind.FRAGMENT);
+            }), ShaderKind.FRAGMENT, fileOps);
 
     final File shaderFile = Paths.get(TestShadersDirectory.getTestShadersDirectory(),
         "reducerregressions", "misc1.frag").toFile();
@@ -341,7 +372,7 @@ public class ReducerUnitTest {
 
     IFileJudge judge = new CheckAstFeaturesFileJudge(Arrays.asList(
           involvesFloatLiteral1, involvesFloatLiteral2, involvesVariable1, involvesVariable2, involvesVariable3, involvesSpecialAssignment),
-          ShaderKind.FRAGMENT);
+          ShaderKind.FRAGMENT, fileOps);
     final File shaderFile = Paths.get(TestShadersDirectory.getTestShadersDirectory(),
         "reducerregressions", "intricate.frag").toFile();
     final String outputFilesPrefix = runReductionOnShader(shaderFile, judge);
@@ -353,17 +384,24 @@ public class ReducerUnitTest {
   private String runReductionOnShader(File shaderFile, IFileJudge fileJudge)
         throws IOException, ParseTimeoutException {
     final String shaderJobShortName = FilenameUtils.removeExtension(shaderFile.getName());
-    final ShadingLanguageVersion version = ShadingLanguageVersion.getGlslVersionFromShader(shaderFile);
+    // Introducing shaderJobFile even though the rest of the code does not use it yet.
+    Assert.assertTrue(shaderFile.toString().endsWith(".frag"));
+    final File shaderJobFile = FileHelper.replaceExtension(shaderFile, ".json");
+    final ShadingLanguageVersion version =
+        ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(
+            fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
+    // TODO: Use shaderJobFile.
     final IRandom generator = new RandomWrapper(0);
     final TranslationUnit tu = Helper.parse(shaderFile, true);
     final ShaderJob state = new GlslShaderJob(
         Optional.empty(),
         Optional.of(tu),
-        new UniformsInfo(new File(Helper.jsonFilenameForShader(shaderFile.getAbsolutePath()))));
+        new UniformsInfo(new File(Helper.jsonFilenameForShader(shaderFile.getAbsolutePath()))),
+        Optional.empty());
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(), shaderFile.getName()));
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(),
         shaderJobShortName + ".json"));
-    return new ReductionDriver(new ReductionOpportunityContext(false, version, generator, new IdGenerator()), false, state)
+    return new ReductionDriver(new ReductionOpportunityContext(false, version, generator, new IdGenerator()), false, fileOps, state)
         .doReduction(shaderJobShortName, 0,
           fileJudge, temporaryFolder.getRoot(), -1);
   }
@@ -395,8 +433,10 @@ public class ReducerUnitTest {
     final File reference = temporaryFolder.newFile("reference.frag");
     final File referenceJson = temporaryFolder.newFile("reference.json");
     final File referenceImage = temporaryFolder.newFile("reference.png");
+    final File referenceJsonFakeResult = temporaryFolder.newFile("reference.info.json");
     FileUtils.writeStringToFile(reference, program, StandardCharsets.UTF_8);
     FileUtils.writeStringToFile(referenceJson, "{ }", StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(referenceJsonFakeResult, "{ }", StandardCharsets.UTF_8);
 
     final ExecResult referenceResult = ToolHelper.runSwiftshaderOnShader(RedirectType.TO_LOG,
           reference, referenceImage, false);
@@ -406,30 +446,30 @@ public class ReducerUnitTest {
 
     int numSteps = 20;
 
-    Reduce.main(new String[] {
-          FilenameUtils.removeExtension(reference.getAbsolutePath()),
+    Reduce.mainHelper(new String[] {
+          referenceJson.getAbsolutePath(),
           "--swiftshader",
           "IDENTICAL",
           "--reduce_everywhere",
-          "--reference_image",
-          referenceImage.getAbsolutePath(),
+          "--reference",
+          referenceJsonFakeResult.getAbsolutePath(),
           "--max_steps",
           String.valueOf(numSteps),
           "--seed",
           "0",
           "--output",
           output.getAbsolutePath()
-    });
+    }, null);
 
     while (new File(output, Constants.REDUCTION_INCOMPLETE).exists()) {
       numSteps += 5;
-      Reduce.main(new String[] {
-            FilenameUtils.removeExtension(reference.getAbsolutePath()),
+      Reduce.mainHelper(new String[] {
+            referenceJson.getAbsolutePath(),
             "--swiftshader",
             "IDENTICAL",
             "--reduce_everywhere",
-            "--reference_image",
-            referenceImage.getAbsolutePath(),
+            "--reference",
+            referenceJsonFakeResult.getAbsolutePath(),
             "--max_steps",
             String.valueOf(numSteps),
             "--seed",
@@ -437,7 +477,7 @@ public class ReducerUnitTest {
             "--output",
             output.getAbsolutePath(),
             "--continue_previous_reduction"
-      });
+      }, null);
     }
 
     final File[] finalResults = output.listFiles((dir, file)
@@ -483,21 +523,23 @@ public class ReducerUnitTest {
                 + "}";
     final File reference = temporaryFolder.newFile("reference.frag");
     final File referenceJson = temporaryFolder.newFile("reference.json");
+    final File referenceJsonFakeResult = temporaryFolder.newFile("reference.info.json");
     final File referenceImage = temporaryFolder.newFile("reference.png");
     FileUtils.writeStringToFile(reference, program, StandardCharsets.UTF_8);
     FileUtils.writeStringToFile(referenceJson, "{ }", StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(referenceJsonFakeResult, "{ }", StandardCharsets.UTF_8);
 
     final ExecResult referenceResult = ToolHelper.runSwiftshaderOnShader(RedirectType.TO_LOG,
           reference, referenceImage, false);
     assertEquals(0, referenceResult.res);
     final File output = temporaryFolder.newFolder();
     Reduce.main(new String[] {
-          FilenameUtils.removeExtension(reference.getAbsolutePath()),
+          referenceJson.getAbsolutePath(),
           "--swiftshader",
           "IDENTICAL",
           "--reduce_everywhere",
-          "--reference_image",
-          referenceImage.getAbsolutePath(),
+          "--reference",
+          referenceJsonFakeResult.getAbsolutePath(),
           "--max_steps",
           "-1",
           "--seed",
