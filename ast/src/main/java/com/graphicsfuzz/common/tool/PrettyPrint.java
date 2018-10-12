@@ -81,16 +81,16 @@ class PrettyPrint {
 
   private static void prettyPrintShader(Namespace ns, TranslationUnit tu)
       throws FileNotFoundException {
-    PrintStream stream = new PrintStream(new FileOutputStream(
-        new File(ns.getString("output"))));
-    if (getGlslVersion(ns) != null) {
-      throw new RuntimeException();
-      //Helper.emitDefines(stream, new ShadingLanguageVersion(getGlslVersion(ns), false),
-      //    false);
+    try (PrintStream stream =
+             new PrintStream(new FileOutputStream(new File(ns.getString("output"))))) {
+      if (getGlslVersion(ns) != null) {
+        throw new RuntimeException();
+        //Helper.emitDefines(stream, new ShadingLanguageVersion(getGlslVersion(ns), false),
+        //    false);
+      }
+      PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(stream);
+      ppv.visit(tu);
     }
-    PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(stream);
-    ppv.visit(tu);
-    stream.close();
   }
 
   private static String getGlslVersion(Namespace ns) {

@@ -7,15 +7,13 @@ import java.util.Optional;
 
 public interface ShaderJob {
 
-  boolean hasFragmentShader();
+  Optional<TranslationUnit> getFragmentShader();
 
-  boolean hasVertexShader();
-
-  TranslationUnit getFragmentShader();
-
-  TranslationUnit getVertexShader();
+  Optional<TranslationUnit> getVertexShader();
 
   UniformsInfo getUniformsInfo();
+
+  Optional<String> getLicense();
 
   void makeUniformBindings();
 

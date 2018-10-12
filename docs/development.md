@@ -313,10 +313,10 @@ manager.queueCommand(
   "ReduceVariant for xxx",
   [
     "reduce_variant",
-    "--reference_image", "processing/7093366951813584254/test_exp/recipient.png",
+    "--reference", "processing/7093366951813584254/test_exp/recipient.info.json",
     "--reduce_everywhere",
     "--output", "processing/7093366951813584254/test_variant_1_inv",
-    "shadersets/28Apr16_shader_100_shader_14/variants/variant_1.frag",
+    "shadersets/28Apr16_shader_100_shader_14/variants/variant_1.json",
     "IDENTICAL",
     "--server", "http://localhost:8080",
     "--token", "7093366951813584254"

@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.util;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.AddBraces;
 import com.graphicsfuzz.reducer.glslreducers.EliminateInjectionMacrosVisitor;
+import java.util.Optional;
 
 public class Simplify {
 

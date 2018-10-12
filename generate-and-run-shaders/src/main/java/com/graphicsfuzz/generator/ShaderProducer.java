@@ -22,6 +22,7 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.tool.EnabledTransformations;
 import com.graphicsfuzz.generator.tool.Generate;
@@ -45,31 +46,34 @@ public class ShaderProducer implements Runnable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ShaderProducer.class);
 
   private final int limit;
-  private final List<String> shaderJobPrefixes;
+  private final File[] shaderJobFiles;
   private final IRandom generator;
   private final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue;
   private final File referencesDir;
   private final ShadingLanguageVersion shadingLanguageVersion;
   private final Namespace ns;
   private final File donorsDir;
+  private final ShaderJobFileOperations fileOps;
 
   ShaderProducer(
-        int limit,
-        List<String> shaderJobPrefixes,
-        IRandom generator,
-        BlockingQueue<Pair<ShaderJob, ShaderJob>> queue,
-        File referencesDir,
-        ShadingLanguageVersion shadingLanguageVersion,
-        File donorsDir,
-        Namespace ns) {
+      int limit,
+      File[] shaderJobFiles,
+      IRandom generator,
+      BlockingQueue<Pair<ShaderJob, ShaderJob>> queue,
+      File referencesDir,
+      ShadingLanguageVersion shadingLanguageVersion,
+      File donorsDir,
+      Namespace ns,
+      ShaderJobFileOperations fileOps) {
     this.limit = limit;
-    this.shaderJobPrefixes = shaderJobPrefixes;
+    this.shaderJobFiles = shaderJobFiles;
     this.generator = generator;
     this.queue = queue;
     this.referencesDir = referencesDir;
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.donorsDir = donorsDir;
     this.ns = ns;
+    this.fileOps = fileOps;
   }
 
   @Override
@@ -81,29 +85,32 @@ public class ShaderProducer implements Runnable {
         Generate.getTransformationDisablingFlags(ns);
 
     final GeneratorArguments generatorArguments =
-        new GeneratorArguments(shadingLanguageVersion,
+        new GeneratorArguments(
+            shadingLanguageVersion,
             generator.nextInt(Integer.MAX_VALUE),
-            ns.getBoolean("small"),
-            ns.getBoolean("avoid_long_loops"),
-            ns.getBoolean("multi_pass"),
-            ns.getBoolean("aggressively_complicate_control_flow"),
-            ns.getBoolean("replace_float_literals"),
+            ns.get("small"),
+            ns.get("avoid_long_loops"),
+            ns.get("multi_pass"),
+            ns.get("aggressively_complicate_control_flow"),
+            ns.get("replace_float_literals"),
             donorsDir,
-            ns.getBoolean("generate_uniform_bindings"),
-            ns.getInt("max_uniforms"),
+            ns.get("generate_uniform_bindings"),
+            ns.get("max_uniforms"),
             enabledTransformations
         );
 
     int sent = 0;
     for (int counter = 0; sent < limit; counter++) {
-      final String referenceShaderJobPrefix = shaderJobPrefixes
-          .get(counter % shaderJobPrefixes.size());
+
+      File referenceShaderJobFile = shaderJobFiles[counter % shaderJobFiles.length];
 
       try {
-        LOGGER.info("Preparing shader job pair based on " + referenceShaderJobPrefix + ".");
-        final ShaderJob referenceShaderJob = Helper.parseShaderJob(referencesDir,
-            referenceShaderJobPrefix, false);
+        LOGGER.info("Preparing shader job pair based on {}.", referenceShaderJobFile);
+
+        final ShaderJob referenceShaderJob =
+            fileOps.readShaderJobFile(referenceShaderJobFile, false);
         final ShaderJob variantShaderJob = referenceShaderJob.clone();
+
         PrepareReference.prepareReference(
             referenceShaderJob,
             shadingLanguageVersion,
@@ -126,27 +133,5 @@ public class ShaderProducer implements Runnable {
       }
     }
   }
-
-  private static List<ShaderJob> populateReferenceShaderJobs(File shadersDir)
-      throws IOException, ParseTimeoutException {
-    assert shadersDir.exists() && shadersDir.isDirectory();
-    final List<ShaderJob> result = new ArrayList<>();
-    for (File uniformsJson : shadersDir.listFiles((dir, name) -> name.endsWith(".json"))) {
-      final File vertexShader = new File(FilenameUtils.removeExtension(uniformsJson.getName())
-          + ".vert");
-      final File fragmentShader = new File(FilenameUtils.removeExtension(uniformsJson.getName())
-          + ".frag");
-      result.add(new GlslShaderJob(
-          vertexShader.exists()
-              ? Optional.of(Helper.parse(vertexShader, false))
-              : Optional.empty(),
-          fragmentShader.exists()
-              ? Optional.of(Helper.parse(fragmentShader, false))
-              : Optional.empty(),
-          new UniformsInfo(uniformsJson)));
-    }
-    return result;
-  }
-
 
 }

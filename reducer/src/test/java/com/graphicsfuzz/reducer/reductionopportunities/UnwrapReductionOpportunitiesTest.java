@@ -28,10 +28,13 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.SameValueRandom;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.util.List;
 import org.junit.Test;
 
 public class UnwrapReductionOpportunitiesTest {
+
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @Test
   public void testBlock1() throws Exception {
@@ -147,14 +150,14 @@ public class UnwrapReductionOpportunitiesTest {
           + "}";
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected2, false)));
     remainingOps = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(false, version, generator, idGenerator));
+          new ReductionOpportunityContext(false, version, generator, idGenerator), fileOps);
     assertEquals(1, remainingOps.size());
     remainingOps.get(0).applyReduction();
     final String expected3 = "void main() {"
           + "}";
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected3, false)));
     remainingOps = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(false, version, generator, idGenerator));
+          new ReductionOpportunityContext(false, version, generator, idGenerator), fileOps);
     assertEquals(0, remainingOps.size());
   }
 

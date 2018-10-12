@@ -16,6 +16,7 @@
 
 package com.graphicsfuzz.server;
 
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -34,7 +35,9 @@ public class Main {
     try {
       Namespace ns = parser.parseArgs(args);
 
-      new FuzzerServer(ns.get("port")).start();
+      ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+      new FuzzerServer(ns.get("port"), fileOps).start();
 
     } catch (ArgumentParserException ex) {
       ex.getParser().handleError(ex);

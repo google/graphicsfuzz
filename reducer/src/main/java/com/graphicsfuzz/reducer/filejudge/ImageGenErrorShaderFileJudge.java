@@ -16,9 +16,10 @@
 
 package com.graphicsfuzz.reducer.filejudge;
 
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.FileJudgeException;
 import com.graphicsfuzz.reducer.IFileJudge;
-import com.graphicsfuzz.reducer.util.ShaderJudgeUtil;
+import com.graphicsfuzz.server.thrift.ImageJob;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
@@ -26,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -40,40 +42,46 @@ public class ImageGenErrorShaderFileJudge implements IFileJudge {
   private IShaderDispatcher imageGenerator;
   private final boolean skipRender;
   private final boolean throwExceptionOnValidationError;
+  private final ShaderJobFileOperations fileOps;
 
-  public ImageGenErrorShaderFileJudge(Pattern pattern,
-        IShaderDispatcher imageGenerator,
-        boolean skipRender,
-        boolean throwExceptionOnValidationError) {
+  public ImageGenErrorShaderFileJudge(
+      Pattern pattern,
+      IShaderDispatcher imageGenerator,
+      boolean skipRender,
+      boolean throwExceptionOnValidationError,
+      ShaderJobFileOperations fileOps) {
     this.pattern = pattern;
     this.imageGenerator = imageGenerator;
     this.skipRender = skipRender;
     this.throwExceptionOnValidationError = throwExceptionOnValidationError;
+    this.fileOps = fileOps;
   }
 
   @Override
-  public boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException {
+  public boolean isInteresting(
+      File shaderJobFile,
+      File shaderResultFileOutput
+  ) throws FileJudgeException {
 
     // 1. Shader file validates.
     // 2. Generate image.
 
     try {
-      if (!ShaderJudgeUtil.shadersAreValid(workDir,
-          shaderJobShortName,
-          throwExceptionOnValidationError)) {
+      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnValidationError)) {
         return false;
       }
-      // 2.
-      File outputImage = new File(workDir, FilenameUtils.getBaseName(shaderJobShortName) + ".png");
-      ImageJobResult imageRes = imageGenerator
-          .getImage(Paths.get(workDir.getAbsolutePath(), shaderJobShortName).toString(),
-              outputImage,
-              skipRender);
-      if (outputImage.isFile()) {
-        outputImage.delete();
-      }
 
-      File outputText = new File(workDir, FilenameUtils.getBaseName(shaderJobShortName) + ".txt");
+      // 2.
+      // Read shader job into an image job.
+      ImageJob imageJob = new ImageJob();
+      fileOps.readShaderJobFileToImageJob(shaderJobFile, imageJob);
+      imageJob.setSkipRender(false);
+
+      // Run the image job.
+      ImageJobResult imageRes = imageGenerator.getImage(imageJob);
+
+      // Write the shader result file.
+      fileOps.writeShaderResultToFile(imageRes, shaderResultFileOutput, Optional.empty());
 
       switch (imageRes.getStatus()) {
         case SUCCESS:
@@ -82,7 +90,6 @@ public class ImageGenErrorShaderFileJudge implements IFileJudge {
           return false;
         default:
           LOGGER.info("get_image failed...which is good.");
-          FileUtils.writeStringToFile(outputText, imageRes.getLog(), Charset.defaultCharset());
           if (pattern == null) {
             LOGGER.info("Interesting.");
             return true;
@@ -97,7 +104,7 @@ public class ImageGenErrorShaderFileJudge implements IFileJudge {
       }
     } catch (InterruptedException | IllegalStateException | IOException
           | ShaderDispatchException exception) {
-      LOGGER.info("Error occurred while checking if file was interesting.", exception);
+      LOGGER.error("Error occurred while checking if file was interesting.", exception);
       throw new FileJudgeException(exception);
     }
   }

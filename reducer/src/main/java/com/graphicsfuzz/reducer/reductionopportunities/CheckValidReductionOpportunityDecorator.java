@@ -16,66 +16,50 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.Helper;
-import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.UniformsInfo;
-import com.graphicsfuzz.util.ExecHelper;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.util.ToolHelper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
 
 public class CheckValidReductionOpportunityDecorator implements IReductionOpportunity {
 
   private final IReductionOpportunity delegate;
   private final ShaderJob shaderJob;
   private final ShadingLanguageVersion shadingLanguageVersion;
+  private final ShaderJobFileOperations fileOps;
 
 
   public CheckValidReductionOpportunityDecorator(IReductionOpportunity delegate,
                                                  ShaderJob shaderJob,
-                                                 ShadingLanguageVersion shadingLanguageVersion) {
+                                                 ShadingLanguageVersion shadingLanguageVersion,
+                                                 ShaderJobFileOperations fileOps) {
     this.delegate = delegate;
     this.shaderJob = shaderJob;
     this.shadingLanguageVersion = shadingLanguageVersion;
+    this.fileOps = fileOps;
   }
 
   @Override
   public void applyReduction() {
     final ShaderJob before = shaderJob.clone();
     delegate.applyReduction();
-    final String prefix = "temp_to_validate";
+    final File outputShaderJobFile = new File("temp_to_validate.json");
     try {
-      Helper.emitShaderJob(
+      fileOps.writeShaderJobFile(
           shaderJob,
           shadingLanguageVersion,
-          prefix,
-          new File("."),
-          null);
-      if (shaderJob.hasVertexShader()) {
-        checkShaderIsValid(before, prefix, ".vert");
+          outputShaderJobFile
+      );
+
+      boolean valid = fileOps.areShadersValid(outputShaderJobFile, false);
+      if (!valid) {
+        throw new ReductionLedToInvalidException(before, shaderJob, delegate);
       }
-      if (shaderJob.hasFragmentShader()) {
-        checkShaderIsValid(before, prefix, ".frag");
-      }
+
     } catch (InterruptedException | IOException exception) {
       throw new RuntimeException(exception);
-    }
-  }
-
-  private void checkShaderIsValid(ShaderJob before, String prefix, String extension)
-      throws IOException, InterruptedException {
-    ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
-          new File(prefix + extension));
-    if (execResult.res != 0) {
-      throw new ReductionLedToInvalidException(before, shaderJob, execResult, delegate);
     }
   }
 

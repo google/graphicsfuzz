@@ -21,12 +21,15 @@ import static org.junit.Assert.assertEquals;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.AvoidDeprecatedGlFragColor;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.tool.Generate;
@@ -48,12 +51,15 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacpp.opencv_core.Mat;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -66,6 +72,9 @@ public class GeneratorUnitTest {
 
   // Toggle this to 'true' to run tests on all shaders.
   private static final boolean ignoreBlacklist = false;
+
+  // TODO: Use ShaderJobFileOperations everywhere.
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -201,7 +210,12 @@ public class GeneratorUnitTest {
           probabilities,
           suffix,
           originalShader, shadingLanguageVersion,
-          Util.renderShaderIfNeeded(shadingLanguageVersion, originalShader, temporaryFolder, false),
+          Util.renderShaderIfNeeded(
+              shadingLanguageVersion,
+              originalShader,
+              temporaryFolder,
+              false,
+              fileOps),
           skipRender);
     }
   }
@@ -273,14 +287,43 @@ public class GeneratorUnitTest {
           new File(Helper.jsonFilenameForShader(originalShader.getAbsolutePath())));
     Generate.setInjectionSwitch(uniformsInfo);
     Generate.randomiseUnsetUniforms(tu, uniformsInfo, generator);
-    final File shaderFile = Util.writeShaderAndUniformsToFile(tu, Optional.of(uniformsInfo),
-          originalShader.getName() + "." + suffix, shadingLanguageVersion,
-            ShaderKind.FRAGMENT, temporaryFolder);
-    Util.validate(shaderFile);
+
+
+    // Using fileOps, even though the rest of the code here does not use it yet.
+    // Write shaders to shader job file and validate.
+
+    Assert.assertTrue(suffix.endsWith(".frag"));
+    Assert.assertTrue(originalShader.getName().endsWith(".frag"));
+
+    ShaderJob shaderJob = new GlslShaderJob(
+        Optional.empty(),
+        Optional.of(tu),
+        uniformsInfo,
+        Optional.empty()
+    );
+    // e.g. "_matrix_mult"
+    String suffixNoExtension = FilenameUtils.removeExtension(suffix);
+    // e.g. "temp/orig_matrix_mult.json"
+    File shaderJobFile =
+        Paths.get(
+            temporaryFolder.toString(),
+            originalShader.getName() + suffixNoExtension + ".json"
+        ).toFile();
+
+    fileOps.writeShaderJobFile(
+        shaderJob,
+        shadingLanguageVersion,
+        shaderJobFile
+    );
+    fileOps.areShadersValid(shaderJobFile, true);
+
     if (!skipRender) {
-      final Mat variantImage = Util.getImage(shaderFile, temporaryFolder);
+      File underlyingFragFile = fileOps.getUnderlyingShaderFile(shaderJobFile, ShaderKind.FRAGMENT);
+      // TODO: Use fileOps.
+      final Mat variantImage = Util.getImage(underlyingFragFile, temporaryFolder, fileOps);
       Util.assertImagesEquals(referenceImage, variantImage);
     }
+
   }
 
 }

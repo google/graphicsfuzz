@@ -16,8 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +39,9 @@ public final class ReductionOpportunities {
    * @param context Information to shape the opportunities that are gathered
    */
   public static List<IReductionOpportunity> getReductionOpportunities(
-      ShaderJob shaderJob, ReductionOpportunityContext context) {
+      ShaderJob shaderJob,
+      ReductionOpportunityContext context,
+      ShaderJobFileOperations fileOps) {
     final List<IReductionOpportunity> opportunities = new ArrayList<>();
     for (IReductionOpportunityFinder<?> ros : Arrays.asList(
         IReductionOpportunityFinder.loopMergeFinder(),
@@ -69,7 +71,7 @@ public final class ReductionOpportunities {
       if (ReductionDriver.DEBUG_REDUCER) {
         opportunities.addAll(currentOpportunities.stream()
               .map(item -> new CheckValidReductionOpportunityDecorator(item, shaderJob,
-                    context.getShadingLanguageVersion()))
+                    context.getShadingLanguageVersion(), fileOps))
               .collect(Collectors.toList()));
       } else {
         opportunities.addAll(currentOpportunities);

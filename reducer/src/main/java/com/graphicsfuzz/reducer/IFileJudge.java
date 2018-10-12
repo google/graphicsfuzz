@@ -20,6 +20,16 @@ import java.io.File;
 
 public interface IFileJudge {
 
-  boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException;
+  /**
+   * @param shaderJobFile          The shader job file that will be tested.
+   * @param shaderResultFileOutput Optional file where the result will be *written* in order to
+   *                               determine if the shaderJobFile is interesting. Of course, the
+   *                               result may not be written, as the isInteresting test may not
+   *                               require running the shader at all; e.g., if isInteresting just
+   *                               requires a shader to be valid according to glslangValidator.
+   */
+  boolean isInteresting(
+      File shaderJobFile,
+      File shaderResultFileOutput) throws FileJudgeException;
 
 }

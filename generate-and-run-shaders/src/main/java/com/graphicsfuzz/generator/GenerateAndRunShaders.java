@@ -17,33 +17,21 @@
 package com.graphicsfuzz.generator;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.Helper;
-import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
-import com.graphicsfuzz.common.util.UniformsInfo;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.generator.tool.Generate;
-import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class GenerateAndRunShaders {
@@ -105,17 +93,19 @@ public class GenerateAndRunShaders {
   public static void main(String[] args)
       throws IOException, InterruptedException {
     final Namespace ns = parse(args);
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     final File referencesDir = ns.get("references");
-    if (!referencesDir.exists()) {
+
+    if (!fileOps.isDirectory(referencesDir)) {
       throw new IllegalArgumentException("References directory does not exist.");
     }
     final File donors = ns.get("donors");
-    if (!donors.exists()) {
+    if (!fileOps.isDirectory(donors)) {
       throw new IllegalArgumentException("Donors directory does not exist.");
     }
-    final File outputDir = new File(ns.getString("output_dir"));
-    FileUtils.deleteDirectory(outputDir);
-    outputDir.mkdir();
+    final File outputDir = ns.get("output_dir");
+    fileOps.deleteDirectory(outputDir);
+    fileOps.mkdir(outputDir);
 
     final ShadingLanguageVersion shadingLanguageVersion = ns.get("webgl")
         ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
@@ -127,40 +117,36 @@ public class GenerateAndRunShaders {
     final File crashStringsToIgnoreFile = ns.get("ignore_crash_strings");
     final Set<String> crashStringsToIgnore = new HashSet<>();
     if (crashStringsToIgnoreFile != null) {
-      crashStringsToIgnore.addAll(FileUtils.readLines(crashStringsToIgnoreFile,
-          StandardCharsets.UTF_8));
+      crashStringsToIgnore.addAll(fileOps.readLines(crashStringsToIgnoreFile));
     }
+    File[] shaderJobFiles = fileOps.listShaderJobFiles(referencesDir, (dir, name) -> true);
 
-    final List<String> shaderJobPrefixes =
-        Arrays.stream(referencesDir.listFiles((dir, name) -> name.endsWith(".json")))
-            .map(item -> FilenameUtils.removeExtension(item.getName()))
-            .collect(Collectors.toList());
-    if (shaderJobPrefixes.isEmpty()) {
+    if (shaderJobFiles.length <= 0) {
       throw new IllegalArgumentException("No shader jobs found.");
     }
 
     final Thread consumer = new Thread(new ShaderConsumer(
-          LIMIT,
-          queue,
-          outputDir,
-          ns.get("server"),
-          ns.get("token"),
-          shadingLanguageVersion,
-          crashStringsToIgnore,
-          ns
-    ));
+        LIMIT,
+        queue,
+        outputDir,
+        ns.get("server"),
+        ns.get("token"),
+        shadingLanguageVersion,
+        crashStringsToIgnore,
+        ns.get("only_variants"),
+        fileOps));
     consumer.start();
 
     final Thread producer = new Thread(new ShaderProducer(
-          LIMIT,
-          shaderJobPrefixes,
-          new RandomWrapper(ns.get("seed")),
-          queue,
-          referencesDir,
-          shadingLanguageVersion,
-          donors,
-          ns
-    ));
+        LIMIT,
+        shaderJobFiles,
+        new RandomWrapper(ns.get("seed")),
+        queue,
+        referencesDir,
+        shadingLanguageVersion,
+        donors,
+        ns,
+        fileOps));
     producer.start();
 
     consumer.join();

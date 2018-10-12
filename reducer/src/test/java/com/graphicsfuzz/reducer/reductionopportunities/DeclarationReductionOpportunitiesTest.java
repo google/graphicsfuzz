@@ -25,10 +25,13 @@ import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.util.List;
 import org.junit.Test;
 
 public class DeclarationReductionOpportunitiesTest {
+
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @Test
   public void testNothingToRemove() throws Exception {
@@ -38,9 +41,16 @@ public class DeclarationReductionOpportunitiesTest {
           + "}\n";
     final TranslationUnit tu = Helper.parse(program, false);
     List<IReductionOpportunity> ops = ReductionOpportunities
-          .getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
-                new RandomWrapper(0), new IdGenerator()));
+          .getReductionOpportunities(
+              MakeShaderJobFromFragmentShader.make(tu),
+              new ReductionOpportunityContext(
+                  false,
+                  ShadingLanguageVersion.ESSL_100,
+                  new RandomWrapper(0),
+                  new IdGenerator()
+              ),
+              fileOps
+          );
     assertEquals(0, ops.size());
   }
 
@@ -59,7 +69,7 @@ public class DeclarationReductionOpportunitiesTest {
     List<IReductionOpportunity> ops = ReductionOpportunities
           .getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                 new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
-                new RandomWrapper(0), new IdGenerator()));
+                new RandomWrapper(0), new IdGenerator()), fileOps);
     assertEquals(0, ops.size());
   }
 

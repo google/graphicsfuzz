@@ -34,7 +34,10 @@ public class ValidatorErrorShaderFileJudge implements IFileJudge {
   }
 
   @Override
-  public boolean isInteresting(File workDir, String shaderJobShortName) throws FileJudgeException {
+  public boolean isInteresting(
+      File shaderJobFile,
+      File shaderResultFileOutput
+  ) {
 
     throw new RuntimeException();
 

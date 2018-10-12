@@ -56,7 +56,7 @@ public class ToolHelper {
           "--output", imageOutput.toString()));
 
     if (skipRender) {
-      command.add("--exit_linking");
+      command.add("--exit-linking");
     }
 
     return new ExecHelper().exec(
@@ -93,7 +93,7 @@ public class ToolHelper {
           String.valueOf(height)));
 
     if (skipRender) {
-      command.add("--exit_linking");
+      command.add("--exit-linking");
     }
 
     return new ExecHelper().exec(
