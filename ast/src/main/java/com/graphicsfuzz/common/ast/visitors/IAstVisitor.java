@@ -27,7 +27,6 @@ import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -60,14 +59,14 @@ import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
-import com.graphicsfuzz.common.ast.type.AnonymousStructType;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.AtomicIntType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.ImageType;
-import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.VoidType;
 
 public interface IAstVisitor {
@@ -158,7 +157,7 @@ public interface IAstVisitor {
 
   void visitBoolConstantExpr(BoolConstantExpr boolConstantExpr);
 
-  void visitStructDeclaration(StructDeclaration structDeclaration);
+  void visitStructDefinitionType(StructDefinitionType structDefinitionType);
 
   void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr);
 
@@ -174,8 +173,6 @@ public interface IAstVisitor {
 
   void visitDefaultLayout(DefaultLayout defaultLayout);
 
-  void visitConcreteStructNameType(NamedStructType concreteStructNameType);
-
-  void visitAnonymousStructNameType(AnonymousStructType anonymousStructNameType);
+  void visitStructNameType(StructNameType structNameType);
 
 }

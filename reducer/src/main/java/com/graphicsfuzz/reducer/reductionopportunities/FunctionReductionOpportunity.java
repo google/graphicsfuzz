@@ -18,24 +18,29 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
+import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
+import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
-class FunctionOrStructReductionOpportunity extends AbstractReductionOpportunity {
+class FunctionReductionOpportunity extends AbstractReductionOpportunity {
 
   private TranslationUnit tu;
-  private Declaration decl;
+  private Declaration functionDefinitionOrPrototype;
 
-  public FunctionOrStructReductionOpportunity(TranslationUnit tu, Declaration decl,
-      VisitationDepth depth) {
+  public FunctionReductionOpportunity(TranslationUnit tu,
+                                      Declaration functionDefinitionOrPrototype,
+                                      VisitationDepth depth) {
     super(depth);
+    assert functionDefinitionOrPrototype instanceof FunctionDefinition
+        || functionDefinitionOrPrototype instanceof FunctionPrototype;
     this.tu = tu;
-    this.decl = decl;
+    this.functionDefinitionOrPrototype = functionDefinitionOrPrototype;
   }
 
   @Override
   public void applyReductionImpl() {
     for (int i = 0; i < tu.getTopLevelDeclarations().size(); i++) {
-      if (tu.getTopLevelDeclarations().get(i) == decl) {
+      if (tu.getTopLevelDeclarations().get(i) == functionDefinitionOrPrototype) {
         tu.removeTopLevelDeclaration(i);
         return;
       }
@@ -45,7 +50,7 @@ class FunctionOrStructReductionOpportunity extends AbstractReductionOpportunity 
 
   @Override
   public boolean preconditionHolds() {
-    return tu.getTopLevelDeclarations().contains(decl);
+    return tu.getTopLevelDeclarations().contains(functionDefinitionOrPrototype);
   }
 
 }

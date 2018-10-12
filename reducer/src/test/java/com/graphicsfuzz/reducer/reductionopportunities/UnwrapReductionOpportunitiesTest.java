@@ -139,23 +139,30 @@ public class UnwrapReductionOpportunitiesTest {
           generator, null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
-    List<? extends IReductionOpportunity> remainingOps = DeclarationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, version, generator, null));
+    List<? extends IReductionOpportunity> remainingOps =
+        VariableDeclReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReductionOpportunityContext(false, version, generator, null));
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)));
     assertEquals(2, remainingOps.size());
     remainingOps.get(0).applyReduction();
     remainingOps.get(1).applyReduction();
     final String expected2 = "void main() {"
-          + "  {"
-          + "  }"
-          + "}";
+        + "  int ;"
+        + "  {"
+        + "    int ;"
+        + "  }"
+        + "}";
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected2, false)));
-    remainingOps = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(false, version, generator, idGenerator), fileOps);
-    assertEquals(1, remainingOps.size());
+    remainingOps = StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReductionOpportunityContext(false, version, generator, null));
+    assertEquals(3, remainingOps.size());
     remainingOps.get(0).applyReduction();
+    remainingOps.get(1).applyReduction();
+    remainingOps.get(2).applyReduction();
     final String expected3 = "void main() {"
           + "}";
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected3, false)));
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu),
+        PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected3, false)));
     remainingOps = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, version, generator, idGenerator), fileOps);
     assertEquals(0, remainingOps.size());

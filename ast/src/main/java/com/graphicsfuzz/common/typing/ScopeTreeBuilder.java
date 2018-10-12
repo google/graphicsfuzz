@@ -19,14 +19,14 @@ package com.graphicsfuzz.common.typing;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +39,7 @@ import java.util.Optional;
 
 public abstract class ScopeTreeBuilder extends StandardVisitor {
 
-  protected final Map<StructType, StructDeclaration> structDeclarations;
+  protected final Map<StructNameType, StructDefinitionType> structDeclarations;
   protected Scope currentScope;
   private Deque<BlockStmt> enclosingBlocks;
   private boolean addEncounteredParametersToScope;
@@ -56,9 +56,11 @@ public abstract class ScopeTreeBuilder extends StandardVisitor {
   }
 
   @Override
-  public void visitStructDeclaration(StructDeclaration structDeclaration) {
-    super.visitStructDeclaration(structDeclaration);
-    structDeclarations.put(structDeclaration.getStructType(), structDeclaration);
+  public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
+    super.visitStructDefinitionType(structDefinitionType);
+    if (structDefinitionType.hasStructNameType()) {
+      structDeclarations.put(structDefinitionType.getStructNameType(), structDefinitionType);
+    }
   }
 
   @Override
@@ -160,6 +162,7 @@ public abstract class ScopeTreeBuilder extends StandardVisitor {
 
   @Override
   public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+    visit(variablesDeclaration.getBaseType());
     List<VariableDeclInfo> children = new ArrayList<>();
     children.addAll(variablesDeclaration.getDeclInfos());
     for (VariableDeclInfo declInfo : children) {

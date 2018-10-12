@@ -14,34 +14,45 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.common.ast.decl;
+package com.graphicsfuzz.common.ast.type;
 
-import com.graphicsfuzz.common.ast.type.StructType;
-import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class StructDeclaration extends Declaration {
+public class StructDefinitionType extends UnqualifiedType {
 
-  private StructType structType;
+  private Optional<StructNameType> structNameType;
   private final List<String> fieldNames;
   private final List<Type> fieldTypes;
 
-  public StructDeclaration(StructType structType,
-                           List<String> fieldNames,
-                           List<Type> fieldTypes) {
-    this.structType = structType;
+  public StructDefinitionType(Optional<StructNameType> structNameType,
+                               List<String> fieldNames,
+                               List<Type> fieldTypes) {
+    this.structNameType = structNameType;
     this.fieldNames = new ArrayList<>();
     this.fieldNames.addAll(fieldNames);
     this.fieldTypes = new ArrayList<>();
     this.fieldTypes.addAll(fieldTypes);
   }
 
-  public StructType getStructType() {
-    return structType;
+  public StructDefinitionType(StructNameType structNameType,
+                              List<String> fieldNames,
+                              List<Type> fieldTypes) {
+    this(Optional.of(structNameType), fieldNames, fieldTypes);
+  }
+
+  public boolean hasStructNameType() {
+    return structNameType.isPresent();
+  }
+
+  public StructNameType getStructNameType() {
+    assert hasStructNameType();
+    return structNameType.get();
   }
 
   public List<String> getFieldNames() {
@@ -126,19 +137,31 @@ public class StructDeclaration extends Declaration {
 
   private String unknownFieldMessage(String fieldName) {
     return "Field " + fieldName + " not found in struct"
-        + " type " + structType.getName();
+        + (hasStructNameType() ? " " + structNameType : "") + ".";
   }
 
   @Override
   public void accept(IAstVisitor visitor) {
-    visitor.visitStructDeclaration(this);
+    visitor.visitStructDefinitionType(this);
   }
 
   @Override
-  public Declaration clone() {
-    return new StructDeclaration(structType.clone(),
+  public StructDefinitionType clone() {
+    return new StructDefinitionType(structNameType.map(StructNameType::clone),
         fieldNames,
         fieldTypes.stream().map(item -> item.clone()).collect(Collectors.toList()));
+  }
+
+  @Override
+  public boolean hasCanonicalConstant() {
+    // TODO: add generation of canonical constants.
+    return false;
+  }
+
+  @Override
+  public Expr getCanonicalConstant() {
+    throw new UnsupportedOperationException("Support for canonical struct constants not yet added"
+        + ".");
   }
 
 }

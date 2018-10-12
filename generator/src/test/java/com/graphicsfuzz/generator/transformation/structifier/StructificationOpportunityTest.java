@@ -22,7 +22,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
+import com.graphicsfuzz.common.ast.stmt.VersionStatement;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -34,7 +35,7 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.Constants;
@@ -59,7 +60,7 @@ public class StructificationOpportunityTest {
     // We want to check that the generated structs get put into this translation unit, before
     // the existing declaration.
     TranslationUnit tu = new TranslationUnit(
-        null,
+        new VersionStatement("#version 100"),
         Arrays.asList(new VariablesDeclaration(BasicType.FLOAT, new ArrayList<>())));
 
     // float v = 3.0;
@@ -185,24 +186,24 @@ public class StructificationOpportunityTest {
         0 /* with (0 + 1) field */,
         false /* that is not a struct */,
         0 /* instead it is FLOAT */);
-    List<StructDeclaration> structs = StructificationOpportunity.randomStruct(0, generator,
+    List<StructDefinitionType> structs = StructificationOpportunity.randomStruct(0, generator,
         new IdGenerator(), ShadingLanguageVersion.GLSL_440, GenerationParams.normal(ShaderKind.FRAGMENT));
     assertEquals(3, structs.size());
-    StructDeclaration enclosingStruct = structs.get(0);
+    StructDefinitionType enclosingStruct = structs.get(0);
     assertEquals(enclosingStruct.getFieldName(0), "_f0");
     assertEquals(enclosingStruct.getFieldName(1), "_f1");
     assertEquals(enclosingStruct.getFieldName(2), "_f2");
-    assertTrue(enclosingStruct.getFieldType(0) instanceof StructType);
-    assertEquals(enclosingStruct.getFieldType(0), structs.get(1).getStructType());
+    assertTrue(enclosingStruct.getFieldType(0) instanceof StructNameType);
+    assertEquals(enclosingStruct.getFieldType(0), structs.get(1).getStructNameType());
     assertEquals(enclosingStruct.getFieldName(1), "_f1");
-    assertTrue(enclosingStruct.getFieldType(2) instanceof StructType);
-    assertEquals(enclosingStruct.getFieldType(2), structs.get(2).getStructType());
+    assertTrue(enclosingStruct.getFieldType(2) instanceof StructNameType);
+    assertEquals(enclosingStruct.getFieldType(2), structs.get(2).getStructNameType());
     assertEquals(enclosingStruct.getFieldType(1), BasicType.FLOAT);
-    assertEquals(lookupDeclaration((StructType) enclosingStruct.getFieldType(0), structs)
+    assertEquals(lookupDeclaration((StructNameType) enclosingStruct.getFieldType(0), structs)
             .getFieldType(0), BasicType.FLOAT);
-    assertEquals(lookupDeclaration((StructType) enclosingStruct.getFieldType(0), structs)
+    assertEquals(lookupDeclaration((StructNameType) enclosingStruct.getFieldType(0), structs)
             .getFieldType(1), BasicType.VEC2);
-    assertEquals(lookupDeclaration((StructType) enclosingStruct.getFieldType(2), structs)
+    assertEquals(lookupDeclaration((StructNameType) enclosingStruct.getFieldType(2), structs)
             .getFieldType(0),
         BasicType.FLOAT);
     assertTrue(generator.isExhausted());
@@ -211,7 +212,7 @@ public class StructificationOpportunityTest {
   @Test
   public void randomStruct() {
     for (int i = 0; i < 10; i++) {
-      List<StructDeclaration> structs =
+      List<StructDefinitionType> structs =
           StructificationOpportunity.randomStruct(0, new RandomWrapper(0),
               new IdGenerator(), ShadingLanguageVersion.ESSL_100,
               GenerationParams.normal(ShaderKind.FRAGMENT));
@@ -220,17 +221,17 @@ public class StructificationOpportunityTest {
 
   }
 
-  private void checkDisjointSubStructs(StructDeclaration struct, List<StructDeclaration> structs) {
-    Set<StructType> observedStructs = new HashSet<>();
-    observedStructs.add(struct.getStructType());
+  private void checkDisjointSubStructs(StructDefinitionType struct, List<StructDefinitionType> structs) {
+    Set<StructNameType> observedStructs = new HashSet<>();
+    observedStructs.add(struct.getStructNameType());
     for (Type t : struct.getFieldTypes()) {
-      if (t.getWithoutQualifiers() instanceof StructType) {
-        final StructType structType = (StructType) t.getWithoutQualifiers();
-        final StructDeclaration structDeclaration = lookupDeclaration(structType, structs);
-        checkDisjointSubStructs(structDeclaration, structs);
-        Set<StructType> referencedStructs = getAllReferencedStructs(
-            structDeclaration, structs);
-        for (StructType s : observedStructs) {
+      if (t.getWithoutQualifiers() instanceof StructNameType) {
+        final StructNameType StructNameType = (StructNameType) t.getWithoutQualifiers();
+        final StructDefinitionType structDefinitionType = lookupDeclaration(StructNameType, structs);
+        checkDisjointSubStructs(structDefinitionType, structs);
+        Set<StructNameType> referencedStructs = getAllReferencedStructs(
+            structDefinitionType, structs);
+        for (StructNameType s : observedStructs) {
           assertFalse(referencedStructs.contains(s));
         }
         observedStructs.addAll(referencedStructs);
@@ -238,22 +239,22 @@ public class StructificationOpportunityTest {
     }
   }
 
-  private StructDeclaration lookupDeclaration(StructType structType, List<StructDeclaration> structs) {
+  private StructDefinitionType lookupDeclaration(StructNameType StructNameType, List<StructDefinitionType> structs) {
     return structs
         .stream()
-        .filter(item -> item.getStructType().equals(structType))
+        .filter(item -> item.getStructNameType().equals(StructNameType))
         .findAny()
         .get();
   }
 
-  private Set<StructType> getAllReferencedStructs(StructDeclaration structDeclaration,
-                                                  List<StructDeclaration> structs) {
-    Set<StructType> result = new HashSet<>();
-    result.add(structDeclaration.getStructType());
-    for (Type t : structDeclaration.getFieldTypes()) {
-      if (t.getWithoutQualifiers() instanceof StructType) {
+  private Set<StructNameType> getAllReferencedStructs(StructDefinitionType structDefinitionType,
+                                                  List<StructDefinitionType> structs) {
+    Set<StructNameType> result = new HashSet<>();
+    result.add(structDefinitionType.getStructNameType());
+    for (Type t : structDefinitionType.getFieldTypes()) {
+      if (t.getWithoutQualifiers() instanceof StructNameType) {
         result.addAll(getAllReferencedStructs(lookupDeclaration(
-            (StructType) t.getWithoutQualifiers(), structs),
+            (StructNameType) t.getWithoutQualifiers(), structs),
             structs));
       }
     }

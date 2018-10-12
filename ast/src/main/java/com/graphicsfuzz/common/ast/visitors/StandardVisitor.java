@@ -28,7 +28,6 @@ import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -63,14 +62,14 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
-import com.graphicsfuzz.common.ast.type.AnonymousStructType;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.AtomicIntType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.ImageType;
-import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import java.util.ArrayList;
@@ -340,10 +339,12 @@ public abstract class StandardVisitor implements IAstVisitor {
   }
 
   @Override
-  public void visitStructDeclaration(StructDeclaration structDeclaration) {
-    visitChildFromParent(structDeclaration.getStructType(), structDeclaration);
-    for (String name : structDeclaration.getFieldNames()) {
-      visitChildFromParent(structDeclaration.getFieldType(name), structDeclaration);
+  public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
+    if (structDefinitionType.hasStructNameType()) {
+      visitChildFromParent(structDefinitionType.getStructNameType(), structDefinitionType);
+    }
+    for (String name : structDefinitionType.getFieldNames()) {
+      visitChildFromParent(structDefinitionType.getFieldType(name), structDefinitionType);
     }
   }
 
@@ -387,12 +388,7 @@ public abstract class StandardVisitor implements IAstVisitor {
   }
 
   @Override
-  public void visitConcreteStructNameType(NamedStructType concreteStructNameType) {
-
-  }
-
-  @Override
-  public void visitAnonymousStructNameType(AnonymousStructType anonymousStructNameType) {
+  public void visitStructNameType(StructNameType structNameType) {
 
   }
 

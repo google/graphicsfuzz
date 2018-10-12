@@ -21,15 +21,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import java.util.Arrays;
 import org.junit.Test;
 
-public class StructDeclarationTest {
+public class StructDefinitionTypeTest {
 
   @Test
   public void insertField() throws Exception {
-    StructDeclaration t = new StructDeclaration(new NamedStructType("temp"),
+    StructDefinitionType t = new StructDefinitionType(new StructNameType("temp"),
         Arrays.asList("a", "b"),
         Arrays.asList(BasicType.FLOAT, BasicType.FLOAT));
     t.insertField(2, "c", BasicType.FLOAT);
@@ -39,7 +38,7 @@ public class StructDeclarationTest {
 
   @Test(expected = IndexOutOfBoundsException.class)
   public void insertField2() throws Exception {
-    StructDeclaration t = new StructDeclaration(new NamedStructType("temp"),
+    StructDefinitionType t = new StructDefinitionType(new StructNameType("temp"),
         Arrays.asList("a", "b"),
         Arrays.asList(BasicType.FLOAT, BasicType.FLOAT));
     t.insertField(4, "d", BasicType.FLOAT);
@@ -47,7 +46,7 @@ public class StructDeclarationTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void removeField() {
-    StructDeclaration t = new StructDeclaration(new NamedStructType("astruct"),
+    StructDefinitionType t = new StructDefinitionType(new StructNameType("astruct"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.VEC4, BasicType.IVEC3));
     t.removeField("z"); // Should throw exception
@@ -55,7 +54,7 @@ public class StructDeclarationTest {
 
   @Test
   public void removeField2() {
-    StructDeclaration t = new StructDeclaration(new NamedStructType("astruct"),
+    StructDefinitionType t = new StructDefinitionType(new StructNameType("astruct"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.VEC4, BasicType.IVEC3));
     assertEquals(2, t.getNumFields());
@@ -67,7 +66,7 @@ public class StructDeclarationTest {
 
   @Test
   public void getFieldIndex() {
-    StructDeclaration t = new StructDeclaration(new NamedStructType("astruct"),
+    StructDefinitionType t = new StructDefinitionType(new StructNameType("astruct"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.VEC4, BasicType.IVEC3));
     assertEquals(0, t.getFieldIndex("x"));
@@ -76,7 +75,7 @@ public class StructDeclarationTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void getFieldIndex2() {
-    StructDeclaration t = new StructDeclaration(new NamedStructType("astruct"),
+    StructDefinitionType t = new StructDefinitionType(new StructNameType("astruct"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.VEC4, BasicType.IVEC3));
     t.getFieldIndex("z");
@@ -84,7 +83,7 @@ public class StructDeclarationTest {
 
   @Test
   public void getFieldTypes() {
-    StructDeclaration t = new StructDeclaration(new NamedStructType("astruct"),
+    StructDefinitionType t = new StructDefinitionType(new StructNameType("astruct"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.MAT2X2, BasicType.MAT3X3));
     assertEquals(t.getFieldTypes().get(0), BasicType.MAT2X2);
@@ -93,10 +92,10 @@ public class StructDeclarationTest {
 
   @Test
   public void hasCanonicalConstant() {
-    StructDeclaration t = new StructDeclaration(new NamedStructType("astruct"),
+    StructDefinitionType t = new StructDefinitionType(new StructNameType("astruct"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
-    assertFalse(t.getStructType().hasCanonicalConstant());
+    assertFalse(t.getStructNameType().hasCanonicalConstant());
   }
 
 }

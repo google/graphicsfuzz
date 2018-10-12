@@ -23,7 +23,6 @@ import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -44,8 +43,9 @@ import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.NamedStructType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -284,9 +284,9 @@ public class Fuzzer {
         case 2:
           if (numStructsLeftToGenerate > 0) {
             numStructsLeftToGenerate--;
-            StructDeclaration struct = fuzzStruct();
+            StructDefinitionType struct = fuzzStruct();
             fuzzingContext.addStruct(struct);
-            decls.add(struct);
+            decls.add(new VariablesDeclaration(struct));
           }
           continue;
         default:
@@ -306,7 +306,7 @@ public class Fuzzer {
           + "\n"), decls);
   }
 
-  private StructDeclaration fuzzStruct() {
+  private StructDefinitionType fuzzStruct() {
     List<String> names = new ArrayList<>();
     List<Type> types = new ArrayList<>();
     int numFields = generator.nextPositiveInt(MAX_FIELDS_PER_STRUCT);
@@ -316,8 +316,8 @@ public class Fuzzer {
       types.add(fuzzType());
     }
 
-    return new StructDeclaration(
-          new NamedStructType(createName("S")),
+    return new StructDefinitionType(
+          new StructNameType(createName("S")),
                 names,
                 types);
   }
@@ -327,7 +327,7 @@ public class Fuzzer {
     candidates.addAll(BasicType.allBasicTypes());
     candidates.addAll(fuzzingContext.getStructDeclarations()
         .stream()
-        .map(item -> item.getStructType())
+        .map(item -> item.getStructNameType())
         .collect(Collectors.toList()));
     return candidates.get(generator.nextInt(candidates.size()));
   }

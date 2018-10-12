@@ -17,14 +17,15 @@
 package com.graphicsfuzz.common.ast;
 
 import com.graphicsfuzz.common.ast.decl.Declaration;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.stmt.VersionStatement;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.StructUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -109,18 +110,14 @@ public class TranslationUnit implements IAstNode {
         .collect(Collectors.toList());
   }
 
-  public List<StructDeclaration> getStructDecls() {
-    return getTopLevelDeclarations()
-        .stream()
-        .filter(item -> item instanceof StructDeclaration)
-        .map(item -> (StructDeclaration) item)
-        .collect(Collectors.toList());
+  public List<StructDefinitionType> getStructDefinitions() {
+    return StructUtils.getStructDefinitions(this);
   }
 
-  public StructDeclaration getStructDecl(StructType type) {
-    return getStructDecls()
+  public StructDefinitionType getStructDefinition(StructNameType type) {
+    return getStructDefinitions()
         .stream()
-        .filter(item -> item.getStructType().equals(type))
+        .filter(item -> item.hasStructNameType() && item.getStructNameType().equals(type))
         .findAny()
         .get();
   }
