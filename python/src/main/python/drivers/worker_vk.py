@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import argparse
+import io
 import os
 import platform
 import shutil
@@ -272,7 +273,8 @@ def doImageJob(args, imageJob):
     res.log += '\n#### ADB LOGCAT START\n'
     adb('logcat -b crash -b system -b main -b events -d > logcat.txt')
     if os.path.exists('logcat.txt'):
-        with open('logcat.txt', 'r') as f:
+        # ADB logcat may have characters that do not respect UTF-8, so ignore errors
+        with io.open('logcat.txt', 'r', errors='ignore') as f:
             res.log += f.read()
     else:
         res.log += 'Cannot even retrieve ADB logcat ??'
