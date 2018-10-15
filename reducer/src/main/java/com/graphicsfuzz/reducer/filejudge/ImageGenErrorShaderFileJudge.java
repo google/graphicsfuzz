@@ -75,7 +75,7 @@ public class ImageGenErrorShaderFileJudge implements IFileJudge {
       // Read shader job into an image job.
       ImageJob imageJob = new ImageJob();
       fileOps.readShaderJobFileToImageJob(shaderJobFile, imageJob);
-      imageJob.setSkipRender(false);
+      imageJob.setSkipRender(skipRender);
 
       // Run the image job.
       ImageJobResult imageRes = imageGenerator.getImage(imageJob);
