@@ -96,6 +96,39 @@ public class TyperTest {
   }
 
   @Test
+  public void visitMemberLookupExprAnonymous() throws Exception {
+
+    String prog = "struct { float a; float b; } myStruct;\n"
+        + "void main() {\n"
+        + "  myStruct.a = 2.0;\n"
+        + "  myStruct.b = 3.0;\n"
+        + "  myStruct.a = myStruct.b;\n"
+        + "}";
+
+    TranslationUnit tu = ParseHelper.parse(prog, false);
+
+    int actualCount =
+        new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_100) {
+
+          private int count;
+
+          public int getCount() {
+            return count;
+          }
+
+          @Override
+          public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
+            super.visitMemberLookupExpr(memberLookupExpr);
+            assertEquals(BasicType.FLOAT, lookupType(memberLookupExpr).getWithoutQualifiers());
+            count++;
+          }
+        }.getCount();
+
+    assertEquals(4, actualCount);
+
+  }
+
+  @Test
   public void testTypeOfScalarConstructors() throws Exception {
     String program = "void main() { float(1); int(1); uint(1); bool(1); }";
 

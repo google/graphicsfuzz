@@ -435,7 +435,9 @@ public class Typer extends ScopeTreeBuilder {
     }
 
     if (structureType.getWithoutQualifiers() instanceof StructDefinitionType) {
-      throw new RuntimeException();
+      types.put(memberLookupExpr,
+          ((StructDefinitionType) structureType.getWithoutQualifiers())
+              .getFieldType(memberLookupExpr.getMember()));
     }
 
     // take care of cases where you get the x coordinate of a vec2 variable and similar

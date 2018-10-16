@@ -114,6 +114,32 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
   }
 
   @Test
+  public void testUsedAnonymousStructIsNotRemoved() throws Exception {
+    final String program = "const struct { float x; } a;\n"
+        + "void main() {\n"
+        + " gl_FragColor = vec4(a.x);\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+            new RandomWrapper(0), null));
+    assertEquals(0, ops.size());
+  }
+
+  @Test
+  public void testUnusedAnonymousStructIsRemoved() throws Exception {
+    final String original = "volatile struct { int x; }; void main() { }";
+    final String expected = "void main() { }";
+    final TranslationUnit tu = Helper.parse(original, false);
+    final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+            new RandomWrapper(0), null));
+    assertEquals(1, ops.size());
+    ops.get(0).applyReduction();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
   public void testVarIsRemovedButStructLeftBehind() throws Exception {
     final String original = "struct S { float x; } myS; void main() { gl_FragColor = vec4(S(3.0)" +
         ".x); }";
