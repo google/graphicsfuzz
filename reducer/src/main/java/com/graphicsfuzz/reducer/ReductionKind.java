@@ -17,6 +17,7 @@
 package com.graphicsfuzz.reducer;
 
 public enum ReductionKind {
+  CUSTOM,
   NO_IMAGE,
   NOT_IDENTICAL,
   IDENTICAL,
