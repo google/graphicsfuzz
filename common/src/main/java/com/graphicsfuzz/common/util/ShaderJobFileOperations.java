@@ -444,6 +444,8 @@ public class ShaderJobFileOperations {
       throws IOException {
     assertIsShaderJobFile(shaderJobFile);
 
+    imageJob.setName(FilenameUtils.removeExtension(shaderJobFile.getName()));
+
     String shaderFileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
 
     final File infoFile = new File(shaderFileNoExtension + ".json");

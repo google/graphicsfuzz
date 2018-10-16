@@ -154,7 +154,7 @@ public class UnwrapReductionOpportunitiesTest {
         + "}";
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected2, false)));
     remainingOps = StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReductionOpportunityContext(false, version, generator, null));
+          new ReductionOpportunityContext(false, version, generator, idGenerator), fileOps);
     assertEquals(3, remainingOps.size());
     remainingOps.get(0).applyReduction();
     remainingOps.get(1).applyReduction();
