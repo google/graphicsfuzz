@@ -25,16 +25,21 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public abstract class ScopeTreeBuilder extends StandardVisitor {
 
+  protected final Map<StructNameType, StructDefinitionType> structDeclarations;
   protected Scope currentScope;
   private Deque<BlockStmt> enclosingBlocks;
   private boolean addEncounteredParametersToScope;
@@ -42,11 +47,20 @@ public abstract class ScopeTreeBuilder extends StandardVisitor {
   private List<FunctionPrototype> encounteredFunctionPrototypes;
 
   protected ScopeTreeBuilder() {
+    this.structDeclarations = new HashMap<>();
     this.currentScope = new Scope(null);
     this.enclosingBlocks = new LinkedList<>();
     this.addEncounteredParametersToScope = false;
     this.enclosingFunction = null;
     this.encounteredFunctionPrototypes = new ArrayList<>();
+  }
+
+  @Override
+  public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
+    super.visitStructDefinitionType(structDefinitionType);
+    if (structDefinitionType.hasStructNameType()) {
+      structDeclarations.put(structDefinitionType.getStructNameType(), structDefinitionType);
+    }
   }
 
   @Override
@@ -148,6 +162,7 @@ public abstract class ScopeTreeBuilder extends StandardVisitor {
 
   @Override
   public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+    visit(variablesDeclaration.getBaseType());
     List<VariableDeclInfo> children = new ArrayList<>();
     children.addAll(variablesDeclaration.getDeclInfos());
     for (VariableDeclInfo declInfo : children) {

@@ -24,7 +24,6 @@ import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
@@ -34,6 +33,8 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
@@ -41,9 +42,11 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.StructUtils;
 import com.graphicsfuzz.generator.fuzzer.FuzzedIntoACornerException;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
@@ -227,7 +230,7 @@ public abstract class DonateCode implements ITransformation {
       injectionPoint.inject(injectedStmt);
       injectedStmts.add(injectedStmt);
     }
-    donateFunctionsStructsAndGlobals(tu);
+    donateFunctionsAndGlobals(tu);
     eliminateUsedDonors();
     makeInjectedArrayAccessesInBounds(tu, injectedStmts, shadingLanguageVersion);
 
@@ -304,9 +307,10 @@ public abstract class DonateCode implements ITransformation {
     }
   }
 
-  private List<Declaration> getNecessaryFunctionsGlobalsAndStructsFromDonor(TranslationUnit donor,
-        List<FunctionPrototype> recipientFunctionPrototypes,
-        Set<String> recipientGlobalNames) {
+  private List<Declaration> getNecessaryFunctionsAndGlobalsFromDonor(
+      TranslationUnit donor,
+      List<FunctionPrototype> recipientFunctionPrototypes,
+      Set<String> recipientGlobalNames) {
 
     List<Declaration> declarationsToAdd = new ArrayList<>();
 
@@ -330,21 +334,18 @@ public abstract class DonateCode implements ITransformation {
         List<VariableDeclInfo> declInfo = ((VariablesDeclaration) d).getDeclInfos().stream()
               .filter(vd -> !recipientGlobalNames.contains(vd.getName()))
               .collect(Collectors.toList());
-        if (declInfo.size() > 0) {
+        // It either contains a name not already used in the reference, or declares structs
+        // which the donated code may need.
+        if (declInfo.size() > 0 || !StructUtils.getStructDefinitions(d).isEmpty()) {
           declarationsToAdd
                 .add(new VariablesDeclaration(((VariablesDeclaration) d).getBaseType(), declInfo));
         }
-      }
-      if (d instanceof StructDeclaration) {
-        // We add all structs, because we say that shaders are incompatible if they have common
-        // struct names
-        declarationsToAdd.add(d);
       }
     }
     return declarationsToAdd;
   }
 
-  private void donateFunctionsStructsAndGlobals(TranslationUnit recipient) {
+  private void donateFunctionsAndGlobals(TranslationUnit recipient) {
 
     List<Declaration> newRecipientTopLevelDeclarations = recipient.getTopLevelDeclarations()
           .stream()
@@ -359,7 +360,7 @@ public abstract class DonateCode implements ITransformation {
         continue;
       }
       final TranslationUnit donor = donorsToTranslationUnits.get(file);
-      List<Declaration> newDeclarations = getNecessaryFunctionsGlobalsAndStructsFromDonor(donor,
+      List<Declaration> newDeclarations = getNecessaryFunctionsAndGlobalsFromDonor(donor,
             recipientFunctionPrototypes,
             recipientGlobalNames);
 
@@ -389,9 +390,14 @@ public abstract class DonateCode implements ITransformation {
   }
 
   private List<String> getStructNames(List<Declaration> toBeAdded) {
-    return toBeAdded.stream().filter(item -> item instanceof StructDeclaration)
-          .map(item -> ((StructDeclaration) item).getType().getName())
-          .collect(Collectors.toList());
+    return toBeAdded
+        .stream()
+        .map(StructUtils::getStructDefinitions)
+        .reduce(new ArrayList<>(), ListConcat::concatenate)
+        .stream()
+        .filter(StructDefinitionType::hasStructNameType)
+        .map(item -> item.getStructNameType().getName())
+        .collect(Collectors.toList());
   }
 
   private List<Declaration> addNecessaryForwardDeclarations(List<Declaration> decls) {
@@ -475,9 +481,13 @@ public abstract class DonateCode implements ITransformation {
   }
 
   private Set<String> getStructNamesFromShader(TranslationUnit tu) {
-    return tu.getTopLevelDeclarations().stream().filter(item -> item instanceof StructDeclaration)
-          .map(item -> ((StructDeclaration) item).getType().getName())
-          .collect(Collectors.toSet());
+    return tu.getStructDefinitions()
+        .stream()
+        .filter(StructDefinitionType::hasStructNameType)
+        .map(item -> item.getStructNameType())
+        .filter(item -> item instanceof StructNameType)
+        .map(item -> ((StructNameType) item).getName())
+        .collect(Collectors.toSet());
   }
 
   /**

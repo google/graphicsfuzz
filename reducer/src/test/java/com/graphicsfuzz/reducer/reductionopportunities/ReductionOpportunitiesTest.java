@@ -695,8 +695,23 @@ public class ReductionOpportunitiesTest {
           + "}", tu);
     }
     {
-      List<DeclarationReductionOpportunity> ops = DeclarationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+      List<VariableDeclReductionOpportunity> ops =
+          VariableDeclReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+      assertEquals(1, ops.size());
+      ops.get(0).applyReduction();
+      CompareAsts.assertEqualAsts("void main() {"
+          + "  float a;"
+          + "  float b;"
+          + "  vec2 ;"
+          + "  a = 5.0;"
+          + "  b = a;"
+          + "}", tu);
+    }
+    {
+      List<StmtReductionOpportunity> ops =
+          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+              new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
       assertEquals(1, ops.size());
       ops.get(0).applyReduction();
       CompareAsts.assertEqualAsts("void main() {"
@@ -944,8 +959,31 @@ public class ReductionOpportunitiesTest {
     }
     CompareAsts.assertEqualAsts(expected9, tu);
 
-    // (10) remove unused declarations
+    // (10) remove unused variable declarations
     final String expected10 =
+        "void main()\n"
+            + "{\n"
+            + "    vec2 ;\n"
+            + "    vec4 ;\n"
+            + "    vec3 ;\n"
+            + "    float a = 1;\n"
+            + "    float b = 2;\n"
+            + "    float c = 3;\n"
+            + "    return a;\n"
+            + "}\n";
+    List<VariableDeclReductionOpportunity> varDeclOps =
+        VariableDeclReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReductionOpportunityContext(false,
+                ShadingLanguageVersion.GLSL_440,
+                new ZeroCannedRandom(), null));
+    assertEquals(3, stmtOps.size());
+    for (VariableDeclReductionOpportunity op : varDeclOps) {
+      op.applyReduction();
+    }
+    CompareAsts.assertEqualAsts(expected10, tu);
+
+    // (11) remove unused variable declarations
+    final String expected11 =
         "void main()\n"
             + "{\n"
             + "    float a = 1;\n"
@@ -953,16 +991,41 @@ public class ReductionOpportunitiesTest {
             + "    float c = 3;\n"
             + "    return a;\n"
             + "}\n";
-    List<DeclarationReductionOpportunity> declOps = DeclarationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    List<StmtReductionOpportunity> finalStmtOps =
+        StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
         new ReductionOpportunityContext(false,
             ShadingLanguageVersion.GLSL_440,
             new ZeroCannedRandom(), null));
-    assertEquals(3, stmtOps.size());
-    for (DeclarationReductionOpportunity op : declOps) {
+    assertEquals(3, finalStmtOps.size());
+    for (StmtReductionOpportunity op : finalStmtOps) {
       op.applyReduction();
     }
-    CompareAsts.assertEqualAsts(expected10, tu);
+    CompareAsts.assertEqualAsts(expected11, tu);
 
+  }
+
+  @Test
+  public void testRemoveDeclarationsInUnreachableFunction() throws Exception {
+    final String program = "void f()\n"
+        + "{\n"
+        + " float a = 17. + 1.0;\n"
+        + " float b = 0.;\n"
+        + " float c = 0.;\n"
+        + " float d = 0.;\n"
+        + "}\n"
+        + "void main() { }";
+    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+            new RandomWrapper(0), null));
+    assertEquals(4, ops.size());
+    for (VariableDeclReductionOpportunity op : ops) {
+      op.applyReduction();
+    }
+    final List<StmtReductionOpportunity> moreOps = StmtReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+            new RandomWrapper(0), null));
+    assertEquals(4, moreOps.size());
   }
 
 }

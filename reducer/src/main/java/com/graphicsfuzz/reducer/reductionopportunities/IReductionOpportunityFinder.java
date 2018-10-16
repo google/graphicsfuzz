@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.util.List;
 
@@ -42,11 +41,12 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
-  static IReductionOpportunityFinder<FunctionOrStructReductionOpportunity> functionFinder() {
-    return new IReductionOpportunityFinder<FunctionOrStructReductionOpportunity>() {
+  static IReductionOpportunityFinder<FunctionReductionOpportunity> functionFinder() {
+    return new IReductionOpportunityFinder<FunctionReductionOpportunity>() {
       @Override
-      public List<FunctionOrStructReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+      public List<FunctionReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReductionOpportunityContext context) {
         return FunctionReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -57,17 +57,35 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
-  static IReductionOpportunityFinder<DeclarationReductionOpportunity> declarationFinder() {
-    return new IReductionOpportunityFinder<DeclarationReductionOpportunity>() {
+  static IReductionOpportunityFinder<VariableDeclReductionOpportunity> variableDeclFinder() {
+    return new IReductionOpportunityFinder<VariableDeclReductionOpportunity>() {
       @Override
-      public List<DeclarationReductionOpportunity> findOpportunities(ShaderJob shaderJob,
+      public List<VariableDeclReductionOpportunity> findOpportunities(ShaderJob shaderJob,
             ReductionOpportunityContext context) {
-        return DeclarationReductionOpportunities.findOpportunities(shaderJob, context);
+        return VariableDeclReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
       @Override
       public String getName() {
-        return "declaration";
+        return "variableDecl";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<GlobalVariablesDeclarationReductionOpportunity>
+      globalVariablesDeclarationFinder() {
+    return new IReductionOpportunityFinder<GlobalVariablesDeclarationReductionOpportunity>() {
+      @Override
+      public List<GlobalVariablesDeclarationReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReductionOpportunityContext context) {
+        return GlobalVariablesDeclarationReductionOpportunities
+            .findOpportunities(shaderJob, context);
+      }
+
+      @Override
+      public String getName() {
+        return "variableDecl";
       }
     };
   }
@@ -130,21 +148,6 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
       @Override
       public String getName() {
         return "inlineInitializer";
-      }
-    };
-  }
-
-  static IReductionOpportunityFinder<FunctionOrStructReductionOpportunity> unusedStructFinder() {
-    return new IReductionOpportunityFinder<FunctionOrStructReductionOpportunity>() {
-      @Override
-      public List<FunctionOrStructReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
-        return UnusedStructReductionOpportunities.findOpportunities(shaderJob, context);
-      }
-
-      @Override
-      public String getName() {
-        return "unusedStruct";
       }
     };
   }

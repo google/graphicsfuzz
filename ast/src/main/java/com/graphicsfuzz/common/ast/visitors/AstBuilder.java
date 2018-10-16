@@ -27,7 +27,6 @@ import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -73,7 +72,8 @@ import com.graphicsfuzz.common.ast.type.ImageType;
 import com.graphicsfuzz.common.ast.type.LayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -155,11 +155,12 @@ import com.graphicsfuzz.parser.GLSLParser.Unary_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Unary_operatorContext;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.misc.Interval;
@@ -167,21 +168,15 @@ import org.antlr.v4.runtime.misc.Pair;
 
 public class AstBuilder extends GLSLBaseVisitor<Object> {
 
-  private List<Declaration> topLevelDeclarations;
-  private List<StructType> structs;
-  private int anonymousStructCounter;
+  private final List<Declaration> topLevelDeclarations;
+  private final Set<StructNameType> structs;
 
   private AstBuilder() {
-    this.structs = new ArrayList<>();
-    this.anonymousStructCounter = 0;
+    this.topLevelDeclarations = new ArrayList<>();
+    this.structs = new HashSet<>();
   }
 
   void addTopLevelDeclaration(Declaration decl) {
-    if (decl instanceof VariablesDeclaration) {
-      if (((VariablesDeclaration) decl).getDeclInfos().isEmpty()) {
-        return;
-      }
-    }
     topLevelDeclarations.add(decl);
   }
 
@@ -189,13 +184,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     return new AstBuilder().visitTranslation_unit(ctx);
   }
 
-  private String anonymousStructName() {
-    return "_anon_struct_" + anonymousStructCounter++;
-  }
-
   @Override
   public TranslationUnit visitTranslation_unit(Translation_unitContext ctx) {
-    topLevelDeclarations = new ArrayList<>();
     visitExtension_statement_list(ctx.extension_statement_list());
     visitExternal_declaration_list(ctx.external_declaration_list());
     return new TranslationUnit(
@@ -307,7 +297,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   public FunctionPrototype visitFunction_prototype(Function_prototypeContext ctx) {
     Function_headerContext header = ctx.function_declarator().function_header();
     if (header != null) {
-      Type returnType = visitFully_specified_type(header.fully_specified_type());
+      Type returnType =
+          visitFully_specified_type(header.fully_specified_type());
       String name = header.variable_identifier().getText();
       return new FunctionPrototype(name, returnType, new ArrayList<>());
     }
@@ -320,63 +311,51 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     }
     parameters.add(0, visitParameter_declaration(fhp.parameter_declaration()));
     header = fhp.function_header();
-    Type returnType = visitFully_specified_type(header.fully_specified_type());
+    Type returnType =
+        visitFully_specified_type(header.fully_specified_type());
     String name = header.variable_identifier().getText();
     return new FunctionPrototype(name, returnType, parameters);
   }
 
   @Override
-  public Type visitFully_specified_type(Fully_specified_typeContext ctx) {
+  public Type visitFully_specified_type(
+      Fully_specified_typeContext ctx) {
     return getType(ctx.type_qualifier(), ctx.type_specifier());
   }
 
-  private Type getType(Type_qualifierContext qualifiersCtx, Type_specifierContext specifierCtx) {
+  private Type getType(Type_qualifierContext qualifiersCtx,
+                                                         Type_specifierContext specifierCtx) {
     return getType(specifierCtx, new ArrayList<>(getQualifiers(qualifiersCtx)));
   }
 
-  private Type getType(Type_specifierContext typeSpecifier, List<TypeQualifier> qualifiers) {
-    Type result = null;
-
-    if (typeSpecifier.type_specifier_nonarray().builtin_type_specifier_nonarray() != null) {
-      result = new QualifiedType(
-          getBuiltinType(typeSpecifier.type_specifier_nonarray().builtin_type_specifier_nonarray()),
-          qualifiers);
-    } else if (typeSpecifier.type_specifier_nonarray().struct_specifier() != null) {
-      result = new QualifiedType(
-          recordAndReturnStructType(typeSpecifier.type_specifier_nonarray().struct_specifier()),
-          qualifiers);
-    } else {
-      assert typeSpecifier.type_specifier_nonarray().IDENTIFIER() != null;
-      String name = typeSpecifier.type_specifier_nonarray().IDENTIFIER().getText();
-      for (StructType s : structs) {
-        if (s.getName().equals(name)) {
-          result = new QualifiedType(s, qualifiers);
-          break;
-        }
-      }
-      if (result == null) {
-        throw new RuntimeException("Could not find struct for type name: " + typeSpecifier
-            .type_specifier_nonarray().IDENTIFIER().getText() + " at line " + typeSpecifier
-            .type_specifier_nonarray().start.getLine());
-      }
-    }
-
+  private Type getType(Type_specifierContext typeSpecifier,
+                               List<TypeQualifier> qualifiers) {
     if (typeSpecifier.array_specifier() != null) {
       throw new RuntimeException();
     }
-    return result;
+    if (typeSpecifier.type_specifier_nonarray().builtin_type_specifier_nonarray() != null) {
+      return new QualifiedType(getBuiltinType(typeSpecifier.type_specifier_nonarray()
+              .builtin_type_specifier_nonarray()), qualifiers);
+    } else if (typeSpecifier.type_specifier_nonarray().struct_specifier() != null) {
+      return getStructDefinitionAndRecordStructType(
+          typeSpecifier.type_specifier_nonarray().struct_specifier());
+    } else {
+      assert typeSpecifier.type_specifier_nonarray().IDENTIFIER() != null;
+      final StructNameType maybeStructNameType = new StructNameType(
+          typeSpecifier.type_specifier_nonarray().IDENTIFIER().getText());
+      return new QualifiedType(maybeStructNameType, qualifiers);
+    }
   }
 
-  private StructType recordAndReturnStructType(Struct_specifierContext ctx) {
-    String name = ctx.IDENTIFIER() == null ? null : ctx.IDENTIFIER().getText();
-    if (name == null) {
-      name = anonymousStructName();
+  private StructDefinitionType getStructDefinitionAndRecordStructType(
+      Struct_specifierContext ctx) {
+    StructNameType structNameType = null;
+    if (ctx.IDENTIFIER() != null) {
+      structNameType = new StructNameType(ctx.IDENTIFIER().getText());
+      assert !structs.contains(structNameType);
+      structs.add(structNameType);
     }
-    assert !structs.stream().map(item -> item.getName()).collect(Collectors.toSet()).contains(name);
-    StructType result = makeStructType(name, ctx.member_list());
-    addTopLevelDeclaration(new StructDeclaration(result));
-    structs.add(result);
-    return result;
+    return makeStructDefinition(Optional.ofNullable(structNameType), ctx.member_list());
   }
 
   private Pair<List<String>, List<Type>> getMembers(Member_listContext memberListContext) {
@@ -384,7 +363,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     final LinkedList<Type> fieldTypes = new LinkedList<>();
     for (Member_listContext ctx = memberListContext; ctx != null;
         ctx = ctx.member_list()) {
-      Type baseType = visitFully_specified_type(ctx.member_declaration().fully_specified_type());
+      final Type baseType =
+          visitFully_specified_type(ctx.member_declaration().fully_specified_type());
       for (Struct_declarator_listContext declarators = ctx.member_declaration()
           .struct_declarator_list();
           declarators != null;
@@ -401,10 +381,10 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     return new Pair<>(fieldNames, fieldTypes);
   }
 
-  private StructType makeStructType(String name,
-      Member_listContext memberListContext) {
+  private StructDefinitionType makeStructDefinition(Optional<StructNameType> structNameType,
+                                                    Member_listContext memberListContext) {
     final Pair<List<String>, List<Type>> members = getMembers(memberListContext);
-    return new StructType(name, members.a, members.b);
+    return new StructDefinitionType(structNameType, members.a, members.b);
   }
 
   private ArrayInfo getArrayInfo(Array_specifierContext arraySpecifierContext) {
@@ -743,13 +723,14 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   public ParameterDecl visitParameter_declaration(Parameter_declarationContext ctx) {
     List<TypeQualifier> qualifiers = getQualifiers(ctx.parameter_qualifier());
     if (ctx.parameter_type_specifier() != null) {
-      return new ParameterDecl(null,
-          getType(ctx.parameter_type_specifier().type_specifier(), qualifiers), null);
+      final Type type = getType(ctx.parameter_type_specifier().type_specifier(), qualifiers);
+      return new ParameterDecl(null, type, null);
+    } else {
+      final Type type = getType(ctx.parameter_declarator().type_specifier(), qualifiers);
+      return new ParameterDecl(ctx.parameter_declarator().IDENTIFIER().getText(),
+          type, ctx.parameter_declarator().array_specifier() == null ? null :
+              getArrayInfo(ctx.parameter_declarator().array_specifier()));
     }
-    return new ParameterDecl(ctx.parameter_declarator().IDENTIFIER().getText(),
-        getType(ctx.parameter_declarator().type_specifier(), qualifiers),
-        ctx.parameter_declarator().array_specifier() == null ? null :
-            getArrayInfo(ctx.parameter_declarator().array_specifier()));
   }
 
   @Override
@@ -807,7 +788,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       declInfo.add(0,
           processVarDeclInfo(sdc.IDENTIFIER().getText(), sdc.array_specifier(), sdc.initializer()));
     }
-    Type baseType = visitFully_specified_type(sdc.fully_specified_type());
+    final Type baseType =
+        visitFully_specified_type(sdc.fully_specified_type());
     return new VariablesDeclaration(baseType, declInfo);
   }
 
@@ -1138,9 +1120,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     }
     if (isStructTypeConstructor(header.function_identifier())) {
       if (header.array_specifier() != null) {
-        StructType structType = structs.stream().filter(item -> item.getName()
-            .equals(header.function_identifier().variable_identifier().getText()))
-            .collect(Collectors.toList()).get(0);
+        final StructNameType structType = new StructNameType(
+            header.function_identifier().variable_identifier().getText());
         return new ArrayConstructorExpr(
             new ArrayType(structType,
                 getArrayInfo(header.array_specifier())), params);
@@ -1175,9 +1156,12 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   private boolean isStructTypeConstructor(Function_identifierContext ctx) {
-    return ctx.variable_identifier() != null
-        && structs.stream()
-            .anyMatch(item -> item.getName().equals(ctx.variable_identifier().getText()));
+    if (ctx.variable_identifier() == null) {
+      return false;
+    }
+    return structs.stream()
+        .map(StructNameType::getName)
+        .anyMatch(ctx.variable_identifier().getText()::equals);
   }
 
   @Override

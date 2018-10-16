@@ -17,21 +17,18 @@
 package com.graphicsfuzz.common.ast;
 
 import com.graphicsfuzz.common.ast.decl.Declaration;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.stmt.VersionStatement;
-import com.graphicsfuzz.common.ast.type.QualifiedType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
-import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.StructUtils;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TranslationUnit implements IAstNode {
@@ -91,61 +88,6 @@ public class TranslationUnit implements IAstNode {
         topLevelDeclarations.stream().map(x -> x.clone()).collect(Collectors.toList()));
   }
 
-  /**
-   * The trouble with cloning is that it duplicates parts of the tree that should really be
-   * shared.  In particular, struct type references should all refer to the declaration.
-   * This method clones the AST and then patches up such issues
-   * @return Cloned and patched up translation unit
-   */
-  public TranslationUnit cloneAndPatchUp() {
-
-    TranslationUnit result = this.clone();
-
-    new StandardVisitor() {
-
-      private Map<String, StructType> mapping;
-
-      @Override
-      public void visitStructDeclaration(StructDeclaration structDeclaration) {
-        super.visitStructDeclaration(structDeclaration);
-        mapping.put(structDeclaration.getType().getName(), structDeclaration.getType());
-      }
-
-      @Override
-      public void visitQualifiedType(QualifiedType qualifiedType) {
-        super.visitQualifiedType(qualifiedType);
-        if (qualifiedType.getTargetType() instanceof StructType) {
-          final String name = ((StructType) qualifiedType.getTargetType()).getName();
-          if (mapping.containsKey(name)) {
-            qualifiedType.setTargetType(mapping.get(name));
-          }
-        }
-      }
-
-      @Override
-      public void visitStructType(StructType structType) {
-        super.visitStructType(structType);
-        for (int i = 0; i < structType.getNumFields(); i++) {
-          if (structType.getFieldType(i) instanceof StructType) {
-            final String name = ((StructType) structType.getFieldType(i)).getName();
-            if (mapping.containsKey(name)) {
-              structType.setFieldType(i, mapping.get(name));
-            }
-          }
-        }
-      }
-
-      public void patchUp(TranslationUnit tu) {
-        mapping = new HashMap<>();
-        visit(tu);
-      }
-
-    }.patchUp(result);
-
-    return result;
-
-  }
-
   public List<VariableDeclInfo> getGlobalVarDeclInfos() {
     return getGlobalVariablesDeclarations()
         .stream()
@@ -166,6 +108,18 @@ public class TranslationUnit implements IAstNode {
         .stream()
         .filter(item -> item.getBaseType().hasQualifier(TypeQualifier.UNIFORM))
         .collect(Collectors.toList());
+  }
+
+  public List<StructDefinitionType> getStructDefinitions() {
+    return StructUtils.getStructDefinitions(this);
+  }
+
+  public StructDefinitionType getStructDefinition(StructNameType type) {
+    return getStructDefinitions()
+        .stream()
+        .filter(item -> item.hasStructNameType() && item.getStructNameType().equals(type))
+        .findAny()
+        .get();
   }
 
 }

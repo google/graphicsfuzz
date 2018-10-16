@@ -24,7 +24,6 @@ import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -65,7 +64,8 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.ImageType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -132,7 +132,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
-    Type baseType = variablesDeclaration.getBaseType();
+    final Type baseType = variablesDeclaration.getBaseType();
     visit(baseType);
     out.append(" ");
     boolean first = true;
@@ -466,8 +466,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   }
 
   @Override
-  public void visitStructType(StructType structType) {
-    out.append(structType.getName());
+  public void visitStructNameType(StructNameType structNameType) {
+    out.append(structNameType.getName());
   }
 
   @Override
@@ -492,18 +492,23 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   }
 
   @Override
-  public void visitStructDeclaration(StructDeclaration structDeclaration) {
-    out.append("struct " + structDeclaration.getType().getName() + " {" + newLine());
+  public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
+    out.append("struct ");
+    if (structDefinitionType.hasStructNameType()) {
+      visit(structDefinitionType.getStructNameType());
+      out.append(" ");
+    }
+    out.append("{" + newLine());
     increaseIndent();
-    for (String name : structDeclaration.getType().getFieldNames()) {
+    for (String name : structDefinitionType.getFieldNames()) {
       out.append(indent());
-      visit(structDeclaration.getType().getFieldType(name));
+      visit(structDefinitionType.getFieldType(name));
       out.append(" " + name);
-      processArrayInfo(structDeclaration.getType().getFieldType(name));
+      processArrayInfo(structDefinitionType.getFieldType(name));
       out.append(";" + newLine());
     }
     decreaseIndent();
-    out.append("};" + newLine());
+    out.append("}");
   }
 
   private void processArrayInfo(Type type) {

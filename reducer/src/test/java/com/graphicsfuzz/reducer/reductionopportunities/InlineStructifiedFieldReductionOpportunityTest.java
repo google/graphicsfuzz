@@ -21,8 +21,8 @@ import static org.junit.Assert.assertEquals;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -37,7 +37,7 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
@@ -54,19 +54,24 @@ public class InlineStructifiedFieldReductionOpportunityTest {
   public void applyReduction() throws IOException, ParseTimeoutException {
 
     final String innerStructTypeName = makeStructName(0);
-    final StructType inner = new StructType(innerStructTypeName,
+    final StructDefinitionType innerStructDefinitionType = new StructDefinitionType(new StructNameType(innerStructTypeName),
         Arrays.asList(
             makeFieldname(0),
             makeFieldname(1),
             makeFieldname(2)),
         Arrays.asList(BasicType.INT, BasicType.FLOAT, BasicType.FLOAT));
+    final VariablesDeclaration inner = new VariablesDeclaration(
+        innerStructDefinitionType);
 
     final String outerStructTypeName = makeStructName(1);
-    final StructType outer = new StructType(outerStructTypeName,
+    final StructDefinitionType outerStructDefinitionType = new StructDefinitionType(new StructNameType(outerStructTypeName),
         Arrays.asList(
             makeFieldname(0),
             makeFieldname(1)),
-        Arrays.asList(inner, BasicType.FLOAT));
+        Arrays.asList(innerStructDefinitionType.getStructNameType(), BasicType.FLOAT));
+    final VariablesDeclaration outer =
+        new VariablesDeclaration(
+            outerStructDefinitionType);
 
     final MemberLookupExpr myOuterF0 = new MemberLookupExpr(new VariableIdentifierExpr("myOuter"),
         makeFieldname(0));
@@ -79,7 +84,7 @@ public class InlineStructifiedFieldReductionOpportunityTest {
 
     final BlockStmt block = new BlockStmt(
         Arrays.asList(
-            new DeclarationStmt(new VariablesDeclaration(outer,
+            new DeclarationStmt(new VariablesDeclaration(outerStructDefinitionType.getStructNameType(),
                 new VariableDeclInfo("myOuter", null,
                     new ScalarInitializer(
                         new TypeConstructorExpr(outerStructTypeName,
@@ -94,20 +99,20 @@ public class InlineStructifiedFieldReductionOpportunityTest {
                     )))),
             new ExprStmt(new BinaryExpr(myOuterF0F1, myOuterF0F2, BinOp.ASSIGN))), true);
 
-    assertEquals(2, outer.getNumFields());
-    assertEquals(makeFieldname(0), outer.getFieldName(0));
-    assertEquals(makeFieldname(1), outer.getFieldName(1));
+    assertEquals(2, outerStructDefinitionType.getNumFields());
+    assertEquals(makeFieldname(0), outerStructDefinitionType.getFieldName(0));
+    assertEquals(makeFieldname(1), outerStructDefinitionType.getFieldName(1));
 
     TranslationUnit tu
         = new TranslationUnit(
             new VersionStatement("unused"),
-            Arrays.asList(new FunctionDefinition(
-                new FunctionPrototype("foo", VoidType.VOID, new ArrayList<ParameterDecl>()),
+            Arrays.asList(inner, outer, new FunctionDefinition(
+                new FunctionPrototype("foo", VoidType.VOID, new ArrayList<>()),
                 block)));
 
     // Apply an inlining opportunity
     new InlineStructifiedFieldReductionOpportunity(
-        outer, makeFieldname(0), tu,
+        outerStructDefinitionType, innerStructDefinitionType, makeFieldname(0), tu,
         new VisitationDepth(0)).applyReduction();
 
     final String expected =
@@ -118,11 +123,11 @@ public class InlineStructifiedFieldReductionOpportunityTest {
 
     assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(block));
 
-    assertEquals(4, outer.getNumFields());
-    assertEquals(makeFieldname(0) + makeFieldname(0), outer.getFieldName(0));
-    assertEquals(makeFieldname(0) + makeFieldname(1), outer.getFieldName(1));
-    assertEquals(makeFieldname(0) + makeFieldname(2), outer.getFieldName(2));
-    assertEquals(makeFieldname(1), outer.getFieldName(3));
+    assertEquals(4, outerStructDefinitionType.getNumFields());
+    assertEquals(makeFieldname(0) + makeFieldname(0), outerStructDefinitionType.getFieldName(0));
+    assertEquals(makeFieldname(0) + makeFieldname(1), outerStructDefinitionType.getFieldName(1));
+    assertEquals(makeFieldname(0) + makeFieldname(2), outerStructDefinitionType.getFieldName(2));
+    assertEquals(makeFieldname(1), outerStructDefinitionType.getFieldName(3));
 
   }
 

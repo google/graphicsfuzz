@@ -18,7 +18,8 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -55,48 +56,59 @@ public class RemoveStructFieldReductionOpportunities extends ScopeTreeBuilder {
     return finder.opportunities;
   }
 
+  @Override
   public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
     super.visitDeclarationStmt(declarationStmt);
     if (!(declarationStmt.getVariablesDeclaration().getBaseType()
-          .getWithoutQualifiers() instanceof StructType)) {
+          .getWithoutQualifiers() instanceof StructNameType)) {
       return;
     }
-    getOpportunitiesForStruct((StructType) declarationStmt.getVariablesDeclaration()
+    getOpportunitiesForStruct((StructNameType) declarationStmt.getVariablesDeclaration()
           .getBaseType().getWithoutQualifiers(), getVistitationDepth());
   }
 
-  private void getOpportunitiesForStruct(StructType structType, VisitationDepth visitationDepth) {
+  private void getOpportunitiesForStruct(StructNameType structType,
+                                         VisitationDepth visitationDepth) {
 
     if (!(structType.getName().startsWith(Constants
           .STRUCTIFICATION_STRUCT_PREFIX))) {
       return;
     }
 
-    for (String field : structType.getFieldNames()) {
-      if (!reachesOriginalVariable(structType, field) && structType.getNumFields() > 1) {
+    final StructDefinitionType structDefinitionType = structDeclarations.get(structType);
+
+    for (String field : structDefinitionType.getFieldNames()) {
+      if (!reachesOriginalVariable(structDefinitionType, field)
+          && structDefinitionType.getNumFields() > 1) {
         final RemoveStructFieldReductionOpportunity op =
               new RemoveStructFieldReductionOpportunity(
-                    structType, field, translationUnit, visitationDepth);
+                  structDefinitionType, field, translationUnit, visitationDepth);
         if (op.preconditionHolds()) {
           opportunities.add(op);
         }
       }
-      if (structType.getFieldType(field).getWithoutQualifiers() instanceof StructType) {
+      if (structDefinitionType.getFieldType(field).getWithoutQualifiers()
+          instanceof StructNameType) {
         getOpportunitiesForStruct(
-              (StructType) structType.getFieldType(field).getWithoutQualifiers(),
+              (StructNameType) structDefinitionType.getFieldType(field).getWithoutQualifiers(),
               visitationDepth.deeper());
       }
     }
   }
 
-  private static boolean reachesOriginalVariable(StructType structType, String field) {
+  private boolean reachesOriginalVariable(StructDefinitionType structDefinitionType,
+                                          String field) {
     if (!(field.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX))) {
       return true;
     }
-    if (!(structType.getFieldType(field).getWithoutQualifiers() instanceof StructType)) {
+    if (!(structDefinitionType.getFieldType(field).getWithoutQualifiers()
+        instanceof StructNameType)) {
       return false;
     }
-    StructType nestedStruct = (StructType) structType.getFieldType(field).getWithoutQualifiers();
+    final StructNameType fieldType =
+        (StructNameType) structDefinitionType.getFieldType(field).getWithoutQualifiers();
+    final StructDefinitionType nestedStruct =
+        structDeclarations.get(fieldType);
     return nestedStruct.getFieldNames().stream()
           .anyMatch(item -> reachesOriginalVariable(nestedStruct, item));
   }

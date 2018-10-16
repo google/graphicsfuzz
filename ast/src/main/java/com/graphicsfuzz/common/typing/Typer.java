@@ -19,7 +19,6 @@ package com.graphicsfuzz.common.typing;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
@@ -37,7 +36,8 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -57,7 +57,7 @@ public class Typer extends ScopeTreeBuilder {
 
   private Map<String, Set<FunctionPrototype>> userDefinedFunctions;
 
-  private Map<String, StructType> structTypeMap;
+  private Map<StructNameType, StructDefinitionType> structDeclarationMap;
 
   private ShadingLanguageVersion shadingLanguageVersion;
 
@@ -68,7 +68,7 @@ public class Typer extends ScopeTreeBuilder {
   public Typer(IAstNode node, ShadingLanguageVersion shadingLanguageVersion) {
     this.types = new HashMap<>();
     this.userDefinedFunctions = new HashMap<>();
-    this.structTypeMap = new HashMap<>();
+    this.structDeclarationMap = new HashMap<>();
     this.shadingLanguageVersion = shadingLanguageVersion;
     visit(node);
   }
@@ -278,11 +278,13 @@ public class Typer extends ScopeTreeBuilder {
         types.put(typeConstructorExpr, BasicType.MAT4X4);
         return;
       default:
-        if (structTypeMap.containsKey(typeConstructorExpr.getTypename())) {
-          types.put(typeConstructorExpr, structTypeMap.get(typeConstructorExpr.getTypename()));
+        final StructNameType maybeStructType =
+            new StructNameType(typeConstructorExpr.getTypename());
+        if (structDeclarationMap.containsKey(maybeStructType)) {
+          types.put(typeConstructorExpr, maybeStructType);
           return;
         }
-        return; // We cannot type the constructor.
+        throw new RuntimeException("Unknown type constructor " + typeConstructorExpr.getTypename());
     }
   }
 
@@ -426,9 +428,15 @@ public class Typer extends ScopeTreeBuilder {
           .makeVectorType(vecType.getElementType(), memberLookupExpr.getMember().length()));
     }
 
-    if (structureType.getWithoutQualifiers() instanceof StructType) {
+    if (structureType.getWithoutQualifiers() instanceof StructNameType) {
       types.put(memberLookupExpr,
-          ((StructType) structureType.getWithoutQualifiers())
+          structDeclarationMap.get(structureType.getWithoutQualifiers())
+              .getFieldType(memberLookupExpr.getMember()));
+    }
+
+    if (structureType.getWithoutQualifiers() instanceof StructDefinitionType) {
+      types.put(memberLookupExpr,
+          ((StructDefinitionType) structureType.getWithoutQualifiers())
               .getFieldType(memberLookupExpr.getMember()));
     }
 
@@ -486,14 +494,12 @@ public class Typer extends ScopeTreeBuilder {
   }
 
   @Override
-  public void visitStructDeclaration(StructDeclaration structDeclaration) {
-    super.visitStructDeclaration(structDeclaration);
-    final StructType structType = structDeclaration.getType();
-    if (structTypeMap.containsKey(structType.getName())) {
-      assert structTypeMap.get(structType.getName()) == structType
-          : "We should not be duplicating struct types";
+  public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
+    super.visitStructDefinitionType(structDefinitionType);
+    if (structDefinitionType.hasStructNameType()) {
+      assert !structDeclarationMap.containsKey(structDefinitionType.getStructNameType());
+      structDeclarationMap.put(structDefinitionType.getStructNameType(), structDefinitionType);
     }
-    structTypeMap.put(structType.getName(), structType);
   }
 
   @Override

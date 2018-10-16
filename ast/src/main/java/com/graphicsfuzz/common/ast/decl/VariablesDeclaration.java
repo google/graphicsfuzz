@@ -19,6 +19,7 @@ package com.graphicsfuzz.common.ast.decl;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,15 +29,25 @@ public class VariablesDeclaration extends Declaration {
   private Type baseType;
   private List<VariableDeclInfo> declInfos;
 
-  public VariablesDeclaration(Type baseType, List<VariableDeclInfo> declInfo) {
+  public VariablesDeclaration(Type baseType,
+                              List<VariableDeclInfo> declInfos) {
     assert baseType != null;
     this.baseType = baseType;
-    this.declInfos = declInfo;
+    this.declInfos = new ArrayList<>();
+    this.declInfos.addAll(declInfos);
   }
 
-  public VariablesDeclaration(Type baseType, VariableDeclInfo decl) {
+  public VariablesDeclaration(Type baseType, VariableDeclInfo declInfo) {
+    this(baseType, Arrays.asList(declInfo));
+  }
+
+  /**
+   * Constructs a variables declaration with no variables attached.  Useful for making a lone
+   * struct.
+   * @param baseType The base type for the empty variables declaration.
+   */
+  public VariablesDeclaration(Type baseType) {
     this(baseType, new ArrayList<>());
-    declInfos.add(decl);
   }
 
   public Type getBaseType() {

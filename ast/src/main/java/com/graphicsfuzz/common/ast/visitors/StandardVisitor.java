@@ -28,7 +28,6 @@ import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -69,7 +68,8 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.ImageType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import java.util.ArrayList;
@@ -339,14 +339,12 @@ public abstract class StandardVisitor implements IAstVisitor {
   }
 
   @Override
-  public void visitStructType(StructType structType) {
-  }
-
-  @Override
-  public void visitStructDeclaration(StructDeclaration structDeclaration) {
-    StructType type = structDeclaration.getType();
-    for (String name : type.getFieldNames()) {
-      visitChildFromParent(type.getFieldType(name), structDeclaration);
+  public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
+    if (structDefinitionType.hasStructNameType()) {
+      visitChildFromParent(structDefinitionType.getStructNameType(), structDefinitionType);
+    }
+    for (String name : structDefinitionType.getFieldNames()) {
+      visitChildFromParent(structDefinitionType.getFieldType(name), structDefinitionType);
     }
   }
 
@@ -386,6 +384,11 @@ public abstract class StandardVisitor implements IAstVisitor {
 
   @Override
   public void visitDefaultLayout(DefaultLayout defaultLayout) {
+
+  }
+
+  @Override
+  public void visitStructNameType(StructNameType structNameType) {
 
   }
 

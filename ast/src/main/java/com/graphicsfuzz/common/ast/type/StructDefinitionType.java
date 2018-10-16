@@ -17,37 +17,42 @@
 package com.graphicsfuzz.common.ast.type;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
-import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class StructType extends UnqualifiedType {
+public class StructDefinitionType extends UnqualifiedType {
 
-  private String name;
+  private Optional<StructNameType> structNameType;
   private final List<String> fieldNames;
   private final List<Type> fieldTypes;
 
-  /**
-   * Makes a named struct with the given field names and types.
-   *
-   * @param name Name of the struct
-   * @param fieldNames Ordered field names
-   * @param fieldTypes Ordered field types, one per field name
-   */
-  public StructType(String name, List<String> fieldNames, List<Type> fieldTypes) {
-    assert fieldNames.size() == fieldTypes.size();
-    this.name = name;
+  public StructDefinitionType(Optional<StructNameType> structNameType,
+                               List<String> fieldNames,
+                               List<Type> fieldTypes) {
+    this.structNameType = structNameType;
     this.fieldNames = new ArrayList<>();
     this.fieldNames.addAll(fieldNames);
     this.fieldTypes = new ArrayList<>();
     this.fieldTypes.addAll(fieldTypes);
   }
 
-  public String getName() {
-    return name;
+  public StructDefinitionType(StructNameType structNameType,
+                              List<String> fieldNames,
+                              List<Type> fieldTypes) {
+    this(Optional.of(structNameType), fieldNames, fieldTypes);
+  }
+
+  public boolean hasStructNameType() {
+    return structNameType.isPresent();
+  }
+
+  public StructNameType getStructNameType() {
+    assert hasStructNameType();
+    return structNameType.get();
   }
 
   public List<String> getFieldNames() {
@@ -102,60 +107,6 @@ public class StructType extends UnqualifiedType {
     fieldTypes.add(index, type);
   }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitStructType(this);
-  }
-
-  @Override
-  public StructType clone() {
-    List<String> newFieldNames = new ArrayList<>();
-    List<Type> newFieldTypes = new ArrayList<>();
-    newFieldNames.addAll(fieldNames);
-    newFieldTypes
-        .addAll(fieldTypes.stream().map(item -> item.clone()).collect(Collectors.toList()));
-    return new StructType(name, newFieldNames, newFieldTypes);
-  }
-
-  @Override
-  public boolean hasCanonicalConstant() {
-    for (Type t : fieldTypes) {
-      if (!t.hasCanonicalConstant()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  @Override
-  public Expr getCanonicalConstant() {
-    return new TypeConstructorExpr(name,
-        fieldTypes.stream().map(item -> item.getCanonicalConstant())
-            .collect(Collectors.toList()));
-  }
-
-  @Override
-  public boolean equals(Object that) {
-    if (this == that) {
-      return true;
-    }
-    if (!(that instanceof StructType)) {
-      return false;
-    }
-    StructType thatStruct = (StructType) that;
-    return name.equals(thatStruct.name)
-        && fieldNames.equals(thatStruct.fieldNames)
-        && fieldTypes.equals(thatStruct.fieldTypes);
-  }
-
-  @Override
-  public int hashCode() {
-    // TODO: revisit if we find performance is an issue and need a better hash code
-    return name.hashCode()
-        ^ fieldNames.hashCode()
-        ^ fieldTypes.hashCode();
-  }
-
   public void removeField(String fieldToRemove) {
     if (!fieldNames.contains(fieldToRemove)) {
       throw new IllegalArgumentException(unknownFieldMessage(fieldToRemove));
@@ -186,11 +137,31 @@ public class StructType extends UnqualifiedType {
 
   private String unknownFieldMessage(String fieldName) {
     return "Field " + fieldName + " not found in struct"
-        + " type " + name;
+        + (hasStructNameType() ? " " + structNameType : "") + ".";
   }
 
-  public void setName(String name) {
-    assert name != null;
-    this.name = name;
+  @Override
+  public void accept(IAstVisitor visitor) {
+    visitor.visitStructDefinitionType(this);
   }
+
+  @Override
+  public StructDefinitionType clone() {
+    return new StructDefinitionType(structNameType.map(StructNameType::clone),
+        fieldNames,
+        fieldTypes.stream().map(item -> item.clone()).collect(Collectors.toList()));
+  }
+
+  @Override
+  public boolean hasCanonicalConstant() {
+    // TODO: add generation of canonical constants.
+    return false;
+  }
+
+  @Override
+  public Expr getCanonicalConstant() {
+    throw new UnsupportedOperationException("Support for canonical struct constants not yet added"
+        + ".");
+  }
+
 }

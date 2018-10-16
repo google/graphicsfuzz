@@ -19,8 +19,8 @@ package com.graphicsfuzz.generator.transformation.structifier;
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
@@ -28,7 +28,8 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.Constants;
@@ -81,15 +82,16 @@ public class StructificationOpportunity {
    * @return List of struct declarations, with the first declaration being the final generated
    *         struct, and the following declarations all required sub-structs.
    */
-  static List<StructDeclaration> randomStruct(int currentDepth, IRandom generator,
-        IdGenerator idGenerator, ShadingLanguageVersion shadingLanguageVersion,
-        GenerationParams generationParams) {
+  static List<StructDefinitionType> randomStruct(int currentDepth, IRandom generator,
+                                                 IdGenerator idGenerator,
+                                                 ShadingLanguageVersion shadingLanguageVersion,
+                                                 GenerationParams generationParams) {
 
     // Choose how many fields to have.  We cannot have 0 fields in GLSL, hence the arithmetic.
     final int numFields = generator.nextInt(generationParams.getMaxStructFields() - 1) + 1;
 
     // Used to store sub-structs that are generated on-the-fly.
-    List<StructDeclaration> subStructs = new ArrayList<>();
+    List<StructDefinitionType> subStructs = new ArrayList<>();
 
     // Field names and types of the new struct to be generated.
     List<String> fieldNames = new ArrayList<>();
@@ -102,12 +104,12 @@ public class StructificationOpportunity {
       // Choose whether to add a struct or primitive field.
       if (currentDepth < generationParams.getMaxStructNestingDepth() && generator.nextBoolean()) {
         // We recursively generate a struct (with associated sub-structs).
-        List<StructDeclaration> newStructs = randomStruct(currentDepth + 1, generator,
+        List<StructDefinitionType> newStructs = randomStruct(currentDepth + 1, generator,
               idGenerator, shadingLanguageVersion, generationParams);
         // All these new structs are now available to us for further fields.
         subStructs.addAll(newStructs);
         // The first struct in the list is the type of the field we are currently generating.
-        fieldTypes.add(newStructs.get(0).getType());
+        fieldTypes.add(newStructs.get(0).getStructNameType());
       } else {
         // Grab a basic type.
         while (true) {
@@ -124,38 +126,39 @@ public class StructificationOpportunity {
 
     // The result is the struct we have generated, followed by all the sub-structs gathered on the
     // way.
-    List<StructDeclaration> result = new ArrayList<>();
-    result.add(new StructDeclaration(new StructType(Constants.STRUCTIFICATION_STRUCT_PREFIX
-          + idGenerator.freshId(), fieldNames, fieldTypes)));
+    List<StructDefinitionType> result = new ArrayList<>();
+    result.add(new StructDefinitionType(
+        new StructNameType(Constants.STRUCTIFICATION_STRUCT_PREFIX
+          + idGenerator.freshId()), fieldNames, fieldTypes));
     result.addAll(subStructs);
     return result;
   }
 
   public void apply(IdGenerator idGenerator, IRandom generator,
         GenerationParams generationParams) {
-    List<StructDeclaration> generatedStructs = randomStruct(0, generator, idGenerator,
+    List<StructDefinitionType> generatedStructs = randomStruct(0, generator, idGenerator,
         shadingLanguageVersion, generationParams);
 
-    generatedStructs.forEach(tu::addDeclaration);
+    generatedStructs.stream().map(VariablesDeclaration::new).forEach(tu::addDeclaration);
 
     final String enclosingStructVariableName = Constants.GLF_STRUCT_REPLACEMENT
           + idGenerator.freshId();
-    final StructType enclosingStructType = generatedStructs.get(0).getType();
+    final StructDefinitionType enclosingStruct = generatedStructs.get(0);
 
     Expr structifiedExpr = insertFieldIntoStruct(
-          enclosingStructVariableName, enclosingStructType, generator);
+          enclosingStructVariableName, enclosingStruct, generator);
 
     // Rename all occurrences of the variable in the block.
     structifyBlock(structifiedExpr);
     // Then rename the variable at its declaration site.
-    structifyDeclaration(enclosingStructVariableName, enclosingStructType);
+    structifyDeclaration(enclosingStructVariableName, enclosingStruct);
 
   }
 
   private void structifyDeclaration(String enclosingStructVariableName,
-        StructType enclosingStructType) {
+        StructDefinitionType enclosingStructType) {
     declToTransform.getVariablesDeclaration()
-          .setBaseType(enclosingStructType);
+          .setBaseType(enclosingStructType.getStructNameType());
     final VariableDeclInfo declInfo = declToTransform.getVariablesDeclaration().getDeclInfo(0);
     declInfo.setName(enclosingStructVariableName);
     if (declInfo.hasInitializer()) {
@@ -168,19 +171,21 @@ public class StructificationOpportunity {
     }
   }
 
-  private Expr makeInitializationExpr(StructType structType, Expr originalInitializer) {
+  private Expr makeInitializationExpr(StructDefinitionType structDefinitionType,
+                                      Expr originalInitializer) {
     List<Expr> args = new ArrayList<>();
-    for (int i = 0; i < structType.getNumFields(); i++) {
-      if (structType.getFieldName(i).startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
-        final Type fieldType = structType.getFieldType(i);
-        args.add(fieldType instanceof StructType
-              ? makeInitializationExpr((StructType) fieldType, originalInitializer)
-              : fieldType.getCanonicalConstant());
+    for (int i = 0; i < structDefinitionType.getNumFields(); i++) {
+      if (structDefinitionType.getFieldName(i).startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
+        final Type fieldType = structDefinitionType.getFieldType(i);
+        args.add(fieldType instanceof StructNameType
+            ? makeInitializationExpr(tu.getStructDefinition((StructNameType) fieldType),
+                originalInitializer)
+            : fieldType.getCanonicalConstant());
       } else {
         args.add(originalInitializer);
       }
     }
-    return new TypeConstructorExpr(structType.getName(),
+    return new TypeConstructorExpr(structDefinitionType.getStructNameType().getName(),
           args);
   }
 
@@ -208,19 +213,19 @@ public class StructificationOpportunity {
   }
 
   private Expr insertFieldIntoStruct(String enclosingStructName,
-        StructType enclosingStructType, IRandom generator) {
+                                     StructDefinitionType enclosingStruct, IRandom generator) {
     Expr result = new VariableIdentifierExpr(enclosingStructName);
-    StructType currentStructType = enclosingStructType;
+    StructDefinitionType currentStruct = enclosingStruct;
     while (true) {
-      Map<String, StructType> structFields = getStructFields(currentStructType);
+      Map<String, StructDefinitionType> structFields = getStructFields(currentStruct);
       if (!structFields.keySet().isEmpty() && generator.nextBoolean()) {
         String fieldName = structFields.keySet().stream().collect(Collectors.toList())
               .get(generator.nextInt(structFields.size()));
         result = new MemberLookupExpr(result, fieldName);
-        currentStructType = structFields.get(fieldName);
+        currentStruct = structFields.get(fieldName);
       } else {
         // Choose random position at which to insert the field.
-        currentStructType.insertField(generator.nextInt(currentStructType.getNumFields() + 1),
+        currentStruct.insertField(generator.nextInt(currentStruct.getNumFields() + 1),
               declToTransform.getVariablesDeclaration().getDeclInfo(0).getName(),
               declToTransform.getVariablesDeclaration().getBaseType());
         result = new MemberLookupExpr(result, declToTransform.getVariablesDeclaration()
@@ -230,12 +235,12 @@ public class StructificationOpportunity {
     }
   }
 
-  private Map<String, StructType> getStructFields(StructType type) {
-    return type.getFieldNames().stream()
-          .filter(item -> type.getFieldType(item) instanceof StructType)
+  private Map<String, StructDefinitionType> getStructFields(StructDefinitionType struct) {
+    return struct.getFieldNames().stream()
+          .filter(item -> struct.getFieldType(item) instanceof StructNameType)
           .collect(Collectors.toMap(
               item -> item,
-              item -> (StructType) type.getFieldType(item))
+              item -> tu.getStructDefinition((StructNameType) struct.getFieldType(item)))
           );
   }
 

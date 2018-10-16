@@ -78,6 +78,10 @@ public class GlslShaderJob implements ShaderJob {
         if (decl instanceof VariablesDeclaration
             && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
           final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
+          if (variablesDeclaration.getNumDecls() == 0) {
+            // No uniforms are actually declared; move on.
+            continue;
+          }
           final QualifiedType qualifiedType = (QualifiedType) variablesDeclaration.getBaseType();
           // Conservatively assume that uniform is the only qualifier.
           assert qualifiedType.getQualifiers().size() == 1;
@@ -185,8 +189,8 @@ public class GlslShaderJob implements ShaderJob {
   @Override
   public GlslShaderJob clone() {
     return new GlslShaderJob(
-        getVertexShader().map(TranslationUnit::cloneAndPatchUp),
-        getFragmentShader().map(TranslationUnit::cloneAndPatchUp),
+        getVertexShader().map(TranslationUnit::clone),
+        getFragmentShader().map(TranslationUnit::clone),
         new UniformsInfo(getUniformsInfo().toString()),
         getLicense());
   }

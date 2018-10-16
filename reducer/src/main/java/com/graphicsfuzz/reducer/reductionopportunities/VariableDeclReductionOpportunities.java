@@ -33,13 +33,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-public class DeclarationReductionOpportunities
-      extends ReductionOpportunitiesBase<DeclarationReductionOpportunity> {
+public class VariableDeclReductionOpportunities
+    extends ReductionOpportunitiesBase<VariableDeclReductionOpportunity> {
 
   private final Deque<Set<ScopeEntry>> referencedScopeEntries;
 
-  private DeclarationReductionOpportunities(TranslationUnit tu,
-        ReductionOpportunityContext context) {
+  private VariableDeclReductionOpportunities(TranslationUnit tu,
+                                             ReductionOpportunityContext context) {
     super(tu, context);
     this.referencedScopeEntries = new LinkedList<>();
     this.referencedScopeEntries.addFirst(new HashSet<>());
@@ -51,9 +51,9 @@ public class DeclarationReductionOpportunities
       assert entry.hasVariableDeclInfo();
       assert referencedScopeEntries.peek() != null;
       if (!referencedScopeEntries.peek().contains(entry)) {
-        addOpportunity(new GlobalDeclarationReductionOpportunity(entry.getVariableDeclInfo(),
-              parentMap,
-              getVistitationDepth()));
+        addOpportunity(new VariableDeclReductionOpportunity(entry.getVariableDeclInfo(),
+            entry.getVariablesDeclaration(),
+            getVistitationDepth()));
       }
     }
   }
@@ -71,8 +71,10 @@ public class DeclarationReductionOpportunities
       if (entry.hasVariableDeclInfo() && !referencedScopeEntries.peek().contains(entry)) {
         if (allowedToReduceLocalDecl(entry.getVariableDeclInfo())) {
           addOpportunity(
-                new LocalDeclarationReductionOpportunity(entry.getVariableDeclInfo(), parentMap,
-                      getVistitationDepth()));
+              new VariableDeclReductionOpportunity(
+                  entry.getVariableDeclInfo(),
+                  entry.getVariablesDeclaration(),
+                  getVistitationDepth()));
         }
       }
     }
@@ -91,7 +93,7 @@ public class DeclarationReductionOpportunities
       // scope also declares a variable x after the usage of x
       String name = entry.getVariableDeclInfo().getName();
       assert currentScope.lookupScopeEntry(name) == entry
-            || currentScope.getParent().lookupScopeEntry(name) == entry;
+          || currentScope.getParent().lookupScopeEntry(name) == entry;
       if (!currentScope.keys().contains(name)) {
         addReferencedScopeEntry(entry);
       }
@@ -126,9 +128,9 @@ public class DeclarationReductionOpportunities
     }
     // Fine to remove if in a dead context, a live context, or if no initializer.
     return context.reduceEverywhere() || enclosingFunctionIsDead()
-          || injectionTracker.enclosedByDeadCodeInjection()
-          || isLiveInjection(variableDeclInfo)
-          || !variableDeclInfo.hasInitializer();
+        || injectionTracker.enclosedByDeadCodeInjection()
+        || isLiveInjection(variableDeclInfo)
+        || !variableDeclInfo.hasInitializer();
   }
 
   private boolean isLiveInjection(VariableDeclInfo variableDeclInfo) {
@@ -142,20 +144,20 @@ public class DeclarationReductionOpportunities
    * @param context Determines info such as whether we reduce everywhere or only reduce injections
    * @return The declaration opportunities that can be reduced
    */
-  static List<DeclarationReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+  static List<VariableDeclReductionOpportunity> findOpportunities(
+      ShaderJob shaderJob,
+      ReductionOpportunityContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
         .reduce(Arrays.asList(), ListConcat::concatenate);
   }
 
-  private static List<DeclarationReductionOpportunity> findOpportunitiesForShader(
+  private static List<VariableDeclReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
       ReductionOpportunityContext context) {
-    DeclarationReductionOpportunities finder =
-          new DeclarationReductionOpportunities(tu, context);
+    VariableDeclReductionOpportunities finder =
+        new VariableDeclReductionOpportunities(tu, context);
     finder.visit(tu);
     finder.getReductionOpportunitiesForUnusedGlobals();
     return finder.getOpportunities();

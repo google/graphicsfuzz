@@ -17,35 +17,30 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.Declaration;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
-class FunctionOrStructReductionOpportunity extends AbstractReductionOpportunity {
+public class GlobalVariablesDeclarationReductionOpportunity extends AbstractReductionOpportunity {
 
-  private TranslationUnit tu;
-  private Declaration decl;
+  final TranslationUnit translationUnit;
+  final VariablesDeclaration variablesDeclaration;
 
-  public FunctionOrStructReductionOpportunity(TranslationUnit tu, Declaration decl,
-      VisitationDepth depth) {
+  public GlobalVariablesDeclarationReductionOpportunity(TranslationUnit translationUnit,
+                                                        VariablesDeclaration variablesDeclaration,
+                                                        VisitationDepth depth) {
     super(depth);
-    this.tu = tu;
-    this.decl = decl;
+    this.translationUnit = translationUnit;
+    this.variablesDeclaration = variablesDeclaration;
   }
 
   @Override
-  public void applyReductionImpl() {
-    for (int i = 0; i < tu.getTopLevelDeclarations().size(); i++) {
-      if (tu.getTopLevelDeclarations().get(i) == decl) {
-        tu.removeTopLevelDeclaration(i);
-        return;
-      }
-    }
-    throw new RuntimeException("Should be unreachable");
+  void applyReductionImpl() {
+    translationUnit.removeTopLevelDeclaration(variablesDeclaration);
   }
 
   @Override
   public boolean preconditionHolds() {
-    return tu.getTopLevelDeclarations().contains(decl);
+    return translationUnit.getTopLevelDeclarations().contains(variablesDeclaration);
   }
 
 }

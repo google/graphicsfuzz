@@ -16,55 +16,41 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.IAstNode;
-import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
-abstract class DeclarationReductionOpportunity extends AbstractReductionOpportunity {
+public class VariableDeclReductionOpportunity extends AbstractReductionOpportunity {
 
-  VariableDeclInfo variableDeclInfo;
-  IParentMap parentMap;
+  final VariableDeclInfo variableDeclInfo;
+  final VariablesDeclaration variablesDeclaration; // The parent of variableDeclInfo
 
-  DeclarationReductionOpportunity(VariableDeclInfo variableDeclInfo, IParentMap parentMap,
-      VisitationDepth depth) {
+  VariableDeclReductionOpportunity(VariableDeclInfo variableDeclInfo,
+                                   VariablesDeclaration variablesDeclaration,
+                                   VisitationDepth depth) {
     super(depth);
     this.variableDeclInfo = variableDeclInfo;
-    this.parentMap = parentMap;
+    this.variablesDeclaration = variablesDeclaration;
   }
 
   @Override
-  public final void applyReductionImpl() {
-    IAstNode immediateParent = parentMap.getParent(variableDeclInfo);
-
-    VariablesDeclaration vd = (VariablesDeclaration) immediateParent;
-
-    if (!vd.getDeclInfos().contains(variableDeclInfo)) {
+  void applyReductionImpl() {
+    if (!variablesDeclaration.getDeclInfos().contains(variableDeclInfo)) {
       // The declaration must have been removed by another reduction opportunity
       return;
     }
-
-    boolean found = false;
-    for (int i = 0; i < vd.getNumDecls(); i++) {
-      if (vd.getDeclInfo(i) == variableDeclInfo) {
-        vd.removeDeclInfo(i);
-        found = true;
-        break;
+    for (int i = 0; i < variablesDeclaration.getNumDecls(); i++) {
+      if (variablesDeclaration.getDeclInfo(i) == variableDeclInfo) {
+        variablesDeclaration.removeDeclInfo(i);
+        return;
       }
     }
-    assert found;
-    if (vd.getNumDecls() != 0) {
-      return;
-    }
-    removeVariablesDeclaration(vd);
+    throw new RuntimeException("Should be unreachable.");
   }
-
-  abstract void removeVariablesDeclaration(VariablesDeclaration node);
 
   @Override
   public boolean preconditionHolds() {
-    return parentMap.getParent(variableDeclInfo) instanceof VariablesDeclaration;
+    return variablesDeclaration.getDeclInfos().contains(variableDeclInfo);
   }
 
 }

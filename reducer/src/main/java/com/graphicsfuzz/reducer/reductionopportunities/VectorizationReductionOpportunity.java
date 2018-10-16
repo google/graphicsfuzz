@@ -75,7 +75,6 @@ public final class VectorizationReductionOpportunity extends AbstractReductionOp
 
   @Override
   public void applyReductionImpl() {
-    TranslationUnit clonedTu = tu.cloneAndPatchUp();
     addComponentVariableIfNotPresent();
     pullOutComponent();
   }

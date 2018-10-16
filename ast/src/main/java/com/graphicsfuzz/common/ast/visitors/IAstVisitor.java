@@ -27,7 +27,6 @@ import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.decl.StructDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -66,7 +65,8 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.ImageType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.VoidType;
 
 public interface IAstVisitor {
@@ -157,9 +157,7 @@ public interface IAstVisitor {
 
   void visitBoolConstantExpr(BoolConstantExpr boolConstantExpr);
 
-  void visitStructType(StructType structType);
-
-  void visitStructDeclaration(StructDeclaration structDeclaration);
+  void visitStructDefinitionType(StructDefinitionType structDefinitionType);
 
   void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr);
 
@@ -174,5 +172,7 @@ public interface IAstVisitor {
   void visitInterfaceBlock(InterfaceBlock interfaceBlock);
 
   void visitDefaultLayout(DefaultLayout defaultLayout);
+
+  void visitStructNameType(StructNameType structNameType);
 
 }

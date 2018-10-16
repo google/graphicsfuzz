@@ -21,6 +21,8 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.ParseHelper;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class PrettyPrinterVisitorTest {
 
   @Test
@@ -115,6 +117,96 @@ public class PrettyPrinterVisitorTest {
         + "  }\n"
         + "}\n";
     CompareAstsDuplicate.assertEqualAsts(program, ParseHelper.parse(program, false));
+  }
+
+  @Test
+  public void testParseAndPrintStructs() throws Exception {
+    // This checks exact layout, so will require maintenance if things change.
+    // This is expected and deliberate: do the maintenance :)
+    final String program = ""
+        + "struct S {\n"
+        + " int a;\n"
+        + " int b;\n"
+        + "} ;\n"
+        + "\n"
+        + "struct T {\n"
+        + " S myS1;\n"
+        + " S myS2;\n"
+        + "} ;\n"
+        + "\n"
+        + "void main()\n"
+        + "{\n"
+        + " T myT = T(S(1, 2), S(3, 4));\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
+        false)));
+  }
+
+  @Test
+  public void testParseAndPrintStructs2() throws Exception {
+    // This checks exact layout, so will require maintenance if things change.
+    // This is expected and deliberate: do the maintenance :)
+    final String program = ""
+        + "struct S {\n"
+        + " int a;\n"
+        + " int b;\n"
+        + "} ;\n"
+        + "\n"
+        + "S someS = S(8, 9);\n"
+        + "\n"
+        + "struct T {\n"
+        + " S myS1;\n"
+        + " S myS2;\n"
+        + "} ;\n"
+        + "\n"
+        + "void main()\n"
+        + "{\n"
+        + " T myT = T(S(1, 2), S(3, 4));\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
+        false)));
+  }
+
+  @Test
+  public void testParseAndPrintStructs3() throws Exception {
+    // This checks exact layout, so will require maintenance if things change.
+    // This is expected and deliberate: do the maintenance :)
+    final String program = ""
+        + "struct S {\n"
+        + " int a;\n"
+        + " int b;\n"
+        + "} someS = S(8, 9);\n"
+        + "\n"
+        + "struct T {\n"
+        + " S myS1;\n"
+        + " S myS2;\n"
+        + "} ;\n"
+        + "\n"
+        + "void main()\n"
+        + "{\n"
+        + " T myT = T(S(1, 2), S(someS.a, 4));\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
+        false)));
+  }
+
+  @Test
+  public void testParseAndPrintStructs4() throws Exception {
+    // This checks exact layout, so will require maintenance if things change.
+    // This is expected and deliberate: do the maintenance :)
+    final String program = ""
+        + "struct {\n"
+        + " int a;\n"
+        + " int b;\n"
+        + "} X, Y, Z;\n"
+        + "\n"
+        + "void main()\n"
+        + "{\n"
+        + " X.a = 3;\n"
+        + " Y.b = X.a;\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
+        false)));
   }
 
 }

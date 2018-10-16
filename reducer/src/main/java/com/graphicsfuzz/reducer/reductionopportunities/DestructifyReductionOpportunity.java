@@ -28,7 +28,8 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.transformreduce.Constants;
@@ -81,29 +82,34 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
 
   private StructifiedVariableInfo findOriginalVariableInfo() {
     return findOriginalVariableInfo(
-        (StructType) declaration.getVariablesDeclaration().getBaseType().getWithoutQualifiers(),
+        (StructNameType) declaration.getVariablesDeclaration().getBaseType()
+            .getWithoutQualifiers(),
         Optional.ofNullable((ScalarInitializer) declaration.getVariablesDeclaration()
             .getDeclInfo(0).getInitializer()))
         .get();
   }
 
-  private Optional<StructifiedVariableInfo> findOriginalVariableInfo(StructType type,
+  private Optional<StructifiedVariableInfo> findOriginalVariableInfo(
+      StructNameType type,
       Optional<ScalarInitializer> initializer) {
 
-    for (int i = 0; i < type.getNumFields(); i++) {
+    final StructDefinitionType structDefinitionType = tu.getStructDefinition(type);
+
+    for (int i = 0; i < structDefinitionType.getNumFields(); i++) {
 
       final int currentIndex = i;
       final Optional<ScalarInitializer> componentInitializer = initializer.map(item ->
           new ScalarInitializer(((TypeConstructorExpr) item.getExpr())
               .getArg(currentIndex)));
 
-      if (type.getFieldName(i).startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
+      if (structDefinitionType.getFieldName(i).startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
         // It is not the desired field, but...
-        Type fieldTypeWithoutQualifiers = type.getFieldType(i).getWithoutQualifiers();
-        if (fieldTypeWithoutQualifiers instanceof StructType) {
+        Type fieldTypeWithoutQualifiers = structDefinitionType.getFieldType(i)
+            .getWithoutQualifiers();
+        if (fieldTypeWithoutQualifiers instanceof StructNameType) {
           // If it is a struct field then the desired field might be in a sub-struct.
           Optional<StructifiedVariableInfo> possibleResult =
-              findOriginalVariableInfo((StructType) fieldTypeWithoutQualifiers,
+              findOriginalVariableInfo((StructNameType) fieldTypeWithoutQualifiers,
                   componentInitializer);
           if (possibleResult.isPresent()) {
             return possibleResult;
@@ -115,8 +121,8 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
         }
       } else {
         // It is the desired field!
-        return Optional.of(new StructifiedVariableInfo(type.getFieldName(i),
-            type.getFieldType(i),
+        return Optional.of(new StructifiedVariableInfo(structDefinitionType.getFieldName(i),
+            structDefinitionType.getFieldType(i),
             componentInitializer));
       }
     }

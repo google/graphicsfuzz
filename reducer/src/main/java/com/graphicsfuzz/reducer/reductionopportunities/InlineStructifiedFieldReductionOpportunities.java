@@ -18,7 +18,8 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
@@ -60,22 +61,28 @@ public class InlineStructifiedFieldReductionOpportunities extends ScopeTreeBuild
     if (!Util.isStructifiedDeclaration(declarationStmt)) {
       return;
     }
-    findInliningOpportunities(
-          (StructType) declarationStmt.getVariablesDeclaration().getBaseType()
-                .getWithoutQualifiers());
+    final StructNameType structType =
+        (StructNameType) declarationStmt.getVariablesDeclaration().getBaseType()
+        .getWithoutQualifiers();
+    findInliningOpportunities(structType);
 
   }
 
-  public void findInliningOpportunities(StructType struct) {
-    assert struct.getName().startsWith(Constants.STRUCTIFICATION_STRUCT_PREFIX);
-    for (String f : struct.getFieldNames()) {
+  public void findInliningOpportunities(StructNameType structType) {
+    assert structType.getName().startsWith(Constants.STRUCTIFICATION_STRUCT_PREFIX);
+    final StructDefinitionType structDefinitionType = structDeclarations.get(structType);
+    for (String f : structDefinitionType.getFieldNames()) {
       if (!f.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
         continue;
       }
-      if (struct.getFieldType(f).getWithoutQualifiers() instanceof StructType) {
+      if (structDefinitionType.getFieldType(f).getWithoutQualifiers()
+          instanceof StructNameType) {
+        final StructNameType innerStructType =
+            (StructNameType) structDefinitionType.getFieldType(f).getWithoutQualifiers();
         opportunities.add(new InlineStructifiedFieldReductionOpportunity(
-              struct, f, tu, getVistitationDepth()));
-        findInliningOpportunities((StructType) struct.getFieldType(f).getWithoutQualifiers());
+            structDefinitionType, structDeclarations.get(innerStructType), f, tu,
+            getVistitationDepth()));
+        findInliningOpportunities(innerStructType);
       }
     }
   }

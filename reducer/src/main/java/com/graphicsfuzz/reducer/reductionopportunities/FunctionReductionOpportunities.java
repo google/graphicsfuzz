@@ -38,7 +38,7 @@ public class FunctionReductionOpportunities extends StandardVisitor {
 
   private final Typer typer;
 
-  private final List<FunctionOrStructReductionOpportunity> opportunities;
+  private final List<FunctionReductionOpportunity> opportunities;
 
   // Collects the prototypes of all functions that are called at least once
   private final Set<FunctionPrototype> calledFunctions;
@@ -59,7 +59,7 @@ public class FunctionReductionOpportunities extends StandardVisitor {
    * @param context Relevant details including the version of GLSL being used
    * @return The opportunities that can be reduced
    */
-  static List<FunctionOrStructReductionOpportunity> findOpportunities(
+  static List<FunctionReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
       ReductionOpportunityContext context) {
     return shaderJob.getShaders()
@@ -68,7 +68,7 @@ public class FunctionReductionOpportunities extends StandardVisitor {
         .reduce(Arrays.asList(), ListConcat::concatenate);
   }
 
-  private static List<FunctionOrStructReductionOpportunity> findOpportunitiesForShader(
+  private static List<FunctionReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
       ReductionOpportunityContext context) {
     FunctionReductionOpportunities finder =
@@ -115,14 +115,14 @@ public class FunctionReductionOpportunities extends StandardVisitor {
           continue;
         }
         if (!functionIsCalled(fd.getPrototype())) {
-          opportunities.add(new FunctionOrStructReductionOpportunity(tu, fd,
+          opportunities.add(new FunctionReductionOpportunity(tu, fd,
               getVistitationDepth()));
         }
       }
       if (decl instanceof FunctionPrototype) {
         FunctionPrototype fp = (FunctionPrototype) decl;
         if (!functionIsCalled(fp)) {
-          opportunities.add(new FunctionOrStructReductionOpportunity(tu, fp,
+          opportunities.add(new FunctionReductionOpportunity(tu, fp,
               getVistitationDepth()));
         }
       }

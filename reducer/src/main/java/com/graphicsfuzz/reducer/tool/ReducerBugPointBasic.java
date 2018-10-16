@@ -130,9 +130,9 @@ public class ReducerBugPointBasic {
 
       ShaderJob current = new GlslShaderJob(
           lastGoodButLeadingToBadShaderJob.getVertexShader()
-              .map(TranslationUnit::cloneAndPatchUp),
+              .map(TranslationUnit::clone),
           lastGoodButLeadingToBadShaderJob.getFragmentShader()
-              .map(TranslationUnit::cloneAndPatchUp),
+              .map(TranslationUnit::clone),
           lastGoodButLeadingToBadShaderJob.getUniformsInfo(),
           lastGoodButLeadingToBadShaderJob.getLicense()
       );
@@ -145,8 +145,8 @@ public class ReducerBugPointBasic {
 
       while (true) {
         final ShaderJob prev = new GlslShaderJob(
-            current.getVertexShader().map(TranslationUnit::cloneAndPatchUp),
-            current.getFragmentShader().map(TranslationUnit::cloneAndPatchUp),
+            current.getVertexShader().map(TranslationUnit::clone),
+            current.getFragmentShader().map(TranslationUnit::clone),
             current.getUniformsInfo(),
             current.getLicense()
         );
@@ -185,9 +185,9 @@ public class ReducerBugPointBasic {
             lastGoodButLeadingToBadShaderJob = prev;
             current = new GlslShaderJob(
                 lastGoodButLeadingToBadShaderJob
-                    .getVertexShader().map(TranslationUnit::cloneAndPatchUp),
+                    .getVertexShader().map(TranslationUnit::clone),
                 lastGoodButLeadingToBadShaderJob
-                    .getFragmentShader().map(TranslationUnit::cloneAndPatchUp),
+                    .getFragmentShader().map(TranslationUnit::clone),
                 lastGoodButLeadingToBadShaderJob.getUniformsInfo(),
                 lastGoodButLeadingToBadShaderJob.getLicense()
             );
@@ -225,9 +225,9 @@ public class ReducerBugPointBasic {
             lastGoodButLeadingToBadShaderJob = prev;
             current = new GlslShaderJob(
                 lastGoodButLeadingToBadShaderJob
-                    .getVertexShader().map(TranslationUnit::cloneAndPatchUp),
+                    .getVertexShader().map(TranslationUnit::clone),
                 lastGoodButLeadingToBadShaderJob
-                    .getFragmentShader().map(TranslationUnit::cloneAndPatchUp),
+                    .getFragmentShader().map(TranslationUnit::clone),
                 lastGoodButLeadingToBadShaderJob.getUniformsInfo(),
                 lastGoodButLeadingToBadShaderJob.getLicense()
             );

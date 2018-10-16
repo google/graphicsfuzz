@@ -18,7 +18,7 @@ package com.graphicsfuzz.generator.fuzzer;
 
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
-import com.graphicsfuzz.common.ast.type.StructType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.typing.Scope;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class FuzzingContext {
 
   private final List<FunctionPrototype> functions;
 
-  private final List<StructType> structs;
+  private final List<StructDefinitionType> structs;
 
   private Scope currentScope;
 
@@ -75,7 +75,7 @@ public class FuzzingContext {
     functions.add(prototype);
   }
 
-  public void addStruct(StructType struct) {
+  public void addStruct(StructDefinitionType struct) {
     structs.add(struct);
   }
 
@@ -124,7 +124,7 @@ public class FuzzingContext {
     return currentScope;
   }
 
-  public List<StructType> getStructTypes() {
+  public List<StructDefinitionType> getStructDeclarations() {
     return Collections.unmodifiableList(structs);
   }
 

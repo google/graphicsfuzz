@@ -106,7 +106,7 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "    _GLF_struct_A _GLF_struct_replacement_838 = _GLF_struct_A(1.0, _GLF_struct_B(_GLF_struct_F(f(), _GLF_struct_D(true, mat4(1.0)))));\n"
         + "}\n";
 
-    TranslationUnit tu = Helper.parse(program, false).cloneAndPatchUp();
+    TranslationUnit tu = Helper.parse(program, false).clone();
 
     List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
     assertEquals(3, ops.size());
@@ -147,7 +147,7 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "    _GLF_struct_762(_GLF_struct_761(bvec2(true)))._f0._f0;\n"
         + "}\n";
 
-    TranslationUnit tu = Helper.parse(program, false).cloneAndPatchUp();
+    TranslationUnit tu = Helper.parse(program, false).clone();
 
     List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, null, null, null));

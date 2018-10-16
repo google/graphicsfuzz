@@ -38,15 +38,19 @@ import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.SideEffectChecker;
+import com.graphicsfuzz.common.util.StructUtils;
 import java.util.Arrays;
 import java.util.List;
 
 public class StmtReductionOpportunities
       extends ReductionOpportunitiesBase<StmtReductionOpportunity> {
 
+  private final TranslationUnit tu;
+
   private StmtReductionOpportunities(TranslationUnit tu,
         ReductionOpportunityContext context) {
     super(tu, context);
+    this.tu = tu;
   }
 
   static List<StmtReductionOpportunity> findOpportunities(ShaderJob shaderJob,
@@ -82,6 +86,9 @@ public class StmtReductionOpportunities
 
     // We deal separately with removal of declarations
     if (stmt instanceof DeclarationStmt) {
+      if (isEmptyAndUnreferencedDeclaration((DeclarationStmt) stmt)) {
+        return true;
+      }
       return false;
     }
 
@@ -273,6 +280,15 @@ public class StmtReductionOpportunities
   static boolean isLooplimiter(String name) {
     return name.startsWith(Constants.LIVE_PREFIX)
           && name.contains("looplimiter");
+  }
+
+  private boolean isEmptyAndUnreferencedDeclaration(DeclarationStmt stmt) {
+    if (stmt.getVariablesDeclaration().getNumDecls() != 0) {
+      return false;
+    }
+
+    return !StructUtils.declaresReferencedStruct(tu,
+        stmt.getVariablesDeclaration());
   }
 
 }
