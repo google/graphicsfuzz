@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.shadersets;
+package com.graphicsfuzz.common.util;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -64,6 +64,10 @@ public class ImageUtil {
     return opencv_imgproc.compareHist(mat1, mat2, opencv_imgproc.HISTCMP_CHISQR);
   }
 
+  public static double compareHistograms(File file1, File file2) throws FileNotFoundException {
+    return compareHistograms(getImage(file1), getImage(file2));
+  }
+
   public static double comparePSNR(File file1, File file2) throws FileNotFoundException {
     opencv_core.Mat image1 = getImage(file1);
     opencv_core.Mat image2 = getImage(file2);
@@ -99,7 +103,4 @@ public class ImageUtil {
     return true;
   }
 
-  public static void main(String[] args) throws FileNotFoundException {
-    System.out.println(compareHistograms(getHistogram(args[0]), getHistogram(args[1])));
-  }
 }

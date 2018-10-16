@@ -34,7 +34,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import com.graphicsfuzz.util.ToolPaths;
-import com.graphicsfuzz.shadersets.ImageUtil;
+import com.graphicsfuzz.common.util.ImageUtil;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 
 public abstract class CommonClientTest {

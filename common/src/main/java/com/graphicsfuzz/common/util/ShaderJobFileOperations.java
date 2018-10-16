@@ -32,7 +32,6 @@ import com.graphicsfuzz.server.thrift.ImageJob;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.JobStatus;
 import com.graphicsfuzz.server.thrift.ResultConstant;
-import com.graphicsfuzz.shadersets.ImageUtil;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ExecResult;
