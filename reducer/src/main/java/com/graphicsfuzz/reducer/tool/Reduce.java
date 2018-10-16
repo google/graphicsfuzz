@@ -29,6 +29,7 @@ import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.reducer.IFileJudge;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import com.graphicsfuzz.reducer.ReductionKind;
+import com.graphicsfuzz.reducer.filejudge.CustomFileJudge;
 import com.graphicsfuzz.reducer.filejudge.FuzzingFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ImageGenErrorShaderFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ImageShaderFileJudge;
@@ -74,6 +75,8 @@ public class Reduce {
 
     parser.addArgument("reduction_kind")
           .help("Kind of reduction to be performed.  Options are:\n"
+                + "   " + ReductionKind.CUSTOM
+                + "             Reduces based on custom criterion.\n"
                 + "   " + ReductionKind.NO_IMAGE
                 + "               Reduces while image generation fails to produce an image.\n"
                 + "   " + ReductionKind.NOT_IDENTICAL
@@ -176,6 +179,11 @@ public class Reduce {
           .help("Carry on from where a previous reduction attempt left off.")
           .action(Arguments.storeTrue());
 
+    parser.addArgument("--custom_judge")
+        .help("Path to an executable shell script that should decide whether a shader job is "
+            + "interesting.")
+        .type(File.class);
+
     return parser;
 
   }
@@ -277,6 +285,35 @@ public class Reduce {
 
       final File referenceResultFile = ns.get("reference");
 
+      final File customJudgeScript = ns.get("custom_judge");
+
+      if (reductionKind == ReductionKind.CUSTOM) {
+        if (server != null) {
+          throwExceptionForCustomReduction("server");
+        }
+        if (token != null) {
+          throwExceptionForCustomReduction("token");
+        }
+        if (errorString != null) {
+          throwExceptionForCustomReduction("error_string");
+        }
+        if (referenceResultFile != null) {
+          throwExceptionForCustomReduction("reference");
+        }
+        if (customJudgeScript == null) {
+          throw new RuntimeException("A " + ReductionKind.CUSTOM + " reduction requires a judge "
+              + "to be specified via '--custom_judge'");
+        }
+        if (!customJudgeScript.canExecute()) {
+          throw new RuntimeException("Custom judge script must be executable.");
+        }
+      } else {
+        if (customJudgeScript != null) {
+          throw new RuntimeException("custom_judge' option only supported with "
+              + ReductionKind.CUSTOM + " reduction.");
+        }
+      }
+
       // Check input files
       fileOps.assertShaderJobRequiredFilesExist(inputShaderJobFile);
       if (referenceResultFile != null) {
@@ -307,15 +344,19 @@ public class Reduce {
                       fileOps,
                       new File(workDir, "temp"))
                   : new RemoteShaderDispatcher(
-                        server + "/manageAPI",
-                        token,
-                        managerOverride,
-                        new AtomicLong(),
-                        retryLimit);
+                      server + "/manageAPI",
+                      token,
+                      managerOverride,
+                      new AtomicLong(),
+                      retryLimit);
 
       File corpus = new File(workDir, "corpus");
 
       switch (reductionKind) {
+        case CUSTOM:
+          fileJudge =
+                new CustomFileJudge(customJudgeScript, workDir);
+          break;
         case NO_IMAGE:
           fileJudge =
                 new ImageGenErrorShaderFileJudge(
@@ -502,6 +543,12 @@ public class Reduce {
         workDir,
         shaderJobShortName,
         fileOps).orElse(0);
+  }
+
+  private static void throwExceptionForCustomReduction(String option) {
+    throw new RuntimeException("The '--" + option + "' option is not compatible with a "
+        + ReductionKind.CUSTOM + " reduction; details of judgement should all be in the custom "
+        + "judge specified via --custom_judge.");
   }
 
 }
