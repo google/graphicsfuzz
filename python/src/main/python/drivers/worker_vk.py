@@ -370,7 +370,11 @@ print('server: ' + server)
 
 # Set device ID
 if args.adbID:
-    os.environ["ANDROID_SERIAL"] = args.adbID
+    os.environ['ANDROID_SERIAL'] = args.adbID
+else:
+    if 'ANDROID_SERIAL' not in os.environ:
+        print('Please set ANDROID_SERIAL env variable, or use --adbID')
+        exit(1)
 
 # Prepare device
 adb('shell mkdir -p /sdcard/graphicsfuzz/')
