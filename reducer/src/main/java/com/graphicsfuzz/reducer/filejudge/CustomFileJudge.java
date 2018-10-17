@@ -19,10 +19,15 @@ package com.graphicsfuzz.reducer.filejudge;
 import com.graphicsfuzz.reducer.FileJudgeException;
 import com.graphicsfuzz.reducer.IFileJudge;
 import com.graphicsfuzz.util.ExecHelper;
+import com.graphicsfuzz.util.ExecResult;
 import java.io.File;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CustomFileJudge implements IFileJudge {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CustomFileJudge.class);
 
   private final File judgeScript;
   private final File directory;
@@ -36,13 +41,17 @@ public class CustomFileJudge implements IFileJudge {
   public boolean isInteresting(File shaderJobFile, File shaderResultFileOutput)
       throws FileJudgeException {
     try {
-      return new ExecHelper().exec(
+      final ExecResult execResult = new ExecHelper().exec(
           ExecHelper.RedirectType.TO_BUFFER,
           directory,
           true,
           judgeScript.getAbsolutePath(),
           shaderJobFile.getAbsolutePath(),
-          shaderResultFileOutput.getAbsolutePath()).res == 0;
+          shaderResultFileOutput.getAbsolutePath());
+      LOGGER.info("Custom file judge stdout: " + execResult.stdout);
+      LOGGER.info("Custom file judge stderr: " + execResult.stderr);
+      LOGGER.info("Custom file judge result: " + execResult.res);
+      return execResult.res == 0;
     } catch (IOException | InterruptedException exception) {
       throw new FileJudgeException(exception);
     }

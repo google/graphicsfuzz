@@ -65,7 +65,9 @@ public class ImageUtil {
   }
 
   public static double compareHistograms(File file1, File file2) throws FileNotFoundException {
-    return compareHistograms(getImage(file1), getImage(file2));
+    return compareHistograms(
+        getHistogram(file1.getAbsolutePath()),
+        getHistogram(file2.getAbsolutePath()));
   }
 
   public static double comparePSNR(File file1, File file2) throws FileNotFoundException {
