@@ -20,6 +20,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.util.FileHelper;
 import com.graphicsfuzz.common.util.ReductionProgressHelper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.ReductionKind;
@@ -1302,6 +1303,23 @@ public class WebUi extends HttpServlet {
 
     if (file.toString().endsWith(".info.json")) {
       fileOps.deleteShaderJobResultFile(file);
+      // There might also be a reduction result. If so, we delete it.
+
+      // E.g. variant_001
+      final String variantName = FileHelper.removeEnd(file.getName(), ".info.json");
+      // E.g. shader_family_001_exp
+      final String expDirName = file.getParentFile().getName();
+      // E.g. android_phone
+      final File workerResultDir = file.getParentFile().getParentFile();
+      if (expDirName.endsWith("_exp")) {
+        // E.g. shader_family_001
+        final String shaderFamilyName = FileHelper.removeEnd(expDirName, "_exp");
+        // E.g. shader_family_001 _ variant_001 _inv
+        final String reductionDirName = shaderFamilyName + "_" + variantName + "_inv";
+        // E.g. processing/android_phone/shader_family_001_variant_001 _inv
+        final File reductionDir = new File(workerResultDir, reductionDirName);
+        fileOps.deleteQuietly(reductionDir);
+      }
     } else {
       FileUtils.forceDelete(file);
     }
