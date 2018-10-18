@@ -35,7 +35,7 @@ public class InlineInitializerReductionOpportunitiesTest {
     final String program = "const int x = 2; void main() { int y = x + 3; }";
     final String expected = "const int x = 2; void main() { int y = (2) + 3; }";
     final TranslationUnit tu = ParseHelper.parse(program, false);
-    final List<InlineInitializerReductionOpportunity> ops =
+    final List<SimplifyExprReductionOpportunity> ops =
           InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(true,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
     assertEquals(1, ops.size());
@@ -53,7 +53,7 @@ public class InlineInitializerReductionOpportunitiesTest {
     final TranslationUnit largeProgramTu = Helper.parse(largeProgram, false);
     final TranslationUnit smallProgramTu = Helper.parse(smallProgram, false);
 
-    List<InlineInitializerReductionOpportunity> ops =
+    List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(largeProgramTu), new ReductionOpportunityContext(true,
             ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
     assertEquals(0, ops.size());
@@ -74,8 +74,8 @@ public class InlineInitializerReductionOpportunitiesTest {
   }
 
   private String make1Plus1Plus1ProgramInlined(int n) {
-    return "void main() { int i = " + make1Plus1Plus1Expr(n) + "; " + make1Plus1Plus1Expr(n) + "; "
-        + make1Plus1Plus1Expr(n) + "; " + make1Plus1Plus1Expr(n) + "; }";
+    return "void main() { int i = " + make1Plus1Plus1Expr(n) + "; (" + make1Plus1Plus1Expr(n)
+        + "); (" + make1Plus1Plus1Expr(n) + "); (" + make1Plus1Plus1Expr(n) + "); }";
   }
 
   private String make1Plus1Plus1Expr(int n) {
@@ -94,11 +94,11 @@ public class InlineInitializerReductionOpportunitiesTest {
 
     final TranslationUnit tu = Helper.parse(program, false);
 
-    List<InlineInitializerReductionOpportunity> ops =
+    List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(true,
             ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
     assertEquals(5, ops.size());
-    ops.forEach(InlineInitializerReductionOpportunity::applyReduction);
+    ops.forEach(SimplifyExprReductionOpportunity::applyReduction);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -109,7 +109,7 @@ public class InlineInitializerReductionOpportunitiesTest {
 
     final TranslationUnit tu = Helper.parse(program, false);
 
-    List<InlineInitializerReductionOpportunity> ops =
+    List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false,
             ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
     assertEquals(0, ops.size());

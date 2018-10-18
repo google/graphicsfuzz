@@ -273,6 +273,7 @@ public class ReductionOpportunitiesTest {
         + "  void main()\n"
         + "  {\n"
         + "    _GLF_struct_0 _GLF_struct_replacement_1 = _GLF_struct_0(2, ivec3(1));\n"
+        + "    _GLF_struct_replacement_1.x++;\n"
         + "    _GLF_struct_9 _GLF_struct_replacement_10 = _GLF_struct_9(vec3(1.0), _GLF_struct_2(mat3(1.0)), _GLF_struct_7(_GLF_struct_6(_GLF_struct_replacement_1.x, _GLF_struct_3(1, true, ivec2(1), vec4(1.0), mat3(1.0)), _GLF_struct_4(1.0, vec4(1.0)), _GLF_struct_5(1.0, 1), ivec3(1)), ivec2(1)), _GLF_struct_8(mat3(1.0)));\n"
         + "    S z = S(_GLF_struct_replacement_1.x, _GLF_struct_replacement_10._f2._f0.y);\n"
         + "    _GLF_struct_replacement_10._f2._f0.y = z.a;\n"
@@ -287,6 +288,7 @@ public class ReductionOpportunitiesTest {
         + "\n"
         + "void main() {\n"
         + "  int x = 2;\n"
+        + "  x++;\n"
         + "  int y = x;\n"
         + "  S z = S(x, y);\n"
         + "  y = z.a;\n"
@@ -972,8 +974,8 @@ public class ReductionOpportunitiesTest {
             + "    vec4 ;\n"
             + "    vec3 ;\n"
             + "    float a = 1;\n"
-            + "    float b = 2;\n"
-            + "    float c = 3;\n"
+            + "    float ;\n"
+            + "    float ;\n"
             + "    return a;\n"
             + "}\n";
     List<VariableDeclReductionOpportunity> varDeclOps =
@@ -981,7 +983,7 @@ public class ReductionOpportunitiesTest {
             new ReductionOpportunityContext(false,
                 ShadingLanguageVersion.GLSL_440,
                 new ZeroCannedRandom(), null));
-    assertEquals(3, stmtOps.size());
+    assertEquals(5, varDeclOps.size());
     for (VariableDeclReductionOpportunity op : varDeclOps) {
       op.applyReduction();
     }
@@ -992,8 +994,6 @@ public class ReductionOpportunitiesTest {
         "void main()\n"
             + "{\n"
             + "    float a = 1;\n"
-            + "    float b = 2;\n"
-            + "    float c = 3;\n"
             + "    return a;\n"
             + "}\n";
     List<StmtReductionOpportunity> finalStmtOps =
@@ -1001,7 +1001,7 @@ public class ReductionOpportunitiesTest {
         new ReductionOpportunityContext(false,
             ShadingLanguageVersion.GLSL_440,
             new ZeroCannedRandom(), null));
-    assertEquals(3, finalStmtOps.size());
+    assertEquals(5, finalStmtOps.size());
     for (StmtReductionOpportunity op : finalStmtOps) {
       op.applyReduction();
     }

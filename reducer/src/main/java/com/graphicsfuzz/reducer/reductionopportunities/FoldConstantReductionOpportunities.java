@@ -330,14 +330,14 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
                                           Expr child,
                                           Expr lhs,
                                           Expr rhs) {
-    findFoldFpBinaryOpportunities(parent, child, lhs, rhs, (a, b) -> a - b);
+    findFoldFpBinaryOpportunities(parent, child, lhs, rhs, (first, second) -> first - second);
   }
 
   private void findFoldFpMulOpportunities(IAstNode parent,
                                           Expr child,
                                           Expr lhs,
                                           Expr rhs) {
-    findFoldFpBinaryOpportunities(parent, child, lhs, rhs, (a, b) -> a * b);
+    findFoldFpBinaryOpportunities(parent, child, lhs, rhs, (first, second) -> first * second);
   }
 
   private void findFoldFpBinaryOpportunities(IAstNode parent, Expr child, Expr lhs, Expr rhs,
@@ -360,14 +360,16 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
                                                       Expr child,
                                                       Expr lhs,
                                                       Expr rhs) {
-    findFoldFpScalarVectorBinaryOpportunities(parent, child, lhs, rhs, (a, b) -> a - b);
+    findFoldFpScalarVectorBinaryOpportunities(parent, child, lhs, rhs,
+        (first, second) -> first - second);
   }
 
   private void findFoldFpScalarVectorMulOpportunities(IAstNode parent,
                                                       Expr child,
                                                       Expr lhs,
                                                       Expr rhs) {
-    findFoldFpScalarVectorBinaryOpportunities(parent, child, lhs, rhs, (a, b) -> a * b);
+    findFoldFpScalarVectorBinaryOpportunities(parent, child, lhs, rhs,
+        (first, second) -> first * second);
   }
 
   private void findFoldFpScalarVectorBinaryOpportunities(IAstNode parent,

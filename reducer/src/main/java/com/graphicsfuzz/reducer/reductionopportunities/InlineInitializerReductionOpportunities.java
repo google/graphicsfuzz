@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
@@ -28,29 +29,33 @@ import com.graphicsfuzz.common.util.StatsVisitor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class InlineInitializerReductionOpportunities
-      extends ReductionOpportunitiesBase<InlineInitializerReductionOpportunity> {
+      extends ReductionOpportunitiesBase<SimplifyExprReductionOpportunity> {
 
   private static final int INITIALIZER_NODE_LIMIT = 20;
 
-  private final List<List<VariableDeclInfo>> relevantDeclInfosStack;
-  private final Set<VariableDeclInfo> referenced;
-  private final TranslationUnit tu;
+  // All variable identifier expressions that can be potentially replaced with initializers.
+  private final List<Pair<VariableDeclInfo, VariableIdentifierExpr>> inlineableUsages;
+
+  // A blacklist of variable declarations that we realise we must not inline references to after
+  // all (used to filter the list of potentially inlineable uses).
+  private final Set<VariableDeclInfo> blackList;
 
   private InlineInitializerReductionOpportunities(
         TranslationUnit tu,
         ReductionOpportunityContext context) {
     super(tu, context);
-    this.relevantDeclInfosStack = new ArrayList<>();
-    relevantDeclInfosStack.add(new ArrayList<>());
-    this.referenced = new HashSet<>();
-    this.tu = tu;
+    this.inlineableUsages = new LinkedList<>();
+    this.blackList = new HashSet<>();
   }
 
-  static List<InlineInitializerReductionOpportunity> findOpportunities(
+  static List<SimplifyExprReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
         ReductionOpportunityContext context) {
     return shaderJob.getShaders()
@@ -59,53 +64,25 @@ public class InlineInitializerReductionOpportunities
         .reduce(Arrays.asList(), ListConcat::concatenate);
   }
 
-  private static List<InlineInitializerReductionOpportunity> findOpportunitiesForShader(
+  private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
       ReductionOpportunityContext context) {
     InlineInitializerReductionOpportunities finder =
           new InlineInitializerReductionOpportunities(tu, context);
     finder.visit(tu);
-    // Do this for global variables
     finder.addOpportunities();
     return finder.getOpportunities();
   }
 
-  @Override
-  protected void pushScope() {
-    super.pushScope();
-    relevantDeclInfosStack.add(new ArrayList<>());
-  }
-
-  @Override
-  protected void popScope() {
-    addOpportunities();
-    super.popScope();
-  }
-
   private void addOpportunities() {
-    for (VariableDeclInfo vdi : topOfStack()) {
-      // To avoid a trivial reduction opportunity, we only add variable declaration infos in
-      // cases where they are actually referenced.
-      if (referenced.contains(vdi)) {
-        addOpportunity(new InlineInitializerReductionOpportunity(
-              tu, vdi, getVistitationDepth()));
+    for (Pair<VariableDeclInfo, VariableIdentifierExpr> pair : inlineableUsages) {
+      if (!blackList.contains(pair.getLeft())) {
+        addOpportunity(new SimplifyExprReductionOpportunity(
+            parentMap.getParent(pair.getRight()),
+            new ParenExpr(((ScalarInitializer) pair.getLeft().getInitializer()).getExpr().clone()),
+            pair.getRight(),
+            getVistitationDepth()));
       }
-    }
-    relevantDeclInfosStack.remove(relevantDeclInfosStack.size() - 1);
-  }
-
-  @Override
-  public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
-    super.visitVariableDeclInfo(variableDeclInfo);
-    if (!variableDeclInfo.hasInitializer()) {
-      return;
-    }
-    if (!(variableDeclInfo.getInitializer() instanceof ScalarInitializer)) {
-      return;
-    }
-    assert !topOfStack().contains(variableDeclInfo);
-    if (allowedToReduce(variableDeclInfo)) {
-      topOfStack().add(variableDeclInfo);
     }
   }
 
@@ -117,36 +94,36 @@ public class InlineInitializerReductionOpportunities
       return;
     }
     final VariableDeclInfo variableDeclInfo = se.getVariableDeclInfo();
-    // We mark this variableDeclInfo as being referenced.
-    referenced.add(variableDeclInfo);
-
-    // If we find that a variable is used in an l-value context, we cannot inline its initializer.
-    if (!inLValueContext()) {
-      // This is fine.
+    if (!allowedToReduce(variableDeclInfo)) {
       return;
     }
-    for (List<VariableDeclInfo> vdis : relevantDeclInfosStack) {
-      if (vdis.contains(variableDeclInfo)) {
-        vdis.remove(variableDeclInfo);
-        return;
+    if (inLValueContext()) {
+      if (!context.reduceEverywhere() && !currentProgramPointHasNoEffect()) {
+        // The declaration is used as an l-value.  To preserve semantics we cannot inline its
+        // initializer.  For example, in:
+        //   int x = 2;
+        //   x += 2;
+        //   x += x;
+        // we end up with x == 8, but if we would inline the initializer to the r-value usage of
+        // x we would get x == 6.
+        blackList.add(variableDeclInfo);
       }
+      return;
     }
+    inlineableUsages.add(new ImmutablePair<>(variableDeclInfo, variableIdentifierExpr));
   }
 
   private boolean allowedToReduce(VariableDeclInfo variableDeclInfo) {
+    if (!variableDeclInfo.hasInitializer()) {
+      return false;
+    }
     if (initializerIsTooBig(variableDeclInfo.getInitializer())) {
       return false;
     }
     if (context.reduceEverywhere()) {
       return true;
     }
-    if (injectionTracker.enclosedByDeadCodeInjection()) {
-      return true;
-    }
-    if (injectionTracker.underUnreachableSwitchCase()) {
-      return true;
-    }
-    if (enclosingFunctionIsDead()) {
+    if (currentProgramPointHasNoEffect()) {
       return true;
     }
     if (StmtReductionOpportunities.isLooplimiter(variableDeclInfo.getName())) {
@@ -159,6 +136,19 @@ public class InlineInitializerReductionOpportunities
     return false;
   }
 
+  private boolean currentProgramPointHasNoEffect() {
+    if (injectionTracker.enclosedByDeadCodeInjection()) {
+      return true;
+    }
+    if (injectionTracker.underUnreachableSwitchCase()) {
+      return true;
+    }
+    if (enclosingFunctionIsDead()) {
+      return true;
+    }
+    return false;
+  }
+
   private boolean initializerIsTooBig(Initializer initializer) {
     // We need to be careful not to inline large initializers.  Doing so could really slow down
     // reduction.  E.g. we might have a declaration that we'll soon be able to delete once we hack
@@ -166,10 +156,6 @@ public class InlineInitializerReductionOpportunities
     // places and then spend a terribly long time performing expression simplification on the
     // resulting expansions.
     return new StatsVisitor(initializer).getNumNodes() > INITIALIZER_NODE_LIMIT;
-  }
-
-  private List<VariableDeclInfo> topOfStack() {
-    return relevantDeclInfosStack.get(relevantDeclInfosStack.size() - 1);
   }
 
 }

@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
@@ -69,6 +70,26 @@ public class VariableDeclReductionOpportunitiesTest {
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(reducedProgram, tu);
+  }
+
+  @Test
+  public void testNothingToRemove() throws Exception {
+    final String program = "void main() {\n"
+        + "  float k = 1.0;\n"
+        + "  gl_FragColor = vec4(k, 0.0, 0.0, 0.0);\n"
+        + "}\n";
+    final TranslationUnit tu = Helper.parse(program, false);
+    List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
+        .findOpportunities(
+            MakeShaderJobFromFragmentShader.make(tu),
+            new ReductionOpportunityContext(
+                false,
+                ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0),
+                new IdGenerator()
+            )
+        );
+    assertEquals(0, ops.size());
   }
 
 }
