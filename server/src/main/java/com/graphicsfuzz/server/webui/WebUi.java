@@ -279,13 +279,15 @@ public class WebUi extends HttpServlet {
     return workers;
   }
 
-  private List<WorkerInfo> getLiveWorkers() throws TException {
+  private List<WorkerInfo> getLiveWorkers(boolean includeInactive) throws TException {
     List<WorkerInfo> workers = fuzzerServiceManagerProxy.getServerState().getWorkers();
     workers.sort((workerInfo, t1) -> {
       Comparator<String> comparator = Comparator.naturalOrder();
       return comparator.compare(workerInfo.getToken(), t1.getToken());
     });
-    workers.removeIf(w -> !(w.live));
+    if (!includeInactive) {
+      workers.removeIf(w -> !(w.live));
+    }
     return workers;
   }
 
@@ -346,7 +348,7 @@ public class WebUi extends HttpServlet {
         "<h3>Connected workers</h3>\n",
         "<div class='ui selection animated celled list'>\n");
     List<String> tokens = new ArrayList<>();
-    for (WorkerInfo worker : getLiveWorkers()) {
+    for (WorkerInfo worker : getLiveWorkers(false)) {
       htmlAppendLn("<a class='item' href='/webui/worker/", worker.getToken(), "'>",
           "<i class='large middle aligned mobile icon'></i><div class='content'>",
           "<div class='header'>", worker.getToken(), "</div>",
@@ -493,7 +495,7 @@ public class WebUi extends HttpServlet {
     List<WorkerInfo> workers;
     boolean atLeastOne = false;
 
-    for (WorkerInfo worker : getLiveWorkers()) {
+    for (WorkerInfo worker : getLiveWorkers(true)) {
       if (worker.getToken().equals(workerName)) {
         List<CommandInfo> commands = worker.getCommandQueue();
         if (commands.size() > 0) {
@@ -650,7 +652,7 @@ public class WebUi extends HttpServlet {
         "<h3>Select workers and shader families</h3>",
         "<form class='ui form' method='post'>");
 
-    List<WorkerInfo> workers = getLiveWorkers();
+    List<WorkerInfo> workers = getLiveWorkers(false);
 
     htmlAppendLn("<h4 class='ui dividing header'>Workers</h4>");
     if (workers.size() == 0) {
@@ -1118,7 +1120,7 @@ public class WebUi extends HttpServlet {
         "<div class='ui divider'></div>");
 
     int dataNum = 0;
-    for (WorkerInfo workerInfo: getLiveWorkers()) {
+    for (WorkerInfo workerInfo: getLiveWorkers(false)) {
       htmlAppendLn("<div class='ui field'>",
           "<div class='ui checkbox'>",
           "<input tabindex='0' class='hidden' type='checkbox' name='workercheck'",
@@ -1513,7 +1515,7 @@ public class WebUi extends HttpServlet {
     //Check if worker is live (cannot rename live workers without some new thrift functionality
     boolean workerLive = false;
     try {
-      for (WorkerInfo workerInfo : getLiveWorkers()) {
+      for (WorkerInfo workerInfo : getLiveWorkers(true)) {
         if (workerInfo.getToken().equals(worker)) {
           workerLive = true;
           break;
