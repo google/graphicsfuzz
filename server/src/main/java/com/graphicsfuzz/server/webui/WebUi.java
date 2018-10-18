@@ -847,7 +847,8 @@ public class WebUi extends HttpServlet {
         "Status: <b>", status, "</b></p>");
 
     htmlAppendLn("<form method='post' id='deleteForm'>\n",
-        "<input type='hidden' name='path' value='", variantResultJobFileNoExtension, "'/>\n",
+        "<input type='hidden' name='path' value='", variantResultJobFileNoExtension + ".info.json",
+        "'/>\n",
         "<input type='hidden' name='type' value='delete'/>\n",
         "<input type='hidden' name='num_back' value='2'/>\n",
         "<div class='ui button'",
@@ -1290,34 +1291,20 @@ public class WebUi extends HttpServlet {
   private void delete(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
     response.setContentType("text/html");
-    //Find file
+
     File file = new File(request.getParameter("path"));
+    String numBack = request.getParameter("num_back");
+
     if (!file.exists()) {
       err404(request, response, "Path to results " + file.getPath() + " not allowed/valid!");
       return;
     }
-    String numBack = request.getParameter("num_back");
 
-    //Delete file
-    if (file.isFile()) {
-      file.delete();
-    } else if (file.isDirectory()) {
-      try {
-        FileUtils.deleteDirectory(file);
-      } catch (Exception exception) {
-        err404(request, response, exception.getMessage());
-        return;
-      }
+    if (file.toString().endsWith(".info.json")) {
+      fileOps.deleteShaderJobResultFile(file);
+    } else {
+      FileUtils.forceDelete(file);
     }
-
-    //Check if successful
-    if (file.exists()) {
-      err404(request, response, "Attempt to delete " + file.getPath() + " failed!");
-      return;
-    }
-
-    String deleteJs = getResourceContent("goBack.js")
-        + "\nwindow.onload = goBack('" + file.getPath() + " deleted!', " + numBack + ");";
 
     html.setLength(0);
     htmlAppendLn("<script>\n",
