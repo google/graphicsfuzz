@@ -23,6 +23,7 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.SideEffectChecker;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -142,8 +143,11 @@ public class InlineInitializerReductionOpportunities
     if (enclosingFunctionIsDead()) {
       return true;
     }
-    if (StmtReductionOpportunities.isLiveCodeVariableDeclaration(variableDeclInfo)
-          && !StmtReductionOpportunities.isLooplimiter(variableDeclInfo.getName())) {
+    if (StmtReductionOpportunities.isLooplimiter(variableDeclInfo.getName())) {
+      // Do not mess with loop limiters.
+      return false;
+    }
+    if (initializerIsScalarAndSideEffectFree(variableDeclInfo)) {
       return true;
     }
     return false;
@@ -152,4 +156,5 @@ public class InlineInitializerReductionOpportunities
   private List<VariableDeclInfo> topOfStack() {
     return relevantDeclInfosStack.get(relevantDeclInfosStack.size() - 1);
   }
+
 }

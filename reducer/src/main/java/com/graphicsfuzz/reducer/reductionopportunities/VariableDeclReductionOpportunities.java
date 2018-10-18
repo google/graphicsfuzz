@@ -130,7 +130,8 @@ public class VariableDeclReductionOpportunities
     return context.reduceEverywhere() || enclosingFunctionIsDead()
         || injectionTracker.enclosedByDeadCodeInjection()
         || isLiveInjection(variableDeclInfo)
-        || !variableDeclInfo.hasInitializer();
+        || !variableDeclInfo.hasInitializer()
+        || initializerIsScalarAndSideEffectFree(variableDeclInfo);
   }
 
   private boolean isLiveInjection(VariableDeclInfo variableDeclInfo) {

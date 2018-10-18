@@ -20,6 +20,8 @@ import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
+import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
@@ -35,6 +37,7 @@ import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.util.SideEffectChecker;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -196,6 +199,18 @@ public abstract class ReductionOpportunitiesBase
 
   boolean inLValueContext() {
     return numEnclosingLValues > 0;
+  }
+
+  boolean initializerIsScalarAndSideEffectFree(VariableDeclInfo variableDeclInfo) {
+    if (!variableDeclInfo.hasInitializer()) {
+      return false;
+    }
+    if (!(variableDeclInfo.getInitializer() instanceof ScalarInitializer)) {
+      return false;
+    }
+    return SideEffectChecker.isSideEffectFree(
+        ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
+        context.getShadingLanguageVersion());
   }
 
   boolean typeIsReducibleToConst(Type type) {

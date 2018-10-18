@@ -18,11 +18,14 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
@@ -31,10 +34,12 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.common.util.ZeroCannedRandom;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Test;
 
 public class ReductionOpportunitiesTest {
@@ -1026,6 +1031,57 @@ public class ReductionOpportunitiesTest {
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(4, moreOps.size());
+  }
+
+  @Test
+  public void testUniformsGetRemoved() throws Exception {
+    final String program = "#version 310 es\n" +
+        "\n" +
+        "#ifdef GL_ES\n" +
+        "#ifdef GL_FRAGMENT_PRECISION_HIGH\n" +
+        "precision highp float;\n" +
+        "precision highp int;\n" +
+        "#else\n" +
+        "precision mediump float;\n" +
+        "precision mediump int;\n" +
+        "#endif\n" +
+        "#endif\n" +
+        "\n" +
+        "#ifndef REDUCER\n" +
+        "#define _GLF_ZERO(X, Y)          (Y)\n" +
+        "#define _GLF_ONE(X, Y)           (Y)\n" +
+        "#define _GLF_FALSE(X, Y)         (Y)\n" +
+        "#define _GLF_TRUE(X, Y)          (Y)\n" +
+        "#define _GLF_IDENTITY(X, Y)      (Y)\n" +
+        "#define _GLF_DEAD(X)             (X)\n" +
+        "#define _GLF_FUZZED(X)           (X)\n" +
+        "#define _GLF_WRAPPED_LOOP(X)     X\n" +
+        "#define _GLF_WRAPPED_IF_TRUE(X)  X\n" +
+        "#define _GLF_WRAPPED_IF_FALSE(X) X\n" +
+        "#define _GLF_SWITCH(X)           X\n" +
+        "#endif\n" +
+        "\n" +
+        "// END OF GENERATED HEADER\n" +
+        "\n" +
+        "layout(set=0,binding=0) uniform buf0 {\n" +
+        " vec2 injectionSwitch;\n" +
+        "} ;\n" +
+        "void main() { }";
+    final TranslationUnit tu = Helper.parse(program, true);
+    final String json = "{ \"injectionSwitch\": { \"args\": [ 1.0, 2.0 ], " +
+        "    \"func\": \"glUniform2f\", \"binding\": 0 } }";
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        Optional.of(tu), new UniformsInfo(json), Optional.empty());
+    shaderJob.removeUniformBindings();
+
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+            new RandomWrapper(0), new IdGenerator()), fileOps);
+    assertEquals(1, ops.size());
+    assertTrue(ops.get(0) instanceof VariableDeclReductionOpportunity);
+    ops.get(0).applyReduction();
+    shaderJob.makeUniformBindings();
+    CompareAsts.assertEqualAsts("void main() { }", tu);
   }
 
 }
