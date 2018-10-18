@@ -1292,8 +1292,8 @@ public class WebUi extends HttpServlet {
       throws ServletException, IOException {
     response.setContentType("text/html");
 
-    File file = new File(request.getParameter("path"));
-    String numBack = request.getParameter("num_back");
+    final File file = new File(request.getParameter("path"));
+    final String numBack = request.getParameter("num_back");
 
     if (!file.exists()) {
       err404(request, response, "Path to results " + file.getPath() + " not allowed/valid!");
