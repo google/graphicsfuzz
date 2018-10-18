@@ -44,6 +44,12 @@ public class LocalShaderDispatcher implements IShaderDispatcher {
     // For running shaders locally, we write the necessary files to a temp directory,
     // run the get_image tool, and then collect the results in an ImageJobResult.
 
+    // Due to strange Thrift behaviour, we set this default value explicitly
+    // otherwise "isSetSkipRender()" is false.
+    if (!imageJob.isSetSkipRender()) {
+      imageJob.setSkipRender(false);
+    }
+
     File localTempShaderJobFile =
         new File(
             tempDir,
