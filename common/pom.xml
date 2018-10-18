@@ -49,7 +49,7 @@ limitations under the License.
       <artifactId>gson</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.graphicsfuzz</groupId>
+      <groupId>com.graphicsfuzz.thirdparty</groupId>
       <artifactId>alphanum-comparator</artifactId>
     </dependency>
     <dependency>
@@ -79,7 +79,7 @@ limitations under the License.
       <artifactId>server-thrift-gen</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.graphicsfuzz</groupId>
+      <groupId>com.graphicsfuzz.thirdparty</groupId>
       <artifactId>gif-sequence-writer</artifactId>
     </dependency>
 
