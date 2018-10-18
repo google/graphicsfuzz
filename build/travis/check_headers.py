@@ -22,6 +22,7 @@ path = os.path.join
 
 excluded_dirnames = ["target", ".git", ".idea", ".gradle", "tmp", "third_party", "venv",
                      "__pycache__"]
+
 excluded_dirpaths = ["./platforms/libgdx/OGLTesting/build",
                      "./platforms/libgdx/OGLTesting/android/build",
                      "./platforms/libgdx/OGLTesting/android/libs",
@@ -29,22 +30,54 @@ excluded_dirpaths = ["./platforms/libgdx/OGLTesting/build",
                      "./platforms/libgdx/OGLTesting/desktop/build",
                      "./platforms/libgdx/OGLTesting/gradle/wrapper",
                      "./build/licenses",
-                     ]
+                    ]
 
 
-def exclude_file(f:str):
+def no_ext_or_endswith_bat(f: str):
+    if len(os.path.basename(f).split(".")) == 1:
+        # No extension
+        return True
+    if f.endswith(".bat"):
+        return True
+    return False
+
+
+def is_command_wrapper(f: str):
+    if not no_ext_or_endswith_bat(f):
+        return False
+    with io.open(f, 'r') as fin:
+        if len(fin.readlines()) < 6:
+            return True
+    return False
+
+
+def exclude_file(f: str):
     return \
+        f.startswith("./python/src/main/python/drivers/") and is_command_wrapper(f) or \
         f in [
             "./assembly/src/main/scripts/server-static/shaders/shader.vert",
             "./server-static-public/src/main/files/server-static/runner_multi_template.html",
+            "./platforms/libgdx/OGLTesting/build.gradle",
+            "./platforms/libgdx/OGLTesting/gradle.properties",
+            "./platforms/libgdx/OGLTesting/settings.gradle",
+            "./platforms/libgdx/OGLTesting/android/build.gradle",
+            "./platforms/libgdx/OGLTesting/android/proguard-project.txt",
+            "./platforms/libgdx/OGLTesting/android/project.properties",
+            "./platforms/libgdx/OGLTesting/core/build.gradle",
+            "./platforms/libgdx/OGLTesting/desktop/build.gradle",
+            "./platforms/libgdx/OGLTesting/ios/build.gradle",
+            "./platforms/libgdx/OGLTesting/ios/robovm.properties",
+
         ]
 
 
-def exclude_filename(f:str):
+def exclude_filename(f: str):
     return \
         f.endswith(".iml") or \
         f.endswith(".png") or \
         f.endswith(".md") or \
+        f.endswith(".json") or \
+        f.endswith(".primitives") or \
         f in [
             ".editorconfig",
             ".gitignore",
@@ -54,6 +87,11 @@ def exclude_filename(f:str):
             "CONTRIBUTORS",
             "LICENSE",
             "HASH",
+            "local.properties",
+            "gradlew",
+            "gradlew.bat",
+            "dependency-reduced-pom.xml",
+
 
         ]
 

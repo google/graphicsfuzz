@@ -18,6 +18,7 @@ import os
 import subprocess
 import shutil
 import licenses
+import check_headers
 
 path = os.path.join
 
@@ -26,6 +27,9 @@ def go():
     os.environ["GRADLE_OPTS"] = "-Dorg.gradle.daemon=false"
 
     os.mkdir("out")
+
+    # Check licenses
+    check_headers.go()
 
     # Build with no tests.
     subprocess.check_call(["mvn", "package", "-Dmaven.test.skip=true"])
