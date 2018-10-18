@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.common.tool;
+package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 
@@ -24,6 +25,10 @@ public class StatsVisitor extends StandardVisitor {
 
   private int statements = 0;
   private int nodes = 0;
+
+  public StatsVisitor(IAstNode node) {
+    visit(node);
+  }
 
   @Override
   public void visit(IAstNode node) {
@@ -34,11 +39,12 @@ public class StatsVisitor extends StandardVisitor {
     }
   }
 
-  public int getStatements() {
+  public int getNumStatements() {
     return statements;
   }
 
-  public int getNodes() {
+  public int getNumNodes() {
     return nodes;
   }
+
 }

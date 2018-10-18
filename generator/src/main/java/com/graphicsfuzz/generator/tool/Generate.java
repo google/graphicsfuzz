@@ -23,7 +23,6 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.tool.StatsVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
@@ -33,6 +32,7 @@ import com.graphicsfuzz.common.util.PruneUniforms;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.common.util.StatsVisitor;
 import com.graphicsfuzz.common.util.StripUnusedFunctions;
 import com.graphicsfuzz.common.util.StripUnusedGlobals;
 import com.graphicsfuzz.common.util.UniformsInfo;
@@ -53,9 +53,7 @@ import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -404,8 +402,7 @@ public class Generate {
   }
 
   private static boolean shaderLargeEnough(TranslationUnit tu, IRandom generator) {
-    StatsVisitor statsVisitor = new StatsVisitor();
-    statsVisitor.visit(tu);
+    final StatsVisitor statsVisitor = new StatsVisitor(tu);
 
     // WebGL:
     //final int minNodes = 3000;
@@ -415,7 +412,7 @@ public class Generate {
     final int maxNodes = 22000;
     final int nodeLimit = generator.nextInt(maxNodes - minNodes) + minNodes;
 
-    return statsVisitor.getNodes() > nodeLimit;
+    return statsVisitor.getNumNodes() > nodeLimit;
 
   }
 

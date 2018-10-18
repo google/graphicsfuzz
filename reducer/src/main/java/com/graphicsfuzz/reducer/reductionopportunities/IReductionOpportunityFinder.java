@@ -136,11 +136,11 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
-  static IReductionOpportunityFinder<InlineInitializerReductionOpportunity>
+  static IReductionOpportunityFinder<SimplifyExprReductionOpportunity>
       inlineInitializerFinder() {
-    return new IReductionOpportunityFinder<InlineInitializerReductionOpportunity>() {
+    return new IReductionOpportunityFinder<SimplifyExprReductionOpportunity>() {
       @Override
-      public List<InlineInitializerReductionOpportunity> findOpportunities(ShaderJob shaderJob,
+      public List<SimplifyExprReductionOpportunity> findOpportunities(ShaderJob shaderJob,
             ReductionOpportunityContext context) {
         return InlineInitializerReductionOpportunities.findOpportunities(shaderJob, context);
       }

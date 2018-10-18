@@ -16,11 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -30,30 +27,11 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.util.List;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class GlobalVariablesDeclarationReductionOpportunitiesTest {
 
   private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-
-  @Test
-  public void testNothingToRemove() throws Exception {
-    final String program = "void main() {\n"
-          + "  float k = 1.0;\n"
-          + "  gl_FragColor = vec4(k, 0.0, 0.0, 0.0);\n"
-          + "}\n";
-    final TranslationUnit tu = Helper.parse(program, false);
-    List<IReductionOpportunity> ops = ReductionOpportunities
-          .getReductionOpportunities(
-              MakeShaderJobFromFragmentShader.make(tu),
-              new ReductionOpportunityContext(
-                  false,
-                  ShadingLanguageVersion.ESSL_100,
-                  new RandomWrapper(0),
-                  new IdGenerator()
-              ),
-              fileOps
-          );
-    assertEquals(0, ops.size());
-  }
 
   @Test
   public void testDoNotRemoveLocalInitialization() throws Exception {

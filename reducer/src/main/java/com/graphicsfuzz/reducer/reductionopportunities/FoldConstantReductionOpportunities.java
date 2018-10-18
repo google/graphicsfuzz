@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 The GraphicsFuzz Project Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.IAstNode;
@@ -22,7 +38,8 @@ import com.graphicsfuzz.common.util.SideEffectChecker;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import jdk.nashorn.internal.ir.FunctionCall;
+import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
 
 public final class FoldConstantReductionOpportunities extends SimplifyExprReductionOpportunities {
 
@@ -60,19 +77,22 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       final Expr rhs = maybeBe.get().getRhs();
       switch (maybeBe.get().getOp()) {
 
-        // TODO: consider doing full-on constant folding here.
+        // TODO: Gradually make this more capable towards full-on constant folding.
         // An issue is: at what precision should we do the constant folding?
-        // While we figure this out, let's just do the identity and annihilator cases.
+        // For starters, let's use Java's precision and see how this goes in practice.
 
         case ADD:
-
           findFoldAddZeroOpportunities(parent, child, lhs, rhs);
           findFoldAddZeroOpportunities(parent, child, rhs, lhs);
+          findFoldFpAddOpportunities(parent, child, lhs, rhs);
+          findFoldFpScalarVectorAddOpportunities(parent, child, lhs, rhs);
           return;
 
         case SUB:
           findFoldSomethingSubZeroOpportunities(parent, child, lhs, rhs);
           findFoldZeroSubSomethingOpportunities(parent, child, lhs, rhs);
+          findFoldFpSubOpportunities(parent, child, lhs, rhs);
+          findFoldFpScalarVectorSubOpportunities(parent, child, lhs, rhs);
           return;
 
         case MUL:
@@ -80,6 +100,8 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
           findFoldMulIdentityOpportunities(parent, child, rhs, lhs);
           findFoldMulZeroOpportunities(parent, child, lhs, rhs);
           findFoldMulZeroOpportunities(parent, child, rhs, lhs);
+          findFoldFpMulOpportunities(parent, child, lhs, rhs);
+          findFoldFpScalarVectorMulOpportunities(parent, child, lhs, rhs);
           return;
 
         case DIV:
@@ -297,6 +319,92 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     }
   }
 
+  private void findFoldFpAddOpportunities(IAstNode parent,
+                                          Expr child,
+                                          Expr lhs,
+                                          Expr rhs) {
+    findFoldFpBinaryOpportunities(parent, child, lhs, rhs, Float::sum);
+  }
+
+  private void findFoldFpSubOpportunities(IAstNode parent,
+                                          Expr child,
+                                          Expr lhs,
+                                          Expr rhs) {
+    findFoldFpBinaryOpportunities(parent, child, lhs, rhs, (first, second) -> first - second);
+  }
+
+  private void findFoldFpMulOpportunities(IAstNode parent,
+                                          Expr child,
+                                          Expr lhs,
+                                          Expr rhs) {
+    findFoldFpBinaryOpportunities(parent, child, lhs, rhs, (first, second) -> first * second);
+  }
+
+  private void findFoldFpBinaryOpportunities(IAstNode parent, Expr child, Expr lhs, Expr rhs,
+                                             BinaryOperator<Float> op) {
+    if (isFpConstant(lhs) && isFpConstant(rhs)) {
+      addReplaceWithExpr(parent, child, new FloatConstantExpr(
+          op.apply(Float.valueOf(((FloatConstantExpr) lhs).getValue()),
+              Float.valueOf(((FloatConstantExpr) rhs).getValue())).toString()));
+    }
+  }
+
+  private void findFoldFpScalarVectorAddOpportunities(IAstNode parent,
+                                                      Expr child,
+                                                      Expr lhs,
+                                                      Expr rhs) {
+    findFoldFpScalarVectorBinaryOpportunities(parent, child, lhs, rhs, Float::sum);
+  }
+
+  private void findFoldFpScalarVectorSubOpportunities(IAstNode parent,
+                                                      Expr child,
+                                                      Expr lhs,
+                                                      Expr rhs) {
+    findFoldFpScalarVectorBinaryOpportunities(parent, child, lhs, rhs,
+        (first, second) -> first - second);
+  }
+
+  private void findFoldFpScalarVectorMulOpportunities(IAstNode parent,
+                                                      Expr child,
+                                                      Expr lhs,
+                                                      Expr rhs) {
+    findFoldFpScalarVectorBinaryOpportunities(parent, child, lhs, rhs,
+        (first, second) -> first * second);
+  }
+
+  private void findFoldFpScalarVectorBinaryOpportunities(IAstNode parent,
+                                                         Expr child,
+                                                         Expr lhs,
+                                                         Expr rhs,
+                                                         BinaryOperator<Float> op) {
+    if (isFpConstant(lhs) && isFpVectorConstant(rhs)) {
+      final TypeConstructorExpr typeConstructorExpr = (TypeConstructorExpr) rhs;
+      addReplaceWithExpr(parent, child,
+          new TypeConstructorExpr(typeConstructorExpr.getTypename(),
+              typeConstructorExpr.getArgs()
+                  .stream()
+                  .map(item -> (FloatConstantExpr) item)
+                  .map(item -> new FloatConstantExpr(op.apply(
+                      Float.valueOf(((FloatConstantExpr) lhs).getValue()),
+                      Float.valueOf(item.getValue())).toString()))
+                  .collect(Collectors.toList())));
+    }
+
+    if (isFpConstant(rhs) && isFpVectorConstant(lhs)) {
+      final TypeConstructorExpr typeConstructorExpr = (TypeConstructorExpr) lhs;
+      addReplaceWithExpr(parent, child,
+          new TypeConstructorExpr(typeConstructorExpr.getTypename(),
+              typeConstructorExpr.getArgs()
+                  .stream()
+                  .map(item -> (FloatConstantExpr) item)
+                  .map(item -> new FloatConstantExpr(op.apply(
+                      Float.valueOf(item.getValue()),
+                      Float.valueOf(((FloatConstantExpr) rhs).getValue())).toString()))
+                  .collect(Collectors.toList())));
+    }
+  }
+
+
   static List<SimplifyExprReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
       ReductionOpportunityContext context) {
@@ -418,15 +526,30 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     return true;
   }
 
-  private boolean isZeroInt(Expr expr) {
+  private static boolean isZeroInt(Expr expr) {
     return isIntValue(expr, Arrays.asList("0"));
   }
 
-  private boolean isIntValue(Expr expr, List<String> values) {
+  private static boolean isIntValue(Expr expr, List<String> values) {
     if (!(expr instanceof IntConstantExpr)) {
       return false;
     }
     return values.contains(((IntConstantExpr) expr).getValue());
+  }
+
+  private static boolean isFpConstant(Expr expr) {
+    return expr instanceof FloatConstantExpr;
+  }
+
+  private static boolean isFpVectorConstant(Expr expr) {
+    return expr instanceof TypeConstructorExpr
+        && Arrays.asList(BasicType.VEC2.toString(),
+                         BasicType.VEC3.toString(),
+                         BasicType.VEC4.toString())
+                           .contains(((TypeConstructorExpr) expr).getTypename())
+        && ((TypeConstructorExpr) expr).getArgs()
+                           .stream()
+                           .allMatch(FoldConstantReductionOpportunities::isFpConstant);
   }
 
   private Expr makeZeroFloat() {

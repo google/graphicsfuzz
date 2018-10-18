@@ -347,6 +347,63 @@ public class FoldConstantReductionOpportunitiesTest {
             "}");
   }
 
+  @Test
+  public void testFpMul() throws Exception {
+    check("void main() { 2.0*3.0; }", 1, "void main() { 6.0; }");
+  }
+
+  @Test
+  public void testFpAdd() throws Exception {
+    check("void main() { 2.0+3.0; }", 1, "void main() { 5.0; }");
+  }
+
+  @Test
+  public void testFpSub() throws Exception {
+    check("void main() { 2.0-3.0; }", 1, "void main() { -1.0; }");
+  }
+
+  @Test
+  public void testVecScalarMul1() throws Exception {
+    check("void main() { vec3(10.0, 11.0, 12.0) * 10.0; }",
+        1,
+        "void main() { vec3(100.0, 110.0, 120.0); }");
+  }
+
+  @Test
+  public void testVecScalarAdd1() throws Exception {
+    check("void main() { vec3(0.02, 0.02, 0.025) + 10.0; }",
+        1,
+        "void main() { vec3(10.02, 10.02, 10.025); }");
+  }
+
+  @Test
+  public void testVecScalarSub1() throws Exception {
+    check("void main() { vec3(0.02, 0.02, 0.025) - 10.0; }",
+        1,
+        "void main() { vec3(-9.98, -9.98, -9.975); }");
+  }
+
+  @Test
+  public void testVecScalarMul2() throws Exception {
+    check("void main() { 10.0 * vec3(10.0, 11.0, 12.0); }",
+        1,
+        "void main() { vec3(100.0, 110.0, 120.0); }");
+  }
+
+  @Test
+  public void testVecScalarAdd2() throws Exception {
+    check("void main() { 10.0 + vec3(0.02, 0.02, 0.025); }",
+        1,
+        "void main() { vec3(10.02, 10.02, 10.025); }");
+  }
+
+  @Test
+  public void testVecScalarSub2() throws Exception {
+    check("void main() { 10.0 - vec3(0.02, 0.02, 0.025); }",
+        1,
+        "void main() { vec3(9.98, 9.98, 9.975); }");
+  }
+
   private void check(String before, int numOps, String after) throws IOException, ParseTimeoutException {
     final TranslationUnit tu = Helper.parse(before, false);
     final List<SimplifyExprReductionOpportunity> ops = FoldConstantReductionOpportunities
@@ -356,5 +413,6 @@ public class FoldConstantReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(after, tu);
     assertEquals(numOps, ops.size());
   }
+
 
 }

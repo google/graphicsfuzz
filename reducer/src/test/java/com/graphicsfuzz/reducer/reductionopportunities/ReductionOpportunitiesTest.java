@@ -18,11 +18,14 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
@@ -31,10 +34,12 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.common.util.ZeroCannedRandom;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Test;
 
 public class ReductionOpportunitiesTest {
@@ -268,6 +273,7 @@ public class ReductionOpportunitiesTest {
         + "  void main()\n"
         + "  {\n"
         + "    _GLF_struct_0 _GLF_struct_replacement_1 = _GLF_struct_0(2, ivec3(1));\n"
+        + "    _GLF_struct_replacement_1.x++;\n"
         + "    _GLF_struct_9 _GLF_struct_replacement_10 = _GLF_struct_9(vec3(1.0), _GLF_struct_2(mat3(1.0)), _GLF_struct_7(_GLF_struct_6(_GLF_struct_replacement_1.x, _GLF_struct_3(1, true, ivec2(1), vec4(1.0), mat3(1.0)), _GLF_struct_4(1.0, vec4(1.0)), _GLF_struct_5(1.0, 1), ivec3(1)), ivec2(1)), _GLF_struct_8(mat3(1.0)));\n"
         + "    S z = S(_GLF_struct_replacement_1.x, _GLF_struct_replacement_10._f2._f0.y);\n"
         + "    _GLF_struct_replacement_10._f2._f0.y = z.a;\n"
@@ -282,6 +288,7 @@ public class ReductionOpportunitiesTest {
         + "\n"
         + "void main() {\n"
         + "  int x = 2;\n"
+        + "  x++;\n"
         + "  int y = x;\n"
         + "  S z = S(x, y);\n"
         + "  y = z.a;\n"
@@ -967,8 +974,8 @@ public class ReductionOpportunitiesTest {
             + "    vec4 ;\n"
             + "    vec3 ;\n"
             + "    float a = 1;\n"
-            + "    float b = 2;\n"
-            + "    float c = 3;\n"
+            + "    float ;\n"
+            + "    float ;\n"
             + "    return a;\n"
             + "}\n";
     List<VariableDeclReductionOpportunity> varDeclOps =
@@ -976,7 +983,7 @@ public class ReductionOpportunitiesTest {
             new ReductionOpportunityContext(false,
                 ShadingLanguageVersion.GLSL_440,
                 new ZeroCannedRandom(), null));
-    assertEquals(3, stmtOps.size());
+    assertEquals(5, varDeclOps.size());
     for (VariableDeclReductionOpportunity op : varDeclOps) {
       op.applyReduction();
     }
@@ -987,8 +994,6 @@ public class ReductionOpportunitiesTest {
         "void main()\n"
             + "{\n"
             + "    float a = 1;\n"
-            + "    float b = 2;\n"
-            + "    float c = 3;\n"
             + "    return a;\n"
             + "}\n";
     List<StmtReductionOpportunity> finalStmtOps =
@@ -996,7 +1001,7 @@ public class ReductionOpportunitiesTest {
         new ReductionOpportunityContext(false,
             ShadingLanguageVersion.GLSL_440,
             new ZeroCannedRandom(), null));
-    assertEquals(3, finalStmtOps.size());
+    assertEquals(5, finalStmtOps.size());
     for (StmtReductionOpportunity op : finalStmtOps) {
       op.applyReduction();
     }
@@ -1026,6 +1031,57 @@ public class ReductionOpportunitiesTest {
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(4, moreOps.size());
+  }
+
+  @Test
+  public void testUniformsGetRemoved() throws Exception {
+    final String program = "#version 310 es\n" +
+        "\n" +
+        "#ifdef GL_ES\n" +
+        "#ifdef GL_FRAGMENT_PRECISION_HIGH\n" +
+        "precision highp float;\n" +
+        "precision highp int;\n" +
+        "#else\n" +
+        "precision mediump float;\n" +
+        "precision mediump int;\n" +
+        "#endif\n" +
+        "#endif\n" +
+        "\n" +
+        "#ifndef REDUCER\n" +
+        "#define _GLF_ZERO(X, Y)          (Y)\n" +
+        "#define _GLF_ONE(X, Y)           (Y)\n" +
+        "#define _GLF_FALSE(X, Y)         (Y)\n" +
+        "#define _GLF_TRUE(X, Y)          (Y)\n" +
+        "#define _GLF_IDENTITY(X, Y)      (Y)\n" +
+        "#define _GLF_DEAD(X)             (X)\n" +
+        "#define _GLF_FUZZED(X)           (X)\n" +
+        "#define _GLF_WRAPPED_LOOP(X)     X\n" +
+        "#define _GLF_WRAPPED_IF_TRUE(X)  X\n" +
+        "#define _GLF_WRAPPED_IF_FALSE(X) X\n" +
+        "#define _GLF_SWITCH(X)           X\n" +
+        "#endif\n" +
+        "\n" +
+        "// END OF GENERATED HEADER\n" +
+        "\n" +
+        "layout(set=0,binding=0) uniform buf0 {\n" +
+        " vec2 injectionSwitch;\n" +
+        "} ;\n" +
+        "void main() { }";
+    final TranslationUnit tu = Helper.parse(program, true);
+    final String json = "{ \"injectionSwitch\": { \"args\": [ 1.0, 2.0 ], " +
+        "    \"func\": \"glUniform2f\", \"binding\": 0 } }";
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        Optional.of(tu), new UniformsInfo(json), Optional.empty());
+    shaderJob.removeUniformBindings();
+
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
+            new RandomWrapper(0), new IdGenerator()), fileOps);
+    assertEquals(1, ops.size());
+    assertTrue(ops.get(0) instanceof VariableDeclReductionOpportunity);
+    ops.get(0).applyReduction();
+    shaderJob.makeUniformBindings();
+    CompareAsts.assertEqualAsts("void main() { }", tu);
   }
 
 }
