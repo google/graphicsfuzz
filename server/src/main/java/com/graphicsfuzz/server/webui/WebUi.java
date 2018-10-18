@@ -921,6 +921,18 @@ public class WebUi extends HttpServlet {
     htmlAppendLn("<div class='ui segment'>\n",
         "<h3>Reduction results</h3>");
 
+    final ReductionStatus referenceReductionStatus = getReductionStatus(token, shaderset,
+        "reference");
+    File referenceShader = new File(WebUiConstants.SHADERSET_DIR + "/"
+        + shaderset, "reference.frag");
+    if (referenceReductionStatus == ReductionStatus.FINISHED) {
+      referenceShader = new File(
+          ReductionFilesHelper.getReductionDir(token, shaderset, "reference"),
+          "reference_reduced_final.frag"
+      );
+    }
+
+
     String reductionHtml = "";
     final ReductionStatus reductionStatus = getReductionStatus(token, shaderset, shader);
 
@@ -950,8 +962,6 @@ public class WebUi extends HttpServlet {
           "</form></p>");
     }
 
-    File referenceShader = new File(WebUiConstants.SHADERSET_DIR + "/"
-        + shaderset, "reference.frag");
     switch (reductionStatus) {
 
       case NOREDUCTION:
@@ -1036,8 +1046,8 @@ public class WebUi extends HttpServlet {
     // Watch out, diff exits with 1 if there is a difference.
     switch (commandResult.getExitCode()) {
       case 0:
-        // files are similar! That's suspicious
-        htmlAppendLn("<p>Reduced variant is similar to reduced reference? ",
+        // files are the same! That's suspicious
+        htmlAppendLn("<p>The reduced variant is the same as the reduced reference! ",
             "(diff returns 0)</p>");
         break;
       case 1:
@@ -1427,7 +1437,7 @@ public class WebUi extends HttpServlet {
     File referenceShaderJobFile;
     if (!shaderJobFile.getName().startsWith("reference")) {
       referenceShaderJobFile =
-          new File(shaderJobFile.getParentFile().getParentFile(), "reference.json");
+          new File(shaderJobFile.getParentFile(), "reference.json");
     } else {
       referenceShaderJobFile = shaderJobFile;
     }
