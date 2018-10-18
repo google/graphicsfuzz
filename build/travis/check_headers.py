@@ -99,7 +99,7 @@ def exclude_filename(f: str):
 def go():
     fail = False
     for (dirpath, dirnames, filenames) in os.walk(os.curdir, topdown=True):
-        # print(dirpath)
+
         # dirnames[:] = <--- modifies in-place to ignore certain directories
 
         if dirpath in excluded_dirpaths:
