@@ -218,6 +218,10 @@ public class ShaderJobFileOperations {
     FileUtils.deleteDirectory(directory);
   }
 
+  public boolean deleteQuietly(File file) {
+    return FileUtils.deleteQuietly(file);
+  }
+
   public void deleteFile(File file) throws IOException {
     Files.delete(file.toPath());
   }

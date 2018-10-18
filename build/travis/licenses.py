@@ -393,7 +393,7 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': '',
         },
-        'com.graphicsfuzz:alphanum-comparator': {
+        'com.graphicsfuzz.thirdparty:alphanum-comparator': {
             'comment': '',
             'name': 'The Alphanum Algorithm',
             'url': 'http://www.davekoelle.com/alphanum.html',
@@ -449,7 +449,7 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': 'internal project',
         },
-        'com.graphicsfuzz:gif-sequence-writer': {
+        'com.graphicsfuzz.thirdparty:gif-sequence-writer': {
             'comment': '',
             'name': 'Animated GIF Writer',
             'url': 'http://elliot.kroo.net/software/java/GifSequenceWriter/',
@@ -457,7 +457,7 @@ def get_maven_dependencies_populated():
             'license_file': 'third_party/gif-sequence-writer/LICENSE',
             'skipped': '',
         },
-        'com.graphicsfuzz:jquery-js': {
+        'com.graphicsfuzz.thirdparty:jquery-js': {
             'comment': '',
             'name': 'jQuery',
             'url': 'https://jquery.org/',
@@ -484,7 +484,7 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': 'internal project',
         },
-        'com.graphicsfuzz:semantic-ui': {
+        'com.graphicsfuzz.thirdparty:semantic-ui': {
             'comment': '',
             'name': 'Semantic UI',
             'url': 'https://github.com/semantic-org/semantic-ui/',
@@ -532,7 +532,7 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': 'internal project',
         },
-        'com.graphicsfuzz:thrift-js': {
+        'com.graphicsfuzz.thirdparty:thrift-js': {
             'comment': '',
             'name': 'Apache Thrift',
             'url': 'https://thrift.apache.org/',
@@ -540,7 +540,7 @@ def get_maven_dependencies_populated():
             'license_file': ['third_party/thrift-js/NOTICE', 'third_party/thrift-js/LICENSE'],
             'skipped': '',
         },
-        'com.graphicsfuzz:thrift-py': {
+        'com.graphicsfuzz.thirdparty:thrift-py': {
             'comment': '',
             'name': '',
             'url': '',
@@ -805,6 +805,10 @@ def read_maven_dependencies(
             line = line.strip()
             line = line.split(":")
             dependency = line[0] + ":" + line[1]
+            # Ignore com.graphicsfuzz: internal projects
+            # Note that third party internal projects start with com.graphicsfuzz.thirdparty:
+            if dependency.startswith("com.graphicsfuzz:"):
+                continue
             if dependency not in dependencies_dict:
                 dependencies_dict[dependency] = dict()
 
@@ -832,13 +836,13 @@ def go():
     dependencies_populated = get_maven_dependencies_populated()
     dependencies_populated.update(get_extras())
 
-    # Check for new maven dependencies for which we have not provided license information.
+    # Find maven dependencies for which we have not provided license information.
     for dep in maven_dependencies:
         if dep not in dependencies_populated:
-            print("Missing dependency " + dep)
+            print("Missing dependency license information " + dep)
             sys.exit(1)
 
-    # Write a THIRD_PARTY file.
+    # Write an OPEN_SOURCE_LICENSES.TXT file.
     with io.open("OPEN_SOURCE_LICENSES.TXT", "w", newline='\r\n') as fout:
 
         fout.write("\n")

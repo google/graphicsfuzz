@@ -42,6 +42,7 @@ limitations under the License.
 
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <jettyVersion>9.4.12.v20180830</jettyVersion>
   </properties>
 
   <!-- Dependency versions -->
@@ -91,17 +92,17 @@ limitations under the License.
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlet</artifactId>
-        <version>9.4.6.v20170531</version>
+        <version>${jettyVersion}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
-        <version>9.4.6.v20170531</version>
+        <version>${jettyVersion}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-continuation</artifactId>
-        <version>9.4.6.v20170531</version>
+        <version>${jettyVersion}</version>
       </dependency>
 
       <dependency>
@@ -229,12 +230,12 @@ limitations under the License.
 
       <!-- third party open source projects -->
       <dependency>
-        <groupId>com.graphicsfuzz</groupId>
+        <groupId>com.graphicsfuzz.thirdparty</groupId>
         <artifactId>alphanum-comparator</artifactId>
         <version>1.0</version>
       </dependency>
       <dependency>
-        <groupId>com.graphicsfuzz</groupId>
+        <groupId>com.graphicsfuzz.thirdparty</groupId>
         <artifactId>gif-sequence-writer</artifactId>
         <version>1.0</version>
       </dependency>
@@ -435,28 +436,28 @@ limitations under the License.
       </dependency>
 
       <dependency>
-        <groupId>com.graphicsfuzz</groupId>
+        <groupId>com.graphicsfuzz.thirdparty</groupId>
         <artifactId>semantic-ui</artifactId>
         <version>2.0.7</version>
         <type>zip</type>
       </dependency>
 
       <dependency>
-        <groupId>com.graphicsfuzz</groupId>
+        <groupId>com.graphicsfuzz.thirdparty</groupId>
         <artifactId>thrift-py</artifactId>
         <version>1.0</version>
         <type>zip</type>
       </dependency>
 
       <dependency>
-        <groupId>com.graphicsfuzz</groupId>
+        <groupId>com.graphicsfuzz.thirdparty</groupId>
         <artifactId>thrift-js</artifactId>
         <version>1.0</version>
         <type>zip</type>
       </dependency>
 
       <dependency>
-        <groupId>com.graphicsfuzz</groupId>
+        <groupId>com.graphicsfuzz.thirdparty</groupId>
         <artifactId>jquery-js</artifactId>
         <version>1.0</version>
         <type>zip</type>

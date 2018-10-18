@@ -20,6 +20,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.common.util.FileHelper;
 import com.graphicsfuzz.common.util.ReductionProgressHelper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.ReductionKind;
@@ -278,13 +279,15 @@ public class WebUi extends HttpServlet {
     return workers;
   }
 
-  private List<WorkerInfo> getLiveWorkers() throws TException {
+  private List<WorkerInfo> getLiveWorkers(boolean includeInactive) throws TException {
     List<WorkerInfo> workers = fuzzerServiceManagerProxy.getServerState().getWorkers();
     workers.sort((workerInfo, t1) -> {
       Comparator<String> comparator = Comparator.naturalOrder();
       return comparator.compare(workerInfo.getToken(), t1.getToken());
     });
-    workers.removeIf(w -> !(w.live));
+    if (!includeInactive) {
+      workers.removeIf(w -> !(w.live));
+    }
     return workers;
   }
 
@@ -345,7 +348,7 @@ public class WebUi extends HttpServlet {
         "<h3>Connected workers</h3>\n",
         "<div class='ui selection animated celled list'>\n");
     List<String> tokens = new ArrayList<>();
-    for (WorkerInfo worker : getLiveWorkers()) {
+    for (WorkerInfo worker : getLiveWorkers(false)) {
       htmlAppendLn("<a class='item' href='/webui/worker/", worker.getToken(), "'>",
           "<i class='large middle aligned mobile icon'></i><div class='content'>",
           "<div class='header'>", worker.getToken(), "</div>",
@@ -492,7 +495,7 @@ public class WebUi extends HttpServlet {
     List<WorkerInfo> workers;
     boolean atLeastOne = false;
 
-    for (WorkerInfo worker : getLiveWorkers()) {
+    for (WorkerInfo worker : getLiveWorkers(true)) {
       if (worker.getToken().equals(workerName)) {
         List<CommandInfo> commands = worker.getCommandQueue();
         if (commands.size() > 0) {
@@ -649,7 +652,7 @@ public class WebUi extends HttpServlet {
         "<h3>Select workers and shader families</h3>",
         "<form class='ui form' method='post'>");
 
-    List<WorkerInfo> workers = getLiveWorkers();
+    List<WorkerInfo> workers = getLiveWorkers(false);
 
     htmlAppendLn("<h4 class='ui dividing header'>Workers</h4>");
     if (workers.size() == 0) {
@@ -847,7 +850,8 @@ public class WebUi extends HttpServlet {
         "Status: <b>", status, "</b></p>");
 
     htmlAppendLn("<form method='post' id='deleteForm'>\n",
-        "<input type='hidden' name='path' value='", variantResultJobFileNoExtension, "'/>\n",
+        "<input type='hidden' name='path' value='", variantResultJobFileNoExtension + ".info.json",
+        "'/>\n",
         "<input type='hidden' name='type' value='delete'/>\n",
         "<input type='hidden' name='num_back' value='2'/>\n",
         "<div class='ui button'",
@@ -917,6 +921,18 @@ public class WebUi extends HttpServlet {
     htmlAppendLn("<div class='ui segment'>\n",
         "<h3>Reduction results</h3>");
 
+    final ReductionStatus referenceReductionStatus = getReductionStatus(token, shaderset,
+        "reference");
+    File referenceShader = new File(WebUiConstants.SHADERSET_DIR + "/"
+        + shaderset, "reference.frag");
+    if (referenceReductionStatus == ReductionStatus.FINISHED) {
+      referenceShader = new File(
+          ReductionFilesHelper.getReductionDir(token, shaderset, "reference"),
+          "reference_reduced_final.frag"
+      );
+    }
+
+
     String reductionHtml = "";
     final ReductionStatus reductionStatus = getReductionStatus(token, shaderset, shader);
 
@@ -946,8 +962,6 @@ public class WebUi extends HttpServlet {
           "</form></p>");
     }
 
-    File referenceShader = new File(WebUiConstants.SHADERSET_DIR + "/"
-        + shaderset, "reference.frag");
     switch (reductionStatus) {
 
       case NOREDUCTION:
@@ -1032,8 +1046,8 @@ public class WebUi extends HttpServlet {
     // Watch out, diff exits with 1 if there is a difference.
     switch (commandResult.getExitCode()) {
       case 0:
-        // files are similar! That's suspicious
-        htmlAppendLn("<p>Reduced variant is similar to reduced reference? ",
+        // files are the same! That's suspicious
+        htmlAppendLn("<p>The reduced variant is the same as the reduced reference! ",
             "(diff returns 0)</p>");
         break;
       case 1:
@@ -1116,7 +1130,7 @@ public class WebUi extends HttpServlet {
         "<div class='ui divider'></div>");
 
     int dataNum = 0;
-    for (WorkerInfo workerInfo: getLiveWorkers()) {
+    for (WorkerInfo workerInfo: getLiveWorkers(false)) {
       htmlAppendLn("<div class='ui field'>",
           "<div class='ui checkbox'>",
           "<input tabindex='0' class='hidden' type='checkbox' name='workercheck'",
@@ -1290,34 +1304,37 @@ public class WebUi extends HttpServlet {
   private void delete(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
     response.setContentType("text/html");
-    //Find file
-    File file = new File(request.getParameter("path"));
+
+    final File file = new File(request.getParameter("path"));
+    final String numBack = request.getParameter("num_back");
+
     if (!file.exists()) {
       err404(request, response, "Path to results " + file.getPath() + " not allowed/valid!");
       return;
     }
-    String numBack = request.getParameter("num_back");
 
-    //Delete file
-    if (file.isFile()) {
-      file.delete();
-    } else if (file.isDirectory()) {
-      try {
-        FileUtils.deleteDirectory(file);
-      } catch (Exception exception) {
-        err404(request, response, exception.getMessage());
-        return;
+    if (file.toString().endsWith(".info.json")) {
+      fileOps.deleteShaderJobResultFile(file);
+      // There might also be a reduction result. If so, we delete it.
+
+      // E.g. variant_001
+      final String variantName = FileHelper.removeEnd(file.getName(), ".info.json");
+      // E.g. shader_family_001_exp
+      final String expDirName = file.getParentFile().getName();
+      // E.g. android_phone
+      final File workerResultDir = file.getParentFile().getParentFile();
+      if (expDirName.endsWith("_exp")) {
+        // E.g. shader_family_001
+        final String shaderFamilyName = FileHelper.removeEnd(expDirName, "_exp");
+        // E.g. shader_family_001 _ variant_001 _inv
+        final String reductionDirName = shaderFamilyName + "_" + variantName + "_inv";
+        // E.g. processing/android_phone/shader_family_001_variant_001 _inv
+        final File reductionDir = new File(workerResultDir, reductionDirName);
+        fileOps.deleteQuietly(reductionDir);
       }
+    } else {
+      FileUtils.forceDelete(file);
     }
-
-    //Check if successful
-    if (file.exists()) {
-      err404(request, response, "Attempt to delete " + file.getPath() + " failed!");
-      return;
-    }
-
-    String deleteJs = getResourceContent("goBack.js")
-        + "\nwindow.onload = goBack('" + file.getPath() + " deleted!', " + numBack + ");";
 
     html.setLength(0);
     htmlAppendLn("<script>\n",
@@ -1420,7 +1437,7 @@ public class WebUi extends HttpServlet {
     File referenceShaderJobFile;
     if (!shaderJobFile.getName().startsWith("reference")) {
       referenceShaderJobFile =
-          new File(shaderJobFile.getParentFile().getParentFile(), "reference.json");
+          new File(shaderJobFile.getParentFile(), "reference.json");
     } else {
       referenceShaderJobFile = shaderJobFile;
     }
@@ -1508,7 +1525,7 @@ public class WebUi extends HttpServlet {
     //Check if worker is live (cannot rename live workers without some new thrift functionality
     boolean workerLive = false;
     try {
-      for (WorkerInfo workerInfo : getLiveWorkers()) {
+      for (WorkerInfo workerInfo : getLiveWorkers(true)) {
         if (workerInfo.getToken().equals(worker)) {
           workerLive = true;
           break;
