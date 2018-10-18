@@ -77,11 +77,17 @@ public class RemoteShaderDispatcher implements IShaderDispatcher {
 
     LOGGER.info("Get image (via server) job: {}", imageJob.getName());
 
+    // Due to strange Thrift behaviour, we set this default value explicitly
+    // otherwise "isSetSkipRender()" is false.
+    if (!imageJob.isSetSkipRender()) {
+      imageJob.setSkipRender(false);
+    }
+
     // Optimisation: no need to actually use HTTP if we are on the server.
     if (fuzzerServiceManager != null) {
       try {
         return getImageHelper(imageJob, fuzzerServiceManager);
-      } catch (IOException | TException exception) {
+      } catch (TException exception) {
         throw new ShaderDispatchException(exception);
       }
     } else {
@@ -95,7 +101,7 @@ public class RemoteShaderDispatcher implements IShaderDispatcher {
 
   private ImageJobResult getImageHelper(
       ImageJob imageJob,
-      FuzzerServiceManager.Iface fuzzerServiceManagerProxy) throws IOException, TException {
+      FuzzerServiceManager.Iface fuzzerServiceManagerProxy) throws TException {
 
     final Job job = new Job()
         .setJobId(jobCounter.incrementAndGet())
