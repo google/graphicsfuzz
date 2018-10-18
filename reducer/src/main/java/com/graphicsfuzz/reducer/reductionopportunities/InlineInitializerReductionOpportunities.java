@@ -17,13 +17,14 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.ListConcat;
-import com.graphicsfuzz.common.util.SideEffectChecker;
+import com.graphicsfuzz.common.util.StatsVisitor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -32,6 +33,8 @@ import java.util.Set;
 
 public class InlineInitializerReductionOpportunities
       extends ReductionOpportunitiesBase<InlineInitializerReductionOpportunity> {
+
+  private static final int INITIALIZER_NODE_LIMIT = 20;
 
   private final List<List<VariableDeclInfo>> relevantDeclInfosStack;
   private final Set<VariableDeclInfo> referenced;
@@ -131,6 +134,9 @@ public class InlineInitializerReductionOpportunities
   }
 
   private boolean allowedToReduce(VariableDeclInfo variableDeclInfo) {
+    if (initializerIsTooBig(variableDeclInfo.getInitializer())) {
+      return false;
+    }
     if (context.reduceEverywhere()) {
       return true;
     }
@@ -151,6 +157,15 @@ public class InlineInitializerReductionOpportunities
       return true;
     }
     return false;
+  }
+
+  private boolean initializerIsTooBig(Initializer initializer) {
+    // We need to be careful not to inline large initializers.  Doing so could really slow down
+    // reduction.  E.g. we might have a declaration that we'll soon be able to delete once we hack
+    // away all of its uses.  But if it has a huge initializer we might first inline that in many
+    // places and then spend a terribly long time performing expression simplification on the
+    // resulting expansions.
+    return new StatsVisitor(initializer).getNumNodes() > INITIALIZER_NODE_LIMIT;
   }
 
   private List<VariableDeclInfo> topOfStack() {

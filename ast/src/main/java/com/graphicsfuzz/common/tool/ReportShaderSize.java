@@ -19,6 +19,7 @@ package com.graphicsfuzz.common.tool;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.StatsVisitor;
 import java.io.File;
 import java.io.IOException;
 
@@ -33,14 +34,13 @@ public class ReportShaderSize {
     File inputFile = new File(args[0]);
     TranslationUnit tu = ParseHelper.parse(inputFile, true);
 
-    StatsVisitor sv = new StatsVisitor();
-    sv.visit(tu);
+    StatsVisitor sv = new StatsVisitor(tu);
 
     System.out.printf(
         "{ \"num_bytes\": %d, \"num_nodes\": %d, \"num_statements\": %d }",
         inputFile.length(),
-        sv.getNodes(),
-        sv.getStatements());
+        sv.getNumNodes(),
+        sv.getNumStatements());
 
   }
 
