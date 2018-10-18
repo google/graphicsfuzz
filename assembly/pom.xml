@@ -50,14 +50,14 @@ limitations under the License.
     </dependency>
 
     <dependency>
-      <groupId>com.graphicsfuzz</groupId>
+      <groupId>com.graphicsfuzz.thirdparty</groupId>
       <artifactId>thrift-py</artifactId>
       <type>zip</type>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>com.graphicsfuzz</groupId>
+      <groupId>com.graphicsfuzz.thirdparty</groupId>
       <artifactId>thrift-js</artifactId>
       <type>zip</type>
       <scope>provided</scope>
@@ -107,14 +107,14 @@ limitations under the License.
     </dependency>
 
     <dependency>
-      <groupId>com.graphicsfuzz</groupId>
+      <groupId>com.graphicsfuzz.thirdparty</groupId>
       <artifactId>semantic-ui</artifactId>
       <type>zip</type>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>com.graphicsfuzz</groupId>
+      <groupId>com.graphicsfuzz.thirdparty</groupId>
       <artifactId>jquery-js</artifactId>
       <type>zip</type>
       <scope>provided</scope>
@@ -222,14 +222,14 @@ limitations under the License.
                   <sourcefiles>
                     <pathelement location="${com.graphicsfuzz:assembly-binaries:zip}"/>
                     <pathelement location="${com.graphicsfuzz:python:zip}"/>
-                    <pathelement location="${com.graphicsfuzz:thrift-py:zip}"/>
-                    <pathelement location="${com.graphicsfuzz:thrift-js:zip}"/>
-                    <pathelement location="${com.graphicsfuzz:jquery-js:zip}"/>
+                    <pathelement location="${com.graphicsfuzz.thirdparty:thrift-py:zip}"/>
+                    <pathelement location="${com.graphicsfuzz.thirdparty:thrift-js:zip}"/>
+                    <pathelement location="${com.graphicsfuzz.thirdparty:jquery-js:zip}"/>
                     <pathelement location="${com.graphicsfuzz:server-static-public:zip}"/>
                     <pathelement location="${com.graphicsfuzz:thrift:zip:python}"/>
                     <pathelement location="${com.graphicsfuzz:thrift:zip:js}"/>
                     <pathelement location="${com.graphicsfuzz:tester:zip:shaders}"/>
-                    <pathelement location="${com.graphicsfuzz:semantic-ui:zip}"/>
+                    <pathelement location="${com.graphicsfuzz.thirdparty:semantic-ui:zip}"/>
                     <pathelement location="${git-file}"/>
                     <fileset dir="${project.basedir}/src/main/scripts"/>
                     <fileset dir="${project.build.directory}/dependency"/>
@@ -241,14 +241,14 @@ limitations under the License.
                     <zip destfile="${assembly-zip}" compress="false">
                       <zipfileset src="${com.graphicsfuzz:assembly-binaries:zip}"/>
                       <zipfileset src="${com.graphicsfuzz:python:zip}" prefix="python"/>
-                      <zipfileset src="${com.graphicsfuzz:thrift-py:zip}" prefix="python/thrift"/>
-                      <zipfileset src="${com.graphicsfuzz:thrift-js:zip}" prefix="server-static/thrift"/>
-                      <zipfileset src="${com.graphicsfuzz:jquery-js:zip}" prefix="server-static/jquery"/>
+                      <zipfileset src="${com.graphicsfuzz.thirdparty:thrift-py:zip}" prefix="python/thrift"/>
+                      <zipfileset src="${com.graphicsfuzz.thirdparty:thrift-js:zip}" prefix="server-static/thrift"/>
+                      <zipfileset src="${com.graphicsfuzz.thirdparty:jquery-js:zip}" prefix="server-static/jquery"/>
                       <zipfileset src="${com.graphicsfuzz:server-static-public:zip}"/>
                       <zipfileset src="${com.graphicsfuzz:thrift:zip:python}" prefix="python/fuzzer_service"/>
                       <zipfileset src="${com.graphicsfuzz:thrift:zip:js}" prefix="server-static/gen-js"/>
                       <zipfileset src="${com.graphicsfuzz:tester:zip:shaders}" prefix="test-shaders"/>
-                      <zipfileset src="${com.graphicsfuzz:semantic-ui:zip}" prefix="server-static/semantic"/>
+                      <zipfileset src="${com.graphicsfuzz.thirdparty:semantic-ui:zip}" prefix="server-static/semantic"/>
                       <zipfileset dir="${project.basedir}/src/main/scripts"/>
                       <zipfileset dir="${project.build.directory}/dependency" prefix="jar"/>
                       <zipfileset dir="${project.build.directory}/sources" prefix="sources"/>

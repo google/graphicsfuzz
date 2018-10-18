@@ -68,7 +68,7 @@ limitations under the License.
     </dependency>
 
     <dependency>
-      <groupId>com.graphicsfuzz</groupId>
+      <groupId>com.graphicsfuzz.thirdparty</groupId>
       <artifactId>jquery-js</artifactId>
       <type>zip</type>
       <scope>provided</scope>
@@ -155,7 +155,7 @@ limitations under the License.
                     <pathelement location="${com.graphicsfuzz:assembly-binaries:zip}"/>
                     <pathelement location="${com.graphicsfuzz:thrift:zip:python}"/>
                     <pathelement location="${com.graphicsfuzz:server-static-public:zip}"/>
-                    <pathelement location="${com.graphicsfuzz:jquery-js:zip}"/>
+                    <pathelement location="${com.graphicsfuzz.thirdparty:jquery-js:zip}"/>
                     <pathelement location="${com.graphicsfuzz:thrift:zip:js}"/>
                     <pathelement location="${git-file}"/>
                     <fileset dir="${project.basedir}/src/main/scripts"/>
@@ -168,7 +168,7 @@ limitations under the License.
                       <zipfileset src="${com.graphicsfuzz:assembly-binaries:zip}"/>
                       <zipfileset src="${com.graphicsfuzz:thrift:zip:python}" prefix="python/fuzzer_service"/>
                       <zipfileset src="${com.graphicsfuzz:server-static-public:zip}"/>
-                      <zipfileset src="${com.graphicsfuzz:jquery-js:zip}" prefix="server-static/jquery"/>
+                      <zipfileset src="${com.graphicsfuzz.thirdparty:jquery-js:zip}" prefix="server-static/jquery"/>
                       <zipfileset src="${com.graphicsfuzz:thrift:zip:js}" prefix="server-static/gen-js"/>
                       <zipfileset dir="${project.basedir}/src/main/scripts"/>
                       <zipfileset dir="${project.build.directory}/dependency" prefix="jar"/>
