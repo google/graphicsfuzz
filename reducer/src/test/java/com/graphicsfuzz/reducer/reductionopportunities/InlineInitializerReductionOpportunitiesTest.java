@@ -86,4 +86,33 @@ public class InlineInitializerReductionOpportunitiesTest {
     return expr;
   }
 
+  @Test
+  public void testCanInlineAllExceptLValueIfReducingEverywhere() throws Exception {
+
+    final String program = "void main() { int i = 4 + 2; i += i + i + i; i -= i * i; }";
+    final String expected = "void main() { int i = 4 + 2; i += (4 + 2) + (4 + 2) + (4 + 2); i -= (4 + 2) * (4 + 2); }";
+
+    final TranslationUnit tu = Helper.parse(program, false);
+
+    List<InlineInitializerReductionOpportunity> ops =
+        InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(true,
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+    assertEquals(5, ops.size());
+    ops.forEach(InlineInitializerReductionOpportunity::applyReduction);
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testNoInliningIfLValueUsageExistsWhenPreservingSemantics() throws Exception {
+
+    final String program = "void main() { int i = 4 + 2; i += i + i + i; i -= i * i; }";
+
+    final TranslationUnit tu = Helper.parse(program, false);
+
+    List<InlineInitializerReductionOpportunity> ops =
+        InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false,
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+    assertEquals(0, ops.size());
+  }
+
 }
