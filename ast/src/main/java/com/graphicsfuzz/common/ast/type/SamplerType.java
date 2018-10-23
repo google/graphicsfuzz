@@ -77,121 +77,121 @@ public class SamplerType extends BuiltinType {
       return "sampler2D";
     }
     if (this == SAMPLER2DRECT) {
-      return "sampler2drect";
+      return "sampler2DRect";
     }
     if (this == SAMPLER3D) {
       return "sampler3D";
     }
     if (this == SAMPLERCUBE) {
-      return "samplercube";
+      return "samplerCube";
     }
     if (this == SAMPLEREXTERNALOES) {
-      return "samplerexternaloes";
+      return "samplerExternalOES";
     }
     if (this == SAMPLER1DSHADOW) {
-      return "sampler1dshadow";
+      return "sampler1DShadow";
     }
     if (this == SAMPLER2DSHADOW) {
-      return "sampler2dshadow";
+      return "sampler2DShadow";
     }
     if (this == SAMPLER2DRECTSHADOW) {
-      return "sampler2drectshadow";
+      return "sampler2DRectShadow";
     }
     if (this == SAMPLERCUBESHADOW) {
-      return "samplercubeshadow";
+      return "samplerCubeShadow";
     }
     if (this == SAMPLER1DARRAY) {
-      return "sampler1darray";
+      return "sampler1DArray";
     }
     if (this == SAMPLER2DARRAY) {
-      return "sampler2darray";
+      return "sampler2DArray";
     }
     if (this == SAMPLER1DARRAYSHADOW) {
-      return "sampler1darrayshadow";
+      return "sampler1DArrayShadow";
     }
     if (this == SAMPLER2DARRAYSHADOW) {
-      return "sampler2darrayshadow";
+      return "sampler2DArrayShadow";
     }
     if (this == SAMPLERBUFFER) {
-      return "samplerbuffer";
+      return "samplerBuffer";
     }
     if (this == SAMPLERCUBEARRAY) {
-      return "samplercubearray";
+      return "samplerCubeArray";
     }
     if (this == SAMPLERCUBEARRAYSHADOW) {
-      return "samplercubearrayshadow";
+      return "samplerCubeArrayShadow";
     }
     if (this == ISAMPLER1D) {
-      return "isampler1d";
+      return "isampler1D";
     }
     if (this == ISAMPLER2D) {
-      return "isampler2d";
+      return "isampler2D";
     }
     if (this == ISAMPLER2DRECT) {
-      return "isampler2drect";
+      return "isampler2DRect";
     }
     if (this == ISAMPLER3D) {
-      return "isampler3d";
+      return "isampler3D";
     }
     if (this == ISAMPLERCUBE) {
-      return "isamplercube";
+      return "isamplerCube";
     }
     if (this == ISAMPLER1DARRAY) {
-      return "isampler1darray";
+      return "isampler1DArray";
     }
     if (this == ISAMPLER2DARRAY) {
-      return "isampler2darray";
+      return "isampler2DArray";
     }
     if (this == ISAMPLERBUFFER) {
-      return "isamplerbuffer";
+      return "isamplerBuffer";
     }
     if (this == ISAMPLERCUBEARRAY) {
-      return "isamplercubearray";
+      return "isamplerCubeArray";
     }
     if (this == USAMPLER1D) {
-      return "usampler1d";
+      return "usampler1D";
     }
     if (this == USAMPLER2D) {
-      return "usampler2d";
+      return "usampler2D";
     }
     if (this == USAMPLER2DRECT) {
-      return "usampler2drect";
+      return "usampler2DRect";
     }
     if (this == USAMPLER3D) {
-      return "usampler3d";
+      return "usampler3D";
     }
     if (this == USAMPLERCUBE) {
-      return "usamplercube";
+      return "usamplerCube";
     }
     if (this == USAMPLER1DARRAY) {
-      return "usampler1darray";
+      return "usampler1DArray";
     }
     if (this == USAMPLER2DARRAY) {
-      return "usampler2darray";
+      return "usampler2DArray";
     }
     if (this == USAMPLERBUFFER) {
-      return "usamplerbuffer";
+      return "usamplerBuffer";
     }
     if (this == USAMPLERCUBEARRAY) {
-      return "usamplercubearray";
+      return "usamplerCubeArray";
     }
     if (this == SAMPLER2DMS) {
-      return "sampler2dms";
+      return "sampler2DMS";
     }
     if (this == ISAMPLER2DMS) {
-      return "isampler2dms";
+      return "isampler2DMS";
     }
     if (this == USAMPLER2DMS) {
-      return "usampler2dms";
+      return "usampler2DMS";
     }
     if (this == SAMPLER2DMSARRAY) {
-      return "sampler2dmsarray";
+      return "sampler2DMSArray";
     }
     if (this == ISAMPLER2DMSARRAY) {
-      return "isampler2dmsarray";
+      return "isampler2DMSArray";
     }
     if (this == USAMPLER2DMSARRAY) {
-      return "usampler2dmsarray";
+      return "usampler2DMSArray";
     }
     throw new RuntimeException("Invalid type");
   }
