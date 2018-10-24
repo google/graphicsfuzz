@@ -16,6 +16,7 @@
 
 package com.graphicsfuzz.reducer;
 
+import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -321,10 +323,9 @@ public class ReductionDriver {
   public final ShaderJob finaliseReduction() {
     // Do final cleanup pass to get rid of macros
     return new GlslShaderJob(
-        state.getVertexShader().map(Simplify::simplify),
-        state.getFragmentShader().map(Simplify::simplify),
+        state.getLicense(),
         state.getUniformsInfo(),
-        state.getLicense());
+        state.getShaders().stream().map(Simplify::simplify).collect(Collectors.toList()));
   }
 
 

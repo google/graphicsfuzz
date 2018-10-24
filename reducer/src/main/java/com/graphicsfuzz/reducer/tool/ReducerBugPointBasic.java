@@ -128,14 +128,7 @@ public class ReducerBugPointBasic {
 
     for (int i = 0; i < maxIterations; i++) {
 
-      ShaderJob current = new GlslShaderJob(
-          lastGoodButLeadingToBadShaderJob.getVertexShader()
-              .map(TranslationUnit::clone),
-          lastGoodButLeadingToBadShaderJob.getFragmentShader()
-              .map(TranslationUnit::clone),
-          lastGoodButLeadingToBadShaderJob.getUniformsInfo(),
-          lastGoodButLeadingToBadShaderJob.getLicense()
-      );
+      ShaderJob current = lastGoodButLeadingToBadShaderJob.clone();
 
       // TODO: this code was written pre vertex shader support, and does not take
       // account of uniforms.
@@ -144,12 +137,7 @@ public class ReducerBugPointBasic {
       // about frag files.
 
       while (true) {
-        final ShaderJob prev = new GlslShaderJob(
-            current.getVertexShader().map(TranslationUnit::clone),
-            current.getFragmentShader().map(TranslationUnit::clone),
-            current.getUniformsInfo(),
-            current.getLicense()
-        );
+        final ShaderJob prev = current.clone();
         List<IReductionOpportunity> ops;
         try {
           ops = ReductionOpportunities.getReductionOpportunities(
@@ -183,14 +171,7 @@ public class ReducerBugPointBasic {
           System.err.println("Exception occurred while applying a reduction opportunity.");
           if (exception.toString().contains(expectedString)) {
             lastGoodButLeadingToBadShaderJob = prev;
-            current = new GlslShaderJob(
-                lastGoodButLeadingToBadShaderJob
-                    .getVertexShader().map(TranslationUnit::clone),
-                lastGoodButLeadingToBadShaderJob
-                    .getFragmentShader().map(TranslationUnit::clone),
-                lastGoodButLeadingToBadShaderJob.getUniformsInfo(),
-                lastGoodButLeadingToBadShaderJob.getLicense()
-            );
+            current = lastGoodButLeadingToBadShaderJob.clone();
 
             fileOps.writeShaderJobFile(
                 lastGoodButLeadingToBadShaderJob,
@@ -223,14 +204,7 @@ public class ReducerBugPointBasic {
                 new File("leads_to_invalid_" + invalidCount + "_after.json"));
             invalidCount++;
             lastGoodButLeadingToBadShaderJob = prev;
-            current = new GlslShaderJob(
-                lastGoodButLeadingToBadShaderJob
-                    .getVertexShader().map(TranslationUnit::clone),
-                lastGoodButLeadingToBadShaderJob
-                    .getFragmentShader().map(TranslationUnit::clone),
-                lastGoodButLeadingToBadShaderJob.getUniformsInfo(),
-                lastGoodButLeadingToBadShaderJob.getLicense()
-            );
+            current = lastGoodButLeadingToBadShaderJob.clone();
           }
         }
       }
@@ -301,8 +275,8 @@ public class ReducerBugPointBasic {
     );
 
     new ReportAstDifferences(
-        shaderJob.getFragmentShader().get(),
-        reparsedShaderJob.getFragmentShader().get());
+        shaderJob.getShaders().get(0),
+        reparsedShaderJob.getShaders().get(0));
 
     final File maybeExistingFile = new File("problem_getting_reduction_opportunities.json");
 

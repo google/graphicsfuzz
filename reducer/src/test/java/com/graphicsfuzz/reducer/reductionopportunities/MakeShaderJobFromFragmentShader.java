@@ -33,8 +33,7 @@ public class MakeShaderJobFromFragmentShader {
   }
 
   public static ShaderJob make(TranslationUnit tu) {
-    return new GlslShaderJob(Optional.empty(), Optional.of(tu), new UniformsInfo(),
-        Optional.empty());
+    return new GlslShaderJob(Optional.empty(), new UniformsInfo(), tu);
   }
 
 }

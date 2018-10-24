@@ -44,6 +44,7 @@ import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 
 public class ParseHelper {
 
@@ -59,29 +60,39 @@ public class ParseHelper {
   public static synchronized TranslationUnit parse(File file, boolean stripHeader)
         throws IOException, ParseTimeoutException {
     return parseInputStream(new ByteArrayInputStream(FileUtils.readFileToByteArray(file)),
-          stripHeader);
+          stripHeader, ShaderKind.fromExtension(FilenameUtils.getExtension(file.getName())));
   }
 
+  /**
+   * Parses a shader from a given string.  The shader is assumed to be a fragment shader;
+   * typically the shader kind is unimportant when we parse from strings.
+   * @param string The shader text to be parsed.
+   * @param stripHeader True if and only if we should strip a header from the shader.
+   * @return The parsed shader.
+   * @throws IOException Thrown if parsing leads to an IO exception.
+   * @throws ParseTimeoutException Thrown if parsing takes to long.
+   */
   public static synchronized TranslationUnit parse(String string, boolean stripHeader)
         throws IOException, ParseTimeoutException {
     return parseInputStream(new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8)),
-          stripHeader);
+          stripHeader, ShaderKind.FRAGMENT);
   }
 
   private static synchronized TranslationUnit parseInputStream(InputStream input,
-        boolean stripHeader)
+        boolean stripHeader, ShaderKind shaderKind)
         throws IOException, ParseTimeoutException {
     TranslationUnit result;
     if (stripHeader) {
       ByteArrayOutputStream os = new ByteArrayOutputStream();
       stripHeader(input, os);
       byte[] fileContents = os.toByteArray();
-      return parseInputStream(new ByteArrayInputStream(fileContents));
+      return parseInputStream(new ByteArrayInputStream(fileContents), shaderKind);
     }
-    return parseInputStream(input);
+    return parseInputStream(input, shaderKind);
   }
 
-  private static synchronized TranslationUnit parseInputStream(InputStream input)
+  private static synchronized TranslationUnit parseInputStream(InputStream input,
+                                                               ShaderKind shaderKind)
         throws IOException, ParseTimeoutException {
     final int timeLimit = 60;
 
@@ -100,7 +111,7 @@ public class ParseHelper {
       throw new ParseTimeoutException(exception);
     }
 
-    return AstBuilder.getTranslationUnit(ctx);
+    return AstBuilder.getTranslationUnit(ctx, shaderKind);
   }
 
   private static Translation_unitContext tryFastParse(

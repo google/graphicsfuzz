@@ -23,10 +23,6 @@ import java.util.Optional;
 
 public interface ShaderJob {
 
-  Optional<TranslationUnit> getFragmentShader();
-
-  Optional<TranslationUnit> getVertexShader();
-
   UniformsInfo getUniformsInfo();
 
   Optional<String> getLicense();
@@ -38,6 +34,12 @@ public interface ShaderJob {
   boolean hasUniformBindings();
 
   List<TranslationUnit> getShaders();
+
+  Optional<TranslationUnit> getVertexShader();
+
+  Optional<TranslationUnit> getFragmentShader();
+
+  Optional<TranslationUnit> getComputeShader();
 
   ShaderJob clone();
 

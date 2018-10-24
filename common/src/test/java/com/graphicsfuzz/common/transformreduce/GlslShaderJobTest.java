@@ -19,12 +19,21 @@ package com.graphicsfuzz.common.transformreduce;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.UniformsInfo;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import org.apache.commons.io.FileUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
 
 public class GlslShaderJobTest {
+
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private static final String VERT_SHADER_NO_BINDINGS =
         "uniform float a;"
@@ -158,34 +167,39 @@ public class GlslShaderJobTest {
   public void testMakeUniformBindings() throws Exception {
 
     final GlslShaderJob job = new GlslShaderJob(
-        Optional.of(ParseHelper.parse(VERT_SHADER_NO_BINDINGS, false)),
-        Optional.of(ParseHelper.parse(FRAG_SHADER_NO_BINDINGS, false)),
+        Optional.empty(),
         new UniformsInfo(JSON_NO_BINDINGS),
-        Optional.empty());
+        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_NO_BINDINGS), false),
+        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_NO_BINDINGS), false));
 
     job.makeUniformBindings();
 
-    CompareAsts.assertEqualAsts(VERT_SHADER_WITH_BINDINGS, job.getVertexShader().get());
-    CompareAsts.assertEqualAsts(FRAG_SHADER_WITH_BINDINGS, job.getFragmentShader().get());
+    CompareAsts.assertEqualAsts(VERT_SHADER_WITH_BINDINGS, job.getShaders().get(0));
+    CompareAsts.assertEqualAsts(FRAG_SHADER_WITH_BINDINGS, job.getShaders().get(1));
     assertEquals(new UniformsInfo(JSON_WITH_BINDINGS).toString(), job.getUniformsInfo().toString());
   }
-
 
   @Test
   public void testRemoveUniformBindings() throws Exception {
 
     final GlslShaderJob job = new GlslShaderJob(
-        Optional.of(ParseHelper.parse(VERT_SHADER_WITH_BINDINGS, false)),
-        Optional.of(ParseHelper.parse(FRAG_SHADER_WITH_BINDINGS, false)),
+        Optional.empty(),
         new UniformsInfo(JSON_WITH_BINDINGS),
-        Optional.empty());
+        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_WITH_BINDINGS), false),
+        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_WITH_BINDINGS), false));
 
     job.removeUniformBindings();
 
-    CompareAsts.assertEqualAsts(VERT_SHADER_NO_BINDINGS, job.getVertexShader().get());
-    CompareAsts.assertEqualAsts(FRAG_SHADER_NO_BINDINGS, job.getFragmentShader().get());
+    CompareAsts.assertEqualAsts(VERT_SHADER_NO_BINDINGS, job.getShaders().get(0));
+    CompareAsts.assertEqualAsts(FRAG_SHADER_NO_BINDINGS, job.getShaders().get(1));
     assertEquals(new UniformsInfo(JSON_NO_BINDINGS).toString(), job.getUniformsInfo().toString());
 
+  }
+
+  private File getShaderFile(String extension, String content) throws IOException {
+    final File file = temporaryFolder.newFile("shader." + extension);
+    FileUtils.writeStringToFile(file, content, StandardCharsets.UTF_8);
+    return file;
   }
 
 }

@@ -124,7 +124,7 @@ public class ReducerUnitTest {
 
     for (int step = 0; step < 10; step++) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
-          new GlslShaderJob(Optional.empty(), Optional.of(tu), new UniformsInfo(), Optional.empty()),
+          new GlslShaderJob(Optional.empty(), new UniformsInfo(), tu),
           new ReductionOpportunityContext(false, shadingLanguageVersion, generator, idGenerator),
           fileOps);
       if (ops.isEmpty()) {
@@ -160,7 +160,7 @@ public class ReducerUnitTest {
             generator, GenerationParams.normal(ShaderKind.FRAGMENT));
       }
       File tempFile = temporaryFolder.newFile();
-      Helper.emitShader(shadingLanguageVersion, ShaderKind.FRAGMENT, tu, new PrintStream(
+      Helper.emitShader(shadingLanguageVersion, tu, new PrintStream(
           new FileOutputStream(tempFile)));
       final int maxBytes = 100000;
       if (tempFile.length() <= maxBytes) {
@@ -221,10 +221,9 @@ public class ReducerUnitTest {
 
       ShaderJob initialState = new GlslShaderJob(
           Optional.empty(),
-          Optional.of(tu),
           new UniformsInfo(
-              new File(FilenameUtils.removeExtension(shaderFile.getAbsolutePath()) + ".json")),
-          Optional.empty());
+             new File(FilenameUtils.removeExtension(shaderFile.getAbsolutePath()) + ".json")),
+          tu);
 
       final String shaderJobShortName = FilenameUtils.removeExtension(shaderFile.getName());
 
@@ -395,10 +394,9 @@ public class ReducerUnitTest {
     final TranslationUnit tu = ParseHelper.parse(shaderFile, true);
     final ShaderJob state = new GlslShaderJob(
         Optional.empty(),
-        Optional.of(tu),
         new UniformsInfo(new File(FilenameUtils.removeExtension(shaderFile.getAbsolutePath()) +
             ".json")),
-        Optional.empty());
+        tu);
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(), shaderFile.getName()));
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(),
         shaderJobShortName + ".json"));
@@ -413,7 +411,6 @@ public class ReducerUnitTest {
     final String program =
           EmitShaderHelper.getDefinesString(
                 ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
                 Helper::glfMacros,
                 Optional.empty()) + "\n"
           + "void main() {"
@@ -494,7 +491,6 @@ public class ReducerUnitTest {
     final String program =
           EmitShaderHelper.getDefinesString(
                 ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
                 Helper::glfMacros,
                 Optional.empty()) + "\n"
                 + "void main() {"
@@ -516,7 +512,6 @@ public class ReducerUnitTest {
     final String program =
           EmitShaderHelper.getDefinesString(
                 ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
                 Helper::glfMacros,
                 Optional.empty()) + "\n"
                 + "void main() {"

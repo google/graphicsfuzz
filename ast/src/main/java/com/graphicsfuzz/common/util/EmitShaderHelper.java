@@ -33,16 +33,13 @@ public final class EmitShaderHelper {
   }
 
   public static void emitDefines(PrintStream out, ShadingLanguageVersion version,
-        ShaderKind shaderKind,
         Supplier<StringBuilder> extraMacros,
         Optional<String> license) {
     out.print(getDefinesString(version,
-          shaderKind,
           extraMacros, license).toString());
   }
 
   public static StringBuilder getDefinesString(ShadingLanguageVersion version,
-        ShaderKind shaderKind,
         Supplier<StringBuilder> extraMacros,
         Optional<String> license) {
     final StringBuilder sb = new StringBuilder();
@@ -72,20 +69,18 @@ public final class EmitShaderHelper {
   }
 
   public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
         TranslationUnit shader,
         Optional<String> license,
         PrintStream stream,
         int indentationWidth,
         Supplier<String> newlineSupplier,
         Supplier<StringBuilder> extraMacros) {
-    emitDefines(stream, shadingLanguageVersion, shaderKind, extraMacros, license);
+    emitDefines(stream, shadingLanguageVersion, extraMacros, license);
     PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier);
     ppv.visit(shader);
   }
 
   public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
         TranslationUnit shader,
         Optional<String> license,
         File outputFile,
@@ -95,27 +90,12 @@ public final class EmitShaderHelper {
     try (PrintStream stream = new PrintStream(new FileOutputStream(outputFile))) {
       emitShader(
           shadingLanguageVersion,
-          shaderKind,
           shader,
           license,
           stream,
           indentationWidth,
           newlineSupplier,
           extraMacros);
-    }
-  }
-
-  public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
-        TranslationUnit shader,
-        Optional<String> license,
-        File outputFile) throws FileNotFoundException {
-    try (PrintStream stream = new PrintStream(new FileOutputStream(outputFile))) {
-      emitShader(shadingLanguageVersion, shaderKind, shader, license,
-          stream,
-          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-          () -> new StringBuilder());
     }
   }
 
