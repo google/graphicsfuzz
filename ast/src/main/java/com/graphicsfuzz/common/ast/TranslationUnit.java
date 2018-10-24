@@ -64,6 +64,10 @@ public class TranslationUnit implements IAstNode {
     this(ShaderKind.FRAGMENT, shadingLanguageVersion, topLevelDeclarations);
   }
 
+  public ShaderKind getShaderKind() {
+    return shaderKind;
+  }
+
   public List<Declaration> getTopLevelDeclarations() {
     return Collections.unmodifiableList(topLevelDeclarations);
   }
