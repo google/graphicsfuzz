@@ -20,9 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
@@ -34,7 +32,7 @@ public class InlineInitializerReductionOpportunitiesTest {
   public void testGlobalScope() throws Exception {
     final String program = "const int x = 2; void main() { int y = x + 3; }";
     final String expected = "const int x = 2; void main() { int y = (2) + 3; }";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops =
           InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(true,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
@@ -50,8 +48,8 @@ public class InlineInitializerReductionOpportunitiesTest {
     final String smallProgram = make1Plus1Plus1Program(10);
     final String smallProgramInlined = make1Plus1Plus1ProgramInlined(10);
 
-    final TranslationUnit largeProgramTu = ParseHelper.parse(largeProgram, false);
-    final TranslationUnit smallProgramTu = ParseHelper.parse(smallProgram, false);
+    final TranslationUnit largeProgramTu = ParseHelper.parse(largeProgram);
+    final TranslationUnit smallProgramTu = ParseHelper.parse(smallProgram);
 
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(largeProgramTu), new ReductionOpportunityContext(true,
@@ -92,7 +90,7 @@ public class InlineInitializerReductionOpportunitiesTest {
     final String program = "void main() { int i = 4 + 2; i += i + i + i; i -= i * i; }";
     final String expected = "void main() { int i = 4 + 2; i += (4 + 2) + (4 + 2) + (4 + 2); i -= (4 + 2) * (4 + 2); }";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(true,
@@ -107,7 +105,7 @@ public class InlineInitializerReductionOpportunitiesTest {
 
     final String program = "void main() { int i = 4 + 2; i += i + i + i; i -= i * i; }";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false,

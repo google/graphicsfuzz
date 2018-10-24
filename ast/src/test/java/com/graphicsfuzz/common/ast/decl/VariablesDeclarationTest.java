@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.common.ast.decl;
 
-import static org.junit.Assert.*;
-
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
@@ -29,7 +27,7 @@ public class VariablesDeclarationTest {
   @Test
   public void testSetDeclInfo() throws Exception {
     final String program = "int x, y; int main() { int y, z, w; }";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     new StandardVisitor() {
       @Override
       public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {

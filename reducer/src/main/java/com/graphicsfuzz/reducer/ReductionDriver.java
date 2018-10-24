@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.reducer;
 
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
@@ -26,6 +25,7 @@ import com.graphicsfuzz.reducer.glslreducers.NoMoreToReduceException;
 import com.graphicsfuzz.reducer.reductionopportunities.FailedReductionException;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import com.graphicsfuzz.reducer.util.Simplify;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;

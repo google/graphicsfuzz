@@ -16,9 +16,6 @@
 
 package com.graphicsfuzz.common.glslversion;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,10 +58,14 @@ public interface ShadingLanguageVersion {
     for (int i = 2; i < components.length; i++) {
       version += " " + components[i];
     }
-    if (lines[1].startsWith("//WebGL")) {
+    if (isWebGlHint(lines[1])) {
       return webGlFromVersionString(version);
     }
     return fromVersionString(version);
+  }
+
+  static boolean isWebGlHint(String line) {
+    return line.startsWith("//WebGL");
   }
 
   static List<ShadingLanguageVersion> allGlslVersions() {

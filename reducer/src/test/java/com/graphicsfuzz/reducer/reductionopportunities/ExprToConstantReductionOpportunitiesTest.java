@@ -32,47 +32,47 @@ public class ExprToConstantReductionOpportunitiesTest {
   @Test
   public void testOut() throws Exception {
     final String prog = "void f(out int x) { } void main() { int a; f(a); }";
-    TranslationUnit tu = ParseHelper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog);
     List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(true, ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0), null));
     for (SimplifyExprReductionOpportunity op : ops) {
       op.applyReduction();
     }
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(prog, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(prog)), PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
   @Test
   public void testInOut() throws Exception {
     final String prog = "void f(inout int x) { } void main() { int a; f(a); }";
-    TranslationUnit tu = ParseHelper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog);
     List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(true, ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0), null));
     for (SimplifyExprReductionOpportunity op : ops) {
       op.applyReduction();
     }
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(prog, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(prog)), PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
   @Test
   public void testIn() throws Exception {
     final String prog = "void f(in int x) { } void main() { int a; f(a); }";
     final String expectedProg = "void f(in int x) { } void main() { int a; f(1); }";
-    TranslationUnit tu = ParseHelper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog);
     List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(true, ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0), null));
     for (SimplifyExprReductionOpportunity op : ops) {
       op.applyReduction();
     }
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg, false)), PrettyPrinterVisitor.prettyPrintAsString(tu));
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)), PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
   @Test
   public void testSingleLiveVariable() throws Exception {
     final String program = "void main() { int GLF_live3_a; GLF_live3_a; }";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, null, null));
     assertEquals(1, ops.size());

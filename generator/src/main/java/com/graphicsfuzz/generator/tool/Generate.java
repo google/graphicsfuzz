@@ -23,7 +23,6 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -52,6 +51,7 @@ import com.graphicsfuzz.generator.transformation.structifier.Structification;
 import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -293,7 +293,7 @@ public class Generate {
     final File referenceFile = ns.get("reference_json");
 
     // This is mutated into the variant.
-    final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceFile, false);
+    final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceFile);
     final StringBuilder generationInfo = generateVariant(
         variantShaderJob,
         new GeneratorArguments(shadingLanguageVersion,

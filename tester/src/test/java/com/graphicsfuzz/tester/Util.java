@@ -60,13 +60,13 @@ public final class Util {
   }
 
   static Mat renderShaderIfNeeded(ShadingLanguageVersion shadingLanguageVersion, File originalShader,
-      TemporaryFolder temporaryFolder, boolean stripHeader, ShaderJobFileOperations fileOps)
+                                  TemporaryFolder temporaryFolder, ShaderJobFileOperations fileOps)
       throws IOException, InterruptedException, ParseTimeoutException {
     if (!referenceFileToImage.containsKey(originalShader.getName())) {
       referenceFileToImage.put(
           originalShader.getName(),
           validateAndGetImage(
-              ParseHelper.parse(originalShader, stripHeader),
+              ParseHelper.parse(originalShader),
               Optional.empty(),
               originalShader.getName() + ".reference.frag",
               shadingLanguageVersion,

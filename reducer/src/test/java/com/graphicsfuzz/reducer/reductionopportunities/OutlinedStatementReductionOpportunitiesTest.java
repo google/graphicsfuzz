@@ -34,14 +34,14 @@ public class OutlinedStatementReductionOpportunitiesTest {
     String programAfter = "int _GLF_outlined_1(int x) { return x; }"
         + "void main() { int y; y = 0; }";
 
-    TranslationUnit tu = ParseHelper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program);
 
     List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
 
   }
@@ -54,14 +54,14 @@ public class OutlinedStatementReductionOpportunitiesTest {
     String programAfter = "int _GLF_outlined_1(int x, int y, int z) { return x + (x + y) + z; }"
         + "void main() { int a, b, c; y = 0 + (0 + a) + b + c; }";
 
-    TranslationUnit tu = ParseHelper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program);
 
     List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
 
   }
@@ -76,14 +76,14 @@ public class OutlinedStatementReductionOpportunitiesTest {
         + "int _GLF_outlined_1(int x, int y, int z) { return injectionSwitch.y * x + (x + y) + z; }"
         + "void main() { int a, b, c; y = injectionSwitch.y * 0 + (0 + a) + b + c; }";
 
-    TranslationUnit tu = ParseHelper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program);
 
     List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
 
   }
@@ -93,7 +93,7 @@ public class OutlinedStatementReductionOpportunitiesTest {
     String program = "int _GLF_outlined_1(int x, int y, int z) { if(_GLF_DEAD(false)) { } return injectionSwitch.y * x + (x + y) + z; }"
         + "void main() { int a, b, c; y = _GLF_outlined_1(0, a, b + c); }";
 
-    TranslationUnit tu = ParseHelper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program);
 
     List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
     assertEquals(0, ops.size());

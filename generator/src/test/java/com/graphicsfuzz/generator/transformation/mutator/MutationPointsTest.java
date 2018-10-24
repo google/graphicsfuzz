@@ -40,7 +40,7 @@ public class MutationPointsTest {
             + "    j += x;\n"
             + "  }\n"
             + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
     final MutationPoints mutationPoints = new MutationPoints(
         new Typer(tu, shadingLanguageVersion),
@@ -68,7 +68,7 @@ public class MutationPointsTest {
             + "    j += x;\n"
             + "  }\n"
             + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.WEBGL_SL;
     final MutationPoints mutationPoints = new MutationPoints(
         new Typer(tu, shadingLanguageVersion),
@@ -90,7 +90,7 @@ public class MutationPointsTest {
             + "    j = j + 1;"
             + "  }\n"
             + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.WEBGL_SL;
     final MutationPoints mutationPoints = new MutationPoints(
         new Typer(tu, shadingLanguageVersion),

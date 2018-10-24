@@ -425,7 +425,7 @@ public class ShaderJobFileOperations {
     return FileUtils.readLines(file, Charset.defaultCharset());
   }
 
-  public ShaderJob readShaderJobFile(File shaderJobFile, boolean stripHeader)
+  public ShaderJob readShaderJobFile(File shaderJobFile)
       throws IOException, ParseTimeoutException {
 
     assertIsShaderJobFile(shaderJobFile);
@@ -435,8 +435,8 @@ public class ShaderJobFileOperations {
     final File fragmentShaderFile = new File(shaderJobFilePrefix + ".frag");
     final File licenseFile = new File(shaderJobFilePrefix + ".license");
     return new GlslShaderJob(
-        ParseHelper.maybeParseShader(vertexShaderFile, stripHeader),
-        ParseHelper.maybeParseShader(fragmentShaderFile, stripHeader),
+        ParseHelper.maybeParseShader(vertexShaderFile),
+        ParseHelper.maybeParseShader(fragmentShaderFile),
         new UniformsInfo(shaderJobFile),
         licenseFile.exists()
             ? Optional.of(FileUtils.readFileToString(licenseFile, Charset.defaultCharset()))
@@ -802,14 +802,12 @@ public class ShaderJobFileOperations {
     }
     try (PrintStream stream = ps(outputFile)) {
       EmitShaderHelper.emitShader(
-          shadingLanguageVersion,
-          shaderKind,
           tu.get(),
           license,
           stream,
           PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-          Helper::glfMacros);
+          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER
+      );
     }
   }
 

@@ -19,7 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -132,7 +132,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "    a = a + 1;"
           + "  }"
           + "}";
-    final TranslationUnit tu = ParseHelper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original);
     assertTrue(CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false,
           ShadingLanguageVersion.GLSL_440, new RandomWrapper(0), null)).isEmpty());
   }
@@ -410,7 +410,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
 
   private void check(boolean reduceEverywhere, String original, String... expected)
         throws IOException, ParseTimeoutException {
-    final TranslationUnit tu = ParseHelper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original);
     List<CompoundToBlockReductionOpportunity> ops =
           getOps(tu, reduceEverywhere);
     final Set<String> actualSet = new HashSet<>();
@@ -425,7 +425,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
     final Set<String> expectedSet = new HashSet<>();
     for (String anExpected : expected) {
       expectedSet.add(PrettyPrinterVisitor
-          .prettyPrintAsString(ParseHelper.parse(anExpected, false)));
+          .prettyPrintAsString(ParseHelper.parse(anExpected)));
     }
     assertEquals(expectedSet, actualSet);
   }

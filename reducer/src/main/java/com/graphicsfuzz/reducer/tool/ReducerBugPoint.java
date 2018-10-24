@@ -16,36 +16,28 @@
 
 package com.graphicsfuzz.reducer.tool;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Optional;
 import java.util.Random;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
 
 public class ReducerBugPoint {
 
@@ -139,7 +131,7 @@ public class ReducerBugPoint {
         ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(
             fileOps.getFirstTwoLinesOfShader(interestingShaderJobFile, ShaderKind.FRAGMENT));
 
-    ShaderJob initialState = fileOps.readShaderJobFile(interestingShaderJobFile, true);
+    ShaderJob initialState = fileOps.readShaderJobFile(interestingShaderJobFile);
 
     for (int i = 0; i < maxIterations; i++) {
 
@@ -187,7 +179,7 @@ public class ReducerBugPoint {
           fileOps.deleteShaderJobFile(interestingShaderJobFile);
           fileOps.copyShaderJobFileTo(maxSuccess, interestingShaderJobFile, true);
 
-          initialState = fileOps.readShaderJobFile(interestingShaderJobFile, true);
+          initialState = fileOps.readShaderJobFile(interestingShaderJobFile);
 
           i = 0;
         }

@@ -34,7 +34,7 @@ public class ScopeTreeBuilderTest {
         + "      }"
         + "  }"
         + "}";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     new ScopeTreeBuilder() {
     }.visit(tu);
 

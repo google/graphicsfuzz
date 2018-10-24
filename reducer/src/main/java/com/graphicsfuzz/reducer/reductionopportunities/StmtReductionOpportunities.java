@@ -34,11 +34,11 @@ import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.SideEffectChecker;
 import com.graphicsfuzz.common.util.StructUtils;
+import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;
 import java.util.List;
 

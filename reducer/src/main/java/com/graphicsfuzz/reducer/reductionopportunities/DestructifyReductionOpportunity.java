@@ -32,10 +32,10 @@ import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;
 import java.util.Optional;
 

@@ -26,7 +26,7 @@ import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.EmitShaderHelper;
@@ -34,7 +34,6 @@ import com.graphicsfuzz.common.util.FileHelper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
@@ -110,7 +109,6 @@ public class ReducerUnitTest {
             shadingLanguageVersion,
             originalShader,
             temporaryFolder,
-            false,
             fileOps);
     final UniformsInfo uniformsInfo = new UniformsInfo(
           new File(FilenameUtils.removeExtension(originalShader.getAbsolutePath()) + ".json"));
@@ -153,15 +151,19 @@ public class ReducerUnitTest {
     while (true) {
       List<ITransformationSupplier> transformationsCopy = new ArrayList<>();
       transformationsCopy.addAll(transformations);
-      final TranslationUnit tu = ParseHelper.parse(originalShader, false);
+      final TranslationUnit tu = ParseHelper.parse(originalShader);
       for (int i = 0; i < 4; i++) {
         getTransformation(transformationsCopy, generator).apply(
             tu, TransformationProbabilities.DEFAULT_PROBABILITIES, shadingLanguageVersion,
             generator, GenerationParams.normal(ShaderKind.FRAGMENT));
       }
       File tempFile = temporaryFolder.newFile();
-      Helper.emitShader(shadingLanguageVersion, ShaderKind.FRAGMENT, tu, new PrintStream(
-          new FileOutputStream(tempFile)));
+      EmitShaderHelper.emitShader(tu, Optional.empty(),
+          new PrintStream(
+              new FileOutputStream(tempFile)),
+          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER
+      );
       final int maxBytes = 100000;
       if (tempFile.length() <= maxBytes) {
         return tu;
@@ -213,7 +215,7 @@ public class ReducerUnitTest {
                 fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
 
     // TODO: Use shaderJobFile.
-    final TranslationUnit tu = ParseHelper.parse(shaderFile, true);
+    final TranslationUnit tu = ParseHelper.parse(shaderFile);
 
     IRandom generator = new RandomWrapper(4);
 
@@ -282,8 +284,8 @@ public class ReducerUnitTest {
         "reducerregressions", "misc1.frag").toFile();
     final String outputFilesPrefix = runReductionOnShader(shaderFile, involvesSpecificBinaryOperator);
     PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(new File(temporaryFolder.getRoot(),
-            outputFilesPrefix + ".frag"),
-        true));
+            outputFilesPrefix + ".frag")
+    ));
     // TODO: assert something about the result.
   }
 
@@ -377,8 +379,8 @@ public class ReducerUnitTest {
         "reducerregressions", "intricate.frag").toFile();
     final String outputFilesPrefix = runReductionOnShader(shaderFile, judge);
     PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(new File(temporaryFolder.getRoot(),
-            outputFilesPrefix + ".frag"),
-        true));
+            outputFilesPrefix + ".frag")
+    ));
   }
 
   private String runReductionOnShader(File shaderFile, IFileJudge fileJudge)
@@ -392,7 +394,7 @@ public class ReducerUnitTest {
             fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
     // TODO: Use shaderJobFile.
     final IRandom generator = new RandomWrapper(0);
-    final TranslationUnit tu = ParseHelper.parse(shaderFile, true);
+    final TranslationUnit tu = ParseHelper.parse(shaderFile);
     final ShaderJob state = new GlslShaderJob(
         Optional.empty(),
         Optional.of(tu),
@@ -411,12 +413,7 @@ public class ReducerUnitTest {
   public void testBasicReduction() throws Exception {
 
     final String program =
-          EmitShaderHelper.getDefinesString(
-                ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
-                Helper::glfMacros,
-                Optional.empty()) + "\n"
-          + "void main() {"
+          "void main() {"
           + "  float x = 0.0;"
           + "  float y = 0.0;"
           + "  x = x + 0.1 + y + y + y + y + y;"
@@ -485,19 +482,14 @@ public class ReducerUnitTest {
           -> file.contains("final") && file.endsWith(".frag"));
     assertEquals(1, finalResults.length);
     assertEquals(
-          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse("void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }", false)),
-          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(finalResults[0], true)));
+          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse("void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }")),
+          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(finalResults[0])));
   }
 
   @Test(expected = FileNotFoundException.class)
   public void testConditionForContinuingReduction() throws Exception {
     final String program =
-          EmitShaderHelper.getDefinesString(
-                ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
-                Helper::glfMacros,
-                Optional.empty()) + "\n"
-                + "void main() {"
+          "void main() {"
                 + "}";
     final File shader = temporaryFolder.newFile("reference.frag");
     final File json = temporaryFolder.newFile("reference.json");
@@ -514,12 +506,7 @@ public class ReducerUnitTest {
   @Test
   public void checkReductionIsFinite() throws Exception {
     final String program =
-          EmitShaderHelper.getDefinesString(
-                ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
-                Helper::glfMacros,
-                Optional.empty()) + "\n"
-                + "void main() {"
+          "void main() {"
                 + "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);"
                 + "}";
     final File reference = temporaryFolder.newFile("reference.frag");

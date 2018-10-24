@@ -19,7 +19,6 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -44,7 +43,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
           + "  float k = foo();\n"
           + "  gl_FragColor = vec4(f, 0.0, 0.0, 0.0);\n"
           + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     List<IReductionOpportunity> ops = ReductionOpportunities
           .getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                 new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
@@ -58,7 +57,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
           + "  int GLF_live0c = 3;"
           + "  GLF_live0c++;"
           + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
           .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), null));
@@ -71,7 +70,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
         + "void main() {\n"
         + " gl_FragColor = vec4(S(3.0).x);\n"
         + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
@@ -82,7 +81,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
   public void testUnusedStructIsRemoved() throws Exception {
     final String original = "struct S { int x; }; void main() { }";
     final String expected = "void main() { }";
-    final TranslationUnit tu = ParseHelper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
@@ -97,7 +96,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
         + "void main() {\n"
         + " gl_FragColor = vec4(a.x);\n"
         + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
@@ -108,7 +107,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
   public void testUnusedAnonymousStructIsRemoved() throws Exception {
     final String original = "volatile struct { int x; }; void main() { }";
     final String expected = "void main() { }";
-    final TranslationUnit tu = ParseHelper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
@@ -123,7 +122,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
         ".x); }";
     final String expected = "struct S { float x; } ;    void main() { gl_FragColor = vec4(S(3.0)" +
         ".x); }";
-    final TranslationUnit tu = ParseHelper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original);
     final List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));

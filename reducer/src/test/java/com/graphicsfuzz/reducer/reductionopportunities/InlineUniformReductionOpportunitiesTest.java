@@ -54,7 +54,7 @@ public class InlineUniformReductionOpportunitiesTest {
             "    }" +
             "  }" +
             "}";
-    final TranslationUnit tu = ParseHelper.parse(prog, false);
+    final TranslationUnit tu = ParseHelper.parse(prog);
     final UniformsInfo uniformsInfo = new UniformsInfo();
     uniformsInfo.addUniform("f", BasicType.FLOAT, Optional.empty(), Arrays.asList(3.2));
     uniformsInfo.addUniform("i", BasicType.INT, Optional.empty(), Arrays.asList(10));

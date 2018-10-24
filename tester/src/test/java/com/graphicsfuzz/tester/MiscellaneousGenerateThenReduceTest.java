@@ -62,7 +62,7 @@ public class MiscellaneousGenerateThenReduceTest {
 
   private void checkControlFlowWrapElimination(String program)
       throws IOException, ParseTimeoutException {
-    TranslationUnit tu = ParseHelper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program);
 
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
     new AddWrappingConditionalStmts().apply(tu,
@@ -85,7 +85,7 @@ public class MiscellaneousGenerateThenReduceTest {
       ops.get(0).applyReduction();
     }
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program)),
       PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

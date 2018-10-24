@@ -19,17 +19,15 @@ package com.graphicsfuzz.reducer;
 import static org.junit.Assert.assertEquals;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.common.util.Helper;
-import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Optional;
 import org.junit.rules.TemporaryFolder;
 
 public class TestUtils {
@@ -38,9 +36,9 @@ public class TestUtils {
     File tempFile = testFolder.newFile("temp.frag");
     new PrettyPrinterVisitor(System.out).visit(tu);
     PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-    Helper.emitDefines(ps, ShadingLanguageVersion.ESSL_100,
-            ShaderKind.FRAGMENT,true);
-    PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(ps);
+    PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(ps,
+        PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+        PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER, true, Optional.empty());
     ppv.visit(tu);
     ps.close();
     ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, tempFile);

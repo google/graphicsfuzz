@@ -44,7 +44,7 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
       "void main() {" +
       "  foo(4.0);" +
       "}";
-    final TranslationUnit tu = ParseHelper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
       findOpportunities(tu, true);
     assertEquals(2, opportunities.size());
@@ -72,7 +72,7 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
       "void main() {" +
       "  foo();" +
       "}";
-    final TranslationUnit tu = ParseHelper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
       findOpportunities(tu, true);
     assertEquals(1, opportunities.size());
@@ -91,7 +91,7 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
       "  foo(2, 3.0);" +
       "  foo(2);" +
       "}";
-    final TranslationUnit tu = ParseHelper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
       findOpportunities(tu, true);
     assertEquals(0, opportunities.size());
@@ -122,14 +122,14 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
       "  gl_FragColor = vec4(x);" +
       "}";
 
-    TranslationUnit tu = ParseHelper.parse(shader, false);
+    TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
       findOpportunities(tu, true);
     assertEquals(1, opportunities.size());
     opportunities.get(0).applyReduction();
     CompareAsts.assertEqualAsts(shaderIfReduced, tu);
 
-    tu = ParseHelper.parse(shader, false);
+    tu = ParseHelper.parse(shader);
     opportunities =
       findOpportunities(tu, false);
     assertEquals(0, opportunities.size());

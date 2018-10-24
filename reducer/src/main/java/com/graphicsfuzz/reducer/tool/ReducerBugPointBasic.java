@@ -105,7 +105,7 @@ public class ReducerBugPointBasic {
 
     final IRandom generator = new RandomWrapper(ns.get("seed"));
 
-    final ShaderJob originalShaderJob = fileOps.readShaderJobFile(shaderJobFile, true);
+    final ShaderJob originalShaderJob = fileOps.readShaderJobFile(shaderJobFile);
 
     final int maxIterations = ns.get("max_iterations");
 
@@ -296,8 +296,7 @@ public class ReducerBugPointBasic {
     );
 
     ShaderJob reparsedShaderJob = fileOps.readShaderJobFile(
-        tempShaderJobFile,
-        true
+        tempShaderJobFile
     );
 
     new ReportAstDifferences(

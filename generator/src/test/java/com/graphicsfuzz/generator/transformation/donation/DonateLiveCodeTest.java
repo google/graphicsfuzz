@@ -101,7 +101,7 @@ public class DonateLiveCodeTest {
             new DonateLiveCode(item -> true, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT),
                   false);
 
-      final TranslationUnit referenceTu = ParseHelper.parse(reference, false);
+      final TranslationUnit referenceTu = ParseHelper.parse(reference);
 
       BlockInjectionPoint blockInjectionPoint =
 

@@ -35,9 +35,9 @@ import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.SideEffectChecker;
+import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.List;
 

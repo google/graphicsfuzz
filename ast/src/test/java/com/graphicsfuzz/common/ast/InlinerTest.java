@@ -32,7 +32,7 @@ public class InlinerTest {
   public void testInline1() throws Exception {
     final String program = "void foo() {} void main() { foo(); }";
     final String expected = "void foo() {} void main() { { } }";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     FunctionCallExpr fce = getFunctionCallExprs(tu).get(0);
     Inliner.inline(fce, tu, ShadingLanguageVersion.ESSL_100,
           new IdGenerator());
@@ -43,7 +43,7 @@ public class InlinerTest {
   public void testInline2() throws Exception {
     final String program = "int foo() { return 2; } void main() { int x = foo(); }";
     final String expected = "int foo() { return 2; } void main() { int foo_inline_return_value_0; { foo_inline_return_value_0 = 2; } int x = foo_inline_return_value_0; }";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     FunctionCallExpr fce = getFunctionCallExprs(tu).get(0);
     Inliner.inline(fce, tu, ShadingLanguageVersion.ESSL_100,
           new IdGenerator());
@@ -121,7 +121,7 @@ public class InlinerTest {
           + "  }"
           + "  x = baz_inline_return_value_0;"
           + "}";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     FunctionCallExpr fce = getFunctionCallExprs(tu).get(0);
     final IdGenerator idGenerator = new IdGenerator();
     Inliner.inline(fce, tu, ShadingLanguageVersion.ESSL_100,
@@ -185,7 +185,7 @@ public class InlinerTest {
           + "  }"
           + "  h.x = 2 + foo_inline_return_value_0;"
           + "}";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     FunctionCallExpr fce = getFunctionCallExprs(tu).get(0);
     Inliner.inline(fce, tu, ShadingLanguageVersion.ESSL_100,
           new IdGenerator());

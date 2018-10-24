@@ -145,7 +145,7 @@ public class SplitForLoopsTest {
   @Test
   public void testSplitShouldBePossible() throws Exception {
     final String program = "void main() { for(int i = 0; i < 10; i++) { } }";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, countForLoops(tu));
     new SplitForLoops().apply(tu, TransformationProbabilities.onlySplitLoops(), ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT));
     assertEquals(2, countForLoops(tu));
@@ -154,7 +154,7 @@ public class SplitForLoopsTest {
   @Test
   public void testSplitShouldNotBePossible() throws Exception {
     final String program = "void main() { for(int i = 0; i < 10; i++) { if(true) break; } }";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, countForLoops(tu));
     new SplitForLoops().apply(tu, TransformationProbabilities.onlySplitLoops(), ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT));
     assertEquals(1, countForLoops(tu));

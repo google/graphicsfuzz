@@ -17,7 +17,6 @@
 package com.graphicsfuzz.reducer.tool;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -42,6 +41,7 @@ import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.LocalShaderDispatcher;
 import com.graphicsfuzz.shadersets.MetricImageFileComparator;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
@@ -475,8 +475,8 @@ public class Reduce {
 
     ShaderJob initialState =
         fileOps.readShaderJobFile(
-            new File(workDir, startingShaderJobShortName + ".json"),
-            true);
+            new File(workDir, startingShaderJobShortName + ".json")
+        );
 
     new ReductionDriver(
         new ReductionOpportunityContext(
@@ -494,8 +494,6 @@ public class Reduce {
             workDir,
             stepLimit);
   }
-
-
 
   private static ShadingLanguageVersion getGlslVersionForShaderJob(
       File shaderFileJob,

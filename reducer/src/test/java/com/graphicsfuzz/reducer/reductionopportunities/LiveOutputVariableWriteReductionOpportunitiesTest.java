@@ -18,7 +18,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ParseHelper;
@@ -45,13 +45,13 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
           + "  {"
           + "  }"
           + "}";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities
               .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(reducedProgram, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(reducedProgram)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
@@ -70,8 +70,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
         + "         }\n"
         + " }\n"
         + "}\n";
-    final String expected = "void main() { { } };";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final String expected = "void main() { { } }";
+    final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
       LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReductionOpportunityContext(false, null, null, null));
@@ -91,8 +91,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
         + "        gl_FragColor = " + backupName + ";\n"
         + " }\n"
         + "}\n";
-    final String expected = "void main() { { } };";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final String expected = "void main() { { } }";
+    final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                 new ReductionOpportunityContext(false, null, null, null));
@@ -113,8 +113,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
           + "          gl_FragColor = " + backupName + ";\n"
           + " }\n"
           + "}\n";
-    final String expected = "void main() { { } };";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final String expected = "void main() { { } }";
+    final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                 new ReductionOpportunityContext(false, null, null, null));

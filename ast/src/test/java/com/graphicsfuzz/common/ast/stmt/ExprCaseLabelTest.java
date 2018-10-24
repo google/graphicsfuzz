@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
-import static org.junit.Assert.*;
-
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
@@ -46,7 +44,7 @@ public class ExprCaseLabelTest {
           + "  }"
           + "}";
 
-    final TranslationUnit tu = ParseHelper.parse(before, false);
+    final TranslationUnit tu = ParseHelper.parse(before);
 
     new StandardVisitor() {
       @Override

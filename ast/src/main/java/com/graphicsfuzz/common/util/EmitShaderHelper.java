@@ -17,7 +17,6 @@
 package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -32,91 +31,40 @@ public final class EmitShaderHelper {
     // Utility class
   }
 
-  public static void emitDefines(PrintStream out, ShadingLanguageVersion version,
-        ShaderKind shaderKind,
-        Supplier<StringBuilder> extraMacros,
-        Optional<String> license) {
-    out.print(getDefinesString(version,
-          shaderKind,
-          extraMacros, license).toString());
-  }
-
-  public static StringBuilder getDefinesString(ShadingLanguageVersion version,
-        ShaderKind shaderKind,
-        Supplier<StringBuilder> extraMacros,
-        Optional<String> license) {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("#version " + version.getVersionString() + "\n");
-    if (license.isPresent()) {
-      sb.append("//\n");
-      sb.append("// Adapted from an original shader with copyright and license as follows:\n");
-      sb.append("//\n");
-      sb.append(license.get() + "\n");
-    }
-    if (version.isWebGl()) {
-      sb.append("//WebGL\n");
-    }
-    sb.append("\n");
-    sb.append("#ifdef GL_ES\n");
-    sb.append("#ifdef GL_FRAGMENT_PRECISION_HIGH\n");
-    sb.append("precision highp float;\n");
-    sb.append("precision highp int;\n");
-    sb.append("#else\n");
-    sb.append("precision mediump float;\n");
-    sb.append("precision mediump int;\n");
-    sb.append("#endif\n");
-    sb.append("#endif\n");
-    sb.append("\n");
-    sb.append(extraMacros.get());
-    return sb;
-  }
-
-  public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
-        TranslationUnit shader,
-        Optional<String> license,
-        PrintStream stream,
-        int indentationWidth,
-        Supplier<String> newlineSupplier,
-        Supplier<StringBuilder> extraMacros) {
-    emitDefines(stream, shadingLanguageVersion, shaderKind, extraMacros, license);
-    PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier);
+  public static void emitShader(TranslationUnit shader,
+                                Optional<String> license,
+                                PrintStream stream,
+                                int indentationWidth,
+                                Supplier<String> newlineSupplier) {
+    PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier,
+        true, license);
     ppv.visit(shader);
   }
 
-  public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
-        TranslationUnit shader,
-        Optional<String> license,
-        File outputFile,
-        int indentationWidth,
-        Supplier<String> newlineSupplier,
-        Supplier<StringBuilder> extraMacros) throws FileNotFoundException {
+  public static void emitShader(TranslationUnit shader,
+                                Optional<String> license,
+                                File outputFile,
+                                int indentationWidth,
+                                Supplier<String> newlineSupplier) throws FileNotFoundException {
     try (PrintStream stream = new PrintStream(new FileOutputStream(outputFile))) {
       emitShader(
-          shadingLanguageVersion,
-          shaderKind,
           shader,
           license,
           stream,
           indentationWidth,
-          newlineSupplier,
-          extraMacros);
+          newlineSupplier
+      );
     }
   }
 
-  public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
-        TranslationUnit shader,
-        Optional<String> license,
-        File outputFile) throws FileNotFoundException {
-    try (PrintStream stream = new PrintStream(new FileOutputStream(outputFile))) {
-      emitShader(shadingLanguageVersion, shaderKind, shader, license,
-          stream,
-          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-          () -> new StringBuilder());
-    }
+  public static void emitShader(
+      TranslationUnit shader,
+      Optional<String> license,
+      File outputFile) throws FileNotFoundException {
+    EmitShaderHelper.emitShader(shader, license, outputFile,
+        PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+        PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER
+    );
   }
 
 }

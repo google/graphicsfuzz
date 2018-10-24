@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.generator.transformation;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -35,17 +33,17 @@ import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.SupportedTypes;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.EmitShaderHelper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.util.ToolHelper;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.util.GenerationParams;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +51,8 @@ import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertEquals;
 
 public class OpaqueExpressionGeneratorTest {
 
@@ -76,7 +76,7 @@ public class OpaqueExpressionGeneratorTest {
                     new Fuzzer(new FuzzingContext(new Scope(null)), shadingLanguageVersion, generator,
                           generationParams));
 
-        final TranslationUnit tu = new TranslationUnit(Optional.empty(),
+        final TranslationUnit tu = new TranslationUnit(Optional.of(ShadingLanguageVersion.ESSL_310),
               Arrays.asList(
                     new FunctionDefinition(
                           new FunctionPrototype("main", VoidType.VOID, new ArrayList<>()),
@@ -88,7 +88,7 @@ public class OpaqueExpressionGeneratorTest {
                                             expr, BinOp.ASSIGN))), false))));
         Generate.addInjectionSwitchIfNotPresent(tu);
         final File file = temporaryFolder.newFile("ex.frag");
-        Helper.emitShader(shadingLanguageVersion, ShaderKind.FRAGMENT, tu, Optional.empty(), file);
+        EmitShaderHelper.emitShader(tu, Optional.empty(), file);
         ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, file);
         assertEquals(0, execResult.res);
         file.delete();

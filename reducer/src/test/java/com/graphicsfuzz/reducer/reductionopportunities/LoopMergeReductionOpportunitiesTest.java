@@ -20,8 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.transformreduce.Constants;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.ParseHelper;
 import java.util.List;
 import org.junit.Test;
@@ -60,7 +59,7 @@ public class LoopMergeReductionOpportunitiesTest {
             + secondLoop
             + "}\n";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     List<LoopMergeReductionOpportunity> opportunities =
         LoopMergeReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
@@ -84,7 +83,7 @@ public class LoopMergeReductionOpportunitiesTest {
             + "        }\n"
             + "}\n";
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

@@ -158,8 +158,8 @@ public class GlslShaderJobTest {
   public void testMakeUniformBindings() throws Exception {
 
     final GlslShaderJob job = new GlslShaderJob(
-        Optional.of(ParseHelper.parse(VERT_SHADER_NO_BINDINGS, false)),
-        Optional.of(ParseHelper.parse(FRAG_SHADER_NO_BINDINGS, false)),
+        Optional.of(ParseHelper.parse(VERT_SHADER_NO_BINDINGS)),
+        Optional.of(ParseHelper.parse(FRAG_SHADER_NO_BINDINGS)),
         new UniformsInfo(JSON_NO_BINDINGS),
         Optional.empty());
 
@@ -175,8 +175,8 @@ public class GlslShaderJobTest {
   public void testRemoveUniformBindings() throws Exception {
 
     final GlslShaderJob job = new GlslShaderJob(
-        Optional.of(ParseHelper.parse(VERT_SHADER_WITH_BINDINGS, false)),
-        Optional.of(ParseHelper.parse(FRAG_SHADER_WITH_BINDINGS, false)),
+        Optional.of(ParseHelper.parse(VERT_SHADER_WITH_BINDINGS)),
+        Optional.of(ParseHelper.parse(FRAG_SHADER_WITH_BINDINGS)),
         new UniformsInfo(JSON_WITH_BINDINGS),
         Optional.empty());
 
