@@ -33,7 +33,7 @@ public class TranslationUnitTest {
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Test
-  public void testShaderKinds() throws  Exception {
+  public void testShaderKinds() throws Exception {
     final File frag = temporaryFolder.newFile("a.frag");
     final File vert = temporaryFolder.newFile("a.vert");
     final File comp = temporaryFolder.newFile("a.comp");
@@ -49,6 +49,13 @@ public class TranslationUnitTest {
 
   }
 
-
+  @Test
+  public void testClone() throws Exception {
+    final File vert = temporaryFolder.newFile("a.vert");
+    FileUtils.writeStringToFile(vert, "void main() { }", StandardCharsets.UTF_8);
+    final TranslationUnit vertTu = ParseHelper.parse(vert, false);
+    assertEquals(ShaderKind.VERTEX, vertTu.getShaderKind());
+    assertEquals(ShaderKind.VERTEX, vertTu.clone().getShaderKind());
+  }
 
 }

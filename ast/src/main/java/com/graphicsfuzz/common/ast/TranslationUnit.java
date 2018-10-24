@@ -113,7 +113,7 @@ public class TranslationUnit implements IAstNode {
 
   @Override
   public TranslationUnit clone() {
-    return new TranslationUnit(shadingLanguageVersion,
+    return new TranslationUnit(shaderKind, shadingLanguageVersion,
         topLevelDeclarations.stream().map(x -> x.clone()).collect(Collectors.toList()));
   }
 

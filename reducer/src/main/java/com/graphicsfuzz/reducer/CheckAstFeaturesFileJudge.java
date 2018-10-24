@@ -48,7 +48,10 @@ public class CheckAstFeaturesFileJudge implements IFileJudge {
       File shaderResultFileOutput) {
     try {
       ShaderJob shaderJob = fileOps.readShaderJobFile(shaderJobFile, true);
-      final TranslationUnit tu = shaderJob.getFragmentShader().get();
+      // This judge harks from fragment shader-centric days and is only intended for use
+      // on single-shader shader jobs.
+      assert shaderJob.getShaders().size() == 1;
+      final TranslationUnit tu = shaderJob.getShaders().get(0);
       return visitorSuppliers.stream().allMatch(item -> item.get().check(tu));
     } catch (IOException | ParseTimeoutException exception) {
       throw new RuntimeException(exception);

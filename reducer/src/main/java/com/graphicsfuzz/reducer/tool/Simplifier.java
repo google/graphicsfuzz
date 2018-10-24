@@ -47,15 +47,13 @@ public class Simplifier {
     ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     ShaderJob shaderJob = fileOps.readShaderJobFile(inputShaderJobFile, true);
 
-    // TODO: Warning: assumes only fragment shader.
+    // TODO: Warning: assumes only one shader fragment shader.
     LOGGER.warn("WARNING: assumes only fragment shaders.");
 
     shaderJob = new GlslShaderJob(
-        Optional.empty(),
-        shaderJob.getFragmentShader().map(Simplify::simplify),
+        shaderJob.getLicense(),
         shaderJob.getUniformsInfo(),
-        shaderJob.getLicense()
-    );
+        Simplify.simplify(shaderJob.getShaders().get(0)));
 
     String[] firstTwoLines =
         fileOps.getFirstTwoLinesOfShader(inputShaderJobFile, ShaderKind.FRAGMENT);
@@ -66,7 +64,7 @@ public class Simplifier {
         ps,
         ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(firstTwoLines),
         true);
-    new PrettyPrinterVisitor(ps).visit(shaderJob.getFragmentShader().get());
+    new PrettyPrinterVisitor(ps).visit(shaderJob.getShaders().get(0));
     ps.flush();
   }
 }

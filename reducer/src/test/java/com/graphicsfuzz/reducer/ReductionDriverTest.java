@@ -51,6 +51,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -85,9 +86,8 @@ public class ReductionDriverTest {
 
     ShaderJob state = new GlslShaderJob(
         Optional.empty(),
-        Optional.of(tu),
         new UniformsInfo(tempJsonFile),
-        Optional.empty());
+        tu);
 
     IFileJudge pessimist = new IFileJudge() {
 
@@ -213,19 +213,14 @@ public class ReductionDriverTest {
         Optional.of(testFolder.newFile("temp.vert")) : Optional.empty();
     File tempJsonFile = testFolder.newFile("temp.json");
 
-    BufferedWriter bwFrag = new BufferedWriter(new FileWriter(tempFragmentShaderFile));
-    bwFrag.write(fragmentShader);
-    bwFrag.close();
+    FileUtils.writeStringToFile(tempFragmentShaderFile, fragmentShader, StandardCharsets.UTF_8);
 
     if (vertexShader.isPresent()) {
-      BufferedWriter bwVert = new BufferedWriter(new FileWriter(tempVertexShaderFile.get()));
-      bwVert.write(vertexShader.get());
-      bwVert.close();
+      FileUtils.writeStringToFile(tempVertexShaderFile.get(), vertexShader.get(),
+          StandardCharsets.UTF_8);
     }
 
-    BufferedWriter bwJson = new BufferedWriter(new FileWriter(tempJsonFile));
-    bwJson.write(jsonString);
-    bwJson.close();
+    FileUtils.writeStringToFile(tempJsonFile, jsonString, StandardCharsets.UTF_8);
 
     ShadingLanguageVersion version = ShadingLanguageVersion.ESSL_100;
     IRandom generator = new RandomWrapper(seed);
@@ -235,8 +230,12 @@ public class ReductionDriverTest {
         ? Optional.of(Helper.parse(tempVertexShaderFile.get(), stripHeader))
         : Optional.empty();
 
-    ShaderJob state = new GlslShaderJob(tuVert,
-        Optional.of(tuFrag), new UniformsInfo(tempJsonFile), Optional.empty());
+    final List<TranslationUnit> translationUnits = new ArrayList<>();
+    tuVert.ifPresent(translationUnits::add);
+    translationUnits.add(tuFrag);
+    ShaderJob state = new GlslShaderJob(
+        Optional.empty(), new UniformsInfo(tempJsonFile),
+        translationUnits);
 
     return new ReductionDriver(new ReductionOpportunityContext(reduceEverywhere, version, generator, new IdGenerator()), false, fileOps, state)
         .doReduction(getPrefix(tempFragmentShaderFile), 0,
@@ -268,7 +267,7 @@ public class ReductionDriverTest {
     final TranslationUnit tu = ParseHelper.parse(tempFile, false);
 
     ShaderJob state = new GlslShaderJob(
-        Optional.empty(), Optional.of(tu), new UniformsInfo(tempJsonFile), Optional.empty());
+        Optional.empty(), new UniformsInfo(tempJsonFile), tu);
 
     IFileJudge referencesSinCosAnd3 = (shaderJobFile, shaderResultFileOutput) -> {
         try {
@@ -557,8 +556,8 @@ public class ReductionDriverTest {
     uniformsInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Arrays.asList(1.0));
     uniformsInfo.addUniform("b", BasicType.FLOAT, Optional.empty(), Arrays.asList(2.0));
     ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
-        Optional.of(fragShader),
-        uniformsInfo, Optional.empty());
+        uniformsInfo,
+        fragShader);
     shaderJob.makeUniformBindings();
 
     final File workDir = testFolder.getRoot();

@@ -33,4 +33,16 @@ public enum ShaderKind {
     }
   }
 
+  public String getFileExtension() {
+    switch (this) {
+      case FRAGMENT:
+        return "frag";
+      case VERTEX:
+        return "vert";
+      case COMPUTE:
+        return "comp";
+      default:
+        throw new RuntimeException("Unreachable.");
+    }
+  }
 }

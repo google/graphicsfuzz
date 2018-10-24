@@ -430,17 +430,25 @@ public class ShaderJobFileOperations {
 
     assertIsShaderJobFile(shaderJobFile);
 
-    String shaderJobFilePrefix = FilenameUtils.removeExtension(shaderJobFile.toString());
-    final File vertexShaderFile = new File(shaderJobFilePrefix + ".vert");
-    final File fragmentShaderFile = new File(shaderJobFilePrefix + ".frag");
+    final String shaderJobFilePrefix = FilenameUtils.removeExtension(shaderJobFile.toString());
+
+    final List<TranslationUnit> translationUnits = new ArrayList<>();
+
+    for (String extension : Arrays.asList("vert", "frag", "comp")) {
+      final Optional<TranslationUnit> maybeTu =
+          ParseHelper.maybeParseShader(new File(shaderJobFilePrefix + "." + extension),
+              stripHeader);
+      maybeTu.ifPresent(translationUnits::add);
+    }
+
     final File licenseFile = new File(shaderJobFilePrefix + ".license");
+
     return new GlslShaderJob(
-        ParseHelper.maybeParseShader(vertexShaderFile, stripHeader),
-        ParseHelper.maybeParseShader(fragmentShaderFile, stripHeader),
-        new UniformsInfo(shaderJobFile),
         licenseFile.exists()
             ? Optional.of(FileUtils.readFileToString(licenseFile, Charset.defaultCharset()))
-            : Optional.empty());
+            : Optional.empty(),
+        new UniformsInfo(shaderJobFile),
+        translationUnits);
   }
 
   public void readShaderJobFileToImageJob(File shaderJobFile, ImageJob imageJob)
@@ -632,21 +640,14 @@ public class ShaderJobFileOperations {
 
     String outputFileNoExtension = FilenameUtils.removeExtension(outputShaderJobFile.toString());
 
-    writeShader(
-        shaderJob.getVertexShader(),
-        shadingLanguageVersion,
-        ShaderKind.VERTEX,
-        shaderJob.getLicense(),
-        new File(outputFileNoExtension + ".vert")
-    );
-
-    writeShader(
-        shaderJob.getFragmentShader(),
-        shadingLanguageVersion,
-        ShaderKind.FRAGMENT,
-        shaderJob.getLicense(),
-        new File(outputFileNoExtension + ".frag")
-    );
+    for (TranslationUnit tu : shaderJob.getShaders()) {
+      writeShader(
+          tu,
+          shadingLanguageVersion,
+          shaderJob.getLicense(),
+          new File(outputFileNoExtension + "." + tu.getShaderKind().getFileExtension())
+      );
+    }
 
     //noinspection deprecation: OK for use inside this class.
     writeAdditionalInfo(
@@ -791,19 +792,15 @@ public class ShaderJobFileOperations {
   }
 
   private static void writeShader(
-      Optional<TranslationUnit> tu,
+      TranslationUnit tu,
       ShadingLanguageVersion shadingLanguageVersion,
-      ShaderKind shaderKind,
       Optional<String> license,
       File outputFile
   ) throws FileNotFoundException {
-    if (!tu.isPresent()) {
-      return;
-    }
     try (PrintStream stream = ps(outputFile)) {
       EmitShaderHelper.emitShader(
           shadingLanguageVersion,
-          tu.get(),
+          tu,
           license,
           stream,
           PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,

@@ -153,9 +153,8 @@ public final class Util {
 
     final ShaderJob shaderJob = new GlslShaderJob(
         Optional.empty(),
-        Optional.of(tu),
         uniforms.get(),
-        Optional.empty()
+        tu
     );
 
     final File shaderJobFileOutput = new File(
