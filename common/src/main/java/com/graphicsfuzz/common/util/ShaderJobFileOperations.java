@@ -174,10 +174,13 @@ public class ShaderJobFileOperations {
     //noinspection ConstantConditions
     shaderExists |= new File(shaderJobFileNoExtension + ".frag").isFile();
     shaderExists |= new File(shaderJobFileNoExtension + ".vert").isFile();
+    shaderExists |= new File(shaderJobFileNoExtension + ".comp").isFile();
 
     if (!shaderExists) {
       throw new FileNotFoundException(
-          "Cannot find vertex or fragment shader at " + shaderJobFileNoExtension + ".[vert/frag]");
+          "Cannot find vertex, fragment or compute shader at "
+              + shaderJobFileNoExtension
+              + ".[vert/frag/comp]");
     }
 
   }
@@ -338,16 +341,7 @@ public class ShaderJobFileOperations {
       ShaderKind shaderKind) {
     assertIsShaderJobFile(shaderJobFile);
     String shaderJobFileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
-
-    switch (shaderKind) {
-      case FRAGMENT:
-        return new File(shaderJobFileNoExtension + ".frag");
-      case VERTEX:
-        return new File(shaderJobFileNoExtension + ".vert");
-      default:
-        // fall through
-    }
-    throw new IllegalStateException("Missing case: " + shaderKind);
+    return new File(shaderJobFileNoExtension + "." + shaderKind.getFileExtension());
   }
 
   public boolean isDirectory(File file) {
@@ -916,9 +910,10 @@ public class ShaderJobFileOperations {
     String fileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
     final File vertexShaderFile = new File(fileNoExtension + ".vert");
     final File fragmentShaderFile = new File(fileNoExtension + ".frag");
+    final File computeShaderFile = new File(fileNoExtension + ".comp");
 
-    if (!isFile(vertexShaderFile) && !isFile(fragmentShaderFile)) {
-      throw new IllegalStateException("No frag or vert shader found for " + shaderJobFile);
+    if (!isFile(vertexShaderFile) && !isFile(fragmentShaderFile) && !isFile(computeShaderFile)) {
+      throw new IllegalStateException("No frag, vert or comp shader found for " + shaderJobFile);
     }
 
     byte[] vertexData = isFile(vertexShaderFile)
@@ -927,9 +922,28 @@ public class ShaderJobFileOperations {
     byte[] fragmentData = isFile(fragmentShaderFile)
         ? readFileToByteArray(fragmentShaderFile)
         : new byte[0];
-    byte[] combinedData = new byte[vertexData.length + fragmentData.length];
-    System.arraycopy(vertexData, 0, combinedData, 0, vertexData.length);
-    System.arraycopy(fragmentData, 0, combinedData, vertexData.length, fragmentData.length);
+    byte[] computeData = isFile(computeShaderFile)
+        ? readFileToByteArray(computeShaderFile)
+        : new byte[0];
+    byte[] combinedData = new byte[vertexData.length + fragmentData.length + computeData.length];
+    System.arraycopy(
+        vertexData,
+        0,
+        combinedData,
+        0,
+        vertexData.length);
+    System.arraycopy(
+        fragmentData,
+        0,
+        combinedData,
+        vertexData.length,
+        fragmentData.length);
+    System.arraycopy(
+        computeData,
+        0,
+        combinedData,
+        vertexData.length + fragmentData.length,
+        computeData.length);
     return DigestUtils.md5Hex(combinedData);
   }
 
