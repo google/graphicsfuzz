@@ -19,11 +19,22 @@ package com.graphicsfuzz.common.tool;
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.util.ExecHelper;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolHelper;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import org.apache.commons.io.FileUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
 
 public class PrettyPrinterVisitorTest {
+
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Test
   public void testParseAndPrint() throws Exception {
@@ -208,5 +219,61 @@ public class PrettyPrinterVisitorTest {
     assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
         false)));
   }
+
+  @Test
+  public void testSamplers() throws Exception {
+    final String program =
+        "uniform sampler1D s1;\n\n"
+      + "uniform sampler2D s2;\n\n"
+      + "uniform sampler2DRect s3;\n\n"
+      + "uniform sampler3D s4;\n\n"
+      + "uniform samplerCube s5;\n\n"
+      + "uniform sampler1DShadow s7;\n\n"
+      + "uniform sampler2DShadow s8;\n\n"
+      + "uniform sampler2DRectShadow s9;\n\n"
+      + "uniform samplerCubeShadow s10;\n\n"
+      + "uniform sampler1DArray s11;\n\n"
+      + "uniform sampler2DArray s12;\n\n"
+      + "uniform sampler1DArrayShadow s13;\n\n"
+      + "uniform sampler2DArrayShadow s14;\n\n"
+      + "uniform samplerBuffer s15;\n\n"
+      + "uniform samplerCubeArray s16;\n\n"
+      + "uniform samplerCubeArrayShadow s17;\n\n"
+      + "uniform isampler1D s18;\n\n"
+      + "uniform isampler2D s19;\n\n"
+      + "uniform isampler2DRect s20;\n\n"
+      + "uniform isampler3D s21;\n\n"
+      + "uniform isamplerCube s22;\n\n"
+      + "uniform isampler1DArray s23;\n\n"
+      + "uniform isampler2DArray s24;\n\n"
+      + "uniform isamplerBuffer s25;\n\n"
+      + "uniform isamplerCubeArray s26;\n\n"
+      + "uniform usampler1D s27;\n\n"
+      + "uniform usampler2D s28;\n\n"
+      + "uniform usampler2DRect s29;\n\n"
+      + "uniform usampler3D s30;\n\n"
+      + "uniform usamplerCube s31;\n\n"
+      + "uniform usampler1DArray s32;\n\n"
+      + "uniform usampler2DArray s33;\n\n"
+      + "uniform usamplerBuffer s34;\n\n"
+      + "uniform usamplerCubeArray s35;\n\n"
+      + "uniform sampler2DMS s36;\n\n"
+      + "uniform isampler2DMS s37;\n\n"
+      + "uniform usampler2DMS s38;\n\n"
+      + "uniform sampler2DMSArray s39;\n\n"
+      + "uniform isampler2DMSArray s40;\n\n"
+      + "uniform usampler2DMSArray s41;\n\n";
+
+    final File shaderFile = temporaryFolder.newFile("shader.frag");
+    FileUtils.writeStringToFile(shaderFile, "#version 410\n\n" + program, StandardCharsets.UTF_8);
+    assertEquals(0, ToolHelper.runValidatorOnShader(ExecHelper.RedirectType.TO_BUFFER,
+        shaderFile).res);
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
+        false)));
+  }
+
+  private void assertTrue(ExecResult runValidatorOnShader) {
+  }
+
 
 }
