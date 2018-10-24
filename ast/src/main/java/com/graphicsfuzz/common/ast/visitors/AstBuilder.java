@@ -79,6 +79,7 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.parser.GLSLBaseVisitor;
 import com.graphicsfuzz.parser.GLSLParser.Additive_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.And_expressionContext;
@@ -170,10 +171,12 @@ import org.antlr.v4.runtime.misc.Pair;
 
 public class AstBuilder extends GLSLBaseVisitor<Object> {
 
+  private final ShaderKind shaderKind;
   private final List<Declaration> topLevelDeclarations;
   private final Set<StructNameType> structs;
 
-  private AstBuilder() {
+  private AstBuilder(ShaderKind shaderKind) {
+    this.shaderKind = shaderKind;
     this.topLevelDeclarations = new ArrayList<>();
     this.structs = new HashSet<>();
   }
@@ -182,8 +185,9 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     topLevelDeclarations.add(decl);
   }
 
-  public static TranslationUnit getTranslationUnit(Translation_unitContext ctx) {
-    return new AstBuilder().visitTranslation_unit(ctx);
+  public static TranslationUnit getTranslationUnit(Translation_unitContext ctx,
+                                                   ShaderKind shaderKind) {
+    return new AstBuilder(shaderKind).visitTranslation_unit(ctx);
   }
 
   @Override
@@ -198,7 +202,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         versionString += " " + ctx.version_statement().IDENTIFIER().getText();
       }
     }
-    return new TranslationUnit(versionString == null
+    return new TranslationUnit(shaderKind,
+            versionString == null
             ? Optional.empty()
             : Optional.of(ShadingLanguageVersion.fromVersionString(versionString)),
         topLevelDeclarations);

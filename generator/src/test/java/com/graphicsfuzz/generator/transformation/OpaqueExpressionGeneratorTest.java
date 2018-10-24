@@ -88,7 +88,7 @@ public class OpaqueExpressionGeneratorTest {
                                             expr, BinOp.ASSIGN))), false))));
         Generate.addInjectionSwitchIfNotPresent(tu);
         final File file = temporaryFolder.newFile("ex.frag");
-        Helper.emitShader(shadingLanguageVersion, ShaderKind.FRAGMENT, tu, Optional.empty(), file);
+        Helper.emitShader(shadingLanguageVersion, tu, Optional.empty(), file);
         ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, file);
         assertEquals(0, execResult.res);
         file.delete();

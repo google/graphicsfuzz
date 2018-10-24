@@ -25,6 +25,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.StructUtils;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,14 +35,33 @@ import java.util.stream.Collectors;
 
 public class TranslationUnit implements IAstNode {
 
-  private Optional<ShadingLanguageVersion> shadingLanguageVersion;
+  private final ShaderKind shaderKind;
+  private final Optional<ShadingLanguageVersion> shadingLanguageVersion;
   private List<Declaration> topLevelDeclarations;
 
-  public TranslationUnit(Optional<ShadingLanguageVersion> shadingLanguageVersion,
+  /**
+   * Constructs a translation unit representing a given type of shader.
+   * @param shaderKind The kind of shader represented, e.g. fragment, vertex, compute.
+   * @param shadingLanguageVersion The shading language version; optional.
+   * @param topLevelDeclarations The content of the shader.
+   */
+  public TranslationUnit(ShaderKind shaderKind,
+                         Optional<ShadingLanguageVersion> shadingLanguageVersion,
                          List<Declaration> topLevelDeclarations) {
+    this.shaderKind = shaderKind;
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.topLevelDeclarations = new ArrayList<>();
     this.topLevelDeclarations.addAll(topLevelDeclarations);
+  }
+
+  /**
+   * Constructs a translation unit representing a fragment shader.
+   * @param shadingLanguageVersion The shading language version; optional.
+   * @param topLevelDeclarations The content of the shader.
+   */
+  public TranslationUnit(Optional<ShadingLanguageVersion> shadingLanguageVersion,
+                         List<Declaration> topLevelDeclarations) {
+    this(ShaderKind.FRAGMENT, shadingLanguageVersion, topLevelDeclarations);
   }
 
   public List<Declaration> getTopLevelDeclarations() {

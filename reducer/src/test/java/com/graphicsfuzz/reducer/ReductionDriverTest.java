@@ -347,7 +347,6 @@ public class ReductionDriverTest {
 
     final String resultFilesPrefix = reduce(judge,
           EmitShaderHelper.getDefinesString(ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
                 () -> new StringBuilder(),
                 Optional.empty())
                 .toString()
@@ -382,7 +381,6 @@ public class ReductionDriverTest {
 
     final String resultFilesPrefix = reduce(judge,
           EmitShaderHelper.getDefinesString(ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
                 () -> new StringBuilder(), Optional.empty())
                 .toString()
                 + ""

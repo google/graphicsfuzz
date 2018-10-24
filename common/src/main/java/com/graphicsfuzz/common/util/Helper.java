@@ -40,9 +40,8 @@ public final class Helper {
   }
 
   public static void emitDefines(PrintStream out, ShadingLanguageVersion version,
-        ShaderKind shaderKind,
         boolean defineMacros) {
-    EmitShaderHelper.emitDefines(out, version, shaderKind,
+    EmitShaderHelper.emitDefines(out, version,
           defineMacros ? Helper::glfMacros : () -> new StringBuilder(),
           Optional.empty());
   }
@@ -69,11 +68,10 @@ public final class Helper {
   }
 
   public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
         TranslationUnit shader,
         Optional<String> license,
         PrintStream stream) {
-    EmitShaderHelper.emitShader(shadingLanguageVersion, shaderKind, shader, license,
+    EmitShaderHelper.emitShader(shadingLanguageVersion, shader, license,
           stream,
           PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
           PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
@@ -82,33 +80,30 @@ public final class Helper {
 
   public static void emitShader(
         ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
         TranslationUnit shader,
         PrintStream stream) {
-    emitShader(shadingLanguageVersion, shaderKind, shader, Optional.empty(), stream);
+    emitShader(shadingLanguageVersion, shader, Optional.empty(), stream);
   }
 
   public static void emitShader(
         ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
         TranslationUnit shader,
         Optional<String> license,
         File outputFile) throws FileNotFoundException {
-    emitShader(shadingLanguageVersion, shaderKind, shader, license, outputFile,
+    emitShader(shadingLanguageVersion, shader, license, outputFile,
           PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
           PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
           true);
   }
 
   public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
-        ShaderKind shaderKind,
         TranslationUnit shader,
         Optional<String> license,
         File outputFile,
         int indentationWidth,
         Supplier<String> newlineSupplier,
         boolean defineMacros) throws FileNotFoundException {
-    EmitShaderHelper.emitShader(shadingLanguageVersion, shaderKind, shader, license,
+    EmitShaderHelper.emitShader(shadingLanguageVersion, shader, license,
           outputFile,
           indentationWidth,
           newlineSupplier,

@@ -121,7 +121,7 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
       new PrettyPrinterVisitor(System.out).visit(tu);
 
       PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-      Helper.emitDefines(ps, ShadingLanguageVersion.ESSL_100, ShaderKind.FRAGMENT, true);
+      Helper.emitDefines(ps, ShadingLanguageVersion.ESSL_100, true);
       PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(ps);
       ppv.visit(tu);
       ps.close();

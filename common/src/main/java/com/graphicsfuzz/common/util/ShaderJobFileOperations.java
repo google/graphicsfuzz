@@ -803,7 +803,6 @@ public class ShaderJobFileOperations {
     try (PrintStream stream = ps(outputFile)) {
       EmitShaderHelper.emitShader(
           shadingLanguageVersion,
-          shaderKind,
           tu.get(),
           license,
           stream,

@@ -65,7 +65,6 @@ public class Simplifier {
     Helper.emitDefines(
         ps,
         ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(firstTwoLines),
-        ShaderKind.FRAGMENT,
         true);
     new PrettyPrinterVisitor(ps).visit(shaderJob.getFragmentShader().get());
     ps.flush();

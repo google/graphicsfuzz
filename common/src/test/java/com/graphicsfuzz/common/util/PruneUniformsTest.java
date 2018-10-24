@@ -185,7 +185,7 @@ public class PruneUniformsTest {
         prefixList));
 
     final File shaderFile = temporaryFolder.newFile("shader.frag");
-    Helper.emitShader(ShadingLanguageVersion.ESSL_300, ShaderKind.FRAGMENT,
+    Helper.emitShader(ShadingLanguageVersion.ESSL_300,
           tu, Optional.empty(), shaderFile);
     final ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, shaderFile);
     assertEquals(0, execResult.res);

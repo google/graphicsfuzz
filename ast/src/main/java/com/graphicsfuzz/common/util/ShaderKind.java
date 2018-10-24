@@ -18,16 +18,18 @@ package com.graphicsfuzz.common.util;
 
 public enum ShaderKind {
 
-  FRAGMENT, VERTEX;
+  FRAGMENT, VERTEX, COMPUTE;
 
-  public String getFileExtension() {
-    switch (this) {
-      case FRAGMENT:
-        return ".frag";
-      case VERTEX:
-        return ".vert";
+  public static ShaderKind fromExtension(String extension) {
+    switch (extension) {
+      case "frag":
+        return FRAGMENT;
+      case "vert":
+        return VERTEX;
+      case "comp":
+        return COMPUTE;
       default:
-        throw new RuntimeException("Unreachable");
+        throw new IllegalArgumentException("Unknown shader extension '" + extension + "'");
     }
   }
 

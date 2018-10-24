@@ -160,7 +160,7 @@ public class ReducerUnitTest {
             generator, GenerationParams.normal(ShaderKind.FRAGMENT));
       }
       File tempFile = temporaryFolder.newFile();
-      Helper.emitShader(shadingLanguageVersion, ShaderKind.FRAGMENT, tu, new PrintStream(
+      Helper.emitShader(shadingLanguageVersion, tu, new PrintStream(
           new FileOutputStream(tempFile)));
       final int maxBytes = 100000;
       if (tempFile.length() <= maxBytes) {
@@ -412,7 +412,6 @@ public class ReducerUnitTest {
     final String program =
           EmitShaderHelper.getDefinesString(
                 ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
                 Helper::glfMacros,
                 Optional.empty()) + "\n"
           + "void main() {"
@@ -493,7 +492,6 @@ public class ReducerUnitTest {
     final String program =
           EmitShaderHelper.getDefinesString(
                 ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
                 Helper::glfMacros,
                 Optional.empty()) + "\n"
                 + "void main() {"
@@ -515,7 +513,6 @@ public class ReducerUnitTest {
     final String program =
           EmitShaderHelper.getDefinesString(
                 ShadingLanguageVersion.ESSL_100,
-                ShaderKind.FRAGMENT,
                 Helper::glfMacros,
                 Optional.empty()) + "\n"
                 + "void main() {"

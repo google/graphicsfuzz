@@ -106,7 +106,7 @@ public class HelperTest {
   public void testParseCurrentHeaderNoMacros() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-    Helper.emitDefines(ps, ShadingLanguageVersion.WEBGL_SL, ShaderKind.FRAGMENT,
+    Helper.emitDefines(ps, ShadingLanguageVersion.WEBGL_SL,
         false);
     ps.println(TEST_PROGRAM);
     ps.close();
@@ -118,7 +118,7 @@ public class HelperTest {
   public void testParseCurrentHeaderWithMacros() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-    Helper.emitDefines(ps, ShadingLanguageVersion.WEBGL_SL, ShaderKind.FRAGMENT,
+    Helper.emitDefines(ps, ShadingLanguageVersion.WEBGL_SL,
         true);
     ps.println(TEST_PROGRAM);
     ps.close();
