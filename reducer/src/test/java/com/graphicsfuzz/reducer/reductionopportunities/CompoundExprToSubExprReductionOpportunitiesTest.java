@@ -16,13 +16,10 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.io.IOException;
@@ -31,12 +28,15 @@ import java.util.List;
 import java.util.Set;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class CompoundExprToSubExprReductionOpportunitiesTest {
 
   @Test
   public void noEffectInRegularCode() throws Exception {
     final String original = "void main() { int a = 2; int b = 3; a + b + b; }";
-    final TranslationUnit tu = Helper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original, false);
     final List<SimplifyExprReductionOpportunity> ops = CompoundExprToSubExprReductionOpportunities
           .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
                 new RandomWrapper(0), null));
@@ -55,7 +55,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
           + "void main() { }";
     final String expected4 = "void foo() { int a = 2; int b = 3; int c = 4; b + c; }"
           + "void main() { }";
-    final TranslationUnit tu = Helper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original, false);
     check(false, original, expected1, expected2, expected3, expected4);
   }
 
@@ -83,7 +83,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
 
   private void check(boolean reduceEverywhere, String original, String... expected)
         throws IOException, ParseTimeoutException {
-    final TranslationUnit tu = Helper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original, false);
     List<SimplifyExprReductionOpportunity> ops =
           getOps(tu, reduceEverywhere);
     final Set<String> actualSet = new HashSet<>();
@@ -98,7 +98,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
     final Set<String> expectedSet = new HashSet<>();
     for (int i = 0; i < expected.length; i++) {
       expectedSet.add(PrettyPrinterVisitor
-            .prettyPrintAsString(Helper.parse(expected[i], false)));
+            .prettyPrintAsString(ParseHelper.parse(expected[i], false)));
     }
     assertEquals(expectedSet, actualSet);
   }

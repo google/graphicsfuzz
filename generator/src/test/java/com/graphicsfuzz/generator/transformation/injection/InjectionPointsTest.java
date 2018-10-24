@@ -16,20 +16,20 @@
 
 package com.graphicsfuzz.generator.transformation.injection;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class InjectionPointsTest {
 
   @Test
   public void testNoInjectAtStartOfSwitch() throws Exception {
     final String prog = "void main() { /* injection point */ switch(1) { /* not injection point */ default: /* injection point */ break; /* injection point */ } /* injection point */ }";
-    TranslationUnit tu = Helper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog, false);
     List<IInjectionPoint> injectionPointList = new InjectionPoints(tu, new RandomWrapper(0), item -> true).getAllInjectionPoints();
     assertEquals(4, injectionPointList.size());
   }

@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.generator.transformation.donation;
 
-import static org.junit.Assert.assertFalse;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -38,8 +36,8 @@ import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.transformation.injection.BlockInjectionPoint;
@@ -52,6 +50,8 @@ import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertFalse;
 
 public class DonateLiveCodeTest {
 
@@ -101,7 +101,7 @@ public class DonateLiveCodeTest {
             new DonateLiveCode(item -> true, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT),
                   false);
 
-      final TranslationUnit referenceTu = Helper.parse(reference, false);
+      final TranslationUnit referenceTu = ParseHelper.parse(reference, false);
 
       BlockInjectionPoint blockInjectionPoint =
 

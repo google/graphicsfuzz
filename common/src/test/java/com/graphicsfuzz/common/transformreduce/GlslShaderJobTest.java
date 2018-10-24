@@ -17,7 +17,7 @@
 package com.graphicsfuzz.common.transformreduce;
 
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class GlslShaderJobTest {
 
@@ -169,8 +169,8 @@ public class GlslShaderJobTest {
     final GlslShaderJob job = new GlslShaderJob(
         Optional.empty(),
         new UniformsInfo(JSON_NO_BINDINGS),
-        Helper.parse(getShaderFile("vert", VERT_SHADER_NO_BINDINGS), false),
-        Helper.parse(getShaderFile("frag", FRAG_SHADER_NO_BINDINGS), false));
+        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_NO_BINDINGS), false),
+        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_NO_BINDINGS), false));
 
     job.makeUniformBindings();
 
@@ -185,8 +185,8 @@ public class GlslShaderJobTest {
     final GlslShaderJob job = new GlslShaderJob(
         Optional.empty(),
         new UniformsInfo(JSON_WITH_BINDINGS),
-        Helper.parse(getShaderFile("vert", VERT_SHADER_WITH_BINDINGS), false),
-        Helper.parse(getShaderFile("frag", FRAG_SHADER_WITH_BINDINGS), false));
+        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_WITH_BINDINGS), false),
+        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_WITH_BINDINGS), false));
 
     job.removeUniformBindings();
 

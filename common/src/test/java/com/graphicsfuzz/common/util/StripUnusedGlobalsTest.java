@@ -53,9 +53,9 @@ public class StripUnusedGlobalsTest {
           + "}"
           + "void main() {"
           + "}";
-    final TranslationUnit tu = Helper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original, false);
     StripUnusedGlobals.strip(tu);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

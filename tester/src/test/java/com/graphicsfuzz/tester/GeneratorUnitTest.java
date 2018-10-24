@@ -284,7 +284,7 @@ public class GeneratorUnitTest {
     }
     Generate.addInjectionSwitchIfNotPresent(tu);
     final UniformsInfo uniformsInfo = new UniformsInfo(
-          new File(Helper.jsonFilenameForShader(originalShader.getAbsolutePath())));
+          new File(FilenameUtils.removeExtension(originalShader.getAbsolutePath()) + ".json"));
     Generate.setInjectionSwitch(uniformsInfo);
     Generate.randomiseUnsetUniforms(tu, uniformsInfo, generator);
 

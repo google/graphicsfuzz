@@ -16,14 +16,14 @@
 
 package com.graphicsfuzz.generator.transformation.outliner;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.ParseHelper;
 import java.util.List;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class OutlineStatementOpportunitiesTest {
 
@@ -50,7 +50,7 @@ public class OutlineStatementOpportunitiesTest {
         + "  v.y = 1.2;" // Does not count; not direct variable assignment
         + "  gl_FragColor = vec4(0.0);" // Counts
         + "}";
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     List<OutlineStatementOpportunity> opportunities = new OutlineStatementOpportunities(tu).getAllOpportunities();
     assertEquals(5, opportunities.size());
 
@@ -76,12 +76,12 @@ public class OutlineStatementOpportunitiesTest {
         + "  gl_FragColor = _GLF_outlined_0();"
         + "}";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     List<OutlineStatementOpportunity> ops = new OutlineStatementOpportunities(tu).getAllOpportunities();
     assertEquals(1, ops.size());
     ops.get(0).apply(new IdGenerator());
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expectedProgram, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram, false)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

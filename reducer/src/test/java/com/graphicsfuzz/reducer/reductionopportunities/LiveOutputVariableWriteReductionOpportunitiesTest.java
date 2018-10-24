@@ -16,16 +16,16 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.OpenGlConstants;
+import com.graphicsfuzz.common.util.ParseHelper;
 import java.util.List;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class LiveOutputVariableWriteReductionOpportunitiesTest {
 
@@ -45,13 +45,13 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
           + "  {"
           + "  }"
           + "}";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities
               .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(reducedProgram, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(reducedProgram, false)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
@@ -71,7 +71,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
         + " }\n"
         + "}\n";
     final String expected = "void main() { { } };";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
       LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReductionOpportunityContext(false, null, null, null));
@@ -92,7 +92,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
         + " }\n"
         + "}\n";
     final String expected = "void main() { { } };";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                 new ReductionOpportunityContext(false, null, null, null));
@@ -114,7 +114,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
           + " }\n"
           + "}\n";
     final String expected = "void main() { { } };";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                 new ReductionOpportunityContext(false, null, null, null));

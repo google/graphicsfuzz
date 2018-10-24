@@ -121,11 +121,11 @@ public class ObfuscatorTest {
   }
 
   private void check(String original, String expected) throws IOException, ParseTimeoutException {
-    TranslationUnit tu = Helper.parse(original, false);
+    TranslationUnit tu = ParseHelper.parse(original, false);
     IRandom generator = new ZeroCannedRandom();
     ImmutablePair<TranslationUnit, UniformsInfo> obfuscated =
           Obfuscator.obfuscate(tu, new UniformsInfo(), generator, ShadingLanguageVersion.ESSL_100);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(obfuscated.getLeft()));
   }
 

@@ -34,14 +34,14 @@ public class AddBracesTest {
   @Test
   public void danglingElse() throws IOException, ParseTimeoutException {
     String program = "void main() { if (a) if (b) s1; else s2; }";
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     TranslationUnit transformed = AddBraces.transform(tu);
     assertNotEquals(tu, transformed);
 
     String programAfter = "void main() { if (a) { if (b) { s1; } } else { s2; } }";
 
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-        Helper.parse(programAfter, false)),
+        ParseHelper.parse(programAfter, false)),
         PrettyPrinterVisitor.prettyPrintAsString(transformed));
   }
 
@@ -50,11 +50,11 @@ public class AddBracesTest {
     String program =      "void main() { for (a; b; c) while (d) do e; while (f); }";
     String programAfter = "void main() { for (a; b; c) { while (d) { do { e; } while (f); } } }";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     TranslationUnit transformed = AddBraces.transform(tu);
     assertNotEquals(tu, transformed);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-        Helper.parse(programAfter, false)),
+        ParseHelper.parse(programAfter, false)),
         PrettyPrinterVisitor.prettyPrintAsString(transformed));
   }
 

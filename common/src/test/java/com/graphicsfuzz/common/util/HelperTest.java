@@ -48,7 +48,7 @@ public class HelperTest {
 
   @Test
   public void testParseFromString() throws IOException, ParseTimeoutException {
-    TranslationUnit tu = Helper.parse(TEST_PROGRAM, false);
+    TranslationUnit tu = ParseHelper.parse(TEST_PROGRAM, false);
     checkTranslationUnit(tu);
   }
 
@@ -98,7 +98,7 @@ public class HelperTest {
             + "precision mediump float;\n"
             + "#endif\n"
             + "void main() { }\n";
-    TranslationUnit tu = Helper.parse(program, true);
+    TranslationUnit tu = ParseHelper.parse(program, true);
     assertEquals(1, tu.getTopLevelDeclarations().size());
   }
 
@@ -129,7 +129,7 @@ public class HelperTest {
   @Test
   public void testQualifiers() throws Exception {
     final String prog = "in vec3 blah; out vec3 bloo; void foo(in float x, out float y);";
-    final TranslationUnit tu = Helper.parse(prog, false);
+    final TranslationUnit tu = ParseHelper.parse(prog, false);
 
     assertEquals(3, tu.getTopLevelDeclarations().size());
     {

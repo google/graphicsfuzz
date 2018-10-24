@@ -16,14 +16,14 @@
 
 package com.graphicsfuzz.generator.transformation.donation;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.typing.Typer;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class MakeArrayAccessesInBoundsTest {
 
@@ -31,10 +31,10 @@ public class MakeArrayAccessesInBoundsTest {
   public void testBasic() throws Exception {
     final String shader = "void main() { int A[5]; int x = 17; A[x] = 2; }";
     final String expected = "void main() { int A[5]; int x = 17; A[(x) >= 0 && (x) < 5 ? x : 0] = 2; }";
-    final TranslationUnit tu = Helper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader, false);
     final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_300);
     MakeArrayAccessesInBounds.makeInBounds(tu, typer);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
@@ -45,10 +45,10 @@ public class MakeArrayAccessesInBoundsTest {
           + "As[(x) >= 0 && (x) < 5 ? x : 0]"
           + "  /* column */ [(y) >= 0 && (y) < 4 ? y : 0]"
           + "  /* row */ [(z) >= 0 && (z) < 2 ? z : 0] = 2.0; }";
-    final TranslationUnit tu = Helper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader, false);
     final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_300);
     MakeArrayAccessesInBounds.makeInBounds(tu, typer);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
@@ -74,10 +74,10 @@ public class MakeArrayAccessesInBoundsTest {
           + "  float f;"
           + "  f = v[(z) >= 0 && (z) < 4 ? z : 0];"
           + "}";
-    final TranslationUnit tu = Helper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader, false);
     final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_300);
     MakeArrayAccessesInBounds.makeInBounds(tu, typer);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

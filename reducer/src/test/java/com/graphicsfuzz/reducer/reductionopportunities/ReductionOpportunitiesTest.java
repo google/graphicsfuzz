@@ -56,7 +56,7 @@ public class ReductionOpportunitiesTest {
         + "  }"
         + "}\n";
 
-    TranslationUnit tu = Helper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog, false);
     List<IReductionOpportunity> opportunities =
         ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
               new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
@@ -70,7 +70,7 @@ public class ReductionOpportunitiesTest {
   public void testPopScope() throws Exception {
     // Regression test added due to bug where scope popping would lead to an exception.
     String program = "void foo(int x) { x; } void main() { }\n";
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false,
         ShadingLanguageVersion.ESSL_100,
@@ -79,7 +79,7 @@ public class ReductionOpportunitiesTest {
 
   private void stressTestStructification(String variantProgram, String reducedProgram) throws Exception{
 
-    TranslationUnit tu = Helper.parse(variantProgram, false);
+    TranslationUnit tu = ParseHelper.parse(variantProgram, false);
     IRandom generator = new RandomWrapper();
     while (true) {
       List<InlineStructifiedFieldReductionOpportunity> ops
@@ -112,7 +112,7 @@ public class ReductionOpportunitiesTest {
     }
 
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-        Helper.parse(reducedProgram, false)),
+        ParseHelper.parse(reducedProgram, false)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
 
   }
@@ -330,7 +330,7 @@ public class ReductionOpportunitiesTest {
         + "  getX(_GLF_struct_replacement_3);"
         + "}";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
 
     List<InlineStructifiedFieldReductionOpportunity> ops =
         InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
@@ -341,7 +341,7 @@ public class ReductionOpportunitiesTest {
     ops.get(0).applyReduction();
 
     assertEquals(
-        PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(reducedProgram, false)),
+        PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(reducedProgram, false)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
 
   }
@@ -376,7 +376,7 @@ public class ReductionOpportunitiesTest {
         + "  getX(x);"
         + "}";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
 
     List<DestructifyReductionOpportunity> ops =
         DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
@@ -387,7 +387,7 @@ public class ReductionOpportunitiesTest {
     ops.get(0).applyReduction();
 
     assertEquals(
-        PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(reducedProgram, false)),
+        PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(reducedProgram, false)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
 
   }
@@ -419,7 +419,7 @@ public class ReductionOpportunitiesTest {
         + "}\n";
 
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
 
     List<Integer> indicesOfExprToConstOps = new ArrayList<>();
     {
@@ -505,7 +505,7 @@ public class ReductionOpportunitiesTest {
 
   private void tryAllCompatibleOpportunities(String program)
       throws IOException, ParseTimeoutException {
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     int numOps = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false,
         ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()), fileOps).size();
@@ -533,7 +533,7 @@ public class ReductionOpportunitiesTest {
   public void reduceRedundantStuff() throws Exception {
     final String program = "void main() { int a; a = a; }";
     final String expected = "void main() { }";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     while (true) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
             MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
@@ -543,7 +543,7 @@ public class ReductionOpportunitiesTest {
       }
       ops.get(0).applyReduction();
     }
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
 
   }
@@ -601,7 +601,7 @@ public class ReductionOpportunitiesTest {
           + "    GLF_live3_looplimiter0 ++;\n"
           + "  }"
           + "}\n";
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
 
   }
@@ -614,7 +614,7 @@ public class ReductionOpportunitiesTest {
           + "}";
     int i = 0;
     while (true) {
-      final TranslationUnit tu = Helper.parse(program, false);
+      final TranslationUnit tu = ParseHelper.parse(program, false);
       List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                   new ReductionOpportunityContext(true, ShadingLanguageVersion.ESSL_100,
@@ -755,7 +755,7 @@ public class ReductionOpportunitiesTest {
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
             + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
             + "}\n";
-    final TranslationUnit tu = Helper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original, false);
     List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), null));
     assertEquals(4, ops.size());
@@ -1067,7 +1067,7 @@ public class ReductionOpportunitiesTest {
         " vec2 injectionSwitch;\n" +
         "} ;\n" +
         "void main() { }";
-    final TranslationUnit tu = Helper.parse(program, true);
+    final TranslationUnit tu = ParseHelper.parse(program, true);
     final String json = "{ \"injectionSwitch\": { \"args\": [ 1.0, 2.0 ], " +
         "    \"func\": \"glUniform2f\", \"binding\": 0 } }";
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
