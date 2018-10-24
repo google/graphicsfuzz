@@ -19,7 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import java.io.IOException;
 import java.util.List;
@@ -421,7 +421,7 @@ public class FoldConstantReductionOpportunitiesTest {
   }
 
   private void check(String before, int numOps, String after) throws IOException, ParseTimeoutException {
-    final TranslationUnit tu = Helper.parse(before, false);
+    final TranslationUnit tu = ParseHelper.parse(before, false);
     final List<SimplifyExprReductionOpportunity> ops = FoldConstantReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false,
             ShadingLanguageVersion.ESSL_100, null, null));

@@ -113,7 +113,7 @@ public class ReducerUnitTest {
             false,
             fileOps);
     final UniformsInfo uniformsInfo = new UniformsInfo(
-          new File(Helper.jsonFilenameForShader(originalShader.getAbsolutePath())));
+          new File(FilenameUtils.removeExtension(originalShader.getAbsolutePath()) + ".json"));
     final TranslationUnit tu = generateSizeLimitedShader(originalShader, transformations, generator,
         shadingLanguageVersion);
     Generate.addInjectionSwitchIfNotPresent(tu);
@@ -213,7 +213,7 @@ public class ReducerUnitTest {
                 fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
 
     // TODO: Use shaderJobFile.
-    final TranslationUnit tu = Helper.parse(shaderFile, true);
+    final TranslationUnit tu = ParseHelper.parse(shaderFile, true);
 
     IRandom generator = new RandomWrapper(4);
 
@@ -223,7 +223,7 @@ public class ReducerUnitTest {
           Optional.empty(),
           Optional.of(tu),
           new UniformsInfo(
-              new File(Helper.jsonFilenameForShader(shaderFile.getAbsolutePath()))),
+              new File(FilenameUtils.removeExtension(shaderFile.getAbsolutePath()) + ".json")),
           Optional.empty());
 
       final String shaderJobShortName = FilenameUtils.removeExtension(shaderFile.getName());
@@ -281,7 +281,7 @@ public class ReducerUnitTest {
     final File shaderFile = Paths.get(TestShadersDirectory.getTestShadersDirectory(),
         "reducerregressions", "misc1.frag").toFile();
     final String outputFilesPrefix = runReductionOnShader(shaderFile, involvesSpecificBinaryOperator);
-    PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(new File(temporaryFolder.getRoot(),
+    PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(new File(temporaryFolder.getRoot(),
             outputFilesPrefix + ".frag"),
         true));
     // TODO: assert something about the result.
@@ -376,7 +376,7 @@ public class ReducerUnitTest {
     final File shaderFile = Paths.get(TestShadersDirectory.getTestShadersDirectory(),
         "reducerregressions", "intricate.frag").toFile();
     final String outputFilesPrefix = runReductionOnShader(shaderFile, judge);
-    PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(new File(temporaryFolder.getRoot(),
+    PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(new File(temporaryFolder.getRoot(),
             outputFilesPrefix + ".frag"),
         true));
   }
@@ -392,11 +392,12 @@ public class ReducerUnitTest {
             fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
     // TODO: Use shaderJobFile.
     final IRandom generator = new RandomWrapper(0);
-    final TranslationUnit tu = Helper.parse(shaderFile, true);
+    final TranslationUnit tu = ParseHelper.parse(shaderFile, true);
     final ShaderJob state = new GlslShaderJob(
         Optional.empty(),
         Optional.of(tu),
-        new UniformsInfo(new File(Helper.jsonFilenameForShader(shaderFile.getAbsolutePath()))),
+        new UniformsInfo(new File(FilenameUtils.removeExtension(shaderFile.getAbsolutePath()) +
+            ".json")),
         Optional.empty());
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(), shaderFile.getName()));
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(),
@@ -484,7 +485,7 @@ public class ReducerUnitTest {
           -> file.contains("final") && file.endsWith(".frag"));
     assertEquals(1, finalResults.length);
     assertEquals(
-          PrettyPrinterVisitor.prettyPrintAsString(Helper.parse("void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }", false)),
+          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse("void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }", false)),
           PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(finalResults[0], true)));
   }
 

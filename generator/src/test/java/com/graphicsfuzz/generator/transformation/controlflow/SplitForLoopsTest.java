@@ -16,9 +16,6 @@
 
 package com.graphicsfuzz.generator.transformation.controlflow;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -43,7 +40,7 @@ import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
@@ -57,6 +54,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class SplitForLoopsTest {
 
@@ -145,7 +145,7 @@ public class SplitForLoopsTest {
   @Test
   public void testSplitShouldBePossible() throws Exception {
     final String program = "void main() { for(int i = 0; i < 10; i++) { } }";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     assertEquals(1, countForLoops(tu));
     new SplitForLoops().apply(tu, TransformationProbabilities.onlySplitLoops(), ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT));
     assertEquals(2, countForLoops(tu));
@@ -154,7 +154,7 @@ public class SplitForLoopsTest {
   @Test
   public void testSplitShouldNotBePossible() throws Exception {
     final String program = "void main() { for(int i = 0; i < 10; i++) { if(true) break; } }";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     assertEquals(1, countForLoops(tu));
     new SplitForLoops().apply(tu, TransformationProbabilities.onlySplitLoops(), ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT));
     assertEquals(1, countForLoops(tu));

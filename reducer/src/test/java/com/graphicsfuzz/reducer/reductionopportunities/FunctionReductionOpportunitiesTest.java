@@ -16,12 +16,12 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class FunctionReductionOpportunitiesTest {
 
@@ -29,7 +29,7 @@ public class FunctionReductionOpportunitiesTest {
   public void testRemovable() throws Exception {
     String program = "void notCalled() { }"
         + "void main() { }";
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     assertEquals(1, FunctionReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, null, null))
     .size());

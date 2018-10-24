@@ -18,7 +18,7 @@ package com.graphicsfuzz.generator;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.util.TestingHelpers;
 import org.junit.Test;
@@ -34,7 +34,7 @@ public class FloatLiteralReplacerTest {
         + "}"
         + "void main() { }";
 
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
 
     final UniformsInfo uniformsInfo = new UniformsInfo();
     FloatLiteralReplacer.replace(tu, uniformsInfo, ShadingLanguageVersion.ESSL_100);
@@ -60,7 +60,7 @@ public class FloatLiteralReplacerTest {
         + "}"
         + "void main() { }";
 
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
 
     final UniformsInfo uniformsInfo = new UniformsInfo();
     FloatLiteralReplacer.replace(tu, uniformsInfo, ShadingLanguageVersion.GLSL_130);

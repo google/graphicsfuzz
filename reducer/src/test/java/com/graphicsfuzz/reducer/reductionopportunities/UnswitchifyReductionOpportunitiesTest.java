@@ -16,21 +16,21 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class UnswitchifyReductionOpportunitiesTest {
 
   @Test
   public void testNotInjected() throws Exception {
     final String program = "void foo(int x) { switch(x) { case 0: default: break; } }";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     List<UnswitchifyReductionOpportunity> ops =
         UnswitchifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
               new ReductionOpportunityContext(false,

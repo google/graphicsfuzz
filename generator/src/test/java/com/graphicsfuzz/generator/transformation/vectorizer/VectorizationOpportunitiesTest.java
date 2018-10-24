@@ -16,17 +16,17 @@
 
 package com.graphicsfuzz.generator.transformation.vectorizer;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CannedRandom;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.generator.util.TestingHelpers;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class VectorizationOpportunitiesTest {
 
@@ -54,7 +54,7 @@ public class VectorizationOpportunitiesTest {
             + "    return col;\n"
             + "}";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     List<VectorizationOpportunity> ops =
         new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
             new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
@@ -84,7 +84,7 @@ public class VectorizationOpportunitiesTest {
             + "    GLF_merged2_0_3_1_3_1_1lr.w = r;\n"
             + "}";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     List<VectorizationOpportunity> ops =
         new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
             new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
@@ -109,7 +109,7 @@ public class VectorizationOpportunitiesTest {
             + "    }"
             + "}\n";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     List<VectorizationOpportunity> ops =
         new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
             new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
@@ -131,7 +131,7 @@ public class VectorizationOpportunitiesTest {
             + "    }"
             + "}\n";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     List<VectorizationOpportunity> ops =
         new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
             new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
@@ -141,7 +141,7 @@ public class VectorizationOpportunitiesTest {
   @Test
   public void testLoops() throws Exception {
     final String program = "void main() { for(int i = 0; i < 10; i++) { } for (int j = 0; j < 10; j++) { } }";
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     List<VectorizationOpportunity> ops =
           new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
                 new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
@@ -208,7 +208,7 @@ public class VectorizationOpportunitiesTest {
                 + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
                 + "}\n";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
     List<VectorizationOpportunity> ops =
           new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
                 new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();

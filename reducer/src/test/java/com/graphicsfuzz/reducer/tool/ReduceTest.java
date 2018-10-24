@@ -18,17 +18,17 @@ package com.graphicsfuzz.reducer.tool;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.reducer.FileJudgeException;
 import java.io.File;
 import java.io.IOException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ReduceTest {
 
@@ -143,7 +143,7 @@ public class ReduceTest {
     final File[] reducedFinal = temporaryFolder.getRoot().listFiles((dir, name) -> name.contains(
         "reduced_final.frag"));
     assertEquals(1, reducedFinal.length);
-    CompareAsts.assertEqualAsts("void main() { }", Helper.parse(reducedFinal[0], true));
+    CompareAsts.assertEqualAsts("void main() { }", ParseHelper.parse(reducedFinal[0], true));
   }
 
   private File getShaderJobReady() throws IOException, ParseTimeoutException {

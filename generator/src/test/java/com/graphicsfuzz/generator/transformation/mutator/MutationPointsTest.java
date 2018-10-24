@@ -16,17 +16,17 @@
 
 package com.graphicsfuzz.generator.transformation.mutator;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.CannedRandom;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import java.util.List;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class MutationPointsTest {
 
@@ -40,7 +40,7 @@ public class MutationPointsTest {
             + "    j += x;\n"
             + "  }\n"
             + "}\n";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
     final MutationPoints mutationPoints = new MutationPoints(
         new Typer(tu, shadingLanguageVersion),
@@ -68,7 +68,7 @@ public class MutationPointsTest {
             + "    j += x;\n"
             + "  }\n"
             + "}\n";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.WEBGL_SL;
     final MutationPoints mutationPoints = new MutationPoints(
         new Typer(tu, shadingLanguageVersion),
@@ -90,7 +90,7 @@ public class MutationPointsTest {
             + "    j = j + 1;"
             + "  }\n"
             + "}\n";
-    final TranslationUnit tu = Helper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program, false);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.WEBGL_SL;
     final MutationPoints mutationPoints = new MutationPoints(
         new Typer(tu, shadingLanguageVersion),
