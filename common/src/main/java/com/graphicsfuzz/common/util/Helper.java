@@ -68,7 +68,7 @@ public final class Helper {
     return sb;
   }
 
-  public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
+  private static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
         ShaderKind shaderKind,
         TranslationUnit shader,
         Optional<String> license,
@@ -100,7 +100,7 @@ public final class Helper {
           true);
   }
 
-  public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
+  private static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
         ShaderKind shaderKind,
         TranslationUnit shader,
         Optional<String> license,
