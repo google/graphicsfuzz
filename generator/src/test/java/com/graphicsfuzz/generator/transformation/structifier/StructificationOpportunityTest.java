@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -48,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.Test;
 
@@ -60,7 +60,7 @@ public class StructificationOpportunityTest {
     // We want to check that the generated structs get put into this translation unit, before
     // the existing declaration.
     TranslationUnit tu = new TranslationUnit(
-        new VersionStatement("#version 100"),
+        Optional.empty(),
         Arrays.asList(new VariablesDeclaration(BasicType.FLOAT, new ArrayList<>())));
 
     // float v = 3.0;

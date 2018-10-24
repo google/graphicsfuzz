@@ -35,17 +35,18 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
-import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 import org.junit.Test;
 
 public class InlineStructifiedFieldReductionOpportunityTest {
@@ -105,7 +106,7 @@ public class InlineStructifiedFieldReductionOpportunityTest {
 
     TranslationUnit tu
         = new TranslationUnit(
-            new VersionStatement("unused"),
+            Optional.empty(),
             Arrays.asList(inner, outer, new FunctionDefinition(
                 new FunctionPrototype("foo", VoidType.VOID, new ArrayList<>()),
                 block)));

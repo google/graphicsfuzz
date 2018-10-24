@@ -56,13 +56,14 @@ import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.ExtensionStatement;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
+import com.graphicsfuzz.common.ast.stmt.PragmaStatement;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
-import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.AtomicIntType;
@@ -77,6 +78,7 @@ import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.parser.GLSLBaseVisitor;
 import com.graphicsfuzz.parser.GLSLParser.Additive_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.And_expressionContext;
@@ -188,8 +190,17 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   public TranslationUnit visitTranslation_unit(Translation_unitContext ctx) {
     visitExtension_statement_list(ctx.extension_statement_list());
     visitExternal_declaration_list(ctx.external_declaration_list());
-    return new TranslationUnit(
-        new VersionStatement(ctx.version_statement().getText()),
+
+    String versionString = null;
+    if (ctx.version_statement().INTCONSTANT() != null) {
+      versionString = ctx.version_statement().INTCONSTANT().getText();
+      if (ctx.version_statement().IDENTIFIER() != null) {
+        versionString += " " + ctx.version_statement().IDENTIFIER().getText();
+      }
+    }
+    return new TranslationUnit(versionString == null
+            ? Optional.empty()
+            : Optional.of(ShadingLanguageVersion.fromVersionString(versionString)),
         topLevelDeclarations);
   }
 
@@ -992,8 +1003,23 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   @Override
-  public Object visitPragma_statement(Pragma_statementContext ctx) {
-    throw new RuntimeException();
+  public PragmaStatement visitPragma_statement(Pragma_statementContext ctx) {
+    if (ctx.PRAGMA_OPTIMIZE_ON() != null) {
+      return PragmaStatement.OPTIMIZE_ON;
+    }
+    if (ctx.PRAGMA_OPTIMIZE_OFF() != null) {
+      return PragmaStatement.OPTIMIZE_OFF;
+    }
+    if (ctx.PRAGMA_DEBUG_ON() != null) {
+      return PragmaStatement.DEBUG_ON;
+    }
+    if (ctx.PRAGMA_DEBUG_OFF() != null) {
+      return PragmaStatement.DEBUG_OFF;
+    }
+    if (ctx.PRAGMA_INVARIANT_ALL() != null) {
+      return PragmaStatement.INVARIANT_ALL;
+    }
+    throw new RuntimeException("Unknown pragma statement " + ctx.getText());
   }
 
   @Override
@@ -1014,8 +1040,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   @Override
-  public Declaration visitExtension_statement(Extension_statementContext ctx) {
-    throw new RuntimeException();
+  public ExtensionStatement visitExtension_statement(Extension_statementContext ctx) {
+    return new ExtensionStatement(ctx.extension_name.getText(), ctx.extension_status.getText());
   }
 
   @Override

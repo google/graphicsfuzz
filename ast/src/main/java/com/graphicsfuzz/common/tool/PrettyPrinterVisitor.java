@@ -50,13 +50,14 @@ import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.ExtensionStatement;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
+import com.graphicsfuzz.common.ast.stmt.PragmaStatement;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
-import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.AtomicIntType;
@@ -111,11 +112,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     new PrettyPrinterVisitor(new PrintStream(bytes)).visit(node);
     return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
-  }
-
-  @Override
-  public void visitVersionStatement(VersionStatement versionStatement) {
-    out.append(versionStatement.getText());
   }
 
   @Override
@@ -586,6 +582,28 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append(" ");
     out.append(defaultLayout.getTypeQualifier().toString());
     out.append(";" + newLine());
+  }
+
+  @Override
+  public void visitTranslationUnit(TranslationUnit translationUnit) {
+    if (translationUnit.hasShadingLanguageVersion()) {
+      out.append("#version " + translationUnit.getShadingLanguageVersion().getVersionString()
+          + "\n");
+    }
+    super.visitTranslationUnit(translationUnit);
+  }
+
+  @Override
+  public void visitPragmaStatement(PragmaStatement pragmaStatement) {
+    super.visitPragmaStatement(pragmaStatement);
+    out.append(pragmaStatement.getText());
+  }
+
+  @Override
+  public void visitExtensionStatement(ExtensionStatement extensionStatement) {
+    super.visitExtensionStatement(extensionStatement);
+    out.append("#extension " + extensionStatement.getExtensionName() + " : "
+        + extensionStatement.getExtensionStatus() + "\n");
   }
 
   private void decreaseIndent() {

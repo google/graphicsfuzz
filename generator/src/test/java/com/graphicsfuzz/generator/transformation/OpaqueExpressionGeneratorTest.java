@@ -30,7 +30,6 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
-import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -77,7 +76,7 @@ public class OpaqueExpressionGeneratorTest {
                     new Fuzzer(new FuzzingContext(new Scope(null)), shadingLanguageVersion, generator,
                           generationParams));
 
-        final TranslationUnit tu = new TranslationUnit(new VersionStatement(""),
+        final TranslationUnit tu = new TranslationUnit(Optional.empty(),
               Arrays.asList(
                     new FunctionDefinition(
                           new FunctionPrototype("main", VoidType.VOID, new ArrayList<>()),
