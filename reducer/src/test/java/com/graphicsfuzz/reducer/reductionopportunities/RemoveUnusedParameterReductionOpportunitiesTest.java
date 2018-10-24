@@ -19,11 +19,10 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
-import org.junit.Test;
-
 import java.util.List;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
@@ -45,7 +44,7 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
       "void main() {" +
       "  foo(4.0);" +
       "}";
-    final TranslationUnit tu = Helper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader, false);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
       findOpportunities(tu, true);
     assertEquals(2, opportunities.size());
@@ -73,7 +72,7 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
       "void main() {" +
       "  foo();" +
       "}";
-    final TranslationUnit tu = Helper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader, false);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
       findOpportunities(tu, true);
     assertEquals(1, opportunities.size());
@@ -92,7 +91,7 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
       "  foo(2, 3.0);" +
       "  foo(2);" +
       "}";
-    final TranslationUnit tu = Helper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader, false);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
       findOpportunities(tu, true);
     assertEquals(0, opportunities.size());
@@ -123,14 +122,14 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
       "  gl_FragColor = vec4(x);" +
       "}";
 
-    TranslationUnit tu = Helper.parse(shader, false);
+    TranslationUnit tu = ParseHelper.parse(shader, false);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
       findOpportunities(tu, true);
     assertEquals(1, opportunities.size());
     opportunities.get(0).applyReduction();
     CompareAsts.assertEqualAsts(shaderIfReduced, tu);
 
-    tu = Helper.parse(shader, false);
+    tu = ParseHelper.parse(shader, false);
     opportunities =
       findOpportunities(tu, false);
     assertEquals(0, opportunities.size());

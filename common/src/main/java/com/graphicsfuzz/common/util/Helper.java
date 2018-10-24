@@ -68,7 +68,7 @@ public final class Helper {
     return sb;
   }
 
-  public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
+  private static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
         ShaderKind shaderKind,
         TranslationUnit shader,
         Optional<String> license,
@@ -100,7 +100,7 @@ public final class Helper {
           true);
   }
 
-  public static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
+  private static void emitShader(ShadingLanguageVersion shadingLanguageVersion,
         ShaderKind shaderKind,
         TranslationUnit shader,
         Optional<String> license,
@@ -113,39 +113,6 @@ public final class Helper {
           indentationWidth,
           newlineSupplier,
           defineMacros ? Helper::glfMacros : () -> new StringBuilder());
-  }
-
-  public static String jsonFilenameForShader(String shader) {
-    return FilenameUtils.removeExtension(shader) + ".json";
-  }
-
-  public static TranslationUnit parse(String string, boolean stripHeader)
-      throws IOException, ParseTimeoutException {
-    return ParseHelper.parse(string, stripHeader);
-  }
-
-  public static TranslationUnit parse(File shader, boolean stripHeader)
-      throws IOException,ParseTimeoutException {
-    return ParseHelper.parse(shader, stripHeader);
-  }
-
-  public static Optional<String> readLicenseFile(File licenseFile) throws IOException {
-    if (licenseFile == null || !licenseFile.isFile()) {
-      return Optional.empty();
-    }
-    StringBuilder result = new StringBuilder();
-    BufferedReader br;
-    try {
-      br = new BufferedReader(new FileReader(licenseFile));
-    } catch (FileNotFoundException exception) {
-      System.err.println("License file " + licenseFile + " not found.");
-      throw exception;
-    }
-    String line;
-    while ((line = br.readLine()) != null) {
-      result.append(line + "\n");
-    }
-    return Optional.of(result.toString());
   }
 
 }

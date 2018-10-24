@@ -16,10 +16,6 @@
 
 package com.graphicsfuzz.generator.transformation.controlflow;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
@@ -27,25 +23,29 @@ import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.CannedRandom;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class AddWrappingConditionalStmtsTest {
 
   @Test
   public void testIfProblems() throws Exception {
     final String prog = "int x; void main() { if(true) x++; }";
-    TranslationUnit tu = Helper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog, false);
 
     new AddWrappingConditionalStmts().apply(tu, TransformationProbabilities.onlyWrap(),
         ShadingLanguageVersion.GLSL_130, new CannedRandom(0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0),
         GenerationParams.normal(ShaderKind.FRAGMENT));
     checkStructuralProperties(tu);
-    TranslationUnit tu2 = Helper.parse(PrettyPrinterVisitor.prettyPrintAsString(tu), false);
+    TranslationUnit tu2 = ParseHelper.parse(PrettyPrinterVisitor.prettyPrintAsString(tu), false);
     checkStructuralProperties(tu2);
   }
 

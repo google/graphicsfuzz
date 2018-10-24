@@ -16,19 +16,19 @@
 
 package com.graphicsfuzz.generator.util;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestingHelpers {
 
   public static void assertShadersMatch(String expectedProgram, TranslationUnit tu)
       throws IOException, ParseTimeoutException {
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expectedProgram, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram, false)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

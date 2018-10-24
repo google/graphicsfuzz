@@ -230,9 +230,9 @@ public class ReductionDriverTest {
     ShadingLanguageVersion version = ShadingLanguageVersion.ESSL_100;
     IRandom generator = new RandomWrapper(seed);
 
-    TranslationUnit tuFrag = Helper.parse(tempFragmentShaderFile, stripHeader);
+    TranslationUnit tuFrag = ParseHelper.parse(tempFragmentShaderFile, stripHeader);
     Optional<TranslationUnit> tuVert = vertexShader.isPresent()
-        ? Optional.of(Helper.parse(tempVertexShaderFile.get(), stripHeader))
+        ? Optional.of(ParseHelper.parse(tempVertexShaderFile.get(), stripHeader))
         : Optional.empty();
 
     ShaderJob state = new GlslShaderJob(tuVert,
@@ -326,9 +326,9 @@ public class ReductionDriverTest {
           + "   }"
           + "}";
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-          Helper.parse(expected, false)),
+          ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(
-                Helper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true)));
+                ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true)));
   }
 
   @Test
@@ -361,9 +361,9 @@ public class ReductionDriverTest {
           + "   sin(1.0);"
           + "}";
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-          Helper.parse(expected, false)),
+          ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(
-                Helper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true)));
+                ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true)));
   }
 
   @Test
@@ -407,9 +407,9 @@ public class ReductionDriverTest {
           + "   sin(vec3(1.0));"
           + "}";
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-          Helper.parse(expected, false)),
+          ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(
-                Helper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true)));
+                ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true)));
   }
 
   @Test
@@ -501,9 +501,9 @@ public class ReductionDriverTest {
 
     final String resultFilesPrefix = reduce(checkVertexShader, frag, Optional.of(vert), json,
         false, true, 1000, 0);
-    CompareAsts.assertEqualAsts("void main() { }", Helper.parse(
+    CompareAsts.assertEqualAsts("void main() { }", ParseHelper.parse(
         new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true));
-    CompareAsts.assertEqualAsts(vert, Helper.parse(
+    CompareAsts.assertEqualAsts(vert, ParseHelper.parse(
         new File(testFolder.getRoot(), resultFilesPrefix + ".vert"), true));
   }
 
@@ -535,15 +535,15 @@ public class ReductionDriverTest {
 
     final String resultFilesPrefix = reduce(checkVertexShader, frag, Optional.of(vert), json,
         false, true, 1000, 0);
-    CompareAsts.assertEqualAsts(frag, Helper.parse(
+    CompareAsts.assertEqualAsts(frag, ParseHelper.parse(
         new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true));
-    CompareAsts.assertEqualAsts("void main() { }", Helper.parse(
+    CompareAsts.assertEqualAsts("void main() { }", ParseHelper.parse(
         new File(testFolder.getRoot(), resultFilesPrefix + ".vert"), true));
   }
 
   @Test
   public void testReductionWithUniformBindings() throws Exception {
-    final TranslationUnit fragShader = Helper.parse("layout(location = 0) out vec4 " +
+    final TranslationUnit fragShader = ParseHelper.parse("layout(location = 0) out vec4 " +
         "_GLF_color;" +
         "uniform float a; " +
         "uniform float b;" +
@@ -576,7 +576,7 @@ public class ReductionDriverTest {
         .doReduction("temp", 0,
             (unused, item) -> true, workDir, 100);
 
-    CompareAsts.assertEqualAsts(expected, Helper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag"), true));
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag"), true));
 
   }
 

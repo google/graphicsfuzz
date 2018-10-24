@@ -22,7 +22,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.UniformsInfo;
@@ -54,7 +54,7 @@ public class InlineUniformReductionOpportunitiesTest {
             "    }" +
             "  }" +
             "}";
-    final TranslationUnit tu = Helper.parse(prog, false);
+    final TranslationUnit tu = ParseHelper.parse(prog, false);
     final UniformsInfo uniformsInfo = new UniformsInfo();
     uniformsInfo.addUniform("f", BasicType.FLOAT, Optional.empty(), Arrays.asList(3.2));
     uniformsInfo.addUniform("i", BasicType.INT, Optional.empty(), Arrays.asList(10));

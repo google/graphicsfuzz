@@ -16,14 +16,12 @@
 
 package com.graphicsfuzz.tester;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.SameValueRandom;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
@@ -39,6 +37,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class MiscellaneousGenerateThenReduceTest {
 
@@ -62,7 +62,7 @@ public class MiscellaneousGenerateThenReduceTest {
 
   private void checkControlFlowWrapElimination(String program)
       throws IOException, ParseTimeoutException {
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
 
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
     new AddWrappingConditionalStmts().apply(tu,
@@ -85,7 +85,7 @@ public class MiscellaneousGenerateThenReduceTest {
       ops.get(0).applyReduction();
     }
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(program, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program, false)),
       PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

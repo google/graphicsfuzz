@@ -16,16 +16,16 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class RemoveStructFieldReductionOpportunitiesTest {
 
@@ -44,7 +44,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
         + "    _GLF_struct_16 _GLF_struct_replacement_17 = _GLF_struct_16(_GLF_struct_15(1, x + 1.0, mat3(1.0)));\n"
         + "}\n";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
 
     assertEquals(2, RemoveStructFieldReductionOpportunities
           .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null)).size());
@@ -64,7 +64,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
         + "    _GLF_struct_16 _GLF_struct_replacement_17 = _GLF_struct_16(_GLF_struct_15(1));\n"
         + "}\n";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
 
     assertEquals(0, RemoveStructFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReductionOpportunityContext(false, null, null, null)).size());
@@ -96,13 +96,13 @@ public class RemoveStructFieldReductionOpportunitiesTest {
           + "{\n"
           + "        _GLF_struct_28 _GLF_struct_replacement_29;\n"
           + "}\n";
-    TranslationUnit tu = Helper.parse(shader, false);
+    TranslationUnit tu = ParseHelper.parse(shader, false);
     List<RemoveStructFieldReductionOpportunity> ops = RemoveStructFieldReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
               new ReductionOpportunityContext(true, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)));
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)));
   }
 
   @Test
@@ -129,7 +129,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
           + "    _GLF_struct_16 _GLF_struct_replacement_17 = _GLF_struct_16(_GLF_struct_15(2));\n"
           + "}\n";
 
-    TranslationUnit tu = Helper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program, false);
 
     final List<RemoveStructFieldReductionOpportunity> ops = RemoveStructFieldReductionOpportunities
           .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
@@ -137,7 +137,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
           .size());
     ops.stream().filter(item -> item.getFieldToRemove().equals("_f0"))
           .findAny().get().applyReduction();
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
     // Now that we have removed this field, removing the other field should have no effect
     // as the reduction opportunity's precondititon should no longer hold.
@@ -145,7 +145,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
           .findAny().get();
     assertFalse(op.preconditionHolds());
     op.applyReduction();
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(Helper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

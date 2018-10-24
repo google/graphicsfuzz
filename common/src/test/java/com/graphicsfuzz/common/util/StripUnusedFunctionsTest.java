@@ -16,15 +16,15 @@
 
 package com.graphicsfuzz.generator.util;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.StripUnusedFunctions;
 import java.io.IOException;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class StripUnusedFunctionsTest {
 
@@ -65,8 +65,8 @@ public class StripUnusedFunctionsTest {
         + "  baz();"
         + "}\n";
 
-    TranslationUnit tuBefore = Helper.parse(programBefore, false);
-    TranslationUnit tuAfter = Helper.parse(programAfter, false);
+    TranslationUnit tuBefore = ParseHelper.parse(programBefore, false);
+    TranslationUnit tuAfter = ParseHelper.parse(programAfter, false);
     StripUnusedFunctions.strip(tuBefore);
     assertEquals(
       PrettyPrinterVisitor.prettyPrintAsString(tuAfter),

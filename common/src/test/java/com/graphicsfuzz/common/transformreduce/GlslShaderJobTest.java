@@ -17,12 +17,12 @@
 package com.graphicsfuzz.common.transformreduce;
 
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import java.util.Optional;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class GlslShaderJobTest {
 
@@ -158,8 +158,8 @@ public class GlslShaderJobTest {
   public void testMakeUniformBindings() throws Exception {
 
     final GlslShaderJob job = new GlslShaderJob(
-        Optional.of(Helper.parse(VERT_SHADER_NO_BINDINGS, false)),
-        Optional.of(Helper.parse(FRAG_SHADER_NO_BINDINGS, false)),
+        Optional.of(ParseHelper.parse(VERT_SHADER_NO_BINDINGS, false)),
+        Optional.of(ParseHelper.parse(FRAG_SHADER_NO_BINDINGS, false)),
         new UniformsInfo(JSON_NO_BINDINGS),
         Optional.empty());
 
@@ -175,8 +175,8 @@ public class GlslShaderJobTest {
   public void testRemoveUniformBindings() throws Exception {
 
     final GlslShaderJob job = new GlslShaderJob(
-        Optional.of(Helper.parse(VERT_SHADER_WITH_BINDINGS, false)),
-        Optional.of(Helper.parse(FRAG_SHADER_WITH_BINDINGS, false)),
+        Optional.of(ParseHelper.parse(VERT_SHADER_WITH_BINDINGS, false)),
+        Optional.of(ParseHelper.parse(FRAG_SHADER_WITH_BINDINGS, false)),
         new UniformsInfo(JSON_WITH_BINDINGS),
         Optional.empty());
 

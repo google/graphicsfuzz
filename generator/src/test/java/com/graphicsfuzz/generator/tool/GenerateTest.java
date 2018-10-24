@@ -16,20 +16,13 @@
 
 package com.graphicsfuzz.generator.tool;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
-import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.util.ToolHelper;
 import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
@@ -37,17 +30,16 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertTrue;
 
 public class GenerateTest {
 
@@ -174,7 +166,7 @@ public class GenerateTest {
       bw.close();
     }
     String reference = "void main() { ; { ; ; ; }; ; { ; ; ; }; ; ; ; ; ; ; }";
-    TranslationUnit tu = Helper.parse(reference, false);
+    TranslationUnit tu = ParseHelper.parse(reference, false);
     new DonateLiveCode(TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
         donorsFolder, GenerationParams.normal(ShaderKind.FRAGMENT), false)
         .apply(tu,
