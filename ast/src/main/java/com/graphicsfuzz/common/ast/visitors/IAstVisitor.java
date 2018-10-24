@@ -52,12 +52,13 @@ import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.ExtensionStatement;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
+import com.graphicsfuzz.common.ast.stmt.PragmaStatement;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
-import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.AtomicIntType;
@@ -76,8 +77,6 @@ public interface IAstVisitor {
   void visitFunctionDefinition(FunctionDefinition functionDefinition);
 
   void visitTranslationUnit(TranslationUnit translationUnit);
-
-  void visitVersionStatement(VersionStatement versionStatement);
 
   void visitBlockStmt(BlockStmt stmt);
 
@@ -174,5 +173,9 @@ public interface IAstVisitor {
   void visitDefaultLayout(DefaultLayout defaultLayout);
 
   void visitStructNameType(StructNameType structNameType);
+
+  void visitExtensionStatement(ExtensionStatement extensionStatement);
+
+  void visitPragmaStatement(PragmaStatement pragmaStatement);
 
 }

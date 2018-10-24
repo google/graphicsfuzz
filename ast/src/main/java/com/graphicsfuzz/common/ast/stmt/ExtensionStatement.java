@@ -16,29 +16,34 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
-import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
-public class VersionStatement implements IAstNode {
+public final class ExtensionStatement extends Declaration {
 
-  private String text;
+  final String extensionName;
+  final String extensionStatus;
 
-  public VersionStatement(String text) {
-    this.text = text;
+  public ExtensionStatement(String extensionName, String extensionStatus) {
+    this.extensionName = extensionName;
+    this.extensionStatus = extensionStatus;
   }
 
-  public String getText() {
-    return text;
+  public String getExtensionName() {
+    return extensionName;
+  }
+
+  public String getExtensionStatus() {
+    return extensionStatus;
   }
 
   @Override
   public void accept(IAstVisitor visitor) {
-    visitor.visitVersionStatement(this);
+    visitor.visitExtensionStatement(this);
   }
 
   @Override
-  public VersionStatement clone() {
-    return new VersionStatement(text);
+  public ExtensionStatement clone() {
+    return new ExtensionStatement(extensionName, extensionStatus);
   }
-
 }

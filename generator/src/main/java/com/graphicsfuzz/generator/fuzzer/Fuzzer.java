@@ -39,7 +39,6 @@ import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
@@ -63,6 +62,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -302,8 +302,7 @@ public class Fuzzer {
           mainPrototype, fuzzBlockStmt(false)));
     fuzzingContext.leaveFunction();
 
-    return new TranslationUnit(new VersionStatement("#version " + shadingLanguageVersion.toString()
-          + "\n"), decls);
+    return new TranslationUnit(Optional.of(shadingLanguageVersion), decls);
   }
 
   private StructDefinitionType fuzzStruct() {

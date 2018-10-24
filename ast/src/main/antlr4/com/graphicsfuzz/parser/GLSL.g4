@@ -16,14 +16,18 @@
 
 grammar GLSL;
 
+@lexer::members {
+   boolean ignoreNewLine = true;
+}
+
 translation_unit:
    version_statement extension_statement_list external_declaration_list
    ;
 
 version_statement:
    /* blank - no #version specified: defaults are already set */
-   | VERSION_TOK INTCONSTANT EOL
-   | VERSION_TOK INTCONSTANT IDENTIFIER EOL
+   | VERSION INTCONSTANT EOL
+   | VERSION INTCONSTANT IDENTIFIER EOL
    ;
 
 pragma_statement:
@@ -32,14 +36,6 @@ pragma_statement:
    | PRAGMA_OPTIMIZE_ON EOL
    | PRAGMA_OPTIMIZE_OFF EOL
    | PRAGMA_INVARIANT_ALL EOL
-   {
-      /// Pragma invariant(all) cannot be used in a fragment shader.
-       //
-       // Page 27 of the GLSL 1.20 spec, Page 53 of the GLSL ES 3.00 spec:
-       //
-       //     "It is an error to use this pragma in a fragment shader."
-       ///
-   }
    ;
 
 extension_statement_list:
@@ -47,7 +43,7 @@ extension_statement_list:
    ;
 
 extension_statement:
-   EXTENSION IDENTIFIER COLON IDENTIFIER EOL
+   EXTENSION extension_name=IDENTIFIER COLON extension_status=IDENTIFIER EOL
    ;
 
 external_declaration_list:
@@ -718,12 +714,12 @@ layout_defaults:
    | layout_qualifier BUFFER SEMICOLON
 ;
 
-PRAGMA_DEBUG_ON:      [ \t]*'#'[ \t]*'pragma'[ \t]+'debug'[ \t]*'('[ \t]*'on'[ \t]*')'      ;
-PRAGMA_DEBUG_OFF:     [ \t]*'#'[ \t]*'pragma'[ \t]+'debug'[ \t]*'('[ \t]*'off'[ \t]*')'     ;
-PRAGMA_OPTIMIZE_ON:   [ \t]*'#'[ \t]*'pragma'[ \t]+'optimize'[ \t]*'('[ \t]*'on'[ \t]*')'   ;
-PRAGMA_OPTIMIZE_OFF:  [ \t]*'#'[ \t]*'pragma'[ \t]+'optimize'[ \t]*'('[ \t]*'off'[ \t]*')'  ;
-PRAGMA_INVARIANT_ALL: [ \t]*'#'[ \t]*'pragma'[ \t]+'invariant'[ \t]*'('[ \t]*'all'[ \t]*')' ;
-EXTENSION: [ \t]*'#'[ \t]*'extension' ;
+PRAGMA_DEBUG_ON:      { ignoreNewLine = false; } [ \t]*'#'[ \t]*'pragma'[ \t]+'debug'[ \t]*'('[ \t]*'on'[ \t]*')' ;
+PRAGMA_DEBUG_OFF:     { ignoreNewLine = false; } [ \t]*'#'[ \t]*'pragma'[ \t]+'debug'[ \t]*'('[ \t]*'off'[ \t]*')'     ;
+PRAGMA_OPTIMIZE_ON:   { ignoreNewLine = false; } [ \t]*'#'[ \t]*'pragma'[ \t]+'optimize'[ \t]*'('[ \t]*'on'[ \t]*')'   ;
+PRAGMA_OPTIMIZE_OFF:  { ignoreNewLine = false; } [ \t]*'#'[ \t]*'pragma'[ \t]+'optimize'[ \t]*'('[ \t]*'off'[ \t]*')'  ;
+PRAGMA_INVARIANT_ALL: { ignoreNewLine = false; } [ \t]*'#'[ \t]*'pragma'[ \t]+'invariant'[ \t]*'('[ \t]*'all'[ \t]*')' ;
+EXTENSION: { ignoreNewLine = false; } [ \t]*'#'[ \t]*'extension' ;
 COLON: ':' ;
 UNIFORM: 'uniform' ;
 BUFFER: 'buffer' ;
@@ -734,7 +730,7 @@ HIGHP: 'highp' ;
 MEDIUMP: 'mediump' ;
 LOWP: 'lowp' ;
 PRECISION: 'precision' ;
-VERSION_TOK: 'version' ;
+VERSION: { ignoreNewLine = false; } [ \t]*'#'[ \t]*'version' ;
 INTCONSTANT: DIGIT+ ; // REVISIT
 
 CONST_TOK: 'const' ;
@@ -965,10 +961,9 @@ fragment DIGIT  : '0'..'9';
 
 COMMENT: ('//' ~('\n'|'\r')* '\r'? '\n' |   '/*' (.)*? '*/') -> skip ;
 
-WS: [\t\r\n\u000C ]+ -> skip ;
+WS: [\t\r\u000C ]+ { skip(); } ;
 
-EOL: '\n' ;
-
+EOL: '\n' { if(ignoreNewLine) { skip(); } ignoreNewLine = true; } ;
 
 /*
 
@@ -1014,7 +1009,7 @@ EOL: '\n' ;
 %token INVARIANT PRECISE
 %token LOWP MEDIUMP HIGHP SUPERP PRECISION
 
-%token VERSION_TOK EXTENSION LINE COLON EOL INTERFACE OUTPUT
+%token VERSION EXTENSION LINE COLON EOL INTERFACE OUTPUT
 %token PRAGMA_DEBUG_ON PRAGMA_DEBUG_OFF
 %token PRAGMA_OPTIMIZE_ON PRAGMA_OPTIMIZE_OFF
 %token PRAGMA_INVARIANT_ALL

@@ -54,13 +54,14 @@ import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.ExtensionStatement;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
+import com.graphicsfuzz.common.ast.stmt.PragmaStatement;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
-import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.AtomicIntType;
@@ -107,15 +108,10 @@ public abstract class StandardVisitor implements IAstVisitor {
 
   @Override
   public void visitTranslationUnit(TranslationUnit translationUnit) {
-    translationUnit.getVersionStatement().accept(this);
     for (Declaration d : translationUnit.getTopLevelDeclarations()) {
       assert d != null;
       visitChildFromParent(this::visit, d, translationUnit);
     }
-  }
-
-  @Override
-  public void visitVersionStatement(VersionStatement versionStatement) {
   }
 
   @Override
@@ -389,6 +385,16 @@ public abstract class StandardVisitor implements IAstVisitor {
 
   @Override
   public void visitStructNameType(StructNameType structNameType) {
+
+  }
+
+  @Override
+  public void visitExtensionStatement(ExtensionStatement extensionStatement) {
+
+  }
+
+  @Override
+  public void visitPragmaStatement(PragmaStatement pragmaStatement) {
 
   }
 

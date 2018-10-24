@@ -36,7 +36,6 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
@@ -56,6 +55,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Test;
 
 public class SplitForLoopsTest {
@@ -123,7 +123,7 @@ public class SplitForLoopsTest {
   }
 
   private static TranslationUnit makeExampleTranslationUnit() {
-    return new TranslationUnit(new VersionStatement("#version 100\n"),
+    return new TranslationUnit(Optional.empty(),
         Arrays.asList(new FunctionDefinition(
             new FunctionPrototype("foo", VoidType.VOID, new ArrayList<ParameterDecl>()),
             new BlockStmt(

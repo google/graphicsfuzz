@@ -19,26 +19,27 @@ package com.graphicsfuzz.common.ast;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
-import com.graphicsfuzz.common.ast.stmt.VersionStatement;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.StructUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TranslationUnit implements IAstNode {
 
-  private VersionStatement versionStatement;
+  private Optional<ShadingLanguageVersion> shadingLanguageVersion;
   private List<Declaration> topLevelDeclarations;
 
-  public TranslationUnit(VersionStatement versionStatement,
-      List<Declaration> topLevelDeclarations) {
-    this.versionStatement = versionStatement;
+  public TranslationUnit(Optional<ShadingLanguageVersion> shadingLanguageVersion,
+                         List<Declaration> topLevelDeclarations) {
+    this.shadingLanguageVersion = shadingLanguageVersion;
     this.topLevelDeclarations = new ArrayList<>();
     this.topLevelDeclarations.addAll(topLevelDeclarations);
   }
@@ -47,8 +48,12 @@ public class TranslationUnit implements IAstNode {
     return Collections.unmodifiableList(topLevelDeclarations);
   }
 
-  public VersionStatement getVersionStatement() {
-    return versionStatement;
+  public boolean hasShadingLanguageVersion() {
+    return shadingLanguageVersion.isPresent();
+  }
+
+  public ShadingLanguageVersion getShadingLanguageVersion() {
+    return shadingLanguageVersion.get();
   }
 
   public void setTopLevelDeclarations(List<Declaration> topLevelDeclarations) {
@@ -84,7 +89,7 @@ public class TranslationUnit implements IAstNode {
 
   @Override
   public TranslationUnit clone() {
-    return new TranslationUnit(versionStatement.clone(),
+    return new TranslationUnit(shadingLanguageVersion,
         topLevelDeclarations.stream().map(x -> x.clone()).collect(Collectors.toList()));
   }
 
