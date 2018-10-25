@@ -38,7 +38,7 @@ public class GraphicsFuzzServerCommandDispatcher implements ICommandDispatcher {
               fuzzerServiceManager
         );
         break;
-      case "reduce_variant":
+      case "reduce":
         Reduce.mainHelper(
               command.subList(1, command.size()).toArray(new String[0]),
               fuzzerServiceManager
