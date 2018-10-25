@@ -26,8 +26,8 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.reducer.reductionopportunities.Compatibility;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -144,14 +144,13 @@ public class ReducerBugPointBasic {
                   reduceEverywhere,
                   shadingLanguageVersion,
                   generator,
-                  idGenerator),
+                  idGenerator, true),
               fileOps);
 
         } catch (Exception exception) {
           recordThrowsExceptionWhenGettingReductionOpportunities(
               current,
               exception,
-              shadingLanguageVersion,
               fileOps);
           break;
         }
@@ -251,10 +250,9 @@ public class ReducerBugPointBasic {
   }
 
   private static void recordThrowsExceptionWhenGettingReductionOpportunities(
-        ShaderJob shaderJob,
-        Exception exception,
-        ShadingLanguageVersion shadingLanguageVersion,
-        ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException {
+      ShaderJob shaderJob,
+      Exception exception,
+      ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException {
     File tempShaderJobFile = new File("temp.json");
 
     fileOps.writeShaderJobFile(

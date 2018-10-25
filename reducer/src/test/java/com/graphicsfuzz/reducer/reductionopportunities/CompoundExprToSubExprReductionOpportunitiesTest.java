@@ -39,7 +39,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<SimplifyExprReductionOpportunity> ops = CompoundExprToSubExprReductionOpportunities
           .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
-                new RandomWrapper(0), null));
+                new RandomWrapper(0), null, true));
     assertTrue(ops.isEmpty());
   }
 
@@ -107,7 +107,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
         boolean reduceEverywhere) {
     return CompoundExprToSubExprReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(reduceEverywhere, ShadingLanguageVersion.GLSL_440,
-          new RandomWrapper(0), null));
+          new RandomWrapper(0), null, true));
   }
 
 }

@@ -31,7 +31,6 @@ import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.EmitShaderHelper;
 import com.graphicsfuzz.common.util.FileHelper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -109,7 +108,7 @@ public class ReductionDriverTest {
         ReductionOpportunities.
             getReductionOpportunities(
                 MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, version, generator, new IdGenerator()),
+                new ReducerContext(false, version, generator, new IdGenerator(), true),
                 fileOps);
     assertEquals(2, ops.size());
 
@@ -118,8 +117,8 @@ public class ReductionDriverTest {
             false,
             version,
             generator,
-            null
-        ),
+            null,
+            true),
         false,
         fileOps,
         state
@@ -229,7 +228,7 @@ public class ReductionDriverTest {
         Optional.empty(), new UniformsInfo(tempJsonFile),
         translationUnits);
 
-    return new ReductionDriver(new ReducerContext(reduceEverywhere, version, generator, new IdGenerator()), false, fileOps, state)
+    return new ReductionDriver(new ReducerContext(reduceEverywhere, version, generator, new IdGenerator(), true), false, fileOps, state)
         .doReduction(getPrefix(tempFragmentShaderFile), 0,
           judge, testFolder.getRoot(), stepLimit);
   }
@@ -275,7 +274,7 @@ public class ReductionDriverTest {
         }
       };
 
-    final String reducedFilesPrefix = new ReductionDriver(new ReducerContext(false, version, generator, null), false, fileOps, state)
+    final String reducedFilesPrefix = new ReductionDriver(new ReducerContext(false, version, generator, null, true), false, fileOps, state)
         .doReduction(getPrefix(tempFile), 0,
           referencesSinCosAnd3, testFolder.getRoot(), -1);
 
@@ -549,7 +548,7 @@ public class ReductionDriverTest {
     final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
         ShadingLanguageVersion.ESSL_300,
         new RandomWrapper(0),
-        new IdGenerator()),
+        new IdGenerator(), true),
         false,
         fileOps, shaderJob)
         .doReduction("temp", 0,

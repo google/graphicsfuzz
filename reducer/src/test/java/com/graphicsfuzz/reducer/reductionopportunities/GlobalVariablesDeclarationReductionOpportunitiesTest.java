@@ -47,7 +47,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
     List<IReductionOpportunity> ops = ReductionOpportunities
           .getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                 new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-                new RandomWrapper(0), new IdGenerator()), fileOps);
+                new RandomWrapper(0), new IdGenerator(), true), fileOps);
     assertEquals(0, ops.size());
   }
 
@@ -60,7 +60,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
           .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-                new RandomWrapper(0), null));
+                new RandomWrapper(0), null, true));
     assertEquals(0, ops.size());
   }
 
@@ -73,7 +73,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), null));
+            new RandomWrapper(0), null, true));
     assertEquals(0, ops.size());
   }
 
@@ -84,7 +84,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), null));
+            new RandomWrapper(0), null, true));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);
@@ -99,7 +99,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), null));
+            new RandomWrapper(0), null, true));
     assertEquals(0, ops.size());
   }
 
@@ -110,7 +110,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), null));
+            new RandomWrapper(0), null, true));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);
@@ -125,14 +125,14 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), null));
+            new RandomWrapper(0), null, true));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);
     final List<GlobalVariablesDeclarationReductionOpportunity> moreOps =
         GlobalVariablesDeclarationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), null));
+            new RandomWrapper(0), null, true));
     assertEquals(0, moreOps.size());
   }
 

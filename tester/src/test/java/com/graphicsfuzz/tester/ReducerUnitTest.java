@@ -29,7 +29,6 @@ import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.EmitShaderHelper;
 import com.graphicsfuzz.common.util.FileHelper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
@@ -123,7 +122,7 @@ public class ReducerUnitTest {
     for (int step = 0; step < 10; step++) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
           new GlslShaderJob(Optional.empty(), new UniformsInfo(), tu),
-          new ReducerContext(false, shadingLanguageVersion, generator, idGenerator),
+          new ReducerContext(false, shadingLanguageVersion, generator, idGenerator, true),
           fileOps);
       if (ops.isEmpty()) {
         break;
@@ -232,7 +231,7 @@ public class ReducerUnitTest {
 
       new ReductionDriver(new ReducerContext(false,
           shadingLanguageVersion, generator,
-            new IdGenerator()), false, fileOps, initialState)
+            new IdGenerator(), true), false, fileOps, initialState)
             .doReduction(shaderJobShortName, 0,
                   new RandomFileJudge(generator, threshold, throwExceptionOnInvalid, fileOps),
                   temporaryFolder.newFolder(),
@@ -403,7 +402,7 @@ public class ReducerUnitTest {
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(), shaderFile.getName()));
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(),
         shaderJobShortName + ".json"));
-    return new ReductionDriver(new ReducerContext(false, version, generator, new IdGenerator()), false, fileOps, state)
+    return new ReductionDriver(new ReducerContext(false, version, generator, new IdGenerator(), true), false, fileOps, state)
         .doReduction(shaderJobShortName, 0,
           fileJudge, temporaryFolder.getRoot(), -1);
   }

@@ -72,9 +72,9 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program);
-    assertEquals(1, InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null)).size());
+    assertEquals(1, InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true)).size());
     InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, null, null, null)).get(0).applyReduction();
+          new ReducerContext(false, null, null, null, true)).get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter)),
       PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
@@ -107,7 +107,7 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program).clone();
 
-    List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null));
+    List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
     assertEquals(3, ops.size());
 
     File tempFile = testFolder.newFile("temp.frag");
@@ -150,7 +150,7 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(program).clone();
 
     List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, null, null, null));
+          new ReducerContext(false, null, null, null, true));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();

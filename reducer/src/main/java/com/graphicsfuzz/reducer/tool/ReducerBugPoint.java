@@ -148,7 +148,7 @@ public class ReducerBugPoint {
                 generator,
                 null,
                 10,
-                1),
+                1, true),
             verbose,
             fileOps,
             initialState

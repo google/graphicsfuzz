@@ -31,24 +31,27 @@ public class ReducerContext {
   private final IdGenerator idGenerator;
   private final int maxPercentageToReduce;
   private final int aggressionDecreaseStep;
+  private final boolean emitGraphicsFuzzDefines;
 
   public ReducerContext(boolean reduceEverywhere,
                         ShadingLanguageVersion shadingLanguageVersion,
                         IRandom random, IdGenerator idGenerator, int maxPercentageToReduce,
-                        int aggressionDecreaseStep) {
+                        int aggressionDecreaseStep, boolean emitGraphicsFuzzDefines) {
     this.reduceEverywhere = reduceEverywhere;
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.random = random;
     this.idGenerator = idGenerator;
     this.maxPercentageToReduce = maxPercentageToReduce;
     this.aggressionDecreaseStep = aggressionDecreaseStep;
+    this.emitGraphicsFuzzDefines = emitGraphicsFuzzDefines;
   }
 
   public ReducerContext(boolean reduceEverywhere,
                         ShadingLanguageVersion shadingLanguageVersion,
-                        IRandom random, IdGenerator idGenerator) {
+                        IRandom random, IdGenerator idGenerator, boolean emitGraphicsFuzzDefines) {
     this(reduceEverywhere, shadingLanguageVersion, random, idGenerator,
-          DEFAULT_MAX_PERCENTAGE_TO_REDUCE, DEFAULT_AGGRESSION_DECREASE_STEP);
+        DEFAULT_MAX_PERCENTAGE_TO_REDUCE, DEFAULT_AGGRESSION_DECREASE_STEP,
+        emitGraphicsFuzzDefines);
   }
 
   public boolean reduceEverywhere() {
@@ -76,6 +79,10 @@ public class ReducerContext {
 
   public int getAggressionDecreaseStep() {
     return aggressionDecreaseStep;
+  }
+
+  public boolean getEmitGraphicsFuzzDefines() {
+    return emitGraphicsFuzzDefines;
   }
 
 }

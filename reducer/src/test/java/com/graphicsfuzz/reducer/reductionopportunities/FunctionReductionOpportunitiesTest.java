@@ -31,7 +31,7 @@ public class FunctionReductionOpportunitiesTest {
         + "void main() { }";
     TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, FunctionReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, null, null))
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, null, null, true))
     .size());
   }
 

@@ -48,7 +48,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities
-              .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null));
+              .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(reducedProgram)),
@@ -74,7 +74,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
       LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, null, null, null));
+            new ReducerContext(false, null, null, null, true));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);
@@ -95,7 +95,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, null, null, null));
+                new ReducerContext(false, null, null, null, true));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);
@@ -117,7 +117,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, null, null, null));
+                new ReducerContext(false, null, null, null, true));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);

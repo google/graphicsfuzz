@@ -62,7 +62,7 @@ public class LoopMergeReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
 
     List<LoopMergeReductionOpportunity> opportunities =
-        LoopMergeReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null));
+        LoopMergeReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
 
     assertEquals(1, opportunities.size());
 

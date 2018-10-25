@@ -424,7 +424,7 @@ public class FoldConstantReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(before);
     final List<SimplifyExprReductionOpportunity> ops = FoldConstantReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-            ShadingLanguageVersion.ESSL_100, null, null));
+            ShadingLanguageVersion.ESSL_100, null, null, true));
     ops.forEach(item -> item.applyReduction());
     CompareAsts.assertEqualAsts(after, tu);
     assertEquals(numOps, ops.size());

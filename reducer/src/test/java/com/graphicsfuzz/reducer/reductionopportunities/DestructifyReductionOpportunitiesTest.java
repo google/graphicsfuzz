@@ -40,7 +40,7 @@ public class DestructifyReductionOpportunitiesTest {
           + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-          ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
+          ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null, true));
     // There should be no opportunities as there is already a variable called 'dist' in scope
     assertEquals(0, ops.size());
   }
@@ -70,7 +70,7 @@ public class DestructifyReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(false,
-          ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
+          ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null, true));
     // There should be one opportunity as variable dist is in a different scope and not used in this scope.
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -94,7 +94,7 @@ public class DestructifyReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(false,
-          ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
+          ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null, true));
     // There should be no opportunities as there is already a variable called 'dist' in scope,
     // and it is used.
     assertEquals(0, ops.size());
@@ -126,7 +126,7 @@ public class DestructifyReductionOpportunitiesTest {
           + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-          ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
+          ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null, true));
     // There should be no opportunities as there is already a variable called 'dist' in scope,
     // and it is used.
     assertEquals(1, ops.size());

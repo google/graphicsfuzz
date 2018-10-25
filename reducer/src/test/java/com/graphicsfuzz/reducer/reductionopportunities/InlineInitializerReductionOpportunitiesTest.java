@@ -35,7 +35,7 @@ public class InlineInitializerReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops =
           InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-          ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+          ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);
@@ -53,12 +53,12 @@ public class InlineInitializerReductionOpportunitiesTest {
 
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(largeProgramTu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
     assertEquals(0, ops.size());
 
     ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(smallProgramTu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
     assertEquals(3, ops.size());
     ops.get(0).applyReduction();
     ops.get(1).applyReduction();
@@ -94,7 +94,7 @@ public class InlineInitializerReductionOpportunitiesTest {
 
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
     assertEquals(5, ops.size());
     ops.forEach(SimplifyExprReductionOpportunity::applyReduction);
     CompareAsts.assertEqualAsts(expected, tu);
@@ -109,7 +109,7 @@ public class InlineInitializerReductionOpportunitiesTest {
 
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
     assertEquals(0, ops.size());
   }
 

@@ -36,7 +36,7 @@ public class UnswitchifyReductionOpportunitiesTest {
               new ReducerContext(false,
               ShadingLanguageVersion.GLSL_130,
                     new RandomWrapper(0),
-                    null));
+                    null, true));
     assertEquals(0, ops.size());
   }
 

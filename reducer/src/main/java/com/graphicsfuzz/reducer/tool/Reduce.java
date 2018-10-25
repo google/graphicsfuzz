@@ -473,17 +473,22 @@ public class Reduce {
       fileOps.deleteFile(new File(workDir, Constants.REDUCTION_INCOMPLETE));
     }
 
-    ShaderJob initialState =
+    final File shaderJobFile = new File(workDir, startingShaderJobShortName + ".json");
+    final ShaderJob initialState =
         fileOps.readShaderJobFile(
-            new File(workDir, startingShaderJobShortName + ".json")
+            shaderJobFile
         );
+
+    final boolean emitGraphicsFuzzDefines =
+        fileOps.doesShaderJobUseGraphicsFuzzDefines(shaderJobFile);
 
     new ReductionDriver(
         new ReducerContext(
             reduceEverywhere,
             shadingLanguageVersion,
             random,
-            idGenerator),
+            idGenerator,
+            emitGraphicsFuzzDefines),
         verbose,
         fileOps,
         initialState)
