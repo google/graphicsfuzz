@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 public class TranslationUnit implements IAstNode {
 
   private final ShaderKind shaderKind;
-  private final Optional<ShadingLanguageVersion> shadingLanguageVersion;
+  private Optional<ShadingLanguageVersion> shadingLanguageVersion;
   private List<Declaration> topLevelDeclarations;
 
   /**
@@ -78,6 +78,10 @@ public class TranslationUnit implements IAstNode {
 
   public ShadingLanguageVersion getShadingLanguageVersion() {
     return shadingLanguageVersion.get();
+  }
+
+  public void setShadingLanguageVersion(ShadingLanguageVersion shadingLanguageVersion) {
+    this.shadingLanguageVersion = Optional.of(shadingLanguageVersion);
   }
 
   public void setTopLevelDeclarations(List<Declaration> topLevelDeclarations) {

@@ -30,11 +30,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -44,6 +46,7 @@ import static org.junit.Assert.assertTrue;
 public class GenerateTest {
 
   public static final String A_VERTEX_SHADER = "" +
+      "layout(location=0) in highp vec4 a_position;" +
       "float foo(float b) {" +
       "  for (int i = 0; i < 10; i++) {" +
       "    b += float(i);" +
@@ -73,7 +76,8 @@ public class GenerateTest {
     ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     // TODO: Use fileOps more.
 
-    final String program = "uniform vec2 injectionSwitch;\n"
+    final String program = "layout(location=0) out highp vec4 _GLF_color;"
+        + "uniform vec2 injectionSwitch;\n"
         + "\n"
         + "void main()\n"
         + "{\n"
@@ -115,7 +119,7 @@ public class GenerateTest {
         + "    fg = float(g / 100);\n"
         + "    fb = float(b / 100);\n"
         + "    fa = float(a / 100);\n"
-        + "    gl_FragColor = vec4(r, g, b, a);\n"
+        + "    _GLF_color = vec4(r, g, b, a);\n"
         + "}\n";
 
     final String json = "{\n"
@@ -130,12 +134,8 @@ public class GenerateTest {
 
     File shaderFile = temporaryFolder.newFile("shader.frag");
     File jsonFile = temporaryFolder.newFile("shader.json");
-    BufferedWriter bw = new BufferedWriter(new FileWriter(shaderFile));
-    bw.write(program);
-    bw.close();
-    bw = new BufferedWriter(new FileWriter(jsonFile));
-    bw.write(json);
-    bw.close();
+    FileUtils.writeStringToFile(shaderFile, program, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(jsonFile, json, StandardCharsets.UTF_8);
 
     File outputDir = temporaryFolder.getRoot();
 
@@ -146,7 +146,7 @@ public class GenerateTest {
     Generate.mainHelper(new String[]{"--seed", "0",
         jsonFile.toString(),
         donors.toString(),
-        "100",
+        "300 es",
         outputShaderJobFile.toString(),
     });
 
@@ -254,12 +254,8 @@ public class GenerateTest {
 
     File vertexShaderFile = temporaryFolder.newFile("shader.vert");
     File jsonFile = temporaryFolder.newFile("shader.json");
-    BufferedWriter bw = new BufferedWriter(new FileWriter(vertexShaderFile));
-    bw.write(A_VERTEX_SHADER);
-    bw.close();
-    bw = new BufferedWriter(new FileWriter(jsonFile));
-    bw.write(EMPTY_JSON);
-    bw.close();
+    FileUtils.writeStringToFile(vertexShaderFile, A_VERTEX_SHADER, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(jsonFile, EMPTY_JSON, StandardCharsets.UTF_8);
 
     final File outputDir = temporaryFolder.getRoot();
     final File outputShaderJobFile = new File(outputDir, "output.json");
