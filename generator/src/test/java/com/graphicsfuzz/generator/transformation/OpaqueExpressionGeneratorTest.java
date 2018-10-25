@@ -34,7 +34,6 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.SupportedTypes;
-import com.graphicsfuzz.common.util.EmitShaderHelper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
