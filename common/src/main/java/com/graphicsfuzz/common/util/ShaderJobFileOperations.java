@@ -21,7 +21,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -278,6 +277,29 @@ public class ShaderJobFileOperations {
   }
 
   /**
+   * Determines whether the underlying shader files for the shader jobs use GraphicsFuzz defines.
+   * Assumes that if one shader does, they all do.
+   */
+  public boolean doesShaderJobUseGraphicsFuzzDefines(File shaderJobFile) throws IOException {
+    for (ShaderKind shaderKind : ShaderKind.values()) {
+      //noinspection deprecation: fine inside this class.
+      final File shaderFile = getUnderlyingShaderFile(shaderJobFile, shaderKind);
+      if (!shaderFile.isFile()) {
+        continue;
+      }
+      try (BufferedReader br = new BufferedReader(new FileReader(shaderFile))) {
+        String line;
+        while ((line = br.readLine()) != null) {
+          if (line.trim().startsWith(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+  
+  /**
    * Does this shaderJobResultFile have an associated image result?
    *
    * <p>Perhaps we should be able to check this by reading the result file,
@@ -419,7 +441,7 @@ public class ShaderJobFileOperations {
     return FileUtils.readLines(file, Charset.defaultCharset());
   }
 
-  public ShaderJob readShaderJobFile(File shaderJobFile, boolean stripHeader)
+  public ShaderJob readShaderJobFile(File shaderJobFile)
       throws IOException, ParseTimeoutException {
 
     assertIsShaderJobFile(shaderJobFile);
@@ -430,8 +452,7 @@ public class ShaderJobFileOperations {
 
     for (String extension : Arrays.asList("vert", "frag", "comp")) {
       final Optional<TranslationUnit> maybeTu =
-          ParseHelper.maybeParseShader(new File(shaderJobFilePrefix + "." + extension),
-              stripHeader);
+          ParseHelper.maybeParseShader(new File(shaderJobFilePrefix + "." + extension));
       maybeTu.ifPresent(translationUnits::add);
     }
 
@@ -627,8 +648,8 @@ public class ShaderJobFileOperations {
 
   public void writeShaderJobFile(
       final ShaderJob shaderJob,
-      final ShadingLanguageVersion shadingLanguageVersion,
-      final File outputShaderJobFile) throws FileNotFoundException {
+      final File outputShaderJobFile,
+      final boolean emitGraphicsFuzzDefines) throws FileNotFoundException {
 
     assertIsShaderJobFile(outputShaderJobFile);
 
@@ -637,9 +658,9 @@ public class ShaderJobFileOperations {
     for (TranslationUnit tu : shaderJob.getShaders()) {
       writeShader(
           tu,
-          shadingLanguageVersion,
           shaderJob.getLicense(),
-          new File(outputFileNoExtension + "." + tu.getShaderKind().getFileExtension())
+          new File(outputFileNoExtension + "." + tu.getShaderKind().getFileExtension()),
+          emitGraphicsFuzzDefines
       );
     }
 
@@ -648,6 +669,12 @@ public class ShaderJobFileOperations {
         outputShaderJobFile,
         ".json",
         shaderJob.getUniformsInfo().toString());
+  }
+
+  public void writeShaderJobFile(
+      final ShaderJob shaderJob,
+      final File outputShaderJobFile) throws FileNotFoundException {
+    writeShaderJobFile(shaderJob, outputShaderJobFile, true);
   }
 
   public void writeShaderJobFileFromImageJob(
@@ -787,19 +814,19 @@ public class ShaderJobFileOperations {
 
   private static void writeShader(
       TranslationUnit tu,
-      ShadingLanguageVersion shadingLanguageVersion,
       Optional<String> license,
-      File outputFile
+      File outputFile,
+      boolean emitGraphicsFuzzDefines
   ) throws FileNotFoundException {
     try (PrintStream stream = ps(outputFile)) {
-      EmitShaderHelper.emitShader(
-          shadingLanguageVersion,
+      PrettyPrinterVisitor.emitShader(
           tu,
           license,
           stream,
           PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
           PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-          Helper::glfMacros);
+          emitGraphicsFuzzDefines
+      );
     }
   }
 

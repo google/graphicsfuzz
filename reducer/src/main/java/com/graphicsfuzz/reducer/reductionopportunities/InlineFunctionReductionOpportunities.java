@@ -20,23 +20,22 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.inliner.Inliner;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class InlineFunctionReductionOpportunities extends StandardVisitor {
 
   private final List<InlineFunctionReductionOpportunity> opportunities;
   private final TranslationUnit tu;
-  private final ReductionOpportunityContext context;
+  private final ReducerContext context;
 
   static List<InlineFunctionReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -45,7 +44,7 @@ public class InlineFunctionReductionOpportunities extends StandardVisitor {
 
   private static List<InlineFunctionReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     InlineFunctionReductionOpportunities finder = new InlineFunctionReductionOpportunities(
         tu, context);
     finder.visit(tu);
@@ -53,7 +52,7 @@ public class InlineFunctionReductionOpportunities extends StandardVisitor {
   }
 
   private InlineFunctionReductionOpportunities(TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     opportunities = new ArrayList<>();
     this.tu = tu;
     this.context = context;

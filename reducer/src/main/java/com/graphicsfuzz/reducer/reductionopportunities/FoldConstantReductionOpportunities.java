@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 public final class FoldConstantReductionOpportunities extends SimplifyExprReductionOpportunities {
 
   private FoldConstantReductionOpportunities(TranslationUnit tu,
-                                           ReductionOpportunityContext context) {
+                                           ReducerContext context) {
     super(tu, context);
   }
 
@@ -407,7 +407,7 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
 
   static List<SimplifyExprReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -416,7 +416,7 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
 
   private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     FoldConstantReductionOpportunities finder = new FoldConstantReductionOpportunities(tu,
         context);
     finder.visit(tu);

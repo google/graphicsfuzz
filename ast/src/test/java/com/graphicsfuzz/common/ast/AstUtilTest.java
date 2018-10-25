@@ -39,7 +39,7 @@ public class AstUtilTest {
         + "int foo(int x) { return 3; }\n"
         + "void main() { }\n";
 
-    TranslationUnit tu = ParseHelper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program);
     List<FunctionPrototype> prototypes = AstUtil.getFunctionPrototypesFromShader(tu);
     assertEquals(4, prototypes.size());
 

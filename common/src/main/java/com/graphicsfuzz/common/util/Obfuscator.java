@@ -279,8 +279,7 @@ public class Obfuscator extends ScopeTreeBuilder {
     ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
     ShaderJob shaderJob = fileOps.readShaderJobFile(
-        new File(args[0]),
-        false
+        new File(args[0])
     );
 
     // TODO: Reimplement obfuscator if needed.

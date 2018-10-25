@@ -17,12 +17,9 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.transformreduce.Constants;
-import com.graphicsfuzz.common.util.Helper;
+import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.ParseHelper;
-import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.reducer.TestUtils;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
@@ -31,6 +28,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -73,11 +71,11 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "  _GLF_struct_1698 " + Constants.STRUCTIFICATION_STRUCT_PREFIX + "_mine = _GLF_struct_1698(0, 1.0, vec3(1.0), vec4(1.0), ivec2(1));\n"
         + "}\n";
 
-    TranslationUnit tu = ParseHelper.parse(program, false);
-    assertEquals(1, InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null)).size());
+    TranslationUnit tu = ParseHelper.parse(program);
+    assertEquals(1, InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true)).size());
     InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(false, null, null, null)).get(0).applyReduction();
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter, false)),
+          new ReducerContext(false, null, null, null, true)).get(0).applyReduction();
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter)),
       PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
@@ -107,9 +105,9 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "    _GLF_struct_A _GLF_struct_replacement_838 = _GLF_struct_A(1.0, _GLF_struct_B(_GLF_struct_F(f(), _GLF_struct_D(true, mat4(1.0)))));\n"
         + "}\n";
 
-    TranslationUnit tu = ParseHelper.parse(program, false).clone();
+    TranslationUnit tu = ParseHelper.parse(program).clone();
 
-    List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
+    List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
     assertEquals(3, ops.size());
 
     File tempFile = testFolder.newFile("temp.frag");
@@ -122,8 +120,9 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
       new PrettyPrinterVisitor(System.out).visit(tu);
 
       PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-      Helper.emitDefines(ps, ShadingLanguageVersion.ESSL_100, true);
-      PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(ps);
+      PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(ps,
+          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER, true, Optional.empty());
       ppv.visit(tu);
       ps.close();
       ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, tempFile);
@@ -148,10 +147,10 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "    _GLF_struct_762(_GLF_struct_761(bvec2(true)))._f0._f0;\n"
         + "}\n";
 
-    TranslationUnit tu = ParseHelper.parse(program, false).clone();
+    TranslationUnit tu = ParseHelper.parse(program).clone();
 
     List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(false, null, null, null));
+          new ReducerContext(false, null, null, null, true));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();

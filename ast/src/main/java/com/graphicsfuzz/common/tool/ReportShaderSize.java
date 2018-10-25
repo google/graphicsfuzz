@@ -32,7 +32,7 @@ public class ReportShaderSize {
       System.exit(1);
     }
     File inputFile = new File(args[0]);
-    TranslationUnit tu = ParseHelper.parse(inputFile, true);
+    TranslationUnit tu = ParseHelper.parse(inputFile);
 
     StatsVisitor sv = new StatsVisitor(tu);
 

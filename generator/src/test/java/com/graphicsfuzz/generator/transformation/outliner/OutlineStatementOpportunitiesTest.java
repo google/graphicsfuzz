@@ -50,7 +50,7 @@ public class OutlineStatementOpportunitiesTest {
         + "  v.y = 1.2;" // Does not count; not direct variable assignment
         + "  gl_FragColor = vec4(0.0);" // Counts
         + "}";
-    TranslationUnit tu = ParseHelper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program);
     List<OutlineStatementOpportunity> opportunities = new OutlineStatementOpportunities(tu).getAllOpportunities();
     assertEquals(5, opportunities.size());
 
@@ -76,12 +76,12 @@ public class OutlineStatementOpportunitiesTest {
         + "  gl_FragColor = _GLF_outlined_0();"
         + "}";
 
-    TranslationUnit tu = ParseHelper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program);
     List<OutlineStatementOpportunity> ops = new OutlineStatementOpportunities(tu).getAllOpportunities();
     assertEquals(1, ops.size());
     ops.get(0).apply(new IdGenerator());
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

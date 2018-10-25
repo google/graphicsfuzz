@@ -143,11 +143,12 @@ public class ReduceTest {
     final File[] reducedFinal = temporaryFolder.getRoot().listFiles((dir, name) -> name.contains(
         "reduced_final.frag"));
     assertEquals(1, reducedFinal.length);
-    CompareAsts.assertEqualAsts("void main() { }", ParseHelper.parse(reducedFinal[0], true));
+    CompareAsts.assertEqualAsts("#version 100\nvoid main() { }",
+        ParseHelper.parse(reducedFinal[0]));
   }
 
   private File getShaderJobReady() throws IOException, ParseTimeoutException {
-    final String fragmentShader = "" +
+    final String fragmentShader = "#version 100\n" +
         "int a;" +
         "int b;" +
         "int c;" +
@@ -162,8 +163,7 @@ public class ReduceTest {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     fileOps.writeStringToFile(jsonFile, "{}");
     fileOps.writeStringToFile(fragmentFile, fragmentShader);
-    fileOps.writeShaderJobFile(fileOps.readShaderJobFile(jsonFile, false),
-        ShadingLanguageVersion.ESSL_100, jsonFile);
+    fileOps.writeShaderJobFile(fileOps.readShaderJobFile(jsonFile), jsonFile);
     return jsonFile;
   }
 

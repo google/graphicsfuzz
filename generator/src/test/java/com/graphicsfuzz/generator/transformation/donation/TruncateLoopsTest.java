@@ -77,9 +77,9 @@ public class TruncateLoopsTest {
           + "    }\n"
           + "  }\n"
           + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     new TruncateLoops(3, "pre", tu);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

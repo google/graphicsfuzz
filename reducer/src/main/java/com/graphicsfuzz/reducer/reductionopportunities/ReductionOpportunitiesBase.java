@@ -35,9 +35,9 @@ import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.SideEffectChecker;
+import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +50,7 @@ public abstract class ReductionOpportunitiesBase
   protected final NotReferencedFromLiveContext notReferencedFromLiveContext;
   protected final IParentMap parentMap;
 
-  protected final ReductionOpportunityContext context;
+  protected final ReducerContext context;
 
   protected String enclosingFunctionName;
 
@@ -62,7 +62,7 @@ public abstract class ReductionOpportunitiesBase
    * @param context Includes information such as whether reductions should be sought everywhere or
    *                only to reverse transformations
    */
-  public ReductionOpportunitiesBase(TranslationUnit tu, ReductionOpportunityContext context) {
+  public ReductionOpportunitiesBase(TranslationUnit tu, ReducerContext context) {
     this.opportunities = new ArrayList<>();
     this.injectionTracker = new InjectionTracker();
     this.notReferencedFromLiveContext = new NotReferencedFromLiveContext(tu);

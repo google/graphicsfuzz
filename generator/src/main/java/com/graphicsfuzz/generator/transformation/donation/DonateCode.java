@@ -107,7 +107,7 @@ public abstract class DonateCode implements ITransformation {
 
   private TranslationUnit prepareTranslationUnit(File donorFile, IRandom generator)
         throws IOException, ParseTimeoutException {
-    TranslationUnit tu = ParseHelper.parse(donorFile, false);
+    TranslationUnit tu = ParseHelper.parse(donorFile);
     addPrefixes(tu, getDeclaredFunctionNames(tu));
     // Add prefixed versions of these builtins, in case they are used
     tu.addDeclaration(new VariablesDeclaration(

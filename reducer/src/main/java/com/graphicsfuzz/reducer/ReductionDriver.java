@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.reducer;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
@@ -25,8 +23,9 @@ import com.graphicsfuzz.reducer.glslreducers.IReductionPlan;
 import com.graphicsfuzz.reducer.glslreducers.MasterPlan;
 import com.graphicsfuzz.reducer.glslreducers.NoMoreToReduceException;
 import com.graphicsfuzz.reducer.reductionopportunities.FailedReductionException;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.reducer.util.Simplify;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -47,7 +46,7 @@ public class ReductionDriver {
 
   private final boolean verbose;
 
-  private final ReductionOpportunityContext context;
+  private final ReducerContext context;
 
   private final IReductionPlan plan;
 
@@ -65,7 +64,7 @@ public class ReductionDriver {
   private final Set<String> failHashes;
   private final Set<String> passHashes;
 
-  public ReductionDriver(ReductionOpportunityContext context,
+  public ReductionDriver(ReducerContext context,
                          boolean verbose,
                          ShaderJobFileOperations fileOps,
                          ShaderJob initialState) {
@@ -193,8 +192,8 @@ public class ReductionDriver {
     }
     fileOps.writeShaderJobFile(
         state,
-        context.getShadingLanguageVersion(),
-        shaderJobFileOutput
+        shaderJobFileOutput,
+        context.getEmitGraphicsFuzzDefines()
     );
     if (requiresUniformBindings) {
       assert state.hasUniformBindings();

@@ -30,7 +30,7 @@ public class CompoundExprToSubExprReductionOpportunities
 
   private CompoundExprToSubExprReductionOpportunities(
         TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     super(tu, context);
   }
 
@@ -67,7 +67,7 @@ public class CompoundExprToSubExprReductionOpportunities
 
   static List<SimplifyExprReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -76,7 +76,7 @@ public class CompoundExprToSubExprReductionOpportunities
 
   private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     CompoundExprToSubExprReductionOpportunities finder =
           new CompoundExprToSubExprReductionOpportunities(tu,
                 context);

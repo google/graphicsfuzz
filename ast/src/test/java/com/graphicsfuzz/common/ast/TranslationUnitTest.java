@@ -40,9 +40,9 @@ public class TranslationUnitTest {
     FileUtils.writeStringToFile(frag, "void main() { }", StandardCharsets.UTF_8);
     FileUtils.writeStringToFile(vert, "void main() { }", StandardCharsets.UTF_8);
     FileUtils.writeStringToFile(comp, "void main() { }", StandardCharsets.UTF_8);
-    final TranslationUnit fragTu = ParseHelper.parse(frag, false);
-    final TranslationUnit vertTu = ParseHelper.parse(vert, false);
-    final TranslationUnit compTu = ParseHelper.parse(comp, false);
+    final TranslationUnit fragTu = ParseHelper.parse(frag);
+    final TranslationUnit vertTu = ParseHelper.parse(vert);
+    final TranslationUnit compTu = ParseHelper.parse(comp);
     assertEquals(ShaderKind.FRAGMENT, fragTu.getShaderKind());
     assertEquals(ShaderKind.VERTEX, vertTu.getShaderKind());
     assertEquals(ShaderKind.COMPUTE, compTu.getShaderKind());
@@ -53,7 +53,7 @@ public class TranslationUnitTest {
   public void testClone() throws Exception {
     final File vert = temporaryFolder.newFile("a.vert");
     FileUtils.writeStringToFile(vert, "void main() { }", StandardCharsets.UTF_8);
-    final TranslationUnit vertTu = ParseHelper.parse(vert, false);
+    final TranslationUnit vertTu = ParseHelper.parse(vert);
     assertEquals(ShaderKind.VERTEX, vertTu.getShaderKind());
     assertEquals(ShaderKind.VERTEX, vertTu.clone().getShaderKind());
   }

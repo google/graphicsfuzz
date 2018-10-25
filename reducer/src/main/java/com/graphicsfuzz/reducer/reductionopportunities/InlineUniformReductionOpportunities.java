@@ -32,7 +32,7 @@ public class InlineUniformReductionOpportunities extends SimplifyExprReductionOp
 
   public static List<SimplifyExprReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context, shaderJob.getUniformsInfo()))
@@ -40,7 +40,7 @@ public class InlineUniformReductionOpportunities extends SimplifyExprReductionOp
   }
 
   private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu, ReductionOpportunityContext context, UniformsInfo uniformsInfo) {
+      TranslationUnit tu, ReducerContext context, UniformsInfo uniformsInfo) {
     final InlineUniformReductionOpportunities finder = new InlineUniformReductionOpportunities(
         tu, context, uniformsInfo);
     finder.visit(tu);
@@ -50,7 +50,7 @@ public class InlineUniformReductionOpportunities extends SimplifyExprReductionOp
   private final UniformsInfo uniformsInfo;
 
   private InlineUniformReductionOpportunities(TranslationUnit tu,
-                                              ReductionOpportunityContext context,
+                                              ReducerContext context,
                                               UniformsInfo uniformsInfo) {
     super(tu, context);
     this.uniformsInfo = uniformsInfo;

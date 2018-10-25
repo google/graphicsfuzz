@@ -29,7 +29,6 @@ import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.util.ApplySubstitution;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -42,6 +41,7 @@ import com.graphicsfuzz.generator.transformation.injection.RemoveImmediateBreakA
 import com.graphicsfuzz.generator.transformation.injection.RemoveReturnStatements;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;

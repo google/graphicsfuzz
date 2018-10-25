@@ -29,7 +29,7 @@ public class MutationReductionOpportunities
 
   private MutationReductionOpportunities(
         TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     super(tu, context);
   }
 
@@ -67,7 +67,7 @@ public class MutationReductionOpportunities
 
   static List<MutationReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -76,7 +76,7 @@ public class MutationReductionOpportunities
 
   private static List<MutationReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     MutationReductionOpportunities finder = new MutationReductionOpportunities(tu,
           context);
     finder.visit(tu);

@@ -27,8 +27,8 @@ public class CompareAsts {
   public static void assertEqualAsts(String first, String second)
         throws IOException, ParseTimeoutException {
     assertEquals(
-          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first, false)),
-          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second, false))
+          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first)),
+          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second))
     );
   }
 
@@ -45,9 +45,9 @@ public class CompareAsts {
 
   public static boolean isEqualAsts(String first, String second) throws IOException,
       ParseTimeoutException {
-    return PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first, false))
+    return PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first))
         .equals(
-            PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second, false)));
+            PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second)));
   }
 
   public static boolean isEqualAsts(String first, TranslationUnit second) throws IOException,

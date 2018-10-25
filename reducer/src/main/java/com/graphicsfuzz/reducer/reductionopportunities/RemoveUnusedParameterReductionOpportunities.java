@@ -48,7 +48,7 @@ public class RemoveUnusedParameterReductionOpportunities
 
   static List<RemoveUnusedParameterReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -57,7 +57,7 @@ public class RemoveUnusedParameterReductionOpportunities
 
   private static List<RemoveUnusedParameterReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     RemoveUnusedParameterReductionOpportunities finder =
         new RemoveUnusedParameterReductionOpportunities(tu, context);
     finder.visit(tu);
@@ -76,7 +76,7 @@ public class RemoveUnusedParameterReductionOpportunities
   private List<ParameterDecl> unusedParametersForCurrentFunction;
 
   private RemoveUnusedParameterReductionOpportunities(TranslationUnit tu,
-                                                      ReductionOpportunityContext context) {
+                                                      ReducerContext context) {
     super(tu, context);
     this.functionsToUnusedParameters = new HashMap<>();
     this.unusedParametersForCurrentFunction = null;

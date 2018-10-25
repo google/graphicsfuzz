@@ -34,8 +34,8 @@ public class CompareAstsDuplicate {
   public static void assertEqualAsts(String first, String second)
         throws IOException, ParseTimeoutException {
     assertEquals(
-          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first, false)),
-          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second, false))
+          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first)),
+          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second))
     );
   }
 

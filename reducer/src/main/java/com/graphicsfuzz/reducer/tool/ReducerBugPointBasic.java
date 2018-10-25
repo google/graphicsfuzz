@@ -16,9 +16,7 @@
 
 package com.graphicsfuzz.reducer.tool;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -28,8 +26,8 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.reducer.reductionopportunities.Compatibility;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -105,7 +103,7 @@ public class ReducerBugPointBasic {
 
     final IRandom generator = new RandomWrapper(ns.get("seed"));
 
-    final ShaderJob originalShaderJob = fileOps.readShaderJobFile(shaderJobFile, true);
+    final ShaderJob originalShaderJob = fileOps.readShaderJobFile(shaderJobFile);
 
     final int maxIterations = ns.get("max_iterations");
 
@@ -142,18 +140,17 @@ public class ReducerBugPointBasic {
         try {
           ops = ReductionOpportunities.getReductionOpportunities(
               current,
-              new ReductionOpportunityContext(
+              new ReducerContext(
                   reduceEverywhere,
                   shadingLanguageVersion,
                   generator,
-                  idGenerator),
+                  idGenerator, true),
               fileOps);
 
         } catch (Exception exception) {
           recordThrowsExceptionWhenGettingReductionOpportunities(
               current,
               exception,
-              shadingLanguageVersion,
               fileOps);
           break;
         }
@@ -175,7 +172,6 @@ public class ReducerBugPointBasic {
 
             fileOps.writeShaderJobFile(
                 lastGoodButLeadingToBadShaderJob,
-                shadingLanguageVersion,
                 new File("leads_to_exception_" + exceptionCount + ".json")
             );
 
@@ -196,11 +192,9 @@ public class ReducerBugPointBasic {
           } else {
             fileOps.writeShaderJobFile(
                 prev,
-                shadingLanguageVersion,
                 new File("leads_to_invalid_" + invalidCount + "_before.json"));
             fileOps.writeShaderJobFile(
                 current,
-                shadingLanguageVersion,
                 new File("leads_to_invalid_" + invalidCount + "_after.json"));
             invalidCount++;
             lastGoodButLeadingToBadShaderJob = prev;
@@ -243,7 +237,6 @@ public class ReducerBugPointBasic {
     File tempShaderJobFile = new File("temp_to_validate.json");
     fileOps.writeShaderJobFile(
         shaderJob,
-        shadingLanguageVersion,
         tempShaderJobFile);
     return fileOps.areShadersValid(tempShaderJobFile, false);
   }
@@ -257,21 +250,18 @@ public class ReducerBugPointBasic {
   }
 
   private static void recordThrowsExceptionWhenGettingReductionOpportunities(
-        ShaderJob shaderJob,
-        Exception exception,
-        ShadingLanguageVersion shadingLanguageVersion,
-        ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException {
+      ShaderJob shaderJob,
+      Exception exception,
+      ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException {
     File tempShaderJobFile = new File("temp.json");
 
     fileOps.writeShaderJobFile(
         shaderJob,
-        shadingLanguageVersion,
         tempShaderJobFile
     );
 
     ShaderJob reparsedShaderJob = fileOps.readShaderJobFile(
-        tempShaderJobFile,
-        true
+        tempShaderJobFile
     );
 
     new ReportAstDifferences(

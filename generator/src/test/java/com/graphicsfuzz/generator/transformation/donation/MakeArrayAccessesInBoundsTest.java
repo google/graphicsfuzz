@@ -31,10 +31,10 @@ public class MakeArrayAccessesInBoundsTest {
   public void testBasic() throws Exception {
     final String shader = "void main() { int A[5]; int x = 17; A[x] = 2; }";
     final String expected = "void main() { int A[5]; int x = 17; A[(x) >= 0 && (x) < 5 ? x : 0] = 2; }";
-    final TranslationUnit tu = ParseHelper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader);
     final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_300);
     MakeArrayAccessesInBounds.makeInBounds(tu, typer);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
@@ -45,10 +45,10 @@ public class MakeArrayAccessesInBoundsTest {
           + "As[(x) >= 0 && (x) < 5 ? x : 0]"
           + "  /* column */ [(y) >= 0 && (y) < 4 ? y : 0]"
           + "  /* row */ [(z) >= 0 && (z) < 2 ? z : 0] = 2.0; }";
-    final TranslationUnit tu = ParseHelper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader);
     final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_300);
     MakeArrayAccessesInBounds.makeInBounds(tu, typer);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
@@ -74,10 +74,10 @@ public class MakeArrayAccessesInBoundsTest {
           + "  float f;"
           + "  f = v[(z) >= 0 && (z) < 4 ? z : 0];"
           + "}";
-    final TranslationUnit tu = ParseHelper.parse(shader, false);
+    final TranslationUnit tu = ParseHelper.parse(shader);
     final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_300);
     MakeArrayAccessesInBounds.makeInBounds(tu, typer);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

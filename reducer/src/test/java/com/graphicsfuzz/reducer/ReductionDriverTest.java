@@ -27,13 +27,11 @@ import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.EmitShaderHelper;
 import com.graphicsfuzz.common.util.FileHelper;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
@@ -45,10 +43,8 @@ import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.MakeShaderJobFromFragmentShader;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
-import java.io.BufferedWriter;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -82,7 +78,7 @@ public class ReductionDriverTest {
     ShadingLanguageVersion version = ShadingLanguageVersion.ESSL_100;
     IRandom generator = new RandomWrapper(0);
 
-    TranslationUnit tu = ParseHelper.parse(tempFile, false);
+    TranslationUnit tu = ParseHelper.parse(tempFile);
 
     ShaderJob state = new GlslShaderJob(
         Optional.empty(),
@@ -112,17 +108,17 @@ public class ReductionDriverTest {
         ReductionOpportunities.
             getReductionOpportunities(
                 MakeShaderJobFromFragmentShader.make(tu),
-                new ReductionOpportunityContext(false, version, generator, new IdGenerator()),
+                new ReducerContext(false, version, generator, new IdGenerator(), true),
                 fileOps);
     assertEquals(2, ops.size());
 
     new ReductionDriver(
-        new ReductionOpportunityContext(
+        new ReducerContext(
             false,
             version,
             generator,
-            null
-        ),
+            null,
+            true),
         false,
         fileOps,
         state
@@ -134,8 +130,7 @@ public class ReductionDriverTest {
   public void checkUnsuccessfulReductionLeavesTrace() throws Exception {
     final String finalFilePrefix = reduce((unused, item) -> false,
           "void main() { }", "{ }",
-          false,
-          false);
+        false);
     assertNull(finalFilePrefix);
     final File traceFile = new File(testFolder.getRoot(), "NOT_INTERESTING");
     assertTrue(traceFile.exists());
@@ -155,7 +150,7 @@ public class ReductionDriverTest {
     };
 
     final String finalFilePrefix =
-        reduce(judge, "void main() { }", "{ }", false, false);
+        reduce(judge, "void main() { }", "{ }", false);
     assertNotNull(finalFilePrefix);
   }
 
@@ -173,39 +168,35 @@ public class ReductionDriverTest {
     };
 
     final String finalFilePrefix = reduce((unused, item) -> false, "void main() { }", "{ }",
-          false, false);
+        false);
     assertNull(finalFilePrefix);
   }
 
   private String reduce(IFileJudge judge, String program, String jsonString,
-        boolean stripHeader,
-        boolean reduceEverywhere)
+                        boolean reduceEverywhere)
         throws IOException, ParseTimeoutException {
-    return reduce(judge, program, jsonString, stripHeader, reduceEverywhere,
+    return reduce(judge, program, jsonString, reduceEverywhere,
           -1, 0);
   }
 
   private String reduce(IFileJudge judge, String fragmentShader, String jsonString,
-      boolean stripHeader,
-      boolean reduceEverywhere,
-      int stepLimit,
-      int seed)
+                        boolean reduceEverywhere,
+                        int stepLimit,
+                        int seed)
       throws IOException, ParseTimeoutException {
     return reduce(judge, fragmentShader, Optional.empty(), jsonString,
-        stripHeader,
         reduceEverywhere,
         stepLimit,
         seed);
   }
 
   private String reduce(IFileJudge judge,
-        String fragmentShader,
-        Optional<String> vertexShader,
-        String jsonString,
-        boolean stripHeader,
-        boolean reduceEverywhere,
-        int stepLimit,
-        int seed)
+                        String fragmentShader,
+                        Optional<String> vertexShader,
+                        String jsonString,
+                        boolean reduceEverywhere,
+                        int stepLimit,
+                        int seed)
         throws IOException, ParseTimeoutException {
     assertFalse(new File(testFolder.getRoot(), "temp.frag").exists());
     File tempFragmentShaderFile = testFolder.newFile("temp.frag");
@@ -225,9 +216,9 @@ public class ReductionDriverTest {
     ShadingLanguageVersion version = ShadingLanguageVersion.ESSL_100;
     IRandom generator = new RandomWrapper(seed);
 
-    TranslationUnit tuFrag = ParseHelper.parse(tempFragmentShaderFile, stripHeader);
+    TranslationUnit tuFrag = ParseHelper.parse(tempFragmentShaderFile);
     Optional<TranslationUnit> tuVert = vertexShader.isPresent()
-        ? Optional.of(ParseHelper.parse(tempVertexShaderFile.get(), stripHeader))
+        ? Optional.of(ParseHelper.parse(tempVertexShaderFile.get()))
         : Optional.empty();
 
     final List<TranslationUnit> translationUnits = new ArrayList<>();
@@ -237,7 +228,7 @@ public class ReductionDriverTest {
         Optional.empty(), new UniformsInfo(tempJsonFile),
         translationUnits);
 
-    return new ReductionDriver(new ReductionOpportunityContext(reduceEverywhere, version, generator, new IdGenerator()), false, fileOps, state)
+    return new ReductionDriver(new ReducerContext(reduceEverywhere, version, generator, new IdGenerator(), true), false, fileOps, state)
         .doReduction(getPrefix(tempFragmentShaderFile), 0,
           judge, testFolder.getRoot(), stepLimit);
   }
@@ -264,7 +255,7 @@ public class ReductionDriverTest {
     final ShadingLanguageVersion version = ShadingLanguageVersion.ESSL_100;
     final IRandom generator = new RandomWrapper(0);
 
-    final TranslationUnit tu = ParseHelper.parse(tempFile, false);
+    final TranslationUnit tu = ParseHelper.parse(tempFile);
 
     ShaderJob state = new GlslShaderJob(
         Optional.empty(), new UniformsInfo(tempJsonFile), tu);
@@ -283,13 +274,13 @@ public class ReductionDriverTest {
         }
       };
 
-    final String reducedFilesPrefix = new ReductionDriver(new ReductionOpportunityContext(false, version, generator, null), false, fileOps, state)
+    final String reducedFilesPrefix = new ReductionDriver(new ReducerContext(false, version, generator, null, true), false, fileOps, state)
         .doReduction(getPrefix(tempFile), 0,
           referencesSinCosAnd3, testFolder.getRoot(), -1);
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(
-              new File(testFolder.getRoot(), reducedFilesPrefix + ".frag"), true)));
+              new File(testFolder.getRoot(), reducedFilesPrefix + ".frag"))));
 
   }
 
@@ -319,15 +310,15 @@ public class ReductionDriverTest {
             + "    }"
             + "  }"
             + "}",
-    "{ }", false, false);
+    "{ }", false);
     final String expected = "void main() {"
           + "   if(true) {"
           + "   }"
           + "}";
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-          ParseHelper.parse(expected, false)),
+          ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(
-                ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true)));
+                ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"))));
   }
 
   @Test
@@ -344,24 +335,18 @@ public class ReductionDriverTest {
                   }
                 }), ShaderKind.FRAGMENT, fileOps);
 
-    final String resultFilesPrefix = reduce(judge,
-          EmitShaderHelper.getDefinesString(ShadingLanguageVersion.ESSL_100,
-                () -> new StringBuilder(),
-                Optional.empty())
-                .toString()
-                + ""
-                + "float foo(float a) { return sin(a); }"
+    final String resultFilesPrefix = reduce(judge,"float foo(float a) { return sin(a); }"
                 + "void main() {"
                 + "  float f = foo(42.0);"
                 + "}",
-          "{ }", true, true);
+          "{ }", true);
     final String expected = "void main() {"
           + "   sin(1.0);"
           + "}";
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-          ParseHelper.parse(expected, false)),
+          ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(
-                ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true)));
+                ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"))));
   }
 
   @Test
@@ -379,11 +364,7 @@ public class ReductionDriverTest {
                 }), ShaderKind.FRAGMENT, fileOps);
 
     final String resultFilesPrefix = reduce(judge,
-          EmitShaderHelper.getDefinesString(ShadingLanguageVersion.ESSL_100,
-                () -> new StringBuilder(), Optional.empty())
-                .toString()
-                + ""
-                + "vec3 GLF_live3intersects(vec3 GLF_live3src, vec3 GLF_live3direction) {"
+        "vec3 GLF_live3intersects(vec3 GLF_live3src, vec3 GLF_live3direction) {"
                 + "  vec3 GLF_live3temp = GLF_live3src + GLF_live3direction;"
                 + "  if (GLF_live3temp.x > 3.0) {"
                 + "    return sin(GLF_live3direction);"
@@ -399,14 +380,14 @@ public class ReductionDriverTest {
                 + "  vec3 GLF_live3x;"
                 + "  GLF_live3x = GLF_live3intermediate(vec3(3.0), vec3(1.2, 2.3, 3.4), vec3(7.0));"
                 + "}",
-          "{ }", true, false);
+          "{ }", false);
     final String expected = "void main() {"
           + "   sin(vec3(1.0));"
           + "}";
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-          ParseHelper.parse(expected, false)),
+          ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(
-                ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true)));
+                ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag"))));
   }
 
   @Test
@@ -432,7 +413,7 @@ public class ReductionDriverTest {
 
     final String json = "{ }";
 
-    final String resultFilesPrefix = reduce(interestingFirstTime, program, json, false, true, 2, 0);
+    final String resultFilesPrefix = reduce(interestingFirstTime, program, json, true, 2, 0);
 
     assertEquals("temp_reduced_final", FilenameUtils.getBaseName(resultFilesPrefix));
 
@@ -440,7 +421,7 @@ public class ReductionDriverTest {
 
     CompareAsts.assertEqualAsts(program,
         ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix +
-        ".frag"), true));
+        ".frag")));
 
   }
 
@@ -468,7 +449,7 @@ public class ReductionDriverTest {
     String json = "{ }";
     final IRandom generator = new RandomWrapper(0);
     reduce((unused, item) -> generator.nextBoolean(), program, json,
-            false, false, 1000, 0);
+        false, 1000, 0);
   }
 
   @Test
@@ -497,11 +478,11 @@ public class ReductionDriverTest {
     };
 
     final String resultFilesPrefix = reduce(checkVertexShader, frag, Optional.of(vert), json,
-        false, true, 1000, 0);
+        true, 1000, 0);
     CompareAsts.assertEqualAsts("void main() { }", ParseHelper.parse(
-        new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true));
+        new File(testFolder.getRoot(), resultFilesPrefix + ".frag")));
     CompareAsts.assertEqualAsts(vert, ParseHelper.parse(
-        new File(testFolder.getRoot(), resultFilesPrefix + ".vert"), true));
+        new File(testFolder.getRoot(), resultFilesPrefix + ".vert")));
   }
 
   @Test
@@ -531,11 +512,11 @@ public class ReductionDriverTest {
     };
 
     final String resultFilesPrefix = reduce(checkVertexShader, frag, Optional.of(vert), json,
-        false, true, 1000, 0);
+        true, 1000, 0);
     CompareAsts.assertEqualAsts(frag, ParseHelper.parse(
-        new File(testFolder.getRoot(), resultFilesPrefix + ".frag"), true));
+        new File(testFolder.getRoot(), resultFilesPrefix + ".frag")));
     CompareAsts.assertEqualAsts("void main() { }", ParseHelper.parse(
-        new File(testFolder.getRoot(), resultFilesPrefix + ".vert"), true));
+        new File(testFolder.getRoot(), resultFilesPrefix + ".vert")));
   }
 
   @Test
@@ -550,7 +531,7 @@ public class ReductionDriverTest {
         "  } else {" +
         "    _GLF_color = vec4(0.0);" +
         "  }" +
-        "}", false);
+        "}");
     final String expected = "void main() { }";
     UniformsInfo uniformsInfo = new UniformsInfo();
     uniformsInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Arrays.asList(1.0));
@@ -562,18 +543,18 @@ public class ReductionDriverTest {
 
     final File workDir = testFolder.getRoot();
     final File tempShaderJobFile = new File(workDir, "temp.json");
-    fileOps.writeShaderJobFile(shaderJob, ShadingLanguageVersion.ESSL_300, tempShaderJobFile);
+    fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
 
-    final String resultsPrefix = new ReductionDriver(new ReductionOpportunityContext(true,
+    final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
         ShadingLanguageVersion.ESSL_300,
         new RandomWrapper(0),
-        new IdGenerator()),
+        new IdGenerator(), true),
         false,
         fileOps, shaderJob)
         .doReduction("temp", 0,
             (unused, item) -> true, workDir, 100);
 
-    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag"), true));
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
 
   }
 

@@ -65,8 +65,8 @@ public class StripUnusedFunctionsTest {
         + "  baz();"
         + "}\n";
 
-    TranslationUnit tuBefore = ParseHelper.parse(programBefore, false);
-    TranslationUnit tuAfter = ParseHelper.parse(programAfter, false);
+    TranslationUnit tuBefore = ParseHelper.parse(programBefore);
+    TranslationUnit tuAfter = ParseHelper.parse(programAfter);
     StripUnusedFunctions.strip(tuBefore);
     assertEquals(
       PrettyPrinterVisitor.prettyPrintAsString(tuAfter),

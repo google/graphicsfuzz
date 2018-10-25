@@ -28,7 +28,7 @@ public class TestingHelpers {
 
   public static void assertShadersMatch(String expectedProgram, TranslationUnit tu)
       throws IOException, ParseTimeoutException {
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

@@ -29,9 +29,9 @@ public class RemoveReturnStatementsTest {
   public void testDo() throws Exception {
     final String prog = "void main() { do return; while(true); }";
     final String expectedProg = "void main() { do ; while(true); }";
-    TranslationUnit tu = ParseHelper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog);
     new RemoveReturnStatements(tu);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),
       PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
@@ -39,9 +39,9 @@ public class RemoveReturnStatementsTest {
   public void testWhile() throws Exception {
     final String prog = "void main() { while(true) return; }";
     final String expectedProg = "void main() { while(true) ; }";
-    TranslationUnit tu = ParseHelper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog);
     new RemoveReturnStatements(tu);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
@@ -49,9 +49,9 @@ public class RemoveReturnStatementsTest {
   public void testFor() throws Exception {
     final String prog = "void main() { for(int i = 0; i < 100; i++) return; }";
     final String expectedProg = "void main() { for(int i = 0; i < 100; i++) ; }";
-    TranslationUnit tu = ParseHelper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog);
     new RemoveReturnStatements(tu);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
@@ -59,9 +59,9 @@ public class RemoveReturnStatementsTest {
   public void testIf() throws Exception {
     final String prog = "void main() { if(true) return; else return; }";
     final String expectedProg = "void main() { if(true) ; else ; }";
-    TranslationUnit tu = ParseHelper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog);
     new RemoveReturnStatements(tu);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg, false)),
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 

@@ -45,7 +45,7 @@ public class FunctionReductionOpportunities extends StandardVisitor {
 
   private final List<FunctionPrototype> declaredFunctions; // All functions declared in the shader
 
-  private FunctionReductionOpportunities(TranslationUnit tu, ReductionOpportunityContext context) {
+  private FunctionReductionOpportunities(TranslationUnit tu, ReducerContext context) {
     this.typer = new Typer(tu, context.getShadingLanguageVersion());
     this.opportunities = new ArrayList<>();
     this.calledFunctions = new HashSet<>();
@@ -61,7 +61,7 @@ public class FunctionReductionOpportunities extends StandardVisitor {
    */
   static List<FunctionReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -70,7 +70,7 @@ public class FunctionReductionOpportunities extends StandardVisitor {
 
   private static List<FunctionReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     FunctionReductionOpportunities finder =
         new FunctionReductionOpportunities(tu, context);
     finder.visit(tu);

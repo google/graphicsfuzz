@@ -59,21 +59,21 @@ public class TruncateLoopsTest {
   }
 
   private void testProgram(String program, boolean isSane) throws IOException, ParseTimeoutException {
-    TranslationUnit tu =  ParseHelper.parse(program, false);
+    TranslationUnit tu =  ParseHelper.parse(program);
     new TruncateLoops(30, "webGL_", tu);
     if(isSane) {
       CompareAstsDuplicate.assertEqualAsts(program, tu);
     } else {
       assertProgramsNotEqual(program, tu);
     }
-    tu =  ParseHelper.parse(program, false);
+    tu =  ParseHelper.parse(program);
     new TruncateLoops(0, "webGL_", tu);
     assertProgramsNotEqual(program, tu);
   }
 
   private void assertProgramsNotEqual(String program, TranslationUnit otherProgram)
       throws IOException, ParseTimeoutException {
-    assert !PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program, false))
+    assert !PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program))
         .equals(PrettyPrinterVisitor.prettyPrintAsString(otherProgram));
   }
 
