@@ -34,7 +34,7 @@ public class VectorizationReductionOpportunities
 
   private VectorizationReductionOpportunities(
         TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     super(tu, context);
     this.tu = tu;
     this.enclosingVariablesDeclaration = null;
@@ -49,7 +49,7 @@ public class VectorizationReductionOpportunities
    */
   static List<VectorizationReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -58,7 +58,7 @@ public class VectorizationReductionOpportunities
 
   private static List<VectorizationReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     VectorizationReductionOpportunities finder =
           new VectorizationReductionOpportunities(tu, context);
     finder.visit(tu);

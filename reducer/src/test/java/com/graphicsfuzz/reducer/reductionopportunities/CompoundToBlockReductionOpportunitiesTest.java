@@ -133,7 +133,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "  }"
           + "}";
     final TranslationUnit tu = ParseHelper.parse(original);
-    assertTrue(CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false,
+    assertTrue(CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
           ShadingLanguageVersion.GLSL_440, new RandomWrapper(0), null)).isEmpty());
   }
 
@@ -435,7 +435,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
     return ReductionOpportunities.
         getReductionOpportunities(
             MakeShaderJobFromFragmentShader.make(tu),
-            new ReductionOpportunityContext(
+            new ReducerContext(
                 reduceEverywhere,
                 ShadingLanguageVersion.GLSL_440,
                 new RandomWrapper(0),

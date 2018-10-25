@@ -23,7 +23,7 @@ import com.graphicsfuzz.reducer.glslreducers.IReductionPlan;
 import com.graphicsfuzz.reducer.glslreducers.MasterPlan;
 import com.graphicsfuzz.reducer.glslreducers.NoMoreToReduceException;
 import com.graphicsfuzz.reducer.reductionopportunities.FailedReductionException;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.reducer.util.Simplify;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
@@ -46,7 +46,7 @@ public class ReductionDriver {
 
   private final boolean verbose;
 
-  private final ReductionOpportunityContext context;
+  private final ReducerContext context;
 
   private final IReductionPlan plan;
 
@@ -64,7 +64,7 @@ public class ReductionDriver {
   private final Set<String> failHashes;
   private final Set<String> passHashes;
 
-  public ReductionDriver(ReductionOpportunityContext context,
+  public ReductionDriver(ReducerContext context,
                          boolean verbose,
                          ShaderJobFileOperations fileOps,
                          ShaderJob initialState) {

@@ -18,7 +18,7 @@ package com.graphicsfuzz.reducer.glslreducers;
 
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunityFinder;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -30,7 +30,7 @@ public class MasterPlan implements IReductionPlan {
 
   private static final int MAX_STEPS_PER_PASS = 200;
   private final boolean verbose;
-  private final ReductionOpportunityContext reductionOpportunityContext;
+  private final ReducerContext reducerContext;
 
   private int fullPassesCompleted;
   private int passIndex;
@@ -40,10 +40,10 @@ public class MasterPlan implements IReductionPlan {
   private List<IReductionPlan> plans;
 
   public MasterPlan(
-        ReductionOpportunityContext reductionOpportunityContext,
+        ReducerContext reducerContext,
         boolean verbose) {
     this.verbose = verbose;
-    this.reductionOpportunityContext = reductionOpportunityContext;
+    this.reducerContext = reducerContext;
     this.fullPassesCompleted = 0;
     this.passIndex = 0;
     this.currentPassSteps = 0;
@@ -81,7 +81,7 @@ public class MasterPlan implements IReductionPlan {
         IReductionOpportunityFinder.foldConstantFinder(),
         IReductionOpportunityFinder.inlineUniformFinder(),
     }) {
-      plans.add(new SimplePlan(reductionOpportunityContext,
+      plans.add(new SimplePlan(reducerContext,
             verbose,
             ops));
     }

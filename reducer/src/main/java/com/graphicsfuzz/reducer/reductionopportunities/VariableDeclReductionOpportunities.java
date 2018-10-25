@@ -39,7 +39,7 @@ public class VariableDeclReductionOpportunities
   private final Deque<Set<ScopeEntry>> referencedScopeEntries;
 
   private VariableDeclReductionOpportunities(TranslationUnit tu,
-                                             ReductionOpportunityContext context) {
+                                             ReducerContext context) {
     super(tu, context);
     this.referencedScopeEntries = new LinkedList<>();
     this.referencedScopeEntries.addFirst(new HashSet<>());
@@ -147,7 +147,7 @@ public class VariableDeclReductionOpportunities
    */
   static List<VariableDeclReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -156,7 +156,7 @@ public class VariableDeclReductionOpportunities
 
   private static List<VariableDeclReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     VariableDeclReductionOpportunities finder =
         new VariableDeclReductionOpportunities(tu, context);
     finder.visit(tu);

@@ -60,7 +60,7 @@ import com.graphicsfuzz.reducer.IFileJudge;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.reducer.tool.RandomFileJudge;
 import com.graphicsfuzz.reducer.tool.Reduce;
 import java.io.File;
@@ -123,7 +123,7 @@ public class ReducerUnitTest {
     for (int step = 0; step < 10; step++) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
           new GlslShaderJob(Optional.empty(), new UniformsInfo(), tu),
-          new ReductionOpportunityContext(false, shadingLanguageVersion, generator, idGenerator),
+          new ReducerContext(false, shadingLanguageVersion, generator, idGenerator),
           fileOps);
       if (ops.isEmpty()) {
         break;
@@ -230,7 +230,7 @@ public class ReducerUnitTest {
 
       final String shaderJobShortName = FilenameUtils.removeExtension(shaderFile.getName());
 
-      new ReductionDriver(new ReductionOpportunityContext(false,
+      new ReductionDriver(new ReducerContext(false,
           shadingLanguageVersion, generator,
             new IdGenerator()), false, fileOps, initialState)
             .doReduction(shaderJobShortName, 0,
@@ -403,7 +403,7 @@ public class ReducerUnitTest {
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(), shaderFile.getName()));
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(),
         shaderJobShortName + ".json"));
-    return new ReductionDriver(new ReductionOpportunityContext(false, version, generator, new IdGenerator()), false, fileOps, state)
+    return new ReductionDriver(new ReducerContext(false, version, generator, new IdGenerator()), false, fileOps, state)
         .doReduction(shaderJobShortName, 0,
           fileJudge, temporaryFolder.getRoot(), -1);
   }

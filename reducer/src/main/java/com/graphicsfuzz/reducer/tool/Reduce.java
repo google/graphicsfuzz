@@ -33,7 +33,7 @@ import com.graphicsfuzz.reducer.filejudge.FuzzingFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ImageGenErrorShaderFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ImageShaderFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ValidatorErrorShaderFileJudge;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
 import com.graphicsfuzz.server.thrift.ImageComparisonMetric;
 import com.graphicsfuzz.shadersets.ExactImageFileComparator;
@@ -479,7 +479,7 @@ public class Reduce {
         );
 
     new ReductionDriver(
-        new ReductionOpportunityContext(
+        new ReducerContext(
             reduceEverywhere,
             shadingLanguageVersion,
             random,

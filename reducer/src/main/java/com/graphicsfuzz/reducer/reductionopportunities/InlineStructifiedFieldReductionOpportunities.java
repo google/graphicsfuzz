@@ -40,7 +40,7 @@ public class InlineStructifiedFieldReductionOpportunities extends ScopeTreeBuild
 
   static List<InlineStructifiedFieldReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item))

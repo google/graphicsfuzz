@@ -47,7 +47,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(program);
 
     assertEquals(2, RemoveStructFieldReductionOpportunities
-          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null)).size());
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null)).size());
 
   }
 
@@ -67,7 +67,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(program);
 
     assertEquals(0, RemoveStructFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(false, null, null, null)).size());
+          new ReducerContext(false, null, null, null)).size());
 
   }
 
@@ -99,7 +99,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveStructFieldReductionOpportunity> ops = RemoveStructFieldReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-              new ReductionOpportunityContext(true, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
+              new ReducerContext(true, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)));
@@ -132,7 +132,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(program);
 
     final List<RemoveStructFieldReductionOpportunity> ops = RemoveStructFieldReductionOpportunities
-          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null));
     assertEquals(2, ops
           .size());
     ops.stream().filter(item -> item.getFieldToRemove().equals("_f0"))

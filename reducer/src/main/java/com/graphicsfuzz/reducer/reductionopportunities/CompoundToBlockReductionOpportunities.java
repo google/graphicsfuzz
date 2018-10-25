@@ -39,14 +39,14 @@ public class CompoundToBlockReductionOpportunities
 
   public CompoundToBlockReductionOpportunities(
         TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     super(tu, context);
     this.enclosingLiveCodeInjections = 0;
   }
 
   static List<CompoundToBlockReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -55,7 +55,7 @@ public class CompoundToBlockReductionOpportunities
 
   private static List<CompoundToBlockReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     CompoundToBlockReductionOpportunities finder =
           new CompoundToBlockReductionOpportunities(tu, context);
     finder.visit(tu);

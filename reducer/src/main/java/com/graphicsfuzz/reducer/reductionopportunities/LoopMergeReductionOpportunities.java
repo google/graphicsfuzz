@@ -45,7 +45,7 @@ public class LoopMergeReductionOpportunities extends ScopeTreeBuilder {
 
   static List<LoopMergeReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item))

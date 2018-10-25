@@ -31,7 +31,7 @@ public class GlobalVariablesDeclarationReductionOpportunities
   private final TranslationUnit tu;
 
   private GlobalVariablesDeclarationReductionOpportunities(TranslationUnit tu,
-                                                           ReductionOpportunityContext context) {
+                                                           ReducerContext context) {
     super(tu, context);
     this.tu = tu;
   }
@@ -55,7 +55,7 @@ public class GlobalVariablesDeclarationReductionOpportunities
 
   private static List<GlobalVariablesDeclarationReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     GlobalVariablesDeclarationReductionOpportunities finder =
         new GlobalVariablesDeclarationReductionOpportunities(tu, context);
     finder.visit(tu);
@@ -64,7 +64,7 @@ public class GlobalVariablesDeclarationReductionOpportunities
 
   static List<GlobalVariablesDeclarationReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))

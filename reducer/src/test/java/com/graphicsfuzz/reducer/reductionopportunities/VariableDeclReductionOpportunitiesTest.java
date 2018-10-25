@@ -39,7 +39,7 @@ public class VariableDeclReductionOpportunitiesTest {
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -52,7 +52,7 @@ public class VariableDeclReductionOpportunitiesTest {
     final String reducedProgram = "struct { int x; } b; void main() { b.x = 2; }\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -65,7 +65,7 @@ public class VariableDeclReductionOpportunitiesTest {
     final String reducedProgram = "struct A { int x; }; void main() { A c; c.x = 2; }\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -82,7 +82,7 @@ public class VariableDeclReductionOpportunitiesTest {
     List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
         .findOpportunities(
             MakeShaderJobFromFragmentShader.make(tu),
-            new ReductionOpportunityContext(
+            new ReducerContext(
                 false,
                 ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0),

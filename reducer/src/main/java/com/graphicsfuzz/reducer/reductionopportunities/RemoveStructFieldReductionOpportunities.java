@@ -42,7 +42,7 @@ public class RemoveStructFieldReductionOpportunities extends ScopeTreeBuilder {
 
   static List<RemoveStructFieldReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item))

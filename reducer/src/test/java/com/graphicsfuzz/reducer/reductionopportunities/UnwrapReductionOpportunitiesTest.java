@@ -41,7 +41,7 @@ public class UnwrapReductionOpportunitiesTest {
     final String program = "int x; void main() { { x = 2; } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(false,
+          new ReducerContext(false,
         ShadingLanguageVersion.GLSL_440, new SameValueRandom(false, 0), null));
     assertEquals(1, ops.size());
   }
@@ -51,7 +51,7 @@ public class UnwrapReductionOpportunitiesTest {
     final String program = "void main() { { } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(false,
+          new ReducerContext(false,
           ShadingLanguageVersion.GLSL_440, new SameValueRandom(false, 0), null));
     assertEquals(0, ops.size());
   }
@@ -61,7 +61,7 @@ public class UnwrapReductionOpportunitiesTest {
     final String program = "void main() { { { } } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReductionOpportunityContext(false,
+        new ReducerContext(false,
             ShadingLanguageVersion.GLSL_440, new SameValueRandom(false, 0), null));
     assertEquals(1, ops.size());
   }
@@ -90,7 +90,7 @@ public class UnwrapReductionOpportunitiesTest {
     assertTrue(PrettyPrinterVisitor.prettyPrintAsString(tu).contains(expectedStmt));
 
     IRandom generator = new RandomWrapper(1);
-    List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, generator, null));
+    List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, generator, null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     assertTrue(PrettyPrinterVisitor.prettyPrintAsString(tu).contains(expectedStmt));
@@ -102,8 +102,8 @@ public class UnwrapReductionOpportunitiesTest {
     final String expected = "void main() { }";
     final TranslationUnit tu = ParseHelper.parse(shader);
     final IRandom generator = new RandomWrapper(0);
-    List<StmtReductionOpportunity> stmtOps = StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, generator, null));
-    List<UnwrapReductionOpportunity> unwrapOps = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100, generator, null));
+    List<StmtReductionOpportunity> stmtOps = StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, generator, null));
+    List<UnwrapReductionOpportunity> unwrapOps = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, generator, null));
     assertTrue(!stmtOps.isEmpty());
     assertTrue(!unwrapOps.isEmpty());
     stmtOps.forEach(StmtReductionOpportunity::applyReduction);
@@ -135,13 +135,13 @@ public class UnwrapReductionOpportunitiesTest {
     final ShadingLanguageVersion version = ShadingLanguageVersion.ESSL_100;
     final RandomWrapper generator = new RandomWrapper(0);
     final IdGenerator idGenerator = new IdGenerator();
-    List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, version,
+    List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, version,
           generator, idGenerator));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     List<? extends IReductionOpportunity> remainingOps =
         VariableDeclReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReductionOpportunityContext(false, version, generator, idGenerator));
+            new ReducerContext(false, version, generator, idGenerator));
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)));
     assertEquals(2, remainingOps.size());
     remainingOps.get(0).applyReduction();
@@ -155,7 +155,7 @@ public class UnwrapReductionOpportunitiesTest {
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected2)));
     remainingOps =
         StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReductionOpportunityContext(false, version, generator, idGenerator));
+            new ReducerContext(false, version, generator, idGenerator));
     assertEquals(3, remainingOps.size());
     remainingOps.get(0).applyReduction();
     remainingOps.get(1).applyReduction();
@@ -165,7 +165,7 @@ public class UnwrapReductionOpportunitiesTest {
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu),
         PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected3)));
     remainingOps = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(false, version, generator, idGenerator), fileOps);
+          new ReducerContext(false, version, generator, idGenerator), fileOps);
     assertEquals(0, remainingOps.size());
   }
 

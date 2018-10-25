@@ -16,17 +16,14 @@
 
 package com.graphicsfuzz.reducer.glslreducers;
 
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import com.graphicsfuzz.reducer.reductionopportunities.Compatibility;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunityFinder;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +31,7 @@ public class SimplePlan implements IReductionPlan {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SimplePlan.class);
 
-  private final ReductionOpportunityContext reductionOpportunityContext;
+  private final ReducerContext reducerContext;
   private final boolean verbose;
   private final IReductionOpportunityFinder<?> opportunitiesFinder;
 
@@ -43,13 +40,13 @@ public class SimplePlan implements IReductionPlan {
   private final List<Integer> history;
 
   SimplePlan(
-        ReductionOpportunityContext reductionOpportunityContext,
+        ReducerContext reducerContext,
         boolean verbose,
         IReductionOpportunityFinder<?> opportunitiesFinder) {
-    this.reductionOpportunityContext = reductionOpportunityContext;
+    this.reducerContext = reducerContext;
     this.verbose = verbose;
     this.opportunitiesFinder = opportunitiesFinder;
-    this.percentageToReduce = reductionOpportunityContext.getMaxPercentageToReduce();
+    this.percentageToReduce = reducerContext.getMaxPercentageToReduce();
     this.replenishCount = 0;
     this.history = new ArrayList<>();
   }
@@ -60,7 +57,7 @@ public class SimplePlan implements IReductionPlan {
       history.clear();
     } else {
       percentageToReduce = Math.max(0,
-            percentageToReduce - reductionOpportunityContext.getAggressionDecreaseStep());
+            percentageToReduce - reducerContext.getAggressionDecreaseStep());
     }
   }
 
@@ -143,13 +140,13 @@ public class SimplePlan implements IReductionPlan {
 
       final List<? extends IReductionOpportunity> currentReductionOpportunities =
             opportunitiesFinder.findOpportunities(
-                  shaderJob, reductionOpportunityContext);
+                  shaderJob, reducerContext);
       if (currentReductionOpportunities.isEmpty()) {
         break;
       }
 
       final IReductionOpportunity nextReductionOpportunity = currentReductionOpportunities
-            .get(reductionOpportunityContext.getRandom()
+            .get(reducerContext.getRandom()
                   .nextInt(currentReductionOpportunities.size()));
 
       if (ReductionDriver.DEBUG_REDUCER) {
@@ -169,7 +166,7 @@ public class SimplePlan implements IReductionPlan {
         ShaderJob shaderJob) {
     // Get the available reduction opportunities.
     final List<? extends IReductionOpportunity> initialReductionOpportunities =
-          opportunitiesFinder.findOpportunities(shaderJob, reductionOpportunityContext);
+          opportunitiesFinder.findOpportunities(shaderJob, reducerContext);
 
     initialReductionOpportunities.sort((first, second) -> first.depth().compareTo(second.depth()));
     return initialReductionOpportunities;
@@ -186,7 +183,7 @@ public class SimplePlan implements IReductionPlan {
   private int skewedRandomElement(List<Integer> options) {
     final int maximum = options.size();
     final int index =
-          (maximum - 1) - (int) Math.sqrt(Math.pow((double) reductionOpportunityContext
+          (maximum - 1) - (int) Math.sqrt(Math.pow((double) reducerContext
                 .getRandom().nextInt(maximum), 2.0));
     assert index >= 0;
     assert index < maximum;
@@ -208,7 +205,7 @@ public class SimplePlan implements IReductionPlan {
   @Override
   public void replenish() {
     replenishCount++;
-    percentageToReduce = reductionOpportunityContext.getMaxPercentageToReduce();
+    percentageToReduce = reducerContext.getMaxPercentageToReduce();
     for (int i = 0; i < replenishCount; i++) {
       percentageToReduce /= 2;
     }

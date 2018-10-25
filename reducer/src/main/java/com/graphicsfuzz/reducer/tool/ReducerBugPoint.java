@@ -24,7 +24,7 @@ import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.reducer.ReductionDriver;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -142,7 +142,7 @@ public class ReducerBugPoint {
       try {
 
         new ReductionDriver(
-            new ReductionOpportunityContext(
+            new ReducerContext(
                 reduceEverywhere,
                 shadingLanguageVersion,
                 generator,

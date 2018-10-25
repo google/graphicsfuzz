@@ -22,7 +22,7 @@ import java.util.List;
 public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
 
   List<T> findOpportunities(ShaderJob shaderJob,
-                            ReductionOpportunityContext context);
+                            ReducerContext context);
 
   String getName();
 
@@ -30,7 +30,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<StmtReductionOpportunity>() {
       @Override
       public List<StmtReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return StmtReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -46,7 +46,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
       @Override
       public List<FunctionReductionOpportunity> findOpportunities(
           ShaderJob shaderJob,
-          ReductionOpportunityContext context) {
+          ReducerContext context) {
         return FunctionReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -61,7 +61,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<VariableDeclReductionOpportunity>() {
       @Override
       public List<VariableDeclReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return VariableDeclReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -78,7 +78,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
       @Override
       public List<GlobalVariablesDeclarationReductionOpportunity> findOpportunities(
           ShaderJob shaderJob,
-          ReductionOpportunityContext context) {
+          ReducerContext context) {
         return GlobalVariablesDeclarationReductionOpportunities
             .findOpportunities(shaderJob, context);
       }
@@ -94,7 +94,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<SimplifyExprReductionOpportunity>() {
       @Override
       public List<SimplifyExprReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return ExprToConstantReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -110,7 +110,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<SimplifyExprReductionOpportunity>() {
       @Override
       public List<SimplifyExprReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return CompoundExprToSubExprReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -125,7 +125,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<CompoundToBlockReductionOpportunity>() {
       @Override
       public List<CompoundToBlockReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return CompoundToBlockReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -141,7 +141,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<SimplifyExprReductionOpportunity>() {
       @Override
       public List<SimplifyExprReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return InlineInitializerReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -156,7 +156,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<MutationReductionOpportunity>() {
       @Override
       public List<MutationReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return MutationReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -172,7 +172,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<OutlinedStatementReductionOpportunity>() {
       @Override
       public List<OutlinedStatementReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return OutlinedStatementReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -187,7 +187,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<UnwrapReductionOpportunity>() {
       @Override
       public List<UnwrapReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return UnwrapReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -203,7 +203,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<RemoveStructFieldReductionOpportunity>() {
       @Override
       public List<RemoveStructFieldReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return RemoveStructFieldReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -218,7 +218,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<DestructifyReductionOpportunity>() {
       @Override
       public List<DestructifyReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return DestructifyReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -234,7 +234,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<InlineStructifiedFieldReductionOpportunity>() {
       @Override
       public List<InlineStructifiedFieldReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return InlineStructifiedFieldReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -249,7 +249,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<VectorizationReductionOpportunity>() {
       @Override
       public List<VectorizationReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return VectorizationReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -264,7 +264,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<UnswitchifyReductionOpportunity>() {
       @Override
       public List<UnswitchifyReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return UnswitchifyReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -281,7 +281,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
       @Override
       public List<LiveOutputVariableWriteReductionOpportunity> findOpportunities(
           ShaderJob shaderJob,
-          ReductionOpportunityContext context) {
+          ReducerContext context) {
         return LiveOutputVariableWriteReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -296,7 +296,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<InlineFunctionReductionOpportunity>() {
       @Override
       public List<InlineFunctionReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return InlineFunctionReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -311,7 +311,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     return new IReductionOpportunityFinder<LoopMergeReductionOpportunity>() {
       @Override
       public List<LoopMergeReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReductionOpportunityContext context) {
+            ReducerContext context) {
         return LoopMergeReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -328,7 +328,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
       @Override
       public List<RemoveUnusedParameterReductionOpportunity> findOpportunities(
           ShaderJob shaderJob,
-          ReductionOpportunityContext context) {
+          ReducerContext context) {
         return RemoveUnusedParameterReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -345,7 +345,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
       @Override
       public List<SimplifyExprReductionOpportunity> findOpportunities(
           ShaderJob shaderJob,
-          ReductionOpportunityContext context) {
+          ReducerContext context) {
         return FoldConstantReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
@@ -362,7 +362,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
       @Override
       public List<SimplifyExprReductionOpportunity> findOpportunities(
           ShaderJob shaderJob,
-          ReductionOpportunityContext context) {
+          ReducerContext context) {
         return InlineUniformReductionOpportunities.findOpportunities(shaderJob, context);
       }
 

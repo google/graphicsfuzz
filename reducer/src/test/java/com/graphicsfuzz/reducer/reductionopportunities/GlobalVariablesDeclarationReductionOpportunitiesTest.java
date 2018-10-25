@@ -46,7 +46,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<IReductionOpportunity> ops = ReductionOpportunities
           .getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()), fileOps);
     assertEquals(0, ops.size());
   }
@@ -59,7 +59,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
           + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
-          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), null));
     assertEquals(0, ops.size());
   }
@@ -72,7 +72,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(0, ops.size());
   }
@@ -83,7 +83,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
     final String expected = "void main() { }";
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -98,7 +98,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(0, ops.size());
   }
@@ -109,7 +109,7 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
     final String expected = "void main() { }";
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<GlobalVariablesDeclarationReductionOpportunity> ops = GlobalVariablesDeclarationReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -124,14 +124,14 @@ public class GlobalVariablesDeclarationReductionOpportunitiesTest {
         ".x); }";
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);
     final List<GlobalVariablesDeclarationReductionOpportunity> moreOps =
         GlobalVariablesDeclarationReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null));
     assertEquals(0, moreOps.size());
   }

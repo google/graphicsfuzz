@@ -32,7 +32,7 @@ import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -77,7 +77,7 @@ public class MiscellaneousGenerateThenReduceTest {
       List<IReductionOpportunity> ops = ReductionOpportunities
           .getReductionOpportunities(new GlslShaderJob(Optional.empty(),
                   new UniformsInfo(), tu),
-                new ReductionOpportunityContext(false, shadingLanguageVersion,
+                new ReducerContext(false, shadingLanguageVersion,
               new SameValueRandom(false, 0), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
         break;

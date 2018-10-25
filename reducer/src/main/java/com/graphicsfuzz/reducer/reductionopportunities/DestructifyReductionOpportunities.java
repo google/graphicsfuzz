@@ -37,7 +37,7 @@ public class DestructifyReductionOpportunities extends ScopeTreeBuilder {
 
   static List<DestructifyReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(DestructifyReductionOpportunities::findOpportunitiesForShader)

@@ -20,7 +20,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 
-public class ReductionOpportunityContext {
+public class ReducerContext {
 
   static final int DEFAULT_MAX_PERCENTAGE_TO_REDUCE = 50;
   static final int DEFAULT_AGGRESSION_DECREASE_STEP = 5;
@@ -32,10 +32,10 @@ public class ReductionOpportunityContext {
   private final int maxPercentageToReduce;
   private final int aggressionDecreaseStep;
 
-  public ReductionOpportunityContext(boolean reduceEverywhere,
-      ShadingLanguageVersion shadingLanguageVersion,
-      IRandom random, IdGenerator idGenerator, int maxPercentageToReduce,
-      int aggressionDecreaseStep) {
+  public ReducerContext(boolean reduceEverywhere,
+                        ShadingLanguageVersion shadingLanguageVersion,
+                        IRandom random, IdGenerator idGenerator, int maxPercentageToReduce,
+                        int aggressionDecreaseStep) {
     this.reduceEverywhere = reduceEverywhere;
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.random = random;
@@ -44,9 +44,9 @@ public class ReductionOpportunityContext {
     this.aggressionDecreaseStep = aggressionDecreaseStep;
   }
 
-  public ReductionOpportunityContext(boolean reduceEverywhere,
-      ShadingLanguageVersion shadingLanguageVersion,
-      IRandom random, IdGenerator idGenerator) {
+  public ReducerContext(boolean reduceEverywhere,
+                        ShadingLanguageVersion shadingLanguageVersion,
+                        IRandom random, IdGenerator idGenerator) {
     this(reduceEverywhere, shadingLanguageVersion, random, idGenerator,
           DEFAULT_MAX_PERCENTAGE_TO_REDUCE, DEFAULT_AGGRESSION_DECREASE_STEP);
   }

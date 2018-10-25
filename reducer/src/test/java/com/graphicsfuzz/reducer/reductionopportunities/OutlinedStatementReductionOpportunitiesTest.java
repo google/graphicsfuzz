@@ -36,7 +36,7 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
+    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();
@@ -56,7 +56,7 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
+    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();
@@ -78,7 +78,7 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
+    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();
@@ -95,7 +95,7 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, null, null, null));
+    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null));
     assertEquals(0, ops.size());
 
   }

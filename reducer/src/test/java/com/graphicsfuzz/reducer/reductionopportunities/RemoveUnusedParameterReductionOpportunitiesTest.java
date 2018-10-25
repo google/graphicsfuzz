@@ -138,7 +138,7 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
   private List<RemoveUnusedParameterReductionOpportunity> findOpportunities(TranslationUnit tu,
                                                                             boolean reduceEverywhere) {
     return RemoveUnusedParameterReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-      new ReductionOpportunityContext(reduceEverywhere,
+      new ReducerContext(reduceEverywhere,
         ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
   }
 

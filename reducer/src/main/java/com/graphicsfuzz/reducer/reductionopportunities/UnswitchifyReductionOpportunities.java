@@ -28,7 +28,7 @@ public class UnswitchifyReductionOpportunities
 
   public UnswitchifyReductionOpportunities(
         TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     super(tu, context);
   }
 
@@ -41,7 +41,7 @@ public class UnswitchifyReductionOpportunities
    */
   static List<UnswitchifyReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -50,7 +50,7 @@ public class UnswitchifyReductionOpportunities
 
   private static List<UnswitchifyReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     UnswitchifyReductionOpportunities finder =
           new UnswitchifyReductionOpportunities(tu, context);
     finder.visit(tu);

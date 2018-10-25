@@ -201,7 +201,7 @@ public class InlineUniformReductionOpportunitiesTest {
       final ShaderJob temp = shaderJob.clone();
       List<SimplifyExprReductionOpportunity> ops =
           InlineUniformReductionOpportunities.findOpportunities(temp,
-              new ReductionOpportunityContext(false,
+              new ReducerContext(false,
                   ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
       assertEquals(expectedSize, ops.size());
       ops.get(i).applyReduction();

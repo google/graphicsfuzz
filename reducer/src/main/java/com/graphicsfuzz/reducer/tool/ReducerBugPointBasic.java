@@ -16,9 +16,7 @@
 
 package com.graphicsfuzz.reducer.tool;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -29,7 +27,7 @@ import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.reducer.reductionopportunities.Compatibility;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -142,7 +140,7 @@ public class ReducerBugPointBasic {
         try {
           ops = ReductionOpportunities.getReductionOpportunities(
               current,
-              new ReductionOpportunityContext(
+              new ReducerContext(
                   reduceEverywhere,
                   shadingLanguageVersion,
                   generator,

@@ -31,11 +31,11 @@ public class InlineFunctionReductionOpportunities extends StandardVisitor {
 
   private final List<InlineFunctionReductionOpportunity> opportunities;
   private final TranslationUnit tu;
-  private final ReductionOpportunityContext context;
+  private final ReducerContext context;
 
   static List<InlineFunctionReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -44,7 +44,7 @@ public class InlineFunctionReductionOpportunities extends StandardVisitor {
 
   private static List<InlineFunctionReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     InlineFunctionReductionOpportunities finder = new InlineFunctionReductionOpportunities(
         tu, context);
     finder.visit(tu);
@@ -52,7 +52,7 @@ public class InlineFunctionReductionOpportunities extends StandardVisitor {
   }
 
   private InlineFunctionReductionOpportunities(TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     opportunities = new ArrayList<>();
     this.tu = tu;
     this.context = context;

@@ -50,7 +50,7 @@ public abstract class ReductionOpportunitiesBase
   protected final NotReferencedFromLiveContext notReferencedFromLiveContext;
   protected final IParentMap parentMap;
 
-  protected final ReductionOpportunityContext context;
+  protected final ReducerContext context;
 
   protected String enclosingFunctionName;
 
@@ -62,7 +62,7 @@ public abstract class ReductionOpportunitiesBase
    * @param context Includes information such as whether reductions should be sought everywhere or
    *                only to reverse transformations
    */
-  public ReductionOpportunitiesBase(TranslationUnit tu, ReductionOpportunityContext context) {
+  public ReductionOpportunitiesBase(TranslationUnit tu, ReducerContext context) {
     this.opportunities = new ArrayList<>();
     this.injectionTracker = new InjectionTracker();
     this.notReferencedFromLiveContext = new NotReferencedFromLiveContext(tu);

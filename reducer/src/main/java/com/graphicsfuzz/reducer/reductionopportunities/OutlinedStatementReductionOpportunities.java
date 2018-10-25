@@ -45,7 +45,7 @@ public class OutlinedStatementReductionOpportunities extends StandardVisitor {
 
   static List<OutlinedStatementReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item))

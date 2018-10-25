@@ -33,7 +33,7 @@ public class UnswitchifyReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<UnswitchifyReductionOpportunity> ops =
         UnswitchifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-              new ReductionOpportunityContext(false,
+              new ReducerContext(false,
               ShadingLanguageVersion.GLSL_130,
                     new RandomWrapper(0),
                     null));

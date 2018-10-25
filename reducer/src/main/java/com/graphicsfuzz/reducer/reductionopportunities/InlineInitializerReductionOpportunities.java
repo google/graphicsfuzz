@@ -26,7 +26,6 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.StatsVisitor;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -49,7 +48,7 @@ public class InlineInitializerReductionOpportunities
 
   private InlineInitializerReductionOpportunities(
         TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     super(tu, context);
     this.inlineableUsages = new LinkedList<>();
     this.blackList = new HashSet<>();
@@ -57,7 +56,7 @@ public class InlineInitializerReductionOpportunities
 
   static List<SimplifyExprReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -66,7 +65,7 @@ public class InlineInitializerReductionOpportunities
 
   private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     InlineInitializerReductionOpportunities finder =
           new InlineInitializerReductionOpportunities(tu, context);
     finder.visit(tu);
