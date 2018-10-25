@@ -50,7 +50,7 @@ import org.apache.commons.io.FilenameUtils;
 
 public class ParseHelper {
 
-  public static final String END_OF_HEADER = "// END OF GENERATED HEADER";
+  public static final String END_OF_GRAPHICSFUZZ_DEFINES = "// END OF GENERATED HEADER";
 
   public static Optional<TranslationUnit> maybeParseShader(File shader)
       throws IOException, ParseTimeoutException {
@@ -82,7 +82,7 @@ public class ParseHelper {
   private static synchronized TranslationUnit parseInputStream(InputStream input,
                                                                ShaderKind shaderKind)
         throws IOException, ParseTimeoutException {
-    final InputStream strippedInput = stripHeader(input);
+    final InputStream strippedInput = stripGraphicsFuzzDefines(input);
     final int timeLimit = 60;
     ParseTreeListener listener =
         new TimeoutParseTreeListener(
@@ -153,9 +153,9 @@ public class ParseHelper {
     return parser;
   }
 
-  static InputStream stripHeader(InputStream inputStream)
+  static InputStream stripGraphicsFuzzDefines(InputStream inputStream)
         throws IOException {
-    if (!containsEndOfHeader(inputStream)) {
+    if (!containsEndOfGraphicsFuzzDefines(inputStream)) {
       return inputStream;
     }
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -163,14 +163,16 @@ public class ParseHelper {
     try (
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(outputStream));
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
-      boolean passedEndOfHeader = false;
+      boolean passedEndOfGraphicsFuzzDefines = false;
       String line;
       while ((line = br.readLine()) != null) {
-        if (passedEndOfHeader || isVersion(line) || ShadingLanguageVersion.isWebGlHint(line)) {
+        if (passedEndOfGraphicsFuzzDefines
+            || isVersion(line)
+            || ShadingLanguageVersion.isWebGlHint(line)) {
           bw.write(line + "\n");
         } else {
-          if (line.trim().startsWith(END_OF_HEADER)) {
-            passedEndOfHeader = true;
+          if (line.trim().startsWith(END_OF_GRAPHICSFUZZ_DEFINES)) {
+            passedEndOfGraphicsFuzzDefines = true;
           }
         }
       }
@@ -185,12 +187,13 @@ public class ParseHelper {
     return matcher.find();
   }
 
-  private static boolean containsEndOfHeader(InputStream inputStream) throws IOException {
+  private static boolean containsEndOfGraphicsFuzzDefines(InputStream inputStream)
+      throws IOException {
     BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
     try {
       String line;
       while ((line = br.readLine()) != null) {
-        if (line.trim().startsWith(END_OF_HEADER)) {
+        if (line.trim().startsWith(END_OF_GRAPHICSFUZZ_DEFINES)) {
           return true;
         }
       }

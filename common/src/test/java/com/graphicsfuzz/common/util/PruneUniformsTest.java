@@ -23,7 +23,9 @@ import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -188,8 +190,17 @@ public class PruneUniformsTest {
         prefixList));
 
     final File shaderFile = temporaryFolder.newFile("shader.frag");
-    EmitShaderHelper.emitShader(
-        tu, Optional.empty(), shaderFile);
+
+    try (PrintStream stream = new PrintStream(new FileOutputStream(shaderFile))) {
+      PrettyPrinterVisitor.emitShader(
+          tu,
+          Optional.empty(),
+          stream,
+          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
+          true
+      );
+    }
     final ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, shaderFile);
     assertEquals(0, execResult.res);
 

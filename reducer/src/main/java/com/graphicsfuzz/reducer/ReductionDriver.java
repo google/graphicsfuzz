@@ -190,10 +190,11 @@ public class ReductionDriver {
       assert !state.hasUniformBindings();
       state.makeUniformBindings();
     }
+    final boolean requiresGraphicsFuzzDefines = true; // TODO: extract this out.
     fileOps.writeShaderJobFile(
         state,
-        context.getShadingLanguageVersion(),
-        shaderJobFileOutput
+        shaderJobFileOutput,
+        requiresGraphicsFuzzDefines
     );
     if (requiresUniformBindings) {
       assert state.hasUniformBindings();

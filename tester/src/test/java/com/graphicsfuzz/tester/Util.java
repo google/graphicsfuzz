@@ -161,7 +161,7 @@ public final class Util {
         temporaryFolder.getRoot(),
         FilenameUtils.removeExtension(fileName) + ".json");
 
-    fileOps.writeShaderJobFile(shaderJob, shadingLanguageVersion, shaderJobFileOutput);
+    fileOps.writeShaderJobFile(shaderJob, shaderJobFileOutput);
 
     // TODO: Use fileOps more.
 

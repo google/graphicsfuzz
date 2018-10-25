@@ -175,7 +175,6 @@ public class ReducerBugPointBasic {
 
             fileOps.writeShaderJobFile(
                 lastGoodButLeadingToBadShaderJob,
-                shadingLanguageVersion,
                 new File("leads_to_exception_" + exceptionCount + ".json")
             );
 
@@ -196,11 +195,9 @@ public class ReducerBugPointBasic {
           } else {
             fileOps.writeShaderJobFile(
                 prev,
-                shadingLanguageVersion,
                 new File("leads_to_invalid_" + invalidCount + "_before.json"));
             fileOps.writeShaderJobFile(
                 current,
-                shadingLanguageVersion,
                 new File("leads_to_invalid_" + invalidCount + "_after.json"));
             invalidCount++;
             lastGoodButLeadingToBadShaderJob = prev;
@@ -243,7 +240,6 @@ public class ReducerBugPointBasic {
     File tempShaderJobFile = new File("temp_to_validate.json");
     fileOps.writeShaderJobFile(
         shaderJob,
-        shadingLanguageVersion,
         tempShaderJobFile);
     return fileOps.areShadersValid(tempShaderJobFile, false);
   }
@@ -265,7 +261,6 @@ public class ReducerBugPointBasic {
 
     fileOps.writeShaderJobFile(
         shaderJob,
-        shadingLanguageVersion,
         tempShaderJobFile
     );
 

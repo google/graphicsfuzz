@@ -163,8 +163,7 @@ public class ReduceTest {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     fileOps.writeStringToFile(jsonFile, "{}");
     fileOps.writeStringToFile(fragmentFile, fragmentShader);
-    fileOps.writeShaderJobFile(fileOps.readShaderJobFile(jsonFile),
-        ShadingLanguageVersion.ESSL_100, jsonFile);
+    fileOps.writeShaderJobFile(fileOps.readShaderJobFile(jsonFile), jsonFile);
     return jsonFile;
   }
 

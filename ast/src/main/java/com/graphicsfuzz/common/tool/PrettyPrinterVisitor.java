@@ -74,7 +74,6 @@ import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.util.Constants;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -113,10 +112,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     this.license = license;
   }
 
-  private String newLine() {
-    return newLineSupplier.get();
-  }
-
   /**
    * Returns, via pretty printing, a string representation of the given node.
    *
@@ -127,6 +122,20 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     new PrettyPrinterVisitor(new PrintStream(bytes)).visit(node);
     return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+  }
+
+  public static void emitShader(TranslationUnit shader,
+                                Optional<String> license,
+                                PrintStream stream,
+                                int indentationWidth,
+                                Supplier<String> newlineSupplier,
+                                boolean emitGraphicsFuzzDefines) {
+    new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier,
+        emitGraphicsFuzzDefines, license).visit(shader);
+  }
+
+  private String newLine() {
+    return newLineSupplier.get();
   }
 
   @Override
@@ -697,7 +706,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append("#define " + Constants.GLF_SWITCH + "(X)           X\n");
     out.append("#endif\n");
     out.append("\n");
-    out.append(ParseHelper.END_OF_HEADER + "\n");
+    out.append(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES + "\n");
   }
 
 }

@@ -312,7 +312,6 @@ public class Generate {
 
     fileOps.writeShaderJobFile(
         variantShaderJob,
-        shadingLanguageVersion,
         outputShaderJobFile);
 
     fileOps.writeAdditionalInfo(

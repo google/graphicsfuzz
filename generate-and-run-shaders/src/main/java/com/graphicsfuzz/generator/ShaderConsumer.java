@@ -222,7 +222,7 @@ public class ShaderConsumer implements Runnable {
                                                 File invalidDirectory) {
     // shaderJob -> shaderJobFileTemp
     try {
-      fileOps.writeShaderJobFile(shaderJob, shadingLanguageVersion, shaderJobFileTemp);
+      fileOps.writeShaderJobFile(shaderJob, shaderJobFileTemp);
     } catch (IOException exception) {
       LOGGER.error("Could not emit " + shaderJobFileTemp + " shader job.", exception);
       return Optional.empty();

@@ -309,7 +309,6 @@ public class GeneratorUnitTest {
 
     fileOps.writeShaderJobFile(
         shaderJob,
-        shadingLanguageVersion,
         shaderJobFile
     );
     fileOps.areShadersValid(shaderJobFile, true);

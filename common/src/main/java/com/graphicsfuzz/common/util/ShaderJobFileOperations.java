@@ -21,7 +21,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -626,8 +625,8 @@ public class ShaderJobFileOperations {
 
   public void writeShaderJobFile(
       final ShaderJob shaderJob,
-      final ShadingLanguageVersion shadingLanguageVersion,
-      final File outputShaderJobFile) throws FileNotFoundException {
+      final File outputShaderJobFile,
+      final boolean emitGraphicsFuzzDefines) throws FileNotFoundException {
 
     assertIsShaderJobFile(outputShaderJobFile);
 
@@ -636,9 +635,9 @@ public class ShaderJobFileOperations {
     for (TranslationUnit tu : shaderJob.getShaders()) {
       writeShader(
           tu,
-          shadingLanguageVersion,
           shaderJob.getLicense(),
-          new File(outputFileNoExtension + "." + tu.getShaderKind().getFileExtension())
+          new File(outputFileNoExtension + "." + tu.getShaderKind().getFileExtension()),
+          emitGraphicsFuzzDefines
       );
     }
 
@@ -647,6 +646,12 @@ public class ShaderJobFileOperations {
         outputShaderJobFile,
         ".json",
         shaderJob.getUniformsInfo().toString());
+  }
+
+  public void writeShaderJobFile(
+      final ShaderJob shaderJob,
+      final File outputShaderJobFile) throws FileNotFoundException {
+    writeShaderJobFile(shaderJob, outputShaderJobFile, true);
   }
 
   public void writeShaderJobFileFromImageJob(
@@ -786,17 +791,18 @@ public class ShaderJobFileOperations {
 
   private static void writeShader(
       TranslationUnit tu,
-      ShadingLanguageVersion shadingLanguageVersion,
       Optional<String> license,
-      File outputFile
+      File outputFile,
+      boolean emitGraphicsFuzzDefines
   ) throws FileNotFoundException {
     try (PrintStream stream = ps(outputFile)) {
-      EmitShaderHelper.emitShader(
+      PrettyPrinterVisitor.emitShader(
           tu,
           license,
           stream,
           PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER
+          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
+          emitGraphicsFuzzDefines
       );
     }
   }

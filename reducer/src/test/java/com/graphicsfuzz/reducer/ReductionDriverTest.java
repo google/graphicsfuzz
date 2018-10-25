@@ -546,7 +546,7 @@ public class ReductionDriverTest {
 
     final File workDir = testFolder.getRoot();
     final File tempShaderJobFile = new File(workDir, "temp.json");
-    fileOps.writeShaderJobFile(shaderJob, ShadingLanguageVersion.ESSL_300, tempShaderJobFile);
+    fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
 
     final String resultsPrefix = new ReductionDriver(new ReductionOpportunityContext(true,
         ShadingLanguageVersion.ESSL_300,

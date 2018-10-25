@@ -31,6 +31,7 @@ import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.SupportedTypes;
 import com.graphicsfuzz.common.util.EmitShaderHelper;
@@ -45,6 +46,8 @@ import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
@@ -88,7 +91,16 @@ public class OpaqueExpressionGeneratorTest {
                                             expr, BinOp.ASSIGN))), false))));
         Generate.addInjectionSwitchIfNotPresent(tu);
         final File file = temporaryFolder.newFile("ex.frag");
-        EmitShaderHelper.emitShader(tu, Optional.empty(), file);
+        try (PrintStream stream = new PrintStream(new FileOutputStream(file))) {
+          PrettyPrinterVisitor.emitShader(
+              tu,
+              Optional.empty(),
+              stream,
+              PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+              PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
+              true
+          );
+        }
         ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, file);
         assertEquals(0, execResult.res);
         file.delete();

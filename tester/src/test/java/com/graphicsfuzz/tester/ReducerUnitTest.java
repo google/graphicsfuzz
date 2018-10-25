@@ -158,11 +158,12 @@ public class ReducerUnitTest {
             generator, GenerationParams.normal(ShaderKind.FRAGMENT));
       }
       File tempFile = temporaryFolder.newFile();
-      EmitShaderHelper.emitShader(tu, Optional.empty(),
+      PrettyPrinterVisitor.emitShader(tu, Optional.empty(),
           new PrintStream(
               new FileOutputStream(tempFile)),
           PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER
+          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
+          true
       );
       final int maxBytes = 100000;
       if (tempFile.length() <= maxBytes) {

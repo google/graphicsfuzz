@@ -70,7 +70,7 @@ public class ParseHelperTest {
   public void testParseFromFileWithHeader() throws IOException, ParseTimeoutException {
     File tempFile = testFolder.newFile("shader.frag");
     BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
-    bw.write("arbitrary\nstuff\n" + ParseHelper.END_OF_HEADER + "\n" + TEST_PROGRAM);
+    bw.write("arbitrary\nstuff\n" + ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES + "\n" + TEST_PROGRAM);
     bw.close();
 
     TranslationUnit tu = ParseHelper.parse(tempFile);
@@ -158,7 +158,7 @@ public class ParseHelperTest {
             + "{\n"
             + "}\n";
     final InputStream is = new ByteArrayInputStream(withHeader.getBytes(StandardCharsets.UTF_8));
-    final InputStream strippedIs = ParseHelper.stripHeader(is);
+    final InputStream strippedIs = ParseHelper.stripGraphicsFuzzDefines(is);
     assertNotSame(is, strippedIs);
     assertEquals(expected, getStringFromInputStream(strippedIs));
   }
@@ -180,7 +180,7 @@ public class ParseHelperTest {
             + "{\n"
             + "}\n";
     final InputStream is = new ByteArrayInputStream(withHeader.getBytes(StandardCharsets.UTF_8));
-    final InputStream strippedIs = ParseHelper.stripHeader(is);
+    final InputStream strippedIs = ParseHelper.stripGraphicsFuzzDefines(is);
     assertNotSame(is, strippedIs);
     assertEquals(expected, getStringFromInputStream(strippedIs));
   }
@@ -200,7 +200,7 @@ public class ParseHelperTest {
             + "{\n"
             + "}\n";
     final InputStream is = new ByteArrayInputStream(withHeader.getBytes(StandardCharsets.UTF_8));
-    final InputStream strippedIs = ParseHelper.stripHeader(is);
+    final InputStream strippedIs = ParseHelper.stripGraphicsFuzzDefines(is);
     assertNotSame(is, strippedIs);
     assertEquals(expected, getStringFromInputStream(strippedIs));
   }
@@ -217,7 +217,7 @@ public class ParseHelperTest {
             + "{\n"
             + "}\n";
     final InputStream is = new ByteArrayInputStream(withHeader.getBytes(StandardCharsets.UTF_8));
-    final InputStream strippedIs = ParseHelper.stripHeader(is);
+    final InputStream strippedIs = ParseHelper.stripGraphicsFuzzDefines(is);
     assertSame(is, strippedIs);
   }
 

@@ -128,7 +128,7 @@ public final class PrepareReference {
         maxUniforms,
         generateUniformBindings);
 
-    fileOps.writeShaderJobFile(shaderJob, shadingLanguageVersion, outputShaderJobFile);
+    fileOps.writeShaderJobFile(shaderJob, outputShaderJobFile);
   }
 
   public static void prepareReference(ShaderJob shaderJob,
