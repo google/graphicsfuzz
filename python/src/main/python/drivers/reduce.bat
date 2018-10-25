@@ -16,4 +16,4 @@
 @REM  limitations under the License.
 @REM
 
-python "%~dp0reduce_variant.py" %*
+python "%~dp0reduce.py" %*
