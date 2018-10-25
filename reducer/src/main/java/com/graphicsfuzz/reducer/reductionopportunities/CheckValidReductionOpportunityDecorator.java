@@ -49,7 +49,6 @@ public class CheckValidReductionOpportunityDecorator implements IReductionOpport
     try {
       fileOps.writeShaderJobFile(
           shaderJob,
-          shadingLanguageVersion,
           outputShaderJobFile
       );
 

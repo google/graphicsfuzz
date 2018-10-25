@@ -38,14 +38,14 @@ public class AddWrappingConditionalStmtsTest {
   @Test
   public void testIfProblems() throws Exception {
     final String prog = "int x; void main() { if(true) x++; }";
-    TranslationUnit tu = ParseHelper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog);
 
     new AddWrappingConditionalStmts().apply(tu, TransformationProbabilities.onlyWrap(),
         ShadingLanguageVersion.GLSL_130, new CannedRandom(0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0),
         GenerationParams.normal(ShaderKind.FRAGMENT));
     checkStructuralProperties(tu);
-    TranslationUnit tu2 = ParseHelper.parse(PrettyPrinterVisitor.prettyPrintAsString(tu), false);
+    TranslationUnit tu2 = ParseHelper.parse(PrettyPrinterVisitor.prettyPrintAsString(tu));
     checkStructuralProperties(tu2);
   }
 

@@ -169,8 +169,8 @@ public class GlslShaderJobTest {
     final GlslShaderJob job = new GlslShaderJob(
         Optional.empty(),
         new UniformsInfo(JSON_NO_BINDINGS),
-        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_NO_BINDINGS), false),
-        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_NO_BINDINGS), false));
+        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_NO_BINDINGS)),
+        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_NO_BINDINGS)));
 
     job.makeUniformBindings();
 
@@ -185,8 +185,8 @@ public class GlslShaderJobTest {
     final GlslShaderJob job = new GlslShaderJob(
         Optional.empty(),
         new UniformsInfo(JSON_WITH_BINDINGS),
-        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_WITH_BINDINGS), false),
-        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_WITH_BINDINGS), false));
+        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_WITH_BINDINGS)),
+        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_WITH_BINDINGS)));
 
     job.removeUniformBindings();
 

@@ -54,7 +54,7 @@ public class InlineUniformReductionOpportunitiesTest {
             "    }" +
             "  }" +
             "}";
-    final TranslationUnit tu = ParseHelper.parse(prog, false);
+    final TranslationUnit tu = ParseHelper.parse(prog);
     final UniformsInfo uniformsInfo = new UniformsInfo();
     uniformsInfo.addUniform("f", BasicType.FLOAT, Optional.empty(), Arrays.asList(3.2));
     uniformsInfo.addUniform("i", BasicType.INT, Optional.empty(), Arrays.asList(10));
@@ -201,8 +201,8 @@ public class InlineUniformReductionOpportunitiesTest {
       final ShaderJob temp = shaderJob.clone();
       List<SimplifyExprReductionOpportunity> ops =
           InlineUniformReductionOpportunities.findOpportunities(temp,
-              new ReductionOpportunityContext(false,
-                  ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
+              new ReducerContext(false,
+                  ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null, true));
       assertEquals(expectedSize, ops.size());
       ops.get(i).applyReduction();
       if (CompareAsts.isEqualAsts(target, temp.getShaders().get(0))) {

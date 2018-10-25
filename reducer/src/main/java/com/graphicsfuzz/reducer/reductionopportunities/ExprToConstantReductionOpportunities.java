@@ -28,7 +28,7 @@ public final class ExprToConstantReductionOpportunities extends SimplifyExprRedu
 
   private ExprToConstantReductionOpportunities(
         TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     super(tu, context);
   }
 
@@ -47,7 +47,7 @@ public final class ExprToConstantReductionOpportunities extends SimplifyExprRedu
 
   static List<SimplifyExprReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -56,7 +56,7 @@ public final class ExprToConstantReductionOpportunities extends SimplifyExprRedu
 
   private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     ExprToConstantReductionOpportunities finder = new ExprToConstantReductionOpportunities(tu,
           context);
     finder.visit(tu);

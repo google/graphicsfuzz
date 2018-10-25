@@ -16,30 +16,33 @@
 
 package com.graphicsfuzz.common.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class HelperTest {
+import static org.junit.Assert.*;
+
+public class ParseHelperTest {
 
   @Rule
   public TemporaryFolder testFolder = new TemporaryFolder();
@@ -48,7 +51,7 @@ public class HelperTest {
 
   @Test
   public void testParseFromString() throws IOException, ParseTimeoutException {
-    TranslationUnit tu = ParseHelper.parse(TEST_PROGRAM, false);
+    TranslationUnit tu = ParseHelper.parse(TEST_PROGRAM);
     checkTranslationUnit(tu);
   }
 
@@ -59,7 +62,7 @@ public class HelperTest {
     bw.write(TEST_PROGRAM);
     bw.close();
 
-    TranslationUnit tu = ParseHelper.parse(tempFile, false);
+    TranslationUnit tu = ParseHelper.parse(tempFile);
     checkTranslationUnit(tu);
   }
 
@@ -67,50 +70,34 @@ public class HelperTest {
   public void testParseFromFileWithHeader() throws IOException, ParseTimeoutException {
     File tempFile = testFolder.newFile("shader.frag");
     BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
-    bw.write("arbitrary\nstuff\n" + ParseHelper.END_OF_HEADER + "\n" + TEST_PROGRAM);
+    bw.write("arbitrary\nstuff\n" + ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES + "\n" + TEST_PROGRAM);
     bw.close();
 
-    TranslationUnit tu = ParseHelper.parse(tempFile, true);
+    TranslationUnit tu = ParseHelper.parse(tempFile);
     checkTranslationUnit(tu);
   }
 
   private void checkTranslationUnit(TranslationUnit tu) {
     assertEquals(3, tu.getTopLevelDeclarations().size());
     Set<String> names =
-      tu.getTopLevelDeclarations()
-          .stream()
-          .filter(item -> item instanceof FunctionDefinition)
-          .map(item -> ((FunctionDefinition)item).getPrototype().getName())
-          .collect(Collectors.toSet());
+        tu.getTopLevelDeclarations()
+            .stream()
+            .filter(item -> item instanceof FunctionDefinition)
+            .map(item -> ((FunctionDefinition)item).getPrototype().getName())
+            .collect(Collectors.toSet());
     assertTrue(names.contains("foo"));
     assertTrue(names.contains("bar"));
     assertTrue(names.contains("baz"));
   }
 
   @Test
-  public void testParseLegacyHeader() throws Exception {
-    // Tests whether header of old receipient can be parsed; useful if we want to re-use old
-    // shader sets.
-    String program =
-        "#version 100\n"
-            + "\n"
-            + "#ifdef GL_ES\n"
-            + "precision mediump float;\n"
-            + "#endif\n"
-            + "void main() { }\n";
-    TranslationUnit tu = ParseHelper.parse(program, true);
-    assertEquals(1, tu.getTopLevelDeclarations().size());
-  }
-
-  @Test
   public void testParseCurrentHeaderNoMacros() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-    Helper.emitDefines(ps, ShadingLanguageVersion.WEBGL_SL,
-        false);
+    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps);
     ps.println(TEST_PROGRAM);
     ps.close();
-    TranslationUnit tu = ParseHelper.parse(tempFile, true);
+    TranslationUnit tu = ParseHelper.parse(tempFile);
     assertEquals(3, tu.getTopLevelDeclarations().size());
   }
 
@@ -118,18 +105,17 @@ public class HelperTest {
   public void testParseCurrentHeaderWithMacros() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-    Helper.emitDefines(ps, ShadingLanguageVersion.WEBGL_SL,
-        true);
+    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps);
     ps.println(TEST_PROGRAM);
     ps.close();
-    TranslationUnit tu = ParseHelper.parse(tempFile, true);
+    TranslationUnit tu = ParseHelper.parse(tempFile);
     assertEquals(3, tu.getTopLevelDeclarations().size());
   }
 
   @Test
   public void testQualifiers() throws Exception {
     final String prog = "in vec3 blah; out vec3 bloo; void foo(in float x, out float y);";
-    final TranslationUnit tu = ParseHelper.parse(prog, false);
+    final TranslationUnit tu = ParseHelper.parse(prog);
 
     assertEquals(3, tu.getTopLevelDeclarations().size());
     {
@@ -152,6 +138,94 @@ public class HelperTest {
       assertTrue(proto.getParameters().get(1).getType().hasQualifier(TypeQualifier.OUT_PARAM));
       assertFalse(proto.getParameters().get(1).getType().hasQualifier(TypeQualifier.SHADER_OUTPUT));
     }
+  }
+
+  @Test
+  public void testStripHeader() throws Exception {
+    final String withHeader =
+          "#version 310 es\n"
+        + "//WebGL\n"
+        + "//Some\n"
+        + "//Stuff\n"
+        + "// END OF GENERATED HEADER\n"
+        + "void main()\n"
+        + "{\n"
+        + "}\n";
+    final String expected =
+        "#version 310 es\n"
+            + "//WebGL\n"
+            + "void main()\n"
+            + "{\n"
+            + "}\n";
+    final InputStream is = new ByteArrayInputStream(withHeader.getBytes(StandardCharsets.UTF_8));
+    final InputStream strippedIs = ParseHelper.stripGraphicsFuzzDefines(is);
+    assertNotSame(is, strippedIs);
+    assertEquals(expected, getStringFromInputStream(strippedIs));
+  }
+
+  @Test
+  public void testStripHeader2() throws Exception {
+    final String withHeader =
+        "#version 440\n"
+            + "//Some\n"
+            + "//Stuff\n"
+            + "\n\n\n"
+            + "// END OF GENERATED HEADER\n"
+            + "void main()\n"
+            + "{\n"
+            + "}\n";
+    final String expected =
+        "#version 440\n"
+            + "void main()\n"
+            + "{\n"
+            + "}\n";
+    final InputStream is = new ByteArrayInputStream(withHeader.getBytes(StandardCharsets.UTF_8));
+    final InputStream strippedIs = ParseHelper.stripGraphicsFuzzDefines(is);
+    assertNotSame(is, strippedIs);
+    assertEquals(expected, getStringFromInputStream(strippedIs));
+  }
+
+  @Test
+  public void testStripHeader3() throws Exception {
+    final String withHeader =
+        "//Some\n"
+            + "//Stuff\n"
+            + "\n\n\n"
+            + "// END OF GENERATED HEADER\n"
+            + "void main()\n"
+            + "{\n"
+            + "}\n";
+    final String expected =
+        "void main()\n"
+            + "{\n"
+            + "}\n";
+    final InputStream is = new ByteArrayInputStream(withHeader.getBytes(StandardCharsets.UTF_8));
+    final InputStream strippedIs = ParseHelper.stripGraphicsFuzzDefines(is);
+    assertNotSame(is, strippedIs);
+    assertEquals(expected, getStringFromInputStream(strippedIs));
+  }
+
+
+  @Test
+  public void testDoNotStripHeader() throws Exception {
+    final String withHeader =
+        "#version 310 es\n"
+            + "//WebGL\n"
+            + "//Some\n"
+            + "//Stuff\n"
+            + "void main()\n"
+            + "{\n"
+            + "}\n";
+    final InputStream is = new ByteArrayInputStream(withHeader.getBytes(StandardCharsets.UTF_8));
+    final InputStream strippedIs = ParseHelper.stripGraphicsFuzzDefines(is);
+    assertSame(is, strippedIs);
+  }
+
+
+  private String getStringFromInputStream(InputStream strippedIs) throws IOException {
+    StringWriter writer = new StringWriter();
+    IOUtils.copy(strippedIs, writer, StandardCharsets.UTF_8);
+    return writer.toString();
   }
 
 }

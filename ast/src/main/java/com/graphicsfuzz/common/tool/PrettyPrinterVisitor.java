@@ -71,9 +71,12 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.util.Constants;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -86,20 +89,27 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   private int indentationCount = 0;
   private final PrintStream out;
   private boolean inFunctionDefinition = false;
+  private final boolean emitGraphicsFuzzDefines;
+  private final Optional<String> license;
+
 
   public PrettyPrinterVisitor(PrintStream out) {
-    this(out, DEFAULT_INDENTATION_WIDTH, DEFAULT_NEWLINE_SUPPLIER);
+    this(out, DEFAULT_INDENTATION_WIDTH,
+        DEFAULT_NEWLINE_SUPPLIER,
+        false,
+        Optional.empty());
   }
 
-  public PrettyPrinterVisitor(PrintStream out, int indentationWidth,
-        Supplier<String> newLineSupplier) {
+  public PrettyPrinterVisitor(PrintStream out,
+                              int indentationWidth,
+                              Supplier<String> newLineSupplier,
+                              boolean emitGraphicsFuzzDefines,
+                              Optional<String> license) {
     this.out = out;
     this.indentationWidth = indentationWidth;
     this.newLineSupplier = newLineSupplier;
-  }
-
-  private String newLine() {
-    return newLineSupplier.get();
+    this.emitGraphicsFuzzDefines = emitGraphicsFuzzDefines;
+    this.license = license;
   }
 
   /**
@@ -112,6 +122,20 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     new PrettyPrinterVisitor(new PrintStream(bytes)).visit(node);
     return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+  }
+
+  public static void emitShader(TranslationUnit shader,
+                                Optional<String> license,
+                                PrintStream stream,
+                                int indentationWidth,
+                                Supplier<String> newlineSupplier,
+                                boolean emitGraphicsFuzzDefines) {
+    new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier,
+        emitGraphicsFuzzDefines, license).visit(shader);
+  }
+
+  private String newLine() {
+    return newLineSupplier.get();
   }
 
   @Override
@@ -586,10 +610,23 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitTranslationUnit(TranslationUnit translationUnit) {
+
     if (translationUnit.hasShadingLanguageVersion()) {
       out.append("#version " + translationUnit.getShadingLanguageVersion().getVersionString()
           + "\n");
+      if (translationUnit.getShadingLanguageVersion().isWebGl()) {
+        out.append("//WebGL\n");
+      }
     }
+
+    if (license.isPresent()) {
+      out.append(license.get() + "\n");
+    }
+
+    if (emitGraphicsFuzzDefines) {
+      emitGraphicsFuzzDefines(out);
+    }
+
     super.visitTranslationUnit(translationUnit);
   }
 
@@ -641,6 +678,35 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       }
     }
     return result.toString();
+  }
+
+  public static void emitGraphicsFuzzDefines(PrintStream out) {
+    out.append("\n");
+    out.append("#ifdef GL_ES\n");
+    out.append("#ifdef GL_FRAGMENT_PRECISION_HIGH\n");
+    out.append("precision highp float;\n");
+    out.append("precision highp int;\n");
+    out.append("#else\n");
+    out.append("precision mediump float;\n");
+    out.append("precision mediump int;\n");
+    out.append("#endif\n");
+    out.append("#endif\n");
+    out.append("\n");
+    out.append("#ifndef REDUCER\n");
+    out.append("#define " + Constants.GLF_ZERO + "(X, Y)          (Y)\n");
+    out.append("#define " + Constants.GLF_ONE + "(X, Y)           (Y)\n");
+    out.append("#define " + Constants.GLF_FALSE + "(X, Y)         (Y)\n");
+    out.append("#define " + Constants.GLF_TRUE + "(X, Y)          (Y)\n");
+    out.append("#define " + Constants.GLF_IDENTITY + "(X, Y)      (Y)\n");
+    out.append("#define " + Constants.GLF_DEAD + "(X)             (X)\n");
+    out.append("#define " + Constants.GLF_FUZED + "(X)           (X)\n");
+    out.append("#define " + Constants.GLF_WRAPPED_LOOP + "(X)     X\n");
+    out.append("#define " + Constants.GLF_WRAPPED_IF_TRUE + "(X)  X\n");
+    out.append("#define " + Constants.GLF_WRAPPED_IF_FALSE + "(X) X\n");
+    out.append("#define " + Constants.GLF_SWITCH + "(X)           X\n");
+    out.append("#endif\n");
+    out.append("\n");
+    out.append(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES + "\n");
   }
 
 }

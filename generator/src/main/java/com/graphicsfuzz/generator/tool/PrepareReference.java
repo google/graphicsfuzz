@@ -18,17 +18,13 @@ package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.FloatLiteralReplacer;
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -123,7 +119,7 @@ public final class PrepareReference {
       boolean generateUniformBindings,
       ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException {
 
-    final ShaderJob shaderJob = fileOps.readShaderJobFile(referenceShaderJobFile, false);
+    final ShaderJob shaderJob = fileOps.readShaderJobFile(referenceShaderJobFile);
 
     prepareReference(
         shaderJob,
@@ -132,7 +128,7 @@ public final class PrepareReference {
         maxUniforms,
         generateUniformBindings);
 
-    fileOps.writeShaderJobFile(shaderJob, shadingLanguageVersion, outputShaderJobFile);
+    fileOps.writeShaderJobFile(shaderJob, outputShaderJobFile);
   }
 
   public static void prepareReference(ShaderJob shaderJob,

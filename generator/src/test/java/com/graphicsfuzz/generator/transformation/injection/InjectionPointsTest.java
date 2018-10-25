@@ -29,7 +29,7 @@ public class InjectionPointsTest {
   @Test
   public void testNoInjectAtStartOfSwitch() throws Exception {
     final String prog = "void main() { /* injection point */ switch(1) { /* not injection point */ default: /* injection point */ break; /* injection point */ } /* injection point */ }";
-    TranslationUnit tu = ParseHelper.parse(prog, false);
+    TranslationUnit tu = ParseHelper.parse(prog);
     List<IInjectionPoint> injectionPointList = new InjectionPoints(tu, new RandomWrapper(0), item -> true).getAllInjectionPoints();
     assertEquals(4, injectionPointList.size());
   }

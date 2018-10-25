@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.visitors.AstBuilder;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.parser.GLSLLexer;
 import com.graphicsfuzz.parser.GLSLParser;
 import com.graphicsfuzz.parser.GLSLParser.Translation_unitContext;
@@ -29,11 +30,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -48,64 +50,51 @@ import org.apache.commons.io.FilenameUtils;
 
 public class ParseHelper {
 
-  static final String END_OF_HEADER = "// END OF GENERATED HEADER";
+  public static final String END_OF_GRAPHICSFUZZ_DEFINES = "// END OF GENERATED HEADER";
 
-  public static Optional<TranslationUnit> maybeParseShader(File shader, boolean stripHeader)
+  public static Optional<TranslationUnit> maybeParseShader(File shader)
       throws IOException, ParseTimeoutException {
     return shader.isFile()
-        ? Optional.of(parse(shader, stripHeader))
+        ? Optional.of(parse(shader))
         : Optional.empty();
   }
 
-  public static synchronized TranslationUnit parse(File file, boolean stripHeader)
+  public static synchronized TranslationUnit parse(File file)
         throws IOException, ParseTimeoutException {
     return parseInputStream(new ByteArrayInputStream(FileUtils.readFileToByteArray(file)),
-          stripHeader, ShaderKind.fromExtension(FilenameUtils.getExtension(file.getName())));
+        ShaderKind.fromExtension(FilenameUtils.getExtension(file.getName())));
   }
 
   /**
    * Parses a shader from a given string.  The shader is assumed to be a fragment shader;
    * typically the shader kind is unimportant when we parse from strings.
    * @param string The shader text to be parsed.
-   * @param stripHeader True if and only if we should strip a header from the shader.
    * @return The parsed shader.
    * @throws IOException Thrown if parsing leads to an IO exception.
    * @throws ParseTimeoutException Thrown if parsing takes to long.
    */
-  public static synchronized TranslationUnit parse(String string, boolean stripHeader)
+  public static synchronized TranslationUnit parse(String string)
         throws IOException, ParseTimeoutException {
     return parseInputStream(new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8)),
-          stripHeader, ShaderKind.FRAGMENT);
-  }
-
-  private static synchronized TranslationUnit parseInputStream(InputStream input,
-        boolean stripHeader, ShaderKind shaderKind)
-        throws IOException, ParseTimeoutException {
-    TranslationUnit result;
-    if (stripHeader) {
-      ByteArrayOutputStream os = new ByteArrayOutputStream();
-      stripHeader(input, os);
-      byte[] fileContents = os.toByteArray();
-      return parseInputStream(new ByteArrayInputStream(fileContents), shaderKind);
-    }
-    return parseInputStream(input, shaderKind);
+        ShaderKind.FRAGMENT);
   }
 
   private static synchronized TranslationUnit parseInputStream(InputStream input,
                                                                ShaderKind shaderKind)
         throws IOException, ParseTimeoutException {
+    final InputStream strippedInput = stripGraphicsFuzzDefines(input);
     final int timeLimit = 60;
-
     ParseTreeListener listener =
-          new TimeoutParseTreeListener(
-                System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(timeLimit));
+        new TimeoutParseTreeListener(
+            System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(timeLimit));
     Translation_unitContext ctx;
     try {
       try {
-        ctx = tryFastParse(input, listener);
+        strippedInput.reset();
+        ctx = tryFastParse(strippedInput, listener);
       } catch (ParseCancellationException exception) {
-        input.reset();
-        ctx = slowParse(input, listener);
+        strippedInput.reset();
+        ctx = slowParse(strippedInput, listener);
       }
     } catch (ParseTimeoutRuntimeException exception) {
       throw new ParseTimeoutException(exception);
@@ -164,54 +153,47 @@ public class ParseHelper {
     return parser;
   }
 
-  public static void stripHeader(InputStream inputStream, OutputStream outputStream)
+  static InputStream stripGraphicsFuzzDefines(InputStream inputStream)
         throws IOException {
-
-    // We do two kinds of header stripping:
-    // (1) we strip the header from a variant, using END_OF_HEADER as a sentinel to know when to
-    //     stop.
-    // (2) we strip the header from a reference, which does not have END_OF_HEADER as a sentinel;
-    //     we do this via baked in knowledge of how the start of the reference will look.
-    //     Specifically, we chop once we have seen a balanced set of #ifdef and #endif macros.
-
-    boolean isVariant = containsEndOfHeader(inputStream);
+    if (!containsEndOfGraphicsFuzzDefines(inputStream)) {
+      return inputStream;
+    }
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     inputStream.reset();
     try (
-          BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(outputStream));
-          BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
-      boolean foundEndOfHeader = false;
-      int ifdefEndIfDepth = 0;
+        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(outputStream));
+        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+      boolean passedEndOfGraphicsFuzzDefines = false;
       String line;
       while ((line = br.readLine()) != null) {
-        if (!foundEndOfHeader) {
-          if (isVariant) {
-            if (line.trim().startsWith(END_OF_HEADER)) {
-              foundEndOfHeader = true;
-            }
-          } else {
-            if (line.trim().startsWith("#endif")) {
-              assert ifdefEndIfDepth > 0;
-              ifdefEndIfDepth--;
-              if (ifdefEndIfDepth == 0) {
-                foundEndOfHeader = true;
-              }
-            } else if (line.trim().startsWith("#ifdef")) {
-              ifdefEndIfDepth++;
-            }
-          }
-        } else {
+        if (passedEndOfGraphicsFuzzDefines
+            || isVersion(line)
+            || ShadingLanguageVersion.isWebGlHint(line)) {
           bw.write(line + "\n");
+        } else {
+          if (line.trim().startsWith(END_OF_GRAPHICSFUZZ_DEFINES)) {
+            passedEndOfGraphicsFuzzDefines = true;
+          }
         }
       }
     }
+    byte[] fileContents = outputStream.toByteArray();
+    return new ByteArrayInputStream(fileContents);
   }
 
-  private static boolean containsEndOfHeader(InputStream inputStream) throws IOException {
+  private static boolean isVersion(String line) {
+    Pattern pattern = Pattern.compile("\\s*#\\s*version\\s*\\d+\\s*\\w*\\s*");
+    Matcher matcher = pattern.matcher(line);
+    return matcher.find();
+  }
+
+  private static boolean containsEndOfGraphicsFuzzDefines(InputStream inputStream)
+      throws IOException {
     BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
     try {
       String line;
       while ((line = br.readLine()) != null) {
-        if (line.trim().startsWith(END_OF_HEADER)) {
+        if (line.trim().startsWith(END_OF_GRAPHICSFUZZ_DEFINES)) {
           return true;
         }
       }

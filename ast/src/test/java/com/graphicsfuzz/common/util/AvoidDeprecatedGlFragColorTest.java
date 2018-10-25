@@ -28,7 +28,7 @@ public class AvoidDeprecatedGlFragColorTest {
         + "void main() { blargh = vec4(0.0); }";
     final String prog = "void main() { "
         + OpenGlConstants.GL_FRAG_COLOR + " = vec4(0.0); }";
-    final TranslationUnit tu = ParseHelper.parse(prog, false);
+    final TranslationUnit tu = ParseHelper.parse(prog);
     AvoidDeprecatedGlFragColor.avoidDeprecatedGlFragColor(tu, "blargh");
     CompareAstsDuplicate.assertEqualAsts(expectedProg, tu);
   }

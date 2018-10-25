@@ -66,7 +66,7 @@ class PrettyPrint {
     try {
 
       long startTime = System.currentTimeMillis();
-      TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")), false);
+      TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")));
       long endTime = System.currentTimeMillis();
 
       prettyPrintShader(ns, tu);

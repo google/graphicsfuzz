@@ -26,8 +26,8 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.typing.Typer;
+import com.graphicsfuzz.util.Constants;
 import java.util.stream.Collectors;
 
 abstract class SimplifyExprReductionOpportunities
@@ -39,7 +39,7 @@ abstract class SimplifyExprReductionOpportunities
 
   SimplifyExprReductionOpportunities(
         TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     super(tu, context);
     this.typer = new Typer(tu, context.getShadingLanguageVersion());
     this.inLiveInjectedStmtOrDeclaration = false;

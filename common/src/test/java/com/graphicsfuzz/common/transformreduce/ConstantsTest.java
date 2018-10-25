@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.transformreduce;
 
 import com.graphicsfuzz.common.util.CheckUtilityClass;
+import com.graphicsfuzz.util.Constants;
 import org.junit.Test;
 
 public class ConstantsTest {

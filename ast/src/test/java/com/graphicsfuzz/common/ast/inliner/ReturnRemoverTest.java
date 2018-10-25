@@ -30,7 +30,7 @@ public class ReturnRemoverTest {
   @Test(expected = CannotRemoveReturnsException.class)
   public void testNoSwitch() throws Exception {
     final String program = "void main() { switch(2) { default: return; } }";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final FunctionDefinition fd = findFunctionDefinition(tu, "main");
     ReturnRemover.removeReturns(fd, ShadingLanguageVersion.GLSL_440);
   }
@@ -105,7 +105,7 @@ public class ReturnRemoverTest {
           + "  return foo_return_value;"
           + "}";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final FunctionDefinition fd = findFunctionDefinition(tu, "foo");
     ReturnRemover.removeReturns(fd, ShadingLanguageVersion.ESSL_300);
     CompareAstsDuplicate.assertEqualAsts(expected, tu);
@@ -151,7 +151,7 @@ public class ReturnRemoverTest {
           + "  }"
           + "}";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final FunctionDefinition fd = findFunctionDefinition(tu, "foo");
     ReturnRemover.removeReturns(fd, ShadingLanguageVersion.ESSL_300);
     CompareAstsDuplicate.assertEqualAsts(expected, tu);
@@ -176,7 +176,7 @@ public class ReturnRemoverTest {
           + "    }"
           + "  }"
           + "}";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final FunctionDefinition fd = findFunctionDefinition(tu, "foo");
     ReturnRemover.removeReturns(fd, ShadingLanguageVersion.ESSL_100);
     CompareAstsDuplicate.assertEqualAsts(expected, tu);
@@ -215,7 +215,7 @@ public class ReturnRemoverTest {
           + "  }"
           + "  return foo_return_value;"
           + "}";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final FunctionDefinition fd = findFunctionDefinition(tu, "foo");
     ReturnRemover.removeReturns(fd, ShadingLanguageVersion.ESSL_300);
     CompareAstsDuplicate.assertEqualAsts(expected, tu);
@@ -227,7 +227,7 @@ public class ReturnRemoverTest {
           + "  int x = 2;"
           + "  x++;"
           + "}";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final FunctionDefinition fd = findFunctionDefinition(tu, "foo");
     ReturnRemover.removeReturns(fd, ShadingLanguageVersion.ESSL_300);
     CompareAstsDuplicate.assertEqualAsts(program, tu);
@@ -238,7 +238,7 @@ public class ReturnRemoverTest {
     final String program = "int foo() {"
           + "  return 1 + 2 + 3 + 4;"
           + "}";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     final FunctionDefinition fd = findFunctionDefinition(tu, "foo");
     ReturnRemover.removeReturns(fd, ShadingLanguageVersion.ESSL_300);
     CompareAstsDuplicate.assertEqualAsts(program, tu);

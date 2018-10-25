@@ -49,8 +49,8 @@ public class ObfuscatorUnitTest {
     for (File originalShader : Util.getReferences()) {
       final Mat originalImage =
           Util.renderShaderIfNeeded(
-              shadingLanguageVersion, originalShader, temporaryFolder, false, fileOps);
-      final TranslationUnit tu = ParseHelper.parse(originalShader, false);
+              shadingLanguageVersion, originalShader, temporaryFolder, fileOps);
+      final TranslationUnit tu = ParseHelper.parse(originalShader);
       ImmutablePair<TranslationUnit, UniformsInfo> obfuscated
             = Obfuscator.obfuscate(tu,
             new UniformsInfo(

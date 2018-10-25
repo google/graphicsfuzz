@@ -18,7 +18,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
-import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.util.Constants;
 
 public class MacroNames {
 

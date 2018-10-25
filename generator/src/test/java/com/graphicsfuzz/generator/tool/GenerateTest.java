@@ -166,7 +166,7 @@ public class GenerateTest {
       bw.close();
     }
     String reference = "void main() { ; { ; ; ; }; ; { ; ; ; }; ; ; ; ; ; ; }";
-    TranslationUnit tu = ParseHelper.parse(reference, false);
+    TranslationUnit tu = ParseHelper.parse(reference);
     new DonateLiveCode(TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
         donorsFolder, GenerationParams.normal(ShaderKind.FRAGMENT), false)
         .apply(tu,

@@ -25,8 +25,8 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.typing.Typer;
+import com.graphicsfuzz.util.Constants;
 import java.util.HashMap;
 import java.util.Map;
 

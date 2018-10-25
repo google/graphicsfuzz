@@ -34,11 +34,11 @@ import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.SideEffectChecker;
 import com.graphicsfuzz.common.util.StructUtils;
+import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;
 import java.util.List;
 
@@ -48,13 +48,13 @@ public class StmtReductionOpportunities
   private final TranslationUnit tu;
 
   private StmtReductionOpportunities(TranslationUnit tu,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     super(tu, context);
     this.tu = tu;
   }
 
   static List<StmtReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-                                                          ReductionOpportunityContext context) {
+                                                          ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -63,7 +63,7 @@ public class StmtReductionOpportunities
 
   private static List<StmtReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     StmtReductionOpportunities finder =
           new StmtReductionOpportunities(tu, context);
     finder.visit(tu);

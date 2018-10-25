@@ -16,18 +16,16 @@
 
 package com.graphicsfuzz.common.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +35,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class PruneUniformsTest {
 
   @Rule
@@ -44,7 +45,8 @@ public class PruneUniformsTest {
 
   @Test
   public void testPruneOne() throws Exception {
-    final String program = "uniform float a;"
+    final String program = "#version 310 es\n"
+          + "uniform float a;"
           + "uniform float prune_b;"
           + "uniform int c;"
           + "void main() {"
@@ -70,7 +72,8 @@ public class PruneUniformsTest {
           + "  }\n"
           + "}\n";
 
-    final String expectedProgram = "uniform float a;"
+    final String expectedProgram = "#version 310 es\n"
+          + "uniform float a;"
           + "float prune_b = 23.0;"
           + "uniform int c;"
           + "void main() {"
@@ -99,7 +102,8 @@ public class PruneUniformsTest {
 
   @Test
   public void testPruneAll() throws Exception {
-    final String program = "uniform int liveI[10];"
+    final String program = "#version 310 es\n"
+          + "uniform int liveI[10];"
           + "uniform vec3 deadF[3];"
           + "uniform vec2 liveG, deadH;"
           + "uniform uint liveA, liveB;"
@@ -151,7 +155,8 @@ public class PruneUniformsTest {
           + "  }\n"
           + "}\n";
 
-    final String expectedProgram = "int liveI[10] = int[10](1, 2, 3, 4, 5, 6, 7, 8, 9, 10);"
+    final String expectedProgram = "#version 310 es\n"
+          + "int liveI[10] = int[10](1, 2, 3, 4, 5, 6, 7, 8, 9, 10);"
           + "vec3 deadF[3] = vec3[3](vec3(1.0, 2.0, 3.0), vec3(4.0, 5.0, 6.0), vec3(7.0, 8.0, 9.0));"
           + "vec2 deadH = vec2(258.0, 259.0);"
           + "vec2 liveG = vec2(256.0, 257.0);"
@@ -177,7 +182,7 @@ public class PruneUniformsTest {
     final File uniformsFile = temporaryFolder.newFile("uniforms.json");
     FileUtils.writeStringToFile(uniformsFile, uniforms, StandardCharsets.UTF_8);
     final UniformsInfo uniformsInfo = new UniformsInfo(uniformsFile);
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     assertTrue(PruneUniforms.prune(
         new GlslShaderJob(Optional.empty(), uniformsInfo, tu),
@@ -185,8 +190,17 @@ public class PruneUniformsTest {
         prefixList));
 
     final File shaderFile = temporaryFolder.newFile("shader.frag");
-    Helper.emitShader(ShadingLanguageVersion.ESSL_300,
-          tu, Optional.empty(), shaderFile);
+
+    try (PrintStream stream = new PrintStream(new FileOutputStream(shaderFile))) {
+      PrettyPrinterVisitor.emitShader(
+          tu,
+          Optional.empty(),
+          stream,
+          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
+          true
+      );
+    }
     final ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, shaderFile);
     assertEquals(0, execResult.res);
 
@@ -194,7 +208,7 @@ public class PruneUniformsTest {
     FileUtils.writeStringToFile(expectedUniformsFile, expectedUniforms, StandardCharsets.UTF_8);
 
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-          ParseHelper.parse(expectedProgram, false)),
+          ParseHelper.parse(expectedProgram)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
     assertEquals(new UniformsInfo(expectedUniformsFile).toString(),
           uniformsInfo.toString());

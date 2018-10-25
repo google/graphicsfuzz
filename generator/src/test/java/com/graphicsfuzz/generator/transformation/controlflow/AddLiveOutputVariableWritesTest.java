@@ -42,7 +42,7 @@ public class AddLiveOutputVariableWritesTest {
 
   @Test
   public void testGlFragColorWritesFragment100() throws Exception {
-    final TranslationUnit trivialTu = ParseHelper.parse(trivialProgram, false);
+    final TranslationUnit trivialTu = ParseHelper.parse(trivialProgram);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_100;
     final ShaderKind shaderKind = ShaderKind.FRAGMENT;
     applyTransformation(trivialTu, shadingLanguageVersion, shaderKind, 0);
@@ -51,7 +51,7 @@ public class AddLiveOutputVariableWritesTest {
 
   @Test
   public void testNoGlFragColorWritesVertex100() throws Exception {
-    final TranslationUnit trivialTu = ParseHelper.parse(trivialProgram, false);
+    final TranslationUnit trivialTu = ParseHelper.parse(trivialProgram);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_100;
     final ShaderKind shaderKind = ShaderKind.VERTEX;
     applyTransformation(trivialTu, shadingLanguageVersion, shaderKind, 0);
@@ -60,7 +60,7 @@ public class AddLiveOutputVariableWritesTest {
 
   @Test
   public void testNoGlFragColorWritesFragment310() throws Exception {
-    final TranslationUnit trivialTu = ParseHelper.parse(trivialProgram, false);
+    final TranslationUnit trivialTu = ParseHelper.parse(trivialProgram);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_300;
     final ShaderKind shaderKind = ShaderKind.FRAGMENT;
     applyTransformation(trivialTu, shadingLanguageVersion, shaderKind, 0);
@@ -74,7 +74,7 @@ public class AddLiveOutputVariableWritesTest {
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_300;
     final ShaderKind shaderKind = ShaderKind.VERTEX;
     for (int i = 0; i < 5; i++) {
-      final TranslationUnit trivialTu = ParseHelper.parse(trivialProgram, false);
+      final TranslationUnit trivialTu = ParseHelper.parse(trivialProgram);
       applyTransformation(trivialTu, shadingLanguageVersion, shaderKind, i);
       assertTrue(Arrays.asList(OpenGlConstants.GL_POSITION, OpenGlConstants.GL_POINT_SIZE)
           .contains(getBackedUpVariableName(trivialTu)));
@@ -84,7 +84,7 @@ public class AddLiveOutputVariableWritesTest {
   @Test
   public void testOutVariableWritesFragment310() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("layout(location = 0) out vec2 someoutvar;\n"
-        + "void main() { }", false);
+        + "void main() { }");
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_300;
     final ShaderKind shaderKind = ShaderKind.FRAGMENT;
     applyTransformation(tu, shadingLanguageVersion, shaderKind, 0);

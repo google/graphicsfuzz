@@ -20,10 +20,10 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,7 +40,7 @@ public class InlineStructifiedFieldReductionOpportunities extends ScopeTreeBuild
 
   static List<InlineStructifiedFieldReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item))

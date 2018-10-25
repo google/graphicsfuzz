@@ -36,10 +36,10 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
   @Test
   public void noEffectInRegularCode() throws Exception {
     final String original = "void main() { int a = 2; int b = 3; a + b + b; }";
-    final TranslationUnit tu = ParseHelper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original);
     final List<SimplifyExprReductionOpportunity> ops = CompoundExprToSubExprReductionOpportunities
-          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false, ShadingLanguageVersion.GLSL_440,
-                new RandomWrapper(0), null));
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new RandomWrapper(0), null, true));
     assertTrue(ops.isEmpty());
   }
 
@@ -55,7 +55,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
           + "void main() { }";
     final String expected4 = "void foo() { int a = 2; int b = 3; int c = 4; b + c; }"
           + "void main() { }";
-    final TranslationUnit tu = ParseHelper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original);
     check(false, original, expected1, expected2, expected3, expected4);
   }
 
@@ -83,7 +83,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
 
   private void check(boolean reduceEverywhere, String original, String... expected)
         throws IOException, ParseTimeoutException {
-    final TranslationUnit tu = ParseHelper.parse(original, false);
+    final TranslationUnit tu = ParseHelper.parse(original);
     List<SimplifyExprReductionOpportunity> ops =
           getOps(tu, reduceEverywhere);
     final Set<String> actualSet = new HashSet<>();
@@ -98,7 +98,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
     final Set<String> expectedSet = new HashSet<>();
     for (int i = 0; i < expected.length; i++) {
       expectedSet.add(PrettyPrinterVisitor
-            .prettyPrintAsString(ParseHelper.parse(expected[i], false)));
+            .prettyPrintAsString(ParseHelper.parse(expected[i])));
     }
     assertEquals(expectedSet, actualSet);
   }
@@ -106,8 +106,8 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
   private List<SimplifyExprReductionOpportunity> getOps(TranslationUnit tu,
         boolean reduceEverywhere) {
     return CompoundExprToSubExprReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReductionOpportunityContext(reduceEverywhere, ShadingLanguageVersion.GLSL_440,
-          new RandomWrapper(0), null));
+          new ReducerContext(reduceEverywhere, ShadingLanguageVersion.GLSL_440,
+          new RandomWrapper(0), null, true));
   }
 
 }

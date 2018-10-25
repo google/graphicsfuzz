@@ -22,8 +22,8 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ReplaceLoopCounter;
+import com.graphicsfuzz.util.Constants;
 
 public class LoopMergeReductionOpportunity extends AbstractReductionOpportunity {
 

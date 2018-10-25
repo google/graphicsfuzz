@@ -17,7 +17,6 @@
 package com.graphicsfuzz.reducer.tool;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -34,7 +33,7 @@ import com.graphicsfuzz.reducer.filejudge.FuzzingFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ImageGenErrorShaderFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ImageShaderFileJudge;
 import com.graphicsfuzz.reducer.filejudge.ValidatorErrorShaderFileJudge;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunityContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
 import com.graphicsfuzz.server.thrift.ImageComparisonMetric;
 import com.graphicsfuzz.shadersets.ExactImageFileComparator;
@@ -42,6 +41,7 @@ import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.LocalShaderDispatcher;
 import com.graphicsfuzz.shadersets.MetricImageFileComparator;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
@@ -473,17 +473,22 @@ public class Reduce {
       fileOps.deleteFile(new File(workDir, Constants.REDUCTION_INCOMPLETE));
     }
 
-    ShaderJob initialState =
+    final File shaderJobFile = new File(workDir, startingShaderJobShortName + ".json");
+    final ShaderJob initialState =
         fileOps.readShaderJobFile(
-            new File(workDir, startingShaderJobShortName + ".json"),
-            true);
+            shaderJobFile
+        );
+
+    final boolean emitGraphicsFuzzDefines =
+        fileOps.doesShaderJobUseGraphicsFuzzDefines(shaderJobFile);
 
     new ReductionDriver(
-        new ReductionOpportunityContext(
+        new ReducerContext(
             reduceEverywhere,
             shadingLanguageVersion,
             random,
-            idGenerator),
+            idGenerator,
+            emitGraphicsFuzzDefines),
         verbose,
         fileOps,
         initialState)
@@ -494,8 +499,6 @@ public class Reduce {
             workDir,
             stepLimit);
   }
-
-
 
   private static ShadingLanguageVersion getGlslVersionForShaderJob(
       File shaderFileJob,

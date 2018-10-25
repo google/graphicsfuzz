@@ -38,7 +38,7 @@ public class ConstCleanerTest {
             + "  int y = x + 2;"
             + "}";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
 
@@ -62,7 +62,7 @@ public class ConstCleanerTest {
             + "  int z = 2 + y;"
             + "}";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.GLSL_440);
 
@@ -85,7 +85,7 @@ public class ConstCleanerTest {
             + "  g2 = g1;"
             + "}";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
 
@@ -108,7 +108,7 @@ public class ConstCleanerTest {
         + "  g2 = g1;"
         + "}";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
 
@@ -130,7 +130,7 @@ public class ConstCleanerTest {
         + "void main() {"
         + "}";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.GLSL_440);
 
@@ -155,7 +155,7 @@ public class ConstCleanerTest {
         + "  g4 = 5;"
         + "}";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
 
@@ -173,7 +173,7 @@ public class ConstCleanerTest {
         + "}"
         + "void main() { }";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
 

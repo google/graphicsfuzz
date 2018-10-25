@@ -32,7 +32,7 @@ import java.util.List;
 public class UnwrapReductionOpportunities
       extends ReductionOpportunitiesBase<UnwrapReductionOpportunity> {
 
-  private UnwrapReductionOpportunities(TranslationUnit tu, ReductionOpportunityContext context) {
+  private UnwrapReductionOpportunities(TranslationUnit tu, ReducerContext context) {
     super(tu, context);
   }
 
@@ -45,7 +45,7 @@ public class UnwrapReductionOpportunities
    */
   static List<UnwrapReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
-        ReductionOpportunityContext context) {
+        ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
@@ -54,7 +54,7 @@ public class UnwrapReductionOpportunities
 
   private static List<UnwrapReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
-      ReductionOpportunityContext context) {
+      ReducerContext context) {
     UnwrapReductionOpportunities finder =
           new UnwrapReductionOpportunities(tu, context);
     finder.visit(tu);

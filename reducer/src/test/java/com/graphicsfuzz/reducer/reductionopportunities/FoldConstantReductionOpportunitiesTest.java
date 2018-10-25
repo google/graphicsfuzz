@@ -421,10 +421,10 @@ public class FoldConstantReductionOpportunitiesTest {
   }
 
   private void check(String before, int numOps, String after) throws IOException, ParseTimeoutException {
-    final TranslationUnit tu = ParseHelper.parse(before, false);
+    final TranslationUnit tu = ParseHelper.parse(before);
     final List<SimplifyExprReductionOpportunity> ops = FoldConstantReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReductionOpportunityContext(false,
-            ShadingLanguageVersion.ESSL_100, null, null));
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_100, null, null, true));
     ops.forEach(item -> item.applyReduction());
     CompareAsts.assertEqualAsts(after, tu);
     assertEquals(numOps, ops.size());

@@ -20,7 +20,6 @@ import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.util.ExecHelper;
-import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -48,8 +47,8 @@ public class PrettyPrinterVisitorTest {
         + "void main()\n"
         + "{\n"
         + "}\n";
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
@@ -72,7 +71,7 @@ public class PrettyPrinterVisitorTest {
         + PrettyPrinterVisitor.defaultIndent(3) + "break;\n"
         + PrettyPrinterVisitor.defaultIndent(2) + "}\n"
         + "}\n";
-    TranslationUnit tu = ParseHelper.parse(program, false);
+    TranslationUnit tu = ParseHelper.parse(program);
     CompareAstsDuplicate.assertEqualAsts(tu, tu.clone());
   }
 
@@ -81,8 +80,8 @@ public class PrettyPrinterVisitorTest {
     final String program = "struct foo {\n"
         + PrettyPrinterVisitor.defaultIndent(1) + "int data[10];\n"
         + "} ;\n\n";
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test(expected = RuntimeException.class)
@@ -92,8 +91,8 @@ public class PrettyPrinterVisitorTest {
     final String program = "struct foo {\n"
         + PrettyPrinterVisitor.defaultIndent(1) + "int data[10][20];\n"
         + "};\n";
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
@@ -101,8 +100,8 @@ public class PrettyPrinterVisitorTest {
     // const volatile is not useful here, but this is just to test that qualifier order is preserved.
     final String program = ""
         + "const volatile float x;\n\n";
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
@@ -116,8 +115,8 @@ public class PrettyPrinterVisitorTest {
         + "void main()\n"
         + "{\n"
         + "}\n";
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
@@ -142,8 +141,8 @@ public class PrettyPrinterVisitorTest {
         + "   barrier();\n"
         + "  }\n"
         + "}\n";
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
@@ -165,8 +164,8 @@ public class PrettyPrinterVisitorTest {
         + "{\n"
         + " T myT = T(S(1, 2), S(3, 4));\n"
         + "}\n";
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
@@ -190,8 +189,8 @@ public class PrettyPrinterVisitorTest {
         + "{\n"
         + " T myT = T(S(1, 2), S(3, 4));\n"
         + "}\n";
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
@@ -213,8 +212,8 @@ public class PrettyPrinterVisitorTest {
         + "{\n"
         + " T myT = T(S(1, 2), S(someS.a, 4));\n"
         + "}\n";
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
@@ -232,24 +231,24 @@ public class PrettyPrinterVisitorTest {
         + " X.a = 3;\n"
         + " Y.b = X.a;\n"
         + "}\n";
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
   public void testParseAndPrintVersion() throws Exception {
     final String program = "#\tversion 100\nvoid main() { }\n";
     final String expected = "#version 100\nvoid main()\n{\n}\n";
-    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
   public void testParseAndPrintVersionES() throws Exception {
     final String program = "#\tversion 310 es\nvoid main() { }\n";
     final String expected = "#version 310 es\nvoid main()\n{\n}\n";
-    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
@@ -258,48 +257,48 @@ public class PrettyPrinterVisitorTest {
         + "#\textension GL_EXT_gpu_shader5 : enable\nvoid main() { }";
     final String expected = ""
         + "#extension GL_EXT_gpu_shader5 : enable\nvoid main()\n{\n}\n";
-    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
   public void testParseAndPrintPragmaOptimizeOn() throws Exception {
     final String program = "#\tpragma optimize  ( on )\nvoid main() { }\n";
     final String expected = "#pragma optimize(on)\nvoid main()\n{\n}\n";
-    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
   public void testParseAndPrintPragmaOptimizeOff() throws Exception {
     final String program = "#pragma optimize  ( off )\nvoid main() { }\n";
     final String expected = "#pragma optimize(off)\nvoid main()\n{\n}\n";
-    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
   public void testParseAndPrintPragmaDebugOn() throws Exception {
     final String program = "#\tpragma debug  ( on )\nvoid main() { }\n";
     final String expected = "#pragma debug(on)\nvoid main()\n{\n}\n";
-    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
   public void testParseAndPrintPragmaDebugOff() throws Exception {
     final String program = "#\tpragma debug  (   off )\nvoid main() { }\n";
     final String expected = "#pragma debug(off)\nvoid main()\n{\n}\n";
-    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
   public void testParseAndPrintPragmaInvariantAll() throws Exception {
     final String program = "#\tpragma invariant  (   all )\nvoid main() { }\n";
     final String expected = "#pragma invariant(all)\nvoid main()\n{\n}\n";
-    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
   @Test
@@ -350,8 +349,8 @@ public class PrettyPrinterVisitorTest {
     FileUtils.writeStringToFile(shaderFile, "#version 410\n\n" + program, StandardCharsets.UTF_8);
     assertEquals(0, ToolHelper.runValidatorOnShader(ExecHelper.RedirectType.TO_BUFFER,
         shaderFile).res);
-    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program,
-        false)));
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
   }
 
 }

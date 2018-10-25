@@ -17,25 +17,18 @@
 package com.graphicsfuzz.generator;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.tool.EnabledTransformations;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.tool.GeneratorArguments;
 import com.graphicsfuzz.generator.tool.PrepareReference;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -108,7 +101,7 @@ public class ShaderProducer implements Runnable {
         LOGGER.info("Preparing shader job pair based on {}.", referenceShaderJobFile);
 
         final ShaderJob referenceShaderJob =
-            fileOps.readShaderJobFile(referenceShaderJobFile, false);
+            fileOps.readShaderJobFile(referenceShaderJobFile);
         final ShaderJob variantShaderJob = referenceShaderJob.clone();
 
         PrepareReference.prepareReference(

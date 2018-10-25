@@ -20,11 +20,10 @@ import static org.junit.Assert.assertEquals;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.AvoidDeprecatedGlFragColor;
-import com.graphicsfuzz.common.util.Helper;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -214,7 +213,6 @@ public class GeneratorUnitTest {
               shadingLanguageVersion,
               originalShader,
               temporaryFolder,
-              false,
               fileOps),
           skipRender);
     }
@@ -272,7 +270,7 @@ public class GeneratorUnitTest {
       ShadingLanguageVersion shadingLanguageVersion,
       Mat referenceImage,
       boolean skipRender) throws IOException, ParseTimeoutException, InterruptedException {
-    final TranslationUnit tu = ParseHelper.parse(originalShader, false);
+    final TranslationUnit tu = ParseHelper.parse(originalShader);
     if (!shadingLanguageVersion.supportedGlFragColor()) {
       AvoidDeprecatedGlFragColor.avoidDeprecatedGlFragColor(tu, Constants.GLF_COLOR);
     }
@@ -311,7 +309,6 @@ public class GeneratorUnitTest {
 
     fileOps.writeShaderJobFile(
         shaderJob,
-        shadingLanguageVersion,
         shaderJobFile
     );
     fileOps.areShadersValid(shaderJobFile, true);

@@ -34,7 +34,7 @@ public class FloatLiteralReplacerTest {
         + "}"
         + "void main() { }";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     final UniformsInfo uniformsInfo = new UniformsInfo();
     FloatLiteralReplacer.replace(tu, uniformsInfo, ShadingLanguageVersion.ESSL_100);
@@ -60,7 +60,7 @@ public class FloatLiteralReplacerTest {
         + "}"
         + "void main() { }";
 
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
 
     final UniformsInfo uniformsInfo = new UniformsInfo();
     FloatLiteralReplacer.replace(tu, uniformsInfo, ShadingLanguageVersion.GLSL_130);

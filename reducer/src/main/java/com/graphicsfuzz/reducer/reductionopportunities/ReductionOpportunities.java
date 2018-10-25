@@ -40,7 +40,7 @@ public final class ReductionOpportunities {
    */
   public static List<IReductionOpportunity> getReductionOpportunities(
       ShaderJob shaderJob,
-      ReductionOpportunityContext context,
+      ReducerContext context,
       ShaderJobFileOperations fileOps) {
     final List<IReductionOpportunity> opportunities = new ArrayList<>();
     for (IReductionOpportunityFinder<?> ros : Arrays.asList(

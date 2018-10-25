@@ -16,13 +16,10 @@
 
 package com.graphicsfuzz.reducer.tool;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.Helper;
-import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -45,7 +42,7 @@ public class Simplifier {
     }
     File inputShaderJobFile = new File(args[0]);
     ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    ShaderJob shaderJob = fileOps.readShaderJobFile(inputShaderJobFile, true);
+    ShaderJob shaderJob = fileOps.readShaderJobFile(inputShaderJobFile);
 
     // TODO: Warning: assumes only one shader fragment shader.
     LOGGER.warn("WARNING: assumes only fragment shaders.");
@@ -60,11 +57,9 @@ public class Simplifier {
 
 
     PrintStream ps = fileOps.getStdOut();
-    Helper.emitDefines(
-        ps,
-        ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(firstTwoLines),
-        true);
-    new PrettyPrinterVisitor(ps).visit(shaderJob.getShaders().get(0));
+    new PrettyPrinterVisitor(ps, PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+        PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER, true,
+        Optional.empty()).visit(shaderJob.getFragmentShader().get());
     ps.flush();
   }
 }

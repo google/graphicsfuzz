@@ -30,13 +30,13 @@ public class UnswitchifyReductionOpportunitiesTest {
   @Test
   public void testNotInjected() throws Exception {
     final String program = "void foo(int x) { switch(x) { case 0: default: break; } }";
-    final TranslationUnit tu = ParseHelper.parse(program, false);
+    final TranslationUnit tu = ParseHelper.parse(program);
     List<UnswitchifyReductionOpportunity> ops =
         UnswitchifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-              new ReductionOpportunityContext(false,
+              new ReducerContext(false,
               ShadingLanguageVersion.GLSL_130,
                     new RandomWrapper(0),
-                    null));
+                    null, true));
     assertEquals(0, ops.size());
   }
 

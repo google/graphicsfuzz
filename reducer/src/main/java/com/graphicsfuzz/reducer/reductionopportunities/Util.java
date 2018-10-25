@@ -17,7 +17,7 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
-import com.graphicsfuzz.common.transformreduce.Constants;
+import com.graphicsfuzz.util.Constants;
 
 class Util {
 

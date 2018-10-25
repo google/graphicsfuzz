@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.common.transformreduce;
+package com.graphicsfuzz.util;
 
 public final class Constants {
 
