@@ -122,7 +122,7 @@ public class ReducerUnitTest {
 
     for (int step = 0; step < 10; step++) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
-          new GlslShaderJob(Optional.empty(), Optional.of(tu), new UniformsInfo(), Optional.empty()),
+          new GlslShaderJob(Optional.empty(), new UniformsInfo(), tu),
           new ReductionOpportunityContext(false, shadingLanguageVersion, generator, idGenerator),
           fileOps);
       if (ops.isEmpty()) {
@@ -223,10 +223,9 @@ public class ReducerUnitTest {
 
       ShaderJob initialState = new GlslShaderJob(
           Optional.empty(),
-          Optional.of(tu),
           new UniformsInfo(
-              new File(FilenameUtils.removeExtension(shaderFile.getAbsolutePath()) + ".json")),
-          Optional.empty());
+             new File(FilenameUtils.removeExtension(shaderFile.getAbsolutePath()) + ".json")),
+          tu);
 
       final String shaderJobShortName = FilenameUtils.removeExtension(shaderFile.getName());
 
@@ -397,10 +396,9 @@ public class ReducerUnitTest {
     final TranslationUnit tu = ParseHelper.parse(shaderFile);
     final ShaderJob state = new GlslShaderJob(
         Optional.empty(),
-        Optional.of(tu),
         new UniformsInfo(new File(FilenameUtils.removeExtension(shaderFile.getAbsolutePath()) +
             ".json")),
-        Optional.empty());
+        tu);
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(), shaderFile.getName()));
     FileUtils.copyFile(shaderFile, new File(temporaryFolder.getRoot(),
         shaderJobShortName + ".json"));

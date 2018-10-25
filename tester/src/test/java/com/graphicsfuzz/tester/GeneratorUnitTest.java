@@ -295,9 +295,8 @@ public class GeneratorUnitTest {
 
     ShaderJob shaderJob = new GlslShaderJob(
         Optional.empty(),
-        Optional.of(tu),
         uniformsInfo,
-        Optional.empty()
+        tu
     );
     // e.g. "_matrix_mult"
     String suffixNoExtension = FilenameUtils.removeExtension(suffix);

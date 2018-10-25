@@ -24,37 +24,44 @@ import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.LayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class GlslShaderJob implements ShaderJob {
 
-  private final Optional<TranslationUnit> vertexShader;
-  private final Optional<TranslationUnit> fragmentShader;
-  private final UniformsInfo uniformsInfo;
   private final Optional<String> license;
+  private final UniformsInfo uniformsInfo;
+  private final List<TranslationUnit> shaders;
 
-  public GlslShaderJob(Optional<TranslationUnit> vertexShader,
-                       Optional<TranslationUnit> fragmentShader,
+  public GlslShaderJob(Optional<String> license,
                        UniformsInfo uniformsInfo,
-                       Optional<String> license) {
-    this.vertexShader = vertexShader;
-    this.fragmentShader = fragmentShader;
-    this.uniformsInfo = uniformsInfo;
+                       List<TranslationUnit> shaders) {
     this.license = license;
+    this.uniformsInfo = uniformsInfo;
+    this.shaders = new ArrayList<>();
+    final Set<ShaderKind> stagesSoFar = new HashSet<>();
+    for (TranslationUnit tu : shaders) {
+      if (stagesSoFar.contains(tu.getShaderKind())) {
+        throw new IllegalArgumentException("Attempt to create shader job with multiple shaders of"
+            + " kind " + tu.getShaderKind());
+      }
+      stagesSoFar.add(tu.getShaderKind());
+      this.shaders.add(tu);
+    }
   }
 
-  @Override
-  public Optional<TranslationUnit> getVertexShader() {
-    return vertexShader;
-  }
-
-  @Override
-  public Optional<TranslationUnit> getFragmentShader() {
-    return fragmentShader;
+  public GlslShaderJob(Optional<String> license,
+                       UniformsInfo uniformsInfo,
+                       TranslationUnit... shaders) {
+    this(license, uniformsInfo, Arrays.asList(shaders));
   }
 
   @Override
@@ -82,12 +89,9 @@ public class GlslShaderJob implements ShaderJob {
     }
     int nextBinding = 0;
 
-    for (Optional<TranslationUnit> maybeTu : Arrays.asList(vertexShader, fragmentShader)) {
-      if (!maybeTu.isPresent()) {
-        continue;
-      }
+    for (TranslationUnit tu : shaders) {
       final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
-      for (Declaration decl : maybeTu.get().getTopLevelDeclarations()) {
+      for (Declaration decl : tu.getTopLevelDeclarations()) {
         // For now we conservatively assume that there are no interface blocks, covering our
         // assumption that there are no existing bindings.
         assert !(decl instanceof InterfaceBlock);
@@ -126,7 +130,7 @@ public class GlslShaderJob implements ShaderJob {
           newTopLevelDeclarations.add(decl);
         }
       }
-      maybeTu.get().setTopLevelDeclarations(newTopLevelDeclarations);
+      tu.setTopLevelDeclarations(newTopLevelDeclarations);
     }
 
     // Add bindings to any uniforms not referenced in the shaders, so that we don't end up in
@@ -151,12 +155,9 @@ public class GlslShaderJob implements ShaderJob {
       assert getUniformsInfo().hasBinding(uniformName);
       getUniformsInfo().removeBinding(uniformName);
     }
-    for (Optional<TranslationUnit> maybeTu : Arrays.asList(vertexShader, fragmentShader)) {
-      if (!maybeTu.isPresent()) {
-        continue;
-      }
+    for (TranslationUnit tu : shaders) {
       final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
-      for (Declaration decl : maybeTu.get().getTopLevelDeclarations()) {
+      for (Declaration decl : tu.getTopLevelDeclarations()) {
         if (decl instanceof VariablesDeclaration) {
           // We are assuming that there are no plain uniforms - all uniforms should be in
           // interface blocks, which we shall remove.
@@ -176,7 +177,7 @@ public class GlslShaderJob implements ShaderJob {
           newTopLevelDeclarations.add(decl);
         }
       }
-      maybeTu.get().setTopLevelDeclarations(newTopLevelDeclarations);
+      tu.setTopLevelDeclarations(newTopLevelDeclarations);
     }
   }
 
@@ -192,23 +193,34 @@ public class GlslShaderJob implements ShaderJob {
 
   @Override
   public List<TranslationUnit> getShaders() {
-    final List<TranslationUnit> result = new ArrayList<>();
-    if (getVertexShader().isPresent()) {
-      result.add(getVertexShader().get());
-    }
-    if (getFragmentShader().isPresent()) {
-      result.add(getFragmentShader().get());
-    }
-    return result;
+    return Collections.unmodifiableList(shaders);
+  }
+
+  private Optional<TranslationUnit> getShaderOfGivenKind(ShaderKind shaderKind) {
+    return shaders.stream().filter(item -> item.getShaderKind().equals(shaderKind)).findAny();
+  }
+
+  @Override
+  public Optional<TranslationUnit> getVertexShader() {
+    return getShaderOfGivenKind(ShaderKind.VERTEX);
+  }
+
+  @Override
+  public Optional<TranslationUnit> getFragmentShader() {
+    return getShaderOfGivenKind(ShaderKind.FRAGMENT);
+  }
+
+  @Override
+  public Optional<TranslationUnit> getComputeShader() {
+    return getShaderOfGivenKind(ShaderKind.COMPUTE);
   }
 
   @Override
   public GlslShaderJob clone() {
     return new GlslShaderJob(
-        getVertexShader().map(TranslationUnit::clone),
-        getFragmentShader().map(TranslationUnit::clone),
+        getLicense(),
         new UniformsInfo(getUniformsInfo().toString()),
-        getLicense());
+        shaders.stream().map(TranslationUnit::clone).collect(Collectors.toList()));
   }
 
 }

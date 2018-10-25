@@ -1070,7 +1070,7 @@ public class ReductionOpportunitiesTest {
     final String json = "{ \"injectionSwitch\": { \"args\": [ 1.0, 2.0 ], " +
         "    \"func\": \"glUniform2f\", \"binding\": 0 } }";
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
-        Optional.of(tu), new UniformsInfo(json), Optional.empty());
+        new UniformsInfo(json), tu);
     shaderJob.removeUniformBindings();
 
     List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(

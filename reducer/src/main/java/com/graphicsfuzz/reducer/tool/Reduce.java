@@ -508,7 +508,12 @@ public class Reduce {
       return ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(
           fileOps.getFirstTwoLinesOfShader(shaderFileJob, ShaderKind.FRAGMENT));
     }
-    throw new RuntimeException("Shader version not specified in vertex or fragment shader.");
+    if (fileOps.doesShaderExist(shaderFileJob, ShaderKind.COMPUTE)) {
+      return ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(
+          fileOps.getFirstTwoLinesOfShader(shaderFileJob, ShaderKind.COMPUTE));
+    }
+    throw new RuntimeException("Shader version not specified in any shader associated with"
+        + "shader job " + shaderFileJob.getName());
   }
 
   private static String getStartingShaderJobShortName(

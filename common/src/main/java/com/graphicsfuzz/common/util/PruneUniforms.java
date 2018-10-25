@@ -67,22 +67,13 @@ public final class PruneUniforms {
     }
 
     for (String uniformName : candidatesForPruning.subList(0, numToPrune)) {
-      inlineUniform(shaderJob.getVertexShader(), shaderJob.getUniformsInfo(), uniformName);
-      inlineUniform(shaderJob.getFragmentShader(), shaderJob.getUniformsInfo(), uniformName);
+      for (TranslationUnit tu : shaderJob.getShaders()) {
+        inlineUniform(tu, shaderJob.getUniformsInfo(), uniformName);
+      }
       shaderJob.getUniformsInfo().removeUniform(uniformName);
     }
 
     return true;
-  }
-
-  private static void inlineUniform(
-      Optional<TranslationUnit> tu,
-      UniformsInfo uniformsInfo,
-      String uniformName) {
-    if (!tu.isPresent()) {
-      return;
-    }
-    inlineUniform(tu.get(), uniformsInfo, uniformName);
   }
 
   private static void inlineUniform(TranslationUnit tu, UniformsInfo uniformsInfo,

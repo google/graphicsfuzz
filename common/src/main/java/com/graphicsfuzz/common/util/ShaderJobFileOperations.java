@@ -174,10 +174,13 @@ public class ShaderJobFileOperations {
     //noinspection ConstantConditions
     shaderExists |= new File(shaderJobFileNoExtension + ".frag").isFile();
     shaderExists |= new File(shaderJobFileNoExtension + ".vert").isFile();
+    shaderExists |= new File(shaderJobFileNoExtension + ".comp").isFile();
 
     if (!shaderExists) {
       throw new FileNotFoundException(
-          "Cannot find vertex or fragment shader at " + shaderJobFileNoExtension + ".[vert/frag]");
+          "Cannot find vertex, fragment or compute shader at "
+              + shaderJobFileNoExtension
+              + ".[vert/frag/comp]");
     }
 
   }
@@ -338,16 +341,7 @@ public class ShaderJobFileOperations {
       ShaderKind shaderKind) {
     assertIsShaderJobFile(shaderJobFile);
     String shaderJobFileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
-
-    switch (shaderKind) {
-      case FRAGMENT:
-        return new File(shaderJobFileNoExtension + ".frag");
-      case VERTEX:
-        return new File(shaderJobFileNoExtension + ".vert");
-      default:
-        // fall through
-    }
-    throw new IllegalStateException("Missing case: " + shaderKind);
+    return new File(shaderJobFileNoExtension + "." + shaderKind.getFileExtension());
   }
 
   public boolean isDirectory(File file) {
@@ -430,17 +424,24 @@ public class ShaderJobFileOperations {
 
     assertIsShaderJobFile(shaderJobFile);
 
-    String shaderJobFilePrefix = FilenameUtils.removeExtension(shaderJobFile.toString());
-    final File vertexShaderFile = new File(shaderJobFilePrefix + ".vert");
-    final File fragmentShaderFile = new File(shaderJobFilePrefix + ".frag");
+    final String shaderJobFilePrefix = FilenameUtils.removeExtension(shaderJobFile.toString());
+
+    final List<TranslationUnit> translationUnits = new ArrayList<>();
+
+    for (String extension : Arrays.asList("vert", "frag", "comp")) {
+      final Optional<TranslationUnit> maybeTu =
+          ParseHelper.maybeParseShader(new File(shaderJobFilePrefix + "." + extension));
+      maybeTu.ifPresent(translationUnits::add);
+    }
+
     final File licenseFile = new File(shaderJobFilePrefix + ".license");
+
     return new GlslShaderJob(
-        ParseHelper.maybeParseShader(vertexShaderFile),
-        ParseHelper.maybeParseShader(fragmentShaderFile),
-        new UniformsInfo(shaderJobFile),
         licenseFile.exists()
             ? Optional.of(FileUtils.readFileToString(licenseFile, Charset.defaultCharset()))
-            : Optional.empty());
+            : Optional.empty(),
+        new UniformsInfo(shaderJobFile),
+        translationUnits);
   }
 
   public void readShaderJobFileToImageJob(File shaderJobFile, ImageJob imageJob)
@@ -632,21 +633,14 @@ public class ShaderJobFileOperations {
 
     String outputFileNoExtension = FilenameUtils.removeExtension(outputShaderJobFile.toString());
 
-    writeShader(
-        shaderJob.getVertexShader(),
-        shadingLanguageVersion,
-        ShaderKind.VERTEX,
-        shaderJob.getLicense(),
-        new File(outputFileNoExtension + ".vert")
-    );
-
-    writeShader(
-        shaderJob.getFragmentShader(),
-        shadingLanguageVersion,
-        ShaderKind.FRAGMENT,
-        shaderJob.getLicense(),
-        new File(outputFileNoExtension + ".frag")
-    );
+    for (TranslationUnit tu : shaderJob.getShaders()) {
+      writeShader(
+          tu,
+          shadingLanguageVersion,
+          shaderJob.getLicense(),
+          new File(outputFileNoExtension + "." + tu.getShaderKind().getFileExtension())
+      );
+    }
 
     //noinspection deprecation: OK for use inside this class.
     writeAdditionalInfo(
@@ -791,18 +785,14 @@ public class ShaderJobFileOperations {
   }
 
   private static void writeShader(
-      Optional<TranslationUnit> tu,
+      TranslationUnit tu,
       ShadingLanguageVersion shadingLanguageVersion,
-      ShaderKind shaderKind,
       Optional<String> license,
       File outputFile
   ) throws FileNotFoundException {
-    if (!tu.isPresent()) {
-      return;
-    }
     try (PrintStream stream = ps(outputFile)) {
       EmitShaderHelper.emitShader(
-          tu.get(),
+          tu,
           license,
           stream,
           PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
@@ -918,9 +908,10 @@ public class ShaderJobFileOperations {
     String fileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
     final File vertexShaderFile = new File(fileNoExtension + ".vert");
     final File fragmentShaderFile = new File(fileNoExtension + ".frag");
+    final File computeShaderFile = new File(fileNoExtension + ".comp");
 
-    if (!isFile(vertexShaderFile) && !isFile(fragmentShaderFile)) {
-      throw new IllegalStateException("No frag or vert shader found for " + shaderJobFile);
+    if (!isFile(vertexShaderFile) && !isFile(fragmentShaderFile) && !isFile(computeShaderFile)) {
+      throw new IllegalStateException("No frag, vert or comp shader found for " + shaderJobFile);
     }
 
     byte[] vertexData = isFile(vertexShaderFile)
@@ -929,9 +920,28 @@ public class ShaderJobFileOperations {
     byte[] fragmentData = isFile(fragmentShaderFile)
         ? readFileToByteArray(fragmentShaderFile)
         : new byte[0];
-    byte[] combinedData = new byte[vertexData.length + fragmentData.length];
-    System.arraycopy(vertexData, 0, combinedData, 0, vertexData.length);
-    System.arraycopy(fragmentData, 0, combinedData, vertexData.length, fragmentData.length);
+    byte[] computeData = isFile(computeShaderFile)
+        ? readFileToByteArray(computeShaderFile)
+        : new byte[0];
+    byte[] combinedData = new byte[vertexData.length + fragmentData.length + computeData.length];
+    System.arraycopy(
+        vertexData,
+        0,
+        combinedData,
+        0,
+        vertexData.length);
+    System.arraycopy(
+        fragmentData,
+        0,
+        combinedData,
+        vertexData.length,
+        fragmentData.length);
+    System.arraycopy(
+        computeData,
+        0,
+        combinedData,
+        vertexData.length + fragmentData.length,
+        computeData.length);
     return DigestUtils.md5Hex(combinedData);
   }
 

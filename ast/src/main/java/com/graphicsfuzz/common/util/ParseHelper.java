@@ -46,6 +46,7 @@ import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 
 public class ParseHelper {
 
@@ -60,17 +61,26 @@ public class ParseHelper {
 
   public static synchronized TranslationUnit parse(File file)
         throws IOException, ParseTimeoutException {
-    return parseInputStream(new ByteArrayInputStream(FileUtils.readFileToByteArray(file))
-    );
+    return parseInputStream(new ByteArrayInputStream(FileUtils.readFileToByteArray(file)),
+        ShaderKind.fromExtension(FilenameUtils.getExtension(file.getName())));
   }
 
+  /**
+   * Parses a shader from a given string.  The shader is assumed to be a fragment shader;
+   * typically the shader kind is unimportant when we parse from strings.
+   * @param string The shader text to be parsed.
+   * @return The parsed shader.
+   * @throws IOException Thrown if parsing leads to an IO exception.
+   * @throws ParseTimeoutException Thrown if parsing takes to long.
+   */
   public static synchronized TranslationUnit parse(String string)
         throws IOException, ParseTimeoutException {
-    return parseInputStream(new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8))
-    );
+    return parseInputStream(new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8)),
+        ShaderKind.FRAGMENT);
   }
 
-  private static synchronized TranslationUnit parseInputStream(InputStream input)
+  private static synchronized TranslationUnit parseInputStream(InputStream input,
+                                                               ShaderKind shaderKind)
         throws IOException, ParseTimeoutException {
     final InputStream strippedInput = stripHeader(input);
     final int timeLimit = 60;
@@ -90,7 +100,7 @@ public class ParseHelper {
       throw new ParseTimeoutException(exception);
     }
 
-    return AstBuilder.getTranslationUnit(ctx);
+    return AstBuilder.getTranslationUnit(ctx, shaderKind);
   }
 
   private static Translation_unitContext tryFastParse(
