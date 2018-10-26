@@ -126,7 +126,8 @@ public class VariableDeclReductionOpportunities
     if (!(parentMap.getParent(parentMap.getParent(vd)) instanceof BlockStmt)) {
       return false;
     }
-    // Fine to remove if in a dead context, a live context, or if no initializer.
+    // Fine to remove if in a dead context, a live context, if no initializer, or if
+    // initializer does not have side effects.
     return context.reduceEverywhere() || enclosingFunctionIsDead()
         || injectionTracker.enclosedByDeadCodeInjection()
         || isLiveInjection(variableDeclInfo)

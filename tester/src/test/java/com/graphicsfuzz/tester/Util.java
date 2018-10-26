@@ -18,18 +18,17 @@ package com.graphicsfuzz.tester;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.FileHelper;
-import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.common.util.ImageUtil;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -45,40 +44,41 @@ import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public final class Util {
-
-  static Map<String, Mat> referenceFileToImage = new HashMap<>();
 
   private Util() {
     // Utility class
   }
 
-  static File[] getReferences() {
+  static File[] getReferenceShaderJobFiles() {
     return new File(TestShadersDirectory.getTestShadersDirectory(), "references")
-        .listFiles((dir, name) -> name.endsWith(".frag"));
+        .listFiles((dir, name) -> name.endsWith(".json"));
   }
 
-  static Mat renderShaderIfNeeded(ShadingLanguageVersion shadingLanguageVersion, File originalShader,
-                                  TemporaryFolder temporaryFolder, ShaderJobFileOperations fileOps)
+  static File renderShader(ShadingLanguageVersion shadingLanguageVersion,
+                           File originalShader,
+                           TemporaryFolder temporaryFolder, ShaderJobFileOperations fileOps)
       throws IOException, InterruptedException, ParseTimeoutException {
-    if (!referenceFileToImage.containsKey(originalShader.getName())) {
-      referenceFileToImage.put(
-          originalShader.getName(),
-          validateAndGetImage(
-              ParseHelper.parse(originalShader),
-              Optional.empty(),
-              originalShader.getName() + ".reference.frag",
-              shadingLanguageVersion,
-              ShaderKind.FRAGMENT,
-              temporaryFolder,
-              fileOps)
-          );
+    final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShader);
+
+    // TODO: having to plug in the version here feels like a hack.  But this is due to the
+    // version not being present in the shaders in the repo, which means that the can be
+    // used for testing with multiple future versions.  There is a trade-off here to be revisited.
+    for (TranslationUnit tu : shaderJob.getShaders()) {
+      assert !tu.hasShadingLanguageVersion();
+      tu.setShadingLanguageVersion(shadingLanguageVersion);
     }
-    return referenceFileToImage.get(originalShader.getName());
+
+    return validateAndGetImage(
+            shaderJob,
+            originalShader.getName() + ".reference.frag",
+            temporaryFolder,
+            fileOps);
   }
 
-  static Mat validateAndGetImage(
+  static File validateAndGetImage(
       File shaderFile,
       TemporaryFolder temporaryFolder,
       ShaderJobFileOperations fileOps)
@@ -88,7 +88,7 @@ public final class Util {
     return getImage(shaderFile, temporaryFolder, fileOps);
   }
 
-  static Mat getImage(
+  static File getImage(
       File shaderFile,
       TemporaryFolder temporaryFolder,
       ShaderJobFileOperations fileOps) throws IOException, InterruptedException {
@@ -136,26 +136,12 @@ public final class Util {
     return shaderTranslatorArgs;
   }
 
-  static Mat validateAndGetImage(
-      TranslationUnit tu,
-      Optional<UniformsInfo> uniforms,
+  static File validateAndGetImage(
+      ShaderJob shaderJob,
       String fileName,
-      ShadingLanguageVersion shadingLanguageVersion,
-      ShaderKind shaderKind,
       TemporaryFolder temporaryFolder,
       ShaderJobFileOperations fileOps)
       throws IOException, InterruptedException {
-
-    // Using fileOps here, even though the rest of the code does not yet use it.
-    Assert.assertEquals(shaderKind, ShaderKind.FRAGMENT);
-    Assert.assertTrue(fileName.endsWith(".frag"));
-    Assert.assertTrue(uniforms.isPresent());
-
-    final ShaderJob shaderJob = new GlslShaderJob(
-        Optional.empty(),
-        uniforms.get(),
-        tu
-    );
 
     final File shaderJobFileOutput = new File(
         temporaryFolder.getRoot(),
@@ -170,7 +156,7 @@ public final class Util {
     return validateAndGetImage(tempFile, temporaryFolder, fileOps);
   }
 
-  static Mat getImageUsingSwiftshader(File shaderFile, TemporaryFolder temporaryFolder) throws IOException, InterruptedException {
+  static File getImageUsingSwiftshader(File shaderFile, TemporaryFolder temporaryFolder) throws IOException, InterruptedException {
     File imageFile = temporaryFolder.newFile();
     ExecResult res =
         ToolHelper.runSwiftshaderOnShader(RedirectType.TO_BUFFER,
@@ -181,13 +167,11 @@ public final class Util {
             32);
 
     assertEquals(0, res.res);
-    Mat mat = opencv_imgcodecs.imread(imageFile.getAbsolutePath());
-    assertNotNull(mat);
-    return mat;
+    return imageFile;
   }
 
   static File createDonorsFolder(TemporaryFolder temporaryFolder) throws IOException {
-    final File[] originalShaderFiles = Util.getReferences();
+    final File[] originalShaderFiles = Util.getReferenceShaderJobFiles();
     final File donorsFolder = temporaryFolder.newFolder();
     for (File originalShader : originalShaderFiles) {
       FileUtils.copyFile(originalShader,
@@ -196,16 +180,11 @@ public final class Util {
     return donorsFolder;
   }
 
-  static void assertImagesEquals(Mat first, Mat second) {
-    UByteIndexer firstI = first.createIndexer();
-    UByteIndexer secondI = second.createIndexer();
-    assertEquals(firstI.rows(), secondI.rows());
-    assertEquals(firstI.cols(), secondI.cols());
-    for (int y = 0; y < firstI.rows(); y++) {
-      for (int x = 0; x < firstI.cols(); x++) {
-        assertEquals(firstI.get(y, x), secondI.get(y, x));
-      }
-    }
-
+  static void assertImagesSimilar(File first, File second) throws FileNotFoundException {
+    // TODO: This has been made very generous, based on Swiftshader producing visually identical
+    // images with fairly high associated histogram distances.  If we find that bugs are slipping
+    // through we should revise this.
+    assertTrue(ImageUtil.compareHistograms(first, second) < 2000.0);
   }
+
 }
