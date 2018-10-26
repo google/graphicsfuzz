@@ -65,6 +65,12 @@ public class ParseHelper {
         ShaderKind.fromExtension(FilenameUtils.getExtension(file.getName())));
   }
 
+  public static synchronized TranslationUnit parse(String string, ShaderKind shaderKind)
+      throws IOException, ParseTimeoutException {
+    return parseInputStream(new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8)),
+        shaderKind);
+  }
+
   /**
    * Parses a shader from a given string.  The shader is assumed to be a fragment shader;
    * typically the shader kind is unimportant when we parse from strings.
@@ -75,8 +81,7 @@ public class ParseHelper {
    */
   public static synchronized TranslationUnit parse(String string)
         throws IOException, ParseTimeoutException {
-    return parseInputStream(new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8)),
-        ShaderKind.FRAGMENT);
+    return parse(string, ShaderKind.FRAGMENT);
   }
 
   private static synchronized TranslationUnit parseInputStream(InputStream input,

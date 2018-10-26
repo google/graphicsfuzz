@@ -137,23 +137,13 @@ public final class PrepareReference {
                                       int maxUniforms,
                                       boolean generateUniformBindings) {
 
-    shaderJob.getVertexShader().ifPresent(
-        tu -> prepareReferenceShader(
-            tu,
-            shadingLanguageVersion,
-            replaceFloatLiterals,
-            shaderJob.getUniformsInfo()
-        )
-    );
-
-    shaderJob.getFragmentShader().ifPresent(
-        tu -> prepareReferenceShader(
-            tu,
-            shadingLanguageVersion,
-            replaceFloatLiterals,
-            shaderJob.getUniformsInfo()
-        )
-    );
+    for (TranslationUnit tu : shaderJob.getShaders()) {
+      prepareReferenceShader(
+          tu,
+          shadingLanguageVersion,
+          replaceFloatLiterals,
+          shaderJob.getUniformsInfo());
+    }
 
     if (maxUniforms > 0 && shaderJob.getUniformsInfo().getNumUniforms() > maxUniforms) {
       throw new RuntimeException("Too many uniforms in reference shader job.");
@@ -172,6 +162,11 @@ public final class PrepareReference {
     if (replaceFloatLiterals) {
       FloatLiteralReplacer.replace(tu, uniformsInfo, shadingLanguageVersion);
     }
+    // TODO: at the moment we assume during generation that shaders do not have version strings.
+    // It may turn out to be good to change this, but for now we assert it to document the
+    // decision.
+    assert !tu.hasShadingLanguageVersion();
+    tu.setShadingLanguageVersion(shadingLanguageVersion);
   }
 
 }

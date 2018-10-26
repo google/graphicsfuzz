@@ -17,20 +17,18 @@
 package com.graphicsfuzz.tester;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.util.Constants;
-import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.AvoidDeprecatedGlFragColor;
 import com.graphicsfuzz.common.util.IdGenerator;
-import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
@@ -54,10 +52,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacpp.opencv_core.Mat;
+import org.bytedeco.javacpp.opencv_imgcodecs;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -91,8 +89,10 @@ public class GeneratorUnitTest {
     bw.write(shader);
     bw.close();
 
-    Mat mat = Util.getImageUsingSwiftshader(shaderFile, temporaryFolder);
-    UByteIndexer sI = mat.createIndexer();
+    final File image = Util.getImageUsingSwiftshader(shaderFile, temporaryFolder);
+    final Mat mat = opencv_imgcodecs.imread(image.getAbsolutePath());
+
+    final UByteIndexer sI = mat.createIndexer();
     for (int y = 0; y < sI.rows(); y++) {
       for (int x = 0; x < sI.cols(); x++) {
         if ((x % 3) == 2) {
@@ -187,14 +187,16 @@ public class GeneratorUnitTest {
   public void testWrap() throws Exception {
     testTransformationMultiVersions(() -> new AddWrappingConditionalStmts(),
         TransformationProbabilities.onlyWrap(),
-        "wrap.frag", Arrays.asList("prefix_sum.frag"), Arrays.asList("prefix_sum.frag"));
+        "wrap.frag",
+        Arrays.asList("colorgrid_modulo.json", "prefix_sum.json"),
+        Arrays.asList("colorgrid_modulo.json", "prefix_sum.json"));
   }
 
   private void testTransformation(List<ITransformationSupplier> transformations,
         TransformationProbabilities probabilities, String suffix, List<String> blacklist,
         ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, ParseTimeoutException, InterruptedException {
-    for (File originalShader : Util.getReferences()) {
+    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles()) {
       final List<ITransformation> transformationsList = new ArrayList<>();
       for (ITransformationSupplier supplier : transformations) {
         transformationsList.add(supplier.get());
@@ -203,17 +205,18 @@ public class GeneratorUnitTest {
       if (ignoreBlacklist) {
         skipRender = false;
       } else {
-        skipRender = (reverseBlacklist != blacklist.contains(originalShader.getName()));
+        skipRender = (reverseBlacklist != blacklist.contains(originalShaderJobFile.getName()));
       }
+      final File referenceImage = Util.renderShader(
+          ShadingLanguageVersion.ESSL_100, // The references are all in ESSL 1.00 format
+          originalShaderJobFile,
+          temporaryFolder,
+          fileOps);
       generateAndCheckVariant(transformationsList,
           probabilities,
           suffix,
-          originalShader, shadingLanguageVersion,
-          Util.renderShaderIfNeeded(
-              shadingLanguageVersion,
-              originalShader,
-              temporaryFolder,
-              fileOps),
+          originalShaderJobFile, shadingLanguageVersion,
+          referenceImage,
           skipRender);
     }
   }
@@ -266,45 +269,41 @@ public class GeneratorUnitTest {
   }
 
   private void generateAndCheckVariant(List<ITransformation> transformations,
-      TransformationProbabilities probabilities, String suffix, File originalShader,
+      TransformationProbabilities probabilities, String suffix, File originalShaderJobFile,
       ShadingLanguageVersion shadingLanguageVersion,
-      Mat referenceImage,
+      File referenceImage,
       boolean skipRender) throws IOException, ParseTimeoutException, InterruptedException {
-    final TranslationUnit tu = ParseHelper.parse(originalShader);
+    final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShaderJobFile);
+    assertEquals(1, shaderJob.getShaders().size());
+    assertEquals(ShaderKind.FRAGMENT, shaderJob.getShaders().get(0).getShaderKind());
+    final TranslationUnit tu = shaderJob.getShaders().get(0);
+
     if (!shadingLanguageVersion.supportedGlFragColor()) {
-      AvoidDeprecatedGlFragColor.avoidDeprecatedGlFragColor(tu, Constants.GLF_COLOR);
+      AvoidDeprecatedGlFragColor.avoidDeprecatedGlFragColor(shaderJob.getShaders().get(0),
+          Constants.GLF_COLOR);
     }
-    final RandomWrapper generator = new RandomWrapper(originalShader.getName().hashCode());
+    final RandomWrapper generator = new RandomWrapper(originalShaderJobFile.getName().hashCode());
     for (ITransformation transformation : transformations) {
       transformation.apply(tu, probabilities, shadingLanguageVersion,
           generator,
           GenerationParams.normal(ShaderKind.FRAGMENT));
     }
     Generate.addInjectionSwitchIfNotPresent(tu);
-    final UniformsInfo uniformsInfo = new UniformsInfo(
-          new File(FilenameUtils.removeExtension(originalShader.getAbsolutePath()) + ".json"));
-    Generate.setInjectionSwitch(uniformsInfo);
-    Generate.randomiseUnsetUniforms(tu, uniformsInfo, generator);
-
+    Generate.setInjectionSwitch(shaderJob.getUniformsInfo());
+    Generate.randomiseUnsetUniforms(tu, shaderJob.getUniformsInfo(), generator);
+    tu.setShadingLanguageVersion(shadingLanguageVersion);
 
     // Using fileOps, even though the rest of the code here does not use it yet.
     // Write shaders to shader job file and validate.
 
     Assert.assertTrue(suffix.endsWith(".frag"));
-    Assert.assertTrue(originalShader.getName().endsWith(".frag"));
-
-    ShaderJob shaderJob = new GlslShaderJob(
-        Optional.empty(),
-        uniformsInfo,
-        tu
-    );
     // e.g. "_matrix_mult"
-    String suffixNoExtension = FilenameUtils.removeExtension(suffix);
+    final String suffixNoExtension = FilenameUtils.removeExtension(suffix);
     // e.g. "temp/orig_matrix_mult.json"
-    File shaderJobFile =
+    final File shaderJobFile =
         Paths.get(
-            temporaryFolder.toString(),
-            originalShader.getName() + suffixNoExtension + ".json"
+            temporaryFolder.getRoot().getAbsolutePath(),
+            originalShaderJobFile.getName() + suffixNoExtension + ".json"
         ).toFile();
 
     fileOps.writeShaderJobFile(
@@ -316,8 +315,8 @@ public class GeneratorUnitTest {
     if (!skipRender) {
       File underlyingFragFile = fileOps.getUnderlyingShaderFile(shaderJobFile, ShaderKind.FRAGMENT);
       // TODO: Use fileOps.
-      final Mat variantImage = Util.getImage(underlyingFragFile, temporaryFolder, fileOps);
-      Util.assertImagesEquals(referenceImage, variantImage);
+      final File variantImage = Util.getImage(underlyingFragFile, temporaryFolder, fileOps);
+      Util.assertImagesSimilar(referenceImage, variantImage);
     }
 
   }

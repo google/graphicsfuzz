@@ -113,4 +113,15 @@ public class InlineInitializerReductionOpportunitiesTest {
     assertEquals(0, ops.size());
   }
 
+  @Test
+  public void testNoInliningIfPartsOfInitializerAreModifiedWhenPreservingSemantics() throws Exception {
+    final String program  = "void main() { int x = 2; int y = x; x = 3; y; }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+
+    List<SimplifyExprReductionOpportunity> ops =
+        InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
+    assertEquals(0, ops.size());
+  }
+
 }

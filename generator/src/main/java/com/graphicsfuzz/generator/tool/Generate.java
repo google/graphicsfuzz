@@ -171,16 +171,14 @@ public class Generate {
     }
     setInjectionSwitch(shaderJob.getUniformsInfo());
 
-    result.append(transformShader(
-        shaderJob,
-        ShaderKind.VERTEX,
-        random.spawnChild(),
-        args));
-    result.append(transformShader(
-        shaderJob,
-        ShaderKind.FRAGMENT,
-        random.spawnChild(),
-        args));
+    for (TranslationUnit tu : shaderJob.getShaders()) {
+      result.append(transformShader(
+          tu,
+          shaderJob,
+          random.spawnChild(),
+          args));
+      tu.setShadingLanguageVersion(args.getShadingLanguageVersion());
+    }
 
     if (args.limitUniforms()) {
       if (!(PruneUniforms.prune(shaderJob, args.getMaxUniforms(),
@@ -198,30 +196,21 @@ public class Generate {
 
   }
 
-  private static StringBuilder transformShader(ShaderJob shaderJob,
-                                               ShaderKind shaderKind,
+  private static StringBuilder transformShader(TranslationUnit shaderToTransform,
+                                               ShaderJob parentShaderJob,
                                                IRandom random,
                                                GeneratorArguments args) {
+    final ShaderKind shaderKind = shaderToTransform.getShaderKind();
     StringBuilder result = new StringBuilder();
     result.append("======\n" + shaderKind + ":\n");
-
-    TranslationUnit shaderToTransform;
-    if (shaderKind == ShaderKind.VERTEX && shaderJob.getVertexShader().isPresent()) {
-      shaderToTransform = shaderJob.getVertexShader().get();
-    } else if (shaderKind == ShaderKind.FRAGMENT && shaderJob.getFragmentShader().isPresent()) {
-      shaderToTransform = shaderJob.getFragmentShader().get();
-    } else {
-      result.append("No shader of this kind present.\n");
-      return result;
-    }
 
     if (args.getReplaceFloatLiterals()) {
       FloatLiteralReplacer.replace(
           shaderToTransform,
-          shaderJob.getUniformsInfo(),
+          parentShaderJob.getUniformsInfo(),
           args.getShadingLanguageVersion());
     }
-    shaderJob.getUniformsInfo().zeroUnsetUniforms(shaderToTransform);
+    parentShaderJob.getUniformsInfo().zeroUnsetUniforms(shaderToTransform);
 
     final GenerationParams generationParams =
             args.getSmall()
@@ -261,7 +250,7 @@ public class Generate {
       StripUnusedGlobals.strip(shaderToTransform);
     }
 
-    randomiseUnsetUniforms(shaderToTransform, shaderJob.getUniformsInfo(),
+    randomiseUnsetUniforms(shaderToTransform, parentShaderJob.getUniformsInfo(),
         random.spawnChild());
 
     return result;

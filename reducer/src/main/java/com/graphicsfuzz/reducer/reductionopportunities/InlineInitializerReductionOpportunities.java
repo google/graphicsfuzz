@@ -22,6 +22,7 @@ import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.ListConcat;
@@ -129,10 +130,22 @@ public class InlineInitializerReductionOpportunities
       // Do not mess with loop limiters.
       return false;
     }
-    if (initializerIsScalarAndSideEffectFree(variableDeclInfo)) {
+    if (initializerIsScalarAndSideEffectFree(variableDeclInfo)
+        && !referencesVariableIdentifier(variableDeclInfo.getInitializer())) {
+      // We need to be careful about inlining e.g.: "int x = y;", because if y is then modified,
+      // inlined uses of x would get the new value of y.
       return true;
     }
     return false;
+  }
+
+  private boolean referencesVariableIdentifier(Initializer initializer) {
+    return new CheckPredicateVisitor() {
+      @Override
+      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        predicateHolds();
+      }
+    }.test(initializer);
   }
 
   private boolean currentProgramPointHasNoEffect() {

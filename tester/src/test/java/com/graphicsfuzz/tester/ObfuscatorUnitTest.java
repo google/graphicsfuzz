@@ -18,21 +18,24 @@ package com.graphicsfuzz.tester;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.Obfuscator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import java.io.File;
 import java.util.Optional;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.bytedeco.javacpp.opencv_core.Mat;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertTrue;
 
 public class ObfuscatorUnitTest {
 
@@ -46,27 +49,23 @@ public class ObfuscatorUnitTest {
   public void testObfuscate() throws Exception {
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_100;
     final IRandom generator = new RandomWrapper(0);
-    for (File originalShader : Util.getReferences()) {
-      final Mat originalImage =
-          Util.renderShaderIfNeeded(
-              shadingLanguageVersion, originalShader, temporaryFolder, fileOps);
-      final TranslationUnit tu = ParseHelper.parse(originalShader);
-      ImmutablePair<TranslationUnit, UniformsInfo> obfuscated
-            = Obfuscator.obfuscate(tu,
-            new UniformsInfo(
-                  new File(FilenameUtils.removeExtension(originalShader.getAbsolutePath()) + ".json")),
-            generator,
-            ShadingLanguageVersion.ESSL_100);
-      final Mat obfuscatedImage =
+    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles()) {
+      final File originalImage =
+          Util.renderShader(
+              shadingLanguageVersion, originalShaderJobFile, temporaryFolder, fileOps);
+      final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShaderJobFile);
+      for (TranslationUnit tu : shaderJob.getShaders()) {
+        assert !tu.hasShadingLanguageVersion();
+        tu.setShadingLanguageVersion(ShadingLanguageVersion.ESSL_100);
+      }
+      final ShaderJob obfuscated = Obfuscator.obfuscate(shaderJob, generator);
+      final File obfuscatedImage =
           Util.validateAndGetImage(
-              obfuscated.getLeft(),
-              Optional.of(obfuscated.getRight()),
-              originalShader.getName() + ".obfuscated.frag",
-              shadingLanguageVersion,
-              ShaderKind.FRAGMENT,
+              obfuscated,
+              originalShaderJobFile.getName() + ".obfuscated.frag",
               temporaryFolder,
               fileOps);
-      Util.assertImagesEquals(originalImage, obfuscatedImage);
+      assertTrue(FileUtils.contentEquals(originalImage, obfuscatedImage));
     }
   }
 
