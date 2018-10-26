@@ -24,6 +24,7 @@ import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -380,6 +381,7 @@ public class Generate {
       // Keep the size down by stripping unused stuff.
       StripUnusedFunctions.strip(reference);
       StripUnusedGlobals.strip(reference);
+      assert canTypeCheckWithoutFailure(reference, args.getShadingLanguageVersion());
       done.add(transformation);
       if (transformations.isEmpty()) {
         transformations = done;
@@ -387,6 +389,14 @@ public class Generate {
       }
     }
     return result;
+  }
+
+  private static boolean canTypeCheckWithoutFailure(TranslationUnit reference,
+                                                    ShadingLanguageVersion shadingLanguageVersion) {
+    // Debugging aid: fail early if we end up messing up the translation unit so that type checking
+    // does not work.
+    new Typer(reference, shadingLanguageVersion);
+    return true;
   }
 
   private static boolean shaderLargeEnough(TranslationUnit tu, IRandom generator) {

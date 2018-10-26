@@ -16,10 +16,7 @@
 
 package com.graphicsfuzz.common.util;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import org.junit.Test;
 
 public class StripUnusedGlobalsTest {
@@ -55,8 +52,19 @@ public class StripUnusedGlobalsTest {
           + "}";
     final TranslationUnit tu = ParseHelper.parse(original);
     StripUnusedGlobals.strip(tu);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
-          PrettyPrinterVisitor.prettyPrintAsString(tu));
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testDoNotStripStruct() throws Exception {
+    final String original = ""
+        + "struct S { int a; };"
+        + "void main() {"
+        + "  S myS;"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    StripUnusedGlobals.strip(tu);
+    CompareAsts.assertEqualAsts(original, tu);
   }
 
 }

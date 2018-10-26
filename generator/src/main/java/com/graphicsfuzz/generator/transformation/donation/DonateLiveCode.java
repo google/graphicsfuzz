@@ -73,7 +73,7 @@ public class DonateLiveCode extends DonateCode {
       if (isLoopLimiter(vars.getKey(), type.getWithoutQualifiers())) {
         initializer = new ScalarInitializer(new IntConstantExpr("0"));
       } else {
-        initializer = getScalarInitializer(injectionPoint, type, true,
+        initializer = getScalarInitializer(injectionPoint, donationContext, type, true,
               generator, shadingLanguageVersion);
       }
       donatedStmts.add(new DeclarationStmt(

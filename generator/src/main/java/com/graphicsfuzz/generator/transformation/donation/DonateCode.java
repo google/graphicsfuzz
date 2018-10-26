@@ -39,6 +39,7 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IRandom;
@@ -284,15 +285,28 @@ public abstract class DonateCode implements ITransformation {
     }.getGlobalsFromShader(shader);
   }
 
-  final ScalarInitializer getScalarInitializer(IInjectionPoint injectionPoint, Type type,
-        boolean restrictToConst, IRandom generator, ShadingLanguageVersion shadingLanguageVersion) {
-    final boolean isConst = type instanceof QualifiedType && ((QualifiedType) type)
-          .hasQualifier(TypeQualifier.CONST);
+  final ScalarInitializer getScalarInitializer(IInjectionPoint injectionPoint,
+                                               DonationContext donationContext,
+                                               Type type,
+                                               boolean restrictToConst,
+                                               IRandom generator,
+                                               ShadingLanguageVersion shadingLanguageVersion) {
+    final boolean isConst = type.hasQualifier(TypeQualifier.CONST);
     try {
+
+      // We may need to generate an initializer for a free variable of struct type.  The struct
+      // will be present in the donor but not yet added to the recipient.  We thus make a
+      // temporary scope identical to the scope at the injection point, but with all of the
+      // structs from the donation context added.
+      final Scope scopeForFuzzing = injectionPoint.scopeAtInjectionPoint().shallowClone();
+      for (StructDefinitionType sdt : donationContext.getAvailableStructs()) {
+        scopeForFuzzing.addStructDefinition(sdt);
+      }
+
       return new ScalarInitializer(
             new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
                   .fuzzedConstructor(
-                        new Fuzzer(new FuzzingContext(injectionPoint.scopeAtInjectionPoint()),
+                        new Fuzzer(new FuzzingContext(scopeForFuzzing),
                             shadingLanguageVersion,
                               generator,
                               generationParams)

@@ -22,24 +22,29 @@ import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 class DonationContext {
 
-  private Stmt donorFragment;
-  private Map<String, Type> freeVariables;
-  private FunctionDefinition enclosingFunction;
+  private final Stmt donorFragment;
+  private final Map<String, Type> freeVariables;
+  private final List<StructDefinitionType> availableStructs;
+  private final FunctionDefinition enclosingFunction;
 
   DonationContext(Stmt donorFragment, Map<String, Type> freeVariables,
+      List<StructDefinitionType> availableStructs,
       FunctionDefinition enclosingFunction) {
     this.donorFragment = donorFragment;
     this.freeVariables = freeVariables;
+    this.availableStructs = availableStructs;
     this.enclosingFunction = enclosingFunction;
   }
 
@@ -49,6 +54,10 @@ class DonationContext {
 
   Map<String, Type> getFreeVariables() {
     return Collections.unmodifiableMap(freeVariables);
+  }
+
+  List<StructDefinitionType> getAvailableStructs() {
+    return Collections.unmodifiableList(availableStructs);
   }
 
   FunctionDefinition getEnclosingFunction() {

@@ -27,6 +27,7 @@ import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.BreakStmt;
 import com.graphicsfuzz.common.ast.stmt.ContinueStmt;
@@ -183,6 +184,18 @@ public class Fuzzer {
       } else {
         throw new FuzzedIntoACornerException();
       }
+    }
+    if (targetType instanceof StructNameType) {
+      final String structName = ((StructNameType) targetType).getName();
+      final StructDefinitionType sdt =
+          fuzzingContext.getCurrentScope().lookupStructName(structName);
+      if (sdt == null) {
+        throw new RuntimeException("Could not find a struct named " + structName + " in scope.");
+      }
+      assert sdt.getStructNameType().getName().equals(structName);
+      return new TypeConstructorExpr(structName, sdt.getFieldTypes()
+          .stream().map(item -> makeExpr(item, false, constContext, depth + 1))
+          .collect(Collectors.toList()));
     }
     throw new RuntimeException("Do not yet know how to make expr of type " + targetType.getClass());
 

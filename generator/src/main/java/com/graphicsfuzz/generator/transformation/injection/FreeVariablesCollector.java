@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
@@ -29,9 +30,9 @@ import java.util.Map;
 
 public class FreeVariablesCollector extends ScopeTreeBuilder {
 
-  private Stmt donorFragment;
+  private final Stmt donorFragment;
   private Scope enclosingScope;
-  private Map<String, Type> freeVariables;
+  private final Map<String, Type> freeVariables;
 
   public FreeVariablesCollector(TranslationUnit donor, Stmt donorFragment) {
     this.donorFragment = donorFragment;
