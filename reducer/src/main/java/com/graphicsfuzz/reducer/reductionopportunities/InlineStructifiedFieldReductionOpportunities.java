@@ -70,7 +70,8 @@ public class InlineStructifiedFieldReductionOpportunities extends ScopeTreeBuild
 
   public void findInliningOpportunities(StructNameType structType) {
     assert structType.getName().startsWith(Constants.STRUCTIFICATION_STRUCT_PREFIX);
-    final StructDefinitionType structDefinitionType = structDeclarations.get(structType);
+    final StructDefinitionType structDefinitionType =
+        currentScope.lookupStructName(structType.getName());
     for (String f : structDefinitionType.getFieldNames()) {
       if (!f.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
         continue;
@@ -80,7 +81,7 @@ public class InlineStructifiedFieldReductionOpportunities extends ScopeTreeBuild
         final StructNameType innerStructType =
             (StructNameType) structDefinitionType.getFieldType(f).getWithoutQualifiers();
         opportunities.add(new InlineStructifiedFieldReductionOpportunity(
-            structDefinitionType, structDeclarations.get(innerStructType), f, tu,
+            structDefinitionType, currentScope.lookupStructName(innerStructType.getName()), f, tu,
             getVistitationDepth()));
         findInliningOpportunities(innerStructType);
       }

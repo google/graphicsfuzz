@@ -21,6 +21,9 @@ import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
+import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.util.Constants;
@@ -35,12 +38,33 @@ public class StripUnusedGlobals extends ScopeTreeBuilder {
     new StripUnusedGlobals(tu);
   }
 
-  private Set<VariableDeclInfo> unusedGlobals;
+  private final Set<VariableDeclInfo> unusedGlobals;
+  private final Set<StructDefinitionType> unusedStructs;
 
   private StripUnusedGlobals(TranslationUnit tu) {
     this.unusedGlobals = new HashSet<>();
+    this.unusedStructs = new HashSet<>();
     visit(tu);
     sweep(tu);
+  }
+
+  @Override
+  public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+    if (variablesDeclaration.getBaseType().getWithoutQualifiers() instanceof StructDefinitionType) {
+      final StructDefinitionType sdt =
+          (StructDefinitionType) variablesDeclaration.getBaseType().getWithoutQualifiers();
+      if (sdt.hasStructNameType()) {
+        // Initially, assume it is unused
+        unusedStructs.add(sdt);
+      }
+    }
+    super.visitVariablesDeclaration(variablesDeclaration);
+  }
+
+  @Override
+  public void visitStructNameType(StructNameType structNameType) {
+    super.visitStructNameType(structNameType);
+    unusedStructs.remove(currentScope.lookupStructName(structNameType.getName()));
   }
 
   @Override
@@ -78,10 +102,19 @@ public class StripUnusedGlobals extends ScopeTreeBuilder {
           index++;
         }
       }
-      if (variablesDeclaration.getNumDecls() == 0) {
+      if (variablesDeclaration.getNumDecls() == 0
+          && !isUsedStructType(variablesDeclaration.getBaseType())) {
         tu.removeTopLevelDeclaration(variablesDeclaration);
       }
     }
+  }
+
+  private boolean isUsedStructType(Type type) {
+    if (!(type.getWithoutQualifiers() instanceof StructDefinitionType)) {
+      return false;
+    }
+    final StructDefinitionType sdt = (StructDefinitionType) type.getWithoutQualifiers();
+    return !unusedStructs.contains(sdt);
   }
 
 }

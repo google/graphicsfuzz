@@ -39,7 +39,6 @@ import java.util.Optional;
 
 public abstract class ScopeTreeBuilder extends StandardVisitor {
 
-  protected final Map<StructNameType, StructDefinitionType> structDeclarations;
   protected Scope currentScope;
   private Deque<BlockStmt> enclosingBlocks;
   private boolean addEncounteredParametersToScope;
@@ -47,7 +46,6 @@ public abstract class ScopeTreeBuilder extends StandardVisitor {
   private List<FunctionPrototype> encounteredFunctionPrototypes;
 
   protected ScopeTreeBuilder() {
-    this.structDeclarations = new HashMap<>();
     this.currentScope = new Scope(null);
     this.enclosingBlocks = new LinkedList<>();
     this.addEncounteredParametersToScope = false;
@@ -59,7 +57,7 @@ public abstract class ScopeTreeBuilder extends StandardVisitor {
   public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
     super.visitStructDefinitionType(structDefinitionType);
     if (structDefinitionType.hasStructNameType()) {
-      structDeclarations.put(structDefinitionType.getStructNameType(), structDefinitionType);
+      currentScope.addStructDefinition(structDefinitionType);
     }
   }
 

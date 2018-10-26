@@ -75,7 +75,8 @@ public class RemoveStructFieldReductionOpportunities extends ScopeTreeBuilder {
       return;
     }
 
-    final StructDefinitionType structDefinitionType = structDeclarations.get(structType);
+    final StructDefinitionType structDefinitionType =
+        currentScope.lookupStructName(structType.getName());
 
     for (String field : structDefinitionType.getFieldNames()) {
       if (!reachesOriginalVariable(structDefinitionType, field)
@@ -108,7 +109,7 @@ public class RemoveStructFieldReductionOpportunities extends ScopeTreeBuilder {
     final StructNameType fieldType =
         (StructNameType) structDefinitionType.getFieldType(field).getWithoutQualifiers();
     final StructDefinitionType nestedStruct =
-        structDeclarations.get(fieldType);
+        currentScope.lookupStructName(fieldType.getName());
     return nestedStruct.getFieldNames().stream()
           .anyMatch(item -> reachesOriginalVariable(nestedStruct, item));
   }

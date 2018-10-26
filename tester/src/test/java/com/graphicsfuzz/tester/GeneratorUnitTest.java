@@ -105,6 +105,12 @@ public class GeneratorUnitTest {
   }
 
   @Test
+  public void testStructify() throws Exception {
+    testTransformationMultiVersions(() -> new Structification(), TransformationProbabilities.DEFAULT_PROBABILITIES,
+        "structs.frag");
+  }
+
+  @Test
   public void testDeadJumps() throws Exception {
     testTransformationMultiVersions(() -> new AddJumpStmts(), TransformationProbabilities.onlyAddJumps(),
         "jumps.frag");

@@ -26,6 +26,7 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.transformation.injection.AvailableStructsCollector;
 import com.graphicsfuzz.generator.transformation.injection.FreeVariablesCollector;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,16 +93,21 @@ public class DonationContexts extends StandardVisitor {
   }
 
   DonationContext getDonationContext() {
-    Stmt donorFragment = donorFragments.get(generator.nextInt(donorFragments.size()));
-    FreeVariablesCollector collector = new FreeVariablesCollector(donor, donorFragment);
-    Stmt clonedDonorFragment = donorFragment.clone();
+    final Stmt donorFragment = donorFragments.get(generator.nextInt(donorFragments.size()));
+    final FreeVariablesCollector fvCollector = new FreeVariablesCollector(donor, donorFragment);
+    final AvailableStructsCollector asCollector =
+        new AvailableStructsCollector(donor, donorFragment);
+
+
+    final Stmt clonedDonorFragment = donorFragment.clone();
     if (clonedDonorFragment instanceof BlockStmt) {
       // If we got the donor fragment from a function body, it may not introduce a new scope.
       // We ensure that the donor fragment to be used in the
       // com.graphicsfuzz.generator.transformation.donation context does.
       ((BlockStmt) clonedDonorFragment).setIntroducesNewScope(true);
     }
-    return new DonationContext(clonedDonorFragment, collector.getFreeVariables(),
+    return new DonationContext(clonedDonorFragment, fvCollector.getFreeVariables(),
+          asCollector.getStructDefinitionTypes(),
           enclosingFunction.get(donorFragment));
   }
 

@@ -95,10 +95,14 @@ public class DonateDeadCode extends DonateCode {
         String newName = "donor_replacement" + name;
         substitution.put(name, newName);
 
-        final ScalarInitializer initializer = getScalarInitializer(injectionPoint, type,
-              type instanceof QualifiedType && ((QualifiedType) type)
+        final ScalarInitializer initializer = getScalarInitializer(
+            injectionPoint,
+            donationContext,
+            type,
+            type instanceof QualifiedType && ((QualifiedType) type)
                     .hasQualifier(TypeQualifier.CONST),
-              generator, shadingLanguageVersion);
+            generator,
+            shadingLanguageVersion);
 
         donatedStmts.add(new DeclarationStmt(
               new VariablesDeclaration(dropQualifiersThatCannotBeUsedForLocalVariable(type),

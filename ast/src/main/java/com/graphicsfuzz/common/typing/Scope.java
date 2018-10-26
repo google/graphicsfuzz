@@ -19,6 +19,7 @@ package com.graphicsfuzz.common.typing;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,10 +32,12 @@ import java.util.Optional;
 public class Scope {
 
   private final Map<String, ScopeEntry> variableMapping;
+  private final Map<String, StructDefinitionType> structMapping;
   private final Scope parent;
 
   public Scope(Scope parent) {
     this.variableMapping = new HashMap<>();
+    this.structMapping = new HashMap<>();
     this.parent = parent;
   }
 
@@ -48,6 +51,26 @@ public class Scope {
   public void add(String name, Type type, Optional<ParameterDecl> parameterDecl) {
     checkNameTypeAndParam(name, type, parameterDecl);
     variableMapping.put(name, new ScopeEntry(type, parameterDecl));
+  }
+
+  public void addStructDefinition(StructDefinitionType sdt) {
+    assert sdt.hasStructNameType();
+    structMapping.put(sdt.getStructNameType().getName(), sdt);
+  }
+
+  /**
+   * Look in current scope to see whether we have a struct definition type matching the struct name.
+   * @param structName Name of struct type.
+   * @return Corresponding struct definition, if found, otherwise null.
+   */
+  public StructDefinitionType lookupStructName(String structName) {
+    if (structMapping.containsKey(structName)) {
+      return structMapping.get(structName);
+    }
+    if (hasParent()) {
+      return getParent().lookupStructName(structName);
+    }
+    return null;
   }
 
   private void checkNameTypeAndParam(String name, Type type,
@@ -97,6 +120,17 @@ public class Scope {
     return Collections.unmodifiableList(result);
   }
 
+  public List<String> namesOfAllStructDefinitionsInScope() {
+    List<String> result = new ArrayList<>();
+    Scope scope = this;
+    while (scope != null) {
+      result.addAll(scope.structMapping.keySet());
+      scope = scope.parent;
+    }
+    result.sort(String::compareTo);
+    return Collections.unmodifiableList(result);
+  }
+
   public List<String> keys() {
     List<String> result = new ArrayList<>();
     result.addAll(variableMapping.keySet());
@@ -116,6 +150,9 @@ public class Scope {
     Scope result = new Scope(parent == null ? null : parent.shallowClone());
     for (Entry<String, ScopeEntry> entry : variableMapping.entrySet()) {
       result.variableMapping.put(entry.getKey(), entry.getValue());
+    }
+    for (Entry<String, StructDefinitionType> entry : structMapping.entrySet()) {
+      result.structMapping.put(entry.getKey(), entry.getValue());
     }
     return result;
   }
