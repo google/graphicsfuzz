@@ -60,14 +60,14 @@ public class TruncateLoopsTest {
 
   private void testProgram(String program, boolean isSane) throws IOException, ParseTimeoutException {
     TranslationUnit tu =  ParseHelper.parse(program);
-    new TruncateLoops(30, "webGL_", tu);
+    new TruncateLoops(30, "webGL_", tu, true);
     if(isSane) {
       CompareAstsDuplicate.assertEqualAsts(program, tu);
     } else {
       assertProgramsNotEqual(program, tu);
     }
     tu =  ParseHelper.parse(program);
-    new TruncateLoops(0, "webGL_", tu);
+    new TruncateLoops(0, "webGL_", tu, true);
     assertProgramsNotEqual(program, tu);
   }
 
