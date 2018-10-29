@@ -53,12 +53,15 @@ public class TruncateLoops extends StandardVisitor {
   private final int limit;
   private final TranslationUnit tu;
   private final String prefix;
+  private final boolean ignoreShortRunningForLoops;
   private int counter;
 
-  public TruncateLoops(int limit, String prefix, TranslationUnit tu) {
+  public TruncateLoops(int limit, String prefix, TranslationUnit tu,
+                       boolean ignoreShortRunningForLoops) {
     this.limit = limit;
     this.tu = tu;
     this.prefix = prefix;
+    this.ignoreShortRunningForLoops = ignoreShortRunningForLoops;
     counter = 0;
     visit(tu);
   }
@@ -66,7 +69,7 @@ public class TruncateLoops extends StandardVisitor {
   @Override
   public void visitForStmt(ForStmt forStmt) {
     super.visitForStmt(forStmt);
-    if (maybeLongRunning(forStmt)) {
+    if (!ignoreShortRunningForLoops || maybeLongRunning(forStmt)) {
       handleLoop(forStmt);
     }
   }
