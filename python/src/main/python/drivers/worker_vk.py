@@ -117,9 +117,11 @@ def prepareShaders(frag):
 
 ################################################################################
 
-def getImageVulkanAndroid(args, frag):
+def getImageVulkanAndroid(args, frag, skipRender):
 
-    app = 'vulkan.samples.vulkan_worker'
+    app = 'com.graphicsfuzz.vkworker'
+    if args.oldworker:
+        app = 'vulkan.samples.vulkan_worker'
 
     print('## ' + frag)
 
@@ -169,11 +171,14 @@ def getImageVulkanAndroid(args, frag):
 
     adb('push test.vert.spv test.frag.spv test.json /sdcard/graphicsfuzz/')
 
+    # Skip render
+    if skipRender:
+      adb('shell touch /sdcard/graphicsfuzz/SKIP_RENDER')
+
     # clean all buffers of logcat
     adb('logcat -b all -c')
 
-    runtestcmd = 'shell am start'
-    runtestcmd += ' -n ' + app + '/android.app.NativeActivity'
+    runtestcmd = 'shell am start ' + app + '/android.app.NativeActivity'
 
     print('* Will run: ' + runtestcmd)
     adb(runtestcmd)
@@ -224,15 +229,24 @@ def getImageVulkanAndroid(args, frag):
         adb('shell am force-stop ' + app)
         return 'timeout'
 
-    # Get the image and convert it to PNG
-    adb('pull /sdcard/graphicsfuzz/image.ppm')
-    if os.path.exists('image.ppm'):
-        subprocess.run('convert image.ppm image.png', shell=True)
-        return 'success'
+    # Get the image
+    if args.oldworker:
+        adb('pull /sdcard/graphicsfuzz/image.ppm')
+        if os.path.exists('image.ppm'):
+            subprocess.run('convert image.ppm image.png', shell=True)
+            return 'success'
+        else:
+            with open('log.txt', 'a') as f:
+                f.write('\nWEIRD ERROR: No crash detected but no image found on device ??\n')
+            return 'unexpected_error'
     else:
-        with open('log.txt', 'a') as f:
-            f.write('\nWEIRD ERROR: No crash detected but no image found on device ??\n')
-        return 'unexpected_error'
+        adb('pull /sdcard/graphicsfuzz/image.png')
+        if os.path.exists('image.png'):
+            return 'success'
+        else:
+            with open('log.txt', 'a') as f:
+                f.write('\nWEIRD ERROR: No crash detected but no image found on device ??\n')
+            return 'unexpected_error'
 
 ################################################################################
 
@@ -245,6 +259,8 @@ def doImageJob(args, imageJob):
 
     res = tt.ImageJobResult()
 
+    skipRender = imageJob.skipRender
+
     # Set nice defaults to fields we will not update anyway
     res.passSanityCheck = True
     res.log = 'Start: ' + name + '\n'
@@ -255,7 +271,7 @@ def doImageJob(args, imageJob):
     remove(png)
     remove(log)
 
-    getimageResult = getImageVulkanAndroid(args, fragFile)
+    getimageResult = getImageVulkanAndroid(args, fragFile, skipRender)
 
     # Try to get our own log file in any case
     if os.path.exists('log.txt'):
@@ -360,6 +376,11 @@ parser.add_argument(
 parser.add_argument(
     '--spirvopt',
     help='Enable spirv-opt with these optimisation flags (e.g. --spirvopt=-O)')
+
+parser.add_argument(
+    '--oldworker',
+    action='store_true',
+    help='Use old worker')
 
 args = parser.parse_args()
 
