@@ -69,12 +69,12 @@ def adb(adbargs, serial=None):
     adbcmd += ' ' + adbargs
 
     try:
-        p = subprocess.run(adbcmd, shell=True, timeout=TIMEOUT_ADB_CMD)
+        p = subprocess.run(adbcmd, shell=True, timeout=TIMEOUT_ADB_CMD, stdout=subprocess.PIPE, universal_newlines=True)
     except subprocess.TimeoutExpired as err:
         print('ERROR: adb command timed out: ' + err.cmd)
         return 1
     else:
-        return p.returncode
+        return p
 
 ################################################################################
 
@@ -199,16 +199,16 @@ def getImageVulkanAndroid(args, frag, skipRender):
         # although it is being started.
         time.sleep(0.1)
 
-        retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE')
+        retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE').returncode
         if retcode == 0:
             done = True
             break
 
-        retcode = adb('shell pidof ' + app + ' > /dev/null')
+        retcode = adb('shell pidof ' + app + ' > /dev/null').returncode
         if retcode == 1:
 
             # double check that no DONE file is present
-            retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE')
+            retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE').returncode
             if retcode == 0:
                 done = True
                 break
@@ -356,6 +356,15 @@ def get_service(server, args):
         return None, None
 
 ################################################################################
+
+def isDeviceOffline(serial):
+    devices = adb('devices').stdout.splitlines()
+    for d in devices:
+        if serial in d and 'offline' in d:
+            return True
+    return False
+
+################################################################################
 # Main
 
 parser = argparse.ArgumentParser()
@@ -404,6 +413,10 @@ service = None
 
 # Main loop
 while True:
+
+    if isDeviceOffline(os.environ['ANDROID_SERIAL']):
+        print('#### ABORT: device is offline')
+        exit(1)
 
     if not(service):
         service, token = get_service(server, args)
