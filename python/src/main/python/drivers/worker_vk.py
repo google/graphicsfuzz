@@ -157,6 +157,7 @@ def doImageJob(args, imageJob):
             if err.stderr:
                 res.log += 'STDERR:\n' + err.stderr + '\n'
             res.status = tt.JobStatus.UNEXPECTED_ERROR
+            return res
         except subprocess.TimeoutExpired as err:
             # spirv-opt timed out, early return
             res.log += 'Timeout from spirv-opt\n'
@@ -166,7 +167,8 @@ def doImageJob(args, imageJob):
                 res.log += 'STDOUT:\n' + err.stdout + '\n'
             if err.stderr:
                 res.log += 'STDERR:\n' + err.stderr + '\n'
-            return 'err_spirvopt'
+            res.status = tt.JobStatus.UNEXPECTED_ERROR
+            return res
 
         shutil.move('test.frag.spv.opt', 'test.frag.spv')
 
