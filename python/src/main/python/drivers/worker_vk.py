@@ -37,6 +37,8 @@ from thrift.transport import THttpClient, TTransport
 from thrift.Thrift import TApplicationException
 from thrift.protocol import TBinaryProtocol
 
+import vkrun
+
 ################################################################################
 # Timeouts, in seconds
 
@@ -115,138 +117,6 @@ def prepareShaders(frag):
     cmd = glslang + ' test.vert -V -o test.vert.spv'
     subprocess.run(cmd, shell=True, check=True)
 
-################################################################################
-
-def getImageVulkanAndroid(args, frag, skipRender):
-
-    app = 'com.graphicsfuzz.vkworker'
-    if args.oldworker:
-        app = 'vulkan.samples.vulkan_worker'
-
-    print('## ' + frag)
-
-    remove('image.ppm')
-    remove('image.png')
-    adb('shell rm -rf /sdcard/graphicsfuzz/*')
-
-    prepareShaders(frag)
-
-    # Optimize
-    if args.spirvopt:
-        cmd = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/spirv-opt ' + args.spirvopt + ' test.frag.spv -o test.frag.spv.opt'
-        try:
-            print('Calling spirv-opt')
-            subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True, timeout=TIMEOUT_SPIRVOPT)
-        except subprocess.CalledProcessError as err:
-            # spirv-opt failed, early return
-            with open('log.txt', 'w') as f:
-                f.write('Error triggered by spirv-opt\n')
-                f.write('COMMAND:\n' + err.cmd + '\n')
-                f.write('RETURNCODE: ' + str(err.returncode) + '\n')
-                if err.stdout:
-                    f.write('STDOUT:\n' + err.stdout + '\n')
-                if err.stderr:
-                    f.write('STDERR:\n' + err.stderr + '\n')
-            return 'err_spirvopt'
-        except subprocess.TimeoutExpired as err:
-            # spirv-opt timed out, early return
-            with open('log.txt', 'w') as f:
-                f.write('Timeout from spirv-opt\n')
-                f.write('COMMAND:\n' + err.cmd + '\n')
-                f.write('TIMEOUT: ' + str(err.timeout) + ' sec\n')
-                if err.stdout:
-                    f.write('STDOUT:\n' + err.stdout + '\n')
-                if err.stderr:
-                    f.write('STDERR:\n' + err.stderr + '\n')
-            return 'err_spirvopt'
-
-        shutil.move('test.frag.spv.opt', 'test.frag.spv')
-
-    # FIXME: Clean up preparation of shader files. Right now it's
-    # convenient to have a copy of the JSON with the original name of
-    # the variant, for debugging purpose, but otherwise it is a
-    # redundant file.
-    jsonFile = frag.replace('.frag', '.json')
-    shutil.copy(jsonFile, 'test.json')
-
-    adb('push test.vert.spv test.frag.spv test.json /sdcard/graphicsfuzz/')
-
-    # Skip render
-    if skipRender:
-      adb('shell touch /sdcard/graphicsfuzz/SKIP_RENDER')
-
-    # clean all buffers of logcat
-    adb('logcat -b all -c')
-
-    runtestcmd = 'shell am start ' + app + '/android.app.NativeActivity'
-
-    print('* Will run: ' + runtestcmd)
-    adb(runtestcmd)
-
-    # Wait for DONE file, or timeout
-    deadline = time.time() + TIMEOUT_APP
-
-    crash = False
-    done = False
-
-    # Busy-wait on the worker (not ideal, but there is no simple way to receive
-    # a signal when the app is done)
-    while time.time() < deadline:
-
-        # Begin the busy-wait loop by sleeping to let the app start
-        # properly. Apparently the -W flag of adb is not enough to be sure the
-        # app has started, which can lead to failure to detect pid for this app
-        # although it is being started.
-        time.sleep(0.1)
-
-        retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE').returncode
-        if retcode == 0:
-            done = True
-            break
-
-        retcode = adb('shell pidof ' + app + ' > /dev/null').returncode
-        if retcode == 1:
-
-            # double check that no DONE file is present
-            retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE').returncode
-            if retcode == 0:
-                done = True
-                break
-
-            # No pid, and no DONE file, this looks like a crash indeed.
-            crash = True
-            break
-
-    # Try to retrieve the log file in any case
-    adb('pull /sdcard/graphicsfuzz/log.txt')
-
-    if crash:
-        print('Crash detected')
-        return 'crash'
-
-    if not done:
-        print('Timeout detected (force-stop app)')
-        adb('shell am force-stop ' + app)
-        return 'timeout'
-
-    # Get the image
-    if args.oldworker:
-        adb('pull /sdcard/graphicsfuzz/image.ppm')
-        if os.path.exists('image.ppm'):
-            subprocess.run('convert image.ppm image.png', shell=True)
-            return 'success'
-        else:
-            with open('log.txt', 'a') as f:
-                f.write('\nWEIRD ERROR: No crash detected but no image found on device ??\n')
-            return 'unexpected_error'
-    else:
-        adb('pull /sdcard/graphicsfuzz/image.png')
-        if os.path.exists('image.png'):
-            return 'success'
-        else:
-            with open('log.txt', 'a') as f:
-                f.write('\nWEIRD ERROR: No crash detected but no image found on device ??\n')
-            return 'unexpected_error'
 
 ################################################################################
 
@@ -255,7 +125,7 @@ def doImageJob(args, imageJob):
     fragFile = name + '.frag'
     jsonFile = name + '.json'
     png = 'image.png'
-    log = 'log.txt'
+    log = 'vklog.txt'
 
     res = tt.ImageJobResult()
 
@@ -267,47 +137,86 @@ def doImageJob(args, imageJob):
 
     writeToFile(imageJob.fragmentSource, fragFile)
     writeToFile(imageJob.uniformsInfo, jsonFile)
+    prepareShaders(fragFile)
+    shutil.copy(jsonFile, 'test.json')
+
+    # Optimize
+    if args.spirvopt:
+        cmd = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/spirv-opt ' + args.spirvopt + ' test.frag.spv -o test.frag.spv.opt'
+        try:
+            res.log += 'spirv-opt flags: ' + args.spirvopt + '\n'
+            print('Calling spirv-opt with flags: ' + args.spirvopt)
+            subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True, timeout=TIMEOUT_SPIRVOPT)
+        except subprocess.CalledProcessError as err:
+            # spirv-opt failed, early return
+            res.log += 'Error triggered by spirv-opt\n'
+            res.log += 'COMMAND:\n' + err.cmd + '\n'
+            res.log += 'RETURNCODE: ' + str(err.returncode) + '\n'
+            if err.stdout:
+                res.log += 'STDOUT:\n' + err.stdout + '\n'
+            if err.stderr:
+                res.log += 'STDERR:\n' + err.stderr + '\n'
+            res.status = tt.JobStatus.UNEXPECTED_ERROR
+        except subprocess.TimeoutExpired as err:
+            # spirv-opt timed out, early return
+            res.log += 'Timeout from spirv-opt\n'
+            res.log += 'COMMAND:\n' + err.cmd + '\n'
+            res.log += 'TIMEOUT: ' + str(err.timeout) + ' sec\n'
+            if err.stdout:
+                res.log += 'STDOUT:\n' + err.stdout + '\n'
+            if err.stderr:
+                res.log += 'STDERR:\n' + err.stderr + '\n'
+            return 'err_spirvopt'
+
+        shutil.move('test.frag.spv.opt', 'test.frag.spv')
 
     remove(png)
     remove(log)
 
-    getimageResult = getImageVulkanAndroid(args, fragFile, skipRender)
+    vkrun.run_android('test.vert.spv', 'test.frag.spv', 'test.json')
 
-    # Try to get our own log file in any case
-    if os.path.exists('log.txt'):
-        res.log += '\n#### LOG START\n'
+    has_log = os.path.exists(log)
+    has_png = os.path.exists(png)
+
+    if has_log:
         with open(log, 'r') as f:
             res.log += f.read()
-        res.log += '\n#### LOG END\n'
 
-    # Early return if something failed even before we started the app
-    if getimageResult == 'err_spirvopt':
-        res.status = tt.JobStatus.UNEXPECTED_ERROR
+    pngcontent = ''
+    if has_png:
+        with open(png, 'rb') as f:
+            pngcontent = f.read()
+
+    # Success
+    if has_log and has_png:
+        assert('GFZVK DONE' in res.log)
+        res.status = tt.JobStatus.SUCCESS
+        # may not have PNG when render_skip
+        if has_png:
+            res.PNG = pngcontent
         return res
 
-    # Always add ADB logcat
-    res.log += '\n#### ADB LOGCAT START\n'
-    adb('logcat -b crash -b system -b main -b events -d > logcat.txt')
-    if os.path.exists('logcat.txt'):
-        # ADB logcat may have characters that do not respect UTF-8, so ignore errors
-        with io.open('logcat.txt', 'r', errors='ignore') as f:
-            res.log += f.read()
-    else:
-        res.log += 'Cannot even retrieve ADB logcat ??'
-    res.log += '\n#### ADB LOGCAT END\n'
+    # Error
+    if has_log:
 
-    if getimageResult == 'crash':
-        res.status = tt.JobStatus.CRASH
-    elif getimageResult == 'timeout':
-        res.status = tt.JobStatus.TIMEOUT
-    elif getimageResult == 'unexpected_error':
-        res.status = tt.JobStatus.UNEXPECTED_ERROR
-    else:
-        assert(getimageResult == 'success')
-        res.status = tt.JobStatus.SUCCESS
-        with open(png, 'rb') as f:
-            res.PNG = f.read()
+        if 'GFZVK CRASH' in res.log:
+            res.status = tt.JobStatus.CRASH
+        elif 'GFZVK TIMEOUT' in res.log:
+            res.status = tt.JobStatus.TIMEOUT
+        else:
+            res.status = tt.JobStatus.UNEXPECTED_ERROR
 
+        if has_png:
+            res.PNG = pngcontent
+
+        return res
+
+    # Unexpected error
+    res.status = tt.JobStatus.UNEXPECTED_ERROR
+    if has_png:
+        res.PNG = pngcontent
+    if not has_log:
+        res.log += 'Cannot even retrieve log?\n'
     return res
 
 ################################################################################
@@ -385,11 +294,6 @@ parser.add_argument(
 parser.add_argument(
     '--spirvopt',
     help='Enable spirv-opt with these optimisation flags (e.g. --spirvopt=-O)')
-
-parser.add_argument(
-    '--oldworker',
-    action='store_true',
-    help='Use old worker')
 
 args = parser.parse_args()
 
