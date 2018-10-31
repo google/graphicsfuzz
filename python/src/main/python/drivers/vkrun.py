@@ -132,6 +132,8 @@ def run_android(vert, frag, json):
         if done:
             f.write('\nGFZVK DONE\n')
         else:
+            # Something went wrong, make sure to stop the app in any case
+            adb('shell am force-stop ' + ANDROID_APP)
             if crash:
                 f.write('\nGFZVK CRASH\n')
             else:
