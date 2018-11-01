@@ -191,11 +191,14 @@ def doImageJob(args, imageJob):
 
     # Success
     if has_log and has_png:
-        assert('GFZVK DONE' in res.log)
-        res.status = tt.JobStatus.SUCCESS
         # may not have PNG when render_skip
         if has_png:
             res.PNG = pngcontent
+        if not('GFZVK DONE' in res.log):
+            res.log += '\nHas log and PNG but cannot find GFZVK DONE?\n'
+            res.status = tt.JobStatus.UNEXPECTED_ERROR
+        else:
+            res.status = tt.JobStatus.SUCCESS
         return res
 
     # Error
