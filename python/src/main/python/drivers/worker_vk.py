@@ -175,7 +175,7 @@ def doImageJob(args, imageJob):
     remove(png)
     remove(log)
 
-    vkrun.run_android('test.vert.spv', 'test.frag.spv', 'test.json')
+    vkrun.run_android('test.vert.spv', 'test.frag.spv', 'test.json', skipRender)
 
     has_log = os.path.exists(log)
     has_png = os.path.exists(png)
