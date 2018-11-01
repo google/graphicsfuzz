@@ -175,7 +175,10 @@ def doImageJob(args, imageJob):
     remove(png)
     remove(log)
 
-    vkrun.run_android('test.vert.spv', 'test.frag.spv', 'test.json', skipRender)
+    if args.linux:
+        vkrun.run_linux('test.vert.spv', 'test.frag.spv', 'test.json', skipRender)
+    else:
+        vkrun.run_android('test.vert.spv', 'test.frag.spv', 'test.json', skipRender)
 
     has_log = os.path.exists(log)
     has_png = os.path.exists(png)
@@ -292,6 +295,11 @@ parser.add_argument(
     help='adb (Android Debug Bridge) ID of the device to run tests on. Run "adb devices" to list these IDs')
 
 parser.add_argument(
+    '--linux',
+    action='store_true',
+    help='Use Linux worker')
+
+parser.add_argument(
     '--server',
     default='http://localhost:8080',
     help='Server URL (default: http://localhost:8080 )')
@@ -307,23 +315,21 @@ print('token: ' + args.token)
 server = args.server + '/request'
 print('server: ' + server)
 
-# Set device ID
-if args.adbID:
-    os.environ['ANDROID_SERIAL'] = args.adbID
-else:
-    if 'ANDROID_SERIAL' not in os.environ:
-        print('Please set ANDROID_SERIAL env variable, or use --adbID')
-        exit(1)
-
-# Prepare device
-adb('shell mkdir -p /sdcard/graphicsfuzz/')
+if not args.linux:
+    # Set device ID
+    if args.adbID:
+        os.environ['ANDROID_SERIAL'] = args.adbID
+    else:
+        if 'ANDROID_SERIAL' not in os.environ:
+            print('Please set ANDROID_SERIAL env variable, or use --adbID')
+            exit(1)
 
 service = None
 
 # Main loop
 while True:
 
-    if isDeviceOffline(os.environ['ANDROID_SERIAL']):
+    if not args.linux and isDeviceOffline(os.environ['ANDROID_SERIAL']):
         print('#### ABORT: device is offline')
         exit(1)
 

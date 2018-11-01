@@ -68,6 +68,7 @@ def run_linux(vert, frag, json, skip_render):
 
     cmd = 'vkworker ' + vert + ' ' + frag + ' ' + json + ' > ' + LOGFILE
     subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN)
+    time.sleep(0.2)
 
 ################################################################################
 # Android
