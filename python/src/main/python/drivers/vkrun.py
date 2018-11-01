@@ -61,6 +61,7 @@ def run_linux(vert, frag, json):
     assert(os.path.exists(json))
     cmd = 'vkworker ' + vert + ' ' + frag + ' ' + json + ' > ' + LOGFILE
     subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN)
+    time.sleep(0.2)
 
 ################################################################################
 # Android
