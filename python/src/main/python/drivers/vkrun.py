@@ -55,12 +55,28 @@ def prepare_shader(shader):
 ################################################################################
 # Linux
 
-def run_linux(vert, frag, json):
+def run_linux(vert, frag, json, skip_render):
     assert(os.path.exists(vert))
     assert(os.path.exists(frag))
     assert(os.path.exists(json))
+
+    if skip_render:
+        with open('SKIP_RENDER', 'w') as f:
+            f.write('SKIP_RENDER')
+    elif os.path.exists('SKIP_RENDER'):
+        os.remove('SKIP_RENDER')
+
     cmd = 'vkworker ' + vert + ' ' + frag + ' ' + json + ' > ' + LOGFILE
-    subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN)
+    status = 'SUCCESS'
+    try:
+        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+    except subprocess.TimeoutExpired as err:
+        status = 'TIMEOUT'
+    except subprocess.CalledProcessError as err:
+        status = 'CRASH'
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
 
 ################################################################################
 # Android
@@ -81,7 +97,7 @@ def adb(adbargs):
     else:
         return p
 
-def run_android(vert, frag, json):
+def run_android(vert, frag, json, skip_render):
     assert(os.path.exists(vert))
     assert(os.path.exists(frag))
     assert(os.path.exists(json))
@@ -91,6 +107,11 @@ def run_android(vert, frag, json):
     adb('push ' + vert + ' ' + ANDROID_SDCARD + '/test.vert.spv')
     adb('push ' + frag + ' ' + ANDROID_SDCARD + '/test.frag.spv')
     adb('push ' + json + ' ' + ANDROID_SDCARD + '/test.json')
+
+
+    if skip_render:
+        adb('shell touch ' + ANDROID_SDCARD + '/SKIP_RENDER')
+
     adb('logcat -c')
     adb('shell am start ' + ANDROID_APP + '/android.app.NativeActivity')
 
@@ -128,16 +149,18 @@ def run_android(vert, frag, json):
     # Grab log
     adb('logcat -d > ' + LOGFILE)
 
-    with open(LOGFILE, 'a') as f:
-        if done:
-            f.write('\nGFZVK DONE\n')
-        else:
-            # Something went wrong, make sure to stop the app in any case
-            adb('shell am force-stop ' + ANDROID_APP)
-            if crash:
-                f.write('\nGFZVK CRASH\n')
-            else:
-                f.write('\nGFZVK TIMEOUT\n')
+    status = 'SUCCESS'
+    if crash:
+        status = 'CRASH'
+    elif not done:
+        status = 'TIMEOUT'
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
+
+    if status != 'SUCCESS':
+        # Something went wrong, make sure to stop the app in any case
+        adb('shell am force-stop ' + ANDROID_APP)
 
     # Grab image if present
     imagepath = ANDROID_SDCARD + '/image.png'
@@ -156,8 +179,10 @@ if __name__ == '__main__':
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-a', '--android', action='store_true', help='Render on Android')
-    group.add_argument('-s', '--serial', help='Android device serial ID. Implies --android')
+    group.add_argument('-i', '--serial', help='Android device serial ID. Implies --android')
     group.add_argument('-l', '--linux', action='store_true', help='Render on Linux')
+
+    parser.add_argument('-s', '--skip-render', action='store_true', help='Skip render')
 
     parser.add_argument('vert', help='Vertex shader: shader.vert[.asm|.spv]')
     parser.add_argument('frag', help='Fragment shader: shader.frag[.asm|.spv]')
@@ -170,10 +195,10 @@ if __name__ == '__main__':
 
     if args.serial:
         os.environ['ANDROID_SERIAL'] = args.serial
-        run_android(vert, frag, args.json)
+        run_android(vert, frag, args.json, args.skip_render)
 
     if args.android:
-        run_android(vert, frag, args.json)
+        run_android(vert, frag, args.json, args.skip_render)
 
     if args.linux:
-        run_linux(vert, frag, args.json)
+        run_linux(vert, frag, args.json, args.skip_render)
