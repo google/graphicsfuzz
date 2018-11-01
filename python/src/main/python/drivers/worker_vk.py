@@ -62,24 +62,6 @@ def remove(f):
 
 ################################################################################
 
-def adb(adbargs, serial=None):
-
-    adbcmd = 'adb'
-    if serial:
-        adbcmd += ' -s {}'.format(serial)
-
-    adbcmd += ' ' + adbargs
-
-    try:
-        p = subprocess.run(adbcmd, shell=True, timeout=TIMEOUT_ADB_CMD, stdout=subprocess.PIPE, universal_newlines=True)
-    except subprocess.TimeoutExpired as err:
-        print('ERROR: adb command timed out: ' + err.cmd)
-        return 1
-    else:
-        return p
-
-################################################################################
-
 def prepareVertFile():
     vertFilename = 'test.vert'
     vertFileDefaultContent = '''#version 310 es
@@ -180,51 +162,31 @@ def doImageJob(args, imageJob):
     else:
         vkrun.run_android('test.vert.spv', 'test.frag.spv', 'test.json', skipRender)
 
-    has_log = os.path.exists(log)
-    has_png = os.path.exists(png)
-
-    if has_log:
+    if os.path.exists(log):
         with open(log, 'r') as f:
             res.log += f.read()
 
-    pngcontent = ''
-    if has_png:
+    if os.path.exists(png):
         with open(png, 'rb') as f:
-            pngcontent = f.read()
+            res.PNG = f.read()
 
-    # Success
-    if has_log and has_png:
-        # may not have PNG when render_skip
-        if has_png:
-            res.PNG = pngcontent
-        if not('GFZVK DONE' in res.log):
-            res.log += '\nHas log and PNG but cannot find GFZVK DONE?\n'
-            res.status = tt.JobStatus.UNEXPECTED_ERROR
-        else:
+    if os.path.exists('STATUS'):
+        with open('STATUS', 'r') as f:
+            status = f.read().rstrip()
+        if status == 'SUCCESS':
             res.status = tt.JobStatus.SUCCESS
-        return res
-
-    # Error
-    if has_log:
-
-        if 'GFZVK CRASH' in res.log:
+        elif status == 'CRASH':
             res.status = tt.JobStatus.CRASH
-        elif 'GFZVK TIMEOUT' in res.log:
+        elif status == 'TIMEOUT':
             res.status = tt.JobStatus.TIMEOUT
         else:
+            res.log += '\nUnknown status value: ' + status + '\n'
             res.status = tt.JobStatus.UNEXPECTED_ERROR
+    else:
+        # Not even a status file?
+        res.log += '\nNo STATUS file\n'
+        res.status = tt.JobStatus.UNEXPECTED_ERROR
 
-        if has_png:
-            res.PNG = pngcontent
-
-        return res
-
-    # Unexpected error
-    res.status = tt.JobStatus.UNEXPECTED_ERROR
-    if has_png:
-        res.PNG = pngcontent
-    if not has_log:
-        res.log += 'Cannot even retrieve log?\n'
     return res
 
 ################################################################################
@@ -274,11 +236,17 @@ def get_service(server, args):
 
 ################################################################################
 
-def isDeviceOffline(serial):
-    devices = adb('devices').stdout.splitlines()
-    for d in devices:
-        if serial in d and 'offline' in d:
-            return True
+def isDeviceAvailable(serial):
+    cmd = 'adb devices'
+    devices = subprocess.run(cmd, shell=True, universal_newlines=True, stdout=subprocess.PIPE, timeout=2).stdout.splitlines()
+    for line in devices:
+        if serial in line:
+            l = line.split()
+            if l[1] == 'device':
+                return True
+            else:
+                return False
+    # Here the serial number was not present in `adb devices` output
     return False
 
 ################################################################################
@@ -329,8 +297,8 @@ service = None
 # Main loop
 while True:
 
-    if not args.linux and isDeviceOffline(os.environ['ANDROID_SERIAL']):
-        print('#### ABORT: device is offline')
+    if not args.linux and not isDeviceAvailable(os.environ['ANDROID_SERIAL']):
+        print('#### ABORT: device {} is not available (either offline or not connected?)'.format(os.environ['ANDROID_SERIAL']))
         exit(1)
 
     if not(service):

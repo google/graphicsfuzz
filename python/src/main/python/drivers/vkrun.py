@@ -67,8 +67,16 @@ def run_linux(vert, frag, json, skip_render):
         os.remove('SKIP_RENDER')
 
     cmd = 'vkworker ' + vert + ' ' + frag + ' ' + json + ' > ' + LOGFILE
-    subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN)
-    time.sleep(0.2)
+    status = 'SUCCESS'
+    try:
+        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+    except subprocess.TimeoutExpired as err:
+        status = 'TIMEOUT'
+    except subprocess.CalledProcessError as err:
+        status = 'CRASH'
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
 
 ################################################################################
 # Android
@@ -141,16 +149,18 @@ def run_android(vert, frag, json, skip_render):
     # Grab log
     adb('logcat -d > ' + LOGFILE)
 
-    with open(LOGFILE, 'a') as f:
-        if done:
-            f.write('\nGFZVK DONE\n')
-        else:
-            # Something went wrong, make sure to stop the app in any case
-            adb('shell am force-stop ' + ANDROID_APP)
-            if crash:
-                f.write('\nGFZVK CRASH\n')
-            else:
-                f.write('\nGFZVK TIMEOUT\n')
+    status = 'SUCCESS'
+    if crash:
+        status = 'CRASH'
+    elif not done:
+        status = 'TIMEOUT'
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
+
+    if status != 'SUCCESS':
+        # Something went wrong, make sure to stop the app in any case
+        adb('shell am force-stop ' + ANDROID_APP)
 
     # Grab image if present
     imagepath = ANDROID_SDCARD + '/image.png'
