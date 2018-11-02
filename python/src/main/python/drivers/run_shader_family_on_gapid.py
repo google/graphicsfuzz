@@ -20,11 +20,11 @@ from pathlib import Path
 from typing import List, NamedTuple
 import subprocess
 import re
-
+import typing
 
 # Types:
 
-RunInfo = NamedTuple(
+RunInfo = typing.NamedTuple(
     'RunInfo', [
         ('gapis_port', str),
         ('shader_source_file', str),
@@ -40,7 +40,7 @@ RunInfo = NamedTuple(
 
 # Regex:
 
-replaced_capture_id_regex = re.compile('New capture id: ([a-z0-9])*\n')
+replaced_capture_id_regex = re.compile('New capture id: ([a-z0-9]*)\n')
 
 # When using gapit screenshot filename, the capture ID is output which can be a nice way to
 # load a capture into gapis and get its ID.
@@ -56,12 +56,19 @@ gapis = ['gapis']
 
 
 def call(args: List[str]):
-    return subprocess.run(
+    print(" ".join(args))
+    res = subprocess.run(
         args,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,
         universal_newlines=True)
+    print("\nstdout:\n")
+    print(res.stdout)
+    print("\nstderr:\n")
+    print(res.stderr)
+    print("\nend.\n")
+    return res
 
 
 def run_gapit_screenshot_file(info: RunInfo) -> str:
@@ -110,6 +117,10 @@ def run_shader(info: RunInfo):
     stdout = res.stdout  # type: str
     new_capture_id = replaced_capture_id_regex.search(stdout).group(1)
 
+    info = info._replace(
+        output_png=str(Path(info.out_dir) / (Path(info.shader_source_file).stem + ".png"))
+    )
+
     # Now call gapit screenshot to capture and write out the screenshot.
     res = call(gapit + [
         'screenshot',
@@ -124,25 +135,33 @@ def run_shader_family(info: RunInfo):
     frag_dir = Path(info.frag_files_dir)
     for f in frag_dir.iterdir():
         if f.is_file() and f.name.endswith('.frag'):
-            info.shader_source_file = str(frag_dir / f)
+            info = info._replace(
+                shader_source_file=str(frag_dir / f)
+            )
             run_shader(info)
 
 
 def go(argv):
 
     parser = argparse.ArgumentParser(
-        description="Run shaders via gapid")
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Run shaders via gapid. First:\n"
+                    "$ gapis -enable-local-files -persist -rpc 'localhost:40000'\n"
+                    "$ gapit screenshot -gapis-port 40000 capture.linear.gfxtrace (and make a note "
+                    "of the capture id)")
 
     parser.add_argument("frag_files_dir", type=str, action="store",
-                        help="")
+                        help="directory containing .frag files")
     parser.add_argument("gapis_port", type=str, action="store",
-                        help="")
+                        help="port on which gapis is listening")
     parser.add_argument("shader_handle", type=str, action="store",
-                        help="")
+                        help="the shader handle within the capture in gapis that should be "
+                             "replaced")
     parser.add_argument("orig_capture_id", type=str, action="store",
-                        help="")
+                        help="the capture id that is already loaded in gapis "
+                             "(e.g. via gapit screenshot)")
     parser.add_argument("out_dir", type=str, action="store",
-                        help="")
+                        help="the output directory that will receive .png files")
 
     args = parser.parse_args(argv)
 
@@ -162,4 +181,5 @@ def go(argv):
 
 
 if __name__ == "__main__":
-    go(sys.argv)
+    go(sys.argv[1:])
+
