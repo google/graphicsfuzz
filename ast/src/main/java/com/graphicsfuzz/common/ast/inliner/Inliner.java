@@ -39,6 +39,7 @@ import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.StatsVisitor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -58,9 +59,11 @@ public class Inliner {
     new Inliner(functionCallExpr, tu, shadingLanguageVersion).doInline(idGenerator);
   }
 
-  public static boolean canInline(FunctionCallExpr functionCallExpr, TranslationUnit tu,
-        ShadingLanguageVersion shadingLanguageVersion) {
-    return new Inliner(functionCallExpr, tu, shadingLanguageVersion).canInline();
+  public static boolean canInline(FunctionCallExpr functionCallExpr,
+                                  TranslationUnit tu,
+                                  ShadingLanguageVersion shadingLanguageVersion,
+                                  int nodeLimit) {
+    return new Inliner(functionCallExpr, tu, shadingLanguageVersion).canInline(nodeLimit);
   }
 
   private Inliner(FunctionCallExpr call, TranslationUnit tu,
@@ -72,10 +75,11 @@ public class Inliner {
     this.parentMap = IParentMap.createParentMap(tu);
   }
 
-  private boolean canInline() {
+  private boolean canInline(int nodeLimit) {
     try {
-      getCloneWithReturnsRemoved(findMatchingFunctionForCall());
-      return true;
+      final FunctionDefinition inlinable =
+          getCloneWithReturnsRemoved(findMatchingFunctionForCall());
+      return nodeLimit == 0 || new StatsVisitor(inlinable).getNumNodes() <= nodeLimit;
     } catch (CannotInlineCallException exception) {
       return false;
     }
