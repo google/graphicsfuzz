@@ -154,6 +154,10 @@ public class Generate {
         .setDefault(0)
         .type(Integer.class);
 
+    parser.addArgument("--no_injection_switch")
+        .help("Do not generate the injectionSwitch uniform.")
+        .action(Arguments.storeTrue());
+
   }
 
   /**
@@ -167,10 +171,12 @@ public class Generate {
     final StringBuilder result = new StringBuilder();
     final IRandom random = new RandomWrapper(args.getSeed());
 
-    for (TranslationUnit shader : shaderJob.getShaders()) {
-      addInjectionSwitchIfNotPresent(shader);
+    if (args.getAddInjectionSwitch()) {
+      for (TranslationUnit shader : shaderJob.getShaders()) {
+        addInjectionSwitchIfNotPresent(shader);
+      }
+      setInjectionSwitch(shaderJob.getUniformsInfo());
     }
-    setInjectionSwitch(shaderJob.getUniformsInfo());
 
     for (TranslationUnit tu : shaderJob.getShaders()) {
       result.append(transformShader(
@@ -215,8 +221,8 @@ public class Generate {
 
     final GenerationParams generationParams =
             args.getSmall()
-                    ? GenerationParams.small(shaderKind)
-                    : GenerationParams.normal(shaderKind);
+                    ? GenerationParams.small(shaderKind, args.getAddInjectionSwitch())
+                    : GenerationParams.normal(shaderKind, args.getAddInjectionSwitch());
 
     final TransformationProbabilities probabilities =
             createProbabilities(args, random);
@@ -296,7 +302,8 @@ public class Generate {
               ns.get("donors"),
               ns.get("generate_uniform_bindings"),
               ns.get("max_uniforms"),
-              enabledTransformations));
+              enabledTransformations,
+              !ns.getBoolean("no_injection_switch")));
 
     final File outputShaderJobFile = ns.get("output");
 

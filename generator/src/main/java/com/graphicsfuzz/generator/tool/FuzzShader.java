@@ -37,7 +37,7 @@ public class FuzzShader {
           .visit(new Fuzzer(new FuzzingContext(),
                 ShadingLanguageVersion.GLSL_440,
                 new RandomWrapper(Integer.parseInt(args[0])),
-                GenerationParams.normal(ShaderKind.FRAGMENT)).fuzzTranslationUnit());
+                GenerationParams.normal(ShaderKind.FRAGMENT, true)).fuzzTranslationUnit());
 
   }
 

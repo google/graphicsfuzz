@@ -94,7 +94,7 @@ public class AddLiveOutputVariableWritesTest {
   private void applyTransformation(TranslationUnit tu, ShadingLanguageVersion shadingLanguageVersion, ShaderKind shaderKind, int seed) {
     new AddLiveOutputVariableWrites().apply(tu, TransformationProbabilities.onlyAddLiveFragColorWrites(),
         shadingLanguageVersion, new RandomWrapper(seed),
-        GenerationParams.normal(shaderKind));
+        GenerationParams.normal(shaderKind, true));
   }
 
   private String getBackedUpVariableName(TranslationUnit tu) {

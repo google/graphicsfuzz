@@ -89,7 +89,8 @@ public class ShaderProducer implements Runnable {
             donorsDir,
             ns.get("generate_uniform_bindings"),
             ns.get("max_uniforms"),
-            enabledTransformations
+            enabledTransformations,
+            !ns.getBoolean("no_injection_switch")
         );
 
     int sent = 0;

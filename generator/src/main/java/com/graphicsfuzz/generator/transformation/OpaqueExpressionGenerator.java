@@ -58,7 +58,7 @@ public final class OpaqueExpressionGenerator {
   private final ShadingLanguageVersion shadingLanguageVersion;
 
   public OpaqueExpressionGenerator(IRandom generator, GenerationParams generationParams,
-        ShadingLanguageVersion shadingLanguageVersion) {
+                                   ShadingLanguageVersion shadingLanguageVersion) {
     this.generator = generator;
     this.generationParams = generationParams;
     // TODO: there are many more identities that we can easily play with here, e.g. bitwise and 1
@@ -142,37 +142,31 @@ public final class OpaqueExpressionGenerator {
       return makeRegularIntegerValuedLiteral(type, isZero ? "0" : "1");
     }
     final int newDepth = depth + 1;
-    Expr result = null;
-    while (result == null) {
+    while (true) {
       final int numTypesOfOne = 2;
       switch (generator.nextInt(numTypesOfOne)) {
         case 0:
           // Make an opaque value recursively and apply an identity function to it
-          result = applyIdentityFunction(makeOpaqueZeroOrOne(isZero, type, constContext,
+          return applyIdentityFunction(makeOpaqueZeroOrOne(isZero, type, constContext,
                 newDepth, fuzzer),
                 type,
                 constContext,
                 newDepth,
                 fuzzer);
-          break;
         case 1:
           // injectionSwitch.x or injectionSwitch.y
-          if (constContext) {
-            result = null;
-          } else {
-            result = makeOpaqueZeroOrOneFromInjectionSwitch(isZero, type);
+          if (constContext || !generationParams.getInjectionSwitchIsAvailable()) {
+            continue;
           }
-          break;
+          return makeOpaqueZeroOrOneFromInjectionSwitch(isZero, type);
         default:
           throw new RuntimeException();
       }
     }
-    //noinspection ConstantConditions
-    assert result != null;
-    return result;
   }
 
   private Expr makeOpaqueZeroOrOneFromInjectionSwitch(boolean isZero, BasicType type) {
+    assert generationParams.getInjectionSwitchIsAvailable();
     if (type == BasicType.FLOAT) {
       if (isZero) {
         return zeroConstructor(injectionSwitch("x"), type);
@@ -210,29 +204,34 @@ public final class OpaqueExpressionGenerator {
     final int numTypesOfBool = generationParams.getShaderKind() == ShaderKind.FRAGMENT ? 4 : 2;
     final Function<Expr, Expr> constructorFunction =
           value ? this::trueConstructor : this::falseConstructor;
-    switch (generator.nextInt(numTypesOfBool)) {
-      case 0:
-        // Make an opaque boolean value recursively and apply an identity function to it
-        return recursivelyMakeOpaqueBooleanScalar(value, constContext, fuzzer, newDepth);
-      case 1: {
-        return makeOpaqueBooleanScalarFromExpr(value,
+    while (true) {
+      switch (generator.nextInt(numTypesOfBool)) {
+        case 0:
+          // Make an opaque boolean value recursively and apply an identity function to it
+          return recursivelyMakeOpaqueBooleanScalar(value, constContext, fuzzer, newDepth);
+        case 1: {
+          if (!generationParams.getInjectionSwitchIsAvailable()) {
+            continue;
+          }
+          return makeOpaqueBooleanScalarFromExpr(value,
               new BinaryExpr(injectionSwitch("x"), injectionSwitch("y"),
-                    value ? BinOp.LT : BinOp.GT));
-      }
-      case 2: {
-        // gl_FragCoord.x [op] 0
-        assert generationParams.getShaderKind() == ShaderKind.FRAGMENT;
-        return makeOpaqueBooleanScalarFromExpr(value,
+                  value ? BinOp.LT : BinOp.GT));
+        }
+        case 2: {
+          // gl_FragCoord.x [op] 0
+          assert generationParams.getShaderKind() == ShaderKind.FRAGMENT;
+          return makeOpaqueBooleanScalarFromExpr(value,
               compareWithGlFragCoord(value, constContext, fuzzer, newDepth, "x"));
-      }
-      case 3: {
-        // gl_FragCoord.y [op] 0
-        assert generationParams.getShaderKind() == ShaderKind.FRAGMENT;
-        return makeOpaqueBooleanScalarFromExpr(value,
+        }
+        case 3: {
+          // gl_FragCoord.y [op] 0
+          assert generationParams.getShaderKind() == ShaderKind.FRAGMENT;
+          return makeOpaqueBooleanScalarFromExpr(value,
               compareWithGlFragCoord(value, constContext, fuzzer, newDepth, "y"));
+        }
+        default:
+          throw new RuntimeException();
       }
-      default:
-        throw new RuntimeException();
     }
   }
 
@@ -282,6 +281,7 @@ public final class OpaqueExpressionGenerator {
   }
 
   private Expr injectionSwitch(String dimension) {
+    assert generationParams.getInjectionSwitchIsAvailable();
     return new MemberLookupExpr(new VariableIdentifierExpr(Constants.INJECTION_SWITCH), dimension);
   }
 

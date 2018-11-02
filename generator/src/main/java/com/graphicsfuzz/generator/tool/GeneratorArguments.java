@@ -32,6 +32,7 @@ public class GeneratorArguments {
   private final boolean generateUniformBindings;
   private final int maxUniforms;
   private final EnabledTransformations enabledTransformations;
+  private final boolean addInjectionSwitch;
 
   public GeneratorArguments(
         ShadingLanguageVersion shadingLanguageVersion,
@@ -44,7 +45,8 @@ public class GeneratorArguments {
         File donorsFolder,
         boolean generateUniformBindings,
         int maxUniforms,
-        EnabledTransformations enabledTransformations) {
+        EnabledTransformations enabledTransformations,
+        boolean addInjectionSwitch) {
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.seed = seed;
     this.small = small;
@@ -56,6 +58,7 @@ public class GeneratorArguments {
     this.generateUniformBindings = generateUniformBindings;
     this.maxUniforms = maxUniforms;
     this.enabledTransformations = enabledTransformations;
+    this.addInjectionSwitch = addInjectionSwitch;
   }
 
   public ShadingLanguageVersion getShadingLanguageVersion() {
@@ -106,6 +109,10 @@ public class GeneratorArguments {
     return enabledTransformations;
   }
 
+  public boolean getAddInjectionSwitch() {
+    return addInjectionSwitch;
+  }
+
   @Override
   public final String toString() {
     final StringBuilder sb = new StringBuilder();
@@ -119,6 +126,7 @@ public class GeneratorArguments {
     sb.append("generateUniformBindings: " + generateUniformBindings + "\n");
     sb.append("maxUniforms: " + (limitUniforms() ? "-" : maxUniforms) + "\n");
     sb.append("enabledTransformations: " + enabledTransformations + "\n");
+    sb.append("addInjectionSwitch: " + addInjectionSwitch + "\n");
     return sb.toString();
   }
 

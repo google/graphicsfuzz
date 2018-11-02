@@ -153,7 +153,7 @@ public class ReducerUnitTest {
       for (int i = 0; i < 4; i++) {
         getTransformation(transformationsCopy, generator).apply(
             tu, TransformationProbabilities.DEFAULT_PROBABILITIES, shadingLanguageVersion,
-            generator, GenerationParams.normal(ShaderKind.FRAGMENT));
+            generator, GenerationParams.normal(ShaderKind.FRAGMENT, true));
       }
       File tempFile = temporaryFolder.newFile();
       PrettyPrinterVisitor.emitShader(tu, Optional.empty(),
@@ -187,11 +187,11 @@ public class ReducerUnitTest {
     result.add(() -> new DonateDeadCode(
             TransformationProbabilities.DEFAULT_PROBABILITIES::donateDeadCodeAtStmt,
             Util.createDonorsFolder(temporaryFolder),
-            GenerationParams.normal(ShaderKind.FRAGMENT)));
+            GenerationParams.normal(ShaderKind.FRAGMENT, true)));
     result.add(() -> new DonateLiveCode(
             TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
             Util.createDonorsFolder(temporaryFolder),
-            GenerationParams.normal(ShaderKind.FRAGMENT),
+            GenerationParams.normal(ShaderKind.FRAGMENT, true),
             true));
     result.add(() -> new AddDeadOutputVariableWrites());
     result.add(() -> new AddLiveOutputVariableWrites());

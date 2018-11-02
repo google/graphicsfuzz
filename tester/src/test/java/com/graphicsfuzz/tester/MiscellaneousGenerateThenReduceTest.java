@@ -69,7 +69,7 @@ public class MiscellaneousGenerateThenReduceTest {
         TransformationProbabilities.onlyWrap(),
         shadingLanguageVersion,
         new SameValueRandom(false, 0),
-        GenerationParams.normal(ShaderKind.FRAGMENT));
+        GenerationParams.normal(ShaderKind.FRAGMENT, true));
 
     System.out.println(PrettyPrinterVisitor.prettyPrintAsString(tu));
 
