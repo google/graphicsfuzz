@@ -29,6 +29,8 @@ import java.util.List;
 
 public class InlineFunctionReductionOpportunities extends StandardVisitor {
 
+  private static final int INLINE_NODE_LIMIT = 100; // Only inline relatively small functions
+
   private final List<InlineFunctionReductionOpportunity> opportunities;
   private final TranslationUnit tu;
   private final ReducerContext context;
@@ -62,7 +64,8 @@ public class InlineFunctionReductionOpportunities extends StandardVisitor {
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
     super.visitFunctionCallExpr(functionCallExpr);
     if (allowedToInline(functionCallExpr)
-          && Inliner.canInline(functionCallExpr, tu, context.getShadingLanguageVersion())) {
+          && Inliner.canInline(
+              functionCallExpr, tu, context.getShadingLanguageVersion(), INLINE_NODE_LIMIT)) {
       opportunities.add(new InlineFunctionReductionOpportunity(
             functionCallExpr,
             tu,
