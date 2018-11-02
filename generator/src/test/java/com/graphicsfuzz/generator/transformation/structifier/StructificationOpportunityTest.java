@@ -127,7 +127,7 @@ public class StructificationOpportunityTest {
         ShadingLanguageVersion.GLSL_440).apply(
         new IdGenerator(),
         generator,
-        GenerationParams.normal(ShaderKind.FRAGMENT));
+        GenerationParams.normal(ShaderKind.FRAGMENT, true));
     // The generator should have used up all its values by now.
     assertTrue(generator.isExhausted());
 
@@ -187,7 +187,7 @@ public class StructificationOpportunityTest {
         false /* that is not a struct */,
         0 /* instead it is FLOAT */);
     List<StructDefinitionType> structs = StructificationOpportunity.randomStruct(0, generator,
-        new IdGenerator(), ShadingLanguageVersion.GLSL_440, GenerationParams.normal(ShaderKind.FRAGMENT));
+        new IdGenerator(), ShadingLanguageVersion.GLSL_440, GenerationParams.normal(ShaderKind.FRAGMENT, true));
     assertEquals(3, structs.size());
     StructDefinitionType enclosingStruct = structs.get(0);
     assertEquals(enclosingStruct.getFieldName(0), "_f0");
@@ -215,7 +215,7 @@ public class StructificationOpportunityTest {
       List<StructDefinitionType> structs =
           StructificationOpportunity.randomStruct(0, new RandomWrapper(0),
               new IdGenerator(), ShadingLanguageVersion.ESSL_100,
-              GenerationParams.normal(ShaderKind.FRAGMENT));
+              GenerationParams.normal(ShaderKind.FRAGMENT, true));
       checkDisjointSubStructs(structs.get(0), structs);
     }
 

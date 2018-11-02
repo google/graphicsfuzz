@@ -140,7 +140,7 @@ public class GeneratorUnitTest {
     testTransformationMultiVersions(() -> new DonateDeadCode(
         TransformationProbabilities.likelyDonateDeadCode()::donateDeadCodeAtStmt,
         Util.createDonorsFolder(temporaryFolder),
-        GenerationParams.normal(ShaderKind.FRAGMENT)), TransformationProbabilities.likelyDonateDeadCode(),
+        GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
         "donatedead.frag", Arrays.asList(), Arrays.asList());
   }
 
@@ -149,7 +149,7 @@ public class GeneratorUnitTest {
     testTransformationMultiVersions(() -> new DonateLiveCode(
         TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
         Util.createDonorsFolder(temporaryFolder),
-        GenerationParams.normal(ShaderKind.FRAGMENT),
+        GenerationParams.normal(ShaderKind.FRAGMENT, true),
         true), TransformationProbabilities.likelyDonateLiveCode(),
         "donatelive.frag",
         Arrays.asList(), Arrays.asList());
@@ -292,7 +292,7 @@ public class GeneratorUnitTest {
     for (ITransformation transformation : transformations) {
       transformation.apply(tu, probabilities, shadingLanguageVersion,
           generator,
-          GenerationParams.normal(ShaderKind.FRAGMENT));
+          GenerationParams.normal(ShaderKind.FRAGMENT, true));
     }
     Generate.addInjectionSwitchIfNotPresent(tu);
     Generate.setInjectionSwitch(shaderJob.getUniformsInfo());

@@ -71,7 +71,7 @@ public class OpaqueExpressionGeneratorTest {
         if (!SupportedTypes.supported(t, shadingLanguageVersion)) {
           continue;
         }
-        final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT);
+        final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT, true);
         final Expr expr = new OpaqueExpressionGenerator(generator, generationParams,
             shadingLanguageVersion)
               .applyIdentityFunction(t.getCanonicalConstant(), t, false, 0,

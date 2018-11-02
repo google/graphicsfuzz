@@ -47,7 +47,7 @@ public class MutationPointsTest {
         tu,
         shadingLanguageVersion,
         new CannedRandom(new Object[] { }),
-        GenerationParams.normal(ShaderKind.FRAGMENT));
+        GenerationParams.normal(ShaderKind.FRAGMENT, true));
     final List<IMutationPoint> points = mutationPoints.getAllMutationPoints();
     // The mutation points are:
     // - LHS and RHS of "x < 100"
@@ -75,7 +75,7 @@ public class MutationPointsTest {
         tu,
         shadingLanguageVersion,
         new CannedRandom(new Object[] { }),
-        GenerationParams.normal(ShaderKind.FRAGMENT));
+        GenerationParams.normal(ShaderKind.FRAGMENT, true));
     final List<IMutationPoint> points = mutationPoints.getAllMutationPoints();
     // Only a single mutation point: the loop guard is untouchable as this is GLSL 100.
     assertEquals(1, points.size());
@@ -97,7 +97,7 @@ public class MutationPointsTest {
         tu,
         shadingLanguageVersion,
         new CannedRandom(new Object[] { }),
-        GenerationParams.normal(ShaderKind.FRAGMENT));
+        GenerationParams.normal(ShaderKind.FRAGMENT, true));
     final List<IMutationPoint> points = mutationPoints.getAllMutationPoints();
     // Two mutation points: LHS and RHS of "j + 1", and RHS of "j = j + 1".
     // Loop guard is untouchable as this is GLSL 100.

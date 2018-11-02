@@ -24,8 +24,8 @@ public class GenerationParams {
   public static final boolean COMMA_OPERATOR_ENABLED = false;
   public static final boolean NON_SQUARE_MATRICES_ENABLED = true;
 
-  public static GenerationParams small(ShaderKind shaderKind) {
-    GenerationParams result = new GenerationParams(shaderKind);
+  public static GenerationParams small(ShaderKind shaderKind, boolean injectionSwitchAvailable) {
+    GenerationParams result = new GenerationParams(shaderKind, injectionSwitchAvailable);
     result.maxDepthForGeneratedExpr = 2;
     result.maxStructNestingDepth = 1;
     result.maxStructFields = 3;
@@ -33,8 +33,8 @@ public class GenerationParams {
     return result;
   }
 
-  public static GenerationParams normal(ShaderKind shaderKind) {
-    GenerationParams result = new GenerationParams(shaderKind);
+  public static GenerationParams normal(ShaderKind shaderKind, boolean injectionSwitchAvailable) {
+    GenerationParams result = new GenerationParams(shaderKind, injectionSwitchAvailable);
     result.maxDepthForGeneratedExpr = 3;
     result.maxStructNestingDepth = 2;
     result.maxStructFields = 5;
@@ -42,8 +42,8 @@ public class GenerationParams {
     return result;
   }
 
-  public static GenerationParams large(ShaderKind shaderKind) {
-    GenerationParams result = new GenerationParams(shaderKind);
+  public static GenerationParams large(ShaderKind shaderKind, boolean injectionSwitchAvailable) {
+    GenerationParams result = new GenerationParams(shaderKind, injectionSwitchAvailable);
     result.maxDepthForGeneratedExpr = 5;
     result.maxStructNestingDepth = 4;
     result.maxStructFields = 7;
@@ -51,9 +51,10 @@ public class GenerationParams {
     return result;
   }
 
-  private GenerationParams(ShaderKind shaderKind) {
+  private GenerationParams(ShaderKind shaderKind, boolean injectionSwitchIsAvailable) {
     // Prevent external construction
     this.shaderKind = shaderKind;
+    this.injectionSwitchIsAvailable = injectionSwitchIsAvailable;
   }
 
   // What sort of shader are we generating?
@@ -68,6 +69,8 @@ public class GenerationParams {
 
   // Donors
   private int maxDonors = 5;
+
+  private final boolean injectionSwitchIsAvailable;
 
   public int getMaxDepthForGeneratedExpr() {
     return maxDepthForGeneratedExpr;
@@ -88,4 +91,9 @@ public class GenerationParams {
   public ShaderKind getShaderKind() {
     return shaderKind;
   }
+
+  public boolean getInjectionSwitchIsAvailable() {
+    return injectionSwitchIsAvailable;
+  }
+
 }

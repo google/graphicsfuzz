@@ -43,7 +43,7 @@ public class AddWrappingConditionalStmtsTest {
     new AddWrappingConditionalStmts().apply(tu, TransformationProbabilities.onlyWrap(),
         ShadingLanguageVersion.GLSL_130, new CannedRandom(0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0),
-        GenerationParams.normal(ShaderKind.FRAGMENT));
+        GenerationParams.normal(ShaderKind.FRAGMENT, true));
     checkStructuralProperties(tu);
     TranslationUnit tu2 = ParseHelper.parse(PrettyPrinterVisitor.prettyPrintAsString(tu));
     checkStructuralProperties(tu2);

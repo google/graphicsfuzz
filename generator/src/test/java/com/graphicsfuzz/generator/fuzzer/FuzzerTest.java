@@ -21,7 +21,6 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.StructNameType;
-import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.ParseHelper;
@@ -59,7 +58,7 @@ public class FuzzerTest {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
         if (variableIdentifierExpr.getName().equals("doitWhenYouReachMyUse")) {
           Expr expr = new Fuzzer(new FuzzingContext(currentScope), ShadingLanguageVersion.ESSL_100,
-              new ZeroCannedRandom(), GenerationParams.normal(ShaderKind.FRAGMENT), "prefix")
+              new ZeroCannedRandom(), GenerationParams.normal(ShaderKind.FRAGMENT, true), "prefix")
               .fuzzExpr(new StructNameType("B"), false, false, 0);
           assertTrue(expr instanceof TypeConstructorExpr);
           // Sanity check a few things about the result

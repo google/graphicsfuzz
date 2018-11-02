@@ -17,7 +17,10 @@
 package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -41,6 +44,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class GenerateTest {
@@ -168,12 +172,12 @@ public class GenerateTest {
     String reference = "void main() { ; { ; ; ; }; ; { ; ; ; }; ; ; ; ; ; ; }";
     TranslationUnit tu = ParseHelper.parse(reference);
     new DonateLiveCode(TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
-        donorsFolder, GenerationParams.normal(ShaderKind.FRAGMENT), false)
+        donorsFolder, GenerationParams.normal(ShaderKind.FRAGMENT, true), false)
         .apply(tu,
             TransformationProbabilities.likelyDonateLiveCode(),
             ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0),
-            GenerationParams.normal(ShaderKind.FRAGMENT));
+            GenerationParams.normal(ShaderKind.FRAGMENT, true));
   }
 
   @Test
@@ -287,5 +291,83 @@ public class GenerateTest {
 
   }
 
+  @Test
+  public void testInjectionSwitchAddedByDefault() throws Exception {
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    final String program = "#version 100\n" +
+        "void main() {" +
+        " int x = 0;" +
+        " for (int i = 0; i < 100; i++) {" +
+        "  x = x + i;" +
+        " }" +
+        "}";
+    final String uniforms = "{}";
+    final File json = temporaryFolder.newFile("shader.json");
+    final File frag = temporaryFolder.newFile("shader.frag");
+    FileUtils.writeStringToFile(frag, program, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(json, uniforms, StandardCharsets.UTF_8);
+
+    final File donors = temporaryFolder.newFolder();
+    final File output = temporaryFolder.newFile("output.json");
+
+    Generate.mainHelper(new String[] { json.getAbsolutePath(), donors.getAbsolutePath(), "100",
+        output.getAbsolutePath(), "--seed", "0" });
+
+    final ShaderJob shaderJob = fileOps.readShaderJobFile(output);
+
+    assertTrue(shaderJob.getUniformsInfo().containsKey("injectionSwitch"));
+
+    assertTrue(fileOps.areShadersValid(output, false));
+
+    assertTrue(shaderJob.getShaders().get(0).getTopLevelDeclarations()
+        .stream()
+        .filter(item -> item instanceof VariablesDeclaration)
+        .map(item -> ((VariablesDeclaration) item).getDeclInfos())
+        .reduce(new ArrayList<>(), ListConcat::concatenate)
+        .stream()
+        .map(item -> item.getName())
+        .anyMatch(item -> item.equals("injectionSwitch")));
+
+  }
+
+
+  @Test
+  public void testNoInjectionSwitchIfDisabled() throws Exception {
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    final String program = "#version 100\n" +
+        "void main() {" +
+        " int x = 0;" +
+        " for (int i = 0; i < 100; i++) {" +
+        "  x = x + i;" +
+        " }" +
+        "}";
+    final String uniforms = "{}";
+    final File json = temporaryFolder.newFile("shader.json");
+    final File frag = temporaryFolder.newFile("shader.frag");
+    FileUtils.writeStringToFile(frag, program, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(json, uniforms, StandardCharsets.UTF_8);
+
+    final File donors = temporaryFolder.newFolder();
+    final File output = temporaryFolder.newFile("output.json");
+
+    Generate.mainHelper(new String[] { json.getAbsolutePath(), donors.getAbsolutePath(), "100",
+        output.getAbsolutePath(), "--no_injection_switch", "--seed", "0" });
+
+    final ShaderJob shaderJob = fileOps.readShaderJobFile(output);
+
+    assertFalse(shaderJob.getUniformsInfo().containsKey("injectionSwitch"));
+
+    assertTrue(fileOps.areShadersValid(output, false));
+
+    assertFalse(shaderJob.getShaders().get(0).getTopLevelDeclarations()
+        .stream()
+        .filter(item -> item instanceof VariablesDeclaration)
+        .map(item -> ((VariablesDeclaration) item).getDeclInfos())
+        .reduce(new ArrayList<>(), ListConcat::concatenate)
+        .stream()
+        .map(item -> item.getName())
+        .anyMatch(item -> item.equals("injectionSwitch")));
+
+  }
 
 }
