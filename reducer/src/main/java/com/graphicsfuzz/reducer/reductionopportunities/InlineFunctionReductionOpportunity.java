@@ -53,7 +53,10 @@ public class InlineFunctionReductionOpportunity extends AbstractReductionOpportu
 
   @Override
   public boolean preconditionHolds() {
-    return Inliner.canInline(functionCallExpr, tu, shadingLanguageVersion);
+    // We use a node limit of 0 (to say "no limit") because we already checked the limit on
+    // creation of this opportunity, and we're OK with the possibility that the limit might now
+    // be exceeded due to other transformations.
+    return Inliner.canInline(functionCallExpr, tu, shadingLanguageVersion, 0);
   }
 
 }
