@@ -17,7 +17,7 @@
 import sys
 import argparse
 from pathlib import Path
-from typing import List, NamedTuple
+from typing import List
 import subprocess
 import re
 import typing
