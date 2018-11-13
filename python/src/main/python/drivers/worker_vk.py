@@ -106,7 +106,7 @@ def doImageJob(args, imageJob):
     name = imageJob.name.replace('.frag','')
     fragFile = name + '.frag'
     jsonFile = name + '.json'
-    png = 'image.png'
+    png = 'image_0.png'
     log = 'vklog.txt'
 
     res = tt.ImageJobResult()
@@ -191,7 +191,7 @@ def doImageJob(args, imageJob):
 
 ################################################################################
 
-def get_service(server, args):
+def get_service(server, args, worker_info_json_string):
     try:
         httpClient = THttpClient.THttpClient(server)
         transport = TTransport.TBufferedTransport(httpClient)
@@ -200,14 +200,7 @@ def get_service(server, args):
         transport.open()
 
         # Get token
-
-        # TODO: grab information from worker
-
-        platforminfo = '''
-        {
-          "clientplatform": "Wrapper on vulkan"
-        }
-        '''
+        platforminfo = worker_info_json_string
 
         tryToken = args.token
         print("Call getToken()")
@@ -294,6 +287,21 @@ if not args.linux:
 
 service = None
 
+# Get worker info
+worker_info_file = 'worker_info.json'
+remove(worker_info_file)
+
+if args.linux:
+    vkrun.dump_info_linux()
+else:
+    vkrun.dump_info_android()
+
+assert(os.path.exists(worker_info_file))
+
+worker_info_json_string = '{}'  # Dummy but valid JSON string
+with open(worker_info_file, 'r') as f:
+    worker_info_json_string = f.read()
+
 # Main loop
 while True:
 
@@ -302,7 +310,7 @@ while True:
         exit(1)
 
     if not(service):
-        service, token = get_service(server, args)
+        service, token = get_service(server, args, worker_info_json_string)
 
         if not(service):
             print("Cannot connect to server, retry in a second...")
