@@ -38,7 +38,7 @@ public class GenerateAndRunShaders {
 
   private static final int LIMIT = 10000;
 
-  private static Namespace parse(String[] args) {
+  private static Namespace parse(String[] args) throws ArgumentParserException {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("GenerateAndRunShaders")
           .defaultHelp(true)
           .description("Generate and run a whole load of shaders.");
@@ -80,18 +80,22 @@ public class GenerateAndRunShaders {
         .type(Boolean.class)
         .action(Arguments.storeTrue());
 
-    try {
-      return parser.parseArgs(args);
-    } catch (ArgumentParserException exception) {
-      exception.getParser().handleError(exception);
-      System.exit(1);
-      return null;
-    }
+    return parser.parseArgs(args);
 
   }
 
   public static void main(String[] args)
       throws IOException, InterruptedException {
+    try {
+      mainHelper(args);
+    } catch (ArgumentParserException exception) {
+      exception.getParser().handleError(exception);
+      System.exit(1);
+    }
+  }
+
+  public static void mainHelper(String[] args)
+      throws IOException, InterruptedException, ArgumentParserException {
     final Namespace ns = parse(args);
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     final File referencesDir = ns.get("references");

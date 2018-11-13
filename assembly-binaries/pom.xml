@@ -31,6 +31,26 @@ limitations under the License.
 
   <repositories>
     <repository>
+      <id>build-angle</id>
+      <url>https://github.com/paulthomson/build-angle/releases/download</url>
+    </repository>
+
+    <repository>
+      <id>build-swiftshader</id>
+      <url>https://github.com/paulthomson/build-swiftshader/releases/download</url>
+    </repository>
+
+    <repository>
+      <id>build-glslang</id>
+      <url>https://github.com/paulthomson/build-glslang/releases/download</url>
+    </repository>
+
+    <repository>
+      <id>get-image-glsl</id>
+      <url>https://github.com/mc-imperial/get-image-glsl/releases/download</url>
+    </repository>
+
+    <repository>
       <id>build-SPIRV-Tools</id>
       <url>https://github.com/paulthomson/build-SPIRV-Tools/releases/download</url>
     </repository>
@@ -39,10 +59,115 @@ limitations under the License.
 
   <properties>
     <spirv-tools-version>7663d620a7fbdccb330d2baec138d0e3e096457c</spirv-tools-version>
+    <angle-version>a6dc81d719f335fea7377ced5c147819d4a6eeb8</angle-version>
+    <swiftshader-version>2c4ff0754cffd7c19747b0ebdaac05ab019d0273</swiftshader-version>
+    <glslang-version>e91ec4d97076b70c2111279e1e997abfdf58dcaf</glslang-version>
+    <getimage-version>2a0d9efa21cb6396dd744ffcae270eb7f367ca00</getimage-version>
   </properties>
 
   <dependencies>
 
+    <!-- build-angle -->
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-angle</artifactId>
+      <version>${angle-version}</version>
+      <classifier>Linux_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-angle</artifactId>
+      <version>${angle-version}</version>
+      <classifier>Mac_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-angle</artifactId>
+      <version>${angle-version}</version>
+      <classifier>Windows_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <!-- build-swiftshader -->
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-swiftshader</artifactId>
+      <version>${swiftshader-version}</version>
+      <classifier>Linux_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-swiftshader</artifactId>
+      <version>${swiftshader-version}</version>
+      <classifier>Mac_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-swiftshader</artifactId>
+      <version>${swiftshader-version}</version>
+      <classifier>Windows_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <!-- build-glslang -->
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-glslang</artifactId>
+      <version>${glslang-version}</version>
+      <classifier>Linux_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-glslang</artifactId>
+      <version>${glslang-version}</version>
+      <classifier>Mac_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-glslang</artifactId>
+      <version>${glslang-version}</version>
+      <classifier>Windows_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <!-- get-image-glsl -->
+    <dependency>
+      <groupId>github.mc-imperial</groupId>
+      <artifactId>get-image-glsl</artifactId>
+      <version>${getimage-version}</version>
+      <classifier>Linux_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>github.mc-imperial</groupId>
+      <artifactId>get-image-glsl</artifactId>
+      <version>${getimage-version}</version>
+      <classifier>Mac_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>github.mc-imperial</groupId>
+      <artifactId>get-image-glsl</artifactId>
+      <version>${getimage-version}</version>
+      <classifier>Windows_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <!-- build-SPIRV-Tools -->
     <dependency>
       <groupId>github.paulthomson</groupId>
       <artifactId>build-SPIRV-Tools</artifactId>
@@ -66,6 +191,8 @@ limitations under the License.
       <classifier>Windows_x64_Release</classifier>
       <type>zip</type>
     </dependency>
+
+    <!-- others -->
 
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
@@ -120,12 +247,46 @@ limitations under the License.
                     <pathelement location="${binaries-zip}"/>
                     <pathelement location="${shaders-zip}"/>
 
+                    <!-- build-angle -->
+                    <pathelement
+                        location="${github.paulthomson:build-angle:zip:Windows_x64_Release}"/>
+                    <pathelement
+                        location="${github.paulthomson:build-angle:zip:Mac_x64_Release}"/>
+                    <pathelement
+                        location="${github.paulthomson:build-angle:zip:Linux_x64_Release}"/>
+
+                    <!-- build-swiftshader -->
+                    <pathelement
+                        location="${github.paulthomson:build-swiftshader:zip:Windows_x64_Release}"/>
+                    <pathelement
+                        location="${github.paulthomson:build-swiftshader:zip:Mac_x64_Release}"/>
+                    <pathelement
+                        location="${github.paulthomson:build-swiftshader:zip:Linux_x64_Release}"/>
+
+                    <!-- build-glslang -->
+                    <pathelement
+                        location="${github.paulthomson:build-glslang:zip:Windows_x64_Release}"/>
+                    <pathelement
+                        location="${github.paulthomson:build-glslang:zip:Mac_x64_Release}"/>
+                    <pathelement
+                        location="${github.paulthomson:build-glslang:zip:Linux_x64_Release}"/>
+
+                    <!-- get-image-glsl -->
+                    <pathelement
+                        location="${github.mc-imperial:get-image-glsl:zip:Windows_x64_Release}"/>
+                    <pathelement
+                        location="${github.mc-imperial:get-image-glsl:zip:Mac_x64_Release}"/>
+                    <pathelement
+                        location="${github.mc-imperial:get-image-glsl:zip:Linux_x64_Release}"/>
+
+                    <!-- build-SPIRV-Tools -->
                     <pathelement
                         location="${github.paulthomson:build-SPIRV-Tools:zip:Windows_x64_Release}"/>
                     <pathelement
                         location="${github.paulthomson:build-SPIRV-Tools:zip:Mac_x64_Release}"/>
                     <pathelement
                         location="${github.paulthomson:build-SPIRV-Tools:zip:Linux_x64_Release}"/>
+
                   </sourcefiles>
                   <targetfiles path="${touched-file}"/>
                   <sequential>
@@ -133,7 +294,170 @@ limitations under the License.
                     <zip destfile="${assembly-zip}" compress="false">
                       <zipfileset src="${shaders-zip}" prefix="shaders"/>
 
-                      <!-- github.paulthomson:build-SPIRV-Tools:zip:... -->
+                      <!-- build-angle -->
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-angle:zip:Linux_x64_Release}"
+                            includes="bin/*,lib/*"
+                        />
+                        <compositemapper>
+                          <globmapper from="bin/*" to="bin/Linux/*"/>
+                          <globmapper from="lib/*" to="bin/Linux/angle/*"/>
+                        </compositemapper>
+                      </mappedresources>
+
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-angle:zip:Mac_x64_Release}"
+                            includes="bin/*,lib/*"
+                        />
+                        <compositemapper>
+                          <globmapper from="bin/*" to="bin/Mac/*"/>
+                          <globmapper from="lib/*" to="bin/Mac/angle/*"/>
+                        </compositemapper>
+                      </mappedresources>
+
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-angle:zip:Windows_x64_Release}"
+                            includes="bin/*,lib/*"
+                        />
+                        <compositemapper>
+                          <globmapper from="bin/*" to="bin/Windows/*"/>
+                          <globmapper from="lib/*" to="bin/Windows/angle/*"/>
+                        </compositemapper>
+                      </mappedresources>
+
+                      <!-- build-swiftshader -->
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-swiftshader:zip:Linux_x64_Release}"
+                            includes="bin/*,lib/*"
+                        />
+                        <compositemapper>
+                          <globmapper from="bin/*" to="bin/Linux/*"/>
+                          <globmapper from="lib/*" to="bin/Linux/swiftshader/*"/>
+                        </compositemapper>
+                      </mappedresources>
+
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-swiftshader:zip:Mac_x64_Release}"
+                            includes="bin/*,lib/*"
+                        />
+                        <compositemapper>
+                          <globmapper from="bin/*" to="bin/Mac/*"/>
+                          <globmapper from="lib/*" to="bin/Mac/swiftshader/*"/>
+                        </compositemapper>
+                      </mappedresources>
+
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-swiftshader:zip:Windows_x64_Release}"
+                            includes="bin/*,lib/*"
+                        />
+                        <compositemapper>
+                          <globmapper from="bin/*" to="bin/Windows/*"/>
+                          <globmapper from="lib/*" to="bin/Windows/swiftshader/*"/>
+                        </compositemapper>
+                      </mappedresources>
+
+                      <!-- build-glslang -->
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-glslang:zip:Linux_x64_Release}"
+                            includes="bin/*"
+                        />
+                        <globmapper from="bin/*" to="bin/Linux/*"/>
+                      </mappedresources>
+
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-glslang:zip:Mac_x64_Release}"
+                            includes="bin/*"
+                        />
+                        <globmapper from="bin/*" to="bin/Mac/*"/>
+                      </mappedresources>
+
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-glslang:zip:Windows_x64_Release}"
+                            includes="bin/*"
+                        />
+                        <globmapper from="bin/*" to="bin/Windows/*"/>
+                      </mappedresources>
+
+                      <!-- get-image-glsl (note: lines below are quite different from the rest) -->
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.mc-imperial:get-image-glsl:zip:Linux_x64_Release}"
+                            includes="bin/get_image_glfw*"
+                        />
+                        <globmapper from="bin/*" to="bin/Linux/*"/>
+                      </mappedresources>
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.mc-imperial:get-image-glsl:zip:Linux_x64_Release}"
+                            includes="bin/get_image_egl*"
+                        />
+                        <globmapper from="bin/get_image_egl*" to="bin/Linux/angle/get_image_egl*"/>
+                      </mappedresources>
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.mc-imperial:get-image-glsl:zip:Linux_x64_Release}"
+                            includes="bin/get_image_egl*"
+                        />
+                        <globmapper from="bin/get_image_egl*"
+                                    to="bin/Linux/swiftshader/get_image_egl*"/>
+                      </mappedresources>
+
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.mc-imperial:get-image-glsl:zip:Mac_x64_Release}"
+                            includes="bin/get_image_glfw*"
+                        />
+                        <globmapper from="bin/*" to="bin/Mac/*"/>
+                      </mappedresources>
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.mc-imperial:get-image-glsl:zip:Mac_x64_Release}"
+                            includes="bin/get_image_egl*"
+                        />
+                        <globmapper from="bin/get_image_egl*" to="bin/Mac/angle/get_image_egl*"/>
+                      </mappedresources>
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.mc-imperial:get-image-glsl:zip:Mac_x64_Release}"
+                            includes="bin/get_image_egl*"
+                        />
+                        <globmapper from="bin/get_image_egl*"
+                                    to="bin/Mac/swiftshader/get_image_egl*"/>
+                      </mappedresources>
+
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.mc-imperial:get-image-glsl:zip:Windows_x64_Release}"
+                            includes="bin/get_image_glfw*"
+                        />
+                        <globmapper from="bin/*" to="bin/Windows/*"/>
+                      </mappedresources>
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.mc-imperial:get-image-glsl:zip:Windows_x64_Release}"
+                            includes="bin/get_image_egl*"
+                        />
+                        <globmapper from="bin/get_image_egl*" to="bin/Windows/angle/get_image_egl*"/>
+                      </mappedresources>
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.mc-imperial:get-image-glsl:zip:Windows_x64_Release}"
+                            includes="bin/get_image_egl*"
+                        />
+                        <globmapper from="bin/get_image_egl*"
+                                    to="bin/Windows/swiftshader/get_image_egl*"/>
+                      </mappedresources>
+
+                      <!-- build-SPIRV-Tools -->
                       <mappedresources>
                         <zipfileset
                             src="${github.paulthomson:build-SPIRV-Tools:zip:Linux_x64_Release}"

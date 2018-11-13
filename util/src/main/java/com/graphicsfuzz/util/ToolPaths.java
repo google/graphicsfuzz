@@ -32,10 +32,6 @@ public class ToolPaths {
     return Paths.get(getBinDir(), "shader_translator").toString();
   }
 
-  public static String getGlInfo() {
-    return Paths.get(ToolPaths.getBinDir(), "get_gl_info").toString();
-  }
-
   public static String getImageGlfw() {
     return Paths.get(ToolPaths.getBinDir(), "get_image_glfw").toString();
   }
