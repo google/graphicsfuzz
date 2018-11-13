@@ -78,6 +78,19 @@ def run_linux(vert, frag, json, skip_render):
     with open('STATUS', 'w') as f:
         f.write(status)
 
+def dump_info_linux():
+    cmd = 'vkworker --info'
+    status = 'SUCCESS'
+    try:
+        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+    except subprocess.TimeoutExpired as err:
+        status = 'TIMEOUT'
+    except subprocess.CalledProcessError as err:
+        status = 'CRASH'
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
+
 ################################################################################
 # Android
 
@@ -163,10 +176,23 @@ def run_android(vert, frag, json, skip_render):
         adb('shell am force-stop ' + ANDROID_APP)
 
     # Grab image if present
-    imagepath = ANDROID_SDCARD + '/image.png'
+    imagepath = ANDROID_SDCARD + '/image_0.png'
     retcode = adb('shell test -f ' + imagepath).returncode
     if retcode == 0:
         adb('pull ' + imagepath)
+
+def dump_info_android():
+    infofile = ANDROID_SDCARD + '/worker_info.json'
+    adb('shell rm -f ' + infofile)
+    adb('shell am force-stop ' + ANDROID_APP)
+    adb('shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity -e gfz "\"--info\""')
+    deadline = time.time() + 1
+    while time.time() < deadline:
+        retcode = adb('shell test -f ' + infofile).returncode
+        if retcode == 0:
+            adb('pull ' + infofile)
+        time.sleep(0.1)
+    adb('shell am force-stop ' + ANDROID_APP)
 
 ################################################################################
 # Main
