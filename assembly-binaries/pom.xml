@@ -29,7 +29,43 @@ limitations under the License.
     <relativePath>../parent-all/pom.xml</relativePath>
   </parent>
 
+  <repositories>
+    <repository>
+      <id>build-SPIRV-Tools</id>
+      <url>https://github.com/paulthomson/build-SPIRV-Tools/releases/download</url>
+    </repository>
+
+  </repositories>
+
+  <properties>
+    <spirv-tools-version>7663d620a7fbdccb330d2baec138d0e3e096457c</spirv-tools-version>
+  </properties>
+
   <dependencies>
+
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-SPIRV-Tools</artifactId>
+      <version>${spirv-tools-version}</version>
+      <classifier>Linux_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-SPIRV-Tools</artifactId>
+      <version>${spirv-tools-version}</version>
+      <classifier>Mac_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>github.paulthomson</groupId>
+      <artifactId>build-SPIRV-Tools</artifactId>
+      <version>${spirv-tools-version}</version>
+      <classifier>Windows_x64_Release</classifier>
+      <type>zip</type>
+    </dependency>
 
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
@@ -83,13 +119,45 @@ limitations under the License.
                   <sourcefiles>
                     <pathelement location="${binaries-zip}"/>
                     <pathelement location="${shaders-zip}"/>
+
+                    <pathelement
+                        location="${github.paulthomson:build-SPIRV-Tools:zip:Windows_x64_Release}"/>
+                    <pathelement
+                        location="${github.paulthomson:build-SPIRV-Tools:zip:Mac_x64_Release}"/>
+                    <pathelement
+                        location="${github.paulthomson:build-SPIRV-Tools:zip:Linux_x64_Release}"/>
                   </sourcefiles>
                   <targetfiles path="${touched-file}"/>
                   <sequential>
                     <delete file="${assembly-zip}" dir="${assembly-dir}"/>
                     <zip destfile="${assembly-zip}" compress="false">
-                      <zipfileset src="${binaries-zip}" prefix="bin"/>
                       <zipfileset src="${shaders-zip}" prefix="shaders"/>
+
+                      <!-- github.paulthomson:build-SPIRV-Tools:zip:... -->
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-SPIRV-Tools:zip:Linux_x64_Release}"
+                            includes="bin/*"
+                        />
+                        <globmapper from="bin/*" to="bin/Linux/*"/>
+                      </mappedresources>
+
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-SPIRV-Tools:zip:Mac_x64_Release}"
+                            includes="bin/*"
+                        />
+                        <globmapper from="bin/*" to="bin/Mac/*"/>
+                      </mappedresources>
+
+                      <mappedresources>
+                        <zipfileset
+                            src="${github.paulthomson:build-SPIRV-Tools:zip:Windows_x64_Release}"
+                            includes="bin/*"
+                        />
+                        <globmapper from="bin/*" to="bin/Windows/*"/>
+                      </mappedresources>
+
                     </zip>
                     <unzip src="${assembly-zip}" dest="${assembly-dir}"/>
                     <chmod perm="ugo+x" dir="${assembly-dir}/bin" includes="**" />
