@@ -126,6 +126,11 @@ def run_android(vert, frag, json, skip_render):
         adb('shell touch ' + ANDROID_SDCARD + '/SKIP_RENDER')
 
     adb('logcat -c')
+    cmd = ANDROID_APP + '/android.app.NativeActivity'
+    # Explicitely set all options, don't rely on defaults
+    flags = '--num-render 3 --png-template image --sanity-before sanity_before.png --sanity-after sanity_after.png'
+    # Pass command line args as Intent extra. Need to nest-quote, hence the "\'blabla\'"
+    cmd += '-e gfz "\'' + flags + '\'"'
     adb('shell am start ' + ANDROID_APP + '/android.app.NativeActivity')
 
     # Busy wait
@@ -141,7 +146,7 @@ def run_android(vert, frag, json, skip_render):
         # be able to detect the app pid.
         time.sleep(0.1)
 
-        retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE').returncode
+        retcode = adb('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode
         if retcode == 0:
             done = True
             break
@@ -150,7 +155,7 @@ def run_android(vert, frag, json, skip_render):
         if retcode == 1:
 
             # double check that no DONE file is present
-            retcode = adb('shell test -f /sdcard/graphicsfuzz/DONE').returncode
+            retcode = adb('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode
             if retcode == 0:
                 done = True
                 break
@@ -167,6 +172,33 @@ def run_android(vert, frag, json, skip_render):
         status = 'CRASH'
     elif not done:
         status = 'TIMEOUT'
+
+    # Check sanity
+    if status == 'SUCCESS':
+        sanity_png_before = ANDROID_SDCARD + '/sanity_before.png'
+        sanity_png_after = ANDROID_SDCARD + '/sanity_after.png'
+        sanity_before_exists = adb('shell test -f ' + sanity_png_before).returncode == 0
+        sanity_after_exists = adb('shell test -f ' + sanity_png_after).returncode == 0
+        if sanity_before_exists and sanity_after_exists:
+            # diff the sanity images on device
+            retcode = adb('shell diff ' + sanity_png_before + ' ' + sanity_png_after).returncode
+            if retcode != 0:
+                status = 'SANITY_ERROR'
+
+    # Check nondet.
+    if status == 'SUCCESS':
+        ref_image = ANDROID_SDCARD + '/image_0.png'
+        ref_image_exists = adb('shell test -f ' + ref_image).returncode == 0
+        if (ref_image_exists):
+            # If reference image is here, report nondet if either other images a
+            # different, or missing, using return code of 'diff' on device
+            for i in range(1,3):
+                next_image = ANDROID_SDCARD + '/image_' + str(i) + '.png'
+                retcode = adb('shell diff ' + ref_image + ' ' + next_image).returncode
+                if retcode != 0:
+                    status = 'NONDET'
+                    adb('pull ' + ref_image + ' nondet0.png')
+                    adb('pull ' + next_image + ' nondet1.png')
 
     with open('STATUS', 'w') as f:
         f.write(status)

@@ -179,6 +179,14 @@ def doImageJob(args, imageJob):
             res.status = tt.JobStatus.CRASH
         elif status == 'TIMEOUT':
             res.status = tt.JobStatus.TIMEOUT
+        elif status == 'SANITY_ERROR':
+            res.status = tt.JobStatus.SANITY_ERROR
+        elif status == 'NONDET':
+            res.status = tt.JobStatus.NONDET
+            with open('nondet0.png', 'rb') as f:
+                res.PNG = f.read()
+            with open('nondet1.png', 'rb') as f:
+                res.PNG2 = f.read()
         else:
             res.log += '\nUnknown status value: ' + status + '\n'
             res.status = tt.JobStatus.UNEXPECTED_ERROR
