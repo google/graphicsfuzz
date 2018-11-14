@@ -50,12 +50,6 @@ limitations under the License.
     <dependencies>
 
       <!-- binaries -->
-      <dependency>
-        <groupId>com.github.mc-imperial</groupId>
-        <artifactId>ogltesting-binaries</artifactId>
-        <version>2eb20ea8</version>
-        <type>zip</type>
-      </dependency>
 
       <dependency>
         <groupId>com.github.mc-imperial</groupId>

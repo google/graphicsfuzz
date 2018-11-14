@@ -202,13 +202,6 @@ limitations under the License.
     </dependency>
 
     <dependency>
-      <groupId>com.github.mc-imperial</groupId>
-      <artifactId>ogltesting-binaries</artifactId>
-      <type>zip</type>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
       <groupId>ant-contrib</groupId>
       <artifactId>ant-contrib</artifactId>
       <scope>provided</scope>
@@ -233,7 +226,6 @@ limitations under the License.
               <target>
                 <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
 
-                <property name="binaries-zip" value="${com.github.mc-imperial:ogltesting-binaries:zip}"/>
                 <property name="shaders-zip" value="${com.graphicsfuzz:shaders:zip}"/>
 
 
@@ -244,7 +236,6 @@ limitations under the License.
 
                 <outofdate>
                   <sourcefiles>
-                    <pathelement location="${binaries-zip}"/>
                     <pathelement location="${shaders-zip}"/>
 
                     <!-- build-angle -->

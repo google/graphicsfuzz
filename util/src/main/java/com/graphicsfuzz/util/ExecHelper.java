@@ -152,6 +152,8 @@ public class ExecHelper {
       stderr = errorGobbler.getResult();
     }
 
+    LOGGER.info("Result: {}", res);
+
     return new ExecResult(res, stdout, stderr, stdoutFile, stderrFile);
   }
 
