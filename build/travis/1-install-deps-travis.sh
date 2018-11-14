@@ -46,9 +46,10 @@ popd
 
 # Android SDK
 
-export ANDROID_TOOLS_FILENAME=tools_r25.2.3-linux.zip
+export ANDROID_TOOLS_FILENAME="tools_r25.2.3-linux.zip"
 export ANDROID_API_LEVELS="platforms;android-23"
-export ANDROID_BUILD_TOOLS_VERSION=25.0.0
+export ANDROID_BUILD_TOOLS_VERSION="25.0.0"
+export ANDROID_TOOLS_URL="http://dl.google.com/android/repository/${ANDROID_TOOLS_FILENAME}""
 
 mkdir -p "${ANDROID_HOME}"
 pushd "${ANDROID_HOME}"
