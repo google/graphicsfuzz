@@ -75,10 +75,18 @@ def go():
     # Copy desktop worker.
     shutil.copy2(
         path("desktop", "build", "libs", "desktop-1.0.jar"),
-        path(source_root, "out", "desktop-worker.jar")
+        path(source_root, "out", "desktop-gles-worker.jar")
     )
 
-    # TODO: Android worker.
+    # Build Android worker
+    subprocess.call(
+        ["./gradlew", "android:assembleDebug"])
+
+    # Copy Android worker.
+    shutil.copy2(
+        path("android", "build", "outputs", "apk", "android-debug.apk"),
+        path(source_root, "out", "android-gles-worker.apk")
+    )
 
     os.chdir(source_root)
 

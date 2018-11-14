@@ -26,7 +26,7 @@ GITHUB_RELEASE_TOOL_VERSION="v1.1.0"
 
 if [ "$(uname)" == "Darwin" ];
 then
-  brew install python3
+  brew install python3 unzip wget
   GITHUB_RELEASE_TOOL_ARCH="darwin_amd64"
 fi
 
@@ -34,7 +34,7 @@ if [ "$(uname)" == "Linux" ];
 then
   sudo add-apt-repository ppa:deadsnakes/ppa -y
   sudo apt-get update -q
-  sudo apt-get install python3.6 -y
+  sudo apt-get install python3.6 unzip wget -y
   GITHUB_RELEASE_TOOL_ARCH="linux_amd64"
 fi
 
@@ -44,3 +44,16 @@ wget "https://github.com/${GITHUB_RELEASE_TOOL_USER}/github-release/releases/dow
 tar xf "github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_ARCH}.tar.gz"
 popd
 
+# Android SDK
+
+export ANDROID_TOOLS_FILENAME=tools_r25.2.3-linux.zip
+export ANDROID_API_LEVELS="platforms;android-23"
+export ANDROID_BUILD_TOOLS_VERSION=25.0.0
+
+mkdir -p "${ANDROID_HOME}"
+pushd "${ANDROID_HOME}"
+wget -q "${ANDROID_TOOLS_URL}"
+unzip "${ANDROID_TOOLS_FILENAME}"
+rm "${ANDROID_TOOLS_FILENAME}"
+echo y | sdkmanager "extras;android;m2repository" "tools" "platform-tools" "${ANDROID_API_LEVELS}" "build-tools;${ANDROID_BUILD_TOOLS_VERSION}"
+popd
