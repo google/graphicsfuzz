@@ -5,9 +5,9 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-### GraphicsFuzz is a testing framework for GLSL and SPIR-V shader compilers.
+### GraphicsFuzz is a testing framework for graphics drivers.
 
-GraphicsFuzz can automatically find and simplify bugs in graphics shader compilers. It enables to generate, run and reduce test shaders. It currently operates on GLSL shaders, and uses glslangValidator and spirv tools to target SPIR-V.
+GraphicsFuzz can automatically find and simplify bugs in graphics shader compilers. It enables to generate, run and reduce test shaders. It currently operates on GLSL shaders, and uses glslangValidator and spirv-tools to target SPIR-V.
 
 **NB:** the **[GLSL reducer](docs/reduce.md)** is available as a **stand-alone** tool.
 
