@@ -6,29 +6,29 @@ GraphicsFuzz is a testing framework for automatically finding and simplifying bu
 
 A graphics driver takes a *shader program* as input and executes it on a GPU (graphics processing unit) to render an image.
 
-![shader program, to GPU, to image](docs/images/shader-gpu-image.png)
+![shader program, to GPU, to image](images/shader-gpu-image.png)
 
 Compiling and executing shaders is complex, and many graphics drivers are unreliable: a valid shader can lead to wrong images, driver errors or even security issues.
 
-![shader program, to GPU, to crash](docs/images/shader-gpu-crash.png)
+![shader program, to GPU, to crash](images/shader-gpu-crash.png)
 
 ## Automatically finding bugs
 
 We start with a *reference shader* that renders an image. The reference shader can be any shader you like, such as a high-value shader from a game or existing test suite.
 
-![reference, to GPU, to image](docs/images/reference-gpu-image.png)
+![reference, to GPU, to image](images/reference-gpu-image.png)
 
 Shaders are programs, so by applying *semantics-preserving* source code transformations, we can obtain a shader with significantly different source code that still has the same effect.
 
-![transformation example: wrapping a statement in a do-while-false loop](docs/images/transformation-example.png)
+![transformation example: wrapping a statement in a do-while-false loop](images/transformation-example.png)
 
 For example, wrapping code in a single-iteration loop does not change the meaning (semantics) of a program. By applying various semantics-preserving transformations to the reference shader, we generate a family of *variant shaders*, where each variant must render the same image as the reference.
 
-![reference and variants, to GPU, to many equivalent images](docs/images/variant-same.png)
+![reference and variants, to GPU, to many equivalent images](images/variant-same.png)
 
 If a variant shader leads to a seriously different image (or a driver error), then we have found a graphics driver bug!
 
-![reference and one variant, to GPU, to two different images](docs/images/variant-bug-wrongimg.png)
+![reference and one variant, to GPU, to two different images](images/variant-bug-wrongimg.png)
 
 This approach is known as *metamorphic testing*.
 
@@ -36,11 +36,11 @@ This approach is known as *metamorphic testing*.
 
 Finding bugs is not the end of the story: a variant shader that exposes a bug is typically very large (thousands of lines), full of code coming from the semantics-preserving transformations. Typically only a fraction of this code is needed to expose the bug.
 
-![Source code, the majority of which is highlighted in yellow, but parts of one statement are not highlighted.](docs/images/variant-haystack.png)
+![Source code, the majority of which is highlighted in yellow, but parts of one statement are not highlighted.](images/variant-haystack.png)
 
 Fortunately, our reducer is able to selectively reverse those transformations that are not relevant to the bug. After reduction, we obtain a small difference sufficient to expose the driver issue.
 
-![The same source code, the majority of which is highlighted in yellow and striked out, but parts of one statement remain.](docs/images/variant-reduced.png)
+![The same source code, the majority of which is highlighted in yellow and striked out, but parts of one statement remain.](images/variant-reduced.png)
 
 The reduced variant *still exposes the bug*, and differs from the reference only slightly: this is a great starting point to isolate the root cause of the bug in the graphics driver.
 

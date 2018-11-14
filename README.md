@@ -9,7 +9,7 @@
 
 GraphicsFuzz can automatically find and simplify bugs in graphics shader compilers. It enables to generate, run and reduce test shaders. It currently operates on GLSL shaders, and uses glslangValidator and spirv tools to target SPIR-V.
 
-**NB:** the **[GLSL reducer](docs/reduce.md)** is available as a stand-alone tool.
+**NB:** the **[GLSL reducer](docs/reduce.md)** is available as a **stand-alone** tool.
 
 * [Introduction: why and how to test shader compilers](docs/introduction.md)
 * [Getting started: the walkthrough](docs/walkthrough.md)
