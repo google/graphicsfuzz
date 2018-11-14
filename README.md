@@ -1,13 +1,13 @@
 
-Warning: this repository is a work-in-progress. Things may break while we transition this project to open source. This is not an officially supported Google product.
+**Warning:** this repository is a work-in-progress. Things may break while we transition this project to open source. This is not an officially supported Google product.
 
 # GraphicsFuzz
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-GraphicsFuzz is a testing framework for automatically finding and simplifying bugs in GLSL and SPIR-V shader compilers.
+### GraphicsFuzz is a testing framework for automatically finding and simplifying bugs in GLSL and SPIR-V shader compilers.
 
-**NB: the [GLSL reducer](docs/reduce.md) is available as a stand-alone tool.**
+**NB:** the **[GLSL reducer](docs/reduce.md)** is available as a stand-alone tool.
 
 * [Introduction: why and how to test shader compilers](docs/introduction.md)
 * [Getting started: the walkthrough](docs/walkthrough.md)
