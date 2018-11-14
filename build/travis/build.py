@@ -23,6 +23,32 @@ import check_headers
 path = os.path.join
 
 
+def check_call_filter(cmd):
+    """
+    This is like subprocess.check_call but filters out common, boring messages so we don't have
+    such a large stdout when executing mvn. This was necessary to prevent travis from
+    terminating our build.
+
+    :param cmd:
+    :return:
+    """
+    print(" ".join(cmd))
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+    )
+    for line in iter(proc.stdout.readline, b""):
+        line = line.decode("utf-8")
+        # note: line includes newline
+        if line.startswith("Progress "):
+            continue
+        if line.find("SimplePlan - Looking for opportunities of kind") != -1:
+            continue
+        print(line, end="")
+    return_code = proc.wait()
+    assert return_code == 0
+
+
 def go():
     os.environ["GRADLE_OPTS"] = "-Dorg.gradle.daemon=false"
 
@@ -32,7 +58,7 @@ def go():
     check_headers.go()
 
     # Build with no tests.
-    subprocess.check_call(["mvn", "package", "-Dmaven.test.skip=true"])
+    check_call_filter(["mvn", "package", "-Dmaven.test.skip=true"])
 
     # Generate third party licenses file.
     licenses.go()
@@ -55,8 +81,8 @@ def go():
     )
 
     # Rebuild with tests.
-    subprocess.check_call(["mvn", "clean"])
-    subprocess.check_call(["mvn", "package", "-P", "imageTests"])
+    check_call_filter(["mvn", "clean"])
+    check_call_filter(["mvn", "package", "-P", "imageTests"])
 
     # Copy output.
     shutil.copy2(

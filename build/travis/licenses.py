@@ -831,7 +831,6 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': 'see spirv-tools',
         },
-
     }
 
 
