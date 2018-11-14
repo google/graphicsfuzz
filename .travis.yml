@@ -22,8 +22,9 @@ matrix:
       sudo: required
 
 install:
+  - export ANDROID_HOME=/opt/android-sdk-linux
+  - export PATH="${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${ANDROID_HOME}/platform-tools:/data/bin:$PATH"
   - build/travis/1-install-deps-travis.sh
-  - export PATH="/data/bin:$PATH"
 
 script:
   - python3.6 build/travis/build.py
