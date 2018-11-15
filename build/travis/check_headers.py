@@ -78,8 +78,12 @@ def exclude_filename(f: str):
         f.endswith(".md") or \
         f.endswith(".json") or \
         f.endswith(".primitives") or \
+        f.endswith(".jar") or \
+        f.endswith(".spv") or \
         f in [
             ".editorconfig",
+            ".gitmodules",
+            "settings.gradle",
             ".gitignore",
             ".gitattributes",
             "AUTHORS",
@@ -91,6 +95,7 @@ def exclude_filename(f: str):
             "gradlew",
             "gradlew.bat",
             "dependency-reduced-pom.xml",
+            "gradle-wrapper.properties",
 
 
         ]
@@ -114,7 +119,12 @@ def go():
             try:
                 with io.open(file, 'r') as fin:
                     contents = fin.read()
-                    if contents.find("Copyright 2018 The GraphicsFuzz Project Authors") == -1:
+
+                    # File must contain Copyright header anywhere
+                    # or "generated" on the first line.
+
+                    if contents.find("Copyright 2018 The GraphicsFuzz Project Authors") == -1 and \
+                            contents.split('\n')[0].find("generated") == -1:
                         fail = True
                         print("Missing license header " + file)
             except:
