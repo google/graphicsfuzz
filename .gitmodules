@@ -1,0 +1,9 @@
+[submodule "third_party/cJSON"]
+	path = third_party/cJSON
+	url = https://github.com/DaveGamble/cJSON
+[submodule "third_party/lodepng"]
+	path = third_party/lodepng
+	url = https://github.com/lvandeve/lodepng
+[submodule "third_party/gflags"]
+	path = third_party/gflags
+	url = https://github.com/gflags/gflags
