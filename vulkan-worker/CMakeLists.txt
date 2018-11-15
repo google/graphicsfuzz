@@ -14,12 +14,14 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
-set(CMAKE_CXX_FLAGS "$ENV{CMAKE_CXX_FLAGS} -g -Werror -std=c++11")
+project(vkworker)
+
+set(CMAKE_CXX_STANDARD 11)
 
 set(THIRD_PARTY ${CMAKE_SOURCE_DIR}/../third_party)
 
 find_package(glfw3 3.2 REQUIRED)
-add_subdirectory(${THIRD_PARTY}/gflags gflags)
+add_subdirectory(${THIRD_PARTY}/gflags gflags EXCLUDE_FROM_ALL)
 
 add_executable(vkworker
   src/linux/main.cc
@@ -29,6 +31,10 @@ add_executable(vkworker
   ${THIRD_PARTY}/cJSON/cJSON.c
   ${THIRD_PARTY}/lodepng/lodepng.cpp
   )
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(vkworker PRIVATE "-Werror" "-Wall" "-Wextra")
+endif()
 
 target_include_directories(vkworker BEFORE PRIVATE
   ${CMAKE_SOURCE_DIR}/src/common
@@ -40,3 +46,5 @@ target_include_directories(vkworker BEFORE PRIVATE
 
 link_directories(vkworker BEFORE $ENV{VULKAN_SDK}/lib)
 target_link_libraries(vkworker vulkan glfw gflags)
+
+install(TARGETS vkworker DESTINATION bin)

@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
   platform_data.window = glfwCreateWindow(WIDTH, HEIGHT, "VulkanWorker", nullptr, nullptr);
 
   VulkanWorker* vulkan_worker = new VulkanWorker(&platform_data);
-  vulkan_worker->Render(vertex_file, fragment_file, uniform_file, FLAGS_png_template, FLAGS_skip_render);
+  vulkan_worker->Render(vertex_file, fragment_file, uniform_file, FLAGS_skip_render);
   delete vulkan_worker;
 
   fclose(vertex_file);

@@ -170,7 +170,7 @@ class VulkanWorker {
   public:
   VulkanWorker(PlatformData *platform_data);
   ~VulkanWorker();
-  void Render(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, std::string &image_template_filename, bool skip_render);
+  void Render(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, bool skip_render);
   static void DumpWorkerInfo(const char *worker_info_filename);
 };
 

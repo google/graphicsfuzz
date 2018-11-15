@@ -414,7 +414,7 @@ void VulkanWorker::CreateSwapchainImageViews() {
 
   image_views_.resize(images_.size());
 
-  for (int i = 0; i < images_.size(); i++) {
+  for (size_t i = 0; i < images_.size(); i++) {
     image_view_create_info.image = images_[i];
     VKCHECK(vkCreateImageView(device_, &image_view_create_info, nullptr, &(image_views_[i])));
   }
@@ -537,7 +537,7 @@ void VulkanWorker::PrepareUniformBuffer() {
   uniform_buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   uniform_buffer_create_info.flags = 0;
 
-  for (int i = 0; i < (int)uniform_entries_.size(); i++) {
+  for (size_t i = 0; i < uniform_entries_.size(); i++) {
     UniformEntry uniform_entry = uniform_entries_[i];
 
     uniform_buffer_create_info.size = uniform_entry.size;
@@ -569,7 +569,7 @@ void VulkanWorker::PrepareUniformBuffer() {
 }
 
 void VulkanWorker::DestroyUniformResources() {
-  for (int i = 0; i < uniform_entries_.size(); i++) {
+  for (size_t i = 0; i < uniform_entries_.size(); i++) {
     free(uniform_entries_[i].value);
     VKLOG(vkFreeMemory(device_, uniform_memories_[i], nullptr));
     VKLOG(vkDestroyBuffer(device_, uniform_buffers_[i], nullptr));
@@ -580,7 +580,7 @@ void VulkanWorker::CreateDescriptorSetLayout() {
   std::vector<VkDescriptorSetLayoutBinding> descriptor_set_layout_bindings;
   descriptor_set_layout_bindings.resize(uniform_entries_.size());
 
-  for (int i = 0; i < uniform_entries_.size(); i++) {
+  for (size_t i = 0; i < uniform_entries_.size(); i++) {
     descriptor_set_layout_bindings[i].binding = i;
     descriptor_set_layout_bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     descriptor_set_layout_bindings[i].descriptorCount = 1;
@@ -757,7 +757,7 @@ void VulkanWorker::DestroyShaderModules() {
 }
 
 void VulkanWorker::PrepareShaderStages() {
-  for (int i = 0; i < 2; i++) {
+  for (size_t i = 0; i < 2; i++) {
     shader_stages_[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shader_stages_[i].pNext = nullptr;
     shader_stages_[i].flags = 0;
@@ -787,14 +787,14 @@ void VulkanWorker::CreateFramebuffers() {
   framebuffer_create_info.height = height_;
   framebuffer_create_info.layers = 1;
 
-  for (int i = 0; i < images_.size(); i++) {
+  for (size_t i = 0; i < images_.size(); i++) {
     attachments[0] = image_views_[i];
     VKCHECK(vkCreateFramebuffer(device_, &framebuffer_create_info, nullptr, &(framebuffers_[i])));
   }
 }
 
 void VulkanWorker::DestroyFramebuffers() {
-  for (int i = 0; i < images_.size(); i++) {
+  for (size_t i = 0; i < images_.size(); i++) {
     VKLOG(vkDestroyFramebuffer(device_, framebuffers_[i], nullptr));
   }
 }
@@ -1008,7 +1008,7 @@ void VulkanWorker::LoadSpirvFromArray(unsigned char *array, unsigned int len, st
   spv.resize(num_words);
 
   uint32_t *p = (uint32_t *)array;
-  for (int i = 0; i < num_words; i++) {
+  for (size_t i = 0; i < num_words; i++) {
     spv[i] = *p;
     p++;
   }
@@ -1315,16 +1315,16 @@ void VulkanWorker::LoadUniforms(const char *uniforms_string) {
   assert(return_past_end == nullptr || "Error when parsing uniform JSON");
 
   // Extract uniforms
-  int num_uniforms = cJSON_GetArraySize(uniform_json);
+  size_t num_uniforms = cJSON_GetArraySize(uniform_json);
   uniform_entries_.resize(num_uniforms);
 
-  for (int i = 0; i < num_uniforms; i++) {
+  for (size_t i = 0; i < num_uniforms; i++) {
     cJSON *json_entry = cJSON_GetArrayItem(uniform_json, i);
     assert(cJSON_IsObject(json_entry));
     cJSON *json_binding = cJSON_GetObjectItemCaseSensitive(json_entry, "binding");
     assert(json_binding != nullptr && cJSON_IsNumber(json_binding));
     int binding = json_binding->valueint;
-    assert(binding >= 0 && binding < num_uniforms);
+    assert(binding >= 0 && (size_t)binding < num_uniforms);
 
     UniformEntry *uniform_entry = &(uniform_entries_[binding]);
 
@@ -1474,9 +1474,9 @@ void VulkanWorker::ExportPNG(const char *png_filename) {
   uint32_t *rgba_pixel = (uint32_t *)rgba_blob;
 
   // TODO: measure this loop, optimise it if and only if it is worth it
-  for (int y = 0; y < height_; y++) {
+  for (uint32_t y = 0; y < height_; y++) {
     uint32_t *source_pixel = (uint32_t *)source_line;
-    for (int x = 0; x < width_; x++) {
+    for (uint32_t x = 0; x < width_; x++) {
       switch (format_) {
 
         case VK_FORMAT_R8G8B8A8_UNORM:
@@ -1578,7 +1578,7 @@ void VulkanWorker::DoRender(std::vector<uint32_t> &vertex_spv, std::vector<uint3
   log("RENDER END");
 }
 
-void VulkanWorker::Render(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, std::string &png_template, bool skip_render) {
+void VulkanWorker::Render(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, bool skip_render) {
 
   // Sanity before
   DoRender(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_unifoms_string, FLAGS_sanity_before.c_str(), false);
