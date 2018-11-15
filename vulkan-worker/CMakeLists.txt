@@ -15,25 +15,26 @@
 cmake_minimum_required(VERSION 3.4.1)
 
 set(CMAKE_CXX_FLAGS "$ENV{CMAKE_CXX_FLAGS} -g -Werror -std=c++11")
-set(CJSON "cJSON-1.7.8")
+
+set(THIRD_PARTY ${CMAKE_SOURCE_DIR}/../third_party)
 
 find_package(glfw3 3.2 REQUIRED)
-add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/gflags)
+add_subdirectory(${THIRD_PARTY}/gflags gflags)
 
 add_executable(vkworker
   src/linux/main.cc
   src/linux/platform.cc
   src/common/vulkan_worker.cc
   src/common/vkcheck.cc
-  third_party/${CJSON}/cJSON.c
-  third_party/lodepng/lodepng.cpp
+  ${THIRD_PARTY}/cJSON/cJSON.c
+  ${THIRD_PARTY}/lodepng/lodepng.cpp
   )
 
 target_include_directories(vkworker BEFORE PRIVATE
   ${CMAKE_SOURCE_DIR}/src/common
   ${CMAKE_SOURCE_DIR}/src/linux
-  ${CMAKE_SOURCE_DIR}/third_party/${CJSON}
-  ${CMAKE_SOURCE_DIR}/third_party/lodepng
+  ${THIRD_PARTY}/cJSON
+  ${THIRD_PARTY}/lodepng
   $ENV{VULKAN_SDK}/include
   )
 
