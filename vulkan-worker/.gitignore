@@ -1,0 +1,14 @@
+build/
+build_*/
+local.properties
+gradle.properties
+.externalNativeBuild/
+.gradle/
+.idea/
+*.iml
+*.png
+*.spv
+GPATH
+GTAGS
+GRTAGS
+TAGS
