@@ -38,7 +38,7 @@ public class GenerateAndRunShadersTest {
     assertTrue(references.delete());
 
     try {
-      GenerateAndRunShaders.main(
+      GenerateAndRunShaders.mainHelper(
             new String[]{
                 references.getAbsolutePath(),
                 donors.getAbsolutePath(),
@@ -64,7 +64,7 @@ public class GenerateAndRunShadersTest {
     assertTrue(donors.delete());
 
     try {
-      GenerateAndRunShaders.main(
+      GenerateAndRunShaders.mainHelper(
             new String[] {
                 references.getAbsolutePath(),
                 donors.getAbsolutePath(),
@@ -89,7 +89,7 @@ public class GenerateAndRunShadersTest {
     new File(references, "a.frag").createNewFile();
 
     try {
-      GenerateAndRunShaders.main(
+      GenerateAndRunShaders.mainHelper(
             new String[]{
                 references.getAbsolutePath(),
                 donors.getAbsolutePath(),

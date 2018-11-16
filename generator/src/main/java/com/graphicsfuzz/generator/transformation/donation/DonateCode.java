@@ -528,11 +528,9 @@ public abstract class DonateCode implements ITransformation {
       return false;
     }
     if (prototypeClashes(fromDonor, recipientFunctionPrototypes)) {
-      System.err
-            .println(
-                  "Donor and recipient are incompatible as they declare clashing functions named "
-                        + fromDonor.getName());
-      System.exit(1);
+      throw new RuntimeException(
+          "Donor and recipient are incompatible as they declare clashing functions named "
+              + fromDonor.getName());
     }
     return true;
   }

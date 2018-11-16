@@ -505,7 +505,7 @@ public class ReducerUnitTest {
           reference, referenceImage, false);
     assertEquals(0, referenceResult.res);
     final File output = temporaryFolder.newFolder();
-    Reduce.main(new String[] {
+    Reduce.mainHelper(new String[] {
           referenceJson.getAbsolutePath(),
           "--swiftshader",
           "IDENTICAL",
@@ -517,7 +517,7 @@ public class ReducerUnitTest {
           "--seed",
           "0",
           "--output",
-          output.getAbsolutePath() });
+          output.getAbsolutePath() }, null);
   }
 
 }
