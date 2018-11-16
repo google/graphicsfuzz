@@ -6,8 +6,6 @@ gradle.properties
 .gradle/
 .idea/
 *.iml
-*.png
-*.spv
 GPATH
 GTAGS
 GRTAGS
