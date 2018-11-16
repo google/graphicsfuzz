@@ -18,10 +18,30 @@ The few platform-specifics are in:
 ## How to build
 
 For Android, use Android Studio to open the `build.gradle` file at the root of
-this repo. On the command line, from root directory: `./gradlew assembleDebug`
+this repo. On the command line, from the vulkan-worker directory: `./gradlew assembleDebug`
 generates the apk in `./src/android/build/outputs/apk/debug/android-debug.apk`.
 
-For Linux, use cmake with the top-level CMakeLists.txt
+For Linux, use CMake with the top-level CMakeLists.txt. E.g.
+
+```sh
+# From vulkan-worker directory:
+
+mkdir build
+cd build
+
+# As with all CMake projects, there are three steps: (configure, build, and
+# install) and they can all be executed using cmake.
+
+cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
+cmake --build . --config Debug
+cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
+
+# Execute vkworker on the samples:
+
+cd ..
+build/install/bin/vkworker samples/shader.vert.spv samples/shader.frag.spv samples/shader.json
+
+```
 
 ## Third party sources
 
