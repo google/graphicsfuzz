@@ -62,7 +62,7 @@ limitations under the License.
     <angle-version>0f47bfa7f7ed90ff0e80ec4724f8292250219dfb</angle-version>
     <swiftshader-version>2c4ff0754cffd7c19747b0ebdaac05ab019d0273</swiftshader-version>
     <glslang-version>e91ec4d97076b70c2111279e1e997abfdf58dcaf</glslang-version>
-    <getimage-version>2a0d9efa21cb6396dd744ffcae270eb7f367ca00</getimage-version>
+    <getimage-version>d987dc0e5f8aeae0dc2f5aac2013e9a3edd54465</getimage-version>
   </properties>
 
   <dependencies>
