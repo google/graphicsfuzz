@@ -72,7 +72,7 @@ def get_extras():
         },
 
         'spirv-tools': {
-            'comment': 'Used by glslang, angle',
+            'comment': 'Used by us, glslang, angle',
             'name': 'SPIR-V Tools',
             'url': 'https://github.com/KhronosGroup/SPIRV-Tools',
             'license_url': 'https://raw.githubusercontent.com/KhronosGroup/SPIRV-Tools/a77bb2e54b35f1f6f8bb20f4dcab4e33999edb60/LICENSE',
@@ -790,6 +790,46 @@ def get_maven_dependencies_populated():
                            '/5e93462dd781677fb75aefc6cc7df65822970ca0/LICENSE.txt',
             'license_file': '',
             'skipped': '',
+        },
+        'github.paulthomson:build-angle': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'see angle',
+        },
+        'github.paulthomson:build-swiftshader': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'see swiftshader',
+        },
+        'github.paulthomson:build-glslang': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'see glslang',
+        },
+        'github.mc-imperial:get-image-glsl': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'internal project',
+        },
+        'github.paulthomson:build-SPIRV-Tools': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'see spirv-tools',
         },
     }
 

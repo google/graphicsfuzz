@@ -31,19 +31,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.bytedeco.javacpp.indexer.UByteIndexer;
-import org.bytedeco.javacpp.opencv_core.Mat;
-import org.bytedeco.javacpp.opencv_imgcodecs;
 import org.junit.Assert;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public final class Util {
@@ -96,7 +90,7 @@ public final class Util {
     final Optional<String> shaderTranslatorArg = getShaderTranslatorArg(shaderFile, fileOps);
     if (shaderTranslatorArg.isPresent()) {
       final ExecResult shaderTranslatorResult = ToolHelper
-            .runShaderTranslatorOnShader(RedirectType.TO_BUFFER, shaderFile,
+            .runShaderTranslatorOnShader(RedirectType.TO_LOG, shaderFile,
                   shaderTranslatorArg.get());
       assertEquals(0, shaderTranslatorResult.res);
     }
@@ -105,10 +99,8 @@ public final class Util {
 
   static void validate(File shaderFile) throws IOException, InterruptedException {
     final ExecResult validatorResult = ToolHelper
-          .runValidatorOnShader(RedirectType.TO_BUFFER, shaderFile);
-    if (validatorResult.res != 0) {
-      assert false;
-    }
+          .runValidatorOnShader(RedirectType.TO_LOG, shaderFile);
+    assertEquals(validatorResult.res, 0);
   }
 
   private static Optional<String> getShaderTranslatorArg(
@@ -159,7 +151,7 @@ public final class Util {
   static File getImageUsingSwiftshader(File shaderFile, TemporaryFolder temporaryFolder) throws IOException, InterruptedException {
     File imageFile = temporaryFolder.newFile();
     ExecResult res =
-        ToolHelper.runSwiftshaderOnShader(RedirectType.TO_BUFFER,
+        ToolHelper.runSwiftshaderOnShader(RedirectType.TO_LOG,
             shaderFile,
             imageFile,
             false,

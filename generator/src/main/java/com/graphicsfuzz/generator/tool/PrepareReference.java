@@ -33,7 +33,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public final class PrepareReference {
 
-  private static Namespace parse(String[] args) {
+  private static Namespace parse(String[] args) throws ArgumentParserException {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("PrepareReference")
         .defaultHelp(true)
         .description("Prepare a reference shader job to work with GraphicsFuzz.");
@@ -71,42 +71,43 @@ public final class PrepareReference {
         .setDefault(0)
         .type(Integer.class);
 
+    return parser.parseArgs(args);
+  }
+
+
+  public static void main(String[] args) {
     try {
-      return parser.parseArgs(args);
+      mainHelper(args);
     } catch (ArgumentParserException exception) {
       exception.getParser().handleError(exception);
       System.exit(1);
-      return null;
+    } catch (IOException | ParseTimeoutException exception) {
+      exception.printStackTrace();
+      System.exit(1);
     }
-
   }
 
-  public static void main(String[] args) {
+  public static void mainHelper(String[] args) throws ArgumentParserException, IOException,
+      ParseTimeoutException {
 
     Namespace ns = parse(args);
 
     ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-    try {
+    final ShadingLanguageVersion shadingLanguageVersion =
+        ns.getBoolean("webgl")
+            ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
+            : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
 
-      final ShadingLanguageVersion shadingLanguageVersion =
-          ns.getBoolean("webgl")
-              ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
-              : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
+    prepareReference(
+        ns.get("reference"),
+        ns.get("output"),
+        shadingLanguageVersion,
+        ns.get("replace_float_literals"),
+        ns.get("max_uniforms"),
+        ns.get("generate_uniform_bindings"),
+        fileOps);
 
-      prepareReference(
-          ns.get("reference"),
-          ns.get("output"),
-          shadingLanguageVersion,
-          ns.get("replace_float_literals"),
-          ns.get("max_uniforms"),
-          ns.get("generate_uniform_bindings"),
-          fileOps);
-
-    } catch (Throwable throwable) {
-      throwable.printStackTrace();
-      System.exit(1);
-    }
 
   }
 

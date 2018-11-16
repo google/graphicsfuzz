@@ -42,7 +42,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public class ReducerBugPointBasic {
 
-  private static Namespace parse(String[] args) {
+  private static Namespace parse(String[] args) throws ArgumentParserException {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("ReducerBugPoint")
           .defaultHelp(true)
           .description("Find bugs in the reducer.");
@@ -76,19 +76,12 @@ public class ReducerBugPointBasic {
           .help("A string to look for in the exception message.")
           .type(String.class);
 
-    try {
-      return parser.parseArgs(args);
-    } catch (ArgumentParserException exception) {
-      exception.getParser().handleError(exception);
-      System.exit(1);
-      return null;
-    }
-
+    return parser.parseArgs(args);
   }
 
 
   public static void main(String[] args)
-        throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, ArgumentParserException {
 
     final Namespace ns = parse(args);
 

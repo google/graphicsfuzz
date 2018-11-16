@@ -30,7 +30,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 class PrettyPrint {
 
-  private static Namespace parse(String[] args) {
+  private static Namespace parse(String[] args) throws ArgumentParserException {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("PrettyPrint")
         .defaultHelp(true)
         .description("Pretty print a shader.");
@@ -49,22 +49,14 @@ class PrettyPrint {
         .help("Version of GLSL to target.")
         .type(String.class);
 
-    try {
-      return parser.parseArgs(args);
-    } catch (ArgumentParserException exception) {
-      exception.getParser().handleError(exception);
-      System.exit(1);
-      return null;
-    }
+    return parser.parseArgs(args);
 
   }
 
   public static void main(String[] args) throws IOException, InterruptedException {
 
-    Namespace ns = parse(args);
-
     try {
-
+      Namespace ns = parse(args);
       long startTime = System.currentTimeMillis();
       TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")));
       long endTime = System.currentTimeMillis();

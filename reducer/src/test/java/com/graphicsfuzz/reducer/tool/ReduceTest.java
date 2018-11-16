@@ -39,7 +39,9 @@ public class ReduceTest {
   public void noServerAllowedInCustomReduction() throws Exception {
     try {
       Reduce.mainHelper(new String[]{"--server", "some_server", "--token", "some_token",
-          makeShaderJobAndReturnJsonFilename(), "CUSTOM"}, null);
+              makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
+              temporaryFolder.getRoot().getAbsolutePath()}
+          , null);
       assertTrue(false);
     } catch (RuntimeException exception) {
       checkOptionNotAllowed(exception, "server");
@@ -50,7 +52,8 @@ public class ReduceTest {
   public void noTokenAllowedInCustomReduction() throws Exception {
     try {
       Reduce.mainHelper(new String[]{"--token", "some_token",
-          makeShaderJobAndReturnJsonFilename(), "CUSTOM"}, null);
+          makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
+          temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
       checkOptionNotAllowed(exception, "token");
@@ -61,7 +64,8 @@ public class ReduceTest {
   public void noErrorStringAllowedInCustomReduction() throws Exception {
     try {
       Reduce.mainHelper(new String[]{"--error_string", "some_string",
-          makeShaderJobAndReturnJsonFilename(), "CUSTOM"}, null);
+          makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
+          temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
       checkOptionNotAllowed(exception, "error_string");
@@ -73,7 +77,7 @@ public class ReduceTest {
     try {
       Reduce.mainHelper(new String[]{"--reference", "reference.info.json",
           makeShaderJobAndReturnJsonFilename(),
-          "CUSTOM"}, null);
+          "CUSTOM", "--output", temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
       checkOptionNotAllowed(exception, "reference");
@@ -88,7 +92,9 @@ public class ReduceTest {
   public void noCustomJudgeAllowedInNonCustomReduction() throws Exception {
     try {
       Reduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "NO_IMAGE",
-          "--custom_judge", "somejudgescript"}, null);
+          "--custom_judge", "somejudgescript", "--output",
+              temporaryFolder.getRoot().getAbsolutePath()},
+          null);
       assertTrue(false);
     } catch (RuntimeException exception) {
       assertTrue(exception.getMessage().contains("custom_judge' option only supported with " +
@@ -99,7 +105,8 @@ public class ReduceTest {
   @Test
   public void customJudgeRequiredInCustomReduction() throws Exception {
     try {
-      Reduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "CUSTOM"}, null);
+      Reduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
+          temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
       assertTrue(exception.getMessage().contains("CUSTOM reduction requires a judge " +
@@ -121,7 +128,7 @@ public class ReduceTest {
           "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue("An exception should have been thrown as the " +
-        "judge script is not executable.", false);
+          "judge script is not executable.", false);
     } catch (RuntimeException exception) {
       assertTrue(exception.getMessage().contains("judge script must be executable"));
     }

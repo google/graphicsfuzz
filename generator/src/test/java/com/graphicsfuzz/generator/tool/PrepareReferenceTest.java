@@ -52,7 +52,7 @@ public class PrepareReferenceTest {
 
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-    PrepareReference.main(new String[] { jsonFile.getAbsolutePath(),
+    PrepareReference.mainHelper(new String[] { jsonFile.getAbsolutePath(),
         output.getAbsolutePath(),
         "310 es" });
 
