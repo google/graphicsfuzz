@@ -54,18 +54,27 @@ const char *getVkResultString (VkResult res) {
   }
 }
 
-void __VK_CHECK(bool do_check, VkResult res, const char *expr, const char *file, int line) {
-
-  // Strip the file full path to only the file name
+// Strip the file full path to only the file name
+static inline const char *stripFilePath(const char *file) {
   const char *p = strrchr(file, '/');
-  if (p != NULL) {
-    file = p + 1;
+  if (p != nullptr) {
+    p++;
+    return p;
   }
+  return file;
+}
 
-  if (do_check) {
-    log("%s:%d %s: %s", file, line, expr, getVkResultString(res));
-    assert(res == VK_SUCCESS);
-  } else {
-    log("%s:%d %s", file, line, expr);
-  }
+void __VK_CHECK_LOG_CALL(const char *file, int line, const char *expr) {
+  file = stripFilePath(file);
+  log("%s:%d CALL %s", file, line, expr);
+}
+
+void __VK_CHECK_LOG_RETURN(const char *file, int line, const char *expr, VkResult result) {
+  file = stripFilePath(file);
+  log("%s:%d RETURN %s: %s", file, line, expr, getVkResultString(result));
+}
+
+void __VK_CHECK_LOG_VOID_RETURN(const char *file, int line, const char *expr) {
+  file = stripFilePath(file);
+  log("%s:%d RETURN %s: void", file, line, expr);
 }
