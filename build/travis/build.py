@@ -82,7 +82,7 @@ def go():
 
     # Rebuild with tests.
     check_call_filter(["mvn", "clean"])
-    check_call_filter(["mvn", "package", "-P", "imageTests"])
+    check_call_filter(["mvn", "package"])  # TODO: Enable image tests.
 
     # Copy output.
     shutil.copy2(
