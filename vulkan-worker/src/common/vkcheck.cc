@@ -17,8 +17,8 @@
 #include <assert.h>
 #include <string.h>
 
-const char *getVkResultString (VkResult res) {
-  switch (res) {
+const char *getVkResultString (VkResult result) {
+  switch (result) {
     case VK_SUCCESS: return "VK_SUCCESS";
     case VK_NOT_READY: return "VK_NOT_READY";
     case VK_TIMEOUT: return "VK_TIMEOUT";
@@ -66,15 +66,16 @@ static inline const char *stripFilePath(const char *file) {
 
 void __VK_CHECK_LOG_CALL(const char *file, int line, const char *expr) {
   file = stripFilePath(file);
-  log("%s:%d CALL %s", file, line, expr);
+  log("%s:%d CALL   %s", file, line, expr);
 }
 
-void __VK_CHECK_LOG_RETURN(const char *file, int line, const char *expr, VkResult result) {
+void __VK_CHECK_LOG_RETURN(const char *file, int line, VkResult result) {
   file = stripFilePath(file);
-  log("%s:%d RETURN %s: %s", file, line, expr, getVkResultString(result));
+  log("%s:%d RETURN %s", file, line, getVkResultString(result));
+  assert(result == VK_SUCCESS);
 }
 
-void __VK_CHECK_LOG_VOID_RETURN(const char *file, int line, const char *expr) {
+void __VK_CHECK_LOG_VOID_RETURN(const char *file, int line) {
   file = stripFilePath(file);
-  log("%s:%d RETURN %s: void", file, line, expr);
+  log("%s:%d RETURN void", file, line);
 }
