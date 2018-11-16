@@ -14,42 +14,40 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
+project(vkworker)
+
+set(CMAKE_CXX_STANDARD 11)
+
+set(THIRD_PARTY ${CMAKE_SOURCE_DIR}/../../../third_party)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_ANDROID_KHR")
+
+# See: https://github.com/android-ndk/ndk/issues/381
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
+
 # Place to find Vulkan validation layers
 link_directories(${ANDROID_NDK}/sources/third_party/vulkan/src/build-android/jniLibs/${ANDROID_ABI})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Werror -std=c++11 -DVK_USE_PLATFORM_ANDROID_KHR")
+# native_app_glue enables to get Android app without Java source
+add_library(native_app_glue STATIC ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
-set(CJSON "cJSON-1.7.8")
-
-set(THIRD_PARTY ${CMAKE_SOURCE_DIR}/../../third_party)
-
-add_subdirectory(${THIRD_PARTY}/gflags gflags)
+add_subdirectory(${THIRD_PARTY}/gflags gflags EXCLUDE_FROM_ALL)
 
 add_library(vkworker SHARED
         ${CMAKE_SOURCE_DIR}/src/main/cpp/main.cc
         ${CMAKE_SOURCE_DIR}/src/main/cpp/platform.cc
         ${CMAKE_SOURCE_DIR}/../common/vulkan_worker.cc
         ${CMAKE_SOURCE_DIR}/../common/vkcheck.cc
-        ${THIRD_PARTY}/${CJSON}/cJSON.c
+        ${THIRD_PARTY}/cJSON/cJSON.c
         ${THIRD_PARTY}/lodepng/lodepng.cpp
         )
 
 target_include_directories(vkworker PRIVATE
         ${CMAKE_SOURCE_DIR}/src/main/cpp
         ${CMAKE_SOURCE_DIR}/../common
-        ${THIRD_PARTY}/${CJSON}
+        ${THIRD_PARTY}/cJSON
         ${THIRD_PARTY}/lodepng
         ${ANDROID_NDK}/sources/android/native_app_glue
-        )
-
-# native_app_glue enables to get Android app without Java source
-add_library(native_app_glue STATIC
-        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
-        )
-
-# See: https://github.com/android-ndk/ndk/issues/381
-set(CMAKE_SHARED_LINKER_FLAGS
-        "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate"
         )
 
 target_link_libraries(vkworker
