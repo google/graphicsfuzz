@@ -59,8 +59,7 @@ wget -q "http://dl.google.com/android/repository/${ANDROID_TOOLS_FILENAME}"
 unzip -q "${ANDROID_TOOLS_FILENAME}"
 rm "${ANDROID_TOOLS_FILENAME}"
 echo y | sdkmanager \
-  "tools;26.1.1" \
-  "platform-tools;28.0.1" \
+  "platform-tools" \
   "platforms;android-26" \
   "build-tools;28.0.2"
 
