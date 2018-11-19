@@ -1103,10 +1103,10 @@ void VulkanWorker::SubmitCommandBuffer() {
 
   VkResult result = VK_TIMEOUT;
   do {
-    log("Wait for fence");
+    // Do not use VKCHECK as VK_TIMEOUT is a valid result
     result = vkWaitForFences(device_, 1, &fence_, VK_TRUE, fence_timeout_nanoseconds_);
+    log("vkWaitForFences(): %s", getVkResultString(result));
   } while (result == VK_TIMEOUT);
-  log("Fence Result: %d", result);
   assert(result == VK_SUCCESS);
 }
 
@@ -1276,7 +1276,9 @@ void VulkanWorker::PrepareExport() {
 
   VkResult result = VK_TIMEOUT;
   do {
+    // Do not use VKCHECK as VK_TIMEOUT is a valid result
     result = vkWaitForFences(device_, 1, &fence_, VK_TRUE, fence_timeout_nanoseconds_);
+    log("vkWaitForFences(): %s", getVkResultString(result));
   } while (result == VK_TIMEOUT);
   assert(result == VK_SUCCESS);
 }
