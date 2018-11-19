@@ -17,10 +17,21 @@
 
 #include <vulkan/vulkan.h>
 
-void __VK_CHECK(bool do_check, VkResult res, const char *expr, const char *file, int line);
+const char *getVkResultString (VkResult result);
 
-#define VKCHECK(expr) __VK_CHECK(true, (expr), #expr, __FILE__, __LINE__)
+void __VK_CHECK_LOG_CALL(const char *file, int line, const char *expr);
+void __VK_CHECK_LOG_RETURN(const char *file, int line, VkResult result);
+void __VK_CHECK_LOG_VOID_RETURN(const char *file, int line);
 
-#define VKLOG(expr) do{ (expr); __VK_CHECK(false, VK_SUCCESS, #expr, __FILE__, __LINE__); }while(false)
+#define VKCHECK(expr) do { \
+  __VK_CHECK_LOG_CALL(__FILE__, __LINE__, #expr); \
+  __VK_CHECK_LOG_RETURN(__FILE__, __LINE__, (expr));  \
+  } while (false)
+
+#define VKLOG(expr) do { \
+  __VK_CHECK_LOG_CALL(__FILE__, __LINE__, #expr); \
+  (expr); \
+  __VK_CHECK_LOG_VOID_RETURN(__FILE__, __LINE__); \
+  } while (false)
 
 #endif
