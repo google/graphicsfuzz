@@ -75,7 +75,7 @@ def get_extras():
             'comment': 'Used by us, glslang, angle',
             'name': 'SPIR-V Tools',
             'url': 'https://github.com/KhronosGroup/SPIRV-Tools',
-            'license_url': 'https://raw.githubusercontent.com/KhronosGroup/SPIRV-Tools/a77bb2e54b35f1f6f8bb20f4dcab4e33999edb60/LICENSE',
+            'license_url': 'https://raw.githubusercontent.com/KhronosGroup/SPIRV-Tools/a8697b0612cdc8c607ca21683a0e9916f4bd2f52/LICENSE',
             'license_file': '',
             'skipped': '',
         },
