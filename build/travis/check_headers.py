@@ -20,17 +20,37 @@ import sys
 
 path = os.path.join
 
-excluded_dirnames = ["target", ".git", ".idea", ".gradle", "tmp", "third_party", "venv",
-                     "__pycache__"]
 
-excluded_dirpaths = ["./platforms/libgdx/OGLTesting/build",
-                     "./platforms/libgdx/OGLTesting/android/build",
-                     "./platforms/libgdx/OGLTesting/android/libs",
-                     "./platforms/libgdx/OGLTesting/core/build",
-                     "./platforms/libgdx/OGLTesting/desktop/build",
-                     "./platforms/libgdx/OGLTesting/gradle/wrapper",
-                     "./build/licenses",
-                    ]
+def exclude_dirname(f: str):
+    return f in [
+        "target",
+        ".git",
+        ".idea",
+        ".gradle",
+        "tmp",
+        "third_party",
+        "venv",
+        "__pycache__",
+        ".externalNativeBuild",
+        ".mvn",
+
+    ]
+
+
+def exclude_dirpath(f: str):
+    return \
+        f.startswith("./vulkan-worker/build") or \
+        f in [
+            "./platforms/libgdx/OGLTesting/build",
+            "./platforms/libgdx/OGLTesting/android/build",
+            "./platforms/libgdx/OGLTesting/android/libs",
+            "./platforms/libgdx/OGLTesting/core/build",
+            "./platforms/libgdx/OGLTesting/desktop/build",
+            "./platforms/libgdx/OGLTesting/gradle/wrapper",
+            "./build/licenses",
+            "./vulkan-worker/src/android/build",
+
+        ]
 
 
 def no_ext_or_endswith_bat(f: str):
@@ -51,7 +71,7 @@ def is_command_wrapper(f: str):
     return False
 
 
-def exclude_file(f: str):
+def exclude_filepath(f: str):
     return \
         f.startswith("./python/src/main/python/drivers/") and is_command_wrapper(f) or \
         f in [
@@ -67,6 +87,8 @@ def exclude_file(f: str):
             "./platforms/libgdx/OGLTesting/desktop/build.gradle",
             "./platforms/libgdx/OGLTesting/ios/build.gradle",
             "./platforms/libgdx/OGLTesting/ios/robovm.properties",
+            "./mvnw",
+            "./mvnw.cmd"
 
         ]
 
@@ -97,7 +119,6 @@ def exclude_filename(f: str):
             "dependency-reduced-pom.xml",
             "gradle-wrapper.properties",
 
-
         ]
 
 
@@ -107,14 +128,14 @@ def go():
 
         # dirnames[:] = <--- modifies in-place to ignore certain directories
 
-        if dirpath in excluded_dirpaths:
+        if exclude_dirpath(dirpath):
             dirnames[:] = []
             continue
 
-        dirnames[:] = [d for d in dirnames if d not in excluded_dirnames]
+        dirnames[:] = [d for d in dirnames if not exclude_dirname(d)]
 
         for file in [path(dirpath, f) for f in filenames if not exclude_filename(f)]:
-            if exclude_file(file):
+            if exclude_filepath(file):
                 continue
             try:
                 with io.open(file, 'r') as fin:
@@ -137,4 +158,3 @@ def go():
 
 if __name__ == "__main__":
     go()
-
