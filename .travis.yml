@@ -36,7 +36,7 @@ matrix:
         - INSTALL_SCRIPT="build/ci_vulkan_worker/1-install-deps-travis.sh"
         - BUILD_SCRIPT="build/ci_vulkan_worker/2-build-travis.sh"
         - RELEASE_SCRIPT="python3.6 build/travis/release.py"
-        - ANDROID_NDK_HOME=/data/android-sdk/ndk-bundle
+        - ANDROID_NDK_HOME=/opt/android-sdk/ndk-bundle
 
 
 install:
