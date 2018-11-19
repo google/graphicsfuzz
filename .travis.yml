@@ -15,19 +15,37 @@
 
 language: generic
 
+# First matrix entry builds graphicsfuzz repo and GLES workers.
+# Second matrix entry builds vulkan-worker.
+
+# The matrix entries install different versions of the Android SDK (for now).
+
 matrix:
   include:
     - os: linux
       dist: trusty
       sudo: required
+      env:
+        - INSTALL_SCRIPT="build/travis/1-install-deps-travis.sh"
+        - BUILD_SCRIPT="python3.6 build/travis/build.py"
+        - RELEASE_SCRIPT="python3.6 build/travis/release.py"
+    - os: linux
+      dist: trusty
+      sudo: required
+      env:
+        - INSTALL_SCRIPT="build/ci_vulkan_worker/1-install-deps-travis.sh"
+        - BUILD_SCRIPT="build/ci_vulkan_worker/2-build-travis.sh"
+        - RELEASE_SCRIPT="python3.6 build/travis/release.py"
+        - ANDROID_NDK_HOME=/data/android-sdk/ndk-bundle
+
 
 install:
-  - export ANDROID_HOME=/opt/android-sdk-linux
+  - export ANDROID_HOME=/opt/android-sdk
   - export PATH="${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${ANDROID_HOME}/platform-tools:/data/bin:$PATH"
-  - build/travis/1-install-deps-travis.sh
+  - $INSTALL_SCRIPT
 
 script:
-  - python3.6 build/travis/build.py
+  - $BUILD_SCRIPT
 
 after_success:
-  - python3.6 build/travis/release.py
+  - $RELEASE_SCRIPT
