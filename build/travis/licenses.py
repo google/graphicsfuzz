@@ -364,9 +364,25 @@ def get_extras():
             'skipped': '',
         },
 
+        'cJSON': {
+            'comment': '',
+            'name': 'cJSON',
+            'url': 'https://github.com/DaveGamble/cJSON',
+            'license_url': 'https://raw.githubusercontent.com/DaveGamble/cJSON'
+                           '/2c914c073d71701b596fa58a84529712a0bd1eeb/LICENSE',
+            'license_file': '',
+            'skipped': '',
+        },
 
-
-
+        'gflags': {
+            'comment': '',
+            'name': 'gflags',
+            'url': 'https://github.com/gflags/gflags',
+            'license_url': 'https://raw.githubusercontent.com/gflags/gflags'
+                           '/498cfa8b137652b636c0dbc2427eaf8637766693/COPYING.txt',
+            'license_file': '',
+            'skipped': '',
+        },
 
 
 
