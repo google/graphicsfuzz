@@ -71,128 +71,11 @@ plus the port (default is 8080).
 
 Now return to the webui page on the server and queue a shader family to the worker.
 
-## Building the server
+## Building the server and workers
 
-Requirements: JDK, Maven.
+See development/IDE on how to build using an IDE.
 
-Execute the following:
-
-```shell
-# clone this repo
-git clone git@github.com:google/graphicsfuzz.git
-
-# change into repo root
-cd graphicsfuzz
-
-# You can build immediately using Maven. This will take a while the first time.
-# The fastest command is:
-mvn package -DskipTests=true -Dcheckstyle.skip=true -am -pl assembly
-
-# Of course, the above skips tests, checkstyle, and only builds the assembly package.
-# You can also try:
-mvn package
-
-# The build artifact as a directory:  assembly/target/assembly-1.0/
-# And as an archive:                  assembly/target/assembly-1.0.zip
-
-# change into artifact directory
-cd assembly/target/assembly-1.0/
-```
-
-(see running the server, but instead of extracting the release zip,
-use the artifact directory `assembly/target/assembly-1.0/`)
-
-Additional Maven commands and Maven profiles:
-
-```shell
-# To build just the assembly project (that contains the server and command line tools).
-mvn package -am -pl assembly
-
-# Skip tests
-mvn package -am -pl assembly -DskipTests=true
-
-# The "imageTests" profile runs additional tests using SwiftShader:
-mvn package -P imageTests
-
-```
-
-## Building the libgdx worker (desktop, Android, iOS)
-
-Requirements: JDK, Maven.
-
-### Prerequisite step for all platforms
-
-The libgdx worker supports desktop, Android, and iOS platforms, but you must perform the following prerequisite step before building for any other platform.
-
-From the root of the repo:
-
-```shell
-# The worker requires some dependencies to be manually built.
-# If you did `mvn package`, these will have been built already.
-# These are not just used for Android, despite the name.
-mvn -am -pl android-client-dep package
-
-# Note that when the Thrift spec is changed, you must
-# call the above to rebuild the dependencies.
-```
-
-### Building the libgdx worker for desktop
-
-Although our focus is testing Android devices,
-building and running the desktop version of the libgdx worker
-is recommended to make sure things work as expected.
-
-```shell
-# Ensure you have performed the prerequisite step before continuing.
-
-# Change to the libgdx worker project root.
-cd platforms/libgdx/OGLTesting/
-
-# Gradle is used to build the worker, but it downloads itself.
-# Let's build the desktop version of the worker.
-# Omit the "./" on Windows.
-# This may take a while the first time.
-./gradlew desktop:dist
-
-# The jar is in: desktop/build/libs
-```
-
-(see running the worker)
-
-### Building and running the libgdx worker for Android
-
-(You need to install Android SDK beforehand, see the "Android notes" below)
-
-```shell
-# Ensure you have performed the prerequisite step before continuing.
-
-# Change to the libgdx worker project root.
-cd platforms/libgdx/OGLTesting/
-
-# build
-./gradlew android:assembleRelease android:assembleDebug
-# run on device
-./gradlew android:installDebug android:run
-
-```
-
-### Building and running the libgdx worker for iOS
-
-```shell
-# iOS: (only works on macOS)
-
-# Ensure you have performed the prerequisite step before continuing.
-
-# Change to the libgdx worker project root.
-cd platforms/libgdx/OGLTesting/
-
-# build
-./gradlew ios:createIPA
-# run on device
-./gradlew ios:launchIOSDevice
-# run on simulator
-./gradlew ios:launchIPhoneSimulator
-```
+Otherwise, see the [build from command line](build_from_command_line.md) documentation.
 
 # Development
 
@@ -392,4 +275,3 @@ other buttons won't work, as the app tries to stay in the foreground.
 * To make the worker use a specific server,
 add a line in `android/src/AndroidLauncher.java`
 after `main.setPlatformInfoJson`. E.g. `main.setUrl("http://bzxc:8080");`
-

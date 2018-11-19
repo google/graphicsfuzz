@@ -19,6 +19,11 @@ GraphicsFuzz can automatically find and simplify bugs in graphics shader compile
   * [Explore test results](docs/explore.md)
   * [Reduce a test](docs/reduce.md)
 
+To obtain GraphicsFuzz tools:
+* Pre-build binaries are available on the [GitHub releases page](https://github.com/google/graphicsfuzz/releases).
+* [Build from command line](docs/build_from_command_line.md)
+* Build from IDE: see [developer getting started](docs/development.md)
+
 ## Contribute
 
 * [Contributing (requires Google CLA)](CONTRIBUTING.md)
