@@ -30,6 +30,10 @@ matrix:
         - INSTALL_SCRIPT="build/travis/1-install-deps-travis.sh"
         - BUILD_SCRIPT="python3.6 build/travis/build.py"
         - RELEASE_SCRIPT="python3.6 build/travis/release.py"
+      cache:
+        directories:
+        - $HOME/.m2
+        - $HOME/.gradle
     - os: linux
       dist: trusty
       sudo: required
@@ -39,6 +43,7 @@ matrix:
         - BUILD_SCRIPT="build/ci_vulkan_worker/2-build-travis.sh"
         - RELEASE_SCRIPT="python3.6 build/travis/release.py"
         - ANDROID_NDK_HOME=/opt/android-sdk/ndk-bundle
+
 
 
 install:
