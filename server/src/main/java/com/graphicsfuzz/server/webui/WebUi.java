@@ -83,7 +83,6 @@ import org.apache.thrift.transport.TTransport;
 public class WebUi extends HttpServlet {
 
   private StringBuilder html;
-  private String deqpRoot = "/path/to/deqp"; //
   private long startTime;
   private final AccessFileInfo accessFileInfo = new AccessFileInfo();
 
@@ -337,8 +336,6 @@ public class WebUi extends HttpServlet {
         "generated token): ', '/static/runner.html?context=webgl2&token=', '',",
         "'/static/runner.htmlcontext=webgl2', true);\">",
         "Launch WebGL2 worker</div>\n",
-        "<a class='ui button' href='/webui/settings'>",
-        "<i class=\"icon setting\"></i>Settings</a>\n",
         "</p>\n",
         "</div>\n");
 
@@ -770,15 +767,6 @@ public class WebUi extends HttpServlet {
     htmlHeader(shaderName);
 
     htmlAppendLn("<div class='ui segment'><h3>Shader: ", shaderName, "</h3>");
-
-    if (shaderName.contains("_reduced_final")) {
-      htmlAppendLn("<form class='ui form' action='/webui/deqpExport' method='post'>",
-          "<input type='hidden' name='type' value='deqpExport'>",
-          "<input type='hidden' name='path' value='", shaderPath.toString(), "'>",
-          "<p>This is a reduced shader: ",
-          "<input type='submit' value='Export to dEQP'>",
-          "</p></form>");
-    }
 
     htmlAppendLn("<a class='ui button' href='/webui/run/", shaderPath.toString(),
         "'>Run shader</a>");
@@ -1673,106 +1661,6 @@ public class WebUi extends HttpServlet {
     outputStream.write(Files.readAllBytes(Paths.get(filename)));
   }
 
-  private void settings(HttpServletRequest request, HttpServletResponse response)
-      throws ServletException, IOException {
-
-    response.setContentType("text/html");
-    htmlHeader("Settings");
-
-    final String newDeqpRoot = request.getParameter("deqp_root");
-    if (newDeqpRoot != null) {
-      deqpRoot = newDeqpRoot;
-    }
-
-    htmlAppendLn("<div class='ui segment'> <h3>Settings</h3>");
-
-    html.append("<p>Current dEQP directory: <em>");
-    if (deqpRoot.isEmpty()) {
-      html.append("UNSET");
-    } else {
-      html.append(deqpRoot);
-    }
-    html.append("</em>");
-    if (!(new File(deqpRoot).isDirectory())) {
-      html.append("<b>This path is not a directory!</b>");
-    }
-    html.append("</p>\n");
-
-    htmlAppendLn("<form action='/webui/settings' class='ui form'>",
-        "<div class='inline field'>",
-        "<label>New dEQP directory:</label>",
-        "<input type='text' name='deqp_root' placeholder='/path/to/deqp'>",
-        "<button class='ui button' type='submit'>Update</button>",
-        "</div></form>");
-
-    htmlAppendLn("</div>");
-    htmlFooter();
-    response.getWriter().println(html);
-  }
-
-  private void deqpExport(HttpServletRequest request, HttpServletResponse response)
-      throws ServletException, IOException {
-    response.setContentType("text/html");
-
-    htmlHeader("Export to dEQP");
-
-    htmlAppendLn("<div class='ui segment'>\n",
-        "<h3>Export shader to dEQP</h3>");
-
-    File graphicsFuzzRoot = new File(deqpRoot + "/external/graphicsfuzz");
-    if (!graphicsFuzzRoot.isDirectory()) {
-      err404(request, response,
-          "Cannot find GraphicsFuzz directory under dEQP root: "
-              + graphicsFuzzRoot.toString()
-              + "\nYou can update dEQP root value in settings from homepage.");
-      return;
-    }
-
-    String path = request.getParameter("path");
-    if (path == null) {
-      err404(request, response, "No 'path' parameter in request");
-      return;
-    }
-
-    String[] files = path.split("/");
-    assert (files[0].equals("processing"));
-    String device = files[1];
-    String shadersetInv = files[2];
-    int pos = shadersetInv.indexOf("_variant_");
-    String shaderset = shadersetInv.substring(0, pos);
-
-    String variantFrag = files[3];
-    String variantJson = variantFrag.replace(".frag", ".json");
-
-    html.append("<pre>\n");
-    html.append("Shaderset: " + shaderset + "\n");
-    html.append("variant_frag: " + variantFrag + "\n");
-    html.append("variant_json: " + variantJson + "\n");
-    html.append("</pre>\n");
-
-    Path varFragPath = Paths.get("processing/" + device + "/" + shadersetInv + "/" + variantFrag);
-    Path varJsonPath = Paths.get("processing/" + device + "/" + shadersetInv + "/" + variantJson);
-    Path dest = Paths.get(graphicsFuzzRoot.toString() + "/gles3/" + shaderset + "/variants");
-    if (!(dest.toFile().isDirectory())) {
-      Files.createDirectories(dest);
-    }
-    Path destFrag = Paths.get(dest.toString() + "/" + variantFrag);
-    Path destJson = Paths.get(dest.toString() + "/" + variantJson);
-
-    Files.copy(varFragPath, destFrag, StandardCopyOption.REPLACE_EXISTING);
-    Files.copy(varJsonPath, destJson, StandardCopyOption.REPLACE_EXISTING);
-
-    html.append("<p>Shader copied to: " + destFrag.toString() + "</p>");
-
-    html.append("<p><b>Make sure to run the update script in dEQP, and to"
-        + " recompile dEQP to see the new reduced variant appear.</b></p>");
-
-
-    htmlAppendLn("</div>");
-    htmlFooter();
-    response.getWriter().println(html);
-  }
-
   // ========================= "GET" requests dispatcher =======================================
 
   public void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -1814,8 +1702,6 @@ public class WebUi extends HttpServlet {
         startRunShader(request, response);
       } else if (actions[1].equals("compare")) {
         compareWorkers(request, response);
-      } else if (actions[1].equals("settings")) {
-        settings(request, response);
       } else {
         // if no action match, serve from resources/public
         resource(request, response);
@@ -1859,8 +1745,6 @@ public class WebUi extends HttpServlet {
         compareResults(request, response);
       } else if (type.equals("experiment")) {
         startExperiment(request, response);
-      } else if (type.equals("deqpExport")) {
-        deqpExport(request, response);
       }
     } catch (Exception exception) {
       exception.printStackTrace();
