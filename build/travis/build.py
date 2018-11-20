@@ -111,6 +111,8 @@ def go():
     subprocess.check_call(
         ["./gradlew", "android:assembleDebug"])
 
+    subprocess.check_call("find", shell=True)
+
     # Copy Android worker.
     shutil.copy2(
         path("android", "build", "outputs", "apk", "android-debug.apk"),
