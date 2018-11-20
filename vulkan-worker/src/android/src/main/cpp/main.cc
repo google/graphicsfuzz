@@ -171,11 +171,6 @@ void android_main(struct android_app* state) {
     assert(app_data->uniform_file != nullptr);
   }
 
-  FILE *logfile = fopen("/sdcard/graphicsfuzz/log.txt", "w");
-  assert(logfile != nullptr);
-  fprintf(logfile, "Dummy log for new vulkan worker\n");
-  fclose(logfile);
-
   // Android: loop on things to do
   while (1) {
     int events;
