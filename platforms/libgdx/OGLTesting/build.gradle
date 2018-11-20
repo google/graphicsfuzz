@@ -4,10 +4,11 @@ buildscript {
         mavenCentral()
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         jcenter()
+        google()
     }
     dependencies {
         classpath 'de.richsource.gradle.plugins:gwt-gradle-plugin:0.6'
-        classpath 'com.android.tools.build:gradle:2.3.0'
+        classpath 'com.android.tools.build:gradle:3.2.0'
         classpath 'com.mobidevelop.robovm:robovm-gradle-plugin:2.3.3-SNAPSHOT'
     }
 }
@@ -31,23 +32,26 @@ allprojects {
         mavenCentral()
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+        google()
+        jcenter()
     }
 }
+
+assert file("../../../android-client-dep/target/android-client-dep-1.0.jar").exists()
 
 project(":desktop") {
     apply plugin: "java"
 
 
     dependencies {
-        compile project(":core")
-        compile "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
-        compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
-        compile "net.sourceforge.argparse4j:argparse4j:0.7.0"
-        compile "org.zeroturnaround:zt-process-killer:1.4"
+        implementation project(":core")
+        implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+        implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+        implementation "net.sourceforge.argparse4j:argparse4j:0.7.0"
+        implementation "org.zeroturnaround:zt-process-killer:1.4"
+        implementation files("../../../../android-client-dep/target/android-client-dep-1.0.jar")
     }
 }
-
-assert file("../../../android-client-dep/target/android-client-dep-1.0.jar").exists()
 
 project(":android") {
    apply plugin: "android"
@@ -55,16 +59,15 @@ project(":android") {
    configurations { natives }
 
    dependencies {
-       compile project(":core")
-       compile "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+       implementation project(":core")
+       implementation "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi"
        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
-       compile "com.android.support:appcompat-v7:23.4.0"
-       compile files("../../../../android-client-dep/target/android-client-dep-1.0.jar")
-
+       implementation "com.android.support:appcompat-v7:23.4.0"
+       implementation files("../../../../android-client-dep/target/android-client-dep-1.0.jar")
    }
 }
 
@@ -74,11 +77,11 @@ project(":ios") {
 
 
     dependencies {
-        compile project(":core")
-        compile "com.mobidevelop.robovm:robovm-rt:$roboVMVersion"
-        compile "com.mobidevelop.robovm:robovm-cocoatouch:$roboVMVersion"
-        compile "com.badlogicgames.gdx:gdx-backend-robovm:$gdxVersion"
-        compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios"
+        implementation project(":core")
+        implementation "com.mobidevelop.robovm:robovm-rt:$roboVMVersion"
+        implementation "com.mobidevelop.robovm:robovm-cocoatouch:$roboVMVersion"
+        implementation "com.badlogicgames.gdx:gdx-backend-robovm:$gdxVersion"
+        implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios"
     }
 }
 
@@ -87,9 +90,9 @@ project(":core") {
 
 
     dependencies {
-        compile "com.badlogicgames.gdx:gdx:$gdxVersion"
-        compile files("../../../../android-client-dep/target/android-client-dep-1.0.jar")
-        compile "ar.com.hjg:pngj:2.1.0"
+        implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+        implementation files("../../../../android-client-dep/target/android-client-dep-1.0.jar")
+        implementation "ar.com.hjg:pngj:2.1.0"
     }
 }
 
