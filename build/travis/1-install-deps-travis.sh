@@ -77,4 +77,16 @@ echo y | sdkmanager \
   "platforms;android-26" \
   "build-tools;28.0.2"
 
+# Building debug apks requires a debug keystore.
+# Android Studio will generate this automatically when running an app, but we must do it manually.
+mkdir -p ~/.android/
+keytool -genkey \
+  -alias androiddebugkey \
+  -keyalg RSA \
+  -keysize 2048 \
+  -keystore ~/.android/debug.keystore \
+  -keypass android \
+  -storepass android \
+  -validity 365
+
 popd
