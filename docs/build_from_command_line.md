@@ -27,7 +27,7 @@ a directory called `graphicsfuzz`. All shell snippets assume to start in that
 directory. We also assume you are on a Linux host, Windows commands may differ
 slightly.
 
-## Building the server
+## Build the server
 
 Use maven:
 
@@ -49,7 +49,7 @@ The build output is available in `assembly/target/assembly-1.0`. For instance, t
 `assembly/target/assembly-1.0.zip`. This archive can be copied to an other host,
 it should contain everything needed to run the server.
 
-## Building the OpenGL worker
+## Build the OpenGL worker
 
 First, you need to run this command to build Thrift-related dependencies:
 
@@ -80,11 +80,7 @@ cd platforms/libgdx/OGLTesting/
 ./gradlew android:assembleDebug
 ```
 
-TODO: the build fails, it seems to be related to gradle plugin being too
-old. See same kind of issue here: https://github.com/google/filament/issues/15
-TODO: Make sure the OpenGL worker builds with recent Gradle.
-
-The generated APK is here: `TODO`
+The generated APK is here: `android/build/outputs/apk/debug/android-debug.apk`
 
 To install and run using gradle:
 
@@ -105,7 +101,7 @@ The resulting JAR is here: `desktop/build/libs/desktop-1.0.jar`
 
 ### Windows
 
-The Linux build produces a JAR which should run fine on Windows.
+The JAR produced by the Linux build should run fine on Windows.
 
 ### iOS
 
