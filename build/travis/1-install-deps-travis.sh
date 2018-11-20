@@ -87,6 +87,7 @@ keytool -genkey \
   -keystore ~/.android/debug.keystore \
   -keypass android \
   -storepass android \
-  -validity 365
+  -validity 365 \
+  -dname "CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown"
 
 popd
