@@ -28,6 +28,7 @@ if [ "$(uname)" == "Darwin" ];
 then
   brew install python3 unzip wget
   GITHUB_RELEASE_TOOL_ARCH="darwin_amd64"
+  ANDROID_HOST_PLATFORM="darwin"
 fi
 
 if [ "$(uname)" == "Linux" ];
@@ -36,6 +37,7 @@ then
   sudo apt-get update -q
   sudo apt-get install python3.6 unzip wget -y
   GITHUB_RELEASE_TOOL_ARCH="linux_amd64"
+  ANDROID_HOST_PLATFORM="linux"
 fi
 
 
@@ -44,17 +46,35 @@ wget "https://github.com/${GITHUB_RELEASE_TOOL_USER}/github-release/releases/dow
 tar xf "github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_ARCH}.tar.gz"
 popd
 
-# Android SDK
 
-export ANDROID_TOOLS_FILENAME="tools_r25.2.3-linux.zip"
-export ANDROID_API_LEVELS="platforms;android-23"
-export ANDROID_BUILD_TOOLS_VERSION="25.0.0"
-export ANDROID_TOOLS_URL="http://dl.google.com/android/repository/${ANDROID_TOOLS_FILENAME}"
+# Android SDK (host platform is linux, darwin, or windows).
+
+ANDROID_TOOLS_FILENAME="sdk-tools-${ANDROID_HOST_PLATFORM}-4333796.zip"
+ANDROID_NDK_FILENAME="android-ndk-r18b-${ANDROID_HOST_PLATFORM}-x86_64.zip"
+ANDROID_PLATFORM_TOOLS_FILENAME="platform-tools_r28.0.1-${ANDROID_HOST_PLATFORM}.zip"
 
 mkdir -p "${ANDROID_HOME}"
 pushd "${ANDROID_HOME}"
-wget -q "${ANDROID_TOOLS_URL}"
-unzip "${ANDROID_TOOLS_FILENAME}"
+
+# Android: "sdk-tools.zip" "tools":
+wget -q "http://dl.google.com/android/repository/${ANDROID_TOOLS_FILENAME}"
+unzip -q "${ANDROID_TOOLS_FILENAME}"
 rm "${ANDROID_TOOLS_FILENAME}"
-echo y | sdkmanager "extras;android;m2repository" "tools" "platform-tools" "${ANDROID_API_LEVELS}" "build-tools;${ANDROID_BUILD_TOOLS_VERSION}"
+
+# Android "android-ndk.zip" "ndk-bundle"
+wget -q "https://dl.google.com/android/repository/${ANDROID_NDK_FILENAME}"
+unzip -q "${ANDROID_NDK_FILENAME}"
+rm "${ANDROID_NDK_FILENAME}"
+mv android-ndk-*/ ndk-bundle
+
+# Android "platform-tools.zip" "platform-tools"
+wget -q "https://dl.google.com/android/repository/${ANDROID_PLATFORM_TOOLS_FILENAME}"
+unzip -q "${ANDROID_PLATFORM_TOOLS_FILENAME}"
+rm "${ANDROID_PLATFORM_TOOLS_FILENAME}"
+
+# Android "platforms" and "build-tools"
+echo y | sdkmanager \
+  "platforms;android-26" \
+  "build-tools;28.0.2"
+
 popd
