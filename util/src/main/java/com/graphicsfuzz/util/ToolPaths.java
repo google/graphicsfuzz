@@ -96,9 +96,9 @@ public class ToolPaths {
     if (isRunningFromIde(jarDir)) {
       return Paths.get(
           getSourceRoot(jarDir),
-          "assembly",
+          "graphicsfuzz",
           "target",
-          "assembly-1.0").toString();
+          "graphicsfuzz-1.0").toString();
     }
 
     return jarDir.getParentFile().toString();

@@ -75,7 +75,7 @@ def exclude_filepath(f: str):
     return \
         f.startswith("./python/src/main/python/drivers/") and is_command_wrapper(f) or \
         f in [
-            "./assembly/src/main/scripts/server-static/shaders/shader.vert",
+            "./graphicsfuzz/src/main/scripts/server-static/shaders/shader.vert",
             "./server-static-public/src/main/files/server-static/runner_multi_template.html",
             "./platforms/libgdx/OGLTesting/build.gradle",
             "./platforms/libgdx/OGLTesting/gradle.properties",

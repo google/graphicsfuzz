@@ -75,12 +75,12 @@ def go():
 
     shutil.copy2(
         "OPEN_SOURCE_LICENSES.TXT",
-        path("assembly", "src", "main", "scripts", "OPEN_SOURCE_LICENSES.TXT")
+        path("graphicsfuzz", "src", "main", "scripts", "OPEN_SOURCE_LICENSES.TXT")
     )
 
     shutil.copy2(
         "LICENSE",
-        path("assembly", "src", "main", "scripts", "LICENSE.TXT")
+        path("graphicsfuzz", "src", "main", "scripts", "LICENSE.TXT")
     )
 
     # Rebuild with tests.
@@ -89,8 +89,8 @@ def go():
 
     # Copy output.
     shutil.copy2(
-        path("assembly", "target", "assembly-1.0.zip"),
-        path("out", "server.zip")
+        path("graphicsfuzz", "target", "graphicsfuzz-1.0.zip"),
+        path("out", "graphicsfuzz-1.0.zip")
     )
 
     source_root = os.path.abspath(".")
