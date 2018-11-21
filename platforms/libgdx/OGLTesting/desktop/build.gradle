@@ -1,5 +1,14 @@
 apply plugin: "java"
 
+dependencies {
+    implementation project(":core")
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    implementation "net.sourceforge.argparse4j:argparse4j:0.7.0"
+    implementation "org.zeroturnaround:zt-process-killer:1.4"
+    implementation files("../../../../android-client-dep/target/android-client-dep-1.0.jar")
+}
+
 sourceCompatibility = 1.8
 sourceSets.main.java.srcDirs = [ "src/" ]
 project.ext.mainClassName = "com.graphicsfuzz.libgdxclient.desktop.DesktopLauncher"
@@ -18,28 +27,10 @@ task dist(type: Jar) {
     from files(sourceSets.main.output.resourcesDir)
     from {configurations.compile.collect {zipTree(it)}}
     from files(project.assetsDir);
- 
+
     manifest {
         attributes 'Main-Class': project.mainClassName
     }
 }
 
 dist.dependsOn classes
-
-eclipse {
-    project {
-        name = appName + "-desktop"
-        linkedResource name: 'assets', type: '2', location: 'PARENT-1-PROJECT_LOC/android/assets'
-    }
-}
-
-task afterEclipseImport(description: "Post processing after project generation", group: "IDE") {
-  doLast {
-    def classpath = new XmlParser().parse(file(".classpath"))
-    new Node(classpath, "classpathentry", [ kind: 'src', path: 'assets' ]);
-    def writer = new FileWriter(file(".classpath"))
-    def printer = new XmlNodePrinter(new PrintWriter(writer))
-    printer.setPreserveWhitespace(true)
-    printer.print(classpath)
-  }
-}

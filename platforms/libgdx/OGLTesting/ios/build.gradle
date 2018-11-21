@@ -1,19 +1,40 @@
+
+buildscript {
+    repositories {
+          mavenLocal()
+          mavenCentral()
+          maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+          jcenter()
+          google()
+    }
+    dependencies {
+        classpath 'com.mobidevelop.robovm:robovm-gradle-plugin:2.3.5'
+    }
+}
+
+apply plugin: "java"
+apply plugin: "robovm"
+
+dependencies {
+    implementation project(":core")
+    implementation "com.mobidevelop.robovm:robovm-rt:$roboVMVersion"
+    implementation "com.mobidevelop.robovm:robovm-cocoatouch:$roboVMVersion"
+    implementation "com.badlogicgames.gdx:gdx-backend-robovm:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios"
+    implementation files("../../../../android-client-dep/target/android-client-dep-1.0.jar")
+}
+
+
 sourceSets.main.java.srcDirs = [ "src/" ]
 
 sourceCompatibility = '1.7'
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 ext {
-	mainClassName = "com.graphicsfuzz.libgdxclient.IOSLauncher"
+    mainClassName = "com.graphicsfuzz.libgdxclient.IOSLauncher"
 }
 
 launchIPhoneSimulator.dependsOn build
 launchIPadSimulator.dependsOn build
 launchIOSDevice.dependsOn build
 createIPA.dependsOn build
-
-
-eclipse.project {
-    name = appName + "-ios"
-    natures 'org.robovm.eclipse.RoboVMNature'
-}

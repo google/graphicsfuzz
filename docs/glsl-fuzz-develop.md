@@ -195,7 +195,7 @@ manager.queueCommand?
 manager.queueCommand(
   "ReduceVariant for xxx",
   [
-    "reduce_variant",
+    "glsl-reduce",
     "--reference", "processing/7093366951813584254/test_exp/recipient.info.json",
     "--reduce_everywhere",
     "--output", "processing/7093366951813584254/test_variant_1_inv",

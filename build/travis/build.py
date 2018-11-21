@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import os
+import sys
 import subprocess
 import shutil
 import licenses
@@ -46,6 +47,8 @@ def check_call_filter(cmd):
             continue
         print(line, end="")
     return_code = proc.wait()
+    print("")
+    sys.stdout.flush()
     assert return_code == 0
 
 
@@ -95,7 +98,7 @@ def go():
     os.chdir(path("platforms", "libgdx", "OGLTesting"))
 
     # Build desktop worker.
-    subprocess.call(
+    subprocess.check_call(
         ["./gradlew", "desktop:dist"])
 
     # Copy desktop worker.
@@ -105,12 +108,12 @@ def go():
     )
 
     # Build Android worker
-    subprocess.call(
+    subprocess.check_call(
         ["./gradlew", "android:assembleDebug"])
 
     # Copy Android worker.
     shutil.copy2(
-        path("android", "build", "outputs", "apk", "android-debug.apk"),
+        path("android", "build", "outputs", "apk", "debug", "android-debug.apk"),
         path(source_root, "out", "android-gles-worker.apk")
     )
 
