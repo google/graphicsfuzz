@@ -17,7 +17,7 @@
 package com.graphicsfuzz.server;
 
 import com.graphicsfuzz.common.util.ParseTimeoutException;
-import com.graphicsfuzz.reducer.tool.Reduce;
+import com.graphicsfuzz.reducer.tool.GlslReduce;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager.Iface;
 import com.graphicsfuzz.shadersets.RunShaderFamily;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
@@ -38,8 +38,8 @@ public class GraphicsFuzzServerCommandDispatcher implements ICommandDispatcher {
               fuzzerServiceManager
         );
         break;
-      case "reduce":
-        Reduce.mainHelper(
+      case "glsl-reduce":
+        GlslReduce.mainHelper(
               command.subList(1, command.size()).toArray(new String[0]),
               fuzzerServiceManager
         );
