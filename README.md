@@ -1,32 +1,45 @@
-
-**Warning:** this repository is a work-in-progress. Things may break while we transition this project to open source. This is not an officially supported Google product.
-
 # GraphicsFuzz
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-### GraphicsFuzz is a testing framework for graphics drivers.
+## GraphicsFuzz is a testing framework for shader compilers
 
-GraphicsFuzz can automatically find and simplify bugs in graphics shader compilers. It enables to generate, run and reduce test shaders. It currently operates on GLSL shaders, and uses glslangValidator and spirv-tools to target SPIR-V.
+GraphicsFuzz provides tools to automatically find and simplify bugs in graphics
+shader compilers. It currently operates on GLSL shaders, and uses
+glslangValidator and spirv-tools to additionally target SPIR-V.
 
-**NB:** the **[GLSL reducer](docs/reduce.md)** is available as a **stand-alone** tool.
+## Tools
 
-* [Introduction: why and how to test shader compilers](docs/introduction.md)
-* [Getting started: the walkthrough](docs/walkthrough.md)
+* glsl-reduce: a stand-alone test case reducer for GLSL shaders
+
+* glsl-fuzz: a family of tools for testing GLSL shader compilers using randomized metamorphic testing
+
+### glsl-reduce
+
+* [Introduction: my shader is crashing the compiler, now what?](docs/glsl-reduce-intro.md)
+
+* [Walkthrough and user documentation](docs/glsl-reduce.md)
+
+### glsl-fuzz
+
+* [Introduction: why and how to test shader compilers](docs/glsl-fuzz-intro.md)
+* [Getting started: the walkthrough](docs/glsl-fuzz-walkthrough.md)
 * User documentation:
-  * [Generate tests](docs/generate.md)
-  * [Run tests](docs/run.md)
-  * [Explore test results](docs/explore.md)
-  * [Reduce a test](docs/reduce.md)
+  * [Generate tests](docs/glsl-fuzz-generate.md)
+  * [Run tests](docs/glsl-fuzz-run.md)
+  * [Explore test results](docs/glsl-fuzz-explore.md)
+  * [Reduce a test](docs/glsl-fuzz-reduce.md)
 
 ## Get the GraphicsFuzz tools
 
-* Pre-build binaries are available on the [GitHub releases page](https://github.com/google/graphicsfuzz/releases).
-* [Build from command line](docs/build_from_command_line.md)
-* Build from IDE: see [developer getting started](docs/development.md)
+* **Pre-built binaries** are available on the [GitHub releases page](https://github.com/google/graphicsfuzz/releases)
+* [Build from command line](docs/glsl-fuzz-build.md)
+* Build from IDE: see [developer getting started](docs/glsl-fuzz-develop.md)
 
 ## Contribute
 
 * [Contributing (requires Google CLA)](CONTRIBUTING.md)
 * [License (Apache 2.0)](LICENSE)
-* [Developer getting started](docs/development.md)
+* [Developer getting started](docs/glsl-fuzz-develop.md)
+
+This is not an officially supported Google product.
