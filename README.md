@@ -11,13 +11,11 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
 ## Tools
 
 * glsl-reduce: a stand-alone test case reducer for GLSL shaders
-
 * glsl-fuzz: a family of tools for testing GLSL shader compilers using randomized metamorphic testing
 
 ### glsl-reduce
 
 * [Introduction: my shader is crashing the compiler, now what?](docs/glsl-reduce-intro.md)
-
 * [Walkthrough and user documentation](docs/glsl-reduce.md)
 
 ### glsl-fuzz
