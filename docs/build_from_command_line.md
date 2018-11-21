@@ -22,14 +22,11 @@ To clone this repository in a directory named `graphicsfuzz`:
 git clone git@github.com:google/graphicsfuzz.git
 ```
 
-In the following, we assume you have checked out the graphicsfuzz repository in
-a directory called `graphicsfuzz`. All shell snippets assume to start in that
-directory. We also assume you are on a Linux host, Windows commands may differ
-slightly.
+In the following, all shell snippets assume to start in the directory where this
+repo was cloned. We also assume you are on a Linux host, Windows commands may
+differ slightly.
 
 ## Build the server
-
-Use maven:
 
 ```shell
 # Regular build
@@ -48,6 +45,41 @@ The build output is available in `assembly/target/assembly-1.0`. For instance, t
 **Stand-alone archive:** The build also creates an archive of this directory as
 `assembly/target/assembly-1.0.zip`. This archive can be copied to an other host,
 it should contain everything needed to run the server.
+
+## Build the Vulkan worker
+
+### Android
+
+```shell
+cd vulkan-worker
+./gradlew assembleDebug
+```
+
+The resulting APK is here: `src/android/build/outputs/apk/debug/android-debug.apk`
+
+### Linux
+
+Make sure the [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
+Vulkan SDK is installed and the environment variable VULKAN_SDK is
+properly set.
+
+```shell
+cd vulkan-worker
+
+mkdir build
+cd build
+
+cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug    # Or: -G "Ninja"
+cmake --build . --config Debug
+```
+
+The resulting binary is here: `vulkan-worker/build/vkworker`
+
+To install with CMake, from the build directory:
+
+```shell
+cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
+```
 
 ## Build the OpenGL worker
 
@@ -73,8 +105,6 @@ gradle is gathering dependencies. Subsequent builds are faster.
 Make sure the [Android SDK /
 NDK](https://developer.android.com/studio/#command-tools) are installed.
 
-Use gradle:
-
 ```shell
 cd platforms/libgdx/OGLTesting/
 ./gradlew android:assembleDebug
@@ -89,8 +119,6 @@ To install and run using gradle:
 ```
 
 ### Linux
-
-Use gradle:
 
 ```shell
 cd platforms/libgdx/OGLTesting/
