@@ -65,13 +65,13 @@ public class GlslReduce {
   private static ArgumentParser getParser() {
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("glsl-reduce")
-          .defaultHelp(true)
-          .description("Reduce GLSL shaders, driven by a criterion of interest. " +
-              "The tool takes a \"shader job\" as input, " +
-              "which is a set of files with the same name (e.g. NAME) in the same directory, " +
-              "including NAME.json (a metadata file that can be empty) " +
-              "and some graphics shaders (NAME.frag and/or NAME.vert) " +
-              "or a compute shader (NAME.comp).");
+        .defaultHelp(true)
+        .description("Reduce GLSL shaders, driven by a criterion of interest. "
+            + "The tool takes a \"shader job\" as input, "
+            + "which is a set of files with the same name (e.g. NAME) in the same directory, "
+            + "including NAME.json (a metadata file that can be empty) "
+            + "and some graphics shaders (NAME.frag and/or NAME.vert) "
+            + "or a compute shader (NAME.comp).");
 
     // Required arguments
     parser.addArgument("shader_job")
