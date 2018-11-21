@@ -901,8 +901,7 @@ public class WebUi extends HttpServlet {
     File referenceRes = new File(result.getParentFile(), "reference.info.json");
 
     String workerName = result.getParentFile().getParentFile().getName();
-    File reductionDir = new File(result.getParentFile().getParentFile(),
-        shaderset + "_" + shader + "_inv");
+    File reductionDir = new File(result.getParentFile() + "/reductions", shader);
 
     // Get results from reductions
 
@@ -1304,22 +1303,11 @@ public class WebUi extends HttpServlet {
     if (file.toString().endsWith(".info.json")) {
       fileOps.deleteShaderJobResultFile(file);
       // There might also be a reduction result. If so, we delete it.
-
-      // E.g. variant_001
+      // e.g. variant_001
       final String variantName = FileHelper.removeEnd(file.getName(), ".info.json");
-      // E.g. shader_family_001_exp
-      final String expDirName = file.getParentFile().getName();
-      // E.g. android_phone
-      final File workerResultDir = file.getParentFile().getParentFile();
-      if (expDirName.endsWith("_exp")) {
-        // E.g. shader_family_001
-        final String shaderFamilyName = FileHelper.removeEnd(expDirName, "_exp");
-        // E.g. shader_family_001 _ variant_001 _inv
-        final String reductionDirName = shaderFamilyName + "_" + variantName + "_inv";
-        // E.g. processing/android_phone/shader_family_001_variant_001 _inv
-        final File reductionDir = new File(workerResultDir, reductionDirName);
-        fileOps.deleteQuietly(reductionDir);
-      }
+      // e.g. reductions/variant_001
+      final File reductionDir = new File(file.getParentFile(), "reductions/" + variantName);
+      fileOps.deleteQuietly(reductionDir);
     } else {
       FileUtils.forceDelete(file);
     }
@@ -1431,8 +1419,7 @@ public class WebUi extends HttpServlet {
     }
     String shaderset = referenceShaderJobFile.getParentFile().getName();
     File reductionDir =
-        new File(WebUiConstants.WORKER_DIR + "/" + worker, shaderset
-              + "_reference_inv");
+        new File(WebUiConstants.WORKER_DIR + "/" + worker + "/reductions", "reference");
     if (reductionDir.isDirectory()) {
       return;
     }
