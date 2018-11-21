@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.reducer.tool;
 
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -30,7 +29,7 @@ import org.junit.rules.TemporaryFolder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ReduceTest {
+public class GlslReduceTest {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -38,7 +37,7 @@ public class ReduceTest {
   @Test
   public void noServerAllowedInCustomReduction() throws Exception {
     try {
-      Reduce.mainHelper(new String[]{"--server", "some_server", "--token", "some_token",
+      GlslReduce.mainHelper(new String[]{"--server", "some_server", "--token", "some_token",
               makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
               temporaryFolder.getRoot().getAbsolutePath()}
           , null);
@@ -51,7 +50,7 @@ public class ReduceTest {
   @Test
   public void noTokenAllowedInCustomReduction() throws Exception {
     try {
-      Reduce.mainHelper(new String[]{"--token", "some_token",
+      GlslReduce.mainHelper(new String[]{"--token", "some_token",
           makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
@@ -63,7 +62,7 @@ public class ReduceTest {
   @Test
   public void noErrorStringAllowedInCustomReduction() throws Exception {
     try {
-      Reduce.mainHelper(new String[]{"--error_string", "some_string",
+      GlslReduce.mainHelper(new String[]{"--error_string", "some_string",
           makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
@@ -75,7 +74,7 @@ public class ReduceTest {
   @Test
   public void noReferenceAllowedInCustomReduction() throws Exception {
     try {
-      Reduce.mainHelper(new String[]{"--reference", "reference.info.json",
+      GlslReduce.mainHelper(new String[]{"--reference", "reference.info.json",
           makeShaderJobAndReturnJsonFilename(),
           "CUSTOM", "--output", temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
@@ -91,7 +90,7 @@ public class ReduceTest {
   @Test
   public void noCustomJudgeAllowedInNonCustomReduction() throws Exception {
     try {
-      Reduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "NO_IMAGE",
+      GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "NO_IMAGE",
           "--custom_judge", "somejudgescript", "--output",
               temporaryFolder.getRoot().getAbsolutePath()},
           null);
@@ -105,7 +104,7 @@ public class ReduceTest {
   @Test
   public void customJudgeRequiredInCustomReduction() throws Exception {
     try {
-      Reduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
+      GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
@@ -120,7 +119,7 @@ public class ReduceTest {
     final File jsonFile = getShaderJobReady();
     final File emptyFile = temporaryFolder.newFile(); // Not executable
     try {
-      Reduce.mainHelper(new String[]{
+      GlslReduce.mainHelper(new String[]{
           jsonFile.getAbsolutePath(),
           "CUSTOM",
           "--custom_judge",
@@ -139,7 +138,7 @@ public class ReduceTest {
     final File jsonFile = getShaderJobReady();
     final File emptyFile = temporaryFolder.newFile();
     emptyFile.setExecutable(true);
-    Reduce.mainHelper(new String[]{
+    GlslReduce.mainHelper(new String[]{
         jsonFile.getAbsolutePath(),
         "CUSTOM",
         "--custom_judge",

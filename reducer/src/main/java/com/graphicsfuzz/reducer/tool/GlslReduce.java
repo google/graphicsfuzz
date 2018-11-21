@@ -58,19 +58,24 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Reduce {
+public class GlslReduce {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(Reduce.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GlslReduce.class);
 
   private static ArgumentParser getParser() {
 
-    ArgumentParser parser = ArgumentParsers.newArgumentParser("Reduce")
+    ArgumentParser parser = ArgumentParsers.newArgumentParser("glsl-reduce")
           .defaultHelp(true)
-          .description("Reduce a shader job, driven by a criterion of interest.");
+          .description("Reduce GLSL shaders, driven by a criterion of interest. " +
+              "The tool takes a \"shader job\" as input, " +
+              "which is a set of files with the same name (e.g. NAME) in the same directory, " +
+              "including NAME.json (a metadata file that can be empty) " +
+              "and some graphics shaders (NAME.frag and/or NAME.vert) " +
+              "or a compute shader (NAME.comp).");
 
     // Required arguments
     parser.addArgument("shader_job")
-          .help("Path of shader job to be reduced.  E.g. /path/to/variant.json ")
+          .help("Path of shader job to be reduced.  E.g. /path/to/shaderjob.json ")
           .type(File.class);
 
     parser.addArgument("reduction_kind")

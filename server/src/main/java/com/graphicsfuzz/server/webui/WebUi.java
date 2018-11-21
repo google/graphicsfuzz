@@ -1339,7 +1339,7 @@ public class WebUi extends HttpServlet {
     response.setContentType("text/html");
 
     final List<String> args = new ArrayList<>();
-    args.add("reduce");
+    args.add("glsl-reduce");
     final String shaderJobFilePath = request.getParameter("shader_path");
     args.add(shaderJobFilePath);
     final String reductionType = request.getParameter("reduction_type");
@@ -1440,7 +1440,7 @@ public class WebUi extends HttpServlet {
         new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderset + "_exp",
               "reference.info.json");
     List<String> args = new ArrayList<>();
-    args.add("reduce");
+    args.add("glsl-reduce");
     args.add(referenceShaderJobFile.getPath());
     args.add("IDENTICAL");
     args.add("--output");
