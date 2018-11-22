@@ -1397,7 +1397,8 @@ public class WebUi extends HttpServlet {
     }
     String shaderset = referenceShaderJobFile.getParentFile().getName();
     File reductionDir =
-        new File(WebUiConstants.WORKER_DIR + "/" + worker + "/reductions", "reference");
+        new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderset + "/reductions",
+            "reference");
     if (reductionDir.isDirectory()) {
       return;
     }
