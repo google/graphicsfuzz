@@ -90,9 +90,11 @@ VulkanWorker::VulkanWorker(PlatformData *platform_data) {
   BindDepthImageMemory();
   CreateDepthImageView();
   PrepareVertexBufferObject();
+  PrepareExport();
 }
 
 VulkanWorker::~VulkanWorker() {
+  CleanExport();
   CleanVertexBufferObject();
   DestroyDepthResources();
   DestroySwapchainImageViews();
@@ -1123,7 +1125,7 @@ void VulkanWorker::PresentToDisplay() {
   VKCHECK(vkQueuePresentKHR(queue_, &present_info));
 }
 
-void VulkanWorker::UpdateImageLayout(VkImage image, VkImageLayout old_image_layout, VkImageLayout new_image_layout, VkPipelineStageFlags src_stage_mask, VkPipelineStageFlags dest_stage_mask) {
+void VulkanWorker::UpdateImageLayout(VkCommandBuffer command_buffer, VkImage image, VkImageLayout old_image_layout, VkImageLayout new_image_layout, VkPipelineStageFlags src_stage_mask, VkPipelineStageFlags dest_stage_mask) {
 
   VkImageMemoryBarrier image_memory_barrier = {};
   // generic
@@ -1187,103 +1189,102 @@ void VulkanWorker::UpdateImageLayout(VkImage image, VkImageLayout old_image_layo
       break;
   }
 
-  VKLOG(vkCmdPipelineBarrier(command_buffer_, src_stage_mask, dest_stage_mask, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier));
+  VKLOG(vkCmdPipelineBarrier(command_buffer, src_stage_mask, dest_stage_mask, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier));
 }
 
 void VulkanWorker::PrepareExport() {
-  VkImageCreateInfo export_image_create_info = {};
-  export_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  export_image_create_info.pNext = nullptr;
-  export_image_create_info.flags = 0;
-  export_image_create_info.imageType = VK_IMAGE_TYPE_2D;
-  export_image_create_info.format = format_;
-  export_image_create_info.extent.width = width_;
-  export_image_create_info.extent.height = height_;
-  export_image_create_info.extent.depth = 1;
-  export_image_create_info.mipLevels = 1;
-  export_image_create_info.arrayLayers = 1;
-  export_image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
-  export_image_create_info.tiling = VK_IMAGE_TILING_LINEAR;
-  export_image_create_info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-  export_image_create_info.queueFamilyIndexCount = 0;
-  export_image_create_info.pQueueFamilyIndices = nullptr;
-  export_image_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  export_image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  VKCHECK(vkCreateImage(device_, &export_image_create_info, nullptr, &export_image_));
 
-  VKLOG(vkGetImageMemoryRequirements(device_, export_image_, &export_image_memory_requirements_));
+  {
+    // Prepare export image
+    VkImageCreateInfo export_image_create_info = {};
+    export_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    export_image_create_info.pNext = nullptr;
+    export_image_create_info.flags = 0;
+    export_image_create_info.imageType = VK_IMAGE_TYPE_2D;
+    export_image_create_info.format = format_;
+    export_image_create_info.extent.width = width_;
+    export_image_create_info.extent.height = height_;
+    export_image_create_info.extent.depth = 1;
+    export_image_create_info.mipLevels = 1;
+    export_image_create_info.arrayLayers = 1;
+    export_image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    export_image_create_info.tiling = VK_IMAGE_TILING_LINEAR;
+    export_image_create_info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    export_image_create_info.queueFamilyIndexCount = 0;
+    export_image_create_info.pQueueFamilyIndices = nullptr;
+    export_image_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    export_image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    VKCHECK(vkCreateImage(device_, &export_image_create_info, nullptr, &export_image_));
 
-  VkMemoryAllocateInfo export_image_memory_allocate_info = {};
-  export_image_memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  export_image_memory_allocate_info.pNext = nullptr;
-  export_image_memory_allocate_info.allocationSize = export_image_memory_requirements_.size;
-  export_image_memory_allocate_info.memoryTypeIndex = GetMemoryTypeIndex(export_image_memory_requirements_.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  VKCHECK(vkAllocateMemory(device_, &export_image_memory_allocate_info, nullptr, &(export_image_memory_)));
+    VKLOG(vkGetImageMemoryRequirements(device_, export_image_, &export_image_memory_requirements_));
 
-  VKCHECK(vkBindImageMemory(device_, export_image_, export_image_memory_, 0));
+    VkMemoryAllocateInfo export_image_memory_allocate_info = {};
+    export_image_memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    export_image_memory_allocate_info.pNext = nullptr;
+    export_image_memory_allocate_info.allocationSize = export_image_memory_requirements_.size;
+    export_image_memory_allocate_info.memoryTypeIndex = GetMemoryTypeIndex(export_image_memory_requirements_.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    VKCHECK(vkAllocateMemory(device_, &export_image_memory_allocate_info, nullptr, &(export_image_memory_)));
 
-  VKCHECK(vkResetCommandBuffer(command_buffer_, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
+    VKCHECK(vkBindImageMemory(device_, export_image_, export_image_memory_, 0));
+  }
 
-  VkCommandBufferBeginInfo export_command_buffer_begin_info = {};
-  export_command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  export_command_buffer_begin_info.pNext = nullptr;
-  export_command_buffer_begin_info.flags = 0;
-  export_command_buffer_begin_info.pInheritanceInfo = nullptr;
-  VKCHECK(vkBeginCommandBuffer(command_buffer_, &export_command_buffer_begin_info));
+  {
+    // Prepare export command buffers, one per swapchain image
 
-  UpdateImageLayout(export_image_, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-  UpdateImageLayout(images_[swapchain_image_index_], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    uint32_t num_swapchain_images = images_.size();
+    export_command_buffers_.resize(num_swapchain_images);
 
-  VkImageCopy export_image_copy = {};
-  export_image_copy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  export_image_copy.srcSubresource.mipLevel = 0;
-  export_image_copy.srcSubresource.baseArrayLayer = 0;
-  export_image_copy.srcSubresource.layerCount = 1;
-  export_image_copy.srcOffset.x = 0;
-  export_image_copy.srcOffset.y = 0;
-  export_image_copy.srcOffset.z = 0;
-  export_image_copy.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  export_image_copy.dstSubresource.mipLevel = 0;
-  export_image_copy.dstSubresource.baseArrayLayer = 0;
-  export_image_copy.dstSubresource.layerCount = 1;
-  export_image_copy.dstOffset.x = 0;
-  export_image_copy.dstOffset.y = 0;
-  export_image_copy.dstOffset.z = 0;
-  export_image_copy.extent.width = width_;
-  export_image_copy.extent.height = height_;
-  export_image_copy.extent.depth = 1;
-  VKLOG(vkCmdCopyImage(command_buffer_, images_[swapchain_image_index_], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, export_image_, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &export_image_copy));
+    VkCommandBufferAllocateInfo export_command_buffer_allocate_info = {};
+    export_command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    export_command_buffer_allocate_info.pNext = nullptr;
+    export_command_buffer_allocate_info.commandPool = command_pool_;
+    export_command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    export_command_buffer_allocate_info.commandBufferCount = images_.size();
+    VKCHECK(vkAllocateCommandBuffers(device_, &export_command_buffer_allocate_info, export_command_buffers_.data()));
 
-  UpdateImageLayout(export_image_, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT);
+    for (uint32_t i = 0; i < num_swapchain_images; i++) {
+      VkCommandBuffer export_command_buffer = export_command_buffers_[i];
 
-  VKCHECK(vkEndCommandBuffer(command_buffer_));
+      VkCommandBufferBeginInfo export_command_buffer_begin_info = {};
+      export_command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+      export_command_buffer_begin_info.pNext = nullptr;
+      export_command_buffer_begin_info.flags = 0;
+      export_command_buffer_begin_info.pInheritanceInfo = nullptr;
+      VKCHECK(vkBeginCommandBuffer(export_command_buffer, &export_command_buffer_begin_info));
 
-  VKCHECK(vkResetFences(device_, 1, &fence_));
+      UpdateImageLayout(export_command_buffer, export_image_, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+      UpdateImageLayout(export_command_buffer, images_[i], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-  const VkCommandBuffer command_buffers[1] = {command_buffer_};
-  VkSubmitInfo submit_info[1] = {};
-  submit_info[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submit_info[0].pNext = nullptr;
-  submit_info[0].waitSemaphoreCount = 0;
-  submit_info[0].pWaitSemaphores = nullptr;
-  submit_info[0].pWaitDstStageMask = nullptr;
-  submit_info[0].commandBufferCount = 1;
-  submit_info[0].pCommandBuffers = command_buffers;
-  submit_info[0].signalSemaphoreCount = 0;
-  submit_info[0].pSignalSemaphores = nullptr;
+      VkImageCopy export_image_copy = {};
+      export_image_copy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      export_image_copy.srcSubresource.mipLevel = 0;
+      export_image_copy.srcSubresource.baseArrayLayer = 0;
+      export_image_copy.srcSubresource.layerCount = 1;
+      export_image_copy.srcOffset.x = 0;
+      export_image_copy.srcOffset.y = 0;
+      export_image_copy.srcOffset.z = 0;
+      export_image_copy.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      export_image_copy.dstSubresource.mipLevel = 0;
+      export_image_copy.dstSubresource.baseArrayLayer = 0;
+      export_image_copy.dstSubresource.layerCount = 1;
+      export_image_copy.dstOffset.x = 0;
+      export_image_copy.dstOffset.y = 0;
+      export_image_copy.dstOffset.z = 0;
+      export_image_copy.extent.width = width_;
+      export_image_copy.extent.height = height_;
+      export_image_copy.extent.depth = 1;
+      VKLOG(vkCmdCopyImage(export_command_buffer, images_[i], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, export_image_, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &export_image_copy));
 
-  VKCHECK(vkQueueSubmit(queue_, 1, submit_info, fence_));
+      UpdateImageLayout(export_command_buffer, export_image_, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT);
 
-  VkResult result = VK_TIMEOUT;
-  do {
-    // Do not use VKCHECK as VK_TIMEOUT is a valid result
-    result = vkWaitForFences(device_, 1, &fence_, VK_TRUE, fence_timeout_nanoseconds_);
-    log("vkWaitForFences(): %s", getVkResultString(result));
-  } while (result == VK_TIMEOUT);
-  assert(result == VK_SUCCESS);
+      VKCHECK(vkEndCommandBuffer(export_command_buffer));
+    }
+  }
+
 }
 
 void VulkanWorker::CleanExport() {
+  VKLOG(vkFreeCommandBuffers(device_, command_pool_, export_command_buffers_.size(), export_command_buffers_.data()));
   VKLOG(vkFreeMemory(device_, export_image_memory_, nullptr));
   VKLOG(vkDestroyImage(device_, export_image_, nullptr));
 }
@@ -1452,6 +1453,31 @@ void VulkanWorker::LoadUniforms(const char *uniforms_string) {
 }
 
 void VulkanWorker::ExportPNG(const char *png_filename) {
+
+  VKCHECK(vkResetFences(device_, 1, &fence_));
+
+  const VkCommandBuffer command_buffers[1] = {export_command_buffers_[swapchain_image_index_]};
+  VkSubmitInfo submit_info[1] = {};
+  submit_info[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_info[0].pNext = nullptr;
+  submit_info[0].waitSemaphoreCount = 0;
+  submit_info[0].pWaitSemaphores = nullptr;
+  submit_info[0].pWaitDstStageMask = nullptr;
+  submit_info[0].commandBufferCount = 1;
+  submit_info[0].pCommandBuffers = command_buffers;
+  submit_info[0].signalSemaphoreCount = 0;
+  submit_info[0].pSignalSemaphores = nullptr;
+
+  VKCHECK(vkQueueSubmit(queue_, 1, submit_info, fence_));
+
+  VkResult result = VK_TIMEOUT;
+  do {
+    // Do not use VKCHECK as VK_TIMEOUT is a valid result
+    result = vkWaitForFences(device_, 1, &fence_, VK_TRUE, fence_timeout_nanoseconds_);
+    log("vkWaitForFences(): %s", getVkResultString(result));
+  } while (result == VK_TIMEOUT);
+  assert(result == VK_SUCCESS);
+
   // Get export image binary blob in whatever format the device exposes
   unsigned char *source_image_blob = (unsigned char *)malloc(export_image_memory_requirements_.size);
   assert(source_image_blob != nullptr);
@@ -1555,9 +1581,7 @@ void VulkanWorker::DoRender(std::vector<uint32_t> &vertex_spv, std::vector<uint3
 
     SubmitCommandBuffer();
     PresentToDisplay();
-    PrepareExport();
     ExportPNG(png_filename);
-    CleanExport();
 
     DestroyFence();
     DestroySemaphore();
