@@ -517,7 +517,8 @@ public class WebUi extends HttpServlet {
     htmlAppendLn("<div class='ui middle aligned selection animated celled list'>");
 
     File[] shaderFamilies = workerDir.listFiles(File::isDirectory);
-    Arrays.sort(shaderFamilies, (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
+    Arrays.sort(shaderFamilies,
+        (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
     for (File shaderFamilyFile : shaderFamilies) {
       final String shaderFamily = shaderFamilyFile.getName();
       ShadersetExp shadersetExp = new ShadersetExp(shaderFamily, workerName);
@@ -607,7 +608,8 @@ public class WebUi extends HttpServlet {
 
     //Iterate through files in workerDir - get experiment results
     File[] shaderFamilies = workerDir.listFiles(File::isDirectory);
-    Arrays.sort(shaderFamilies, (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
+    Arrays.sort(shaderFamilies,
+        (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
     String[] workers = new String[1];
     for (File shaderFamilyFile : shaderFamilies) {
       final String shaderFamily = shaderFamilyFile.getName();
@@ -948,7 +950,8 @@ public class WebUi extends HttpServlet {
       case ONGOING:
         final Optional<Integer> reductionStep = ReductionProgressHelper
               .getLatestReductionStepAny(ReductionFilesHelper
-                    .getReductionDir(token, shaderFamily, variant), "variant", fileOps);
+                    .getReductionDir(token, shaderFamily, variant),
+                  "variant", fileOps);
         htmlAppendLn(
             "<p>Reduction not finished for this result: ",
             (reductionStep
@@ -975,7 +978,8 @@ public class WebUi extends HttpServlet {
     }
 
     // Show reduction log, if it exists, regardless of current reduction status
-    final File logFile = new File(ReductionFilesHelper.getReductionDir(token, shaderFamily, variant),
+    final File logFile =
+        new File(ReductionFilesHelper.getReductionDir(token, shaderFamily, variant),
           "command.log");
     if (logFile.exists()) {
       htmlAppendLn("<p>Contents of reduction log file:</p>",
