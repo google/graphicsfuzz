@@ -10,7 +10,7 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
 
 ## Tools
 
-* glsl-reduce: a stand-alone test case reducer for GLSL shaders
+* glsl-reduce: a stand-alone GLSL shader reducer
 * glsl-fuzz: a family of tools for testing GLSL shader compilers using randomized metamorphic testing
 
 ### glsl-reduce
@@ -20,17 +20,26 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
 
 ### glsl-fuzz
 
-* [Introduction: why and how to test shader compilers](docs/glsl-fuzz-intro.md)
-* [Getting started: the walkthrough](docs/glsl-fuzz-walkthrough.md)
-* User documentation:
-  * [Generate tests](docs/glsl-fuzz-generate.md)
-  * [Run tests](docs/glsl-fuzz-run.md)
-  * [Explore test results](docs/glsl-fuzz-explore.md)
-  * [Reduce a test](docs/glsl-fuzz-reduce.md)
+* [How it works (high-level): metamorphic testing using GraphicsFuzz](docs/glsl-fuzz-intro.md)
+* [GraphicsFuzz walkthrough](docs/glsl-fuzz-walkthrough.md):
+  * Generating GLSL shaders for the worker applications
+  * Starting the server
+  * Running GLSL shaders using the worker applications on:
+    * OpenGL desktop platforms
+    * OpenGL ES Android platforms
+    * Vulkan Android platforms
+  * Exploring results using the WebUI
+  * Reducing buggy shaders using the WebUI
+  * Exploring the results on the file system
+
+Additional documentation:
+
+* [glsl-generate: options for generating GLSL shaders for our worker applications](docs/glsl-fuzz-generate.md)
+* [glsl-reduce: reducer features specific to glsl-fuzz](docs/glsl-fuzz-reduce.md)
 
 ## Get the GraphicsFuzz tools
 
-* **Pre-built binaries** are available on the [GitHub releases page](https://github.com/google/graphicsfuzz/releases)
+* **Pre-built binaries** are available on the [GitHub releases page](docs/glsl-fuzz-releases.md)
 * [Build from command line](docs/glsl-fuzz-build.md)
 * Build from IDE: see [developer getting started](docs/glsl-fuzz-develop.md)
 
