@@ -1547,8 +1547,8 @@ void VulkanWorker::ExportPNG(const char *png_filename) {
   free(png);
 }
 
-void VulkanWorker::DoRender(std::vector<uint32_t> &vertex_spv, std::vector<uint32_t> &fragment_spv, const char *uniforms_string, const char *png_filename, bool skip_render) {
-  log("RENDER START");
+void VulkanWorker::PrepareTest(std::vector<uint32_t> &vertex_spv, std::vector<uint32_t> &fragment_spv, const char *uniforms_string) {
+  log("PREPARETEST START");
 
   vertex_shader_spv_ = vertex_spv;
   fragment_shader_spv_ = fragment_spv;
@@ -1570,23 +1570,10 @@ void VulkanWorker::DoRender(std::vector<uint32_t> &vertex_spv, std::vector<uint3
   CreateFramebuffers();
   CreateGraphicsPipeline();
 
-  if (skip_render) {
-    log("SKIP_RENDER");
-  } else {
-    log("DRAW");
-    CreateSemaphore();
-    AcquireNextImage();
-    PrepareCommandBuffer();
-    CreateFence();
+  log("PREPARETEST END");
+}
 
-    SubmitCommandBuffer();
-    PresentToDisplay();
-    ExportPNG(png_filename);
-
-    DestroyFence();
-    DestroySemaphore();
-  }
-
+void VulkanWorker::CleanTest() {
   DestroyGraphicsPipeline();
   DestroyFramebuffers();
   DestroyShaderModules();
@@ -1600,14 +1587,36 @@ void VulkanWorker::DoRender(std::vector<uint32_t> &vertex_spv, std::vector<uint3
 
   DestroyPipelineLayout();
   DestroyUniformResources();
-
-  log("RENDER END");
 }
 
-void VulkanWorker::Render(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, bool skip_render) {
+void VulkanWorker::DrawTest(const char *png_filename, bool skip_render) {
+  log("DRAWTEST START");
+
+  if (skip_render) {
+    log("SKIP_RENDER");
+  } else {
+    CreateSemaphore();
+    AcquireNextImage();
+    PrepareCommandBuffer();
+    CreateFence();
+
+    SubmitCommandBuffer();
+    PresentToDisplay();
+    ExportPNG(png_filename);
+
+    DestroyFence();
+    DestroySemaphore();
+  }
+
+  log("DRAWTEST END");
+}
+
+void VulkanWorker::RunTest(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, bool skip_render) {
 
   // Sanity before
-  DoRender(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_unifoms_string, FLAGS_sanity_before.c_str(), false);
+  PrepareTest(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_unifoms_string);
+  DrawTest(FLAGS_sanity_before.c_str(), false);
+  CleanTest();
 
   // Test workload
   std::vector<uint32_t> vertex_spv;
@@ -1616,16 +1625,20 @@ void VulkanWorker::Render(FILE *vertex_file, FILE *fragment_file, FILE *uniforms
   LoadSpirvFromFile(fragment_file, fragment_spv);
   char *uniforms_string = GetFileContent(uniforms_file);
 
+  PrepareTest(vertex_spv, fragment_spv, uniforms_string);
+
   for (int i = 0; i < FLAGS_num_render; i++) {
     std::string png_filename = FLAGS_png_template + "_" + std::to_string(i) + ".png";
-    DoRender(vertex_spv, fragment_spv, uniforms_string, png_filename.c_str(), skip_render);
+    DrawTest(png_filename.c_str(), skip_render);
   }
 
+  CleanTest();
   free(uniforms_string);
 
   // Sanity after
-  DoRender(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_unifoms_string, FLAGS_sanity_after.c_str(), false);
-
+  PrepareTest(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_unifoms_string);
+  DrawTest(FLAGS_sanity_after.c_str(), false);
+  CleanTest();
 }
 
 // DumpWorkerInfo() is static to be callable without creating a full-blown worker.
