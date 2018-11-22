@@ -17,7 +17,7 @@ limitations under the License.
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.graphicsfuzz</groupId>
-  <artifactId>GraphicsFuzz</artifactId>
+  <artifactId>graphicsfuzz-root</artifactId>
   <version>1.0</version>
   <packaging>pom</packaging>
 
@@ -28,10 +28,8 @@ limitations under the License.
 
   <modules>
     <!-- Keep in alphabetical order -->
-    <module>android-client-dep</module>
     <module>assembly-binaries</module>
     <module>assembly-public</module>
-    <module>assembly</module>
     <module>ast</module>
     <module>checkstyle-config</module>
     <module>client-tests</module>
@@ -40,6 +38,8 @@ limitations under the License.
     <module>fuzzerserver</module>
     <module>generate-and-run-shaders</module>
     <module>generator</module>
+    <module>gles-worker-dependencies</module>
+    <module>graphicsfuzz</module>
     <module>parent-all</module>
     <module>parent-checkstyle</module>
     <module>python</module>

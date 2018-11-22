@@ -26,6 +26,7 @@ import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.reducer.tool.GlslReduce;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -60,7 +61,6 @@ import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.reducer.tool.RandomFileJudge;
-import com.graphicsfuzz.reducer.tool.Reduce;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -425,7 +425,7 @@ public class ReducerUnitTest {
 
     int numSteps = 20;
 
-    Reduce.mainHelper(new String[] {
+    GlslReduce.mainHelper(new String[] {
           referenceJson.getAbsolutePath(),
           "--swiftshader",
           "IDENTICAL",
@@ -442,7 +442,7 @@ public class ReducerUnitTest {
 
     while (new File(output, Constants.REDUCTION_INCOMPLETE).exists()) {
       numSteps += 5;
-      Reduce.mainHelper(new String[] {
+      GlslReduce.mainHelper(new String[] {
             referenceJson.getAbsolutePath(),
             "--swiftshader",
             "IDENTICAL",
@@ -481,7 +481,7 @@ public class ReducerUnitTest {
     final File output = temporaryFolder.newFolder();
     // This should throw a FileNotFoundException, because REDUCTION_INCOMPLETE
     // will not be present.
-    Reduce.mainHelper(new String[] { "--swiftshader", "--continue_previous_reduction",
+    GlslReduce.mainHelper(new String[] { "--swiftshader", "--continue_previous_reduction",
           json.getAbsolutePath(), "--output",
           output.getAbsolutePath(), "NO_IMAGE" }, null);
   }
@@ -505,7 +505,7 @@ public class ReducerUnitTest {
           reference, referenceImage, false);
     assertEquals(0, referenceResult.res);
     final File output = temporaryFolder.newFolder();
-    Reduce.mainHelper(new String[] {
+    GlslReduce.mainHelper(new String[] {
           referenceJson.getAbsolutePath(),
           "--swiftshader",
           "IDENTICAL",

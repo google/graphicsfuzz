@@ -24,9 +24,9 @@ import java.util.Optional;
 
 public class ReductionFilesHelper {
 
-  static File getReductionDir(String token, String shaderSet, String shader) {
-    return new File(WebUiConstants.WORKER_DIR + "/" + token + "/"
-          + shaderSet + "_" + shader + "_inv");
+  static File getReductionDir(String token, String shaderSet, String variant) {
+    return new File(WebUiConstants.WORKER_DIR + "/" + token + "/" + shaderSet
+        + "/reductions/" + variant);
   }
 
   static Optional<File> getLatestReductionImage(

@@ -37,7 +37,7 @@ def go():
 	os.chdir(os.environ["OGLT_SOURCE_ROOT"])
 	os.environ["MAVEN_OPTS"] = os.environ.get("MAVEN_OPTS", "") + " -XX:+TieredCompilation -XX:TieredStopAtLevel=1 "
 	if len(sys.argv[1:]) == 0:
-	        print("Try: \nm -pl assembly package\nm -pl assembly package -P shade,zip")
+	        print("Try: \nm -pl graphicsfuzz package")
 	        return
 	call(["mvn", "-Dmaven.test.skip=true", "-am"] + sys.argv[1:])
 
