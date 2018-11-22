@@ -4,15 +4,20 @@ GraphicsFuzz is a testing framework for automatically finding and simplifying bu
 
 In this walkthrough, we will briefly demonstrate most features of GraphicsFuzz from start to finish, including our browser-based UI.
 
-We will be using the latest release zip and the Desktop or Android worker. You can download these
- from the [releases page](glsl-fuzz-releases.md) or [build them from source](glsl-fuzz-build.md). If 
- you want to use the Android worker you will also need an Android device or the Android device emulator.
+We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
+You can download these from the [releases page](glsl-fuzz-releases.md)
+or [build them from source](glsl-fuzz-build.md).
+If you want to use the Android worker you will also need an Android device 
+or the Android device emulator.
 
 Add the following directories to your path:
 
 * `graphicsfuzz-1.0/python/drivers`
-* `graphicsfuzz-1.0/bin/{Linux,Mac,Windows}`
-
+* One of:
+  * `graphicsfuzz-1.0/bin/Linux`
+  * `graphicsfuzz-1.0/bin/Mac`
+  * `graphicsfuzz-1.0/bin/Windows`
+  
 The `graphicsfuzz-1.0/` directory is the unzipped graphicsfuzz release.
 If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
 
@@ -137,7 +142,7 @@ the workers run.
 
 To test the OpenGL drivers on a
 Mac, Linux, or Windows desktop device,
-download the latest `gles-desktop-worker-1.0.jar` from the 
+download the latest `gles-desktop-worker-1.0.jar` file from the 
 [releases page](glsl-fuzz-releases.md). 
 
 You will need to create a `token.txt` file in the same directory
@@ -171,10 +176,12 @@ is failing to connect to the server.
 ### `gles-worker-android`
 
 To test the OpenGL ES drivers on an Android device,
-download the latest `gles-worker-android-debug.apk` from the [releases page](glsl-fuzz-releases.md).
+download the latest `gles-worker-android-debug.apk` file 
+from the [releases page](glsl-fuzz-releases.md).
 You can download the .apk file from your device directly
 (e.g. using the Chrome app)
-and open the .apk file to install it.
+and open the .apk file to install it,
+or you can install it using `adb`.
 
 > You may need to allow installation of apps from unknown sources.
 > See the TODO [Android notes section](glsl-fuzz-develop.md#Android_notes)
@@ -235,11 +242,12 @@ The `glsl-to-spirv-worker` script translates the GLSL shaders to SPIR-V
 via `glslangValidator` before sending the shader to
 the `vulkan-worker-android` app running on the Android device.
 
-Download the latest `vulkan-worker-android-debug.apk` 
+Download the latest `vulkan-worker-android-debug.apk` file
 from the [releases page](glsl-fuzz-releases.md)
 and install it on your Android device.
 You can download the .apk file from your device directly
-(e.g. using the Chrome app) and open the .apk file to install it.
+(e.g. using the Chrome app) and open the .apk file to install it,
+or you can install it using `adb`.
 
 > You may need to allow installation of apps from unknown sources. See the TODO Android notes section of the developer documentation for various settings that you may need to change on your Android device, and for other ways of installing the app.
 
@@ -252,7 +260,7 @@ You can run the worker as follows:
 # Install the apk, if not installed already.
 adb install vulkan-worker-android-debug.apk
 
-# Make sure the app can read/write on /sdcard/
+# Make sure the app can read/write /sdcard/
 adb shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE
 adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE
 
