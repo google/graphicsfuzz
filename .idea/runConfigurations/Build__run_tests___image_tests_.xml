@@ -15,7 +15,7 @@ limitations under the License.
 -->
 
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Clean" type="MavenRunConfiguration" factoryName="Maven">
+  <configuration default="false" name="Build (run tests + image tests)" type="MavenRunConfiguration" factoryName="Maven">
     <MavenSettings>
       <option name="myGeneralSettings" />
       <option name="myRunnerSettings">
@@ -40,11 +40,12 @@ limitations under the License.
           </option>
           <option name="goals">
             <list>
-              <option value="-Dmaven.test.skip=true" />
               <option value="-am" />
               <option value="-pl" />
-              <option value=":assembly" />
-              <option value="clean" />
+              <option value=":graphicsfuzz" />
+              <option value="package" />
+              <option value="-P" />
+              <option value="imageTests" />
             </list>
           </option>
           <option name="profilesMap">
