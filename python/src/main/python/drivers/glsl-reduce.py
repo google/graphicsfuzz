@@ -23,7 +23,7 @@ java_tool_path = os.sep.join(
 
 # Run the reduction
 
-cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.reducer.tool.Reduce" ] + sys.argv[1:]
+cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.reducer.tool.GlslReduce" ] + sys.argv[1:]
 
 print("Reduction command: %s" % (" ".join(cmd)))
 reduce_proc = subprocess.Popen(cmd)
