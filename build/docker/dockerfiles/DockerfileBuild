@@ -25,7 +25,7 @@ RUN \
 
 COPY \
   build/docker/scripts/build.sh \
-  assembly/src/main/scripts/docker/scripts/umask-wrapper.sh \
+  graphicsfuzz/src/main/scripts/docker/scripts/umask-wrapper.sh \
   /data/
 
 WORKDIR /data

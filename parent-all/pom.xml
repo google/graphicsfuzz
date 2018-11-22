@@ -242,11 +242,6 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>com.graphicsfuzz</groupId>
-        <artifactId>assembly</artifactId>
-        <version>1.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.graphicsfuzz</groupId>
         <artifactId>assembly-binaries</artifactId>
         <version>1.0</version>
         <type>zip</type>
@@ -314,6 +309,11 @@ limitations under the License.
       <dependency>
         <groupId>com.graphicsfuzz</groupId>
         <artifactId>generator</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphicsfuzz</groupId>
+        <artifactId>graphicsfuzz</artifactId>
         <version>1.0</version>
       </dependency>
       <dependency>

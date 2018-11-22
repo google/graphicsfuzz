@@ -888,7 +888,7 @@ def write_license_from_url(fout: typing.TextIO, url: str) -> None:
 
 def go():
     maven_dependencies: typing.Dict[str, typing.Dict] = dict()
-    read_maven_dependencies(maven_dependencies, path("assembly", "target", "dependencies.txt"))
+    read_maven_dependencies(maven_dependencies, path("graphicsfuzz", "target", "dependencies.txt"))
     dependencies_populated = get_maven_dependencies_populated()
     dependencies_populated.update(get_extras())
 

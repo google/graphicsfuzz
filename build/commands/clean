@@ -36,7 +36,7 @@ def call(args):
 def go():
 	os.chdir(os.environ["OGLT_SOURCE_ROOT"])
         os.environ["MAVEN_OPTS"] = os.environ.get("MAVEN_OPTS", "") + " -XX:+TieredCompilation -XX:TieredStopAtLevel=1 "
-	call(["mvn", "-Dmaven.test.skip=true", "-am", "-pl", "assembly", "clean"])
+	call(["mvn", "-Dmaven.test.skip=true", "-am", "-pl", "graphicsfuzz", "clean"])
 
 if __name__ == "__main__":
 	go()
