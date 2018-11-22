@@ -428,6 +428,7 @@ public class ReducerUnitTest {
     GlslReduce.mainHelper(new String[] {
           referenceJson.getAbsolutePath(),
           "--swiftshader",
+          "--reduction-kind",
           "IDENTICAL",
           "--reference",
           referenceJsonFakeResult.getAbsolutePath(),
@@ -444,6 +445,7 @@ public class ReducerUnitTest {
       GlslReduce.mainHelper(new String[] {
             referenceJson.getAbsolutePath(),
             "--swiftshader",
+            "--reduction-kind",
             "IDENTICAL",
             "--reference",
             referenceJsonFakeResult.getAbsolutePath(),
@@ -481,7 +483,8 @@ public class ReducerUnitTest {
     // will not be present.
     GlslReduce.mainHelper(new String[] { "--swiftshader", "--continue-previous-reduction",
           json.getAbsolutePath(), "--output",
-          output.getAbsolutePath(), "NO_IMAGE" }, null);
+          output.getAbsolutePath(),
+          "--reduction-kind", "NO_IMAGE" }, null);
   }
 
   @Test
@@ -506,6 +509,7 @@ public class ReducerUnitTest {
     GlslReduce.mainHelper(new String[] {
           referenceJson.getAbsolutePath(),
           "--swiftshader",
+          "--reduction-kind",
           "IDENTICAL",
           "--reference",
           referenceJsonFakeResult.getAbsolutePath(),

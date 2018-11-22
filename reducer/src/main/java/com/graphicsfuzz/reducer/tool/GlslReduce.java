@@ -78,7 +78,7 @@ public class GlslReduce {
           .help("Path of shader job to be reduced.  E.g. /path/to/shaderjob.json ")
           .type(File.class);
 
-    parser.addArgument("reduction-kind")
+    parser.addArgument("--reduction-kind")
           .help("Kind of reduction to be performed.  Options are:\n"
                 + "   " + ReductionKind.CUSTOM
                 + "             Reduces based on custom criterion.\n"
@@ -98,6 +98,7 @@ public class GlslReduce {
                 + "     Reduces while validator gives a particular error\n"
                 + "   " + ReductionKind.ALWAYS_REDUCE
                 + "       Always reduces (useful for testing)\n")
+          .setDefault("CUSTOM")
           .type(String.class);
 
     parser.addArgument("--metric")

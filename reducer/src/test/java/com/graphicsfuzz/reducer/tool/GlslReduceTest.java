@@ -38,7 +38,7 @@ public class GlslReduceTest {
   public void noServerAllowedInCustomReduction() throws Exception {
     try {
       GlslReduce.mainHelper(new String[]{"--server", "some_server", "--token", "some_token",
-              makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
+              makeShaderJobAndReturnJsonFilename(), "--reduction-kind", "CUSTOM", "--output",
               temporaryFolder.getRoot().getAbsolutePath()}
           , null);
       assertTrue(false);
@@ -51,7 +51,7 @@ public class GlslReduceTest {
   public void noTokenAllowedInCustomReduction() throws Exception {
     try {
       GlslReduce.mainHelper(new String[]{"--token", "some_token",
-          makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
+          makeShaderJobAndReturnJsonFilename(), "--reduction-kind", "CUSTOM", "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
@@ -63,7 +63,7 @@ public class GlslReduceTest {
   public void noErrorStringAllowedInCustomReduction() throws Exception {
     try {
       GlslReduce.mainHelper(new String[]{"--error-string", "some_string",
-          makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
+          makeShaderJobAndReturnJsonFilename(), "--reduction-kind", "CUSTOM", "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
@@ -76,7 +76,8 @@ public class GlslReduceTest {
     try {
       GlslReduce.mainHelper(new String[]{"--reference", "reference.info.json",
           makeShaderJobAndReturnJsonFilename(),
-          "CUSTOM", "--output", temporaryFolder.getRoot().getAbsolutePath()}, null);
+          "--reduction-kind", "CUSTOM", "--output", temporaryFolder.getRoot().getAbsolutePath()},
+          null);
       assertTrue(false);
     } catch (RuntimeException exception) {
       checkOptionNotAllowed(exception, "reference");
@@ -90,8 +91,9 @@ public class GlslReduceTest {
   @Test
   public void noCustomJudgeAllowedInNonCustomReduction() throws Exception {
     try {
-      GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "NO_IMAGE",
-          "--custom-judge", "somejudgescript", "--output",
+      GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(),
+              "--reduction-kind", "NO_IMAGE",
+              "--custom-judge", "somejudgescript", "--output",
               temporaryFolder.getRoot().getAbsolutePath()},
           null);
       assertTrue(false);
@@ -104,7 +106,7 @@ public class GlslReduceTest {
   @Test
   public void customJudgeRequiredInCustomReduction() throws Exception {
     try {
-      GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
+      GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "--reduction-kind", "CUSTOM", "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
@@ -121,6 +123,7 @@ public class GlslReduceTest {
     try {
       GlslReduce.mainHelper(new String[]{
           jsonFile.getAbsolutePath(),
+          "--reduction-kind",
           "CUSTOM",
           "--custom-judge",
           emptyFile.getAbsolutePath(),
@@ -140,6 +143,7 @@ public class GlslReduceTest {
     emptyFile.setExecutable(true);
     GlslReduce.mainHelper(new String[]{
         jsonFile.getAbsolutePath(),
+        "--reduction-kind",
         "CUSTOM",
         "--custom-judge",
         emptyFile.getAbsolutePath(),

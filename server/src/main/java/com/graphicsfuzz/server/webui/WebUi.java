@@ -1342,7 +1342,8 @@ public class WebUi extends HttpServlet {
     args.add("glsl-reduce");
     final String shaderJobFilePath = request.getParameter("shader-path");
     args.add(shaderJobFilePath);
-    final String reductionType = request.getParameter("reduction-type");
+    args.add("--reduction-kind");
+    final String reductionType = request.getParameter("reduction-kind");
     args.add(reductionType);
     args.add("--metric");
     args.add(request.getParameter("metric"));
@@ -1363,7 +1364,7 @@ public class WebUi extends HttpServlet {
       args.add("--threshold");
       args.add(threshold);
     }
-    final String errorRegex = request.getParameter("error-regex");
+    final String errorRegex = request.getParameter("error-string");
     if (errorRegex != null) {
       args.add("--error-string");
       args.add(errorRegex);
@@ -1442,6 +1443,7 @@ public class WebUi extends HttpServlet {
     List<String> args = new ArrayList<>();
     args.add("glsl-reduce");
     args.add(referenceShaderJobFile.getPath());
+    args.add("--reduction-kind");
     args.add("IDENTICAL");
     args.add("--output");
     args.add(reductionDir.getPath());
@@ -1902,7 +1904,7 @@ public class WebUi extends HttpServlet {
         "<fieldset>",
         "<legend>Reduction Options</legend>",
         "<input type='hidden' name='type' value='reduce'>",
-        "<input type='hidden' name='shader_path' value='", shaderJobFilePath, "'>",
+        "<input type='hidden' name='shader-path' value='", shaderJobFilePath, "'>",
         "<input type='hidden' name='output' value='", output, "'>",
         "<input type='hidden' name='token' value='", token, "'>",
         "<table><tr>",
@@ -1914,7 +1916,7 @@ public class WebUi extends HttpServlet {
         "<tr>",
         "<td align='right'><p class='no_space'>Reduction Mode:</p></td>",
         "<td>",
-        "<select name='reduction_type' class='reduce_col' onchange='selectReduceKind(this);'>",
+        "<select name='reduction-kind' class='reduce_col' onchange='selectReduceKind(this);'>",
         "<option value='ABOVE_THRESHOLD'>Above Threshold</option>",
         (crash
             ? "<option value='NO_IMAGE' selected='selected'>No Image</option>"
@@ -1947,16 +1949,16 @@ public class WebUi extends HttpServlet {
             : "<tr id='error_string_tr' class='invisible'>"
         ),
         "<td align='right'><p class='no_space'>Error Regex:</p></td>",
-        "<td><input class='reduce_col' name='error_regex' value=''/></td>",
+        "<td><input class='reduce_col' name='error-string' value=''/></td>",
         "</tr>",
         "<tr>",
         "<td class='row_top row_right' rowspan='2'><p class='no_space'>Reference Image:</p></td>",
         "<td><input type='radio' value='", referenceResultPath, "' checked='checked'",
-        " name='reference_image'/><p class='no_space'>    Reference</p></td>",
+        " name='reference-image'/><p class='no_space'>    Reference</p></td>",
         "</tr>",
         "<tr align='left'>",
         "<td><input type='radio' value='", variantShaderJobResultFileNoExtension,
-        ".info.json' name='reference_image'/><p class='no_space'>    Variant</p></td>",
+        ".info.json' name='reference-image'/><p class='no_space'>    Variant</p></td>",
         "</tr>",
         "</table>",
         "</td>",
