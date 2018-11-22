@@ -1340,9 +1340,9 @@ public class WebUi extends HttpServlet {
 
     final List<String> args = new ArrayList<>();
     args.add("glsl-reduce");
-    final String shaderJobFilePath = request.getParameter("shader_path");
+    final String shaderJobFilePath = request.getParameter("shader-path");
     args.add(shaderJobFilePath);
-    final String reductionType = request.getParameter("reduction_type");
+    final String reductionType = request.getParameter("reduction-type");
     args.add(reductionType);
     args.add("--metric");
     args.add(request.getParameter("metric"));
@@ -1351,7 +1351,7 @@ public class WebUi extends HttpServlet {
     args.add(output);
     if (!ReductionKind.NO_IMAGE.toString().equalsIgnoreCase(reductionType)) {
       args.add("--reference");
-      args.add(request.getParameter("reference_image"));
+      args.add(request.getParameter("reference-image"));
     }
     args.add("--token");
     final String token = request.getParameter("token");
@@ -1363,21 +1363,21 @@ public class WebUi extends HttpServlet {
       args.add("--threshold");
       args.add(threshold);
     }
-    final String errorRegex = request.getParameter("error_regex");
+    final String errorRegex = request.getParameter("error-regex");
     if (errorRegex != null) {
-      args.add("--error_string");
+      args.add("--error-string");
       args.add(errorRegex);
     }
-    final String reduceEverywhere = request.getParameter("reduce_everywhere");
+    final String reduceEverywhere = request.getParameter("preserve-semantics");
     if (reduceEverywhere != null) {
       if (reduceEverywhere.equals("on")) {
-        args.add("--reduce_everywhere");
+        args.add("--preserve-semantics");
       }
     }
-    final String skipRender = request.getParameter("skip_render");
+    final String skipRender = request.getParameter("skip-render");
     if (skipRender != null) {
       if (skipRender.equals("on")) {
-        args.add("--skip_render");
+        args.add("--skip-render");
       }
     }
     final String timeout = request.getParameter("timeout");
@@ -1385,14 +1385,14 @@ public class WebUi extends HttpServlet {
       args.add("--timeout");
       args.add(timeout);
     }
-    final String maxSteps = request.getParameter("max_steps");
+    final String maxSteps = request.getParameter("max-steps");
     if (maxSteps != null) {
-      args.add("--max_steps");
+      args.add("--max-steps");
       args.add(maxSteps);
     }
-    final String retryLimit = request.getParameter("retry_limit");
+    final String retryLimit = request.getParameter("retry-limit");
     if (retryLimit != null) {
-      args.add("--retry_limit");
+      args.add("--retry-limit");
       args.add(retryLimit);
     }
     final String seed = request.getParameter("seed");
@@ -1968,8 +1968,8 @@ public class WebUi extends HttpServlet {
         "</td>",
         "<td class='checkbox'>",
         (crash
-            ? "<input type='checkbox' name='reduce_everywhere' checked='checked'/>"
-            : "<input type='checkbox' name='reduce_everywhere'/>"
+            ? "<input type='checkbox' name='preserve-semantics'/>"
+            : "<input type='checkbox' name='preserve-semantics' checked='checked'/>"
         ),
         "</td>",
         "</tr>",
@@ -1978,7 +1978,7 @@ public class WebUi extends HttpServlet {
         "<p class='no_space'>Skip Render:</p>",
         "</td>",
         "<td class='checkbox'>",
-        "<input type='checkbox' name='skip_render'/>",
+        "<input type='checkbox' name='skip-render'/>",
         "</td>",
         "</tr>",
         "<tr>",
@@ -1994,7 +1994,7 @@ public class WebUi extends HttpServlet {
         "<p class='no_space'>Max Steps:</p>",
         "</td>",
         "<td>",
-        "<input size='15' name='max_steps' value='2000'/>",
+        "<input size='15' name='max-steps' value='2000'/>",
         "</td>",
         "</tr>",
         "<tr>",
@@ -2002,7 +2002,7 @@ public class WebUi extends HttpServlet {
         "<p class='no_space'>Retry Limit:</p>",
         "</td>",
         "<td>",
-        "<input size='15' name='retry_limit' value='2'/>",
+        "<input size='15' name='retry-limit' value='2'/>",
         "</td>",
         "</tr>",
         "<tr>",

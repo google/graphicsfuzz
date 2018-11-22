@@ -62,12 +62,12 @@ public class GlslReduceTest {
   @Test
   public void noErrorStringAllowedInCustomReduction() throws Exception {
     try {
-      GlslReduce.mainHelper(new String[]{"--error_string", "some_string",
+      GlslReduce.mainHelper(new String[]{"--error-string", "some_string",
           makeShaderJobAndReturnJsonFilename(), "CUSTOM", "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
-      checkOptionNotAllowed(exception, "error_string");
+      checkOptionNotAllowed(exception, "error-string");
     }
   }
 
@@ -91,12 +91,12 @@ public class GlslReduceTest {
   public void noCustomJudgeAllowedInNonCustomReduction() throws Exception {
     try {
       GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "NO_IMAGE",
-          "--custom_judge", "somejudgescript", "--output",
+          "--custom-judge", "somejudgescript", "--output",
               temporaryFolder.getRoot().getAbsolutePath()},
           null);
       assertTrue(false);
     } catch (RuntimeException exception) {
-      assertTrue(exception.getMessage().contains("custom_judge' option only supported with " +
+      assertTrue(exception.getMessage().contains("custom-judge' option only supported with " +
           "CUSTOM reduction"));
     }
   }
@@ -109,7 +109,7 @@ public class GlslReduceTest {
       assertTrue(false);
     } catch (RuntimeException exception) {
       assertTrue(exception.getMessage().contains("CUSTOM reduction requires a judge " +
-          "to be specified via '--custom_judge'"));
+          "to be specified via '--custom-judge'"));
     }
 
   }
@@ -122,7 +122,7 @@ public class GlslReduceTest {
       GlslReduce.mainHelper(new String[]{
           jsonFile.getAbsolutePath(),
           "CUSTOM",
-          "--custom_judge",
+          "--custom-judge",
           emptyFile.getAbsolutePath(),
           "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
@@ -141,9 +141,8 @@ public class GlslReduceTest {
     GlslReduce.mainHelper(new String[]{
         jsonFile.getAbsolutePath(),
         "CUSTOM",
-        "--custom_judge",
+        "--custom-judge",
         emptyFile.getAbsolutePath(),
-        "--reduce_everywhere",
         "--output",
         temporaryFolder.getRoot().getAbsolutePath()}, null);
     final File[] reducedFinal = temporaryFolder.getRoot().listFiles((dir, name) -> name.contains(

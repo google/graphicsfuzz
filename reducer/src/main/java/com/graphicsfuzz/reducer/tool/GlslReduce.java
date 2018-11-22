@@ -74,11 +74,11 @@ public class GlslReduce {
             + "or a compute shader (NAME.comp).");
 
     // Required arguments
-    parser.addArgument("shader_job")
+    parser.addArgument("shader-job")
           .help("Path of shader job to be reduced.  E.g. /path/to/shaderjob.json ")
           .type(File.class);
 
-    parser.addArgument("reduction_kind")
+    parser.addArgument("reduction-kind")
           .help("Kind of reduction to be performed.  Options are:\n"
                 + "   " + ReductionKind.CUSTOM
                 + "             Reduces based on custom criterion.\n"
@@ -123,14 +123,14 @@ public class GlslReduce {
           .setDefault(30)
           .type(Integer.class);
 
-    parser.addArgument("--max_steps")
+    parser.addArgument("--max-steps")
           .help(
                 "The maximum number of reduction steps to take before giving up and outputting the "
                       + "final reduced file.")
           .setDefault(250)
           .type(Integer.class);
 
-    parser.addArgument("--retry_limit")
+    parser.addArgument("--retry-limit")
           .help("When getting an image via the server, the number of times the server should "
                 + "allow the client to retry a shader before assuming the shader crashes the "
                 + "client and marking it as SKIPPED.")
@@ -141,7 +141,7 @@ public class GlslReduce {
           .help("Emit detailed information related to the reduction process.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--skip_render")
+    parser.addArgument("--skip-render")
           .help("Don't render the shader on remote clients. Useful when reducing compile or link "
                 + "errors.")
           .action(Arguments.storeTrue());
@@ -151,7 +151,7 @@ public class GlslReduce {
           .setDefault(new Random().nextInt())
           .type(Integer.class);
 
-    parser.addArgument("--error_string")
+    parser.addArgument("--error-string")
           .help("String checked for containment in validation or compilation tool error message.")
           .type(String.class);
 
@@ -168,11 +168,11 @@ public class GlslReduce {
           .setDefault(new File("."))
           .type(File.class);
 
-    parser.addArgument("--reduce_everywhere")
-          .help("Allow reducer to reduce arbitrarily.")
+    parser.addArgument("--preserve-semantics")
+          .help("Only perform semantics-preserving reductions.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--stop_on_error")
+    parser.addArgument("--stop-on-error")
           .help("Quit if something goes wrong during reduction; useful for testing.")
           .action(Arguments.storeTrue());
 
@@ -180,11 +180,11 @@ public class GlslReduce {
           .help("Use swiftshader for rendering.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--continue_previous_reduction")
+    parser.addArgument("--continue-previous-reduction")
           .help("Carry on from where a previous reduction attempt left off.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--custom_judge")
+    parser.addArgument("--custom-judge")
         .help("Path to an executable shell script that should decide whether a shader job is "
             + "interesting.")
         .type(File.class);
@@ -231,7 +231,7 @@ public class GlslReduce {
         throw new ArgumentParserException(
               "If reduction kind is "
                     + ReductionKind.VALIDATOR_ERROR
-                    + " then --error_string must be provided.",
+                    + " then --error-string must be provided.",
               parser);
       }
 
@@ -262,7 +262,7 @@ public class GlslReduce {
       final boolean skipRender = ns.get("skip_render");
       final int seed = ns.get("seed");
       final String errorString = ns.get("error_string");
-      final boolean reduceEverywhere = ns.get("reduce_everywhere");
+      final boolean reduceEverywhere = !ns.getBoolean("preserve_semantics");
       final boolean stopOnError = ns.get("stop_on_error");
 
       final String server = ns.get("server");
@@ -300,21 +300,21 @@ public class GlslReduce {
           throwExceptionForCustomReduction("token");
         }
         if (errorString != null) {
-          throwExceptionForCustomReduction("error_string");
+          throwExceptionForCustomReduction("error-string");
         }
         if (referenceResultFile != null) {
           throwExceptionForCustomReduction("reference");
         }
         if (customJudgeScript == null) {
           throw new RuntimeException("A " + ReductionKind.CUSTOM + " reduction requires a judge "
-              + "to be specified via '--custom_judge'");
+              + "to be specified via '--custom-judge'");
         }
         if (!customJudgeScript.canExecute()) {
           throw new RuntimeException("Custom judge script must be executable.");
         }
       } else {
         if (customJudgeScript != null) {
-          throw new RuntimeException("custom_judge' option only supported with "
+          throw new RuntimeException("custom-judge' option only supported with "
               + ReductionKind.CUSTOM + " reduction.");
         }
       }
@@ -561,7 +561,7 @@ public class GlslReduce {
   private static void throwExceptionForCustomReduction(String option) {
     throw new RuntimeException("The '--" + option + "' option is not compatible with a "
         + ReductionKind.CUSTOM + " reduction; details of judgement should all be in the custom "
-        + "judge specified via --custom_judge.");
+        + "judge specified via --custom-judge.");
   }
 
 }
