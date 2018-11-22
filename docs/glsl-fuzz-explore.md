@@ -1,23 +1,29 @@
 # GraphicsFuzz: explore test results
 
-A test may result in an image, or an error at some point during the test run.
+When tests are executed via the web UI, the results are written to a particular
+file hierarchy under the `processing` directory in the server working directory:
 
-Describe file layout:
-
-```
-server-work-dir/
-├── processing
-│   └── Pixel3
-│       ├── my_shader_family_exp
-│       └── my_shader_family_variant_001_inv
-└── shaderfamilies
-    └── my_shader_family
-        ├── reference.frag
-        ├── reference.json
-        ├── variant_000.frag
-        ├── variant_000.json
-        ├── variant_001.frag
-        ├── variant_001.json
-        ├── variant_002.frag
-        └── variant_002.json
+```shell
+processing
+└── <worker-name>
+    ├── shader-family-01
+    │   ├── reference.info.json
+    │   ├── reference.png
+    │   ├── reference.txt
+    │   ├── variant_000.info.json
+    │   ├── variant_000.png
+    │   ├── variant_000.txt
+    │   ├── variant_001.info.json
+    │   ├── variant_001.png
+    │   └── variant_001.txt
+    └── shader-family-02
+        ├── reference.info.js
+        ├── reference.png
+        ├── reference.txt
+        ├── variant_000.info.json
+        ├── variant_000.png
+        ├── variant_000.txt
+        ├── variant_001.info.json
+        ├── variant_001.png
+        └── variant_001.txt
 ```
