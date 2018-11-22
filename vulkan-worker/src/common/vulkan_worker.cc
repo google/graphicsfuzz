@@ -1453,6 +1453,7 @@ void VulkanWorker::LoadUniforms(const char *uniforms_string) {
 }
 
 void VulkanWorker::ExportPNG(const char *png_filename) {
+  log("EXPORTPNG START");
 
   VKCHECK(vkResetFences(device_, 1, &fence_));
 
@@ -1545,6 +1546,8 @@ void VulkanWorker::ExportPNG(const char *png_filename) {
   free(source_image_blob);
   free(rgba_blob);
   free(png);
+
+  log("EXPORTPNG END");
 }
 
 void VulkanWorker::PrepareTest(std::vector<uint32_t> &vertex_spv, std::vector<uint32_t> &fragment_spv, const char *uniforms_string) {
