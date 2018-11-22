@@ -1,14 +1,22 @@
-# Introduction
+# GraphicsFuzz walkthrough
 
 GraphicsFuzz is a testing framework for automatically finding and simplifying bugs in graphics shader compilers.
 
-In this guide, we will briefly show how you might use each feature of GraphicsFuzz from start to finish. In practice, you may not want to use every feature; for example, you may want to use our pre-generated shader families instead of generating your own.
+In this walkthrough, we will briefly demonstrate most features of GraphicsFuzz from start to finish, including our browser-based UI.
 
-We will be using the latest release zip and the Desktop or Android worker. You can download these from the [GitHub releases page](https://github.com/google/graphicsfuzz/releases). If the latest versions of these are not available, you can [build them from source](development.md). If you want to use the Android worker you will also need an Android device or the Android device emulator.
+We will be using the latest release zip and the Desktop or Android worker. You can download these
+ from the [releases page](glsl-fuzz-releases.md) or [build them from source](glsl-fuzz-build.md). If 
+ you want to use the Android worker you will also need an Android device or the Android device emulator.
 
-We assume the release zip has been extracted to `/gf/`; thus, you will have `/gf/bin/`, `/gf/jar/`, `/gf/python/`, etc.
+Add the following directories to your path:
 
-You will need to install the latest version of the Java 8 Development Kit,
+* `graphicsfuzz-1.0/python/drivers`
+* `graphicsfuzz-1.0/bin/{Linux,Mac,Windows}`
+
+The `graphicsfuzz-1.0/` directory is the unzipped graphicsfuzz release.
+If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
+
+You will also need to install the latest version of the Java 8 Development Kit,
 either:
 
 * From your system's package manager. E.g. `sudo apt-get install openjdk-8-jdk`.
@@ -22,7 +30,7 @@ java -version
 # Output: openjdk version "1.8.0_181"
 ```
 
-## Generating shader families using the generator
+## Generating shader families using `glsl-generate`
 
 GraphicsFuzz works by taking a *reference shader* and producing a family of *variant shaders*, where each variant should render the same image as the reference (modulo possible floating-point differences).
 
@@ -30,57 +38,86 @@ GraphicsFuzz works by taking a *reference shader* and producing a family of *var
 
 The reference shader and its variants together are referred to as a *shader family*.
 
-The tool that generates shader families is known as the *generator*. The inputs to the generator are a reference shader and a folder of *donor shaders* (not pictured above). In theory, these input shaders can be any GLSL fragment shaders. In practice, we designed our tools to support shaders from glslsandbox.com, and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed). Each shader file `shader.frag` must have a corresponding `shader.json` metadata file alongside it, which contains the values for the uniforms.
+The `glsl-generate` tool generates shader families. The inputs are a reference shader and a folder of *donor shaders* (not pictured above). In theory, these input shaders can be any GLSL fragment shaders. In practice, we designed our tools to support shaders from glslsandbox.com, and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed). Each shader file `shader.frag` must have a corresponding `shader.json` metadata file alongside it, which contains the values for the uniforms.
 
-We can create some families shaders as follows:
+We can create some shader families as follows:
 
 ```sh
-# Change to the extracted release zip directory.
-cd /gf
+# Copy the sample shaders into the current directory:
+cp graphicsfuzz-1.0/shaders/samples samples
 
-# Create a temp directory to store our shader families.
-# The directory structure will allow our server
+# Create a work directory to store our generated shader families.
+# The directory structure will allow the server
 # to find the shaders later.
-mkdir -p temp/work/shaderfamilies
+mkdir -p work/shaderfamilies
 
 # Generate several shader families from the set of sample shaders.
 # Synopsis:
-# generate_shader_families [options] donors references num_variants glsl_version prefix output_folder
-#
-# If instead you want to generate GLSL ES 1.00 shaders, change
-# shaders/samples/300es to shaders/samples/100, and "300 es" to "100"
-python/drivers/generate_shader_families --max_bytes 500000 --multi_pass shaders/samples/donors shaders/samples/300es 10 "300 es" a_shader_family temp/work/shaderfamilies
+# glsl-generate [options] donors references num_variants glsl_version prefix output_folder
 
-# The script above will take approx. 1-2 minutes to run, and will generate a shader family for every shader in shaders/samples/300es:
-ls temp/work/shaderfamilies
+# Generate some GLSL version 300 es shaders.
+glsl-generate --max_bytes 500000 --multi_pass samples/donors samples/300es 10 "300 es" family_300es work/shaderfamilies
+
+# Generate some GLSL version 100 shaders.
+glsl-generate --max_bytes 500000 --multi_pass samples/donors samples/100 10 "100" family_100 work/shaderfamilies
+
+# Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
+glsl-generate --max_bytes 500000 --multi_pass --generate_uniform_bindings --max_uniforms 10 samples/donors samples/300es 10 "300 es" family_vulkan work/shaderfamilies
+
+# The lines above will take approx. 1-2 minutes each, and will generate a shader family for every
+# shader in samples/300es or samples/100:
+ls work/shaderfamilies
+
 # Output:
-# a_shader_family_bubblesort_flag
-# a_shader_family_mandelbrot_blurry
-# a_shader_family_squares
-# a_shader_family_colorgrid_modulo
-# a_shader_family_prefix_sum
+
+# family_100_bubblesort_flag
+# family_100_mandelbrot_blurry
+# family_100_squares
+# family_100_colorgrid_modulo
+# family_100_prefix_sum
+
+# family_300es_bubblesort_flag
+# family_300es_mandelbrot_blurry
+# family_300es_squares
+# family_300es_colorgrid_modulo
+# family_300es_prefix_sum
+
+# family_vulkan_bubblesort_flag
+# family_vulkan_mandelbrot_blurry
+# family_vulkan_squares
+# family_vulkan_colorgrid_modulo
+# family_vulkan_prefix_sum
 ```
 
-## Running the server
+## Running `glsl-server`
 
-The server application is used to drive the testing of different devices by
+The `glsl-server` application is used to drive the testing of different devices by
 communicating with worker applications that run on the devices.
 
-```sh
-# Change to the extracted release zip directory.
-cd gf/
+> You do not have to use the server or worker applications;
+> see TODO for a description of a custom workflow using 
+> only our `glsl-generate` and `glsl-reduce` command line tools.
 
+You can start `glsl-server` as follows:
+
+```sh
 # The server uses the current directory as its working directory
-# so we must change directory.
-cd temp/work
+# so we must change to our `work` directory.
+cd work
+
+# Check that the shader families are here.
+ls
+# Output:
+# shaderfamilies
+# processing <-- only if you have previously run the server here.
 
 # Execute the server app.
 # The server listens on port 8080 by default, but you can override
 # this with e.g. --port 80
-java -ea -jar ../../jar/server-1.0.jar
+glsl-server
 ```
 
-Now visit http://localhost:8080/webui
+Now visit [http://localhost:8080/webui](http://localhost:8080/webui)
 in your browser.
 You should see several lists:
 connected workers, disconnected workers,
@@ -96,29 +133,29 @@ We will now run some worker applications
 that connect to the server, allowing us to test the devices on which
 the workers run.
 
-### Desktop worker
+### `gles-desktop-worker`
 
-To test your current device (or any other desktop or laptop device), download
-the latest desktop worker jar: look for `desktop-1.0.jar` on the GitHub
-release. If you build from source, you should find it in
-`platforms/libgdx/OGLTesting/desktop/build/libs/desktop-1.0.jar`.
+To test the OpenGL drivers on a
+Mac, Linux, or Windows desktop device,
+download the latest `gles-desktop-worker-1.0.jar` from the 
+[releases page](glsl-fuzz-releases.md). 
 
 You will need to create a `token.txt` file in the same directory
 with one line containing the token (a name for the device you are testing). E.g.
 
 ```sh
-echo paul-laptop-linux > token.txt
+echo laptop-dell > token.txt
 ```
 
 Then execute the following:
 
 ```sh
-# Use `--help` to see options
-# Use `--server` to specify a server URL (default is http://localhost:8080/)
-java -ea -jar desktop-1.0.jar
+# Add `--help` to see options
+# Add `--server` to specify a server URL (default is http://localhost:8080/)
+java -ea -jar gles-desktop-worker-1.0.jar
 ```
 
-You should see a relatively small window containing some animated white text on
+You should see a small window containing some animated white text on
 a black background, including the text `state: GET_JOB`. In the terminal, you
 should see repeating text similar to:
 
@@ -131,14 +168,16 @@ Main: Waiting 6 ticks.
 If you see `state: NO_CONNECTION` in the window, then the worker application
 is failing to connect to the server.
 
-### Android worker
+### `gles-worker-android`
 
-From your Android device,
-download the latest `android-debug.apk` (e.g. using the Chrome app) from the [GitHub releases page](https://github.com/google/graphicsfuzz/releases)
-and open the apk file to install the app.
+To test the OpenGL ES drivers on an Android device,
+download the latest `gles-worker-android-debug.apk` from the [releases page](glsl-fuzz-releases.md).
+You can download the .apk file from your device directly
+(e.g. using the Chrome app)
+and open the .apk file to install it.
 
 > You may need to allow installation of apps from unknown sources.
-> See the [Android notes section](development.md#Android_notes)
+> See the TODO [Android notes section](glsl-fuzz-develop.md#Android_notes)
 > of the developer documentation for
 > various settings that you may need to change on your Android device,
 > and for other ways of installing the app.
@@ -150,7 +189,7 @@ but the app should then start and the screen will remain
 black with animated text,
 similar to the desktop worker.
 
-> To exit the app, you must use the back button, otherwise it will automatically restart.
+> To exit the app, you **must use the back button**, otherwise it will automatically restart.
 
 The app should show a dialogue where you can enter the URL of the server.
 If your Android device and server are on the same network,
@@ -159,8 +198,8 @@ or your desktop/laptop IP address and port.
 
 E.g. `paul-laptop:8080` or `192.168.0.4:8080`.
 
-However, this will usually not work
-if you are connected to a university, public, or corporate network.
+However, this usually won't work
+on university, public, or corporate networks.
 Alternatively, you can connect your device
 via USB, execute `adb reverse tcp:8080 tcp:8080` on your desktop/laptop,
 and use `localhost:8080` as the server address.
@@ -178,13 +217,66 @@ If you see `state: NO_CONNECTION` then
 the worker application
 is failing to connect to the server.
 
+### `vulkan-worker-android`
+
+You can use the `vulkan-worker-android` app
+to test the Vulkan drivers on an Android device.
+This worker requires running a `glsl-to-spirv-worker`
+on a desktop machine,
+with an Android device (connected via USB) that has the `vulkan-worker-android` app installed.
+
+```
+glsl-server     <--- HTTP --->    glsl-to-spirv-worker    <--- adb commands --->    vulkan-worker-android app
+(on a desktop)                    (on a desktop)                                    (on an Android device)
+```
+
+
+The `glsl-to-spirv-worker` script translates the GLSL shaders to SPIR-V
+via `glslangValidator` before sending the shader to
+the `vulkan-worker-android` app running on the Android device.
+
+Download the latest `vulkan-worker-android-debug.apk` 
+from the [releases page](glsl-fuzz-releases.md)
+and install it on your Android device.
+You can download the .apk file from your device directly
+(e.g. using the Chrome app) and open the .apk file to install it.
+
+> You may need to allow installation of apps from unknown sources. See the TODO Android notes section of the developer documentation for various settings that you may need to change on your Android device, and for other ways of installing the app.
+
+There is no point in manually running this app from the Android device; it will crash unless
+it finds shaders in the `/sdcard/graphicsfuzz` directory.
+
+You can run the worker as follows:
+
+```sh
+# Install the apk, if not installed already.
+adb install vulkan-worker-android-debug.apk
+
+# Make sure the app can read/write on /sdcard/
+adb shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE
+adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE
+
+# Execute the worker script. Pass the token (a name for your device) as an argument
+# and the serial number of the Android device (found using `adb devices`).
+# Add `--help` to see options
+# Add `--server` to specify a server URL (default is http://localhost:8080)
+glsl-to-spirv-worker galaxy-s9-vulkan --adbID 21372144e90c7fae
+```
+
+You should see `No job` repeatedly output to the terminal.
+
+If you see `Cannot connect to server`
+then the worker script 
+is failing to connect to the server.
+
+
 ## Queuing shader families to a worker
 
 Return to the Web UI
-at http://localhost:8080/webui
+at [http://localhost:8080/webui](http://localhost:8080/webui)
 and refresh the page.
 You should see the workers under "Connected workers".
-We can now queue some shader familes to the workers:
+We can now queue some shader families to the workers:
 
 * Click "Run shader families on workers".
 * Select one or more workers via the checkboxes under "Workers".
@@ -197,7 +289,7 @@ these images are being captured and uploaded to the server.
 ## Viewing shader family results
 
 Return to the Web UI
-at http://localhost:8080/webui
+at [http://localhost:8080/webui](http://localhost:8080/webui)
 and click on one of the connected workers,
 and then click on one of the shader families:
 you should see a table of images.
@@ -210,8 +302,7 @@ the results for this family across all workers.
 In the example above,
 the image for shader `variant_001` differs from the rest.
 Recall that all images should be identical,
-thus `variant_001` has exposed a bug in the
-device that causes the wrong image to rendered.
+thus `variant_001` has exposed a bug that causes the wrong image to rendered.
 
 Clicking on `variant_001`
 reveals the GLSL fragment shader source that
@@ -318,10 +409,9 @@ You can see results in the file system within the server's working directory at 
 
 * Shader family results:
 
-`work/processing/[token]/[shader_family]/`.
+`work/processing/<token>/<shader_family>/`.
 
 * Reduction result:
 
-`work/processing/[token]/[shader_family]_variant_[number]_inv/`.
-
+`work/processing/<token>/<shader_family>/reductions/<shader_name>`.
 
