@@ -105,8 +105,8 @@ public class DesktopClientTest extends CommonClientTest {
         .getCodeSource()
         .getLocation()
         .toURI()).getAbsoluteFile().getParentFile();
-    return Paths.get(ToolPaths.getSourceRoot(file), "platforms", "libgdx",
-        "OGLTesting", "desktop", "build", "libs", "desktop-1.0.jar").toString();
+    return Paths.get(ToolPaths.getSourceRoot(file), "gles-worker",
+        "desktop", "build", "libs", "gles-worker-desktop-1.0.jar").toString();
   }
 
   @Test

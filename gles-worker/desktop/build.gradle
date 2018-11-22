@@ -1,0 +1,39 @@
+apply plugin: "java"
+
+assert file("../../gles-worker-dependencies/target/gles-worker-dependencies-1.0.jar").exists()
+
+dependencies {
+    implementation project(":core")
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    implementation "net.sourceforge.argparse4j:argparse4j:0.7.0"
+    implementation "org.zeroturnaround:zt-process-killer:1.4"
+    implementation files("../../gles-worker-dependencies/target/gles-worker-dependencies-1.0.jar")
+}
+
+sourceCompatibility = 1.8
+sourceSets.main.java.srcDirs = [ "src/" ]
+project.ext.mainClassName = "DesktopLauncher"
+project.ext.assetsDir = new File("../android/assets");
+
+task run(dependsOn: classes, type: JavaExec) {
+    main = project.mainClassName
+    classpath = sourceSets.main.runtimeClasspath
+    standardInput = System.in
+    workingDir = project.assetsDir
+    ignoreExitValue = true
+}
+
+task dist(type: Jar) {
+    from files(sourceSets.main.output.classesDir)
+    from files(sourceSets.main.output.resourcesDir)
+    from {configurations.compile.collect {zipTree(it)}}
+    from files(project.assetsDir);
+    baseName = "gles-worker-desktop"
+
+    manifest {
+        attributes 'Main-Class': project.mainClassName
+    }
+}
+
+dist.dependsOn classes

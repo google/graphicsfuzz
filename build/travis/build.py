@@ -95,7 +95,7 @@ def go():
 
     source_root = os.path.abspath(".")
 
-    os.chdir(path("platforms", "libgdx", "OGLTesting"))
+    os.chdir(path("gles-worker"))
 
     # Build desktop worker.
     subprocess.check_call(
@@ -103,8 +103,8 @@ def go():
 
     # Copy desktop worker.
     shutil.copy2(
-        path("desktop", "build", "libs", "desktop-1.0.jar"),
-        path(source_root, "out", "desktop-gles-worker.jar")
+        path("desktop", "build", "libs", "gles-worker-desktop-1.0.jar"),
+        path(source_root, "out", "gles-worker-desktop-1.0.jar")
     )
 
     # Build Android worker
@@ -113,8 +113,8 @@ def go():
 
     # Copy Android worker.
     shutil.copy2(
-        path("android", "build", "outputs", "apk", "debug", "android-debug.apk"),
-        path(source_root, "out", "android-gles-worker.apk")
+        path("android", "build", "outputs", "apk", "debug", "gles-worker-android-debug.apk"),
+        path(source_root, "out", "gles-worker-android-debug.apk")
     )
 
     os.chdir(source_root)

@@ -49,6 +49,7 @@ android {
                           "-DANDROID_STL=${stlType}", '-DSAMPLE_NAME=' + project.getName()
             }
         }
+        setProperty("archivesBaseName", "vulkan-worker-android")
     }
     externalNativeBuild {
         cmake {

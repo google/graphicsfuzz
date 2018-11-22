@@ -1,0 +1,14 @@
+apply plugin: "java"
+
+assert file("../../gles-worker-dependencies/target/gles-worker-dependencies-1.0.jar").exists()
+
+dependencies {
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+    implementation files("../../gles-worker-dependencies/target/gles-worker-dependencies-1.0.jar")
+    implementation "ar.com.hjg:pngj:2.1.0"
+}
+
+sourceCompatibility = 1.6
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+sourceSets.main.java.srcDirs = [ "src/" ]
