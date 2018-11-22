@@ -25,6 +25,6 @@ popd
 find vulkan-worker/src/android/build/outputs/
 
 mkdir -p out
-cp vulkan-worker/src/android/build/outputs/apk/debug/android-debug.apk out/android-vulkan-worker.apk
+cp vulkan-worker/src/android/build/outputs/apk/debug/vulkan-worker-android-debug.apk out/vulkan-worker-android-debug.apk
 
 find out/
