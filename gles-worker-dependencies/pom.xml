@@ -1,0 +1,132 @@
+<!--
+Copyright 2018 The GraphicsFuzz Project Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>gles-worker-dependencies</artifactId>
+  <name>gles-worker-dependencies</name>
+  <packaging>jar</packaging>
+  <description>
+    A shaded jar (uber jar) containing Java dependencies needed for the gles-worker. This includes
+    some dependencies from the main GraphicsFuzz Maven build, plus repackaged third-party Java
+    libraries. The repackaged third-party classes have a prefix added to their package names
+    (e.g. com.graphicsfuzz.repackaged.org.apache) to guarantee that they won't conflict with any
+    Java libraries that already exist on Android. We also compile at source level 1.6 for Android
+    compatibility, although this may no longer be necessary with recent Android SDKs.
+  </description>
+
+  <parent>
+    <groupId>com.graphicsfuzz</groupId>
+    <artifactId>parent-all</artifactId>
+    <version>1.0</version>
+    <relativePath>../parent-all/pom.xml</relativePath>
+  </parent>
+
+  <properties>
+    <maven.compiler.source>1.6</maven.compiler.source>
+    <maven.compiler.target>1.6</maven.compiler.target>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
+      <artifactId>server-thrift-gen</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpmime</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <forceCreation>true</forceCreation>
+          <skipIfEmpty>false</skipIfEmpty>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <configuration>
+          <shadedArtifactAttached>false</shadedArtifactAttached>
+          <createDependencyReducedPom>true</createDependencyReducedPom>
+          <relocations>
+            <relocation>
+              <pattern>org</pattern>
+              <shadedPattern>com.graphicsfuzz.repackaged.org</shadedPattern>
+              <excludes>
+                <exclude>org.slf4j.*</exclude>
+              </excludes>
+            </relocation>
+            <relocation>
+              <pattern>mozilla</pattern>
+              <shadedPattern>com.graphicsfuzz.repackaged.mozilla</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.google</pattern>
+              <shadedPattern>com.graphicsfuzz.repackaged.com.google</shadedPattern>
+            </relocation>
+          </relocations>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <!-- This transformer can combine and rewrite (due to relocations) annotations listed in META-INF/services/ -->
+              <!-- Not currently needed -->
+
+              <!--<transformers>-->
+                <!--<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>-->
+              <!--</transformers>-->
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

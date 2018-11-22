@@ -41,12 +41,12 @@ def exclude_dirpath(f: str):
     return \
         f.startswith("./vulkan-worker/build") or \
         f in [
-            "./platforms/libgdx/OGLTesting/build",
-            "./platforms/libgdx/OGLTesting/android/build",
-            "./platforms/libgdx/OGLTesting/android/libs",
-            "./platforms/libgdx/OGLTesting/core/build",
-            "./platforms/libgdx/OGLTesting/desktop/build",
-            "./platforms/libgdx/OGLTesting/gradle/wrapper",
+            "./gles-worker/build",
+            "./gles-worker/android/build",
+            "./gles-worker/android/libs",
+            "./gles-worker/core/build",
+            "./gles-worker/desktop/build",
+            "./gles-worker/gradle/wrapper",
             "./build/licenses",
             "./vulkan-worker/src/android/build",
 
@@ -77,16 +77,16 @@ def exclude_filepath(f: str):
         f in [
             "./graphicsfuzz/src/main/scripts/server-static/shaders/shader.vert",
             "./server-static-public/src/main/files/server-static/runner_multi_template.html",
-            "./platforms/libgdx/OGLTesting/build.gradle",
-            "./platforms/libgdx/OGLTesting/gradle.properties",
-            "./platforms/libgdx/OGLTesting/settings.gradle",
-            "./platforms/libgdx/OGLTesting/android/build.gradle",
-            "./platforms/libgdx/OGLTesting/android/proguard-project.txt",
-            "./platforms/libgdx/OGLTesting/android/project.properties",
-            "./platforms/libgdx/OGLTesting/core/build.gradle",
-            "./platforms/libgdx/OGLTesting/desktop/build.gradle",
-            "./platforms/libgdx/OGLTesting/ios/build.gradle",
-            "./platforms/libgdx/OGLTesting/ios/robovm.properties",
+            "./gles-worker/build.gradle",
+            "./gles-worker/gradle.properties",
+            "./gles-worker/settings.gradle",
+            "./gles-worker/android/build.gradle",
+            "./gles-worker/android/proguard-project.txt",
+            "./gles-worker/android/project.properties",
+            "./gles-worker/core/build.gradle",
+            "./gles-worker/desktop/build.gradle",
+            "./gles-worker/ios/build.gradle",
+            "./gles-worker/ios/robovm.properties",
             "./mvnw",
             "./mvnw.cmd"
 
