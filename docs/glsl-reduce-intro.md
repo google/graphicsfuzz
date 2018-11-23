@@ -1,4 +1,4 @@
-# glsl-reduce intro: my shader is crashing the compiler, now what?
+# `glsl-reduce` introduction: my shader is causing a crash, now what?
 
 **Shader compiler-writers** are all too often faced with the situation where they
 have a large, complex shader that causes their compiler to crash, and wish they

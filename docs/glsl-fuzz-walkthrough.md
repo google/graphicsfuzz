@@ -35,7 +35,7 @@ java -version
 # Output: openjdk version "1.8.0_181"
 ```
 
-## Generating shader families using `glsl-generate`
+## Generating shaders using `glsl-generate`
 
 GraphicsFuzz works by taking a *reference shader* and producing a family of *variant shaders*, where each variant should render the same image as the reference (modulo possible floating-point differences).
 
@@ -94,7 +94,7 @@ ls work/shaderfamilies
 # family_vulkan_prefix_sum
 ```
 
-## Running `glsl-server`
+## Running the server
 
 The `glsl-server` application is used to drive the testing of different devices by
 communicating with worker applications that run on the devices.
@@ -278,7 +278,7 @@ then the worker script
 is failing to connect to the server.
 
 
-## Queuing shader families to a worker
+## Running shaders on the worker applications
 
 Return to the Web UI
 at [http://localhost:8080/webui](http://localhost:8080/webui)

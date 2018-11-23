@@ -1,14 +1,15 @@
-# GraphicsFuzz: build from command line
-
-This page describes how to build from command line.
+# GraphicsFuzz: building from the command line
 
 Note that:
-* Pre-build binaries should be available on the [GitHub releases page](https://github.com/google/graphicsfuzz/releases).
-* See [developer documentation](development.md) on how to build from IDE.
+* Pre-built binaries should be available on the [GitHub releases page](glsl-fuzz-releases.md).
+* See [developer documentation](glsl-fuzz-develop.md) for instructions on setting up your IDE.
+* See [documentation for using the tools](../README.md#Tools)
+  or read the [walkthough for a brief overview of using all tools
+  (also requires downloading or building some worker applications)](glsl-fuzz-walkthrough.md).
 
 ## Requirements:
 
-* [JDK 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+* [JDK 1.8+](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 * [Maven](https://maven.apache.org/)
 * [Python](https://www.python.org/)
 * For Android workers: [Android SDK & NDK](https://developer.android.com/studio/#command-tools)
@@ -16,37 +17,71 @@ Note that:
 
 ## Get a local copy of this repository
 
-To clone this repository in a directory named `graphicsfuzz`:
+To clone this repository:
 
-```shell
-git clone git@github.com:google/graphicsfuzz.git
+```sh
+git clone https://github.com/google/graphicsfuzz.git
+
+# Or: git clone git@github.com:google/graphicsfuzz.git
+
+# Change into the cloned directory:
+cd graphicsfuzz
 ```
 
-In the following, all shell snippets assume to start in the directory where this
-repo was cloned. We also assume you are on a Linux host, Windows commands may
-differ slightly.
+The Vulkan worker build also requires git submodules to be cloned:
 
-## Build the server
+```sh
+git submodule init
+git submodule update
+```
 
-```shell
-# Regular build
-mvn package -am -pl assembly
+## Build the GraphicsFuzz package
 
-# An alternative that skips tests, to build faster
-mvn package -am -pl assembly -DskipTests=true
+The main GraphicsFuzz package `graphicsfuzz-1.0.zip`
+includes the main command line tools
+(`glsl-generate`, `glsl-reduce`)
+and the server (`glsl-server`),
+as well as many third-party
+tools (`glslangValidator`, `spirv-opt`).
 
-# An alternative that runs additional 'image' tests
+```sh
+# Build all Maven projects, and don't run tests.
+mvn package -DskipTests=true
+```
+
+Alternative commands:
+
+```sh
+# Faster: just build the graphicsfuzz package and dependencies.
+mvn package -am -pl graphicsfuzz -DskipTests=true
+
+# Build, and also run tests.
+mvn package
+
+# Build, and skip checkstyle.
+mvn package -DskipTests=true -Dcheckstyle.skip
+
+# Build, and also run tests, including slower image tests.
 mvn package -P imageTests
 ```
 
-The build output is available in `assembly/target/assembly-1.0`. For instance, the server JAR is here:
-`assembly/target/assembly-1.0/jar/server-1.0.jar`.
+The package is output to `graphicsfuzz/target/graphicsfuzz-1.0.zip`, and is unzipped at the same location `graphicsfuzz/target/graphicsfuzz-1.0/`.
 
-**Stand-alone archive:** The build also creates an archive of this directory as
-`assembly/target/assembly-1.0.zip`. This archive can be copied to an other host,
-it should contain everything needed to run the server.
+You should add the following to your path:
 
-## Build the Vulkan worker
+* `graphicsfuzz/target/graphicsfuzz-1.0/python/drivers`
+* Optionally, for third-party tools like `glslangValidator` and `spirv-opt`, add one of:
+  * `graphicsfuzz/target/graphicsfuzz-1.0/bin/Linux`
+  * `graphicsfuzz/target/graphicsfuzz-1.0/bin/Mac`
+  * `graphicsfuzz/target/graphicsfuzz-1.0/bin/Windows`
+
+You can now run e.g. `glsl-generate`, `glsl-reduce`, `glsl-server`, `glslangValidator`, `spirv-opt`.
+
+See [documentation for these tools](../README.md#Tools)
+or read the [walkthough for a brief overview of using all tools
+(also requires downloading or building some worker applications)](glsl-fuzz-walkthrough.md).
+
+## Build the Vulkan worker (vulkan-worker)
 
 ### Android
 
@@ -55,81 +90,77 @@ cd vulkan-worker
 ./gradlew assembleDebug
 ```
 
-The resulting APK is here: `src/android/build/outputs/apk/debug/android-debug.apk`
+The resulting APK is here:
+
+`vulkan-worker/src/android/build/outputs/apk/debug/vulkan-worker-android-debug.apk`
 
 ### Linux
 
 Make sure the [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
-Vulkan SDK is installed and the environment variable VULKAN_SDK is
+is installed and the environment variable `VULKAN_SDK` is
 properly set.
 
-```shell
+```sh
 cd vulkan-worker
 
 mkdir build
 cd build
 
-cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug    # Or: -G "Ninja"
+cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug  # Or: -G "Ninja"
 cmake --build . --config Debug
-```
-
-The resulting binary is here: `vulkan-worker/build/vkworker`
-
-To install with CMake, from the build directory:
-
-```shell
 cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
 ```
 
-## Build the OpenGL worker
+The resulting binary is here: `vulkan-worker/build/install/vkworker`.
 
-First, you need to run this command to build Thrift-related dependencies:
+The last step (install) is optional, in which case the binary can be found here: `vulkan-worker/build/vkworker`.
 
-```shell
-mvn -am -pl android-client-dep package
+## Build the OpenGL worker (gles-worker)
+
+First, you must build the gles-worker-dependencies project using Maven:
+
+```sh
+mvn -am -pl gles-worker-dependencies package
 ```
 
-**Note**: everytime the Thrift specification is changed, this command should be
-run again.
+This will already have been built if you did `mvn package` earlier without the `-pl` argument.
 
-The OpenGL worker relies on [LibGDX](https://github.com/libgdx/libgdx) to be
-portable across several platforms. Android and Linux desktop are actively
-supported. Windows and iOS builds are documented, but please be aware that hey
-are less tested.
-
-Gradle builds can take several minutes to set up the first time you run them, as
-gradle is gathering dependencies. Subsequent builds are faster.
+The OpenGL worker uses [LibGDX](https://github.com/libgdx/libgdx) to produce builds for Linux, Mac, Windows, Android, and iOS.
+Android and Linux builds are actively used; other platforms are tested less regularly.
 
 ### Android
 
-Make sure the [Android SDK /
-NDK](https://developer.android.com/studio/#command-tools) are installed.
+Required: [Android SDK and
+NDK](https://developer.android.com/studio/#command-tools).
+See our [continuous integration script](../build/travis/1-install-deps-travis.sh) for a fast way to install the correct versions from the command line.
 
-```shell
-cd platforms/libgdx/OGLTesting/
+To build for Android:
+
+```sh
+cd gles-worker/
 ./gradlew android:assembleDebug
 ```
 
-The generated APK is here: `android/build/outputs/apk/debug/android-debug.apk`
+The generated APK is here:
+
+`gles-worker/android/build/outputs/apk/debug/gles-worker-android-debug.apk`
 
 To install and run using gradle:
 
-```shell
+```sh
 ./gradlew android:installDebug android:run
 ```
 
-### Linux
+### Linux, Mac, Windows
 
-```shell
-cd platforms/libgdx/OGLTesting/
+```sh
+cd gles-worker/
 ./gradlew desktop:dist
 ```
 
-The resulting JAR is here: `desktop/build/libs/desktop-1.0.jar`
+The resulting JAR is here: 
 
-### Windows
-
-The JAR produced by the Linux build should run fine on Windows.
+`gles-worker/desktop/build/libs/gles-desktop-worker-1.0.jar`
 
 ### iOS
 
@@ -137,8 +168,8 @@ This build is **not actively supported.**.
 
 The iOS build can be performed **only on MacOS.**
 
-```shell
-cd platforms/libgdx/OGLTesting/
+```sh
+cd gles-worker/
 
 # build
 ./gradlew ios:createIPA
