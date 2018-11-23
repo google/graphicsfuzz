@@ -68,6 +68,7 @@ class VulkanWorker {
   VkDevice device_;
   VkCommandPool command_pool_;
   VkCommandBuffer command_buffer_;
+  std::vector<VkCommandBuffer> export_command_buffers_;
   VkSurfaceKHR surface_;
   VkFormat format_;
   VkSwapchainKHR swapchain_;
@@ -159,8 +160,10 @@ class VulkanWorker {
   void PrepareExport();
   void CleanExport();
   void ExportPNG(const char *png_filename);
-  void UpdateImageLayout(VkImage image, VkImageLayout old_image_layout, VkImageLayout new_image_layout, VkPipelineStageFlags src_stage_mask, VkPipelineStageFlags dest_stage_mask);
-  void DoRender(std::vector<uint32_t> &vertex_spv, std::vector<uint32_t> &fragment_spv, const char *uniforms_string, const char *png_filename, bool skip_render);
+  void UpdateImageLayout(VkCommandBuffer command_buffer, VkImage image, VkImageLayout old_image_layout, VkImageLayout new_image_layout, VkPipelineStageFlags src_stage_mask, VkPipelineStageFlags dest_stage_mask);
+  void PrepareTest(std::vector<uint32_t> &vertex_spv, std::vector<uint32_t> &fragment_spv, const char *uniforms_string);
+  void CleanTest();
+  void DrawTest(const char *png_filename, bool skip_render);
 
   uint32_t GetMemoryTypeIndex(uint32_t memory_requirements_type_bits, VkMemoryPropertyFlags required_properties);
   char *GetFileContent(FILE *file);
@@ -170,7 +173,7 @@ class VulkanWorker {
   public:
   VulkanWorker(PlatformData *platform_data);
   ~VulkanWorker();
-  void Render(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, bool skip_render);
+  void RunTest(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, bool skip_render);
   static void DumpWorkerInfo(const char *worker_info_filename);
 };
 
