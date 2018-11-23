@@ -4,7 +4,7 @@
 
 ## GraphicsFuzz is a testing framework for shader compilers
 
-GraphicsFuzz is a set of tools for automatically finding and simplifying bugs in graphics
+GraphicsFuzz provides tools to automatically find and simplify bugs in graphics
 shader compilers. It operates on GLSL shaders, and uses
 glslangValidator and spirv-tools to additionally target SPIR-V.
 
