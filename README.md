@@ -18,6 +18,7 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
 
 * [Introduction: my shader is causing a crash, now what?](docs/glsl-reduce-intro.md)
 * [Walkthrough and user documentation](docs/glsl-reduce.md)
+* [Developer documentation](docs/glsl-fuzz-develop.md)
 
 ### glsl-fuzz
 
@@ -36,16 +37,18 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
     * Vulkan Android platforms
   * Exploring results from the WebUI
   * Reducing buggy shaders from the WebUI
-  * Exploring the results on the file system
+  * TODO: Exploring the results on the file system
+  * TODO: Reducing buggy shaders from the command line using `glsl-reduce`
 * [glsl-generate manual](docs/glsl-fuzz-generate.md)
 * [glsl-reduce manual (for reducing fuzzed shaders)](docs/glsl-fuzz-reduce.md)
+* [Developer documentation](docs/glsl-fuzz-develop.md)
 
 ## Get the GraphicsFuzz tools
 
 
 * **Pre-built binaries** are available on the [GitHub releases page](docs/glsl-fuzz-releases.md)
 * [Building from the command line](docs/glsl-fuzz-build.md)
-* Build from IDE: see [developer getting started](docs/glsl-fuzz-develop.md)
+* Building from your IDE: see [developer documentation](docs/glsl-fuzz-develop.md)
 
 ## Contribute
 

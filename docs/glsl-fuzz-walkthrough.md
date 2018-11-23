@@ -100,8 +100,9 @@ The `glsl-server` application is used to drive the testing of different devices 
 communicating with worker applications that run on the devices.
 
 > You do not have to use the server or worker applications;
-> see TODO for a description of a custom workflow using 
-> only our `glsl-generate` and `glsl-reduce` command line tools.
+> `glsl-generate` and `glsl-reduce` can be used as stand-alone 
+> command line tools, although you will need to write a script
+> that can utilize your shaders.
 
 You can start `glsl-server` as follows:
 
@@ -249,7 +250,8 @@ You can download the .apk file from your device directly
 (e.g. using the Chrome app) and open the .apk file to install it,
 or you can install it using `adb`.
 
-> You may need to allow installation of apps from unknown sources. See the TODO Android notes section of the developer documentation for various settings that you may need to change on your Android device, and for other ways of installing the app.
+> You may need to allow installation of apps from unknown sources. See the 
+> [Android notes](android-notes.md) for various settings that you may need to change on your Android device, and for other ways of installing the app.
 
 There is no point in manually running this app from the Android device; it will crash unless
 it finds shaders in the `/sdcard/graphicsfuzz` directory.

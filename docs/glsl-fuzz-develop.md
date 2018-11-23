@@ -1,5 +1,5 @@
 
-# Developer Documentation
+# Developer documentation
 
 The developer documentation currently focuses on opening the various
 projects in IntelliJ IDEA.
