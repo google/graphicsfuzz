@@ -184,8 +184,8 @@ and open the .apk file to install it,
 or you can install it using `adb`.
 
 > You may need to allow installation of apps from unknown sources.
-> See the TODO [Android notes section](glsl-fuzz-develop.md#Android_notes)
-> of the developer documentation for
+> See the [Android notes](android-notes.md)
+> for
 > various settings that you may need to change on your Android device,
 > and for other ways of installing the app.
 
@@ -210,7 +210,7 @@ on university, public, or corporate networks.
 Alternatively, you can connect your device
 via USB, execute `adb reverse tcp:8080 tcp:8080` on your desktop/laptop,
 and use `localhost:8080` as the server address.
-See the [Android networking guide](android_networking_guide.md)
+See the [Android networking guide](android-networking-guide.md)
 for more detailed instructions.
 
 > If you need to enter a new server address, you will need to clear the app's data. E.g. by uninstalling and reinstalling the app.

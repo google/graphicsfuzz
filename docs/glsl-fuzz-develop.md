@@ -1,118 +1,77 @@
 
-# Development Documentation
+# Developer Documentation
 
-List of all requirements:
+The developer documentation currently focuses on opening the various
+projects in IntelliJ IDEA.
+
+## Requirements:
 
 * [JDK 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 * [Maven](https://maven.apache.org/)
 * [Python](https://www.python.org/)
+* [IntelliJ IDEA Community or Ultimate](https://www.jetbrains.com/idea/)
+* Android SDK and NDK: see [Android Notes](android-notes.md)
 
-Skip to the Development section if you want to set things up for development more permanently.
+## Get a local copy of this repository
 
-## Running the server
+To clone this repository:
 
-Requirements for running the server locally: JDK.
+```sh
+git clone https://github.com/google/graphicsfuzz.git
 
-Download and extract the latest release zip. Change into the directory that contains `bin`, `jar`, etc. and execute the following:
+# Or: git clone git@github.com:google/graphicsfuzz.git
 
-```shell
-# The server reads and writes files in the current working directory.
-# Let's just create a temp directory for now.
-mkdir temp
-cd temp
-
-# Copy in the sample shader families.
-# HE: 12/09/2018: This is obsolete!
-cp -R ../sample-shadersets shadersets
-
-# Now we can start the server
-java -ea -jar ../jar/server-1.0.jar
+# Change into the cloned directory:
+cd graphicsfuzz
 ```
 
-Open a browser to
-[http://localhost:8080/webui](http://localhost:8080/webui).
+The Vulkan worker build also requires git submodules to be cloned:
 
-From here, you can queue shader families to workers. However, there are no workers yet.
-
-## Running the libgdx desktop worker
-
-Requirements: JDK.
-
-Download and extract the latest desktop worker jar.
-You will need to create a `token.txt` file in the same directory
-with one line containing the token (a name for the device you are testing). E.g.
-
-`echo paul-laptop-windows>token.txt`.
-
-Then execute the following:
-
-```shell
-# Use `--help` to see options
-# Use `-server` to specify a server URL (default is http://localhost:8080/)
-# Use `-start` to disable autorestart of the worker (can be useful).
-# Let's run the worker.
-java -jar desktop-1.0.jar
+```sh
+git submodule init
+git submodule update
 ```
 
-* The worker might not render images properly if it is minimized.
+## Opening GraphicsFuzz in IntelliJ
 
-Now return to the webui page on the server and queue a shader family to the worker.
+The main GraphicsFuzz project is a Maven project
+defined in `pom.xml`
+at the root of the repository.
+It includes the main command line tools
+(`glsl-generate`, `glsl-reduce`)
+and the server (`glsl-server`).
 
-## Running the libgdx Android worker
+From IntelliJ, choose Open (not Import Project) and open
+the `pom.xml` file in the repository root.
+We exclude most IntelliJ project files
+from version control, but some are committed.
+Thus,
+if asked about opening an existing project,
+choose "Open Existing Project"
+and then choose "Add as Maven Project"
+from the notification to
+add the root `pom.xml` as a Maven project.
 
-Download the latest Android libgdx worker apk on your Android device.
-Install and run the app.
 
-* Enter the IP address or hostname of the machine on which you are running the server,
-plus the port (default is 8080).
-  * E.g. http://Paul-Laptop:8080/
-  * If your Android device is connected via USB to a machine that is running the server at http://localhost:8080/, you can do `adb reverse tcp:8080 tcp:8080` and enter http://localhost:8080/ in the app. The adb command forwards the local port 8080 of your Android device to your machine's 8080 port.
-* Enter a token (a name for the device you are testing).
-
-Now return to the webui page on the server and queue a shader family to the worker.
-
-## Building the server and workers
-
-See development/IDE on how to build using an IDE.
-
-Otherwise, see the [build from command line](build_from_command_line.md) documentation.
-
-# Development
-
-## IDE
-
-Use IntelliJ and open (not import, etc.)
-the `pom.xml` file in the repo root.
-
-Then, from the repo root:
-
-```shell
-# Copy sample shader families to the temp directory.
-cp -R assembly/src/main/scripts/sample-shadersets temp/shadersets
-
-# Copy in the run configurations for IntelliJ.
-mkdir .idea/runConfigurations
-cp run-configurations/* .idea/runConfigurations/
-```
-
-You should now be able to build, clean, and run the server,
+You should see some run configurations
+(Build, Clean, Run Server, etc.)
+next to the play button.
+You can run these to build and clean
 from IntelliJ.
-In fact, IntelliJ will automatically build the Java code,
-but a manual build is required to ensure the binaries
-and Python scripts
-are output to `assembly/target/assembly-1.0`;
-the server will expect these files to be there
-when not being run from the jar.
+In fact, IntelliJ will automatically build Java code
+and report errors,
+but a manual build is required to download
+dependencies, generate code, and output various scripts and binaries
+to the expected directories.
 
-Note that the build task you need to use is 'Build' under the
-'Run' menu, not the tasks in the top level 'Build' menu. If you
-try to use the normal Build menu, it will fail to compile due to
-not being able to find the thrift generated files (because they
-will not have been generated).
+> Note that the build task you need to use is 'Build' under the
+> 'Run' menu, not the tasks in the top level 'Build' menu. If you
+> try to use the normal Build menu initially, it will fail to compile due to
+> not being able to find generated files.
 
-### Using the IDE with the libgdx worker (platforms/libgdx/OGLTesting)
+## Opening the OpenGL worker (gles-worker) in IntelliJ
 
-* In IntelliJ, open [platforms/libgdx/OGLTesting/build.gradle](platforms/libgdx/OGLTesting/build.gradle).
+* In IntelliJ, open [gles-worker/build.gradle](../gles-worker/build.gradle).
 If asked, choose to open as a project, not as a file.
 * You should see some options for importing the gradle project.
 Tick "auto-import projects" and leave the other options as they are.
@@ -128,13 +87,13 @@ you can open `build.gradle` and comment out the entire android section:
 ```
 
 and open `settings.gradle` and delete `'android'` from the list.
-* If you do want to build for Android, see "Android notes" below ("To easily set up the Android SDK, follow the...").
+* If you do want to build for Android, see [Android Notes](android-notes.md) first.
 * From the `Gradle projects` pane, you should be able to execute "desktop:dist"
 as you would from the command line: double-click the entry: `:desktop` -> Tasks -> other -> `dist`.
-The same is true for Android.
+The same is true for Android's "android:assembleDebug" task.
 * For running on Android, you should just be able to click the run/debug button
 with a special run configuration that gets created for Android (see Android notes below).
-* For running/debugging on desktop, you will want to edit run confirgurations, click the `+` to create a new
+* For running/debugging on desktop, you will want to edit run configurations, click the `+` to create a new
 configuration and choose "JAR Application".
 This is necessary because the app is set to
 not run from outside a Jar on the desktop.
@@ -144,24 +103,26 @@ You may also want to provide the `-start` command line argument
 when testing so that you can actually debug the code in `Main.java` and not just the parent
 process that just creates a child process (with the `-start` command).
 
-# Docker
-The server zip contains a `Dockerfile` suitable for running the server.
-The script `docker_build_create_start.sh.template` can be modified and then executed to automatically create a docker image and container, and start the container.
+# Thrift
+
+The server and workers use an RPC interface defined
+in [thrift/src/main/thrift/FuzzerService.thrift](../thrift/src/main/thrift/FuzzerService.thrift).
 
 # Manage server using Python/iPython
 
 This section describes how you can control the server interactively
 via iPython.
 It can also be used as a guide for how to write a Python script
-that runs at the server; e.g., a script might scan shader set experiments
+that runs at the server; e.g., a script might scan results
 and start certain reductions.
 
 ```bash
 # From source repo:
-export PYTHONPATH=/path/to/graphicsfuzz/assembly/target/assembly-1.0/python
-# OR: from unzipped server package:
-export PYTHONPATH=/path/to/server-1.0/python
-# OR: if you are writing a python script that is in `python/drivers`:
+export PYTHONPATH=/path/to/repo/graphicsfuzz/target/graphicsfuzz-1.0/python
+# OR: from unzipped graphicsfuzz package:
+export PYTHONPATH=/path/to/graphicsfuzz-1.0/python
+# OR: if you are writing a python script that is in `python/drivers`,
+#     start with:
 import os
 import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -193,19 +154,19 @@ manager.queueCommand?
 # Commands are run from the `work` directory.
 
 manager.queueCommand(
-  "ReduceVariant for xxx",
+  "Reduction for dell-laptop",
   [
     "glsl-reduce",
-    "--reference", "processing/7093366951813584254/test_exp/recipient.info.json",
+    "--reference", "processing/dell-laptop/shaderfamily1/reference.info.json",
     "--reduce_everywhere",
-    "--output", "processing/7093366951813584254/test_variant_1_inv",
-    "shadersets/28Apr16_shader_100_shader_14/variants/variant_1.json",
+    "--output", "processing/dell-laptop/shaderfamily1/reductions/variant_1/",
+    "shaderfamilies/shaderfamily1/variants/variant_1.json",
     "IDENTICAL",
     "--server", "http://localhost:8080",
-    "--token", "7093366951813584254"
+    "--token", "dell-laptop"
    ],
-   "7093366951813584254",
-   "processing/7093366951813584254/test_variant_1_inv/command.log")
+   "dell-laptop",
+   "processing/dell-laptop/shaderfamily1/reductions/variant_1/command.log")
 
 ```
 Note that the command (list of strings) contains a token: this token corresponds
@@ -215,10 +176,10 @@ this corresponds to the queue of *commands* to which this command
 will be queued.
 Generally,
 commands (executable scripts or binaries,
-such as `run_shader_family` or `reduce_variant`) in a command queue
+such as `run_shader_family` or `glsl-reduce`) in a command queue
 will queue jobs to the corresponding worker's job queue
 or, in some cases, commands to the same command queue.
-Commands like `reduce_variant` and `run_shader_family`
+Commands like `glsl-reduce` and `run_shader_family`
 are intercepted by the server so that a corresponding
 Java method is executed directly in the server process,
 instead of launching a separate process.
@@ -230,48 +191,3 @@ queue additional commands, then it should typically be set to
 `localhost:internal_port` (usually `localhost:8080`) so that
 the Python script can queue commands to the server that launched the Python
 script.
-
-# Android notes
-
-## Installing the Android platform tools
-
-It is recommended that you install the Android platform tools
-using the Android SDK;
-there are instructions for this below.
-However, if you don't want to install the SDK, you can just install the Android platform tools:
-
-* Using your system's package manager. E.g. `sudo apt-get install android-sdk-platform-tools`.
-* By [downloading them directly](https://developer.android.com/studio/releases/platform-tools).
-
-## Other notes
-
-* Open `Settings`, `About device`, and keep tapping build number until developer settings are enabled.  The build number might be under a further `Software information` option.
-* In developer settings, enable `USB debugging` and `Stay awake`.
-* In security settings (which might be under `Lock screen and security`), enable installing apps from unknown sources.
-* You can download the android worker directly on the phone from the releases page
-or possibly from any running server (if the server is from an automated build). E.g.
-[http://localhost:8080/static/android-debug.apk](http://localhost:8080/static/android-debug.apk).
-
-(The "release" version may not work.)
-You can also open the code and run it from IntelliJ, which is described below.
-* To easily set up the Android SDK, follow the
-commands in the automated build [Dockerfile](../build/docker/ci/Dockerfile).
-This will install the required packages using the Android SDK Manager. Note that `ANDROID_HOME` can be anywhere.
-* In IntelliJ, open [platforms/libgdx/OGLTesting/build.gradle](platforms/libgdx/OGLTesting/build.gradle).
-* Next to `build.gradle`, create a file called `local.properties` with the contents:
-
-```
-sdk.dir=/data/android/android-sdk-linux
-```
-
-where the given directory should contain `tools/`, `platform-tools/`, etc.
-* IntelliJ should add an `android` run configuration. Press the play button
-to run `android` and pick your device. The app should then start.
-* In IntelliJ, open `Android Monitor` to view log output.
-Enter `com.graphicsfuzz.` in the search text box and select `No filters` in the drop down.
-This will ensure you see output from all processes; our worker uses three processes on Android.
-* Press the back button on the device to exit the app. Pressing home or
-other buttons won't work, as the app tries to stay in the foreground.
-* To make the worker use a specific server,
-add a line in `android/src/AndroidLauncher.java`
-after `main.setPlatformInfoJson`. E.g. `main.setUrl("http://bzxc:8080");`

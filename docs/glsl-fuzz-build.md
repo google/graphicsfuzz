@@ -4,7 +4,7 @@ Note that:
 * Pre-built binaries should be available on the [GitHub releases page](glsl-fuzz-releases.md).
 * See [developer documentation](glsl-fuzz-develop.md) for instructions on setting up your IDE.
 * See [documentation for using the tools](../README.md#Tools)
-  or read the [walkthough for a brief overview of using all tools
+  or read the [walkthrough for a brief overview of using all tools
   (also requires downloading or building some worker applications)](glsl-fuzz-walkthrough.md).
 
 ## Requirements:
@@ -78,7 +78,7 @@ You should add the following to your path:
 You can now run e.g. `glsl-generate`, `glsl-reduce`, `glsl-server`, `glslangValidator`, `spirv-opt`.
 
 See [documentation for these tools](../README.md#Tools)
-or read the [walkthough for a brief overview of using all tools
+or read the [walkthrough for a brief overview of using all tools
 (also requires downloading or building some worker applications)](glsl-fuzz-walkthrough.md).
 
 ## Build the Vulkan worker (vulkan-worker)
