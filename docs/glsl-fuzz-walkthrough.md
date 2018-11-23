@@ -413,15 +413,15 @@ a function body that contains a somewhat complex `pow` function call
 is enough to trigger the bug.
 
 
-## File system
+## Exploring results in the file system
 
-You can see results in the file system within the server's working directory at following locations:
+You can see results in the file system within the server's working directory at the following locations:
 
 * Shader family results:
 
-`work/processing/<token>/<shader_family>/`.
+`work/processing/<worker_token>/<shader_family>/`.
 
 * Reduction result:
 
-`work/processing/<token>/<shader_family>/reductions/<shader_name>`.
+`work/processing/<worker_token>/<shader_family>/reductions/<shader_name>`.
 

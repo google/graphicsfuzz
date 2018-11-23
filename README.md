@@ -37,7 +37,7 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
     * Vulkan Android platforms
   * Exploring results from the WebUI
   * Reducing buggy shaders from the WebUI
-  * TODO: Exploring the results on the file system
+  * TODO: Exploring the results in the file system
   * TODO: Reducing buggy shaders from the command line using `glsl-reduce`
 * [glsl-generate manual](docs/glsl-fuzz-generate.md)
 * [glsl-reduce manual (for reducing fuzzed shaders)](docs/glsl-fuzz-reduce.md)
