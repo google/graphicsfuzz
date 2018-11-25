@@ -130,6 +130,11 @@ limitations under the License.
         <artifactId>commons-lang3</artifactId>
         <version>3.5</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>1.18</version>
+      </dependency>
 
       <dependency>
         <groupId>com.google.code.gson</groupId>
