@@ -49,7 +49,7 @@ We can create some shader families as follows:
 
 ```sh
 # Copy the sample shaders into the current directory:
-cp graphicsfuzz-1.0/shaders/samples samples
+cp -r graphicsfuzz-1.0/shaders/samples samples
 
 # Create a work directory to store our generated shader families.
 # The directory structure will allow the server
@@ -423,5 +423,5 @@ You can see results in the file system within the server's working directory at 
 
 * Reduction result:
 
-`work/processing/<worker_token>/<shader_family>/reductions/<shader_name>`.
+`work/processing/<token>/<shader_family>/reductions/<shader_name>`.
 
