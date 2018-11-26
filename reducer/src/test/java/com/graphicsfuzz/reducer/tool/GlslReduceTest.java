@@ -93,13 +93,13 @@ public class GlslReduceTest {
     try {
       GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(),
               "--reduction-kind", "NO_IMAGE",
-              "--custom-judge", "somejudgescript", "--output",
+              "somejudgescript", "--output",
               temporaryFolder.getRoot().getAbsolutePath()},
           null);
       assertTrue(false);
     } catch (RuntimeException exception) {
-      assertTrue(exception.getMessage().contains("custom-judge' option only supported with " +
-          "CUSTOM reduction"));
+      assertTrue(exception.getMessage().contains("An interestingness test is only supported when "
+          + "a custom reduction is used."));
     }
   }
 
@@ -110,8 +110,8 @@ public class GlslReduceTest {
           temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
-      assertTrue(exception.getMessage().contains("CUSTOM reduction requires a judge " +
-          "to be specified via '--custom-judge'"));
+      assertTrue(exception.getMessage().contains("A custom reduction requires an interestingness "
+          + "test to be specified."));
     }
 
   }
@@ -125,7 +125,6 @@ public class GlslReduceTest {
           jsonFile.getAbsolutePath(),
           "--reduction-kind",
           "CUSTOM",
-          "--custom-judge",
           emptyFile.getAbsolutePath(),
           "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
@@ -145,7 +144,6 @@ public class GlslReduceTest {
         jsonFile.getAbsolutePath(),
         "--reduction-kind",
         "CUSTOM",
-        "--custom-judge",
         emptyFile.getAbsolutePath(),
         "--output",
         temporaryFolder.getRoot().getAbsolutePath()}, null);

@@ -78,10 +78,18 @@ public class GlslReduce {
           .help("Path of shader job to be reduced.  E.g. /path/to/shaderjob.json ")
           .type(File.class);
 
+    // Optional positional argument
+    parser.addArgument("interestingness-test")
+        .help("Path to an executable shell script that should decide whether a shader job is "
+            + "interesting.  Only allowed (and then also required) when performing a custom "
+            + "reduction, which is the default.")
+        .nargs("?")
+        .type(File.class);
+
     parser.addArgument("--reduction-kind")
           .help("Kind of reduction to be performed.  Options are:\n"
                 + "   " + ReductionKind.CUSTOM
-                + "             Reduces based on custom criterion.\n"
+                + "             Reduces based on a user-supplied interestingness test.\n"
                 + "   " + ReductionKind.NO_IMAGE
                 + "               Reduces while image generation fails to produce an image.\n"
                 + "   " + ReductionKind.NOT_IDENTICAL
@@ -185,11 +193,6 @@ public class GlslReduce {
           .help("Carry on from where a previous reduction attempt left off.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--custom-judge")
-        .help("Path to an executable shell script that should decide whether a shader job is "
-            + "interesting.")
-        .type(File.class);
-
     return parser;
 
   }
@@ -291,7 +294,7 @@ public class GlslReduce {
 
       final File referenceResultFile = ns.get("reference");
 
-      final File customJudgeScript = ns.get("custom_judge");
+      final File customJudgeScript = ns.get("interestingness_test");
 
       if (reductionKind == ReductionKind.CUSTOM) {
         if (server != null) {
@@ -307,16 +310,16 @@ public class GlslReduce {
           throwExceptionForCustomReduction("reference");
         }
         if (customJudgeScript == null) {
-          throw new RuntimeException("A " + ReductionKind.CUSTOM + " reduction requires a judge "
-              + "to be specified via '--custom-judge'");
+          throw new RuntimeException("A custom reduction requires an interestingness test to be "
+              + "specified.");
         }
         if (!customJudgeScript.canExecute()) {
           throw new RuntimeException("Custom judge script must be executable.");
         }
       } else {
         if (customJudgeScript != null) {
-          throw new RuntimeException("custom-judge' option only supported with "
-              + ReductionKind.CUSTOM + " reduction.");
+          throw new RuntimeException("An interestingness test is only supported when a custom "
+              + "reduction is used.");
         }
       }
 
@@ -560,9 +563,8 @@ public class GlslReduce {
   }
 
   private static void throwExceptionForCustomReduction(String option) {
-    throw new RuntimeException("The '--" + option + "' option is not compatible with a "
-        + ReductionKind.CUSTOM + " reduction; details of judgement should all be in the custom "
-        + "judge specified via --custom-judge.");
+    throw new RuntimeException("The '--" + option + "' option is not compatible with a custom "
+        + "reduction; details of judgement should all be captured in the interestingness test.");
   }
 
 }
