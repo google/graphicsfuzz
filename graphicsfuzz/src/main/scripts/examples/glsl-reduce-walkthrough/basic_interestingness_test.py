@@ -21,7 +21,7 @@ import sys
 frag = os.path.splitext(sys.argv[1])[0] + ".frag"
 print(frag)
 
-cmd = [ "." + os.sep + "fake_compiler.py", frag ]
+cmd = [ "python", os.path.dirname(os.path.realpath(__file__)) + os.sep + "fake_compiler.py", frag ]
 proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 proc.communicate()
 
