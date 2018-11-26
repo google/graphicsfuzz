@@ -50,7 +50,7 @@ void ProcessAppCmd (struct android_app *app, int32_t cmd) {
         assert(app_data->vertex_file != nullptr);
         assert(app_data->fragment_file != nullptr);
         assert(app_data->uniform_file != nullptr);
-        app_data->vulkan_worker->Render(app_data->vertex_file, app_data->fragment_file, app_data->uniform_file, FLAGS_skip_render);
+        app_data->vulkan_worker->RunTest(app_data->vertex_file, app_data->fragment_file, app_data->uniform_file, FLAGS_skip_render);
         ANativeActivity_finish(app->activity);
       }
       break;
