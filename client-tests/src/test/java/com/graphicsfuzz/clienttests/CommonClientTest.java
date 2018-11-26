@@ -148,7 +148,7 @@ public abstract class CommonClientTest {
   void checkStatus(File jsonFile, String expectedStatus) throws FileNotFoundException {
     JsonObject json = new Gson().fromJson(new FileReader(jsonFile),
         JsonObject.class);
-    assertEquals(expectedStatus, json.get("Status").getAsString());
+    assertEquals(expectedStatus, json.get("status").getAsString());
   }
 
   static String getResourcesDirectory() {

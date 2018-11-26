@@ -137,7 +137,7 @@ public class WebUi extends HttpServlet {
         if (file.getName().startsWith("variant") && file.getName().endsWith(".info.json")) {
           nbVariantDone++;
           JsonObject info = accessFileInfo.getResultInfo(file);
-          String status = info.get("Status").getAsString();
+          String status = info.get("status").getAsString();
           if (status.contentEquals("SUCCESS")) {
             if (imageIsIdentical(info)) {
               nbSameImage++;
@@ -812,7 +812,7 @@ public class WebUi extends HttpServlet {
     }
 
     JsonObject info = accessFileInfo.getResultInfo(infoFile);
-    final String status = info.get("Status").getAsString();
+    final String status = info.get("status").getAsString();
     String shaderPath = "shaderfamilies/" + shaderFamily + "/" + variant + ".frag";
 
     htmlHeader("Single result");
@@ -820,7 +820,7 @@ public class WebUi extends HttpServlet {
         "<p>Shader <b><a href='/webui/shader/", shaderPath, "'>",
         variant, "</a></b> of <b>", shaderFamily, "</b>",
         " run on <b>", token, "</b><br>",
-        "Status: <b>", status, "</b></p>");
+        "status: <b>", status, "</b></p>");
 
     htmlAppendLn("<form method='post' id='deleteForm'>\n",
         "<input type='hidden' name='path' value='", variantFullPathNoExtension + ".info.json",
@@ -1804,7 +1804,7 @@ public class WebUi extends HttpServlet {
       ReductionStatus reductionStatus) throws FileNotFoundException {
 
     JsonObject info = accessFileInfo.getResultInfo(variantInfoFile);
-    String status = info.get("Status").getAsString();
+    String status = info.get("status").getAsString();
     String cellHref = "/webui/result/" + variantInfoFile.getPath().replace(".info.json", "");
 
     if (status.contentEquals("SUCCESS")) {
@@ -2047,7 +2047,7 @@ public class WebUi extends HttpServlet {
       htmlAppendLn("<td ");
       if (refInfoFile.exists()) {
         JsonObject refInfo = accessFileInfo.getResultInfo(refInfoFile);
-        String refStatus = refInfo.get("Status").getAsString();
+        String refStatus = refInfo.get("status").getAsString();
         if (refStatus.contentEquals("SUCCESS")) {
           htmlAppendLn("class='selectable center aligned'><a href='/webui/result/",
               refHref,

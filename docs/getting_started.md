@@ -4,11 +4,32 @@ GraphicsFuzz is a testing framework for automatically finding and simplifying bu
 
 In this guide, we will briefly show how you might use each feature of GraphicsFuzz from start to finish. In practice, you may not want to use every feature; for example, you may want to use our pre-generated shader families instead of generating your own.
 
+<<<<<<< Updated upstream:docs/getting_started.md
 We will be using the latest release zip and the Desktop or Android worker. You can download these from the [GitHub releases page](https://github.com/google/graphicsfuzz/releases). If the latest versions of these are not available, you can [build them from source](development.md). If you want to use the Android worker you will also need an Android device or the Android device emulator.
+=======
+We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
+You can download these from the [releases page](glsl-fuzz-releases.md)
+or [build them from source](glsl-fuzz-build.md).
+If you want to use the Android worker you will also need an Android device
+or the Android device emulator.
+>>>>>>> Stashed changes:docs/glsl-fuzz-walkthrough.md
 
 We assume the release zip has been extracted to `/gf/`; thus, you will have `/gf/bin/`, `/gf/jar/`, `/gf/python/`, etc.
 
+<<<<<<< Updated upstream:docs/getting_started.md
 You will need to install the latest version of the Java 8 Development Kit,
+=======
+* `graphicsfuzz-1.0/python/drivers`
+* One of:
+  * `graphicsfuzz-1.0/bin/Linux`
+  * `graphicsfuzz-1.0/bin/Mac`
+  * `graphicsfuzz-1.0/bin/Windows`
+
+The `graphicsfuzz-1.0/` directory is the unzipped graphicsfuzz release.
+If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
+
+You will also need to install the latest version of the Java 8 Development Kit,
+>>>>>>> Stashed changes:docs/glsl-fuzz-walkthrough.md
 either:
 
 * From your system's package manager. E.g. `sudo apt-get install openjdk-8-jdk`.
@@ -66,6 +87,16 @@ ls temp/work/shaderfamilies
 The server application is used to drive the testing of different devices by
 communicating with worker applications that run on the devices.
 
+<<<<<<< Updated upstream:docs/getting_started.md
+=======
+> You do not have to use the server or worker applications;
+> `glsl-generate` and `glsl-reduce` can be used as stand-alone
+> command line tools, although you will need to write a script
+> that can utilize your shaders.
+
+You can start `glsl-server` as follows:
+
+>>>>>>> Stashed changes:docs/glsl-fuzz-walkthrough.md
 ```sh
 # Change to the extracted release zip directory.
 cd gf/
@@ -98,10 +129,17 @@ the workers run.
 
 ### Desktop worker
 
+<<<<<<< Updated upstream:docs/getting_started.md
 To test your current device (or any other desktop or laptop device), download
 the latest desktop worker jar: look for `desktop-1.0.jar` on the GitHub
 release. If you build from source, you should find it in
 `platforms/libgdx/OGLTesting/desktop/build/libs/desktop-1.0.jar`.
+=======
+To test the OpenGL drivers on a
+Mac, Linux, or Windows desktop device,
+download the latest `gles-desktop-worker-1.0.jar` file from the
+[releases page](glsl-fuzz-releases.md).
+>>>>>>> Stashed changes:docs/glsl-fuzz-walkthrough.md
 
 You will need to create a `token.txt` file in the same directory
 with one line containing the token (a name for the device you are testing). E.g.
@@ -133,9 +171,19 @@ is failing to connect to the server.
 
 ### Android worker
 
+<<<<<<< Updated upstream:docs/getting_started.md
 From your Android device,
 download the latest `android-debug.apk` (e.g. using the Chrome app) from the [GitHub releases page](https://github.com/google/graphicsfuzz/releases)
 and open the apk file to install the app.
+=======
+To test the OpenGL ES drivers on an Android device,
+download the latest `gles-worker-android-debug.apk` file
+from the [releases page](glsl-fuzz-releases.md).
+You can download the .apk file from your device directly
+(e.g. using the Chrome app)
+and open the .apk file to install it,
+or you can install it using `adb`.
+>>>>>>> Stashed changes:docs/glsl-fuzz-walkthrough.md
 
 > You may need to allow installation of apps from unknown sources.
 > See the [Android notes section](development.md#Android_notes)
@@ -178,7 +226,66 @@ If you see `state: NO_CONNECTION` then
 the worker application
 is failing to connect to the server.
 
+<<<<<<< Updated upstream:docs/getting_started.md
 ## Queuing shader families to a worker
+=======
+### `vulkan-worker-android`
+
+You can use the `vulkan-worker-android` app
+to test the Vulkan drivers on an Android device.
+This worker requires running a `glsl-to-spirv-worker`
+on a desktop machine,
+with an Android device (connected via USB) that has the `vulkan-worker-android` app installed.
+
+```
+glsl-server     <--- HTTP --->    glsl-to-spirv-worker    <--- adb commands --->    vulkan-worker-android app
+(on a desktop)                    (on a desktop)                                    (on an Android device)
+```
+
+
+The `glsl-to-spirv-worker` script translates the GLSL shaders to SPIR-V
+via `glslangValidator` before sending the shader to
+the `vulkan-worker-android` app running on the Android device.
+
+Download the latest `vulkan-worker-android-debug.apk` file
+from the [releases page](glsl-fuzz-releases.md)
+and install it on your Android device.
+You can download the .apk file from your device directly
+(e.g. using the Chrome app) and open the .apk file to install it,
+or you can install it using `adb`.
+
+> You may need to allow installation of apps from unknown sources. See the
+> [Android notes](android-notes.md) for various settings that you may need to change on your Android device, and for other ways of installing the app.
+
+There is no point in manually running this app from the Android device; it will crash unless
+it finds shaders in the `/sdcard/graphicsfuzz` directory.
+
+You can run the worker as follows:
+
+```sh
+# Install the apk, if not installed already.
+adb install vulkan-worker-android-debug.apk
+
+# Make sure the app can read/write /sdcard/
+adb shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE
+adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE
+
+# Execute the worker script. Pass the token (a name for your device) as an argument
+# and the serial number of the Android device (found using `adb devices`).
+# Add `--help` to see options
+# Add `--server` to specify a server URL (default is http://localhost:8080)
+glsl-to-spirv-worker galaxy-s9-vulkan --adbID 21372144e90c7fae
+```
+
+You should see `No job` repeatedly output to the terminal.
+
+If you see `Cannot connect to server`
+then the worker script
+is failing to connect to the server.
+
+
+## Running shaders on the worker applications
+>>>>>>> Stashed changes:docs/glsl-fuzz-walkthrough.md
 
 Return to the Web UI
 at http://localhost:8080/webui
@@ -322,6 +429,13 @@ You can see results in the file system within the server's working directory at 
 
 * Reduction result:
 
+<<<<<<< Updated upstream:docs/getting_started.md
 `work/processing/[token]/[shader_family]_variant_[number]_inv/`.
 
+=======
+`work/processing/<worker_token>/<shader_family>/reductions/<shader_name>`.
 
+The result of a variant run are stored in several files:
+>>>>>>> Stashed changes:docs/glsl-fuzz-walkthrough.md
+
+`work/processing/<worker_token>/<shader_family>/<variant_name>.info.json` stores the main results, it looks like:
