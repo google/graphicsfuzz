@@ -51,13 +51,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.transport.THttpClient;
-import org.apache.thrift.transport.TTransport;
 
 /**
  * Simple Web UI.
@@ -80,26 +74,30 @@ import org.apache.thrift.transport.TTransport;
  */
 public class WebUi extends HttpServlet {
 
-  private StringBuilder html;
+  private final StringBuilder html;
   private long startTime;
-  private final AccessFileInfo accessFileInfo = new AccessFileInfo();
+  private final AccessFileInfo accessFileInfo;
 
   private final FilenameFilter variantFragFilter =
       (dir, name) -> name.startsWith("variant_") && name.endsWith(".frag");
 
   private final ShaderJobFileOperations fileOps;
+  private final FuzzerServiceManager.Iface fuzzerServiceManagerProxy;
 
-  public WebUi(ShaderJobFileOperations fileOps) {
+  public WebUi(FuzzerServiceManager.Iface fuzzerServiceManager, ShaderJobFileOperations fileOps) {
+    this.html = new StringBuilder();
+    this.accessFileInfo = new AccessFileInfo();
     this.fileOps = fileOps;
+    this.fuzzerServiceManagerProxy = fuzzerServiceManager;
   }
 
-  class Shaderset {
+  private static final class Shaderset {
     final String name;
     final File dir;
     final File preview;
     final int nbVariants;
 
-    Shaderset(String name) {
+    public Shaderset(String name) {
       this.name = name;
       this.dir = new File(WebUiConstants.SHADERSET_DIR + "/" + name);
       this.preview = new File(dir + "/thumb.png");
@@ -113,7 +111,7 @@ public class WebUi extends HttpServlet {
     }
   }
 
-  class ShadersetExp {
+  private static final class ShadersetExp {
     final Shaderset shaderset;
     final String name;
     final String worker;
@@ -125,7 +123,8 @@ public class WebUi extends HttpServlet {
     int nbSlightlyDifferentImage;
     int nbWrongImage;
 
-    ShadersetExp(String name, String worker) throws FileNotFoundException {
+    public ShadersetExp(String name, String worker, AccessFileInfo accessFileInfo)
+        throws FileNotFoundException {
       this.name = name;
       this.worker = worker;
       this.dir = new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + name);
@@ -133,7 +132,7 @@ public class WebUi extends HttpServlet {
       this.nbVariants = shaderset.nbVariants;
 
       // Set variant counters
-      for (File file: dir.listFiles()) {
+      for (File file : dir.listFiles()) {
         if (file.getName().startsWith("variant") && file.getName().endsWith(".info.json")) {
           nbVariantDone++;
           JsonObject info = accessFileInfo.getResultInfo(file);
@@ -154,7 +153,7 @@ public class WebUi extends HttpServlet {
     }
   }
 
-  private boolean imageIsIdentical(JsonObject info) {
+  private static boolean imageIsIdentical(JsonObject info) {
     // We're looking for metrics/identical, conservatively return false if it is not found.
     if (info == null) {
       return false;
@@ -166,11 +165,10 @@ public class WebUi extends HttpServlet {
     if (!metricsJson.has("identical")) {
       return false;
     }
-    final boolean isIndentical = metricsJson.get("identical").getAsBoolean();
-    return isIndentical;
+    return metricsJson.get("identical").getAsBoolean();
   }
 
-  private boolean imageIsAcceptable(JsonObject info) {
+  private static boolean imageIsAcceptable(JsonObject info) {
 
     // This currently uses histogram data, if available, but can easily be adapted to
     // use other data that is available, e.g. PSNR.
@@ -197,27 +195,6 @@ public class WebUi extends HttpServlet {
 
   private enum ReductionStatus {
     NOREDUCTION, ONGOING, FINISHED, NOTINTERESTING, EXCEPTION, INCOMPLETE
-  }
-
-  private FuzzerServiceManager.Iface fuzzerServiceManagerProxy;
-
-  public void init() throws ServletException {
-
-    html = new StringBuilder();
-
-    try {
-      CloseableHttpClient httpClient = HttpClients.createDefault();
-      TTransport transport = new THttpClient("http://localhost:8080/manageAPI", httpClient);
-      transport.open();
-      TProtocol protocol = new TBinaryProtocol(transport);
-      fuzzerServiceManagerProxy = new FuzzerServiceManager.Client(protocol);
-    } catch (TException ex) {
-      ex.printStackTrace();
-    }
-  }
-
-  public void destroy() {
-    // do nothing.
   }
 
   private String getResourceContent(String resourceName) throws IOException {
@@ -521,7 +498,7 @@ public class WebUi extends HttpServlet {
         (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
     for (File shaderFamilyFile : shaderFamilies) {
       final String shaderFamily = shaderFamilyFile.getName();
-      ShadersetExp shadersetExp = new ShadersetExp(shaderFamily, workerName);
+      ShadersetExp shadersetExp = new ShadersetExp(shaderFamily, workerName, accessFileInfo);
 
       htmlAppendLn(
           "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
@@ -1415,6 +1392,7 @@ public class WebUi extends HttpServlet {
     args.add(referenceShaderJobFile.getPath());
     args.add("--reduction-kind");
     args.add("IDENTICAL");
+    args.add("--preserve-semantics");
     args.add("--output");
     args.add(reductionDir.getPath());
     args.add("--reference");
