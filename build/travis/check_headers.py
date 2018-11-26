@@ -74,6 +74,7 @@ def is_command_wrapper(f: str):
 def exclude_filepath(f: str):
     return \
         f.startswith("./python/src/main/python/drivers/") and is_command_wrapper(f) or \
+        f.startswith("./graphicsfuzz/src/main/scripts/examples/glsl-reduce/") and is_command_wrapper(f) or \
         f in [
             "./graphicsfuzz/src/main/scripts/server-static/shaders/shader.vert",
             "./server-static-public/src/main/files/server-static/runner_multi_template.html",
