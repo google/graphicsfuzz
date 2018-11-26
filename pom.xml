@@ -60,6 +60,7 @@ limitations under the License.
     <module>thrift</module>
     <module>tool</module>
     <module>util</module>
+    <module>zip-helper</module>
   </modules>
 
 

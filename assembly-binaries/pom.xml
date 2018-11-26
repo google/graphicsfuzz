@@ -215,6 +215,13 @@ limitations under the License.
 
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>com.graphicsfuzz</groupId>
+            <artifactId>zip-helper</artifactId>
+            <version>1.0</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>run-ant</id>
@@ -282,198 +289,116 @@ limitations under the License.
                   <targetfiles path="${touched-file}"/>
                   <sequential>
                     <delete file="${assembly-zip}" dir="${assembly-dir}"/>
-                    <zip destfile="${assembly-zip}" compress="false">
-                      <zipfileset src="${shaders-zip}" prefix="shaders"/>
+
+                    <java classname="com.graphicsfuzz.zip.ZipFromZip">
+                      <arg value="${assembly-zip}"/>
+
+                      <arg value="${shaders-zip}"/>
+                      <arg value="(.*)"/>
+                      <arg value="shaders/$1"/>
 
                       <!-- build-angle -->
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-angle:zip:Linux_x64_Release}"
-                            includes="bin/*,lib/*"
-                        />
-                        <compositemapper>
-                          <globmapper from="bin/*" to="bin/Linux/*"/>
-                          <globmapper from="lib/*" to="bin/Linux/angle/*"/>
-                        </compositemapper>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-angle:zip:Linux_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Linux/$1"/>
+                      <arg value="${github.paulthomson:build-angle:zip:Linux_x64_Release}"/>
+                      <arg value="lib/(.+)"/>
+                      <arg value="bin/Linux/angle/$1"/>
 
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-angle:zip:Mac_x64_Release}"
-                            includes="bin/*,lib/*"
-                        />
-                        <compositemapper>
-                          <globmapper from="bin/*" to="bin/Mac/*"/>
-                          <globmapper from="lib/*" to="bin/Mac/angle/*"/>
-                        </compositemapper>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-angle:zip:Mac_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Mac/$1"/>
+                      <arg value="${github.paulthomson:build-angle:zip:Mac_x64_Release}"/>
+                      <arg value="lib/(.+)"/>
+                      <arg value="bin/Mac/angle/$1"/>
 
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-angle:zip:Windows_x64_Release}"
-                            includes="bin/*,lib/*"
-                        />
-                        <compositemapper>
-                          <globmapper from="bin/*" to="bin/Windows/*"/>
-                          <globmapper from="lib/*" to="bin/Windows/angle/*"/>
-                        </compositemapper>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-angle:zip:Windows_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Windows/$1"/>
+                      <arg value="${github.paulthomson:build-angle:zip:Windows_x64_Release}"/>
+                      <arg value="lib/(.+)"/>
+                      <arg value="bin/Windows/angle/$1"/>
 
                       <!-- build-swiftshader -->
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-swiftshader:zip:Linux_x64_Release}"
-                            includes="bin/*,lib/*"
-                        />
-                        <compositemapper>
-                          <globmapper from="bin/*" to="bin/Linux/*"/>
-                          <globmapper from="lib/*" to="bin/Linux/swiftshader/*"/>
-                        </compositemapper>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-swiftshader:zip:Linux_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Linux/$1"/>
+                      <arg value="${github.paulthomson:build-swiftshader:zip:Linux_x64_Release}"/>
+                      <arg value="lib/(.+)"/>
+                      <arg value="bin/Linux/swiftshader/$1"/>
 
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-swiftshader:zip:Mac_x64_Release}"
-                            includes="bin/*,lib/*"
-                        />
-                        <compositemapper>
-                          <globmapper from="bin/*" to="bin/Mac/*"/>
-                          <globmapper from="lib/*" to="bin/Mac/swiftshader/*"/>
-                        </compositemapper>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-swiftshader:zip:Mac_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Mac/$1"/>
+                      <arg value="${github.paulthomson:build-swiftshader:zip:Mac_x64_Release}"/>
+                      <arg value="lib/(.+)"/>
+                      <arg value="bin/Mac/swiftshader/$1"/>
 
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-swiftshader:zip:Windows_x64_Release}"
-                            includes="bin/*,lib/*"
-                        />
-                        <compositemapper>
-                          <globmapper from="bin/*" to="bin/Windows/*"/>
-                          <globmapper from="lib/*" to="bin/Windows/swiftshader/*"/>
-                        </compositemapper>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-swiftshader:zip:Windows_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Windows/$1"/>
+                      <arg value="${github.paulthomson:build-swiftshader:zip:Windows_x64_Release}"/>
+                      <arg value="lib/(.+)"/>
+                      <arg value="bin/Windows/swiftshader/$1"/>
 
                       <!-- build-glslang -->
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-glslang:zip:Linux_x64_Release}"
-                            includes="bin/*"
-                        />
-                        <globmapper from="bin/*" to="bin/Linux/*"/>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-glslang:zip:Linux_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Linux/$1"/>
 
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-glslang:zip:Mac_x64_Release}"
-                            includes="bin/*"
-                        />
-                        <globmapper from="bin/*" to="bin/Mac/*"/>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-glslang:zip:Mac_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Mac/$1"/>
 
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-glslang:zip:Windows_x64_Release}"
-                            includes="bin/*"
-                        />
-                        <globmapper from="bin/*" to="bin/Windows/*"/>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-glslang:zip:Windows_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Windows/$1"/>
 
                       <!-- get-image-glsl (note: lines below are quite different from the rest) -->
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.mc-imperial:get-image-glsl:zip:Linux_x64_Release}"
-                            includes="bin/get_image_glfw*"
-                        />
-                        <globmapper from="bin/*" to="bin/Linux/*"/>
-                      </mappedresources>
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.mc-imperial:get-image-glsl:zip:Linux_x64_Release}"
-                            includes="bin/get_image_egl*"
-                        />
-                        <globmapper from="bin/get_image_egl*" to="bin/Linux/angle/get_image_egl*"/>
-                      </mappedresources>
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.mc-imperial:get-image-glsl:zip:Linux_x64_Release}"
-                            includes="bin/get_image_egl*"
-                        />
-                        <globmapper from="bin/get_image_egl*"
-                                    to="bin/Linux/swiftshader/get_image_egl*"/>
-                      </mappedresources>
+                      <arg value="${github.mc-imperial:get-image-glsl:zip:Linux_x64_Release}"/>
+                      <arg value="bin/(get_image_glfw.*)"/>
+                      <arg value="bin/Linux/$1"/>
+                      <arg value="${github.mc-imperial:get-image-glsl:zip:Linux_x64_Release}"/>
+                      <arg value="bin/(get_image_egl.*)"/>
+                      <arg value="bin/Linux/angle/$1"/>
+                      <arg value="${github.mc-imperial:get-image-glsl:zip:Linux_x64_Release}"/>
+                      <arg value="bin/(get_image_egl.*)"/>
+                      <arg value="bin/Linux/swiftshader/$1"/>
 
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.mc-imperial:get-image-glsl:zip:Mac_x64_Release}"
-                            includes="bin/get_image_glfw*"
-                        />
-                        <globmapper from="bin/*" to="bin/Mac/*"/>
-                      </mappedresources>
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.mc-imperial:get-image-glsl:zip:Mac_x64_Release}"
-                            includes="bin/get_image_egl*"
-                        />
-                        <globmapper from="bin/get_image_egl*" to="bin/Mac/angle/get_image_egl*"/>
-                      </mappedresources>
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.mc-imperial:get-image-glsl:zip:Mac_x64_Release}"
-                            includes="bin/get_image_egl*"
-                        />
-                        <globmapper from="bin/get_image_egl*"
-                                    to="bin/Mac/swiftshader/get_image_egl*"/>
-                      </mappedresources>
+                      <arg value="${github.mc-imperial:get-image-glsl:zip:Mac_x64_Release}"/>
+                      <arg value="bin/(get_image_glfw.*)"/>
+                      <arg value="bin/Mac/$1"/>
+                      <arg value="${github.mc-imperial:get-image-glsl:zip:Mac_x64_Release}"/>
+                      <arg value="bin/(get_image_egl.*)"/>
+                      <arg value="bin/Mac/angle/$1"/>
+                      <arg value="${github.mc-imperial:get-image-glsl:zip:Mac_x64_Release}"/>
+                      <arg value="bin/(get_image_egl.*)"/>
+                      <arg value="bin/Mac/swiftshader/$1"/>
 
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.mc-imperial:get-image-glsl:zip:Windows_x64_Release}"
-                            includes="bin/get_image_glfw*"
-                        />
-                        <globmapper from="bin/*" to="bin/Windows/*"/>
-                      </mappedresources>
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.mc-imperial:get-image-glsl:zip:Windows_x64_Release}"
-                            includes="bin/get_image_egl*"
-                        />
-                        <globmapper from="bin/get_image_egl*" to="bin/Windows/angle/get_image_egl*"/>
-                      </mappedresources>
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.mc-imperial:get-image-glsl:zip:Windows_x64_Release}"
-                            includes="bin/get_image_egl*"
-                        />
-                        <globmapper from="bin/get_image_egl*"
-                                    to="bin/Windows/swiftshader/get_image_egl*"/>
-                      </mappedresources>
+                      <arg value="${github.mc-imperial:get-image-glsl:zip:Windows_x64_Release}"/>
+                      <arg value="bin/(get_image_glfw.*)"/>
+                      <arg value="bin/Windows/$1"/>
+                      <arg value="${github.mc-imperial:get-image-glsl:zip:Windows_x64_Release}"/>
+                      <arg value="bin/(get_image_egl.*)"/>
+                      <arg value="bin/Windows/angle/$1"/>
+                      <arg value="${github.mc-imperial:get-image-glsl:zip:Windows_x64_Release}"/>
+                      <arg value="bin/(get_image_egl.*)"/>
+                      <arg value="bin/Windows/swiftshader/$1"/>
 
                       <!-- build-SPIRV-Tools -->
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-SPIRV-Tools:zip:Linux_x64_Release}"
-                            includes="bin/*"
-                        />
-                        <globmapper from="bin/*" to="bin/Linux/*"/>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-SPIRV-Tools:zip:Linux_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Linux/$1"/>
 
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-SPIRV-Tools:zip:Mac_x64_Release}"
-                            includes="bin/*"
-                        />
-                        <globmapper from="bin/*" to="bin/Mac/*"/>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-SPIRV-Tools:zip:Mac_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Mac/$1"/>
 
-                      <mappedresources>
-                        <zipfileset
-                            src="${github.paulthomson:build-SPIRV-Tools:zip:Windows_x64_Release}"
-                            includes="bin/*"
-                        />
-                        <globmapper from="bin/*" to="bin/Windows/*"/>
-                      </mappedresources>
+                      <arg value="${github.paulthomson:build-SPIRV-Tools:zip:Windows_x64_Release}"/>
+                      <arg value="bin/(.+)"/>
+                      <arg value="bin/Windows/$1"/>
 
-                    </zip>
+                    </java>
                     <unzip src="${assembly-zip}" dest="${assembly-dir}"/>
                     <chmod perm="ugo+x" dir="${assembly-dir}/bin" includes="**" />
                     <touch file="${touched-file}"/>

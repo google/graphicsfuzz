@@ -75,8 +75,8 @@ def run_linux(vert, frag, json, skip_render):
     except subprocess.CalledProcessError as err:
         status = 'CRASH'
 
-    with open('STATUS', 'w') as f:
-        f.write(status)
+    with open(LOGFILE, 'a') as f:
+        f.write('\nSTATUS ' + status + '\n')
 
 def dump_info_linux():
     cmd = 'vkworker --info'
@@ -200,8 +200,8 @@ def run_android(vert, frag, json, skip_render):
                     adb('pull ' + ref_image + ' nondet0.png')
                     adb('pull ' + next_image + ' nondet1.png')
 
-    with open('STATUS', 'w') as f:
-        f.write(status)
+    with open(LOGFILE, 'a') as f:
+        f.write('\nSTATUS ' + status + '\n')
 
     if status != 'SUCCESS':
         # Something went wrong, make sure to stop the app in any case

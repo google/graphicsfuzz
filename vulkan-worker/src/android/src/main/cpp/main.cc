@@ -50,7 +50,7 @@ void ProcessAppCmd (struct android_app *app, int32_t cmd) {
         assert(app_data->vertex_file != nullptr);
         assert(app_data->fragment_file != nullptr);
         assert(app_data->uniform_file != nullptr);
-        app_data->vulkan_worker->Render(app_data->vertex_file, app_data->fragment_file, app_data->uniform_file, FLAGS_skip_render);
+        app_data->vulkan_worker->RunTest(app_data->vertex_file, app_data->fragment_file, app_data->uniform_file, FLAGS_skip_render);
         ANativeActivity_finish(app->activity);
       }
       break;
@@ -136,10 +136,15 @@ void FreeGflagsArgs(int argc, char **argv) {
 
 void android_main(struct android_app* state) {
 
-  // New default values
+  // Reset all default values, as any change may survive the exiting of this
+  // android_main() function and still be set when android_main() is called
+  // again.
   FLAGS_sanity_before = "/sdcard/graphicsfuzz/sanity_before.png";
   FLAGS_sanity_after = "/sdcard/graphicsfuzz/sanity_after.png";
   FLAGS_png_template = "/sdcard/graphicsfuzz/image";
+  FLAGS_info = false;
+  FLAGS_skip_render = false;
+  FLAGS_num_render = 3;
 
   int argc = 0;
   char **argv = nullptr;

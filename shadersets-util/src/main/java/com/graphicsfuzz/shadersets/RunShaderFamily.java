@@ -297,7 +297,7 @@ public class RunShaderFamily {
       infoJson.addProperty("stage", res.stage.toString());
     }
     if (res.isSetStatus()) {
-      infoJson.addProperty("Status", res.getStatus().toString());
+      infoJson.addProperty("status", res.getStatus().toString());
     }
     infoJson.addProperty("passSanityCheck", "" + res.passSanityCheck);
     return infoJson;

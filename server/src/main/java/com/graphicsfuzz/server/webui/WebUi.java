@@ -36,9 +36,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -89,9 +87,6 @@ public class WebUi extends HttpServlet {
   private final FilenameFilter variantFragFilter =
       (dir, name) -> name.startsWith("variant_") && name.endsWith(".frag");
 
-  private final FilenameFilter shaderFamilyExperimentFilter =
-      (dir, name) -> name.endsWith("_exp");
-
   private final ShaderJobFileOperations fileOps;
 
   public WebUi(ShaderJobFileOperations fileOps) {
@@ -133,7 +128,7 @@ public class WebUi extends HttpServlet {
     ShadersetExp(String name, String worker) throws FileNotFoundException {
       this.name = name;
       this.worker = worker;
-      this.dir = new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + name + "_exp");
+      this.dir = new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + name);
       this.shaderset = new Shaderset(name);
       this.nbVariants = shaderset.nbVariants;
 
@@ -142,7 +137,7 @@ public class WebUi extends HttpServlet {
         if (file.getName().startsWith("variant") && file.getName().endsWith(".info.json")) {
           nbVariantDone++;
           JsonObject info = accessFileInfo.getResultInfo(file);
-          String status = info.get("Status").getAsString();
+          String status = info.get("status").getAsString();
           if (status.contentEquals("SUCCESS")) {
             if (imageIsIdentical(info)) {
               nbSameImage++;
@@ -521,23 +516,18 @@ public class WebUi extends HttpServlet {
 
     htmlAppendLn("<div class='ui middle aligned selection animated celled list'>");
 
-    File[] expDirs = workerDir.listFiles();
-    Arrays.sort(expDirs, (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
-    for (File e : expDirs) {
-      String expName = e.getName();
-      if (!expName.endsWith("_exp") || !e.isDirectory()) {
-        continue;
-      }
-
-      // remove ending "_exp"
-      String shadersetName = expName.substring(0, expName.length() - 4);
-      ShadersetExp shadersetExp = new ShadersetExp(shadersetName, workerName);
+    File[] shaderFamilies = workerDir.listFiles(File::isDirectory);
+    Arrays.sort(shaderFamilies,
+        (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
+    for (File shaderFamilyFile : shaderFamilies) {
+      final String shaderFamily = shaderFamilyFile.getName();
+      ShadersetExp shadersetExp = new ShadersetExp(shaderFamily, workerName);
 
       htmlAppendLn(
-          "<a class='item' href='/webui/worker/", workerName, "/", expName, "'>",
+          "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
           "<img class='ui mini image' src='/webui/file/", WebUiConstants.WORKER_DIR, "/",
-          workerName, "/", expName, "/reference.png'>",
-          "<div class='content'><div class='header'>", shadersetName, "</div>",
+          workerName, "/", shaderFamily, "/reference.png'>",
+          "<div class='content'><div class='header'>", shaderFamily, "</div>",
           "Variant done: ", Integer.toString(shadersetExp.nbVariantDone),
           " / ", Integer.toString(shadersetExp.nbVariants),
           " | Wrong images: ", Integer.toString(shadersetExp.nbWrongImage),
@@ -561,8 +551,8 @@ public class WebUi extends HttpServlet {
     assert (path.length >= 4);
     // path == ["", "worker", "<workername>", "<experimentName>"]
     String workerName = path[2];
-    String expName = path[3];
-    String workerSlashExp = workerName + "/" + expName;
+    String shaderFamily = path[3];
+    String workerSlashExp = workerName + "/" + shaderFamily;
 
     htmlHeaderResultTable(workerSlashExp);
 
@@ -582,7 +572,6 @@ public class WebUi extends HttpServlet {
 
     htmlAppendLn("<div class='ui segment'>\n",
         "<h3>Results table</h3>");
-    String shaderFamily = expName.replace("_exp", "");
     String[] workers = new String[1];
     workers[0] = workerName;
 
@@ -618,16 +607,13 @@ public class WebUi extends HttpServlet {
     }
 
     //Iterate through files in workerDir - get experiment results
-    File[] expDirs = workerDir.listFiles(shaderFamilyExperimentFilter);
-    Arrays.sort(expDirs, (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
+    File[] shaderFamilies = workerDir.listFiles(File::isDirectory);
+    Arrays.sort(shaderFamilies,
+        (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
     String[] workers = new String[1];
-    for (File e : expDirs) {
-      String expName = e.getName();
-
-      String shaderFamily = expName.replace("_exp", "");
-
-      htmlAppendLn("<div class='ui segment'>\n",
-          "<h3>", shaderFamily, "</h3>");
+    for (File shaderFamilyFile : shaderFamilies) {
+      final String shaderFamily = shaderFamilyFile.getName();
+      htmlAppendLn("<div class='ui segment'>\n", "<h3>", shaderFamily, "</h3>");
       workers[0] = workerName;
       htmlComparativeTable(shaderFamily, workers);
       htmlAppendLn("</div>");
@@ -730,7 +716,7 @@ public class WebUi extends HttpServlet {
     File[] workerDirs = new File(WebUiConstants.WORKER_DIR).listFiles();
     List<String> workerList = new ArrayList<String>();
     for (File workerDir : workerDirs) {
-      File expResult = new File(workerDir, shaderFamily + "_exp");
+      File expResult = new File(workerDir, shaderFamily);
       if (expResult.isDirectory()) {
         workerList.add(workerDir.getName());
       }
@@ -813,57 +799,56 @@ public class WebUi extends HttpServlet {
       return;
     }
     final String token = path[3];
-    final String shaderExp = path[4];
-    final String resultFilename = path[5];
-    final String shaderExperimentDir =
-        WebUiConstants.WORKER_DIR + "/" + token + "/" + shaderExp + "/";
-    final String variantResultJobFileNoExtension = shaderExperimentDir + resultFilename;
+    final String shaderFamily = path[4];
+    final String variant = path[5];
+    final String variantDir =
+        WebUiConstants.WORKER_DIR + "/" + token + "/" + shaderFamily + "/";
+    final String variantFullPathNoExtension = variantDir + variant;
 
-    File infoFile = new File(shaderExperimentDir, resultFilename + ".info.json");
+    File infoFile = new File(variantDir, variant + ".info.json");
     if (!infoFile.isFile()) {
       err404(request, response, "Invalid result path: cannot find corresponding info file");
       return;
     }
 
     JsonObject info = accessFileInfo.getResultInfo(infoFile);
-    final String status = info.get("Status").getAsString();
-    String shaderPath = "shaderfamilies/" + shaderExp.replace("_exp", "" + "/");
-    shaderPath += resultFilename + ".frag";
+    final String status = info.get("status").getAsString();
+    String shaderPath = "shaderfamilies/" + shaderFamily + "/" + variant + ".frag";
 
     htmlHeader("Single result");
     htmlAppendLn("<div class='ui segment'><h3>Single result</h3>",
         "<p>Shader <b><a href='/webui/shader/", shaderPath, "'>",
-        resultFilename, "</a></b> of <b>", shaderExp, "</b>",
+        variant, "</a></b> of <b>", shaderFamily, "</b>",
         " run on <b>", token, "</b><br>",
-        "Status: <b>", status, "</b></p>");
+        "status: <b>", status, "</b></p>");
 
     htmlAppendLn("<form method='post' id='deleteForm'>\n",
-        "<input type='hidden' name='path' value='", variantResultJobFileNoExtension + ".info.json",
+        "<input type='hidden' name='path' value='", variantFullPathNoExtension + ".info.json",
         "'/>\n",
         "<input type='hidden' name='type' value='delete'/>\n",
         "<input type='hidden' name='num_back' value='2'/>\n",
         "<div class='ui button'",
         " onclick=\"checkAndSubmit('Confirm deletion of ",
-        variantResultJobFileNoExtension,
+        variantFullPathNoExtension,
         "', deleteForm)\">",
         "Delete this result</div>\n",
         "</form>",
         "<div class='ui divider'></div>");
 
     String referencePngPath =
-        variantResultJobFileNoExtension.replace(resultFilename, "reference.png");
+        variantFullPathNoExtension.replace(variant, "reference.png");
 
     htmlAppendLn("<p>Reference image:</p>",
         "<img src='/webui/file/", referencePngPath, "'>");
 
-    String pngPath = shaderExperimentDir + resultFilename + ".png";
+    String pngPath = variantDir + variant + ".png";
     File pngFile = new File(pngPath);
     if (pngFile.exists()) {
       htmlAppendLn("<p>Result image:</p>",
           "<img src='/webui/file/", pngPath, "'>");
     }
 
-    String gifPath = shaderExperimentDir + resultFilename + ".gif";
+    String gifPath = variantDir + variant + ".gif";
     File gifFile = new File(gifPath);
     if (gifFile.exists()) {
       htmlAppendLn("<p>Results non-deterministic animation:</p>",
@@ -885,44 +870,38 @@ public class WebUi extends HttpServlet {
         "<div class='ui segment'>\n",
         "<h3>Run log</h3>\n",
         "<textarea readonly rows='25' cols='160'>");
-    htmlAppendLn(getFileContents(new File(shaderExperimentDir + resultFilename + ".txt")));
+    htmlAppendLn(getFileContents(new File(variantDir + variant + ".txt")));
     htmlAppendLn("</textarea>\n",
         "</div>");
 
     // Get result file
-    File result = new File(variantResultJobFileNoExtension);
+    File result = new File(variantFullPathNoExtension);
 
     // Information/links for result
-    String shaderset = result.getParentFile().getName();
-    shaderset = shaderset.substring(0, shaderset.length() - 4);
-
-    String shader = FilenameUtils.removeExtension(result.getName());
-    String shaderDir = "shaderfamilies/" + shaderset + "/";
     File referenceRes = new File(result.getParentFile(), "reference.info.json");
 
     String workerName = result.getParentFile().getParentFile().getName();
-    File reductionDir = new File(result.getParentFile().getParentFile(),
-        shaderset + "_" + shader + "_inv");
+    File reductionDir = new File(result.getParentFile() + "/reductions", variant);
 
     // Get results from reductions
 
     htmlAppendLn("<div class='ui segment'>\n",
         "<h3>Reduction results</h3>");
 
-    final ReductionStatus referenceReductionStatus = getReductionStatus(token, shaderset,
+    final ReductionStatus referenceReductionStatus = getReductionStatus(token, shaderFamily,
         "reference");
     File referenceShader = new File(WebUiConstants.SHADERSET_DIR + "/"
-        + shaderset, "reference.frag");
+        + shaderFamily, "reference.frag");
     if (referenceReductionStatus == ReductionStatus.FINISHED) {
       referenceShader = new File(
-          ReductionFilesHelper.getReductionDir(token, shaderset, "reference"),
+          ReductionFilesHelper.getReductionDir(token, shaderFamily, "reference"),
           "reference_reduced_final.frag"
       );
     }
 
 
     String reductionHtml = "";
-    final ReductionStatus reductionStatus = getReductionStatus(token, shaderset, shader);
+    final ReductionStatus reductionStatus = getReductionStatus(token, shaderFamily, variant);
 
     htmlAppendLn("<p>Reduction status: <b>", reductionStatus.toString(), "</b></p>");
 
@@ -931,7 +910,7 @@ public class WebUi extends HttpServlet {
           " data-hide='reduce-menu'>Reduce result</button>",
           "<div class='reduce-menu invisible'>");
       htmlReductionForm(
-          shaderDir + shader + ".json",
+          "shaderfamilies/" + shaderFamily + "/" + variant + ".json",
           reductionDir.getPath(),
           workerName,
           referenceRes.getPath(),
@@ -945,7 +924,7 @@ public class WebUi extends HttpServlet {
           "<input type='hidden' name='num_back' value='2'/>\n",
           "<div class='ui button'",
           " onclick=\"checkAndSubmit('Confirm deletion of reduction results for ",
-          shaderset + ": " + shader, "', deleteReductionForm)\">",
+          shaderFamily + ": " + variant, "', deleteReductionForm)\">",
           "Delete reduction results</div>\n",
           "</form></p>");
     }
@@ -964,14 +943,15 @@ public class WebUi extends HttpServlet {
         htmlAppendLn("<p>Reduction failed with an exception:</p>",
             "<textarea readonly rows='25' cols='160'>\n",
             getFileContents(ReductionProgressHelper.getReductionExceptionFile(
-                ReductionFilesHelper.getReductionDir(token, shaderset, shader), shader)),
+                ReductionFilesHelper.getReductionDir(token, shaderFamily, variant), variant)),
             "</textarea>");
         break;
 
       case ONGOING:
         final Optional<Integer> reductionStep = ReductionProgressHelper
               .getLatestReductionStepAny(ReductionFilesHelper
-                    .getReductionDir(token, shaderset, shader), "variant", fileOps);
+                    .getReductionDir(token, shaderFamily, variant),
+                  "variant", fileOps);
         htmlAppendLn(
             "<p>Reduction not finished for this result: ",
             (reductionStep
@@ -983,14 +963,14 @@ public class WebUi extends HttpServlet {
         break;
 
       case FINISHED:
-        produceDiff(shader, reductionDir, referenceShader);
+        produceDiff(variant, reductionDir, referenceShader);
         break;
 
       case INCOMPLETE:
         File reductionIncompleteResult = new File(reductionDir,
-            shader + "_incomplete_reduced_final.frag");
+            variant + "_incomplete_reduced_final.frag");
         htmlAppendLn("<p>Reduction hit the step limit.</p>");
-        produceDiff(shader, reductionDir, referenceShader);
+        produceDiff(variant, reductionDir, referenceShader);
         break;
 
       default:
@@ -998,7 +978,8 @@ public class WebUi extends HttpServlet {
     }
 
     // Show reduction log, if it exists, regardless of current reduction status
-    final File logFile = new File(ReductionFilesHelper.getReductionDir(token, shaderset, shader),
+    final File logFile =
+        new File(ReductionFilesHelper.getReductionDir(token, shaderFamily, variant),
           "command.log");
     if (logFile.exists()) {
       htmlAppendLn("<p>Contents of reduction log file:</p>",
@@ -1167,10 +1148,10 @@ public class WebUi extends HttpServlet {
           commands.add("--token");
           commands.add(worker);
           commands.add("--output");
-          commands.add("processing/" + worker + "/" + shaderset + "_exp/");
+          commands.add("processing/" + worker + "/" + shaderset);
           commands.add(WebUiConstants.SHADERSET_DIR + "/" + shaderset);
           fuzzerServiceManagerProxy.queueCommand("run_shader_family: " + shaderset, commands,
-              worker,"processing/" + worker + "/" + shaderset + "_exp/command.log");
+              worker,"processing/" + worker + "/" + shaderset + "/command.log");
           msg.append(" started successfully!\\n");
         }
       }
@@ -1304,22 +1285,11 @@ public class WebUi extends HttpServlet {
     if (file.toString().endsWith(".info.json")) {
       fileOps.deleteShaderJobResultFile(file);
       // There might also be a reduction result. If so, we delete it.
-
-      // E.g. variant_001
+      // e.g. variant_001
       final String variantName = FileHelper.removeEnd(file.getName(), ".info.json");
-      // E.g. shader_family_001_exp
-      final String expDirName = file.getParentFile().getName();
-      // E.g. android_phone
-      final File workerResultDir = file.getParentFile().getParentFile();
-      if (expDirName.endsWith("_exp")) {
-        // E.g. shader_family_001
-        final String shaderFamilyName = FileHelper.removeEnd(expDirName, "_exp");
-        // E.g. shader_family_001 _ variant_001 _inv
-        final String reductionDirName = shaderFamilyName + "_" + variantName + "_inv";
-        // E.g. processing/android_phone/shader_family_001_variant_001 _inv
-        final File reductionDir = new File(workerResultDir, reductionDirName);
-        fileOps.deleteQuietly(reductionDir);
-      }
+      // e.g. reductions/variant_001
+      final File reductionDir = new File(file.getParentFile(), "reductions/" + variantName);
+      fileOps.deleteQuietly(reductionDir);
     } else {
       FileUtils.forceDelete(file);
     }
@@ -1432,14 +1402,14 @@ public class WebUi extends HttpServlet {
     }
     String shaderset = referenceShaderJobFile.getParentFile().getName();
     File reductionDir =
-        new File(WebUiConstants.WORKER_DIR + "/" + worker, shaderset
-              + "_reference_inv");
+        new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderset + "/reductions",
+            "reference");
     if (reductionDir.isDirectory()) {
       return;
     }
     File referenceResult =
-        new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderset + "_exp",
-              "reference.info.json");
+        new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderset,
+            "reference.info.json");
     List<String> args = new ArrayList<>();
     args.add("glsl-reduce");
     args.add(referenceShaderJobFile.getPath());
@@ -1587,11 +1557,11 @@ public class WebUi extends HttpServlet {
         commands.add("--token");
         commands.add(worker);
         commands.add("--output");
-        commands.add("processing/" + worker + "/" + shaderset + "_exp/");
+        commands.add("processing/" + worker + "/" + shaderset + "/");
         try {
           fuzzerServiceManagerProxy
               .queueCommand("run_shader_family: " + shaderPath, commands, worker,
-                  "processing/" + worker + "/" + shaderset + "_exp/command.log");
+                  "processing/" + worker + "/" + shaderset + "/command.log");
         } catch (TException exception) {
           err404(request, response, exception.getMessage());
           return;
@@ -1750,7 +1720,7 @@ public class WebUi extends HttpServlet {
       }
     } catch (Exception exception) {
       exception.printStackTrace();
-      throw new ServletException("GET method failed, request was: " + request.toString());
+      throw new ServletException("POST method failed, request was: " + request.toString());
     }
   }
 
@@ -1836,7 +1806,7 @@ public class WebUi extends HttpServlet {
       ReductionStatus reductionStatus) throws FileNotFoundException {
 
     JsonObject info = accessFileInfo.getResultInfo(variantInfoFile);
-    String status = info.get("Status").getAsString();
+    String status = info.get("status").getAsString();
     String cellHref = "/webui/result/" + variantInfoFile.getPath().replace(".info.json", "");
 
     if (status.contentEquals("SUCCESS")) {
@@ -2072,14 +2042,14 @@ public class WebUi extends HttpServlet {
       // Reference result is separate as it doesn't contain a "identical" field, etc
       // FIXME: make sure reference result has same format as variants to be able to refactor
       String refHref = WebUiConstants.WORKER_DIR + "/" + worker + "/"
-          + shaderFamily + "_exp/reference";
+          + shaderFamily + "/reference";
       File refInfoFile = new File(refHref + ".info.json");
       String refPngPath = refHref + ".png";
 
       htmlAppendLn("<td ");
       if (refInfoFile.exists()) {
         JsonObject refInfo = accessFileInfo.getResultInfo(refInfoFile);
-        String refStatus = refInfo.get("Status").getAsString();
+        String refStatus = refInfo.get("status").getAsString();
         if (refStatus.contentEquals("SUCCESS")) {
           htmlAppendLn("class='selectable center aligned'><a href='/webui/result/",
               refHref,
@@ -2100,7 +2070,7 @@ public class WebUi extends HttpServlet {
 
       for (File f : variantFragFiles) {
         File infoFile = new File(WebUiConstants.WORKER_DIR + "/" + worker
-            + "/" + shaderFamily + "_exp/" + f.getName().replace(".frag", ".info.json"));
+            + "/" + shaderFamily + "/" + f.getName().replace(".frag", ".info.json"));
 
         if (infoFile.isFile()) {
           ReductionStatus reductionStatus = getReductionStatus(worker, shaderFamily,
