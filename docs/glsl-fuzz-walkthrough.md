@@ -7,7 +7,7 @@ In this walkthrough, we will briefly demonstrate most features of GraphicsFuzz f
 We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
 You can download these from the [releases page](glsl-fuzz-releases.md)
 or [build them from source](glsl-fuzz-build.md).
-If you want to use the Android worker you will also need an Android device 
+If you want to use the Android worker you will also need an Android device
 or the Android device emulator.
 
 Add the following directories to your path:
@@ -17,7 +17,7 @@ Add the following directories to your path:
   * `graphicsfuzz-1.0/bin/Linux`
   * `graphicsfuzz-1.0/bin/Mac`
   * `graphicsfuzz-1.0/bin/Windows`
-  
+
 The `graphicsfuzz-1.0/` directory is the unzipped graphicsfuzz release.
 If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
 
@@ -100,7 +100,7 @@ The `glsl-server` application is used to drive the testing of different devices 
 communicating with worker applications that run on the devices.
 
 > You do not have to use the server or worker applications;
-> `glsl-generate` and `glsl-reduce` can be used as stand-alone 
+> `glsl-generate` and `glsl-reduce` can be used as stand-alone
 > command line tools, although you will need to write a script
 > that can utilize your shaders.
 
@@ -143,8 +143,8 @@ the workers run.
 
 To test the OpenGL drivers on a
 Mac, Linux, or Windows desktop device,
-download the latest `gles-desktop-worker-1.0.jar` file from the 
-[releases page](glsl-fuzz-releases.md). 
+download the latest `gles-desktop-worker-1.0.jar` file from the
+[releases page](glsl-fuzz-releases.md).
 
 You will need to create a `token.txt` file in the same directory
 with one line containing the token (a name for the device you are testing). E.g.
@@ -177,7 +177,7 @@ is failing to connect to the server.
 ### `gles-worker-android`
 
 To test the OpenGL ES drivers on an Android device,
-download the latest `gles-worker-android-debug.apk` file 
+download the latest `gles-worker-android-debug.apk` file
 from the [releases page](glsl-fuzz-releases.md).
 You can download the .apk file from your device directly
 (e.g. using the Chrome app)
@@ -250,7 +250,7 @@ You can download the .apk file from your device directly
 (e.g. using the Chrome app) and open the .apk file to install it,
 or you can install it using `adb`.
 
-> You may need to allow installation of apps from unknown sources. See the 
+> You may need to allow installation of apps from unknown sources. See the
 > [Android notes](android-notes.md) for various settings that you may need to change on your Android device, and for other ways of installing the app.
 
 There is no point in manually running this app from the Android device; it will crash unless
@@ -276,7 +276,7 @@ glsl-to-spirv-worker galaxy-s9-vulkan --adbID 21372144e90c7fae
 You should see `No job` repeatedly output to the terminal.
 
 If you see `Cannot connect to server`
-then the worker script 
+then the worker script
 is failing to connect to the server.
 
 
@@ -412,16 +412,54 @@ In the above example,
 a function body that contains a somewhat complex `pow` function call
 is enough to trigger the bug.
 
-
 ## Exploring results in the file system
 
 You can see results in the file system within the server's working directory at the following locations:
 
-* Shader family results:
+### Shader family results
 
-`work/processing/<worker_token>/<shader_family>/`.
+Each variant can lead to these files:
+* `work/processing/<worker_token>/<shader_family>/<variant>.info.json`
+* `work/processing/<worker_token>/<shader_family>/<variant>.txt`
+* `work/processing/<worker_token>/<shader_family>/<variant>.png` (only when `SUCCESS` status)
+* `work/processing/<worker_token>/<shader_family>/<variant>.gif` (only for `NONDET` status)
+* `work/processing/<worker_token>/<shader_family>/<variant>_nondet1.png` (only for `NONDET` status)
+* `work/processing/<worker_token>/<shader_family>/<variant>_nondet2.png` (only for `NONDET` status)
 
-* Reduction result:
+`<variant>.info.json` contains results overview encoded in JSON. It looks like the following:
 
-`work/processing/<token>/<shader_family>/reductions/<shader_name>`.
+```shell
+{
+  "status": "SUCCESS",
+  ... other fields ...
+}
+```
 
+The `status` field is a string summarizing the result, it can be of value:
+* `SUCCESS`: the variant rendered an image
+* `CRASH`: the variant led to a driver crash
+* `NONDET`: the variant led to a non-deterministic rendering
+*  `TIMEOUT`: the variant took too long to be processed (in the case of the
+    vulkan worker, this may indicate glslangValidator or spirv-opt taking too
+    long to process the variant)
+* `UNEXPECTED_ERROR`: the variant led to an unexpected error
+
+This JSON also contains other fields, like metrics of difference between the
+variant image and the reference image.
+
+**NB:** as of November 2018, only the `status` is considered stable.
+
+`<variant>.txt` contains the log of the variant run. On Android, it is a dump of
+the android logcat, and can contain precious information like details on a
+driver crash for example.
+
+`<variant>.png` is the image produced by this variant. This file is present only
+if the variant status is `SUCCESS`.
+
+In case of `NONDET` status, two different renderings for this same variant are
+stored in `<variant>_nondet1.png` and `<variant>_nondet2.png`. An animated GIF
+with this two images is produced in `<variant>.gif`.
+
+### Reduction result:
+
+`work/processing/<worker_token>/<shader_family>/reductions/<shader_name>`.
