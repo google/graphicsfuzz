@@ -463,3 +463,21 @@ with this two images is produced in `<variant>.gif`.
 ### Reduction result:
 
 `work/processing/<worker_token>/<shader_family>/reductions/<shader_name>`.
+
+
+## Reducing shaders from the command line using `glsl-reduce`
+
+Behind the scenes,
+the server is simply invoking our command line tools.
+Indeed,
+the "reduction log" includes
+the command that was run on its first line.
+E.g.
+
+`glsl-reduce shaderfamilies/familiy01/variant_01.json ABOVE_THRESHOLD [etc.]`
+
+> You can try running these commands at the command line
+> from the `work` directory,
+> although note that some arguments that have spaces
+> may need to be quoted (and they will not be quoted in the reduction log).
+
