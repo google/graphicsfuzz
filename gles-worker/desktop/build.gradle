@@ -11,9 +11,8 @@ dependencies {
     implementation files("../../gles-worker-dependencies/target/gles-worker-dependencies-1.0.jar")
 }
 
-sourceCompatibility = 1.8
 sourceSets.main.java.srcDirs = [ "src/" ]
-project.ext.mainClassName = "DesktopLauncher"
+project.ext.mainClassName = "com.graphicsfuzz.glesworker.desktop.DesktopLauncher"
 project.ext.assetsDir = new File("../android/assets");
 
 task run(dependsOn: classes, type: JavaExec) {
@@ -25,12 +24,12 @@ task run(dependsOn: classes, type: JavaExec) {
 }
 
 task dist(type: Jar) {
-    from files(sourceSets.main.output.classesDir)
-    from files(sourceSets.main.output.resourcesDir)
-    from {configurations.compile.collect {zipTree(it)}}
-    from files(project.assetsDir);
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+    from files(project.assetsDir)
     baseName = "gles-worker-desktop"
-
     manifest {
         attributes 'Main-Class': project.mainClassName
     }
