@@ -475,12 +475,21 @@ the reduction of this variant leads to the following files:
 
 ## Reducing shaders from the command line using `glsl-reduce`
 
-Behind the scenes, the server is simply invoking our command line tools.
-Indeed, the "reduction log" includes the command that was run on its first line.
+Behind the scenes, the server is invoking our command line tools.
+In fact, the "reduction log" shown by the WebUI
+(`command.log` in the file system)
+includes the command that was run on its first line.
 E.g.
 
 `glsl-reduce shaderfamilies/familiy01/variant_01.json ABOVE_THRESHOLD [etc.]`
 
-You can try running these commands at the command line from the `work`
-directory, although note that some arguments that have spaces may need to be
-quoted (and they will not be quoted in the reduction log).
+> You can try running these commands at the command line in the `work`
+> directory, although note that some arguments that have spaces may need to be
+> quoted (and they will not be quoted in the reduction log).
+
+### Invoking a bad image reductions:
+
+```sh
+glsl-reduce
+```
+
