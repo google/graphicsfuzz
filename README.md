@@ -47,13 +47,13 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
 
 
 * **Pre-built binaries** are available on the [GitHub releases page](docs/glsl-fuzz-releases.md)
-* [Building from the command line](docs/glsl-fuzz-build.md)
-* Building from your IDE: see [developer documentation](docs/glsl-fuzz-develop.md)
+* [Developer documentation](docs/glsl-fuzz-develop.md) covers how to compile
+  either from an IDE or the command line.
 
 ## Contribute
 
 * [Contributing (requires Google CLA)](CONTRIBUTING.md)
 * [License (Apache 2.0)](LICENSE)
-* [Developer getting started](docs/glsl-fuzz-develop.md)
+* [Developer documentation](docs/glsl-fuzz-develop.md)
 
 This is not an officially supported Google product.
