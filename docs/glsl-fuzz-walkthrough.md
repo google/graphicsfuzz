@@ -415,16 +415,18 @@ is enough to trigger the bug.
 ## Exploring results in the file system
 
 You can see results in the file system within the server's working directory at the following locations:
+* Shader family results are under `work/processing/<worker_token>/<shader_family>/`
+* Reduction results are under `work/processing/<worker_token>/<shader_family>/reductions/<variant>/`
 
 ### Shader family results
 
-Each variant can lead to these files:
-* `work/processing/<worker_token>/<shader_family>/<variant>.info.json`
-* `work/processing/<worker_token>/<shader_family>/<variant>.txt`
-* `work/processing/<worker_token>/<shader_family>/<variant>.png` (only when `SUCCESS` status)
-* `work/processing/<worker_token>/<shader_family>/<variant>.gif` (only for `NONDET` status)
-* `work/processing/<worker_token>/<shader_family>/<variant>_nondet1.png` (only for `NONDET` status)
-* `work/processing/<worker_token>/<shader_family>/<variant>_nondet2.png` (only for `NONDET` status)
+Under `work/processing/<worker_token>/<shader_family>/`, each variant can lead to these files:
+* `<variant>.info.json`
+* `<variant>.txt`
+* `<variant>.png` (only when `SUCCESS` status)
+* `<variant>.gif` (only for `NONDET` status)
+* `<variant>_nondet1.png` (only for `NONDET` status)
+* `<variant>_nondet2.png` (only for `NONDET` status)
 
 `<variant>.info.json` contains results overview encoded in JSON. It looks like the following:
 
@@ -445,9 +447,8 @@ The `status` field is a string summarizing the result, it can be of value:
 * `UNEXPECTED_ERROR`: the variant led to an unexpected error
 
 This JSON also contains other fields, like metrics of difference between the
-variant image and the reference image.
-
-**NB:** as of November 2018, only the `status` is considered stable.
+variant image and the reference image. **NB:** as of November 2018, only the
+`status` is considered stable.
 
 `<variant>.txt` contains the log of the variant run. On Android, it is a dump of
 the android logcat, and can contain precious information like details on a
@@ -460,24 +461,26 @@ In case of `NONDET` status, two different renderings for this same variant are
 stored in `<variant>_nondet1.png` and `<variant>_nondet2.png`. An animated GIF
 with this two images is produced in `<variant>.gif`.
 
-### Reduction result:
+### Reduction results
 
-`work/processing/<worker_token>/<shader_family>/reductions/<shader_name>`.
+Under `work/processing/<worker_token>/<shader_family>/reductions/<variant>/`,
+the reduction of this variant leads to the following files:
 
+* `command.log` is the command with which the reducer was started
+* `<variant>_reduced_<step_number>.*` are the files associated with this given
+  step of the reduction.
+* `<variant>_reduced_final.*` are the files at the final step of the
+  reduction. It typically refers to the smallest shader the reducer could obtain
+  for this particular reduction.
 
 ## Reducing shaders from the command line using `glsl-reduce`
 
-Behind the scenes,
-the server is simply invoking our command line tools.
-Indeed,
-the "reduction log" includes
-the command that was run on its first line.
+Behind the scenes, the server is simply invoking our command line tools.
+Indeed, the "reduction log" includes the command that was run on its first line.
 E.g.
 
 `glsl-reduce shaderfamilies/familiy01/variant_01.json ABOVE_THRESHOLD [etc.]`
 
-> You can try running these commands at the command line
-> from the `work` directory,
-> although note that some arguments that have spaces
-> may need to be quoted (and they will not be quoted in the reduction log).
-
+You can try running these commands at the command line from the `work`
+directory, although note that some arguments that have spaces may need to be
+quoted (and they will not be quoted in the reduction log).
