@@ -802,7 +802,7 @@ public class ShaderJobFileOperations {
       infoJson.addProperty("stage", res.stage.toString());
     }
     if (res.isSetStatus()) {
-      infoJson.addProperty("Status", res.getStatus().toString());
+      infoJson.addProperty("status", res.getStatus().toString());
     }
     infoJson.addProperty("passSanityCheck", "" + res.passSanityCheck);
     return infoJson;
@@ -1079,14 +1079,14 @@ public class ShaderJobFileOperations {
 
       JsonObject infoJson = new JsonObject();
       if (shaderResult.isSetStatus()) {
-        infoJson.addProperty("Status", shaderResult.getStatus().toString());
+        infoJson.addProperty("status", shaderResult.getStatus().toString());
       }
       if (shaderResult.isSetLog()) {
-        infoJson.addProperty("Log", shaderResult.getLog());
+        infoJson.addProperty("log", shaderResult.getLog());
       }
       if (shaderResult.isSetComputeOutputs()) {
         infoJson.add(
-            "Outputs", new Gson().fromJson(shaderResult.getComputeOutputs(), JsonObject.class));
+            "outputs", new Gson().fromJson(shaderResult.getComputeOutputs(), JsonObject.class));
       }
 
       fileOps.writeStringToFile(
