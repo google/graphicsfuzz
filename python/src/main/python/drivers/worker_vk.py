@@ -215,11 +215,11 @@ def get_service(server, args, worker_info_json_string):
         workerRes = service.getWorkerName(platforminfo, tryWorker)
         assert type(workerRes) != None
 
-        if workerRes.worker == None:
+        if workerRes.workerName == None:
             print('Worker error: ' + tt.WorkerNameError._VALUES_TO_NAMES[workerRes.error])
             exit(1)
 
-        worker = workerRes.worker
+        worker = workerRes.workerName
 
         print("Got worker: " + worker)
         assert(worker == args.worker)

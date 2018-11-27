@@ -78,6 +78,9 @@ def run_linux(vert, frag, json, skip_render):
     with open(LOGFILE, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
 
+    with open('STATUS', 'w') as f:
+        f.write(status)
+
 def dump_info_linux():
     cmd = 'vkworker --info'
     status = 'SUCCESS'
@@ -202,6 +205,9 @@ def run_android(vert, frag, json, skip_render):
 
     with open(LOGFILE, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
 
     if status != 'SUCCESS':
         # Something went wrong, make sure to stop the app in any case

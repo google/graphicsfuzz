@@ -118,7 +118,7 @@ function initClient(i) {
     workers[i] = localStorage.getItem("worker" + i);
   }
   myLog("Trying worker '" + workers[i] + "'.", i);
-  var getWorkerNameResult = clients[i].getWorkerName(platformInfo, workerNames[i]);
+  var getWorkerNameResult = clients[i].getWorkerName(platformInfo, workers[i]);
   if (!getWorkerNameResult.workerName) {
     throw "Worker name rejected: " + reverseWorkerNameError[getWorkerNameResult.error];
   }
