@@ -26,6 +26,10 @@ body {
   max-width: 100px;
 }
 
+.force-cell-height {
+  height: 100px;
+}
+
 td.warnimg {
   background-color: #ffccff;
 }
