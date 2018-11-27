@@ -492,10 +492,10 @@ E.g.
 > and arguments with spaces (e.g. --error-string "Fatal signal 11") may need to be
 > quoted, and they will not be quoted in the reduction log.
 
-### Invoking a bad image reductions
+### Performing a bad image reduction
 
 Here is an example of a bad image reduction command,
-as run by the server.
+similar to what the server would run.
 
 ```sh
 # Summary:
@@ -507,10 +507,12 @@ args=(
   # The shader (job) to reduce.
   shaderfamilies/sf1/variant_004.json                       
   
-  # When doing a bad image reduction, it is crucial that we do not change the semantics of the shader;
-  # for example, by removing statements that are used to calculate the output colour values.
+  # Do not change the semantics of the shader: essential when doing bad image reductions.
+  # Thus, glsl-reduce will mostly just reverse the trasformations that were added by glsl-generate,
+  # although it can also do some simple reductions like constant propagation.
+  --preserve-semantics
   
-  # Reduce while sufficiently different from reference image.
+  # Interestingness test: the produced image is different from the reference image.
   # I.e. the image comparison value is LARGER than the threshold.
   --reduction-kind ABOVE_THRESHOLD
 
@@ -525,21 +527,84 @@ args=(
   # such as a buffer of values for a compute shader.
   --reference processing/my-worker/sf1/reference.info.json  
 
-  # Output directory: the reduced shader job will end up here with the name *_reduced_final.json.
+  # Output directory: the reduced shader job will end up here, ending with *_reduced_final.json.
   --output processing/my-worker/sf1/reductions/variant_004
   
-  
-  
+  # There will be at most 200 reduction steps.
   --max-steps 2000
   
-  --token my-worker
-  --server http://localhost:8080/manageAPI
+  # Timeout for each run of the interestingness test.
   --timeout 30
+  
+  # If the worker fails to respond twice, assume the shader fails to render.
   --retry-limit 2
+  
+  # Random seed for the reduction algorithm.
   --seed -136936935
+  
+  # glsl-reduce will, by default, run shader jobs locally, which is not well-tested.
+  # We specify a server and worker name to run the shader jobs on a worker that is connected
+  # to the server.
+  
+  --server http://localhost:8080
+  --worker-name my-worker
+  
 )
 
 glsl-reduce "${args[@]}"
 ```
 
+### Performing a no image reduction
+
+Here is an example of a no image reduction command,
+similar to what the server would run.
+
+```sh
+# Summary:
+#  glsl-reduce shader_job.json --reduction-kind NO_IMAGE --error-string "Fatal signal 11" [other options]
+
+# Store args in array for readability:
+
+args=(
+
+  # The shader (job) to reduce.
+  shaderfamilies/sf1/variant_007.json                       
+  
+  # Interestingness test: no image is produced, plus the error-string provided below must match
+  # the run log.
+  --reduction-kind NO_IMAGE
+
+  # The run log must contain this string for the shader job to be regarded as interesting.
+  --error-string "Fatal signal 11"
+  
+  # Output directory: the reduced shader job will end up here, ending with *_reduced_final.json.
+  --output processing/my-worker/sf1/reductions/variant_007
+  
+  # There will be at most 200 reduction steps.
+  --max-steps 2000
+  
+  # Timeout for each run of the interestingness test.
+  --timeout 30
+  
+  # If the worker fails to respond twice, assume the shader fails to render.
+  --retry-limit 2
+  
+  # Random seed for the reduction algorithm.
+  --seed -136936935
+  
+  # glsl-reduce will, by default, run shader jobs locally, which is not well-tested.
+  # We specify a server and worker name to run the shader jobs on a worker that is connected
+  # to the server.
+  
+  --server http://localhost:8080
+  --worker-name my-worker
+  
+)
+
+glsl-reduce "${args[@]}"
+```
+
+### Additional options
+
+See the [glsl-reduce manual](glsl-fuzz-reduce.md) for details on other options.
 
