@@ -2063,7 +2063,7 @@ public class WebUi extends HttpServlet {
               "</a>\n");
         }
       } else {
-        htmlAppendLn("class='bound-cell-width center aligned'>No result");
+        htmlAppendLn("class='bound-cell-width force-cell-height center aligned'>No result yet");
       }
       htmlAppendLn("</td>");
 
@@ -2077,7 +2077,7 @@ public class WebUi extends HttpServlet {
 
           htmlVariantResultTableCell(infoFile, refPngPath, reductionStatus);
         } else {
-          htmlAppendLn("<td class='bound-cell-width center aligned'>No result</td>");
+          htmlAppendLn("<td class='bound-cell-width center aligned'>No result yet</td>");
         }
       }
       htmlAppendLn("</tr>");
