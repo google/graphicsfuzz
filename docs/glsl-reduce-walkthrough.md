@@ -73,7 +73,7 @@ python glsl-reduce-walkthrough/fake_compiler.py reduction_results/colorgrid_modu
 # Output:
 # Fatal error: too much indexing.
 
-# Observe that the reduced shader is must smaller
+# Observe that the reduced shader is much smaller
 cat reduction_results/colorgrid_modulo_reduced_final.frag
 
 # Output:
