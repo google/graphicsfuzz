@@ -127,8 +127,7 @@ public class GlslReduce {
 
     parser.addArgument("--timeout")
           .help(
-                "Time in seconds after which execution of an individual variant is terminated "
-                      + "during reduction.")
+                "Time in seconds after which checking interestingness of a shader job is aborted.")
           .setDefault(30)
           .type(Integer.class);
 
@@ -156,7 +155,8 @@ public class GlslReduce {
           .action(Arguments.storeTrue());
 
     parser.addArgument("--seed")
-          .help("Seed to initialize random number generator with.")
+          .help("Seed with which to initialize the random number that is used to control "
+              + "reduction decisions.")
           .setDefault(new Random().nextInt())
           .type(Integer.class);
 
@@ -173,7 +173,7 @@ public class GlslReduce {
           .type(String.class);
 
     parser.addArgument("--output")
-          .help("Output directory.")
+          .help("Directory to which reduction intermediate and final results will be written.")
           .setDefault(new File("."))
           .type(File.class);
 
@@ -190,7 +190,9 @@ public class GlslReduce {
           .action(Arguments.storeTrue());
 
     parser.addArgument("--continue-previous-reduction")
-          .help("Carry on from where a previous reduction attempt left off.")
+          .help("Carry on from where a previous reduction attempt left off.  Requires the "
+              + "temporary files written by the previous reduction to be intact, including the "
+              + "presence of a " + Constants.REDUCTION_INCOMPLETE + " file.")
           .action(Arguments.storeTrue());
 
     return parser;
