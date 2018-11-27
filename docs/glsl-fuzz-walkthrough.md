@@ -1,8 +1,9 @@
-# GraphicsFuzz walkthrough
+# glsl-fuzz walkthrough
 
-GraphicsFuzz is a testing framework for automatically finding and simplifying bugs in graphics shader compilers.
+glsl-fuzz is a testing framework for automatically finding and simplifying bugs in graphics shader compilers
+by generating, running, and reducing GLSL shaders.
 
-In this walkthrough, we will briefly demonstrate most features of GraphicsFuzz from start to finish, including our browser-based UI.
+In this walkthrough, we will briefly demonstrate most features of glsl-fuzz from start to finish, including our browser-based UI.
 
 We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
 You can download these from the [releases page](glsl-fuzz-releases.md)
@@ -43,7 +44,16 @@ GraphicsFuzz works by taking a *reference shader* and producing a family of *var
 
 The reference shader and its variants together are referred to as a *shader family*.
 
-The `glsl-generate` tool generates shader families. The inputs are a reference shader and a folder of *donor shaders* (not pictured above). In theory, these input shaders can be any GLSL fragment shaders. In practice, we designed our tools to support shaders from glslsandbox.com, and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed). Each shader file `shader.frag` must have a corresponding `shader.json` metadata file alongside it, which contains the values for the uniforms.
+The `glsl-generate` tool generates shader families. The inputs are a folder of reference shaders
+and a folder of *donor shaders* (not pictured above). In theory, these input shaders can be any GLSL fragment shaders. In practice, we designed our tools to support shaders from glslsandbox.com, and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed). 
+Each shader file `shader.frag` must have a corresponding `shader.json` metadata file alongside it, which contains the values for the uniforms.
+
+> In fact, we refer to the `shader.json` as the **shader job**;
+> in general, there can be `shader.frag`, `shader.vert`, and/or `shader.compute` alongside
+> this file, so we treat `shader.json` as the input file that represents all shaders
+> and metadata necessary for rendering an image.
+> Thus, the inputs are really a set of shader jobs,
+> but in this walkthrough, each shader job will just have an associated fragment shader.
 
 We can create some shader families as follows:
 
@@ -93,6 +103,29 @@ ls work/shaderfamilies
 # family_vulkan_colorgrid_modulo
 # family_vulkan_prefix_sum
 ```
+
+Each shader family contains 11 shader jobs;
+1 for the reference shader, and 10 for the variant shaders:
+
+```sh
+ls work/shaderfamilies/family_100_bubblesort_flag/*.json
+
+# Output:
+
+# infolog.json      variant_002.frag  variant_005.frag  variant_008.frag
+# reference.frag    variant_002.json  variant_005.json  variant_008.json
+# reference.json    variant_002.prob  variant_005.prob  variant_008.prob
+# variant_000.frag  variant_003.frag  variant_006.frag  variant_009.frag
+# variant_000.json  variant_003.json  variant_006.json  variant_009.json
+# variant_000.prob  variant_003.prob  variant_006.prob  variant_009.prob
+# variant_001.frag  variant_004.frag  variant_007.frag
+# variant_001.json  variant_004.json  variant_007.json
+# variant_001.prob  variant_004.prob  variant_007.prob
+```
+
+Note that `infolog.json` is not a shader job.
+The `.prob` files give details on the transformations (and their probabilities)
+that were used to generate each shader.
 
 ## Running the server
 
@@ -370,7 +403,7 @@ was enough to cause the wrong image to be rendered.
 > The diff view currently assumes that the `diff` command line tool is
 > available and on the path, which may not be the case on your system.
 
-## Queuing a crash reduction
+## Queuing a no image reduction
 
 The results table for the shader family below shows
 that `variant_004` failed to render due to a crash:
@@ -424,7 +457,7 @@ You can see results in the file system within the server's working directory at 
 
 ### Shader family results
 
-Under `work/processing/<worker>/<shader_family>/`, each variant can lead to these files:
+Under `work/processing/<worker>/<shader_family>/`, each variant produces the following files:
 * `<variant>.info.json`
 * `<variant>.txt`
 * `<variant>.png` (only when `SUCCESS` status)
@@ -432,7 +465,8 @@ Under `work/processing/<worker>/<shader_family>/`, each variant can lead to thes
 * `<variant>_nondet1.png` (only for `NONDET` status)
 * `<variant>_nondet2.png` (only for `NONDET` status)
 
-`<variant>.info.json` contains results overview encoded in JSON. It looks like the following:
+`<variant>.info.json` describes the result of running the variant shader,
+in the following JSON format:
 
 ```shell
 {
@@ -441,7 +475,7 @@ Under `work/processing/<worker>/<shader_family>/`, each variant can lead to thes
 }
 ```
 
-The `status` field is a string summarizing the result, it can be of value:
+The `status` field is a string summarizing the result. It can be:
 * `SUCCESS`: the variant rendered an image
 * `CRASH`: the variant led to a driver crash
 * `NONDET`: the variant led to a non-deterministic rendering
@@ -450,20 +484,19 @@ The `status` field is a string summarizing the result, it can be of value:
     long to process the variant)
 * `UNEXPECTED_ERROR`: the variant led to an unexpected error
 
-This JSON also contains other fields, like metrics of difference between the
-variant image and the reference image. **NB:** as of November 2018, only the
-`status` is considered stable.
+This JSON also contains other fields, including different image comparison metrics
+from comparing the variant image and the reference image.
 
 `<variant>.txt` contains the log of the variant run. On Android, it is a dump of
-the android logcat, and can contain precious information like details on a
-driver crash for example.
+the android logcat, and can contain precious information, such as details on a
+driver crash.
 
 `<variant>.png` is the image produced by this variant. This file is present only
 if the variant status is `SUCCESS`.
 
-In case of `NONDET` status, two different renderings for this same variant are
+In case of `NONDET` status, two different images for this same variant are
 stored in `<variant>_nondet1.png` and `<variant>_nondet2.png`. An animated GIF
-with this two images is produced in `<variant>.gif`.
+is also produced in `<variant>.gif`.
 
 ### Reduction results
 
@@ -487,7 +520,7 @@ E.g.
 
 `glsl-reduce shaderfamilies/familiy01/variant_01.json --reduction-kind [etc.]`
 
-> You can try running these commands at the command line in the `work`
+> You can try running these commands from the command line in the `work`
 > directory, although note that some "empty" arguments (i.e. "") 
 > and arguments with spaces (e.g. --error-string "Fatal signal 11") may need to be
 > quoted, and they will not be quoted in the reduction log.
@@ -501,58 +534,58 @@ similar to what the server would run.
 # Summary:
 #  glsl-reduce shader_job.json --reduction-kind ABOVE_THRESHOLD --reference result.info.json [other options]
 
-# Store args in array for readability:
-
-args=(
-  # The shader (job) to reduce.
-  shaderfamilies/sf1/variant_004.json                       
-  
-  # Do not change the semantics of the shader: essential when doing bad image reductions.
-  # Thus, glsl-reduce will mostly just reverse the trasformations that were added by glsl-generate,
-  # although it can also do some simple reductions like constant propagation.
-  --preserve-semantics
-  
-  # Interestingness test: the produced image is different from the reference image.
-  # I.e. the image comparison value is LARGER than the threshold.
-  --reduction-kind ABOVE_THRESHOLD
-
-  # The threshold for image comparison: we have found 100.0 works well.
-  --threshold 100.0
-                           
-  # Image comparison metric: by default, we use the Chi-Square distance between image histograms.
-  --metric HISTOGRAM_CHISQR
-
-  # The reference image is reference.png, but we must pass the associated .info.json file.
-  # We do this because the reference result could be something other than an image,
-  # such as a buffer of values for a compute shader.
-  --reference processing/my-worker/sf1/reference.info.json  
-
-  # Output directory: the reduced shader job will end up here, ending with *_reduced_final.json.
-  --output processing/my-worker/sf1/reductions/variant_004
-  
-  # There will be at most 200 reduction steps.
-  --max-steps 2000
-  
-  # Timeout for each run of the interestingness test.
-  --timeout 30
-  
-  # If the worker fails to respond twice, assume the shader fails to render.
-  --retry-limit 2
-  
-  # Random seed for the reduction algorithm.
-  --seed -136936935
-  
-  # glsl-reduce will, by default, run shader jobs locally, which is not well-tested.
-  # We specify a server and worker name to run the shader jobs on a worker that is connected
-  # to the server.
-  
-  --server http://localhost:8080
+glsl-reduce \
+  shaderfamilies/sf1/variant_004.json \                       
+  --preserve-semantics \
+  --reduction-kind ABOVE_THRESHOLD \
+  --threshold 100.0 \
+  --metric HISTOGRAM_CHISQR \
+  --reference processing/my-worker/sf1/reference.info.json \  
+  --output processing/my-worker/sf1/reductions/variant_004 \
+  --max-steps 2000 \
+  --timeout 30 \
+  --retry-limit 2 \
+  --seed -136936935 \
+  --server http://localhost:8080 \
   --worker-name my-worker
-  
-)
-
-glsl-reduce "${args[@]}"
 ```
+
+Explanation:
+
+* `shaderfamilies/sf1/variant_004.json`
+  * The shader (job) to reduce.
+* `--preserve-semantics`
+  * Specifics that the reducer must not change the semantics of the shader when reducing;
+this is essential when doing bad image reductions.
+Thus, `glsl-reduce` will mainly just reverse the transformations that were added by `glsl-generate`,
+although it can also do some other straightforward semantics-preserving reductions that are not
+reversals, such as propagation of uniform values into the shader.                       
+* `--reduction-kind ABOVE_THRESHOLD`  
+  * Interestingness test: the produced image is different from the reference image.
+I.e. the image comparison value is LARGER than the threshold.
+* `--threshold 100.0`
+  * The threshold for image comparison: we have found 100.0 works well.
+* `--metric HISTOGRAM_CHISQR`
+  * Image comparison metric: by default, we use the Chi-Square distance between image histograms.
+* `--reference processing/my-worker/sf1/reference.info.json`
+  * The reference image is reference.png, but we must pass the associated .info.json file.
+We do this because the reference result could be something other than an image,
+such as a buffer of values for a compute shader.
+* `--output processing/my-worker/sf1/reductions/variant_004`
+  * Output directory: the reduced shader job will end up here, ending with *_reduced_final.json.
+* `--max-steps 2000`
+  * There will be at most 200 reduction steps.
+* `--timeout 30`
+  * Timeout for each run of the interestingness test.
+* `--retry-limit 2`
+  * If the worker fails to respond twice, assume the shader fails to render.
+* `--seed -136936935`
+  * Random seed for the reduction algorithm.
+* `--server http://localhost:8080 --worker-name my-worker`
+  * `glsl-reduce` will, by default, run shader jobs locally, which is not well-tested.
+Specify a server and worker name to run the shader jobs on a worker that is connected
+to the server.
+
 
 ### Performing a no image reduction
 
@@ -563,46 +596,42 @@ similar to what the server would run.
 # Summary:
 #  glsl-reduce shader_job.json --reduction-kind NO_IMAGE --error-string "Fatal signal 11" [other options]
 
-# Store args in array for readability:
-
-args=(
-
-  # The shader (job) to reduce.
-  shaderfamilies/sf1/variant_007.json                       
-  
-  # Interestingness test: no image is produced, plus the error-string provided below must match
-  # the run log.
-  --reduction-kind NO_IMAGE
-
-  # The run log must contain this string for the shader job to be regarded as interesting.
-  --error-string "Fatal signal 11"
-  
-  # Output directory: the reduced shader job will end up here, ending with *_reduced_final.json.
-  --output processing/my-worker/sf1/reductions/variant_007
-  
-  # There will be at most 200 reduction steps.
-  --max-steps 2000
-  
-  # Timeout for each run of the interestingness test.
-  --timeout 30
-  
-  # If the worker fails to respond twice, assume the shader fails to render.
-  --retry-limit 2
-  
-  # Random seed for the reduction algorithm.
-  --seed -136936935
-  
-  # glsl-reduce will, by default, run shader jobs locally, which is not well-tested.
-  # We specify a server and worker name to run the shader jobs on a worker that is connected
-  # to the server.
-  
-  --server http://localhost:8080
+glsl-reduce \
+  shaderfamilies/sf1/variant_007.json \                       
+  --reduction-kind NO_IMAGE \
+  --error-string "Fatal signal 11" \
+  --output processing/my-worker/sf1/reductions/variant_007 \
+  --max-steps 2000 \
+  --timeout 30 \
+  --retry-limit 2 \
+  --seed -136936935 \
+  --server http://localhost:8080 \
   --worker-name my-worker
-  
-)
-
-glsl-reduce "${args[@]}"
 ```
+
+Explanation:
+
+* `shaderfamilies/sf1/variant_007.json`                       
+  * The shader job to reduce.
+* `--reduction-kind NO_IMAGE`
+  * Interestingness test: no image is produced, plus the error-string provided below must match
+    the run log.
+* `--error-string "Fatal signal 11"`
+  * The run log must contain this string for the shader job to be regarded as interesting.
+* `--output processing/my-worker/sf1/reductions/variant_007`
+  * Output directory: the reduced shader job will end up here, ending with *_reduced_final.json.
+* `--max-steps 2000`
+  * There will be at most 200 reduction steps.
+* `--timeout 30`
+  * Timeout for each run of the interestingness test.
+* `--retry-limit 2`
+  * If the worker fails to respond twice, assume the shader fails to render.
+* `--seed -136936935`
+  * Random seed for the reduction algorithm.  
+* `--server http://localhost:8080 --worker-name my-worker`
+  * `glsl-reduce` will, by default, run shader jobs locally, which is not well-tested.
+We specify a server and worker name to run the shader jobs on a worker that is connected
+to the server.
 
 ### Additional options
 
