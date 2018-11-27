@@ -1122,7 +1122,7 @@ public class WebUi extends HttpServlet {
           List<String> commands = new ArrayList<>();
           commands.add("run_shader_family");
           commands.add("--server");
-          commands.add("http://localhost:8080/manageAPI");
+          commands.add("http://localhost:8080");
           commands.add("--worker");
           commands.add(worker);
           commands.add("--output");
@@ -1306,7 +1306,7 @@ public class WebUi extends HttpServlet {
     final String worker = request.getParameter("worker");
     args.add(worker);
     args.add("--server");
-    args.add("http://localhost:8080/manageAPI");
+    args.add("http://localhost:8080");
     final String threshold = request.getParameter("threshold");
     if (threshold != null) {
       args.add("--threshold");
@@ -1401,7 +1401,7 @@ public class WebUi extends HttpServlet {
     args.add("--worker");
     args.add(worker);
     args.add("--server");
-    args.add("http://localhost:8080/manageAPI");
+    args.add("http://localhost:8080");
     try {
       fuzzerServiceManagerProxy.queueCommand(
           "Reference Reduction: " + shaderset,
@@ -1846,7 +1846,7 @@ public class WebUi extends HttpServlet {
       String referenceResultPath,
       String variantShaderJobResultFileNoExtension,
       String resultStatus) {
-    final boolean crash = resultStatus.equals("CRASH");
+    final boolean success = resultStatus.equals("SUCCESS");
 
     htmlAppendLn(
         "<form class='ui form' method='post' id='reduceForm'>",
@@ -1867,9 +1867,9 @@ public class WebUi extends HttpServlet {
         "<td>",
         "<select name='reduction-kind' class='reduce_col' onchange='selectReduceKind(this);'>",
         "<option value='ABOVE_THRESHOLD'>Above Threshold</option>",
-        (crash
-            ? "<option value='NO_IMAGE' selected='selected'>No Image</option>"
-            : "<option value='NO_IMAGE'>No Image</option>"
+        (success
+            ? "<option value='NO_IMAGE'>No Image</option>"
+            : "<option value='NO_IMAGE' selected='selected'>No Image</option>"
         ),
         "<option value='NOT_IDENTICAL'>Not Identical</option>",
         "<option value='IDENTICAL'>Identical</option>",
@@ -1877,7 +1877,10 @@ public class WebUi extends HttpServlet {
         "</select>",
         "</td>",
         "</tr>",
-        "<tr>",
+        (success
+            ? "<tr id='metric_tr' class=''>"
+            : "<tr id='metric_tr' class='invisible'>"
+        ),
         "<td align='right'><p class='no_space'>Comparison metric:</p></td>",
         "<td>",
         "<select name='metric' class='reduce_col'>",
@@ -1886,16 +1889,16 @@ public class WebUi extends HttpServlet {
         "</select>",
         "</td>",
         "</tr>",
-        (crash
-            ? "<tr id='threshold_tr' class='invisible'>"
-            : "<tr id='threshold_tr' class=''>"
+        (success
+            ? "<tr id='threshold_tr' class=''>"
+            : "<tr id='threshold_tr' class='invisible'>"
         ),
         "<td align='right'><p class='no_space'>Threshold:</p></td>",
         "<td><input class='reduce_col' name='threshold' value='100.0'/></td>",
         "</tr>",
-        (crash
-            ? "<tr id='error_string_tr' class=''>"
-            : "<tr id='error_string_tr' class='invisible'>"
+        (success
+            ? "<tr id='error_string_tr' class='invisible'>"
+            : "<tr id='error_string_tr' class=''>"
         ),
         "<td align='right'><p class='no_space'>Error Regex:</p></td>",
         "<td><input class='reduce_col' name='error-string' value=''/></td>",
@@ -1918,9 +1921,9 @@ public class WebUi extends HttpServlet {
         "<p class='no_space'>Reduce Everywhere:</p>",
         "</td>",
         "<td class='checkbox'>",
-        (crash
-            ? "<input type='checkbox' name='preserve-semantics'/>"
-            : "<input type='checkbox' name='preserve-semantics' checked='checked'/>"
+        (success
+            ? "<input type='checkbox' name='preserve-semantics' checked='checked'/>"
+            : "<input type='checkbox' name='preserve-semantics'/>"
         ),
         "</td>",
         "</tr>",

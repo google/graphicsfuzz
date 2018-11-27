@@ -86,6 +86,7 @@ function selectReduceKind(elem) {
   var threshold_visible = (val !== "BELOW_THRESHOLD" && val !== "ABOVE_THRESHOLD");
   setClass(error_string_tr, "invisible", error_string_visible);
   setClass(threshold_tr, "invisible", threshold_visible);
+  setClass(metric_tr, "invisible", threshold_visible);
 }
 
 var lastChecked = -1;
