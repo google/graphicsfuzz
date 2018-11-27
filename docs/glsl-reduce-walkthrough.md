@@ -42,7 +42,7 @@ We'll start by illustrating a mock shader compiler bug.  We present commands ass
 # Copy the sample shaders into the current directory:
 cp -r graphicsfuzz-1.0/examples/glsl-reduce-walkthrough .
 
-# Run a fake shader compiler on the fragment shader file:
+# Run the fake shader compiler on the fragment shader file:
 python glsl-reduce-walkthrough/fake_compiler.py glsl-reduce-walkthrough/colorgrid_modulo.frag
 
 # Output:
@@ -50,7 +50,11 @@ python glsl-reduce-walkthrough/fake_compiler.py glsl-reduce-walkthrough/colorgri
 
 ```
 
-Take a look at `fake_compiler.py` and `colorgrid_modulo.frag` to see why the fake compiler generates this error message for the shader.
+Our fake compiler fails to compile the valid shader because it cannot handle shaders
+with a lot of indexing. Thus, we have found a compiler bug.
+
+> Take a look at `fake_compiler.py` if you want to see why the fake compiler generates this error
+> message for the shader. This is not important for understanding how to use the reducer.
 
 Let's now use glsl-reduce to get a much smaller shader that causes the compiler to fail with this error:
 
@@ -67,7 +71,7 @@ glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthro
 # Output:
 # <lots of messages about the reducer's progress>
 
-# Run the fake shader compiler on the reduced fragment shader file:
+# Confirm that the reduced fragment shader file still reproduces the issue:
 python glsl-reduce-walkthrough/fake_compiler.py reduction_results/colorgrid_modulo_reduced_final.frag
 
 # Output:
@@ -112,10 +116,6 @@ Let's try our reduction again but with a different interestingness test.  Have a
 Let's use it to perform a reduction:
 
 ```
-# Make new interestingness test scripts executable
-chmod +x glsl-reduce-walkthrough/weak_interestingness_test
-chmod +x glsl-reduce-walkthrough/weak_interestingness_test.py
-
 # Run glsl-reduce
 glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/weak_interestingness_test --output slipped_reduction_results
 
@@ -136,8 +136,8 @@ python glsl-reduce-walkthrough/fake_compiler.py reduction_results/colorgrid_modu
 
 ```
 
-The reduced shader does cause a bug to trigger in the fake compiler, but it is a
-different bug to the one we saw before: we get a different error message!  (Look
+The reduced shader *does* cause a bug to trigger in the fake compiler, but it is a
+*different* bug to the one we saw before: we get a different error message!  (Look
 in `glsl-reduce-walkthrough/fake_compiler.py` to see why this message is
 generated; this is of course just a mock bug made up for this illustrative walkthrough.)
 
