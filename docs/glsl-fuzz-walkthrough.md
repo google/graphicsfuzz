@@ -146,11 +146,11 @@ Mac, Linux, or Windows desktop device,
 download the latest `gles-desktop-worker-1.0.jar` file from the
 [releases page](glsl-fuzz-releases.md).
 
-You will need to create a `token.txt` file in the same directory
-with one line containing the token (a name for the device you are testing). E.g.
+You will need to create a `worker-name.txt` file in the same directory with one
+line containing the worker name to identify your device. E.g.
 
 ```sh
-echo laptop-dell > token.txt
+echo my-laptop > worker-name.txt
 ```
 
 Then execute the following:
@@ -216,14 +216,10 @@ for more detailed instructions.
 
 > If you need to enter a new server address, you will need to clear the app's data. E.g. by uninstalling and reinstalling the app.
 
-The app will show a second dialogue where you must enter the
-token (a name for the device).
-Once you have entered a token,
-you should see a mostly black screen with
-animated text that contains `state: GET_JOB`.
-If you see `state: NO_CONNECTION` then
-the worker application
-is failing to connect to the server.
+The app will show a second dialogue where you must enter the worker name.  Once
+you have entered a name, you should see a mostly black screen with animated text
+that contains `state: GET_JOB`.  If you see `state: NO_CONNECTION` then the
+worker application is failing to connect to the server.
 
 ### `vulkan-worker-android`
 
@@ -266,7 +262,7 @@ adb install vulkan-worker-android-debug.apk
 adb shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE
 adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE
 
-# Execute the worker script. Pass the token (a name for your device) as an argument
+# Execute the worker script. Pass the worker name as an argument
 # and the serial number of the Android device (found using `adb devices`).
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
@@ -415,12 +411,12 @@ is enough to trigger the bug.
 ## Exploring results in the file system
 
 You can see results in the file system within the server's working directory at the following locations:
-* Shader family results are under `work/processing/<worker_token>/<shader_family>/`
-* Reduction results are under `work/processing/<worker_token>/<shader_family>/reductions/<variant>/`
+* Shader family results are under `work/processing/<worker>/<shader_family>/`
+* Reduction results are under `work/processing/<worker>/<shader_family>/reductions/<variant>/`
 
 ### Shader family results
 
-Under `work/processing/<worker_token>/<shader_family>/`, each variant can lead to these files:
+Under `work/processing/<worker>/<shader_family>/`, each variant can lead to these files:
 * `<variant>.info.json`
 * `<variant>.txt`
 * `<variant>.png` (only when `SUCCESS` status)
@@ -463,7 +459,7 @@ with this two images is produced in `<variant>.gif`.
 
 ### Reduction results
 
-Under `work/processing/<worker_token>/<shader_family>/reductions/<variant>/`,
+Under `work/processing/<worker>/<shader_family>/reductions/<variant>/`,
 the reduction of this variant leads to the following files:
 
 * `command.log` is the command with which the reducer was started
@@ -492,4 +488,3 @@ E.g.
 ```sh
 glsl-reduce
 ```
-

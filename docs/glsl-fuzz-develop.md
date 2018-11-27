@@ -154,43 +154,37 @@ manager.queueCommand?
 # Commands are run from the `work` directory.
 
 manager.queueCommand(
-  "Reduction for dell-laptop",
+  "Reduction for my-laptop",
   [
     "glsl-reduce",
-    "--reference", "processing/dell-laptop/shaderfamily1/reference.info.json",
+    "--reference", "processing/my-laptop/shaderfamily1/reference.info.json",
     "--reduce_everywhere",
-    "--output", "processing/dell-laptop/shaderfamily1/reductions/variant_1/",
+    "--output", "processing/my-laptop/shaderfamily1/reductions/variant_1/",
     "shaderfamilies/shaderfamily1/variants/variant_1.json",
     "IDENTICAL",
     "--server", "http://localhost:8080",
-    "--token", "dell-laptop"
+    "--woker", "my-laptop"
    ],
-   "dell-laptop",
-   "processing/dell-laptop/shaderfamily1/reductions/variant_1/command.log")
+   "my-laptop",
+   "processing/my-laptop/shaderfamily1/reductions/variant_1/command.log")
 
 ```
-Note that the command (list of strings) contains a token: this token corresponds
-to the job queue that will receive ImageJobs that the worker will render.
-The `queueName` parameter contains the same token:
-this corresponds to the queue of *commands* to which this command
-will be queued.
-Generally,
-commands (executable scripts or binaries,
-such as `run_shader_family` or `glsl-reduce`) in a command queue
-will queue jobs to the corresponding worker's job queue
-or, in some cases, commands to the same command queue.
-Commands like `glsl-reduce` and `run_shader_family`
-are intercepted by the server so that a corresponding
-Java method is executed directly in the server process,
-instead of launching a separate process.
-Despite this,
-the `--server` parameter should still be set;
-it can typically be set to a dummy string,
-but if the command is actually a Python script that will
-queue additional commands, then it should typically be set to
-`localhost:internal_port` (usually `localhost:8080`) so that
-the Python script can queue commands to the server that launched the Python
-script.
+
+Note that the command (list of strings) contains a worker name (here,
+"my-laptop") which corresponds to the job queue that will receive ImageJobs that
+the worker will render.  The `queueName` parameter contains the same name: this
+corresponds to the queue of *commands* to which this command will be queued.
+Generally, commands (executable scripts or binaries, such as `run_shader_family`
+or `glsl-reduce`) in a command queue will queue jobs to the corresponding
+worker's job queue or, in some cases, commands to the same command queue.
+Commands like `glsl-reduce` and `run_shader_family` are intercepted by the
+server so that a corresponding Java method is executed directly in the server
+process, instead of launching a separate process.  Despite this, the `--server`
+parameter should still be set; it can typically be set to a dummy string, but if
+the command is actually a Python script that will queue additional commands,
+then it should typically be set to `localhost:internal_port` (usually
+`localhost:8080`) so that the Python script can queue commands to the server
+that launched the Python script.
 
 # Build from command line
 
