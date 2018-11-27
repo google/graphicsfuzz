@@ -1,6 +1,6 @@
 # How it works: metamorphic testing using glsl-fuzz
 
-`glsl-fuzz` is a testing framework for automatically finding and simplifying bugs in graphics shader compilers. Our tools currently manipulate GLSL shaders, but we can indirectly test other targets such as SPIR-V, HLSL and Metal. Our current priority is testing Vulkan drivers.
+`glsl-fuzz` is a testing framework for automatically finding and simplifying bugs in graphics shader compilers. The tool works by generating tests from GLSL shaders.  These can be used to test shader compilers in OpenGL/OpenGL ES drivers, as well as SPIR-V shader compilers in Vulkan drivers via transpilation to SPIR-V -- the tool supports both these use cases.  Similarly, transpilation could be used to target shader compilers for HLSL and Metal in the future.
 
 ## The problem
 
@@ -48,3 +48,4 @@ The reduced variant *still exposes the bug*, and differs from the reference only
 
 GraphicsFuzz finds bugs in graphics drivers by rendering families of semantically equivalent shaders, and looking for output discrepancies. This approach is known as *metamorphic testing*. For each bug, the reducer saves a lot of debugging time by producing a simpler *minimal-difference test case* that still exposes the bug.
 
+To learn more, checkout the [walkthrough](glsl-fuzz-walkthrough.md), [test genrator manual](glsl-fuzz-generate.md) and [test reducer manual](glsl-fuzz-reduce.md).

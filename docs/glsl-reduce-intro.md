@@ -1,4 +1,4 @@
-# `glsl-reduce` introduction: my shader is being weird, now what?
+# glsl-reduce introduction: my shader is being weird, now what?
 
 **Shader compiler-writers** are all too often faced with the situation where they
 have a large, complex shader that causes their compiler to crash, and wish they
