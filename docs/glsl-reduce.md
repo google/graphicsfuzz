@@ -39,8 +39,13 @@ java -version
 
 glsl-reduce requires two arguments:
 
+TODO: Add citation to creduce.
+
 * a *shader job*: a path to a `.json` file representing the shader or shaders of interest
 * an *interestingness test*: a path to an executable script encoding the properties a shader job must satisfy to be deemed interesting.
+
+
+TODO: Say the .json file allows you to store metadata if you want. In the future, could describe the names of the shaders, but for now, we just use shaders with the same name.
 
 If the shader job is called `foo.json`, glsl-reduce will look for shader files
 called `foo.frag`, `foo.vert` or `foo.comp`.  At least one of these shaders is
