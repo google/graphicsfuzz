@@ -13,16 +13,13 @@ and they wish they had a smaller, simpler shader
 that would trigger the same issue:
 the small shader would reveal which lines cause the issue,
 perhaps allowing certain patterns or features to be avoided,
-and removes any irrelevant (and possibly proprietary)
+and would be free from irrelevant (and possibly proprietary)
 code, making it more convenient for inclusion in a bug report
 that can be shared with other developers.
 
 More generally, it's common to have a complex shader that causes something
 interesting to happen when consumed by an application or tool, and to want to
 find a small, simple shader that *still* causes the interesting thing to happen.
-The interesting thing might be that a particular frame renders way too slowly,
-the RAM consumed by the shader compiler snowballs, the shader crashes shader
-compilers from distinct GPU vendors A and B but not that of vendor C, etc.
 
 `glsl-reduce` is an automated reducer for GLSL shaders.  You give it a fragment,
 vertex or compute shader and a script that checks the property you care about,
@@ -30,4 +27,4 @@ most likely by running an application that uses the shader.
 The tool will then proceed to shrink your shader down to a smaller, simpler form
 that still has the property.
 
-To learn more, check out the [walkthrough and user documentation](glsl-reduce.md)
+To learn more, check out the [walkthrough](glsl-reduce-walkthrough.md) and [manual](glsl-reduce.md).

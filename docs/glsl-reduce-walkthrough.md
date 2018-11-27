@@ -3,8 +3,7 @@
 glsl-reduce is a tool for automatically reducing a GLSL shader with respect to a programmable condition.
 
 In this walkthrough, we will use a mock shader compiler bug to demonstrate how
-to use glsl-reduce in action.  We then describe various command-line arguments
-that can be passed to glsl-reduce.
+to use glsl-reduce in action.
 
 We will be using the latest release zip `graphicsfuzz-1.0.zip`.
 You can download this from the [releases page](glsl-fuzz-releases.md)
@@ -35,42 +34,14 @@ java -version
 # Output: openjdk version "1.8.0_181"
 ```
 
-## Arguments required by glsl-reduce
+## glsl-reduce in action
 
-glsl-reduce requires two arguments:
-
-TODO: Add citation to creduce.
-
-* a *shader job*: a path to a `.json` file representing the shader or shaders of interest
-* an *interestingness test*: a path to an executable script encoding the properties a shader job must satisfy to be deemed interesting.
-
-
-TODO: Say the .json file allows you to store metadata if you want. In the future, could describe the names of the shaders, but for now, we just use shaders with the same name.
-
-If the shader job is called `foo.json`, glsl-reduce will look for shader files
-called `foo.frag`, `foo.vert` or `foo.comp`.  At least one of these shaders is
-required to be present.  When glsl-reduce is used in conjunction with
-[glsl-fuzz](glsl-fuzz-intro.md), the JSON file is used to record data about the execution
-environment for the shaders.  However, when glsl-reduce is used in a standalone
-fashion, as in this walkthrough, the JSON file should simply contain `{}`.
-
-## A mock shader compiler bug
-
-We'll start by illustrating a mock shader compiler bug.
+We'll start by illustrating a mock shader compiler bug.  We present commands assuming a Linux/Mac environment, but they should be easy to adapt to a Windows setting.
 
 ```sh
 # Copy the sample shaders into the current directory:
 cp -r graphicsfuzz-1.0/examples/glsl-reduce-walkthrough .
 
-```
-
-Take a look at `colorgrid_modulo.frag` and `colorgrid_modulo.json` under
-`glsl-reduce-walkthrough`.  The `.frag` file is a moderately complex fragment
-shader.  The `.json` file just contains `{}` as described above.
-
-Let's run a fake shader compiler on the `.frag` file:
-
-```
 # Run a fake shader compiler on the fragment shader file:
 python glsl-reduce-walkthrough/fake_compiler.py glsl-reduce-walkthrough/colorgrid_modulo.frag
 
@@ -79,76 +50,100 @@ python glsl-reduce-walkthrough/fake_compiler.py glsl-reduce-walkthrough/colorgri
 
 ```
 
-If you look in `fake_compiler.py` you'll see that this script inspects the text
-of the shader and generates an error about indexing if the input shader contains
-the substring `[i]` more than once.  Let's imagine that in fact a real compiler
-gave this fatal error due to a genuine bug.
+Take a look at `fake_compiler.py` and `colorgrid_modulo.frag` to see why the fake compiler generates this error message for the shader.
 
-
-## Applying glsl-reduce attempt 1: a basic interestingness test
-
-We would like to use glsl-reduce to produce a much smaller input shader that can
-still trigger this fatal error: a smaller shader would make the shader compiler
-easier to debug.
-
-To do this, we need an *interestingness test* that encodes what it means for a
-shader to be interesting.  In our case, we're interested in the shader if it
-leads to a compilation failure.  In a different setting we might be interested
-in a completely different property, e.g. whether rendering using a given shader
-causes a device's temperature to exceed some threshold, causes a driver to
-consume more than a certain amount of memory, or send the shader compiler into
-an infinite loop.
-
-Whatever condition we care about, we need to write a script that takes a shader
-job (JSON file) as an argument, and exits with code 0 if and only if the shader
-job is interesting.
-
-Have a look at `glsl-reduce-walkthrough/basic_interestingness_test.py`.  This
-basic interestingness test takes a shader job name, `foo.json` say, turns it
-into a corresponding fragment shader name, `foo.frag`, invokes the fake compiler
-on `foo.frag`, and exits with code 0 if and only if the fake compiler failed.
-That is: a shader job comprised of a single fragment shader is interesting if
-and only if the fake compiler does *not* succeed in compiling the fragment
-shader.
-
-The files `glsl-reduce-walkthrough/basic_interestingness_test` and
-`glsl-reduce-walkthrough/basic_interestingness_test.bat` are shell scripts for
-Linux/Mac and Windows that invoke the Python script.
-
-Make whichever of these scripts is relevant to your platform executable.  If
-you're working under Linux or Mac, also make
-`glsl-reduce-walkthrough/basic_interestingness_test.py` executable.  Then try
-running glsl-reduce:
+Let's now use glsl-reduce to get a much smaller shader that causes the compiler to fail with this error:
 
 ```
-glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/basic_interestingness_test --output basic_reduction
+# Make some scripts executable
+chmod +x glsl-reduce-walkthrough/interestingness_test
+chmod +x glsl-reduce-walkthrough/interestingness_test.py
+
+# Observe that the initial shader is reasonably large
+cat glsl-reduce-walkthrough/colorgrid_modulo.frag
+
+# Output:
+# <contents of the original shader>
+
+# Run glsl-reduce
+glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/interestingness_test --output reduction_results
+
+# Output:
+# <lots of messages about the reducer's progress>
+
+# Run the fake shader compiler on the reduced fragment shader file:
+python glsl-reduce-walkthrough/fake_compiler.py reduction_results/colorgrid_modulo_reduced_final.frag
+
+# Output:
+# Fatal error: too much indexing.
+
+# Observe that the reduced shader is must smaller
+cat reduction_results/colorgrid_modulo_reduced_final.frag
+
+# Output:
+# <contents of the reduced shader>
+
 ```
 
-You should see a lot of output fly by, and within a few seconds the reducer
-should complete.
+In `reduction_results` you will also find many partially-reduced shader jobs named
+`colorgrid_modulo_reduced_X_Y.json`, where `Y` is `success` or `fail` depending on
+whether the shader job was interesting, and `X` is a counter associated with
+each shader job, indicating at what point during the reduction process it was
+considered.  These shader jobs are sometimes useful for understanding the steps that were made during a reduction, but can otherwise be ignored.
 
-In the `basic_reduction` directory (created by glsl-reduce in response to the
-`--output` option) you will find a final shader job,
-`colorgrid_modulo_reduced_final`, representing the end result of reduction.
 
-Take a look at the contents of `colorgrid_modulo_reduced_final.frag`: it's
-basically just an empty main function.
+## In more detail
 
-Let's check whether this really causes our mock compiler bug to trigger:
+glsl-reduce requires two arguments:
+
+* a *shader job*: a path to a `.json` file representing the shader or shaders of interest
+* an *interestingness test*: a path to an executable script encoding the properties a shader job must satisfy to be deemed interesting.
+
+The `.json` file serves two purposes: (1) it tells glsl-reduce which shaders to operate on -- if it is called `foo.json` then at least one of `foo.frag`, `foo.vert` and `foo.comp` must be present, and any that are present will be reduced; (2) it allows metadata about these shaders to be stored.  At present, glsl-reduce does not allow any metadata when used in stand-alone mode, so the JSON file is required to simply contain `{}`.  (The file is used for meaningful metadata when glsl-reduce is used in conjunction with [glsl-fuzz](glsl-fuzz-intro.md).)
+
+The *interestingness test* (name inspired by [C-Reduce](https://embed.cs.utah.edu/creduce/using/)) is a script that codifies what it means for a shader to be interesting.  It takes the name of a shader job as an argument, and should return 0 if and only if the shaders associated with the shader job are interesting.  What "interesting" means is specific to the context in which you are using glsl-reduce.
+
+In the above example we deemed a shader job `foo.json` to be interesting if the associated fragment shader `foo.frag` caused the fake compiler to fail with the "`too much indexing`" message.  Have a look at `glsl-reduce-walkthrough/interestingness_test.py` (which is invoked by `glsl-reduce-walkthrough/interestingness_test` for Linux/Mac, and the corresponding `.bat` file for Windows): it checks precisely this.
+
+In a different setting we might be interested in reducing with respect to a completely different property, e.g. we might check whether rendering using a given shader causes a device's temperature to exceed some threshold, whether a shader causes a driver to consume more than a certain amount of memory, or whether a shader sends a shader compiler into
+a seemingly infinite loop.  Writing the interestingness test is entirely in the hands of the user of glsl-reduce.
+
+
+# Bug slippage: the need for a strong interestingness test
+
+Let's try our reduction again but with a different interestingness test.  Have a look at `glsl-reduce-walkthrough/weak_interestingness_test.py`.  This test just checks whether compilation failed; it does not check the failure string.
+
+Let's use it to perform a reduction:
 
 ```
-# Run a fake shader compiler on the reduced fragment shader file:
-python glsl-reduce-walkthrough/fake_compiler.py basic_reduction/colorgrid_modulo_reduced_final.frag
+# Make new interestingness test scripts executable
+chmod +x glsl-reduce-walkthrough/weak_interestingness_test
+chmod +x glsl-reduce-walkthrough/weak_interestingness_test.py
+
+# Run glsl-reduce
+glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/weak_interestingness_test --output slipped_reduction_results
+
+# Output:
+# <lots of messages about the reducer's progress>
+
+# Whoah, it's an even smaller result!
+cat slipped_reduction_results/colorgrid_modulo_reduced_final.frag
+
+# Output:
+# <a shader with an empty main>
+
+# Does it still give us the fatal error?
+python glsl-reduce-walkthrough/fake_compiler.py reduction_results/colorgrid_modulo_reduced_final.frag
 
 # Output:
 # Internal error: something went wrong inlining 'floor'.
 
 ```
 
-The reduced file does cause a bug to trigger in the fake compiler, but it is a
+The reduced shader does cause a bug to trigger in the fake compiler, but it is a
 different bug to the one we saw before: we get a different error message!  (Look
 in `glsl-reduce-walkthrough/fake_compiler.py` to see why this message is
-generated; again this is a mock bug made up for this illustrative walkthrough.)
+generated; this is of course just a mock bug made up for this illustrative walkthrough.)
 
 This is known as *bug slippage* ([see Section 3.5 of this
 paper](https://www.cs.utah.edu/~regehr/papers/pldi13.pdf)): in reducing a shader
@@ -157,67 +152,18 @@ attention to that second bug.  What we end up with is a minimized shader that
 triggers the *second* bug but not the original bug.
 
 Slippage can be useful as a method for discovering additional bugs ([see this
-blog post on the topic](https://blog.regehr.org/archives/1284)), but is a pain
-if we really did want to reduce with respect to the original bug.
-
-In `basic_reduction` you will also find many partially-reduced shader jobs named
-`colorgrid_modulo_reduced_X_Y`, where `Y` is `success` or `fail` depending on
-whether the shader job was interesting, and `X` is a counter associated with
-each shader job, indicating at what point during the reduction process it was
-considered.  These shader jobs can be ignored, but can sometimes be useful for
-understanding at what point slippage occurred.
-
-
-## Applying glsl-reduce attempt 2: a better interestingness test
-
-The reason we ended up with bug slippage is that our interestingness test was
-very relaxed: it merely required the fake compiler to fail, and did not consider
-the error that was generated.
-
-Have a look at `glsl-reduce-walkthrough/better_interestingness_test.py`.  In
-addition to checking that compilation fails, this script only deems a shader
-interesting if the resulting error output from the compiler contains the
-substring `too much indexing`.
-
-Make sure `glsl-reduce-walkthrough/better_interestingness_test` (Linux/Mac) or
-`glsl-reduce-walkthrough/better_interestingness_test.bat` (Windows) is
-executable, and that `glsl-reduce-walkthrough/better_interestingness_test.py` is
-also executable if on Linux/Mac.  Now let's try reducing using this more strict
-interestingness test:
-
-```
-# Run the reducer with the better interestingness test
-glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/better_interestingness_test --output better_reduction
-```
-
-This time you might notice that the reducer takes a little longer to run.  The
-final result, in `better_reduction/colorgrid_modulo_reduced_final.frag`, is not
-quite as small as before: it contains at least two occurrences of `[i]` in order
-for the indexing bug to trigger, and also contains some other stuff which, if
-removed, would cause slippage to the `something went wrong inlining 'floor'`
-bug.
-
-```
-# Run a fake shader compiler on the reduced fragment shader file:
-python glsl-reduce-walkthrough/fake_compiler.py better_reduction/colorgrid_modulo_reduced_final.frag
-
-# Output:
-# Fatal error: too much indexing.
-
-```
-
-Great: our minimized shader preserves the original bug!
+blog post on the topic](https://blog.regehr.org/archives/1284)), and the series of partially-reduced shader jobs produced during reduction sometimes provides a rich source of by-product bugs.  However, slippage is annoying if we really care about reducing with respect to the original bug.  To avoid slippage, you need to write a sufficiently strong interestingness test.
 
 
 ## Summary from walkthrough
 
 The walkthrough has illustrated:
 
-* How to run glsl-reduce on a shader job with a given interestingness test
-* The concept of bug slippage, whereby a weak interestingness test can cause attention to switch from an original shader compiler bug to some other bug
-* How to edit the interestingness test to be stricter and avoid slippage
+* How to run glsl-reduce on an example
+* What the arguments to glsl-reduce mean, including the concept of an *interestingness test*
+* The notion of *bug slippage*, whereby a weak interestingness test can cause reduction to switch from an original bug to  some other bug
 
-It is hopefully clear that the interestingness test is *entirely programmable*.
+We emphasize again that the interestingness test is *entirely programmable*.
 In this tutorial it has simply involved invoking a (fake) compiler and checking
 the compiler's output.  In practice it could do something much more complex,
 such as launching an app that will consume the shader of interest and then
