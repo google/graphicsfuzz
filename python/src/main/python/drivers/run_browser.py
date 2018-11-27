@@ -31,9 +31,9 @@ parser.add_argument("--browserPath", type=str, action="store",
 parser.add_argument("--url", type=str, action="store",
                     default=r"http://localhost:8080/static/runner.html",
                     help="URL of server managing experiments.")
-parser.add_argument("--token", type=str, action="store",
+parser.add_argument("--worker", type=str, action="store",
                     default="",
-                    help="Name of token to be used by server.")
+                    help="Worker to be used by server.")
 parser.add_argument("browserArgs", action="store", nargs="*",
                     default = ["--enable-logging=stderr --enable-logging --v=1 --disable-gpu-process-crash-limit"],
                     help="Arguments to be passed to the browser")
@@ -65,8 +65,8 @@ def signal_handler(sig, frame):
 def run():
     global browser_proc
     full_url = args.url
-    if args.token != "":
-        full_url += "?token=" + args.token
+    if args.worker != "":
+        full_url += "?worker=" + args.worker
     cmd = [args.browserPath] + [full_url] + args.browserArgs
     print("Running command:\n\t" + " ".join(cmd) + "\n")
     browser_proc = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE);

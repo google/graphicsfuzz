@@ -67,8 +67,8 @@ public class RunShaderFamily {
             "URL of server to use for sending get image requests.")
         .type(String.class);
 
-    parser.addArgument("--token")
-        .help("The token of the client used for get image requests. Used with --server.")
+    parser.addArgument("--worker")
+        .help("The worker used for get image requests. Used with --server.")
         .type(String.class);
 
     parser.addArgument("--output")
@@ -86,18 +86,18 @@ public class RunShaderFamily {
     final boolean verbose = ns.get("verbose");
     final File shaderFamily = ns.get("shader_family");
     final String server = ns.get("server");
-    final String token = ns.get("token");
+    final String worker = ns.get("worker");
     final File outputDir = ns.get("output");
 
-    if (managerOverride != null && (server == null || token == null)) {
+    if (managerOverride != null && (server == null || worker == null)) {
       throw new ArgumentParserException(
-          "Must supply server (dummy string) and token when executing in server process.",
+          "Must supply server (dummy string) and worker name when executing in server process.",
           parser);
     }
 
     if (server != null) {
-      if (token == null) {
-        throw new ArgumentParserException("Must supply token with server.", parser);
+      if (worker == null) {
+        throw new ArgumentParserException("Must supply worker name with server.", parser);
       }
     }
 
@@ -108,7 +108,7 @@ public class RunShaderFamily {
             ? new LocalShaderDispatcher(false, fileOps, new File(outputDir, "temp"))
             : new RemoteShaderDispatcher(
                 server + "/manageAPI",
-                token,
+                worker,
                 managerOverride,
                 new AtomicLong());
 

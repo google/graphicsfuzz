@@ -312,28 +312,28 @@ public class Main extends ApplicationAdapter {
     // Here we've established connection with the server, so its URL is good, let's save it
     serverFile.writeString(url, false);
 
-    // Recover token
-    FileHandle tokenFile = Gdx.files.local("token.txt");
+    // Recover worker name
+    FileHandle workerNameFile = Gdx.files.local("worker-name.txt");
 
-    if (jobGetter.token == null) {
-      if (tokenFile.exists()) {
-        jobGetter.token = tokenFile.readString();
+    if (jobGetter.worker == null) {
+      if (workerNameFile.exists()) {
+        jobGetter.worker = workerNameFile.readString();
       } else {
         if (Gdx.app.getType() == ApplicationType.Desktop) {
-          Gdx.app.log("Main", "Please set a token by creating token.txt with one line of text.");
+          Gdx.app.log("Main", "Please set a worker name by creating worker-name.txt with one line of text.");
           setBackoffWaitTicks();
         } else if (!showingTextInput) {
-          String defaultToken = "";
+          String defaultWorker = "";
           if (platformInfoJson.has("clientplatform") &&
               platformInfoJson.get("clientplatform").getAsString().equalsIgnoreCase("android") &&
               platformInfoJson.has("model")) {
-            defaultToken = platformInfoJson.get("model").getAsString().trim().replace(" ", "-");
+            defaultWorker = platformInfoJson.get("model").getAsString().trim().replace(" ", "-");
           }
           showingTextInput = true;
           Gdx.input.getTextInput(new TextInputListener() {
             @Override
             public void input(String text) {
-              jobGetter.token = text;
+              jobGetter.worker = text;
               showingTextInput = false;
             }
 
@@ -341,7 +341,7 @@ public class Main extends ApplicationAdapter {
             public void canceled() {
               showingTextInput = false;
             }
-          }, "Absent or invalid token, provide new token:", defaultToken, "");
+          }, "Absent or invalid worker name, provide new name:", defaultWorker, "");
         }
 
         // Return: the text listener will be invoked on the next frame.
@@ -351,22 +351,22 @@ public class Main extends ApplicationAdapter {
 
     String platformInfo = platformInfoJson.toString();
 
-    boolean tokenOK = false;
+    boolean workerNameOK = false;
     try {
-      tokenOK = jobGetter.setToken(jobGetter.token, platformInfo);
+      workerNameOK = jobGetter.setWorkerName(jobGetter.worker, platformInfo);
     } catch (TException e) {
-      Gdx.app.log("Main", "Exception when trying to get token: " + e.getMessage());
-      tokenOK = false;
+      Gdx.app.log("Main", "Exception when trying to get worker name: " + e.getMessage());
+      workerNameOK = false;
     }
 
-    if (tokenOK) {
-      Gdx.app.log("Main", "Set token: " + jobGetter.token);
-      tokenFile.writeString(jobGetter.token, false);
+    if (workerNameOK) {
+      Gdx.app.log("Main", "Set worker name: " + jobGetter.worker);
+      workerNameFile.writeString(jobGetter.worker, false);
       return true;
     } else {
-      Gdx.app.log("Main", "Token was refused, or server is unreachable.");
-      // Reset token
-      jobGetter.token = null;
+      Gdx.app.log("Main", "Worker name was refused, or server is unreachable.");
+      // Reset worker name
+      jobGetter.worker = null;
       return false;
     }
   }
@@ -468,7 +468,7 @@ public class Main extends ApplicationAdapter {
       // we do not use jobgetter.replyJob() as if we are here due to a crash, there is no previous
       // job stored in latestJob, so replyJob() will think the answer has already been sent.
       // FIXME: we should simplify all this.
-      jobGetter.fuzzerServiceProxy.jobDone(jobGetter.token, toreply);
+      jobGetter.fuzzerServiceProxy.jobDone(jobGetter.worker, toreply);
 
       persistentData.reset();
       return;
@@ -689,7 +689,7 @@ public class Main extends ApplicationAdapter {
         DisplayContent.append("datetime: "
               + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())
               + "\n\n");
-        DisplayContent.append("token: " + (jobGetter != null ? jobGetter.token : "") + "\n");
+        DisplayContent.append("worker: " + (jobGetter != null ? jobGetter.worker : "") + "\n");
 
         DisplayContent.append("server: " + url + "\n");
         DisplayContent.append("state: " + state.toString() + "\n");

@@ -60,8 +60,8 @@ public class GenerateAndRunShaders {
           .help("URL of server.")
           .type(String.class);
 
-    parser.addArgument("token")
-          .help("Token for worker.")
+    parser.addArgument("worker")
+          .help("Worker name.")
           .type(String.class);
 
     parser.addArgument("glsl_version")
@@ -134,7 +134,7 @@ public class GenerateAndRunShaders {
         queue,
         outputDir,
         ns.get("server"),
-        ns.get("token"),
+        ns.get("worker"),
         shadingLanguageVersion,
         crashStringsToIgnore,
         ns.get("only_variants"),

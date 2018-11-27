@@ -89,7 +89,7 @@ public final class FuzzerServer {
     context.addServlet(
           new ServletHolder(
                 new FileDownloadServlet(
-                    (pathInfo, token) -> Paths.get(staticDir, pathInfo).toFile(), staticDir)),
+                    (pathInfo, worker) -> Paths.get(staticDir, pathInfo).toFile(), staticDir)),
           "/static/*");
 
     HandlerList handlerList = new HandlerList();

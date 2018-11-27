@@ -159,8 +159,8 @@ public class GlslReduce {
           .help("Server URL to which image jobs are sent.")
           .type(String.class);
 
-    parser.addArgument("--token")
-          .help("Client token to which image jobs are sent. Used with --server.")
+    parser.addArgument("--worker")
+          .help("Name of worker to which image jobs are sent. Used with --server.")
           .type(String.class);
 
     parser.addArgument("--output")
@@ -266,23 +266,23 @@ public class GlslReduce {
       final boolean stopOnError = ns.get("stop_on_error");
 
       final String server = ns.get("server");
-      final String token = ns.get("token");
+      final String worker = ns.get("worker");
 
       final boolean usingSwiftshader = ns.get("swiftshader");
 
       final boolean continuePreviousReduction = ns.get("continue_previous_reduction");
 
-      if (managerOverride != null && (server == null || token == null)) {
+      if (managerOverride != null && (server == null || worker == null)) {
         throw new ArgumentParserException(
-              "Must supply server (dummy string) and token when executing in server process.",
+              "Must supply server (dummy string) and worker when executing in server process.",
               parser);
       }
 
-      if (server != null && token == null) {
-        throw new ArgumentParserException("If --server is used then --token is required", parser);
+      if (server != null && worker == null) {
+        throw new ArgumentParserException("If --server is used then --worker is required", parser);
       }
-      if (server == null && token != null) {
-        LOGGER.warn("Warning: --token ignored, as it is used without --server");
+      if (server == null && worker != null) {
+        LOGGER.warn("Warning: --worker ignored, as it is used without --server");
       }
       if (server != null && usingSwiftshader) {
         LOGGER.warn("Warning: --swiftshader ignored, as --server is being used");
@@ -296,8 +296,8 @@ public class GlslReduce {
         if (server != null) {
           throwExceptionForCustomReduction("server");
         }
-        if (token != null) {
-          throwExceptionForCustomReduction("token");
+        if (worker != null) {
+          throwExceptionForCustomReduction("worker");
         }
         if (errorString != null) {
           throwExceptionForCustomReduction("error_string");
@@ -350,7 +350,7 @@ public class GlslReduce {
                       new File(workDir, "temp"))
                   : new RemoteShaderDispatcher(
                       server + "/manageAPI",
-                      token,
+                      worker,
                       managerOverride,
                       new AtomicLong(),
                       retryLimit);

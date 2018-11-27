@@ -24,12 +24,12 @@ import static org.junit.Assert.assertFalse;
 import com.google.gson.Gson;
 import com.graphicsfuzz.server.thrift.FuzzerService;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
-import com.graphicsfuzz.server.thrift.GetTokenResult;
+import com.graphicsfuzz.server.thrift.GetWorkerNameResult;
 import com.graphicsfuzz.server.thrift.ImageJob;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.Job;
 import com.graphicsfuzz.server.thrift.JobStatus;
-import com.graphicsfuzz.server.thrift.TokenError;
+import com.graphicsfuzz.server.thrift.WorkerNameError;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -70,22 +70,22 @@ public class FuzzerServerIntegrationTests {
 
   @Test
   public void willErrorOnAMismatchedJobId() throws Exception {
-    final String token = newToken();
+    final String worker = newWorkerName();
 
-    assertNotNull(token);
+    assertNotNull(worker);
 
     final Job job = new Job().setImageJob(new ImageJob()).setJobId(1);
-    final Future<Job> submitting = this.submitJob(token, job, 1);
+    final Future<Job> submitting = this.submitJob(worker, job, 1);
 
     try {
       final Job otherJob = new Job().setImageJob(new ImageJob()).setJobId(2);
 
-      final Job got = this.getAJob(token);
+      final Job got = this.getAJob(worker);
       assertEquals(job.getJobId(), got.getJobId());
 
       thrown.expect(TException.class);
 
-      this.fuzzerService.jobDone(token, otherJob);
+      this.fuzzerService.jobDone(worker, otherJob);
     } finally {
       submitting.cancel(true);
     }
@@ -93,15 +93,15 @@ public class FuzzerServerIntegrationTests {
 
   @Test
   public void willGetASubmittedJob() throws Exception {
-    final String token = newToken();
+    final String worker = newWorkerName();
 
-    assertNotNull(token);
+    assertNotNull(worker);
     final Job job = new Job().setImageJob(new ImageJob()).setJobId(1);
     assertTrue(job.toString(), job.isSetImageJob());
 
-    Future<Job> submitting = submitJob(token, job, 1);
+    Future<Job> submitting = submitJob(worker, job, 1);
 
-    this.clientRuns(token, (todo) -> {
+    this.clientRuns(worker, (todo) -> {
       assertTrue(todo.toString(), todo.isSetImageJob());
       assertEquals(1, todo.getJobId());
       todo.getImageJob().setResult(new ImageJobResult().setStatus(JobStatus.UNEXPECTED_ERROR));
@@ -115,14 +115,14 @@ public class FuzzerServerIntegrationTests {
   @Test
   public void willSetSkippedAfterFailures() throws Exception {
 
-    final String token = newToken();
+    final String worker = newWorkerName();
 
-    assertNotNull(token);
+    assertNotNull(worker);
     final Job job = new Job().setImageJob(new ImageJob()).setJobId(1);
     assertTrue(job.toString(), job.isSetImageJob());
 
-    Future<Job> submitting = submitJob(token, job, 3);
-    this.clientRepeatedlyCrashes(token, 3);
+    Future<Job> submitting = submitJob(worker, job, 3);
+    this.clientRepeatedlyCrashes(worker, 3);
     Job result = submitting.get();
     assertFalse(result.isSetSkipJob());
     assertTrue(result.isSetImageJob());
@@ -132,49 +132,49 @@ public class FuzzerServerIntegrationTests {
   }
 
   @Test
-  public void willSanitizeValueOnOldToken() throws Exception {
-    String oldToken = new String("  helloworld ");
+  public void willSanitizeValueOnOldWorkerName() throws Exception {
+    String oldWorkerName = new String("  helloworld ");
     String platformInfo = "{}";
-    GetTokenResult getTokenResult = this.fuzzerService.getToken(
-        platformInfo, oldToken);
-    assertTrue(getTokenResult.isSetToken());
-    assertEquals("helloworld", getTokenResult.getToken());
+    GetWorkerNameResult getWorkerNameResult = this.fuzzerService.getWorkerName(
+        platformInfo, oldWorkerName);
+    assertTrue(getWorkerNameResult.isSetWorkerName());
+    assertEquals("helloworld", getWorkerNameResult.getWorkerName());
   }
 
   @Test
-  public void willRejectTokenWithChangedPlatformInfo() throws Exception {
-    String oldToken = this.newToken();
+  public void willRejectWorkerNameWithChangedPlatformInfo() throws Exception {
+    String oldWorkerName = this.newWorkerName();
     String platformInfo = "{\"bogus\": \"key\"}";
-    GetTokenResult getTokenResult = this.fuzzerService.getToken(
-        platformInfo, oldToken);
-    assertFalse(getTokenResult.isSetToken());
-    assertEquals(getTokenResult.getError(), TokenError.PLATFORM_INFO_CHANGED);
+    GetWorkerNameResult getWorkerNameResult = this.fuzzerService.getWorkerName(
+        platformInfo, oldWorkerName);
+    assertFalse(getWorkerNameResult.isSetWorkerName());
+    assertEquals(getWorkerNameResult.getError(), WorkerNameError.PLATFORM_INFO_CHANGED);
   }
 
   @Test
-  public void willRejectAnInvalidToken() throws Exception {
+  public void willRejectAnInvalidWorkerName() throws Exception {
     String platformInfo = "{}";
-    GetTokenResult getTokenResult = this.fuzzerService.getToken(
+    GetWorkerNameResult getWorkerNameResult = this.fuzzerService.getWorkerName(
         platformInfo,
         new String("hello world")
     );
-    assertFalse(getTokenResult.isSetToken());
-    assertEquals(getTokenResult.getError(), TokenError.INVALID_PROVIDED_TOKEN);
+    assertFalse(getWorkerNameResult.isSetWorkerName());
+    assertEquals(getWorkerNameResult.getError(), WorkerNameError.INVALID_PROVIDED_WORKER);
   }
 
   @Test
   public void willRejectANonObjectPlatformInfo() throws Exception {
     String platformInfo = "";
-    GetTokenResult getTokenResult = this.fuzzerService.getToken(
+    GetWorkerNameResult getWorkerNameResult = this.fuzzerService.getWorkerName(
         platformInfo,
         ""
     );
-    assertFalse(getTokenResult.isSetToken());
-    assertEquals(getTokenResult.getError(), TokenError.INVALID_PLATFORM_INFO);
+    assertFalse(getWorkerNameResult.isSetWorkerName());
+    assertEquals(getWorkerNameResult.getError(), WorkerNameError.INVALID_PLATFORM_INFO);
   }
 
   @Test
-  public void willPutManufacturerAndModelIntoToken() throws Exception {
+  public void willPutManufacturerAndModelIntoWorkerName() throws Exception {
     Gson gson = new Gson();
     Map<String, String> platformInfoData = new HashMap<>();
     platformInfoData.put("manufacturer", "ABCD");
@@ -183,19 +183,19 @@ public class FuzzerServerIntegrationTests {
         platformInfoData
     );
 
-    GetTokenResult getTokenResult =
-        this.fuzzerService.getToken(platformInfo, "");
+    GetWorkerNameResult getWorkerNameResult =
+        this.fuzzerService.getWorkerName(platformInfo, "");
 
-    assertTrue(getTokenResult.isSetToken());
-    assertTrue(getTokenResult.getToken().contains("ABCD"));
-    assertTrue(getTokenResult.getToken().contains("12345"));
+    assertTrue(getWorkerNameResult.isSetWorkerName());
+    assertTrue(getWorkerNameResult.getWorkerName().contains("ABCD"));
+    assertTrue(getWorkerNameResult.getWorkerName().contains("12345"));
   }
 
   // Helper methods below here
-  private Future<Job> submitJob(String token, Job job, int retryLimit) {
+  private Future<Job> submitJob(String worker, Job job, int retryLimit) {
     return this.submit(() ->
         this.fuzzerServiceManager.submitJob(
-            job, token, retryLimit
+            job, worker, retryLimit
         )
     );
   }
@@ -210,17 +210,17 @@ public class FuzzerServerIntegrationTests {
     });
   }
 
-  private void clientRepeatedlyCrashes(String token, int maxCrashes) throws Exception {
+  private void clientRepeatedlyCrashes(String worker, int maxCrashes) throws Exception {
     for (int i = 0; i <= maxCrashes; i++) {
       boolean gotJob = false;
       for (int j = 0; j < 500; j++) {
-        Job todo = this.fuzzerService.getJob(token).deepCopy();
+        Job todo = this.fuzzerService.getJob(worker).deepCopy();
         if (todo.isSetNoJob()) {
           Thread.sleep(1);
           continue;
         }
         if (todo.isSetSkipJob()) {
-          this.fuzzerService.jobDone(token, todo.deepCopy());
+          this.fuzzerService.jobDone(worker, todo.deepCopy());
           return;
         }
         gotJob = true;
@@ -230,9 +230,9 @@ public class FuzzerServerIntegrationTests {
     }
   }
 
-  private Job getAJob(String token) throws Exception {
+  private Job getAJob(String worker) throws Exception {
     while (true) {
-      Job todo = this.fuzzerService.getJob(token).deepCopy();
+      Job todo = this.fuzzerService.getJob(worker).deepCopy();
       if (todo.isSetNoJob()) {
         Thread.sleep(1);
         continue;
@@ -241,17 +241,17 @@ public class FuzzerServerIntegrationTests {
     }
   }
 
-  private void clientRuns(String token, ClientAction client) throws Exception {
-    Job todo = this.getAJob(token);
+  private void clientRuns(String worker, ClientAction client) throws Exception {
+    Job todo = this.getAJob(worker);
     Job result = client.run(todo.deepCopy());
-    this.fuzzerService.jobDone(token, result);
+    this.fuzzerService.jobDone(worker, result);
   }
 
-  private String newToken() throws TException {
+  private String newWorkerName() throws TException {
     String platformInfo = "{}";
-    return this.fuzzerService.getToken(
+    return this.fuzzerService.getWorkerName(
         platformInfo, ""
-    ).getToken();
+    ).getWorkerName();
   }
 
   interface ThriftCallable<T> {

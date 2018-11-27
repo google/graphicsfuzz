@@ -39,7 +39,7 @@ import com.graphicsfuzz.shadersets.ShaderDispatchException;
 
 public abstract class CommonClientTest {
 
-  static final String TOKEN = "test_worker";
+  static final String WORKERNAME = "test_worker";
   static Process worker;
   static Thread server;
   static final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
@@ -124,7 +124,7 @@ public abstract class CommonClientTest {
     final File outputDir = temporaryFolder.newFolder();
     String[] args = {
         FilenameUtils.removeExtension(Paths.get(getTestShadersDirectory(), fragmentShader).toString()) + ".json",
-        "--token", TOKEN, "--server", "http://localhost:8080", "--output",
+        "--worker", WORKERNAME, "--server", "http://localhost:8080", "--output",
         outputDir.getAbsolutePath()};
     RunShaderFamily.mainHelper(
         args, null

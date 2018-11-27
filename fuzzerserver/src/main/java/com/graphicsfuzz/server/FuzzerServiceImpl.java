@@ -24,11 +24,11 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonWriter;
 import com.graphicsfuzz.server.SessionMap.Session;
 import com.graphicsfuzz.server.thrift.FuzzerService;
-import com.graphicsfuzz.server.thrift.GetTokenResult;
+import com.graphicsfuzz.server.thrift.GetWorkerNameResult;
 import com.graphicsfuzz.server.thrift.Job;
 import com.graphicsfuzz.server.thrift.NoJob;
-import com.graphicsfuzz.server.thrift.TokenError;
-import com.graphicsfuzz.server.thrift.TokenNotFoundException;
+import com.graphicsfuzz.server.thrift.WorkerNameError;
+import com.graphicsfuzz.server.thrift.WorkerNameNotFoundException;
 import java.io.CharArrayWriter;
 import java.io.File;
 import java.io.IOException;
@@ -55,7 +55,7 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
 
   private final WorkQueue reductionWorkQueue;
 
-  private final Pattern validTokenPattern = Pattern.compile("[a-zA-Z_0-9-]+");
+  private final Pattern validWorkerNamePattern = Pattern.compile("[a-zA-Z_0-9-]+");
 
   public FuzzerServiceImpl(
       String processingDir,
@@ -81,18 +81,19 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
   }
 
   @Override
-  public GetTokenResult getToken(String platformInfo, String oldToken) throws TException {
-    String token = null;
+  public GetWorkerNameResult getWorkerName(String platformInfo, String oldWorker)
+      throws TException {
+    String worker = null;
 
     final String clientJsonFilename = "client.json";
-    LOGGER.info("Called getToken with oldToken: {}.", oldToken);
+    LOGGER.info("Called getWorkerName with oldWorker: {}.", oldWorker);
 
-    // Trim token.
-    if (oldToken != null) {
-      oldToken = oldToken.trim();
+    // Trim worker name
+    if (oldWorker != null) {
+      oldWorker = oldWorker.trim();
     }
-    if (oldToken.isEmpty()) {
-      oldToken = null;
+    if (oldWorker.isEmpty()) {
+      oldWorker = null;
     }
 
     // Check and store provided platform info JSON object.
@@ -100,7 +101,7 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
     JsonElement pie = new JsonParser().parse(platformInfo);
     if (!pie.isJsonObject()) {
       LOGGER.error("Platform info is not valid JSON");
-      return new GetTokenResult().setError(TokenError.INVALID_PLATFORM_INFO);
+      return new GetWorkerNameResult().setError(WorkerNameError.INVALID_PLATFORM_INFO);
     }
     info.add("platform_info", pie.getAsJsonObject());
 
@@ -120,21 +121,21 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
 
     if (clientInfoString.isEmpty()) {
       LOGGER.error("Empty platform info.");
-      return new GetTokenResult().setError(TokenError.INVALID_PLATFORM_INFO);
+      return new GetWorkerNameResult().setError(WorkerNameError.INVALID_PLATFORM_INFO);
     }
 
     // Read old client info String
     String oldClientInfoString = "";
 
-    if (oldToken != null) {
+    if (oldWorker != null) {
 
-      if (oldToken.isEmpty()
-          || !validTokenPattern.matcher(oldToken).matches()) {
-        LOGGER.error("Invalid token provided: {}", oldToken);
-        return new GetTokenResult().setError(TokenError.INVALID_PROVIDED_TOKEN);
+      if (oldWorker.isEmpty()
+          || !validWorkerNamePattern.matcher(oldWorker).matches()) {
+        LOGGER.error("Invalid worker name provided: {}", oldWorker);
+        return new GetWorkerNameResult().setError(WorkerNameError.INVALID_PROVIDED_WORKER);
       }
       try {
-        File platformInfoFile = Paths.get(processingDir, oldToken, clientJsonFilename)
+        File platformInfoFile = Paths.get(processingDir, oldWorker, clientJsonFilename)
             .toFile();
         LOGGER.info("Reading platform info at: {}", platformInfoFile);
         oldClientInfoString =
@@ -146,7 +147,7 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
                   + "\n{}\n{}",
               oldClientInfoString,
               clientInfoString);
-          return new GetTokenResult().setError(TokenError.PLATFORM_INFO_CHANGED);
+          return new GetWorkerNameResult().setError(WorkerNameError.PLATFORM_INFO_CHANGED);
         }
 
       } catch (IOException exception) {
@@ -154,75 +155,72 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
       }
     }
 
-    if (oldToken != null && (oldClientInfoString.isEmpty() || clientInfoString
+    if (oldWorker != null && (oldClientInfoString.isEmpty() || clientInfoString
         .equals(oldClientInfoString))) {
-      LOGGER.info("Using provided token.");
-      sessions.putIfAbsent(oldToken, new Session(oldToken, platformInfo, executorService));
-      token = oldToken;
+      LOGGER.info("Using provided worker name.");
+      sessions.putIfAbsent(oldWorker, new Session(oldWorker, platformInfo, executorService));
+      worker = oldWorker;
     } else {
-      LOGGER.info("Generating new token. Old then new platform info: \n{}\n{}", oldClientInfoString,
-          clientInfoString);
+      LOGGER.info("Generating new worker name. Old then new platform info: \n{}\n{}",
+          oldClientInfoString, clientInfoString);
       Session dummy = new Session();
       while (true) {
-        String tokenStr;
-        // For platforms with meaningful platform info, create a meaningful token, yet still
-        // randomized
+        // For workers with meaningful platform info, create a meaningful name, yet still randomized
         if (info.getAsJsonObject("platform_info").has("manufacturer")
             && info.getAsJsonObject("platform_info").has("model")) {
-          tokenStr = info.getAsJsonObject("platform_info").get("manufacturer").getAsString();
-          tokenStr += "_";
-          tokenStr += info.getAsJsonObject("platform_info").get("model").getAsString();
-          tokenStr += String.valueOf(Math.abs(new SecureRandom().nextInt())).substring(0, 4);
+          worker = info.getAsJsonObject("platform_info").get("manufacturer").getAsString();
+          worker += "_";
+          worker += info.getAsJsonObject("platform_info").get("model").getAsString();
+          worker += String.valueOf(Math.abs(new SecureRandom().nextInt())).substring(0, 4);
         } else {
-          tokenStr = String.valueOf(Math.abs(new SecureRandom().nextLong()));
+          worker = String.valueOf(Math.abs(new SecureRandom().nextLong()));
         }
-        tokenStr = tokenStr.replace(' ', '_');
-        token = new String(tokenStr);
-        if (sessions.putIfAbsent(token, dummy)) {
-          Session newSession = new Session(token, platformInfo, executorService);
-          sessions.replace(token, dummy, newSession);
+        worker = worker.replace(' ', '_');
+        if (sessions.putIfAbsent(worker, dummy)) {
+          Session newSession = new Session(worker, platformInfo, executorService);
+          sessions.replace(worker, dummy, newSession);
           break;
         }
       }
     }
 
-    File tokenDir = Paths.get(processingDir, token).toFile();
+    File workerDir = Paths.get(processingDir, worker).toFile();
     try {
-      FileUtils.forceMkdir(tokenDir);
+      FileUtils.forceMkdir(workerDir);
     } catch (IOException exception) {
-      sessions.remove(token);
-      return new GetTokenResult().setError(TokenError.SERVER_ERROR);
+      sessions.remove(worker);
+      return new GetWorkerNameResult().setError(WorkerNameError.SERVER_ERROR);
     }
 
-    LOGGER.info("Giving out token: " + token);
+    LOGGER.info("Giving out worker name: " + worker);
 
-    // Write client info
+    // Write worker info
     try {
       FileUtils.writeStringToFile(
           Paths.get(
               processingDir,
-              token,
+              worker,
               clientJsonFilename).toFile(),
           clientInfoString,
           StandardCharsets.UTF_8);
     } catch (IOException exception) {
-      sessions.remove(token);
-      return new GetTokenResult().setError(TokenError.SERVER_ERROR);
+      sessions.remove(worker);
+      return new GetWorkerNameResult().setError(WorkerNameError.SERVER_ERROR);
     }
 
-    return new GetTokenResult().setToken(token);
+    return new GetWorkerNameResult().setWorkerName(worker);
   }
 
   @Override
-  public Job getJob(String token) throws TException {
+  public Job getJob(String worker) throws TException {
 
-    if (!sessions.containsToken(token)) {
-      throw new TokenNotFoundException().setToken(token);
+    if (!sessions.containsWorker(worker)) {
+      throw new WorkerNameNotFoundException().setWorkerName(worker);
     }
 
-    return sessions.lockSessionAndExecute(token, session -> {
+    return sessions.lockSessionAndExecute(worker, session -> {
       try {
-        MDC.put("token", token);
+        MDC.put("worker", worker);
         LOGGER.info("getJob");
         session.touch();
 
@@ -238,7 +236,7 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
             continue;
           }
           StringBuilder logmsg = new StringBuilder();
-          logmsg.append("getJob(): worker '" + token
+          logmsg.append("getJob(): worker '" + worker
               + "' gets job " + res.getJobId());
           if (res.isSetSkipJob()) {
             logmsg.append(" (skip)");
@@ -255,22 +253,22 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
       } catch (ServerJobException exception) {
         throw new TException(exception);
       } finally {
-        MDC.remove("token");
+        MDC.remove("worker");
       }
     });
 
   }
 
   @Override
-  public void jobDone(String token, Job job) throws TException {
+  public void jobDone(String worker, Job job) throws TException {
 
-    if (!sessions.containsToken(token)) {
-      throw new TokenNotFoundException().setToken(token);
+    if (!sessions.containsWorker(worker)) {
+      throw new WorkerNameNotFoundException().setWorkerName(worker);
     }
 
-    sessions.lockSessionAndExecute(token, session -> {
+    sessions.lockSessionAndExecute(worker, session -> {
       try {
-        MDC.put("token", token);
+        MDC.put("worker", worker);
         StringBuilder logmsg = new StringBuilder();
         logmsg.append("jobDone(): JobId#" + job.getJobId()
             + " Queue has size: " + session.jobQueue.size());
@@ -291,7 +289,7 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
       } catch (ServerJobException exception) {
         throw new TException(exception);
       } finally {
-        MDC.remove("token");
+        MDC.remove("worker");
       }
     });
   }

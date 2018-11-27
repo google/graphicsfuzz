@@ -324,8 +324,8 @@ def doImageJob(imageJob):
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    'token',
-    help='Worker token to identify to the server')
+    'worker',
+    help='Woker name to identify to the server')
 
 parser.add_argument(
     '--adbID',
@@ -338,7 +338,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-print('token: ' + args.token)
+print('Worker: ' + args.worker)
 
 server = args.server + '/request'
 print('server: ' + server)
@@ -351,7 +351,7 @@ def get_service():
         service = FuzzerService.Client(protocol)
         transport.open()
 
-        # Get token
+        # Get worker name
 
         platforminfo = '''
         {
@@ -359,22 +359,22 @@ def get_service():
         }
         '''
 
-        tryToken = args.token
-        print("Call getToken()")
-        tokenRes = service.getToken(platforminfo, tryToken)
-        assert type(tokenRes) != None
-        token = tokenRes.token
+        tryWorker = args.worker
+        print("Call getWorkerName()")
+        workerRes = service.getWorkerName(platforminfo, tryWorker)
+        assert type(workerRes) != None
+        worker = workerRes.worker
 
-        print("Got token: " + token)
-        assert(token == args.token)
+        print("Got worker: " + worker)
+        assert(worker == args.worker)
 
-        if not os.path.exists(args.token):
-            os.makedirs(args.token)
+        if not os.path.exists(args.worker):
+            os.makedirs(args.worker)
 
         # Set working dir
-        os.chdir(args.token)
+        os.chdir(args.worker)
 
-        return service, token
+        return service, worker
 
     except (TApplicationException, ConnectionRefusedError, ConnectionResetError) as exception:
         return None, None
@@ -393,7 +393,7 @@ service = None
 while True:
 
     if not(service):
-        service, token = get_service()
+        service, worker = get_service()
 
         if not(service):
             print("Cannot connect to server, retry in a second...")
@@ -401,21 +401,21 @@ while True:
             continue
 
     try:
-        job = service.getJob(token)
+        job = service.getJob(worker)
 
         if job.noJob != None:
             print("No job")
 
         elif job.skipJob != None:
             print("Skip job")
-            service.jobDone(token, job)
+            service.jobDone(worker, job)
 
         else:
             assert(job.imageJob != None)
             print("#### Image job: " + job.imageJob.name)
             job.imageJob.result = doImageJob(job.imageJob)
             print("Send back, results status: {}".format(job.imageJob.result.status))
-            service.jobDone(token, job)
+            service.jobDone(worker, job)
 
     except (TApplicationException, ConnectionError) as exception:
         print("Connection to server lost. Re-initialising client.")
