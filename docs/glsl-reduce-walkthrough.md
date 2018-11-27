@@ -55,10 +55,6 @@ Take a look at `fake_compiler.py` and `colorgrid_modulo.frag` to see why the fak
 Let's now use glsl-reduce to get a much smaller shader that causes the compiler to fail with this error:
 
 ```
-# Make some scripts executable
-chmod +x glsl-reduce-walkthrough/interestingness_test
-chmod +x glsl-reduce-walkthrough/interestingness_test.py
-
 # Observe that the initial shader is reasonably large
 cat glsl-reduce-walkthrough/colorgrid_modulo.frag
 
