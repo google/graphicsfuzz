@@ -477,14 +477,61 @@ In fact, the "reduction log" shown by the WebUI
 includes the command that was run on its first line.
 E.g.
 
-`glsl-reduce shaderfamilies/familiy01/variant_01.json ABOVE_THRESHOLD [etc.]`
+`glsl-reduce shaderfamilies/familiy01/variant_01.json --reduction-kind [etc.]`
 
 > You can try running these commands at the command line in the `work`
-> directory, although note that some arguments that have spaces may need to be
-> quoted (and they will not be quoted in the reduction log).
+> directory, although note that some "empty" arguments (i.e. "") 
+> and arguments with spaces (e.g. --error-string "Fatal signal 11") may need to be
+> quoted, and they will not be quoted in the reduction log.
 
-### Invoking a bad image reductions:
+### Invoking a bad image reductions
+
+Here is an example of a bad image reduction command,
+as run by the server.
 
 ```sh
-glsl-reduce
+# Summary:
+#  glsl-reduce shader_job.json --reduction-kind ABOVE_THRESHOLD --reference result.info.json [other options]
+
+# Store args in array for readability:
+
+args=(
+  # The shader (job) to reduce.
+  shaderfamilies/sf1/variant_004.json                       
+  
+  # When doing a bad image reduction, it is crucial that we do not change the semantics of the shader;
+  # for example, by removing statements that are used to calculate the output colour values.
+  
+  # Reduce while sufficiently different from reference image.
+  # I.e. the image comparison value is LARGER than the threshold.
+  --reduction-kind ABOVE_THRESHOLD
+
+  # The threshold for image comparison: we have found 100.0 works well.
+  --threshold 100.0
+                           
+  # Image comparison metric: by default, we use the Chi-Square distance between image histograms.
+  --metric HISTOGRAM_CHISQR
+
+  # The reference image is reference.png, but we must pass the associated .info.json file.
+  # We do this because the reference result could be something other than an image,
+  # such as a buffer of values for a compute shader.
+  --reference processing/my-worker/sf1/reference.info.json  
+
+  # Output directory: the reduced shader job will end up here with the name *_reduced_final.json.
+  --output processing/my-worker/sf1/reductions/variant_004
+  
+  
+  
+  --max-steps 2000
+  
+  --token my-worker
+  --server http://localhost:8080/manageAPI
+  --timeout 30
+  --retry-limit 2
+  --seed -136936935
+)
+
+glsl-reduce "${args[@]}"
 ```
+
+
