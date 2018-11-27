@@ -277,7 +277,7 @@ public class WebUi extends HttpServlet {
     List<WorkerInfo> workers = fuzzerServiceManagerProxy.getServerState().getWorkers();
     workers.sort((workerInfo, t1) -> {
       Comparator<String> comparator = Comparator.naturalOrder();
-      return comparator.compare(workerInfo.getToken(), t1.getToken());
+      return comparator.compare(workerInfo.getWorkerName(), t1.getWorkerName());
     });
     if (!includeInactive) {
       workers.removeIf(w -> !(w.live));
@@ -324,11 +324,12 @@ public class WebUi extends HttpServlet {
         "Run WebGL viewer</a>\n",
         "<a class='ui button' href='/static/webgl_viewer.html?context=webgl2'>",
         "Run WebGL2 viewer</a>\n",
-        "<div class='ui button' onclick=\"promptForInfo('Enter a token (or leave blank for a",
-        "generated token): ', '/static/runner.html?token=', '', '/static/runner.html', true);\">",
+        "<div class='ui button' onclick=\"promptForInfo('Enter a worker name",
+        "(or leave blank for a generated name): ',",
+        "'/static/runner.html?worker=', '', '/static/runner.html', true);\">",
         "Launch WebGL worker</div>\n",
-        "<div class='ui button' onclick=\"promptForInfo('Enter a token (or leave blank for a",
-        "generated token): ', '/static/runner.html?context=webgl2&token=', '',",
+        "<div class='ui button' onclick=\"promptForInfo('Enter a worker name (or leave blank for a",
+        "generated name): ', '/static/runner.html?context=webgl2&worker=', '',",
         "'/static/runner.htmlcontext=webgl2', true);\">",
         "Launch WebGL2 worker</div>\n",
         "</p>\n",
@@ -339,14 +340,14 @@ public class WebUi extends HttpServlet {
         "<div class='ui segment'>\n",
         "<h3>Connected workers</h3>\n",
         "<div class='ui selection animated celled list'>\n");
-    List<String> tokens = new ArrayList<>();
+    List<String> workers = new ArrayList<>();
     for (WorkerInfo worker : getLiveWorkers(false)) {
-      htmlAppendLn("<a class='item' href='/webui/worker/", worker.getToken(), "'>",
+      htmlAppendLn("<a class='item' href='/webui/worker/", worker.getWorkerName(), "'>",
           "<i class='large middle aligned mobile icon'></i><div class='content'>",
-          "<div class='header'>", worker.getToken(), "</div>",
+          "<div class='header'>", worker.getWorkerName(), "</div>",
           "#queued jobs: ",
           Integer.toString(worker.getCommandQueueSize()), "</div></a>");
-      tokens.add(worker.getToken());
+      workers.add(worker.getWorkerName());
     }
     htmlAppendLn("</div></div>");
 
@@ -357,10 +358,10 @@ public class WebUi extends HttpServlet {
         "<button class='ui black basic button' onclick='toggleDiv(this)'",
         " data-hide='disconnected-workers'>Show/Hide</button>\n",
         "<div class='disconnected-workers invisible ui selection animated celled list'>");
-    List<File> workers = getAllWorkers(request, response);
+    List<File> workerFiles = getAllWorkers(request, response);
     if (workers != null) {
-      for (File worker : workers) {
-        if (!tokens.contains(worker.getName())) {
+      for (File worker : workerFiles) {
+        if (!workers.contains(worker.getName())) {
           htmlAppendLn("<a class='item' href='/webui/worker/", worker.getName(), "'>",
               worker.getName(), "</a>");
         }
@@ -444,7 +445,7 @@ public class WebUi extends HttpServlet {
         "<p><form method='post' id='clearForm'>\n",
         "<input type='hidden' id='' name='queueType' value='worker'/>\n",
         "<input type='hidden' id='' name='type' value='clear'/>\n",
-        "<input type='hidden' id='' name='token' value='", workerName, "'/>\n",
+        "<input type='hidden' id='' name='worker' value='", workerName, "'/>\n",
         "<div class='ui button' onclick=\"clearForm.submit();\">Clear Queue</div>\n",
         "</form></p>\n",
         "</div>");
@@ -488,7 +489,7 @@ public class WebUi extends HttpServlet {
     boolean atLeastOne = false;
 
     for (WorkerInfo worker : getLiveWorkers(true)) {
-      if (worker.getToken().equals(workerName)) {
+      if (worker.getWorkerName().equals(workerName)) {
         List<CommandInfo> commands = worker.getCommandQueue();
         if (commands.size() > 0) {
           atLeastOne = true;
@@ -496,7 +497,7 @@ public class WebUi extends HttpServlet {
               " data-hide='job-queue'>Show/Hide</button>\n",
               "<div class='job-queue ui celled list'>");
           for (CommandInfo ci : commands) {
-            htmlAppendLn("<div class='item'><div class='header'>", ci.name, "</div></div>");
+            htmlAppendLn("<div class='item'><div class='header'>", ci.workerName, "</div></div>");
           }
           htmlAppendLn("</div>");
           break;
@@ -656,9 +657,9 @@ public class WebUi extends HttpServlet {
             "<div class='ui checkbox'>",
             "<input tabindex='0' class='hidden' type='checkbox' name='workercheck'",
             " data-num='", Integer.toString(dataNum), "' onclick='applyCheckbox(event);'",
-            " value='", workerInfo.getToken(), "'>",
+            " value='", workerInfo.getWorkerName(), "'>",
             "<label data-num='", Integer.toString(dataNum), "' onclick='applyCheckbox(event);'>",
-            workerInfo.getToken(), "</label>",
+            workerInfo.getWorkerName(), "</label>",
             "</div></div>");
         dataNum += 1;
       }
@@ -798,11 +799,11 @@ public class WebUi extends HttpServlet {
       err404(request, response, "Path to result " + request.getPathInfo() + " invalid!");
       return;
     }
-    final String token = path[3];
+    final String worker = path[3];
     final String shaderFamily = path[4];
     final String variant = path[5];
     final String variantDir =
-        WebUiConstants.WORKER_DIR + "/" + token + "/" + shaderFamily + "/";
+        WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderFamily + "/";
     final String variantFullPathNoExtension = variantDir + variant;
 
     File infoFile = new File(variantDir, variant + ".info.json");
@@ -819,7 +820,7 @@ public class WebUi extends HttpServlet {
     htmlAppendLn("<div class='ui segment'><h3>Single result</h3>",
         "<p>Shader <b><a href='/webui/shader/", shaderPath, "'>",
         variant, "</a></b> of <b>", shaderFamily, "</b>",
-        " run on <b>", token, "</b><br>",
+        " run on <b>", worker, "</b><br>",
         "status: <b>", status, "</b></p>");
 
     htmlAppendLn("<form method='post' id='deleteForm'>\n",
@@ -888,20 +889,20 @@ public class WebUi extends HttpServlet {
     htmlAppendLn("<div class='ui segment'>\n",
         "<h3>Reduction results</h3>");
 
-    final ReductionStatus referenceReductionStatus = getReductionStatus(token, shaderFamily,
+    final ReductionStatus referenceReductionStatus = getReductionStatus(worker, shaderFamily,
         "reference");
     File referenceShader = new File(WebUiConstants.SHADERSET_DIR + "/"
         + shaderFamily, "reference.frag");
     if (referenceReductionStatus == ReductionStatus.FINISHED) {
       referenceShader = new File(
-          ReductionFilesHelper.getReductionDir(token, shaderFamily, "reference"),
+          ReductionFilesHelper.getReductionDir(worker, shaderFamily, "reference"),
           "reference_reduced_final.frag"
       );
     }
 
 
     String reductionHtml = "";
-    final ReductionStatus reductionStatus = getReductionStatus(token, shaderFamily, variant);
+    final ReductionStatus reductionStatus = getReductionStatus(worker, shaderFamily, variant);
 
     htmlAppendLn("<p>Reduction status: <b>", reductionStatus.toString(), "</b></p>");
 
@@ -943,14 +944,14 @@ public class WebUi extends HttpServlet {
         htmlAppendLn("<p>Reduction failed with an exception:</p>",
             "<textarea readonly rows='25' cols='160'>\n",
             getFileContents(ReductionProgressHelper.getReductionExceptionFile(
-                ReductionFilesHelper.getReductionDir(token, shaderFamily, variant), variant)),
+                ReductionFilesHelper.getReductionDir(worker, shaderFamily, variant), variant)),
             "</textarea>");
         break;
 
       case ONGOING:
         final Optional<Integer> reductionStep = ReductionProgressHelper
               .getLatestReductionStepAny(ReductionFilesHelper
-                    .getReductionDir(token, shaderFamily, variant),
+                    .getReductionDir(worker, shaderFamily, variant),
                   "variant", fileOps);
         htmlAppendLn(
             "<p>Reduction not finished for this result: ",
@@ -979,7 +980,7 @@ public class WebUi extends HttpServlet {
 
     // Show reduction log, if it exists, regardless of current reduction status
     final File logFile =
-        new File(ReductionFilesHelper.getReductionDir(token, shaderFamily, variant),
+        new File(ReductionFilesHelper.getReductionDir(worker, shaderFamily, variant),
           "command.log");
     if (logFile.exists()) {
       htmlAppendLn("<p>Contents of reduction log file:</p>",
@@ -1036,8 +1037,8 @@ public class WebUi extends HttpServlet {
     }
   }
 
-  private ReductionStatus getReductionStatus(String token, String shaderSet, String shader) {
-    final File reductionDir = ReductionFilesHelper.getReductionDir(token, shaderSet, shader);
+  private ReductionStatus getReductionStatus(String worker, String shaderSet, String shader) {
+    final File reductionDir = ReductionFilesHelper.getReductionDir(worker, shaderSet, shader);
     if (! reductionDir.exists()) {
       return ReductionStatus.NOREDUCTION;
     }
@@ -1104,9 +1105,9 @@ public class WebUi extends HttpServlet {
           "<div class='ui checkbox'>",
           "<input tabindex='0' class='hidden' type='checkbox' name='workercheck'",
           " data-num='", Integer.toString(dataNum), "' onclick='applyCheckbox(event);'",
-          " value='", workerInfo.getToken(), "'>",
+          " value='", workerInfo.getWorkerName(), "'>",
           "<label data-num='", Integer.toString(dataNum), "' onclick='applyCheckbox(event);'>",
-          workerInfo.getToken(), "</label>",
+          workerInfo.getWorkerName(), "</label>",
           "</div></div>");
       dataNum += 1;
     }
@@ -1145,7 +1146,7 @@ public class WebUi extends HttpServlet {
           commands.add("run_shader_family");
           commands.add("--server");
           commands.add("http://localhost:8080/manageAPI");
-          commands.add("--token");
+          commands.add("--worker");
           commands.add(worker);
           commands.add("--output");
           commands.add("processing/" + worker + "/" + shaderset);
@@ -1323,9 +1324,9 @@ public class WebUi extends HttpServlet {
       args.add("--reference");
       args.add(request.getParameter("reference_image"));
     }
-    args.add("--token");
-    final String token = request.getParameter("token");
-    args.add(token);
+    args.add("--worker");
+    final String worker = request.getParameter("worker");
+    args.add(worker);
     args.add("--server");
     args.add("http://localhost:8080/manageAPI");
     final String threshold = request.getParameter("threshold");
@@ -1374,12 +1375,12 @@ public class WebUi extends HttpServlet {
     String message;
     try {
       fuzzerServiceManagerProxy.queueCommand(
-          args.get(0) + ":" + shaderJobFilePath, args, token, output + "/command.log");
+          args.get(0) + ":" + shaderJobFilePath, args, worker, output + "/command.log");
       message = "Reduction started successfully!";
     } catch (TException exception) {
       message = "Reduction failed (is worker live?):\\n" + exception.getMessage();
     }
-    reduceReference(shaderJobFilePath, token);
+    reduceReference(shaderJobFilePath, worker);
 
     html.setLength(0);
     htmlAppendLn("<script>\n",
@@ -1417,7 +1418,7 @@ public class WebUi extends HttpServlet {
     args.add(reductionDir.getPath());
     args.add("--reference");
     args.add(referenceResult.getPath());
-    args.add("--token");
+    args.add("--worker");
     args.add(worker);
     args.add("--server");
     args.add("http://localhost:8080/manageAPI");
@@ -1438,16 +1439,16 @@ public class WebUi extends HttpServlet {
     response.setContentType("text/html");
 
     String queueType = request.getParameter("queueType");
-    String token = request.getParameter("token");
+    String worker = request.getParameter("worker");
     String msg;
 
     if (queueType.equals("worker")) {
       //Attempt to clear worker job queue
       try {
-        fuzzerServiceManagerProxy.clearClientJobQueue(token);
-        msg = "Queue for worker " + token + " cleared!";
+        fuzzerServiceManagerProxy.clearClientJobQueue(worker);
+        msg = "Queue for worker " + worker + " cleared!";
       } catch (TException exception) {
-        msg = "Worker " + token + " has no queued commands!";
+        msg = "Worker " + worker + " has no queued commands!";
       }
     } else {
       err404(request, response, "Unexpected queue type!");
@@ -1463,7 +1464,7 @@ public class WebUi extends HttpServlet {
     response.getWriter().println(html);
   }
 
-  //Renames a worker (token) (renames dir in the filesystem) and redirects to new worker page
+  //Renames a worker (worker) (renames dir in the filesystem) and redirects to new worker page
   private void renameWorker(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
     response.setContentType("text/html");
@@ -1484,7 +1485,7 @@ public class WebUi extends HttpServlet {
     boolean workerLive = false;
     try {
       for (WorkerInfo workerInfo : getLiveWorkers(true)) {
-        if (workerInfo.getToken().equals(worker)) {
+        if (workerInfo.getWorkerName().equals(worker)) {
           workerLive = true;
           break;
         }
@@ -1552,7 +1553,7 @@ public class WebUi extends HttpServlet {
       commands.add("http://localhost:8080");
       StringBuilder msg = new StringBuilder();
       for (String worker : workers) {
-        commands.add("--token");
+        commands.add("--worker");
         commands.add(worker);
         commands.add("--output");
         commands.add("processing/" + worker + "/" + shaderset + "/");
@@ -1861,7 +1862,7 @@ public class WebUi extends HttpServlet {
   private void htmlReductionForm(
       String shaderJobFilePath,
       String output,
-      String token,
+      String worker,
       String referenceResultPath,
       String variantShaderJobResultFileNoExtension,
       String resultStatus) {
@@ -1874,7 +1875,7 @@ public class WebUi extends HttpServlet {
         "<input type='hidden' name='type' value='reduce'>",
         "<input type='hidden' name='shader_path' value='", shaderJobFilePath, "'>",
         "<input type='hidden' name='output' value='", output, "'>",
-        "<input type='hidden' name='token' value='", token, "'>",
+        "<input type='hidden' name='worker' value='", worker, "'>",
         "<table><tr>",
         "<td class='row_middle'><h3 class='no_margin'>Required Arguments</h3></td>",
         "<td class='row_middle'><h3 class='no_margin'>Optional Arguments</h3></td>",

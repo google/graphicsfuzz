@@ -20,7 +20,7 @@ var transport = null;
 var protocol = null;
 var platformInfo = null;
 var clients = [];
-var tokens = [];
+var workers = [];
 var completedJobs = [];
 var gls = [];
 
@@ -28,12 +28,12 @@ var msWaitDefault = 10;
 var msWaitMax = 5000;
 var msWait = msWaitDefault;
 
-var reverseTokenError = {};
+var reverseWorkerNameError = {};
 
 var webgl_context;
 
-for (var key in graphicsfuzzserver.TokenError) {
-  reverseTokenError[graphicsfuzzserver.TokenError[key]] = key;
+for (var key in graphicsfuzzserver.WorkerNameError) {
+  reverseWorkerNameError[graphicsfuzzserver.WorkerNameError[key]] = key;
 }
 
 //Get time since [time] in microseconds (time should be obtained with window.performance.now() to match precision)
@@ -106,35 +106,35 @@ function initClient(i) {
     throw "Attempted to initialise client " + i + " when only " + clients.length + " exist.";
   }
   clients.push(new graphicsfuzzserver.FuzzerServiceClient(protocol));
-  tokens.push("");
+  workers.push("");
   completedJobs.push(0);
 
-  //Check URL for tokens
-  tokens[i] = getArg("token" + i);
-  if (i == 0 && tokens[i] == undefined) {
-    tokens[i] = getArg("token");
+  //Check URL for workers
+  workers[i] = getArg("worker" + i);
+  if (i == 0 && workers[i] == undefined) {
+    workers[i] = getArg("worker");
   }
-  if (tokens[i] == undefined) {
-    tokens[i] = localStorage.getItem("token" + i);
+  if (workers[i] == undefined) {
+    workers[i] = localStorage.getItem("worker" + i);
   }
-  myLog("Trying token '" + tokens[i] + "'.", i);
-  var getTokenResult = clients[i].getToken(platformInfo, tokens[i]);
-  if (!getTokenResult.token) {
-    throw "token rejected: " + reverseTokenError[getTokenResult.error];
+  myLog("Trying worker '" + workers[i] + "'.", i);
+  var getWorkerNameResult = clients[i].getWorkerName(platformInfo, workers[i]);
+  if (!getWorkerNameResult.workerName) {
+    throw "Worker name rejected: " + reverseWorkerNameError[getWorkerNameResult.error];
   }
-  tokens[i] = getTokenResult.token;
+  workers[i] = getWorkerNameResult.workerName;
 
-  localStorage.setItem("token" + i, tokens[i]);
-  myLog("Token from server '" + tokens[i] + "'.", i);
+  localStorage.setItem("worker" + i, workers[i]);
+  myLog("Worker from server '" + workers[i] + "'.", i);
 
-  document.getElementById("current_token" + i).value = "Current token: " + tokens[i];
+  document.getElementById("current_worker" + i).value = "Current worker: " + workers[i];
 }
 
 //Get job and execute shader if necessary
 function getAndHandleJob(i) {
 
   //Get job
-  var job = clients[i].getJob(tokens[i]);
+  var job = clients[i].getJob(workers[i]);
   myLog("Got a job.", i);
 
   //No job
@@ -272,12 +272,12 @@ function finishJob(i, job) {
   console.log("Job Done " + completedJobs[i] + " ");
 
   //Return result
-  clients[i].jobDone(tokens[i], job);
+  clients[i].jobDone(workers[i], job);
 
   if (!contextOK) {
     location.reload();
   }
-  
+
 }
 
 //Log text in str to console i
@@ -301,12 +301,12 @@ function startSafe(n) {
     for(x in e) {
       str += x + ":" + e[x] + "\n";
     }
-    var tokenRejected = (typeof e === "string" && e.startsWith("token rejected"));
-    if(tokenRejected) {
-      str = "TOKEN WAS REJECTED\n" + e;
+    var workerRejected = (typeof e === "string" && e.startsWith("Worker name rejected"));
+    if(workerRejected) {
+      str = "WORKER NAME WAS REJECTED\n" + e;
     }
     myLog(str, currI);
-    if(tokenRejected) {
+    if(workerRejected) {
       setTimeout(doRefresh, 10000);
     } else {
       setTimeout(doRefresh, 2000);
@@ -534,7 +534,7 @@ function loadClient(i, numClients) {
     document.getElementById("containing-element").removeAttribute("id");
     var elem = [];
     elem.push(document.getElementById("opengl-canvas{i}"));
-    elem.push(document.getElementById("current_token{i}"));
+    elem.push(document.getElementById("current_worker{i}"));
     elem.push(document.getElementById("rendered_shader{i}"));
     elem.push(document.getElementById("console{i}"));
     for (var j = 0; j < elem.length; j++) {

@@ -39,7 +39,7 @@ public class RemoteShaderDispatcher implements IShaderDispatcher {
   private static final Logger LOGGER = LoggerFactory.getLogger(RemoteShaderDispatcher.class);
 
   private final String url;
-  private final String token;
+  private final String worker;
   private final FuzzerServiceManager.Iface fuzzerServiceManager;
 
   private final AtomicLong jobCounter;
@@ -49,27 +49,27 @@ public class RemoteShaderDispatcher implements IShaderDispatcher {
 
   public RemoteShaderDispatcher(
       String url,
-      String token,
+      String worker,
       Iface fuzzerServiceManager,
       AtomicLong jobCounter) {
-    this(url, token, fuzzerServiceManager, jobCounter, DEFAULT_RETRY_LIMIT);
+    this(url, worker, fuzzerServiceManager, jobCounter, DEFAULT_RETRY_LIMIT);
   }
 
   public RemoteShaderDispatcher(
       String url,
-      String token,
+      String worker,
       Iface fuzzerServiceManager,
       AtomicLong jobCounter,
       int retryLimit) {
     this.url = url;
-    this.token = token;
+    this.worker = worker;
     this.fuzzerServiceManager = fuzzerServiceManager;
     this.jobCounter = jobCounter;
     this.retryLimit = retryLimit;
   }
 
-  public RemoteShaderDispatcher(String url, String token) {
-    this(url, token, null, new AtomicLong(), DEFAULT_RETRY_LIMIT);
+  public RemoteShaderDispatcher(String url, String worker) {
+    this(url, worker, null, new AtomicLong(), DEFAULT_RETRY_LIMIT);
   }
 
   @Override
@@ -107,7 +107,7 @@ public class RemoteShaderDispatcher implements IShaderDispatcher {
         .setJobId(jobCounter.incrementAndGet())
         .setImageJob(imageJob);
 
-    return fuzzerServiceManagerProxy.submitJob(job, token, retryLimit)
+    return fuzzerServiceManagerProxy.submitJob(job, worker, retryLimit)
         .getImageJob()
         .getResult();
   }

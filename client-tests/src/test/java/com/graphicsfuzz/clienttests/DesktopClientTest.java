@@ -73,14 +73,14 @@ public class DesktopClientTest extends CommonClientTest {
     pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
     pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
-    FileUtils.writeStringToFile(new File(temporaryFolder.getRoot(), "token.txt"),
-        TOKEN, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(new File(temporaryFolder.getRoot(), "worker-name.txt"),
+        WORKERNAME, StandardCharsets.UTF_8);
 
     worker = pb.start();
 
     int exceptionCount = 0;
     final int limit = 1000;
-    File workerDirectory = Paths.get(serverWorkDir.getAbsolutePath(), "processing", TOKEN)
+    File workerDirectory = Paths.get(serverWorkDir.getAbsolutePath(), "processing", WORKERNAME)
         .toFile();
     while (true) {
       Thread.sleep(10);
@@ -92,7 +92,7 @@ public class DesktopClientTest extends CommonClientTest {
       }
       exceptionCount++;
     }
-    System.out.println("Got token after " + exceptionCount + " tries");
+    System.out.println("Got worker name after " + exceptionCount + " tries");
   }
 
   @AfterClass
@@ -180,7 +180,7 @@ public class DesktopClientTest extends CommonClientTest {
     String[] args = {
         FilenameUtils.removeExtension(
             Paths.get(getTestShadersDirectory(), computeShader).toString()) + ".json",
-        "--token", TOKEN, "--server", "http://localhost:8080", "--output",
+        "--worker", WORKERNAME, "--server", "http://localhost:8080", "--output",
         outputDir.getAbsolutePath()
     };
 

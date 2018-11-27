@@ -37,13 +37,13 @@ limitations under the License.
 			<div class="cell">
 				<canvas id="opengl-canvas" style="border: none;" width="640" height="480"></canvas>
 			</div>
-			
+
 			<div class="cell">
 				<div id="button_div">
 					<ul>
 						<li><button title="Connects to a given server and starts executing available jobs" onclick="doRun()">Connect & Run</button></li>
 						<li><button title="Disconnects from the current server" onclick="stopRun()">Disconnect</button></li>
-						<li><button title="Resets the current token to 'null'" onclick="resetToken()">Reset token</button></li>
+						<li><button title="Resets the current worker name to 'null'" onclick="resetWorkerName()">Reset worker name</button></li>
 					</ul>
 
 					<ul>
@@ -59,10 +59,10 @@ limitations under the License.
 				<div style="clear:both;"></div>
 			</div>
 		</div>
-		
+
 		<div class="row">
 			<div class="cell shader_location_input">
-				<input type="text" id="current_token" placeholder="Current token:" readonly/><br/>
+				<input type="text" id="current_worker" placeholder="Current worker name:" readonly/><br/>
 				<input type="text" id="rendered_shader" placeholder="Rendered shader:" readonly/><br/>
 				<input type="text" id="location" placeholder="Location of shader(s)"/><br/>
 				<textarea id="shader_source" placeholder="Source of fragment shader"></textarea>
