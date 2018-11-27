@@ -324,7 +324,7 @@ if not args.disable_validator:
     if not shader_is_valid(args.output_folder + "reference.frag"):
         print("The reference fragment shader is not valid, stopping.")
         exit(1)
-    vertex_shader = args.output_folder + "reference.vert"        
+    vertex_shader = args.output_folder + "reference.vert"
     if os.path.isfile(vertex_shader) and not shader_is_valid(vertex_shader):
         print("The reference vertex shader is not valid, stopping.")
         exit(1)
@@ -340,7 +340,7 @@ if os.path.isfile(primitives_file(args.reference_prefix)):
   if "texture" in primitives_data:
     texture_filename = primitives_data["texture"]
     shutil.copyfile(texture_filename, args.output_folder + texture_filename)
-  
+
 os.chdir(args.output_folder)
 
 donor_list = glob.glob(args.donors + os.path.sep + "*.frag")
@@ -363,6 +363,7 @@ chunk_count = 0
 
 # Main variant generation loop
 while gen_variants < args.num_variants:
+
     if args.verbose:
         print("Trying variant %d (produced %d of %d)..." % (tried_variants, gen_variants, args.num_variants))
     # Generation
@@ -386,7 +387,7 @@ while gen_variants < args.num_variants:
     if generated_shaders_too_large(args, variant_file_prefix):
       # A generated shader is too large - discard it (but don't log it as bad)
       continue
-    
+
     # Validation
     if skip_due_to_invalid_shader(args, variant_file_prefix):
       continue
@@ -395,10 +396,6 @@ while gen_variants < args.num_variants:
       shutil.copyfile("reference.primitives", primitives_file(variant_file_prefix))
 
     gen_variants += 1
-    if not args.verbose and args.chunk_size > 0 and gen_variants in \
-            range(args.num_variants // args.chunk_size, args.num_variants, args.num_variants // args.chunk_size):
-        chunk_count += 1
-        print("Done %d%%..." % (100 // args.chunk_size * chunk_count), end="\r")
 
 ### Final steps
 # Output json log
@@ -407,7 +404,5 @@ dict['dict'] = log_json
 log_json_file = open("infolog.json", 'w')
 log_json_file.write(json.dumps(dict, sort_keys=True, indent=4))
 log_json_file.close()
-
-
 
 print("Generation complete -- generated %d variants in %d tries." % (gen_variants, tried_variants))

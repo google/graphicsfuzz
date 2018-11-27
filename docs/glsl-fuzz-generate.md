@@ -7,6 +7,8 @@
 glsl-generate mutates some reference GLSL shaders to produce families of variant
 shaders.
 
+## Options
+
 ```shell
 usage: glsl-generate.py [-h] [--webgl] [--keep_bad_variants] [--stop_on_fail]
                         [--verbose] [--small] [--avoid_long_loops]
@@ -56,4 +58,42 @@ optional arguments:
                         are included in generated shaders. Necessary for
                         Vulkan compatibility.
 
+```
+
+## Example
+
+From the graphicsfuzz-1.0 directory:
+
+```shell
+mkdir generated
+glsl-generate shaders/src/main/glsl/samples/donors shaders/src/main/glsl/samples/310es 2 "310 es" my_prefix generated
+```
+
+Note that the output directory must already exists.
+
+The above command will produce:
+
+```shell
+generated/
+├── my_prefix_bubblesort_flag
+│   ├── infolog.json
+│   ├── reference.frag
+│   ├── reference.json
+│   ├── variant_000.frag
+│   ├── variant_000.json
+│   ├── variant_000.prob
+│   ├── variant_001.frag
+│   ├── variant_001.json
+│   └── variant_001.prob
+├── my_prefix_colorgrid_modulo
+│   ├── infolog.json
+│   ├── reference.frag
+│   ├── reference.json
+│   ├── variant_000.frag
+│   ├── variant_000.json
+│   ├── variant_000.prob
+│   ├── variant_001.frag
+│   ├── variant_001.json
+│   └── variant_001.prob
+[ ... etc ... ]
 ```
