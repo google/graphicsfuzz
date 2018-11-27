@@ -22,8 +22,8 @@ import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
 import com.graphicsfuzz.server.thrift.ImageJob;
 import com.graphicsfuzz.server.thrift.Job;
 import com.graphicsfuzz.server.thrift.ServerInfo;
-import com.graphicsfuzz.server.thrift.TokenNotFoundException;
 import com.graphicsfuzz.server.thrift.WorkerInfo;
+import com.graphicsfuzz.server.thrift.WorkerNameNotFoundException;
 import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
@@ -66,15 +66,15 @@ public class FuzzerServiceManagerImpl implements FuzzerServiceManager.Iface {
   }
 
   @Override
-  public Job submitJob(Job job, String forClient, int retryLimit) throws TException {
-    LOGGER.info("submitJob {}", forClient);
+  public Job submitJob(Job job, String worker, int retryLimit) throws TException {
+    LOGGER.info("submitJob {}", worker);
     Job[] result = new Job[1];
 
-    if (!service.getSessionMap().containsToken(forClient)) {
-      throw new TokenNotFoundException().setToken(forClient);
+    if (!service.getSessionMap().containsWorker(worker)) {
+      throw new WorkerNameNotFoundException().setWorkerName(worker);
     }
 
-    service.getSessionMap().lockSessionAndExecute(forClient, session -> {
+    service.getSessionMap().lockSessionAndExecute(worker, session -> {
       session.jobQueue.add(new SingleJob(job, job1 -> {
         synchronized (result) {
           result[0] = job1;
@@ -117,10 +117,10 @@ public class FuzzerServiceManagerImpl implements FuzzerServiceManager.Iface {
       throw new TException("queueName must be set.");
     }
 
-    final String token = new String(queueName);
+    final String worker = new String(queueName);
 
-    if (!service.getSessionMap().containsToken(token)) {
-      throw new TokenNotFoundException().setToken(token);
+    if (!service.getSessionMap().containsWorker(worker)) {
+      throw new WorkerNameNotFoundException().setWorkerName(worker);
     }
 
     try {
@@ -134,7 +134,7 @@ public class FuzzerServiceManagerImpl implements FuzzerServiceManager.Iface {
       }
 
       service.getSessionMap().lockSessionAndExecute(
-          token, session -> {
+          worker, session -> {
             session.workQueue.add(new CommandRunnable(
                 name,
                 command,
@@ -178,7 +178,7 @@ public class FuzzerServiceManagerImpl implements FuzzerServiceManager.Iface {
     {
       List<String> reductionQueueStr = service.getReductionWorkQueue().queueToStringList();
       for (String reductionCommand : reductionQueueStr) {
-        reductionQueue.add(new CommandInfo().setName(reductionCommand));
+        reductionQueue.add(new CommandInfo().setWorkerName(reductionCommand));
       }
     }
 
@@ -186,13 +186,13 @@ public class FuzzerServiceManagerImpl implements FuzzerServiceManager.Iface {
     List<WorkerInfo> workers = new ArrayList<>();
 
     {
-      Set<String> tokens = service.getSessionMap().getTokenSet();
-      for (String token : tokens) {
-        service.getSessionMap().lockSessionAndExecute(token, session -> {
+      Set<String> workerSet = service.getSessionMap().getWorkerSet();
+      for (String worker : workerSet) {
+        service.getSessionMap().lockSessionAndExecute(worker, session -> {
 
           workers.add(
                 new WorkerInfo()
-                      .setToken(token)
+                      .setWorkerName(worker)
                       .setCommandQueue(session.workQueue.getQueueAsCommandInfoList())
                       .setJobQueue(getJobQueueAsJobInfoList(session.jobQueue))
                       .setLive(session.isLive())

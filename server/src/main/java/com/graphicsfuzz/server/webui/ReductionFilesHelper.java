@@ -24,18 +24,18 @@ import java.util.Optional;
 
 public class ReductionFilesHelper {
 
-  static File getReductionDir(String token, String shaderSet, String variant) {
-    return new File(WebUiConstants.WORKER_DIR + "/" + token + "/" + shaderSet
+  static File getReductionDir(String worker, String shaderSet, String variant) {
+    return new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderSet
         + "/reductions/" + variant);
   }
 
   static Optional<File> getLatestReductionImage(
-      String token,
+      String worker,
       String shaderset,
       String shader,
       ShaderJobFileOperations fileOps) throws IOException {
 
-    final File reductionDir = getReductionDir(token, shaderset, shader);
+    final File reductionDir = getReductionDir(worker, shaderset, shader);
     final Optional<Integer> latestSuccessfulReductionStep =
           ReductionProgressHelper.getLatestReductionStepSuccess(
               reductionDir,

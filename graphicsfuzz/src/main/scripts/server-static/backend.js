@@ -23,7 +23,7 @@ var triangleRightVertexPositionBuffer = null;
 var transport = null;
 var protocol = null;
 var client = null;
-var token = null;
+var worker = null;
 
 var msWait = 10;
 
@@ -85,7 +85,7 @@ function doRun() {
             protocol = new Thrift.TJSONProtocol(transport);
             client = new oglfuzzerserver.FuzzerServiceClient(protocol);
 
-            token = new oglfuzzerserver.Token();
+            worker = new oglfuzzerserver.WorkerName();
             var platformInfo = getPlatformInfo();
 
             if (typeof(Storage) === "undefined") {
@@ -94,18 +94,18 @@ function doRun() {
             }
 
             var queryParams = $.jurlp(window.location.href).query();
-            token.value = queryParams.token != undefined ? queryParams.token : localStorage.getItem("token");
-            console.log("Trying token '" + token.value + "'.");
-            token = client.getToken(platformInfo, token);
-            localStorage.setItem("token", token.value);
-            console.log("Token from server '" + token.value + "'.");
+            worker.value = queryParams.worker != undefined ? queryParams.worker : localStorage.getItem("worker");
+            console.log("Trying worker name'" + worker.value + "'.");
+            worker = client.getWorkerName(platformInfo, worker);
+            localStorage.setItem("worker", worker.value);
+            console.log("Worker name from server '" + worker.value + "'.");
 
-            document.getElementById("current_token").value = "Current token: " + token.value;
+            document.getElementById("current_worker").value = "Current worker: " + worker.value;
 
             isRunning = true;
         }
 
-        var job = client.getJob(token);
+        var job = client.getJob(worker);
         console.log("Got a job.");
 
         if (job.noJob != null) {
@@ -118,7 +118,7 @@ function doRun() {
 
         if(job.skipJob != null) {
             console.log("Got a skip job.");
-            client.jobDone(token, job);
+            client.jobDone(worker, job);
             return;
         }
 
@@ -148,7 +148,7 @@ function doRun() {
                 imageJob.result.errorMessage = result.error + "\n" + result.log;
             }
 
-            client.jobDone(token, job);
+            client.jobDone(worker, job);
         }
 	} catch (exception) {
 		console.log("Exception occurred: " + exception);
@@ -169,8 +169,8 @@ function stopRun() {
 	isRunning = false;
 }
 
-function resetToken() {
-	localStorage.removeItem("token");
+function resetWorker() {
+	localStorage.removeItem("worker");
 }
 
 /* OpenGL functions ------------------------------------------------------*/
@@ -453,10 +453,10 @@ function getImage() {
 	return canvas.toDataURL("image/png");
 }
 
-function downloadFile(token, url) {
+function downloadFile(worker, url) {
 	var file;
 	$.ajax({
-		url: url + "?token=" + token.value,
+		url: url + "?worker=" + worker.value,
 		async: false,
 		dataType: "text",
         mimeType: "textPlain"
@@ -470,9 +470,9 @@ function downloadFile(token, url) {
 	return file;
 }
 
-function uploadFile(token, url, shaderSet, file, destinationFilename) {
+function uploadFile(worker, url, shaderSet, file, destinationFilename) {
 	var packet = new FormData();
-	packet.append("token", token.value);
+	packet.append("worker", worker.value);
 	packet.append("id", shaderSet.shaderSetId);
 	packet.append("file", dataURItoBlob(file), destinationFilename);
 	$.ajax({
@@ -497,12 +497,12 @@ function getUnmaskedInfo(gl) {
 		vendor: '',
 		renderer: ''
 	};
-	
+
 	var dbgRenderInfo = gl.getExtension("WEBGL_debug_renderer_info");
 	if (dbgRenderInfo != null) {
 		unMaskedInfo.vendor   = gl.getParameter(dbgRenderInfo.UNMASKED_VENDOR_WEBGL);
 		unMaskedInfo.renderer = gl.getParameter(dbgRenderInfo.UNMASKED_RENDERER_WEBGL);
 	}
-	
+
 	return unMaskedInfo;
 }

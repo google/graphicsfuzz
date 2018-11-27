@@ -32,11 +32,11 @@ def start_logcat():
     logcat_subprocess = subprocess.Popen(logcat_subprocess_arg, stdout=subprocess.PIPE, universal_newlines=True)
     return logcat_subprocess.stdout
 
-def start_worker(server, token, newtab=False):
+def start_worker(server, worker, newtab=False):
     # Note the escaped ampersand in the command
     worker_cmd = "adb shell am start -n org.mozilla.firefox/org.mozilla.gecko.LauncherActivity"
     if newtab:
-        worker_cmd += " -a android.intent.action.VIEW -d 'http://" + server + "/static/runner.html?context=webgl2\&token=" + token + "'"
+        worker_cmd += " -a android.intent.action.VIEW -d 'http://" + server + "/static/runner.html?context=webgl2\&worker=" + worker + "'"
     # shlex.split() doesn't keep the escape around the URL ... ? resort
     # to shell=True
     subprocess.run(worker_cmd, shell=True)
@@ -51,17 +51,17 @@ parser.add_argument(
     help='Server URL, e.g. localhost:8080')
 
 parser.add_argument(
-    'token',
-    help='Worker token to identify to the server')
+    'worker',
+    help='Worker name to identify to the server')
 
 args = parser.parse_args()
 
 logcat = start_logcat()
-start_worker(args.server, args.token, newtab=True)
+start_worker(args.server, args.worker, newtab=True)
 
 while True:
     line = logcat.readline()
     if (" Process org.mozilla.firefox " in line) and (" has died" in line):
         print("Detected a crash: " + line, end='')
         print('Restart worker...')
-        start_worker(args.server, args.token)
+        start_worker(args.server, args.worker)

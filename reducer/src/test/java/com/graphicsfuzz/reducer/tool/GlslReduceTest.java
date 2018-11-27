@@ -37,7 +37,8 @@ public class GlslReduceTest {
   @Test
   public void noServerAllowedInCustomReduction() throws Exception {
     try {
-      GlslReduce.mainHelper(new String[]{"--server", "some_server", "--token", "some_token",
+
+      GlslReduce.mainHelper(new String[]{"--server", "some_server", "--worker", "some_worker",
               makeShaderJobAndReturnJsonFilename(), "--reduction-kind", "CUSTOM", "--output",
               temporaryFolder.getRoot().getAbsolutePath()}
           , null);
@@ -48,14 +49,14 @@ public class GlslReduceTest {
   }
 
   @Test
-  public void noTokenAllowedInCustomReduction() throws Exception {
+  public void noWorkerNameAllowedInCustomReduction() throws Exception {
     try {
-      GlslReduce.mainHelper(new String[]{"--token", "some_token",
+      GlslReduce.mainHelper(new String[]{"--worker", "some_worker",
           makeShaderJobAndReturnJsonFilename(), "--reduction-kind", "CUSTOM", "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
       assertTrue(false);
     } catch (RuntimeException exception) {
-      checkOptionNotAllowed(exception, "token");
+      checkOptionNotAllowed(exception, "worker");
     }
   }
 

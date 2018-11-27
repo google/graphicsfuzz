@@ -26,7 +26,7 @@ import com.graphicsfuzz.repackaged.org.apache.thrift.protocol.TProtocol;
 import com.graphicsfuzz.repackaged.org.apache.thrift.transport.THttpClient;
 import com.graphicsfuzz.repackaged.org.apache.thrift.transport.TTransport;
 import com.graphicsfuzz.server.thrift.FuzzerService;
-import com.graphicsfuzz.server.thrift.GetTokenResult;
+import com.graphicsfuzz.server.thrift.GetWorkerNameResult;
 import com.graphicsfuzz.server.thrift.Job;
 
 public class JobGetter implements Disposable {
@@ -36,7 +36,7 @@ public class JobGetter implements Disposable {
   private CloseableHttpClient httpClient;
   private TTransport transport;
   public FuzzerService.Iface fuzzerServiceProxy;
-  public String token;
+  public String worker;
 
   // The latest job that has been gotten.
   private Job latestJob;
@@ -59,25 +59,25 @@ public class JobGetter implements Disposable {
     Gdx.app.log("JobGetter", "JobGetter created");
   }
 
-  public boolean setToken(String token, String platformInfo) throws TException {
+  public boolean setWorkerName(String worker, String platformInfo) throws TException {
 
-    GetTokenResult getTokenResult = fuzzerServiceProxy.getToken(
+    GetWorkerNameResult getWorkerNameResult = fuzzerServiceProxy.getWorkerName(
         platformInfo,
-        token);
+        worker);
 
-    if (getTokenResult.isSetToken()) {
-      this.token = getTokenResult.getToken();
-      Gdx.app.log("JobGetter", "Token set: " + this.token);
+    if (getWorkerNameResult.isSetWorkerName()) {
+      this.worker = getWorkerNameResult.getWorkerName();
+      Gdx.app.log("JobGetter", "Worker name set: " + this.worker);
       return true;
     } else {
-      Gdx.app.log("JobGetter", "Failed to set token");
+      Gdx.app.log("JobGetter", "Failed to set worker name");
       return false;
     }
   }
 
   public Job getJob() throws TException {
 
-    Job job = fuzzerServiceProxy.getJob(token);
+    Job job = fuzzerServiceProxy.getJob(worker);
 
     Gdx.app.log("JobGetter", "Got a job.");
 
@@ -121,7 +121,7 @@ public class JobGetter implements Disposable {
 
       Gdx.app.log("JobGetter", "Sending jobDone.");
 
-      fuzzerServiceProxy.jobDone(token, job);
+      fuzzerServiceProxy.jobDone(worker, job);
 
       // We have sent a reply, so nullify latestJob.
       latestJob = null;

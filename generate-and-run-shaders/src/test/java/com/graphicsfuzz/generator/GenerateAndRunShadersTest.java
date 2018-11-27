@@ -44,7 +44,7 @@ public class GenerateAndRunShadersTest {
                 donors.getAbsolutePath(),
                 outputDir,
                 "dummy_server",
-                "dummy_token",
+                "dummy_worker",
                 "100"
             }
       );
@@ -70,7 +70,7 @@ public class GenerateAndRunShadersTest {
                 donors.getAbsolutePath(),
                 outputDir,
                 "dummy_server",
-                "dummy_token",
+                "dummy_worker",
                 "100"
             }
       );
@@ -95,7 +95,7 @@ public class GenerateAndRunShadersTest {
                 donors.getAbsolutePath(),
                 outputDir,
                 "dummy_server",
-                "dummy_token",
+                "dummy_worker",
                 "100"
             }
       );

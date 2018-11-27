@@ -83,13 +83,13 @@ public class WorkQueue {
         // runnables may add work.
         // Should not use "return" below:
         try {
-          MDC.put("token", name + ":" + runnable.toString());
+          MDC.put("worker", name + ":" + runnable.toString());
           LOGGER.info("Dequeued work item. Running it now.");
           runnable.run();
         } catch (Throwable ex) {
           LOGGER.error("Throwable", ex);
         } finally {
-          MDC.remove("token");
+          MDC.remove("worker");
         }
       }
     }
@@ -148,12 +148,12 @@ public class WorkQueue {
         CommandRunnable cr = (CommandRunnable) item;
         res.add(
             new CommandInfo()
-              .setName(cr.getName())
+              .setWorkerName(cr.getName())
               .setCommand(cr.getCommand())
               .setLogFile(cr.getLogFile())
         );
       } else {
-        res.add(new CommandInfo().setName(item.toString()));
+        res.add(new CommandInfo().setWorkerName(item.toString()));
       }
     }
     return res;

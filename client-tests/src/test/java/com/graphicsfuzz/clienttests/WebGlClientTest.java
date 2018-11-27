@@ -43,7 +43,7 @@ public class WebGlClientTest extends CommonClientTest {
     Thread.sleep(5000);
 
     final List<String> command = Arrays.asList(
-        "firefox", "-new-instance", "http://localhost:8080/static/runner.html?context=webgl2&token=" + TOKEN);
+        "firefox", "-new-instance", "http://localhost:8080/static/runner.html?context=webgl2&worker=" + WORKERNAME);
     final ProcessBuilder pb =
         new ProcessBuilder()
             .command(command)
@@ -56,7 +56,7 @@ public class WebGlClientTest extends CommonClientTest {
 
     int exceptionCount = 0;
     final int limit = 1000;
-    File workerDirectory = Paths.get(serverWorkDir.getAbsolutePath(), "processing", TOKEN)
+    File workerDirectory = Paths.get(serverWorkDir.getAbsolutePath(), "processing", WORKERNAME)
         .toFile();
     while (true) {
       Thread.sleep(10);
@@ -68,7 +68,7 @@ public class WebGlClientTest extends CommonClientTest {
       }
       exceptionCount++;
     }
-    System.out.println("Got token after " + exceptionCount + " tries");
+    System.out.println("Got worker name after " + exceptionCount + " tries");
   }
 
   @AfterClass

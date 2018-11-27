@@ -33,10 +33,10 @@ const string IDENTIFIER_ANDROID = "android";
 const string IDENTIFIER_IOS = "ios";
 
 const string UPLOAD_FIELD_NAME_FILE = "file";
-const string UPLOAD_FIELD_NAME_TOKEN = "token";
+const string UPLOAD_FIELD_NAME_WORKER = "worker";
 const string UPLOAD_FIELD_NAME_ID = "id"; // the shader set id
 
-const string DOWNLOAD_FIELD_NAME_TOKEN = UPLOAD_FIELD_NAME_TOKEN;
+const string DOWNLOAD_FIELD_NAME_WORKER = UPLOAD_FIELD_NAME_WORKER;
 
 // get_image exit codes.
 const i32 COMPILE_ERROR_EXIT_CODE = 101;
@@ -67,21 +67,21 @@ enum ImageComparisonMetric {
     PSNR
 }
 
-enum TokenError {
+enum WorkerNameError {
   SERVER_ERROR = 0,
   INVALID_PLATFORM_INFO,
-  INVALID_PROVIDED_TOKEN,
+  INVALID_PROVIDED_WORKER,
   PLATFORM_INFO_CHANGED,
 }
 
 struct CommandInfo {
-  1 : optional string name,
+  1 : optional string workerName,
   2 : optional list<string> command,
   3 : optional string logFile,
 }
 
 struct WorkerInfo {
-  1 : optional string token,
+  1 : optional string workerName,
   2 : optional list<CommandInfo> commandQueue,
   3 : optional list<string> jobQueue,
   4 : optional bool live,
@@ -92,9 +92,9 @@ struct ServerInfo {
   2 : optional list<WorkerInfo> workers
 }
 
-struct GetTokenResult {
-  1 : optional string token,
-  2 : optional TokenError error,
+struct GetWorkerNameResult {
+  1 : optional string workerName,
+  2 : optional WorkerNameError error,
 }
 
 enum JobStatus {
@@ -213,8 +213,8 @@ struct CommandResult {
   3 : optional i32 exitCode,
 }
 
-exception TokenNotFoundException {
-  1 : optional string token
+exception WorkerNameNotFoundException {
+  1 : optional string workerName
 }
 
 
@@ -223,11 +223,11 @@ exception TokenNotFoundException {
 **/
 service FuzzerService {
 
-  GetTokenResult getToken(1 : string platformInfo, 2 : string token),
+  GetWorkerNameResult getWorkerName(1 : string platformInfo, 2 : string workerName),
 
-  Job getJob(1 : string token) throws (1 : TokenNotFoundException ex),
+  Job getJob(1 : string workerName) throws (1 : WorkerNameNotFoundException ex),
 
-  void jobDone(1 : string token, 2 : Job job) throws (1 : TokenNotFoundException ex),
+  void jobDone(1 : string workerName, 2 : Job job) throws (1 : WorkerNameNotFoundException ex),
 }
 
 /**
@@ -254,7 +254,7 @@ service FuzzerServiceManager {
   /**
   * Submit a job (i.e. ImageJob) to a worker job queue.
   **/
-  Job submitJob(1 : Job job, 2 : string forClient, 3 : i32 retryLimit) throws (1 : TokenNotFoundException ex),
+  Job submitJob(1 : Job job, 2 : string forClient, 3 : i32 retryLimit) throws (1 : WorkerNameNotFoundException ex),
 
   /**
   * Clears a worker job queue.
@@ -269,7 +269,7 @@ service FuzzerServiceManager {
     1 : string name,
     // E.g. run_shader_family shaderfamilies/bbb --output processing/greylaptop/bbb_exp/
     2 : list<string> command,
-    // This should generally be set to the token.
+    // This should generally be set to the worker name
     3 : string queueName,
     // Optional: path to log file. E.g. processing/aaa/bbb_ccc_inv/command.log
     4 : string logFile),

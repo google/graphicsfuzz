@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.server;
 
-import static com.graphicsfuzz.server.thrift.FuzzerServiceConstants.DOWNLOAD_FIELD_NAME_TOKEN;
+import static com.graphicsfuzz.server.thrift.FuzzerServiceConstants.DOWNLOAD_FIELD_NAME_WORKER;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,7 +43,7 @@ public class FileDownloadServlet extends HttpServlet {
     /**
      * @return The file to write to.
      */
-    File processDownload(String pathInfo, String token) throws DownloadException;
+    File processDownload(String pathInfo, String worker) throws DownloadException;
   }
 
   private final DownloadProcessor downloadProcessor;
@@ -69,9 +69,9 @@ public class FileDownloadServlet extends HttpServlet {
     }
     pathInfo = pathInfo.substring(1);
     File file = null;
-    String token = request.getParameter(DOWNLOAD_FIELD_NAME_TOKEN);
+    String worker = request.getParameter(DOWNLOAD_FIELD_NAME_WORKER);
     try {
-      file = downloadProcessor.processDownload(pathInfo, token);
+      file = downloadProcessor.processDownload(pathInfo, worker);
     } catch (DownloadException exception) {
       throw new ServletException(exception);
     }

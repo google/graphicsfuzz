@@ -43,7 +43,7 @@ public class ShaderConsumer implements Runnable {
   private final File outputDir;
   private final File tempDir;
   private final String server;
-  private final String token;
+  private final String worker;
   private final ShadingLanguageVersion shadingLanguageVersion;
   private final Set<String> crashStringsToIgnore;
   private final boolean onlyVariants;
@@ -54,7 +54,7 @@ public class ShaderConsumer implements Runnable {
       BlockingQueue<Pair<ShaderJob, ShaderJob>> queue,
       File outputDir,
       String server,
-      String token,
+      String worker,
       ShadingLanguageVersion shadingLanguageVersion,
       Set<String> crashStringsToIgnore,
       boolean onlyVariants,
@@ -64,7 +64,7 @@ public class ShaderConsumer implements Runnable {
     this.outputDir = outputDir;
     this.tempDir = new File(outputDir, "temp");
     this.server = server;
-    this.token = token;
+    this.worker = worker;
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.crashStringsToIgnore = crashStringsToIgnore;
     this.onlyVariants = onlyVariants;
@@ -75,7 +75,7 @@ public class ShaderConsumer implements Runnable {
   public void run() {
 
     final IShaderDispatcher imageGenerator =
-        new RemoteShaderDispatcher(server + "/manageAPI", token);
+        new RemoteShaderDispatcher(server + "/manageAPI", worker);
 
     final File invalidDirectory = new File(outputDir, "INVALID");
 

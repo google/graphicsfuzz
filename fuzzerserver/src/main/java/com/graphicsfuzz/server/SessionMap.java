@@ -54,11 +54,11 @@ public final class SessionMap {
     }
 
     public Session(
-        String token,
+        String worker,
         String platformInfo,
         ExecutorService executorService) {
       this.platformInfo = platformInfo;
-      workQueue = new WorkQueue(executorService, "WorkQueue(" + token + ")");
+      workQueue = new WorkQueue(executorService, "WorkQueue(" + worker + ")");
     }
   }
 
@@ -70,16 +70,16 @@ public final class SessionMap {
 
   private final ConcurrentMap<String, Session> sessions = new ConcurrentHashMap<>();
 
-  public Set<String> getTokenSet() {
+  public Set<String> getWorkerSet() {
     return Collections.unmodifiableSet(sessions.keySet());
   }
 
-  public boolean containsToken(String token) {
-    return sessions.containsKey(token);
+  public boolean containsWorker(String worker) {
+    return sessions.containsKey(worker);
   }
 
-  public boolean isLive(String token) {
-    Session session = this.sessions.get(token);
+  public boolean isLive(String worker) {
+    Session session = this.sessions.get(worker);
     if (session == null) {
       return false;
     }
@@ -87,27 +87,27 @@ public final class SessionMap {
   }
 
   /**
-   * @return true if token was absent and so has been put into the map.
+   * @return true if worker was absent and so has been put into the map.
    */
-  public boolean putIfAbsent(String token, Session session) {
-    return sessions.putIfAbsent(token, session) == null;
+  public boolean putIfAbsent(String worker, Session session) {
+    return sessions.putIfAbsent(worker, session) == null;
   }
 
-  public void replace(String token, Session oldSession, Session session) {
-    sessions.replace(token, oldSession, session);
+  public void replace(String worker, Session oldSession, Session session) {
+    sessions.replace(worker, oldSession, session);
   }
 
-  public void remove(String token) {
-    sessions.remove(token);
+  public void remove(String worker) {
+    sessions.remove(worker);
   }
 
-  public WorkQueue getWorkQueue(String token) {
-    return sessions.get(token).workQueue;
+  public WorkQueue getWorkQueue(String worker) {
+    return sessions.get(worker).workQueue;
   }
 
-  public <T, E extends Throwable> T lockSessionAndExecute(String token,
+  public <T, E extends Throwable> T lockSessionAndExecute(String worker,
       SessionWorkerEx<T, E> sessionWorker) throws E {
-    Session session = sessions.get(token);
+    Session session = sessions.get(worker);
     synchronized (session.mutex) {
       return sessionWorker.go(session);
     }
