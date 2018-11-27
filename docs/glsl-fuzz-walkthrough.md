@@ -123,6 +123,8 @@ ls
 glsl-server
 ```
 
+Leave the server running in your terminal.
+
 Now visit [http://localhost:8080/webui](http://localhost:8080/webui)
 in your browser.
 You should see several lists:
@@ -143,10 +145,11 @@ the workers run.
 
 To test the OpenGL drivers on a
 Mac, Linux, or Windows desktop device,
-download the latest `gles-desktop-worker-1.0.jar` file from the
-[releases page](glsl-fuzz-releases.md).
+open a new terminal, navigate to a location of your choice, and
+download the latest `gles-worker-desktop-1.0.jar` file from the
+[releases page](glsl-fuzz-releases.md) into your current directory.
 
-You will need to create a `worker-name.txt` file in the same directory with one
+You will need to create a `worker-name.txt` file in your current directory with one
 line containing the worker name to identify your device. E.g.
 
 ```sh
@@ -158,7 +161,7 @@ Then execute the following:
 ```sh
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080/)
-java -ea -jar gles-desktop-worker-1.0.jar
+java -ea -jar gles-worker-desktop-1.0.jar
 ```
 
 You should see a small window containing some animated white text on
@@ -173,6 +176,10 @@ Main: Waiting 6 ticks.
 
 If you see `state: NO_CONNECTION` in the window, then the worker application
 is failing to connect to the server.
+
+Assuming the worker has succeeded in connecting to the server, leave the worker running in its terminal window.
+
+Don't care about the other kinds of worker?  [Skip ahead to running shaders on workers](#running-shaders-on-the-worker-applications).
 
 ### `gles-worker-android`
 
@@ -220,6 +227,8 @@ The app will show a second dialogue where you must enter the worker name.  Once
 you have entered a name, you should see a mostly black screen with animated text
 that contains `state: GET_JOB`.  If you see `state: NO_CONNECTION` then the
 worker application is failing to connect to the server.
+
+Don't care about the other kinds of worker?  [Skip ahead to running shaders on workers](#running-shaders-on-the-worker-applications).
 
 ### `vulkan-worker-android`
 
@@ -352,7 +361,8 @@ refresh the page and you should see the result:
 ![Variant_001 reduction result](images/screenshot-variant-reduction-result.png)
 
 In particular, you can see the difference between the
-reference shader and the reduced variant shader;
+reference shader and the reduced variant shader.
+The results will depend on what shader compiler bugs (if any!) you find on your platform, but
 in the above example,
 adding just 4 lines (that should have no effect) to the reference shader
 was enough to cause the wrong image to be rendered.
@@ -388,9 +398,7 @@ in the run log.
 
 The other default settings are sufficient, so click "Start Reduction".
 
-This time, you will not see the worker rendering images,
-as most attempts will cause the worker to crash,
-as expected.
+This time, you will not see the worker rendering images, because the "Skip Render" option has been set.  This is because to reduce a shader compiler crash bug there is no need to actually render using the shader if it compiles successfully.
 
 Once the reduction has finished,
 refresh the page and you should see the result.
@@ -463,8 +471,8 @@ Under `work/processing/<worker>/<shader_family>/reductions/<variant>/`,
 the reduction of this variant leads to the following files:
 
 * `command.log` is the command with which the reducer was started
-* `<variant>_reduced_<step_number>.*` are the files associated with this given
-  step of the reduction.
+* `<variant>_reduced_<step_number>_<success_or_fail>.*` are the files associated with this given
+  step of the reduction; `success` or `fail` indicates whether the reduction step succeeded in preserving the bug or not 
 * `<variant>_reduced_final.*` are the files at the final step of the
   reduction. It typically refers to the smallest shader the reducer could obtain
   for this particular reduction.
