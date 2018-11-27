@@ -73,74 +73,74 @@ generate_shader_family = os.sep.join([os.path.dirname(os.path.abspath(__file__))
 references = glob.glob(args.references + os.sep + "*.frag")
 
 if not references:
-  print("Warning: no references found in " + args.references)
+    print("Warning: no references found in " + args.references)
 else:
-  print("About to generate "
-        + str(len(references)) + " shader famil" + ("y" if len(references) == 0 else "ies")
-        + ", each with " + str(args.num_variants) + " variant" + ("" if args.num_variants == 1 else "s") + ".")
+    print("About to generate "
+          + str(len(references)) + " shader famil" + ("y" if len(references) == 0 else "ies")
+          + ", each with " + str(args.num_variants) + " variant" + ("" if args.num_variants == 1 else "s") + ".")
 
 reference_count = 0
 for reference in glob.glob(args.references + os.sep + "*.frag"):
-  print("Generating family " + str(reference_count) + " from reference " + reference)
-  reference_count += 1
-  cmd = [
-      "python",
-      generate_shader_family,
-      os.path.splitext(reference)[0],
-      args.donors,
-      args.glsl_version,
-      os.path.join(
-          args.output_folder,
-          args.prefix + "_" + os.path.splitext(os.path.basename(reference))[0]
-      ),
-      "--num_variants",
-      str(args.num_variants),
-      "--seed",
-      str(random.randint(0, pow(2, 16)))
-  ]
-  if args.webgl:
-      cmd.append("--webgl")
-  if args.verbose:
-      cmd.append("--verbose")
-  if args.keep_bad_variants:
-      cmd.append("--keep_bad_variants")
-  if args.stop_on_fail:
-      cmd.append("--stop_on_fail")
-  if args.small:
-      cmd.append("--small")
-  if args.avoid_long_loops:
-    cmd.append("--avoid_long_loops")
-  if args.max_bytes is not None:
-      cmd.append("--max_bytes")
-      cmd.append(str(args.max_bytes))
-  if args.max_factor is not None:
-    cmd.append("--max_factor")
-    cmd.append(str(args.max_factor))
-  if args.replace_float_literals:
-    cmd.append("--replace_float_literals")
-  if args.multi_pass:
-    cmd.append("--multi_pass")
-  if args.require_license:
-    cmd.append("--require_license")
-  if args.generate_uniform_bindings:
-    cmd.append("--generate_uniform_bindings")
-  if args.max_uniforms is not None:
-    cmd.append("--max_uniforms")
-    cmd.append(str(args.max_uniforms))
+    print("Generating family " + str(reference_count) + " from reference " + reference)
+    reference_count += 1
+    cmd = [
+        "python",
+        generate_shader_family,
+        os.path.splitext(reference)[0],
+        args.donors,
+        args.glsl_version,
+        os.path.join(
+            args.output_folder,
+            args.prefix + "_" + os.path.splitext(os.path.basename(reference))[0]
+        ),
+        "--num_variants",
+        str(args.num_variants),
+        "--seed",
+        str(random.randint(0, pow(2, 16)))
+    ]
+    if args.webgl:
+        cmd.append("--webgl")
+    if args.verbose:
+        cmd.append("--verbose")
+    if args.keep_bad_variants:
+        cmd.append("--keep_bad_variants")
+    if args.stop_on_fail:
+        cmd.append("--stop_on_fail")
+    if args.small:
+        cmd.append("--small")
+    if args.avoid_long_loops:
+        cmd.append("--avoid_long_loops")
+    if args.max_bytes is not None:
+        cmd.append("--max_bytes")
+        cmd.append(str(args.max_bytes))
+    if args.max_factor is not None:
+        cmd.append("--max_factor")
+        cmd.append(str(args.max_factor))
+    if args.replace_float_literals:
+        cmd.append("--replace_float_literals")
+    if args.multi_pass:
+        cmd.append("--multi_pass")
+    if args.require_license:
+        cmd.append("--require_license")
+    if args.generate_uniform_bindings:
+        cmd.append("--generate_uniform_bindings")
+    if args.max_uniforms is not None:
+        cmd.append("--max_uniforms")
+        cmd.append(str(args.max_uniforms))
 
-  if args.verbose:
-      print("Generating a shader family: " + " ".join(cmd))
+    if args.verbose:
+        print("Generating a shader family: " + " ".join(cmd))
 
-  proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  proc_stdout, proc_stderr = proc.communicate()
-  if proc.returncode != 0:
-      print("Error code " + str(proc.returncode) + " returned during generation of shader family for " + reference)
-      if args.stop_on_fail:
-          print("Stopping.")
-          exit(1)
-  if args.verbose:
-    print("")
-    print(" ".join(cmd))
-    print(proc_stdout)
-    print(proc_stderr)
-    print("")
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc_stdout, proc_stderr = proc.communicate()
+    if proc.returncode != 0:
+        print("Error code " + str(proc.returncode) + " returned during generation of shader family for " + reference)
+        if args.stop_on_fail:
+            print("Stopping.")
+            exit(1)
+    if args.verbose:
+        print("")
+        print(" ".join(cmd))
+        print(proc_stdout)
+        print(proc_stderr)
+        print("")
