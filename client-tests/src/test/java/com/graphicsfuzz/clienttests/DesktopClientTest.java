@@ -199,14 +199,15 @@ public class DesktopClientTest extends CommonClientTest {
   private void checkOutput(File jsonFile, int[] expected) throws FileNotFoundException {
     JsonObject json = new Gson().fromJson(new FileReader(jsonFile),
         JsonObject.class);
-    assertArrayEquals(expected, getIntArray(json.get("Outputs").getAsJsonObject().get("output").getAsJsonArray()));
+    assertArrayEquals(expected,
+        getIntArray(json.get("outputs").getAsJsonObject().get("output").getAsJsonArray()));
   }
 
   private void checkOutputPrefix(File jsonFile, int[] expectedPrefix) throws FileNotFoundException {
     JsonObject json = new Gson().fromJson(new FileReader(jsonFile),
           JsonObject.class);
     final int[] actualData = getIntArray(
-          json.get("Outputs").getAsJsonObject().get("output").getAsJsonArray());
+          json.get("outputs").getAsJsonObject().get("output").getAsJsonArray());
     for (int i = 0; i < expectedPrefix.length; i++) {
       assertEquals(expectedPrefix[i], actualData[i]);
     }
