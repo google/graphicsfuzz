@@ -68,7 +68,7 @@ parser.add_argument("--max_uniforms", type=int, action="store",
 
 args = parser.parse_args()
 
-generate_shader_family = os.sep.join([os.path.dirname(os.path.abspath(__file__)), "generate_shader_family.py"])
+generate_shader_family = os.sep.join([os.path.dirname(os.path.abspath(__file__)), "generate-shader-family.py"])
 
 references = glob.glob(args.references + os.sep + "*.frag")
 
