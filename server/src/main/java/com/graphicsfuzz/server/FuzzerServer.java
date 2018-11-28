@@ -92,7 +92,7 @@ public final class FuzzerServer {
       context.addServlet(shManager, "/manageAPI");
     }
 
-    context.addServlet(new ServletHolder(new WebUi(fileOps)), "/webui/*");
+    context.addServlet(new ServletHolder(new WebUi(fuzzerServiceManager, fileOps)), "/webui/*");
 
     final String staticDir = ToolPaths.getStaticDir();
     context.addServlet(

@@ -1,7 +1,6 @@
 <component name="ProjectCodeStyleConfiguration">
   <code_scheme name="Project" version="173">
     <option name="RIGHT_MARGIN" value="100" />
-    <option name="WRAP_WHEN_TYPING_REACHES_RIGHT_MARGIN" value="true" />
     <JavaCodeStyleSettings>
       <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="1000" />
       <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="1000" />
@@ -20,6 +19,7 @@
       <option name="ENABLED" value="false" />
     </editorconfig>
     <codeStyleSettings language="JAVA">
+      <option name="BINARY_OPERATION_SIGN_ON_NEXT_LINE" value="true" />
       <option name="WRAP_LONG_LINES" value="true" />
       <option name="WRAP_ON_TYPING" value="1" />
       <indentOptions>

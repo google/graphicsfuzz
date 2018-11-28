@@ -53,7 +53,7 @@ public class ReducerBugPointBasic {
           .type(File.class);
 
     // Optional arguments
-    parser.addArgument("--max_iterations")
+    parser.addArgument("--max-iterations")
           .help("Maximum number of times to iterate before giving up.")
           .setDefault(30)
           .type(Integer.class);
@@ -63,16 +63,16 @@ public class ReducerBugPointBasic {
           .setDefault(new Random().nextInt())
           .type(Integer.class);
 
-    parser.addArgument("--reduce_everywhere")
-          .help("Reduce arbitrary parts of the shader.")
+    parser.addArgument("--preserve-semantics")
+          .help("Only perform semantics-preserving reductions.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--ignore_invalid")
+    parser.addArgument("--ignore-invalid")
           .help("Do not log or fix on cases where the shader is invalid - "
                 + "ignore them and backtrack.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--expected_string")
+    parser.addArgument("--expected-string")
           .help("A string to look for in the exception message.")
           .type(String.class);
 
@@ -100,7 +100,7 @@ public class ReducerBugPointBasic {
 
     final int maxIterations = ns.get("max_iterations");
 
-    final boolean reduceEverywhere = ns.get("reduce_everywhere");
+    final boolean reduceEverywhere = !ns.getBoolean("reduce_everywhere");
 
     final boolean ignoreInvalid = ns.get("ignore_invalid");
 

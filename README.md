@@ -1,65 +1,46 @@
-
-Warning: this repository is a work-in-progress. Things may break while we transition this project to open source. This is not an officially supported Google product.
-
 # GraphicsFuzz
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Build Status](https://travis-ci.org/google/graphicsfuzz.svg?branch=master)](https://travis-ci.org/google/graphicsfuzz)
+
+## GraphicsFuzz is a testing framework for shader compilers
+
+GraphicsFuzz provides tools to automatically find and simplify bugs in graphics
+shader compilers. It operates on GLSL shaders, and uses
+glslangValidator and spirv-tools to additionally target SPIR-V.
+
+## Tools
+
+* **glsl-reduce**: a stand-alone GLSL shader reducer
+* **glsl-fuzz**: a family of tools for testing GLSL shader compilers using randomized metamorphic testing
+
+### glsl-reduce
+
+* [Introduction: my shader is being weird, now what?](docs/glsl-reduce-intro.md)
+* [glsl-reduce walkthrough](docs/glsl-reduce-walkthrough.md)
+* [glsl-reduce manual](docs/glsl-reduce.md)
+* [Developer documentation](docs/glsl-fuzz-develop.md)
+
+### glsl-fuzz
+
+* [How it works (high-level): metamorphic testing using glsl-fuzz](docs/glsl-fuzz-intro.md)
+* [glsl-fuzz walkthrough](docs/glsl-fuzz-walkthrough.md)
+* [glsl-generate manual](docs/glsl-fuzz-generate.md)
+* [glsl-reduce manual (for reducing fuzzed shaders)](docs/glsl-fuzz-reduce.md)
+* [Developer documentation](docs/glsl-fuzz-develop.md)
+
+## Get the GraphicsFuzz tools
 
 
-## Introduction
+* **Pre-built binaries** are available on the [GitHub releases page](docs/glsl-fuzz-releases.md)
+* [**Build instructions**](docs/glsl-fuzz-develop.md)
 
-GraphicsFuzz is a testing framework for automatically finding and simplifying bugs in graphics shader compilers. Our tools currently manipulate GLSL shaders, but we can indirectly test other targets such as SPIR-V, HLSL and Metal. Our current priority is testing Vulkan drivers.
 
-* [Getting started](docs/getting_started.md)
-* [Developer getting started](docs/development.md)
+## Contribute
+
 * [Contributing (requires Google CLA)](CONTRIBUTING.md)
 * [License (Apache 2.0)](LICENSE)
-
-## The problem
-
-A graphics driver takes a *shader program* as input and executes it on a GPU (graphics processing unit) to render an image.
-
-![shader program, to GPU, to image](docs/images/shader-gpu-image.png)
-
-Compiling and executing shaders is complex, and many graphics drivers are unreliable: a valid shader can lead to wrong images, driver errors or even security issues.
-
-![shader program, to GPU, to crash](docs/images/shader-gpu-crash.png)
-
-## Automatically finding bugs
-
-We start with a *reference shader* that renders an image. The reference shader can be any shader you like, such as a high-value shader from a game or existing test suite.
-
-![reference, to GPU, to image](docs/images/reference-gpu-image.png)
-
-Shaders are programs, so by applying *semantics-preserving* source code transformations, we can obtain a shader with significantly different source code that still has the same effect.
-
-![transformation example: wrapping a statement in a do-while-false loop](docs/images/transformation-example.png)
-
-For example, wrapping code in a single-iteration loop does not change the meaning (semantics) of a program. By applying various semantics-preserving transformations to the reference shader, we generate a family of *variant shaders*, where each variant must render the same image as the reference.
-
-![reference and variants, to GPU, to many equivalent images](docs/images/variant-same.png)
-
-If a variant shader leads to a seriously different image (or a driver error), then we have found a graphics driver bug!
-
-![reference and one variant, to GPU, to two different images](docs/images/variant-bug-wrongimg.png)
-
-This approach is known as *metamorphic testing*.
-
-## Reduction
-
-Finding bugs is not the end of the story: a variant shader that exposes a bug is typically very large (thousands of lines), full of code coming from the semantics-preserving transformations. Typically only a fraction of this code is needed to expose the bug.
-
-![Source code, the majority of which is highlighted in yellow, but parts of one statement are not highlighted.](docs/images/variant-haystack.png)
-
-Fortunately, our reducer is able to selectively reverse those transformations that are not relevant to the bug. After reduction, we obtain a small difference sufficient to expose the driver issue.
-
-![The same source code, the majority of which is highlighted in yellow and striked out, but parts of one statement remain.](docs/images/variant-reduced.png)
-
-The reduced variant *still exposes the bug*, and differs from the reference only slightly: this is a great starting point to isolate the root cause of the bug in the graphics driver.
-
-## Summary
-
-GraphicsFuzz finds bugs in graphics drivers by rendering families of semantically equivalent shaders, and looking for output discrepancies. This approach is known as *metamorphic testing*. For each bug, the reducer saves a lot of debugging time by producing a simpler *minimal-difference test case* that still exposes the bug.
+* [Developer documentation](docs/glsl-fuzz-develop.md)
 
 ## Further reading
 
@@ -89,3 +70,5 @@ GraphicsFuzz finds bugs in graphics drivers by rendering families of semanticall
 
 * OOPSLA 2017: [Automated Testing of Graphics Shader Compilers](http://multicore.doc.ic.ac.uk/publications/oopsla-17.html)
 * Metamorphic [Testing Workshop at ICSE 2016: Metamorphic Testing for (Graphics) Compilers](http://multicore.doc.ic.ac.uk/publications/met-16.html)
+
+This is not an officially supported Google product.

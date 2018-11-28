@@ -59,7 +59,7 @@ public class ReducerBugPoint {
           .type(File.class);
 
     // Optional arguments
-    parser.addArgument("--max_iterations")
+    parser.addArgument("--max-iterations")
           .help("Maximum number of times to iterate before giving up.")
           .setDefault(30)
           .type(Integer.class);
@@ -69,19 +69,19 @@ public class ReducerBugPoint {
           .setDefault(new Random().nextInt())
           .type(Integer.class);
 
-    parser.addArgument("--reduce_everywhere")
-          .help("Reduce arbitrary parts of the shader.")
+    parser.addArgument("--preserve-semantics")
+          .help("Only perform semantics-preserving reductions.")
           .action(Arguments.storeTrue());
 
     parser.addArgument("--verbose")
           .help("Emit verbose info.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--exception_on_invalid")
+    parser.addArgument("--exception-on-invalid")
           .help("Throw exception when shader is invalid.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--expected_string")
+    parser.addArgument("--expected-string")
           .help("A string to look for in the exception message.")
           .type(String.class);
 
@@ -98,7 +98,7 @@ public class ReducerBugPoint {
 
     final int maxIterations = ns.get("max_iterations");
 
-    final boolean reduceEverywhere = ns.get("reduce_everywhere");
+    final boolean reduceEverywhere = !ns.getBoolean("preserve_semantics");
 
     final boolean verbose = ns.get("verbose");
 

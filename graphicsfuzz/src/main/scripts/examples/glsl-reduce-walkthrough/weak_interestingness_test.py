@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 # Copyright 2018 The GraphicsFuzz Project Authors
 #
@@ -18,14 +18,16 @@ import os
 import subprocess
 import sys
 
-java_tool_path = os.sep.join(
-    [os.path.dirname(os.path.abspath(__file__)), "..", "..", "jar", "tool-1.0.jar"])
+frag = os.path.splitext(sys.argv[1])[0] + ".frag"
+print(frag)
 
-# Run the reduction
+cmd = [ "python", os.path.dirname(os.path.realpath(__file__)) + os.sep + "fake_compiler.py", frag ]
+proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+proc.communicate()
 
-cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.reducer.tool.GlslReduce" ] + sys.argv[1:]
+if proc.returncode != 0:
+  # Interesting: the compiler failed.
+  exit(0)
 
-print("Reduction command: %s" % (" ".join(cmd)))
-reduce_proc = subprocess.Popen(cmd)
-reduce_proc.communicate()
-sys.exit(reduce_proc.returncode)
+# Boring: the compiler succeeded.
+exit(1)

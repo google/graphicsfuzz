@@ -74,14 +74,22 @@ public class GlslReduce {
             + "or a compute shader (NAME.comp).");
 
     // Required arguments
-    parser.addArgument("shader_job")
+    parser.addArgument("shader-job")
           .help("Path of shader job to be reduced.  E.g. /path/to/shaderjob.json ")
           .type(File.class);
 
-    parser.addArgument("reduction_kind")
+    // Optional positional argument
+    parser.addArgument("interestingness-test")
+        .help("Path to an executable shell script that should decide whether a shader job is "
+            + "interesting.  Only allowed (and then also required) when performing a custom "
+            + "reduction, which is the default.")
+        .nargs("?")
+        .type(File.class);
+
+    parser.addArgument("--reduction-kind")
           .help("Kind of reduction to be performed.  Options are:\n"
                 + "   " + ReductionKind.CUSTOM
-                + "             Reduces based on custom criterion.\n"
+                + "             Reduces based on a user-supplied interestingness test.\n"
                 + "   " + ReductionKind.NO_IMAGE
                 + "               Reduces while image generation fails to produce an image.\n"
                 + "   " + ReductionKind.NOT_IDENTICAL
@@ -98,6 +106,7 @@ public class GlslReduce {
                 + "     Reduces while validator gives a particular error\n"
                 + "   " + ReductionKind.ALWAYS_REDUCE
                 + "       Always reduces (useful for testing)\n")
+          .setDefault("CUSTOM")
           .type(String.class);
 
     parser.addArgument("--metric")
@@ -118,19 +127,18 @@ public class GlslReduce {
 
     parser.addArgument("--timeout")
           .help(
-                "Time in seconds after which execution of an individual variant is terminated "
-                      + "during reduction.")
+                "Time in seconds after which checking interestingness of a shader job is aborted.")
           .setDefault(30)
           .type(Integer.class);
 
-    parser.addArgument("--max_steps")
+    parser.addArgument("--max-steps")
           .help(
                 "The maximum number of reduction steps to take before giving up and outputting the "
                       + "final reduced file.")
           .setDefault(250)
           .type(Integer.class);
 
-    parser.addArgument("--retry_limit")
+    parser.addArgument("--retry-limit")
           .help("When getting an image via the server, the number of times the server should "
                 + "allow the client to retry a shader before assuming the shader crashes the "
                 + "client and marking it as SKIPPED.")
@@ -141,17 +149,18 @@ public class GlslReduce {
           .help("Emit detailed information related to the reduction process.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--skip_render")
+    parser.addArgument("--skip-render")
           .help("Don't render the shader on remote clients. Useful when reducing compile or link "
                 + "errors.")
           .action(Arguments.storeTrue());
 
     parser.addArgument("--seed")
-          .help("Seed to initialize random number generator with.")
+          .help("Seed with which to initialize the random number that is used to control "
+              + "reduction decisions.")
           .setDefault(new Random().nextInt())
           .type(Integer.class);
 
-    parser.addArgument("--error_string")
+    parser.addArgument("--error-string")
           .help("String checked for containment in validation or compilation tool error message.")
           .type(String.class);
 
@@ -164,15 +173,15 @@ public class GlslReduce {
           .type(String.class);
 
     parser.addArgument("--output")
-          .help("Output directory.")
+          .help("Directory to which reduction intermediate and final results will be written.")
           .setDefault(new File("."))
           .type(File.class);
 
-    parser.addArgument("--reduce_everywhere")
-          .help("Allow reducer to reduce arbitrarily.")
+    parser.addArgument("--preserve-semantics")
+          .help("Only perform semantics-preserving reductions.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--stop_on_error")
+    parser.addArgument("--stop-on-error")
           .help("Quit if something goes wrong during reduction; useful for testing.")
           .action(Arguments.storeTrue());
 
@@ -180,14 +189,11 @@ public class GlslReduce {
           .help("Use swiftshader for rendering.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--continue_previous_reduction")
-          .help("Carry on from where a previous reduction attempt left off.")
+    parser.addArgument("--continue-previous-reduction")
+          .help("Carry on from where a previous reduction attempt left off.  Requires the "
+              + "temporary files written by the previous reduction to be intact, including the "
+              + "presence of a " + Constants.REDUCTION_INCOMPLETE + " file.")
           .action(Arguments.storeTrue());
-
-    parser.addArgument("--custom_judge")
-        .help("Path to an executable shell script that should decide whether a shader job is "
-            + "interesting.")
-        .type(File.class);
 
     return parser;
 
@@ -231,7 +237,7 @@ public class GlslReduce {
         throw new ArgumentParserException(
               "If reduction kind is "
                     + ReductionKind.VALIDATOR_ERROR
-                    + " then --error_string must be provided.",
+                    + " then --error-string must be provided.",
               parser);
       }
 
@@ -262,7 +268,7 @@ public class GlslReduce {
       final boolean skipRender = ns.get("skip_render");
       final int seed = ns.get("seed");
       final String errorString = ns.get("error_string");
-      final boolean reduceEverywhere = ns.get("reduce_everywhere");
+      final boolean reduceEverywhere = !ns.getBoolean("preserve_semantics");
       final boolean stopOnError = ns.get("stop_on_error");
 
       final String server = ns.get("server");
@@ -290,7 +296,7 @@ public class GlslReduce {
 
       final File referenceResultFile = ns.get("reference");
 
-      final File customJudgeScript = ns.get("custom_judge");
+      final File customJudgeScript = ns.get("interestingness_test");
 
       if (reductionKind == ReductionKind.CUSTOM) {
         if (server != null) {
@@ -300,22 +306,22 @@ public class GlslReduce {
           throwExceptionForCustomReduction("worker");
         }
         if (errorString != null) {
-          throwExceptionForCustomReduction("error_string");
+          throwExceptionForCustomReduction("error-string");
         }
         if (referenceResultFile != null) {
           throwExceptionForCustomReduction("reference");
         }
         if (customJudgeScript == null) {
-          throw new RuntimeException("A " + ReductionKind.CUSTOM + " reduction requires a judge "
-              + "to be specified via '--custom_judge'");
+          throw new RuntimeException("A custom reduction requires an interestingness test to be "
+              + "specified.");
         }
         if (!customJudgeScript.canExecute()) {
           throw new RuntimeException("Custom judge script must be executable.");
         }
       } else {
         if (customJudgeScript != null) {
-          throw new RuntimeException("custom_judge' option only supported with "
-              + ReductionKind.CUSTOM + " reduction.");
+          throw new RuntimeException("An interestingness test is only supported when a custom "
+              + "reduction is used.");
         }
       }
 
@@ -559,9 +565,8 @@ public class GlslReduce {
   }
 
   private static void throwExceptionForCustomReduction(String option) {
-    throw new RuntimeException("The '--" + option + "' option is not compatible with a "
-        + ReductionKind.CUSTOM + " reduction; details of judgement should all be in the custom "
-        + "judge specified via --custom_judge.");
+    throw new RuntimeException("The '--" + option + "' option is not compatible with a custom "
+        + "reduction; details of judgement should all be captured in the interestingness test.");
   }
 
 }

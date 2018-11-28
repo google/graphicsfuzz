@@ -249,7 +249,8 @@ limitations under the License.
                       <zipfileset src="${com.graphicsfuzz:thrift:zip:js}" prefix="server-static/gen-js"/>
                       <zipfileset src="${com.graphicsfuzz:tester:zip:shaders}" prefix="test-shaders"/>
                       <zipfileset src="${com.graphicsfuzz.thirdparty:semantic-ui:zip}" prefix="server-static/semantic"/>
-                      <zipfileset dir="${project.basedir}/src/main/scripts"/>
+                      <zipfileset dir="${project.basedir}/src/main/scripts" excludes="examples/**"/>
+                      <zipfileset dir="${project.basedir}/src/main/scripts" includes="examples/**" filemode="755"/>
                       <zipfileset dir="${project.build.directory}/dependency" prefix="jar"/>
                       <zipfileset dir="${project.build.directory}/sources" prefix="sources"/>
                       <file file="${git-file}"/>
@@ -257,6 +258,7 @@ limitations under the License.
                     <unzip src="${assembly-zip}" dest="${assembly-dir}"/>
                     <chmod perm="ugo+x" dir="${assembly-dir}/bin" includes="**" />
                     <chmod perm="ugo+x" dir="${assembly-dir}/python" includes="**" />
+                    <chmod perm="ugo+x" dir="${assembly-dir}/examples" includes="**" />
                     <touch file="${touched-file}"/>
                   </sequential>
                 </outofdate>

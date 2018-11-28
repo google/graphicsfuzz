@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 # Copyright 2018 The GraphicsFuzz Project Authors
 #
@@ -18,14 +18,18 @@ import os
 import subprocess
 import sys
 
-java_tool_path = os.sep.join(
-    [os.path.dirname(os.path.abspath(__file__)), "..", "..", "jar", "tool-1.0.jar"])
+frag = os.path.splitext(sys.argv[1])[0] + ".frag"
+print(frag)
 
-# Run the reduction
+cmd = [ "python", os.path.dirname(os.path.realpath(__file__)) + os.sep + "fake_compiler.py", frag ]
 
-cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.reducer.tool.GlslReduce" ] + sys.argv[1:]
+proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+proc_stdout, proc_stderr = proc.communicate()
 
-print("Reduction command: %s" % (" ".join(cmd)))
-reduce_proc = subprocess.Popen(cmd)
-reduce_proc.communicate()
-sys.exit(reduce_proc.returncode)
+if proc.returncode != 0:
+  if "too much indexing" in proc_stderr:
+    # Interesting: the compiler failed with a relevant message.
+    exit(0)
+
+# Boring: the compiler either succeeded, or failed with an irrelevant message.
+exit(1)

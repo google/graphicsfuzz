@@ -51,13 +51,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.transport.THttpClient;
-import org.apache.thrift.transport.TTransport;
 
 /**
  * Simple Web UI.
@@ -80,26 +74,30 @@ import org.apache.thrift.transport.TTransport;
  */
 public class WebUi extends HttpServlet {
 
-  private StringBuilder html;
+  private final StringBuilder html;
   private long startTime;
-  private final AccessFileInfo accessFileInfo = new AccessFileInfo();
+  private final AccessFileInfo accessFileInfo;
 
   private final FilenameFilter variantFragFilter =
       (dir, name) -> name.startsWith("variant_") && name.endsWith(".frag");
 
   private final ShaderJobFileOperations fileOps;
+  private final FuzzerServiceManager.Iface fuzzerServiceManagerProxy;
 
-  public WebUi(ShaderJobFileOperations fileOps) {
+  public WebUi(FuzzerServiceManager.Iface fuzzerServiceManager, ShaderJobFileOperations fileOps) {
+    this.html = new StringBuilder();
+    this.accessFileInfo = new AccessFileInfo();
     this.fileOps = fileOps;
+    this.fuzzerServiceManagerProxy = fuzzerServiceManager;
   }
 
-  class Shaderset {
+  private static final class Shaderset {
     final String name;
     final File dir;
     final File preview;
     final int nbVariants;
 
-    Shaderset(String name) {
+    public Shaderset(String name) {
       this.name = name;
       this.dir = new File(WebUiConstants.SHADERSET_DIR + "/" + name);
       this.preview = new File(dir + "/thumb.png");
@@ -113,7 +111,7 @@ public class WebUi extends HttpServlet {
     }
   }
 
-  class ShadersetExp {
+  private static final class ShadersetExp {
     final Shaderset shaderset;
     final String name;
     final String worker;
@@ -125,7 +123,8 @@ public class WebUi extends HttpServlet {
     int nbSlightlyDifferentImage;
     int nbWrongImage;
 
-    ShadersetExp(String name, String worker) throws FileNotFoundException {
+    public ShadersetExp(String name, String worker, AccessFileInfo accessFileInfo)
+        throws FileNotFoundException {
       this.name = name;
       this.worker = worker;
       this.dir = new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + name);
@@ -133,7 +132,7 @@ public class WebUi extends HttpServlet {
       this.nbVariants = shaderset.nbVariants;
 
       // Set variant counters
-      for (File file: dir.listFiles()) {
+      for (File file : dir.listFiles()) {
         if (file.getName().startsWith("variant") && file.getName().endsWith(".info.json")) {
           nbVariantDone++;
           JsonObject info = accessFileInfo.getResultInfo(file);
@@ -154,7 +153,7 @@ public class WebUi extends HttpServlet {
     }
   }
 
-  private boolean imageIsIdentical(JsonObject info) {
+  private static boolean imageIsIdentical(JsonObject info) {
     // We're looking for metrics/identical, conservatively return false if it is not found.
     if (info == null) {
       return false;
@@ -166,11 +165,10 @@ public class WebUi extends HttpServlet {
     if (!metricsJson.has("identical")) {
       return false;
     }
-    final boolean isIndentical = metricsJson.get("identical").getAsBoolean();
-    return isIndentical;
+    return metricsJson.get("identical").getAsBoolean();
   }
 
-  private boolean imageIsAcceptable(JsonObject info) {
+  private static boolean imageIsAcceptable(JsonObject info) {
 
     // This currently uses histogram data, if available, but can easily be adapted to
     // use other data that is available, e.g. PSNR.
@@ -197,27 +195,6 @@ public class WebUi extends HttpServlet {
 
   private enum ReductionStatus {
     NOREDUCTION, ONGOING, FINISHED, NOTINTERESTING, EXCEPTION, INCOMPLETE
-  }
-
-  private FuzzerServiceManager.Iface fuzzerServiceManagerProxy;
-
-  public void init() throws ServletException {
-
-    html = new StringBuilder();
-
-    try {
-      CloseableHttpClient httpClient = HttpClients.createDefault();
-      TTransport transport = new THttpClient("http://localhost:8080/manageAPI", httpClient);
-      transport.open();
-      TProtocol protocol = new TBinaryProtocol(transport);
-      fuzzerServiceManagerProxy = new FuzzerServiceManager.Client(protocol);
-    } catch (TException ex) {
-      ex.printStackTrace();
-    }
-  }
-
-  public void destroy() {
-    // do nothing.
   }
 
   private String getResourceContent(String resourceName) throws IOException {
@@ -522,7 +499,7 @@ public class WebUi extends HttpServlet {
         (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
     for (File shaderFamilyFile : shaderFamilies) {
       final String shaderFamily = shaderFamilyFile.getName();
-      ShadersetExp shadersetExp = new ShadersetExp(shaderFamily, workerName);
+      ShadersetExp shadersetExp = new ShadersetExp(shaderFamily, workerName, accessFileInfo);
 
       htmlAppendLn(
           "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
@@ -1145,7 +1122,7 @@ public class WebUi extends HttpServlet {
           List<String> commands = new ArrayList<>();
           commands.add("run_shader_family");
           commands.add("--server");
-          commands.add("http://localhost:8080/manageAPI");
+          commands.add("http://localhost:8080");
           commands.add("--worker");
           commands.add(worker);
           commands.add("--output");
@@ -1311,9 +1288,10 @@ public class WebUi extends HttpServlet {
 
     final List<String> args = new ArrayList<>();
     args.add("glsl-reduce");
-    final String shaderJobFilePath = request.getParameter("shader_path");
+    final String shaderJobFilePath = request.getParameter("shader-path");
     args.add(shaderJobFilePath);
-    final String reductionType = request.getParameter("reduction_type");
+    args.add("--reduction-kind");
+    final String reductionType = request.getParameter("reduction-kind");
     args.add(reductionType);
     args.add("--metric");
     args.add(request.getParameter("metric"));
@@ -1322,33 +1300,33 @@ public class WebUi extends HttpServlet {
     args.add(output);
     if (!ReductionKind.NO_IMAGE.toString().equalsIgnoreCase(reductionType)) {
       args.add("--reference");
-      args.add(request.getParameter("reference_image"));
+      args.add(request.getParameter("reference-image"));
     }
     args.add("--worker");
     final String worker = request.getParameter("worker");
     args.add(worker);
     args.add("--server");
-    args.add("http://localhost:8080/manageAPI");
+    args.add("http://localhost:8080");
     final String threshold = request.getParameter("threshold");
     if (threshold != null) {
       args.add("--threshold");
       args.add(threshold);
     }
-    final String errorRegex = request.getParameter("error_regex");
+    final String errorRegex = request.getParameter("error-string");
     if (errorRegex != null) {
-      args.add("--error_string");
+      args.add("--error-string");
       args.add(errorRegex);
     }
-    final String reduceEverywhere = request.getParameter("reduce_everywhere");
+    final String reduceEverywhere = request.getParameter("preserve-semantics");
     if (reduceEverywhere != null) {
       if (reduceEverywhere.equals("on")) {
-        args.add("--reduce_everywhere");
+        args.add("--preserve-semantics");
       }
     }
-    final String skipRender = request.getParameter("skip_render");
+    final String skipRender = request.getParameter("skip-render");
     if (skipRender != null) {
       if (skipRender.equals("on")) {
-        args.add("--skip_render");
+        args.add("--skip-render");
       }
     }
     final String timeout = request.getParameter("timeout");
@@ -1356,14 +1334,14 @@ public class WebUi extends HttpServlet {
       args.add("--timeout");
       args.add(timeout);
     }
-    final String maxSteps = request.getParameter("max_steps");
+    final String maxSteps = request.getParameter("max-steps");
     if (maxSteps != null) {
-      args.add("--max_steps");
+      args.add("--max-steps");
       args.add(maxSteps);
     }
-    final String retryLimit = request.getParameter("retry_limit");
+    final String retryLimit = request.getParameter("retry-limit");
     if (retryLimit != null) {
-      args.add("--retry_limit");
+      args.add("--retry-limit");
       args.add(retryLimit);
     }
     final String seed = request.getParameter("seed");
@@ -1413,7 +1391,9 @@ public class WebUi extends HttpServlet {
     List<String> args = new ArrayList<>();
     args.add("glsl-reduce");
     args.add(referenceShaderJobFile.getPath());
+    args.add("--reduction-kind");
     args.add("IDENTICAL");
+    args.add("--preserve-semantics");
     args.add("--output");
     args.add(reductionDir.getPath());
     args.add("--reference");
@@ -1421,7 +1401,7 @@ public class WebUi extends HttpServlet {
     args.add("--worker");
     args.add(worker);
     args.add("--server");
-    args.add("http://localhost:8080/manageAPI");
+    args.add("http://localhost:8080");
     try {
       fuzzerServiceManagerProxy.queueCommand(
           "Reference Reduction: " + shaderset,
@@ -1866,14 +1846,14 @@ public class WebUi extends HttpServlet {
       String referenceResultPath,
       String variantShaderJobResultFileNoExtension,
       String resultStatus) {
-    final boolean crash = resultStatus.equals("CRASH");
+    final boolean success = resultStatus.equals("SUCCESS");
 
     htmlAppendLn(
         "<form class='ui form' method='post' id='reduceForm'>",
         "<fieldset>",
         "<legend>Reduction Options</legend>",
         "<input type='hidden' name='type' value='reduce'>",
-        "<input type='hidden' name='shader_path' value='", shaderJobFilePath, "'>",
+        "<input type='hidden' name='shader-path' value='", shaderJobFilePath, "'>",
         "<input type='hidden' name='output' value='", output, "'>",
         "<input type='hidden' name='worker' value='", worker, "'>",
         "<table><tr>",
@@ -1885,11 +1865,11 @@ public class WebUi extends HttpServlet {
         "<tr>",
         "<td align='right'><p class='no_space'>Reduction Mode:</p></td>",
         "<td>",
-        "<select name='reduction_type' class='reduce_col' onchange='selectReduceKind(this);'>",
+        "<select name='reduction-kind' class='reduce_col' onchange='selectReduceKind(this);'>",
         "<option value='ABOVE_THRESHOLD'>Above Threshold</option>",
-        (crash
-            ? "<option value='NO_IMAGE' selected='selected'>No Image</option>"
-            : "<option value='NO_IMAGE'>No Image</option>"
+        (success
+            ? "<option value='NO_IMAGE'>No Image</option>"
+            : "<option value='NO_IMAGE' selected='selected'>No Image</option>"
         ),
         "<option value='NOT_IDENTICAL'>Not Identical</option>",
         "<option value='IDENTICAL'>Identical</option>",
@@ -1897,7 +1877,10 @@ public class WebUi extends HttpServlet {
         "</select>",
         "</td>",
         "</tr>",
-        "<tr>",
+        (success
+            ? "<tr id='metric_tr' class=''>"
+            : "<tr id='metric_tr' class='invisible'>"
+        ),
         "<td align='right'><p class='no_space'>Comparison metric:</p></td>",
         "<td>",
         "<select name='metric' class='reduce_col'>",
@@ -1906,28 +1889,28 @@ public class WebUi extends HttpServlet {
         "</select>",
         "</td>",
         "</tr>",
-        (crash
-            ? "<tr id='threshold_tr' class='invisible'>"
-            : "<tr id='threshold_tr' class=''>"
+        (success
+            ? "<tr id='threshold_tr' class=''>"
+            : "<tr id='threshold_tr' class='invisible'>"
         ),
         "<td align='right'><p class='no_space'>Threshold:</p></td>",
         "<td><input class='reduce_col' name='threshold' value='100.0'/></td>",
         "</tr>",
-        (crash
-            ? "<tr id='error_string_tr' class=''>"
-            : "<tr id='error_string_tr' class='invisible'>"
+        (success
+            ? "<tr id='error_string_tr' class='invisible'>"
+            : "<tr id='error_string_tr' class=''>"
         ),
         "<td align='right'><p class='no_space'>Error Regex:</p></td>",
-        "<td><input class='reduce_col' name='error_regex' value=''/></td>",
+        "<td><input class='reduce_col' name='error-string' value=''/></td>",
         "</tr>",
         "<tr>",
         "<td class='row_top row_right' rowspan='2'><p class='no_space'>Reference Image:</p></td>",
         "<td><input type='radio' value='", referenceResultPath, "' checked='checked'",
-        " name='reference_image'/><p class='no_space'>    Reference</p></td>",
+        " name='reference-image'/><p class='no_space'>    Reference</p></td>",
         "</tr>",
         "<tr align='left'>",
         "<td><input type='radio' value='", variantShaderJobResultFileNoExtension,
-        ".info.json' name='reference_image'/><p class='no_space'>    Variant</p></td>",
+        ".info.json' name='reference-image'/><p class='no_space'>    Variant</p></td>",
         "</tr>",
         "</table>",
         "</td>",
@@ -1938,9 +1921,9 @@ public class WebUi extends HttpServlet {
         "<p class='no_space'>Reduce Everywhere:</p>",
         "</td>",
         "<td class='checkbox'>",
-        (crash
-            ? "<input type='checkbox' name='reduce_everywhere' checked='checked'/>"
-            : "<input type='checkbox' name='reduce_everywhere'/>"
+        (success
+            ? "<input type='checkbox' name='preserve-semantics' checked='checked'/>"
+            : "<input type='checkbox' name='preserve-semantics'/>"
         ),
         "</td>",
         "</tr>",
@@ -1949,7 +1932,7 @@ public class WebUi extends HttpServlet {
         "<p class='no_space'>Skip Render:</p>",
         "</td>",
         "<td class='checkbox'>",
-        "<input type='checkbox' name='skip_render'/>",
+        "<input type='checkbox' name='skip-render'/>",
         "</td>",
         "</tr>",
         "<tr>",
@@ -1965,7 +1948,7 @@ public class WebUi extends HttpServlet {
         "<p class='no_space'>Max Steps:</p>",
         "</td>",
         "<td>",
-        "<input size='15' name='max_steps' value='2000'/>",
+        "<input size='15' name='max-steps' value='2000'/>",
         "</td>",
         "</tr>",
         "<tr>",
@@ -1973,7 +1956,7 @@ public class WebUi extends HttpServlet {
         "<p class='no_space'>Retry Limit:</p>",
         "</td>",
         "<td>",
-        "<input size='15' name='retry_limit' value='2'/>",
+        "<input size='15' name='retry-limit' value='2'/>",
         "</td>",
         "</tr>",
         "<tr>",

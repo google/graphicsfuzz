@@ -28,7 +28,7 @@ E.g. `192.168.0.4:8080`
 You may alternatively connect the device using a USB cable.
 In this case,
 you should install the Android platform tools,
-as described in the [Android notes section](development.md#Android_notes)
+as described in the [Android notes](android-notes.md)
 of the developer documentation, so that you have access to the `adb` tool.
 Then:
 

@@ -18,14 +18,14 @@ import os
 import subprocess
 import sys
 
-java_tool_path = os.sep.join(
-    [os.path.dirname(os.path.abspath(__file__)), "..", "..", "jar", "tool-1.0.jar"])
+java_server_path = os.sep.join(
+    [os.path.dirname(os.path.abspath(__file__)), "..", "..", "jar", "server-1.0.jar"])
 
 # Run the reduction
 
-cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.reducer.tool.GlslReduce" ] + sys.argv[1:]
+cmd = ["java", "-ea", "-jar", java_server_path] + sys.argv[1:]
 
-print("Reduction command: %s" % (" ".join(cmd)))
+print("Server command: %s" % (" ".join(cmd)))
 reduce_proc = subprocess.Popen(cmd)
 reduce_proc.communicate()
 sys.exit(reduce_proc.returncode)

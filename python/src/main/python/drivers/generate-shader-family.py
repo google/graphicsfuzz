@@ -38,24 +38,24 @@ max_int = pow(2, 16)
 ### Helper functions
 
 def abs_path_with_extension(prefix, extension):
-  return os.path.abspath(prefix + extension)
+    return os.path.abspath(prefix + extension)
 
 def uniforms_file(prefix):
-  return abs_path_with_extension(prefix, ".json")
+    return abs_path_with_extension(prefix, ".json")
 
 def primitives_file(prefix):
-  return abs_path_with_extension(prefix, ".primitives")
+    return abs_path_with_extension(prefix, ".primitives")
 
 def license_file(prefix):
-  return abs_path_with_extension(prefix, ".license")
+    return abs_path_with_extension(prefix, ".license")
 
 def uniforms_present(prefix):
-  return os.path.isfile(uniforms_file(prefix))
+    return os.path.isfile(uniforms_file(prefix))
 
 def kill_generator(generator_proc):
-  if args.verbose:
-    print("Timeout")
-  generator_proc.kill()
+    if args.verbose:
+        print("Timeout")
+    generator_proc.kill()
 
 def generate_variant(reference_prefix, inner_seed, output_prefix):
     cmd = ["java", "-ea",
@@ -67,24 +67,24 @@ def generate_variant(reference_prefix, inner_seed, output_prefix):
            "--seed",
            str(inner_seed) ]
     if args.webgl:
-      cmd += [ "--webgl" ]
+        cmd += [ "--webgl" ]
     if args.small:
-      cmd += [ "--small" ]
+        cmd += [ "--small" ]
     if args.avoid_long_loops:
-      cmd += [ "--avoid_long_loops" ]
+        cmd += [ "--avoid_long_loops" ]
     if args.replace_float_literals:
-      cmd += [ "--replace_float_literals" ]
+        cmd += [ "--replace_float_literals" ]
     if args.aggressively_complicate_control_flow:
-      cmd += [ "--aggressively_complicate_control_flow" ]
+        cmd += [ "--aggressively_complicate_control_flow" ]
     if args.multi_pass:
-      cmd += [ "--multi_pass" ]
+        cmd += [ "--multi_pass" ]
     if args.generate_uniform_bindings:
-      cmd += [ "--generate_uniform_bindings" ]
+        cmd += [ "--generate_uniform_bindings" ]
     if args.max_uniforms is not None:
-      cmd += [ "--max_uniforms", str(args.max_uniforms) ]
+        cmd += [ "--max_uniforms", str(args.max_uniforms) ]
     if args.verbose:
-      print("Transform command: %s" % (" ".join(cmd)))
-    generator_proc = subprocess.Popen(cmd, \
+        print("Transform command: %s" % (" ".join(cmd)))
+    generator_proc = subprocess.Popen(cmd,
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     kill_timer = threading.Timer(args.timeout, lambda: kill_generator(generator_proc))
     try:
@@ -93,11 +93,10 @@ def generate_variant(reference_prefix, inner_seed, output_prefix):
         assert (generator_proc.returncode is not None)
     finally:
         kill_timer.cancel()
-    return {"returncode": generator_proc.returncode, \
-            "stdout": generator_stdout, \
-            "stderr": generator_stderr, \
+    return {"returncode": generator_proc.returncode,
+            "stdout": generator_stdout,
+            "stderr": generator_stderr,
             "cmd": " ".join(cmd)}
-
 
 def prepare_reference_shaders(reference_prefix, output_file_prefix, glsl_version):
     cmd = ["java",
@@ -107,16 +106,16 @@ def prepare_reference_shaders(reference_prefix, output_file_prefix, glsl_version
            output_file_prefix + ".json",
            glsl_version ]
     if args.replace_float_literals:
-      cmd += [ "--replace_float_literals" ]
+        cmd += [ "--replace_float_literals" ]
     if args.webgl:
-      cmd += [ "--webgl" ]
+        cmd += [ "--webgl" ]
     if args.generate_uniform_bindings:
-      cmd += [ "--generate_uniform_bindings" ]
+        cmd += [ "--generate_uniform_bindings" ]
     if args.max_uniforms is not None:
-      cmd += [ "--max_uniforms", str(args.max_uniforms - 1) ] # We subtract 1 because we need to be able to add injectionSwitch
+        cmd += [ "--max_uniforms", str(args.max_uniforms - 1) ] # We subtract 1 because we need to be able to add injectionSwitch
     if args.verbose:
-      print("Reference preparation command: %s" % (" ".join(cmd)))
-    prepare_reference_proc = subprocess.Popen(cmd, \
+        print("Reference preparation command: %s" % (" ".join(cmd)))
+    prepare_reference_proc = subprocess.Popen(cmd,
                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     prepare_reference_stdout, prepare_reference_stderr = prepare_reference_proc.communicate()
     if prepare_reference_proc.returncode != 0:
@@ -147,68 +146,65 @@ def shader_is_valid(shader_file):
     return True
 
 def generated_shaders_too_large(args, variant_file_prefix):
-  for ext in [ ".frag", ".vert" ]:
-    variant_shader_file = variant_file_prefix + ext
-    if not os.path.isfile(variant_shader_file):
-      continue
-    num_bytes_variant = os.path.getsize(variant_shader_file)
-    num_bytes_reference = os.path.getsize(args.reference_prefix + ext)
+    for ext in [ ".frag", ".vert" ]:
+        variant_shader_file = variant_file_prefix + ext
+        if not os.path.isfile(variant_shader_file):
+            continue
+        num_bytes_variant = os.path.getsize(variant_shader_file)
+        num_bytes_reference = os.path.getsize(args.reference_prefix + ext)
 
-    if args.max_factor is not None and float(num_bytes_variant) > args.max_factor * float(num_bytes_reference):
-      if args.verbose:
-        print("Discarding " + ext + " shader of size " + str(num_bytes_variant) + " bytes; more than " + str(args.max_factor) + " times larger than reference of size " + str(num_bytes_reference))
-      return True
+        if args.max_factor is not None and float(num_bytes_variant) > args.max_factor * float(num_bytes_reference):
+            if args.verbose:
+                print("Discarding " + ext + " shader of size " + str(num_bytes_variant) + " bytes; more than " + str(args.max_factor) + " times larger than reference of size " + str(num_bytes_reference))
+            return True
 
-    if args.max_bytes is not None and num_bytes_variant > args.max_bytes:
-      if args.verbose:
-        print("Discarding " + ext + " shader of size " + str(num_bytes_variant) + " bytes; exceeds limit of " + str(args.max_bytes) + " bytes")
-      return True
+        if args.max_bytes is not None and num_bytes_variant > args.max_bytes:
+            if args.verbose:
+                print("Discarding " + ext + " shader of size " + str(num_bytes_variant) + " bytes; exceeds limit of " + str(args.max_bytes) + " bytes")
+            return True
 
-  return False
-
+    return False
 
 def remove_if_exists(filename):
-  if os.path.isfile(filename):
-    os.remove(filename)
-
+    if os.path.isfile(filename):
+        os.remove(filename)
 
 def move_if_exists(src, dst):
-  print(src)
-  print(dst)
-  if os.path.isfile(src):
-    shutil.move(src, dst)
-
+    print(src)
+    print(dst)
+    if os.path.isfile(src):
+        shutil.move(src, dst)
 
 def skip_due_to_invalid_shader(args, variant_file_prefix):
-  variant_file_frag = variant_file_prefix + ".frag"
-  variant_file_vert = variant_file_prefix + ".vert"
-  variant_file_json = variant_file_prefix + ".json"
-  variant_file_probabilities = variant_file_prefix + ".prob"
+    variant_file_frag = variant_file_prefix + ".frag"
+    variant_file_vert = variant_file_prefix + ".vert"
+    variant_file_json = variant_file_prefix + ".json"
+    variant_file_probabilities = variant_file_prefix + ".prob"
 
-  if args.disable_validator:
-    return False
-  for ext in [ ".frag", ".vert" ]:
-    variant_shader_file = variant_file_prefix + ext
-    if not os.path.isfile(variant_shader_file):
-      continue
-    if shader_is_valid(variant_shader_file):
-      continue
-    if not args.keep_bad_variants:
-        remove_if_exists(variant_file_frag)
-        remove_if_exists(variant_file_vert)
-        os.remove(variant_file_json)
-        os.remove(variant_file_probabilities)
-        return True
-    else:
-        move_if_exists(variant_file_frag, "bad_" + os.path.basename(variant_file_frag))
-        move_if_exists(variant_file_vert, "bad_" + os.path.basename(variant_file_vert))
-        shutil.move(variant_file_json, "bad_" + os.path.basename(variant_file_json))
-        shutil.move(variant_file_probabilities, "bad_" + os.path.basename(variant_file_probabilities))
-    if args.stop_on_fail:
-        if args.verbose:
-            print("Generated an invalid variant, stopping.")
-        exit(1)
-    return False
+    if args.disable_validator:
+        return False
+    for ext in [ ".frag", ".vert" ]:
+        variant_shader_file = variant_file_prefix + ext
+        if not os.path.isfile(variant_shader_file):
+            continue
+        if shader_is_valid(variant_shader_file):
+            continue
+        if not args.keep_bad_variants:
+            remove_if_exists(variant_file_frag)
+            remove_if_exists(variant_file_vert)
+            os.remove(variant_file_json)
+            os.remove(variant_file_probabilities)
+            return True
+        else:
+            move_if_exists(variant_file_frag, "bad_" + os.path.basename(variant_file_frag))
+            move_if_exists(variant_file_vert, "bad_" + os.path.basename(variant_file_vert))
+            shutil.move(variant_file_json, "bad_" + os.path.basename(variant_file_json))
+            shutil.move(variant_file_probabilities, "bad_" + os.path.basename(variant_file_probabilities))
+        if args.stop_on_fail:
+            if args.verbose:
+                print("Generated an invalid variant, stopping.")
+            exit(1)
+        return False
 
 ### Argument parser
 parser = argparse.ArgumentParser(description="Variant generator")
@@ -290,9 +286,7 @@ random.seed(args.seed)
 args.validator_path = os.path.abspath(args.validator_path)
 args.translator_path = os.path.abspath(args.translator_path)
 
-os.environ["CLASSPATH"] = \
-    args.java_tool_path + \
-    (os.pathsep + os.environ["CLASSPATH"] if "CLASSPATH" in os.environ else "")
+os.environ["CLASSPATH"] = args.java_tool_path + (os.pathsep + os.environ["CLASSPATH"] if "CLASSPATH" in os.environ else "")
 
 if args.verbose:
     print("Setting CLASSPATH to: %s." % (os.environ["CLASSPATH"]))
@@ -324,23 +318,23 @@ if not args.disable_validator:
     if not shader_is_valid(args.output_folder + "reference.frag"):
         print("The reference fragment shader is not valid, stopping.")
         exit(1)
-    vertex_shader = args.output_folder + "reference.vert"        
+    vertex_shader = args.output_folder + "reference.vert"
     if os.path.isfile(vertex_shader) and not shader_is_valid(vertex_shader):
         print("The reference vertex shader is not valid, stopping.")
         exit(1)
 
 # Copy primitives for reference shaders, if they exist
 if os.path.isfile(primitives_file(args.reference_prefix)):
-  shutil.copyfile(primitives_file(args.reference_prefix),
-                  args.output_folder + "reference.primitives")
+    shutil.copyfile(primitives_file(args.reference_prefix),
+                    args.output_folder + "reference.primitives")
 
 # Copy texture if referenced by primitives
 if os.path.isfile(primitives_file(args.reference_prefix)):
-  primitives_data = json.load(open(primitives_file(args.reference_prefix)))
-  if "texture" in primitives_data:
-    texture_filename = primitives_data["texture"]
-    shutil.copyfile(texture_filename, args.output_folder + texture_filename)
-  
+    primitives_data = json.load(open(primitives_file(args.reference_prefix)))
+    if "texture" in primitives_data:
+        texture_filename = primitives_data["texture"]
+        shutil.copyfile(texture_filename, args.output_folder + texture_filename)
+
 os.chdir(args.output_folder)
 
 donor_list = glob.glob(args.donors + os.path.sep + "*.frag")
@@ -363,6 +357,7 @@ chunk_count = 0
 
 # Main variant generation loop
 while gen_variants < args.num_variants:
+
     if args.verbose:
         print("Trying variant %d (produced %d of %d)..." % (tried_variants, gen_variants, args.num_variants))
     # Generation
@@ -384,21 +379,17 @@ while gen_variants < args.num_variants:
 
     # Check code size
     if generated_shaders_too_large(args, variant_file_prefix):
-      # A generated shader is too large - discard it (but don't log it as bad)
-      continue
-    
+        # A generated shader is too large - discard it (but don't log it as bad)
+        continue
+
     # Validation
     if skip_due_to_invalid_shader(args, variant_file_prefix):
-      continue
+        continue
 
     if os.path.isfile("reference.primitives"):
-      shutil.copyfile("reference.primitives", primitives_file(variant_file_prefix))
+        shutil.copyfile("reference.primitives", primitives_file(variant_file_prefix))
 
     gen_variants += 1
-    if not args.verbose and args.chunk_size > 0 and gen_variants in \
-            range(args.num_variants // args.chunk_size, args.num_variants, args.num_variants // args.chunk_size):
-        chunk_count += 1
-        print("Done %d%%..." % (100 // args.chunk_size * chunk_count), end="\r")
 
 ### Final steps
 # Output json log
@@ -407,7 +398,5 @@ dict['dict'] = log_json
 log_json_file = open("infolog.json", 'w')
 log_json_file.write(json.dumps(dict, sort_keys=True, indent=4))
 log_json_file.close()
-
-
 
 print("Generation complete -- generated %d variants in %d tries." % (gen_variants, tried_variants))

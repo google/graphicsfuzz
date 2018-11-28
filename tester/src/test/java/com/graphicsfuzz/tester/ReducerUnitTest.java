@@ -428,11 +428,11 @@ public class ReducerUnitTest {
     GlslReduce.mainHelper(new String[] {
           referenceJson.getAbsolutePath(),
           "--swiftshader",
+          "--reduction-kind",
           "IDENTICAL",
-          "--reduce_everywhere",
           "--reference",
           referenceJsonFakeResult.getAbsolutePath(),
-          "--max_steps",
+          "--max-steps",
           String.valueOf(numSteps),
           "--seed",
           "0",
@@ -445,17 +445,17 @@ public class ReducerUnitTest {
       GlslReduce.mainHelper(new String[] {
             referenceJson.getAbsolutePath(),
             "--swiftshader",
+            "--reduction-kind",
             "IDENTICAL",
-            "--reduce_everywhere",
             "--reference",
             referenceJsonFakeResult.getAbsolutePath(),
-            "--max_steps",
+            "--max-steps",
             String.valueOf(numSteps),
             "--seed",
             "0",
             "--output",
             output.getAbsolutePath(),
-            "--continue_previous_reduction"
+            "--continue-previous-reduction"
       }, null);
     }
 
@@ -481,9 +481,10 @@ public class ReducerUnitTest {
     final File output = temporaryFolder.newFolder();
     // This should throw a FileNotFoundException, because REDUCTION_INCOMPLETE
     // will not be present.
-    GlslReduce.mainHelper(new String[] { "--swiftshader", "--continue_previous_reduction",
+    GlslReduce.mainHelper(new String[] { "--swiftshader", "--continue-previous-reduction",
           json.getAbsolutePath(), "--output",
-          output.getAbsolutePath(), "NO_IMAGE" }, null);
+          output.getAbsolutePath(),
+          "--reduction-kind", "NO_IMAGE" }, null);
   }
 
   @Test
@@ -508,11 +509,11 @@ public class ReducerUnitTest {
     GlslReduce.mainHelper(new String[] {
           referenceJson.getAbsolutePath(),
           "--swiftshader",
+          "--reduction-kind",
           "IDENTICAL",
-          "--reduce_everywhere",
           "--reference",
           referenceJsonFakeResult.getAbsolutePath(),
-          "--max_steps",
+          "--max-steps",
           "-1",
           "--seed",
           "0",
