@@ -1453,7 +1453,7 @@ void VulkanWorker::LoadUniforms(const char *uniforms_string) {
 }
 
 void VulkanWorker::ExportPNG(const char *png_filename) {
-  log("EXPORTPNG START");
+  log("EXPORTTOCPU START");
 
   VKCHECK(vkResetFences(device_, 1, &fence_));
 
@@ -1501,8 +1501,12 @@ void VulkanWorker::ExportPNG(const char *png_filename) {
   unsigned char *rgba_blob = (unsigned char *)malloc(width_ * height_ * 4); // Four channels (RGBA)
   assert(rgba_blob != nullptr);
   uint32_t *rgba_pixel = (uint32_t *)rgba_blob;
+  log("EXPORTTOCPU END");
 
-  // TODO: measure this loop, optimise it if and only if it is worth it
+  log("DUMPRGBA START");
+  // Do not try to optimise this loop, it is not worth it.
+  // If you still want to try: measure, measure, measure.
+  // And realize: it's probably not worth it.
   for (uint32_t y = 0; y < height_; y++) {
     uint32_t *source_pixel = (uint32_t *)source_line;
     for (uint32_t x = 0; x < width_; x++) {
@@ -1529,25 +1533,20 @@ void VulkanWorker::ExportPNG(const char *png_filename) {
     }
     source_line += subresource_layout.rowPitch;
   }
+  log("DUMPRGBA END");
 
   // Convert to PNG
-  unsigned char *png = nullptr;
-  size_t png_size = 0;
-  unsigned int error = lodepng_encode32(&png, &png_size, rgba_blob, width_, height_);
-  if (error) {
-    log("Error while encoding PNG: %u: %s", error, lodepng_error_text(error));
-    assert(false && "Error while encoding export image in PNG");
-  }
-  assert(png != nullptr);
-  assert(png_size > 0);
-
-  lodepng_save_file(png, png_size, png_filename);
+  std::vector<unsigned char> png;
+  log("PNGENCODE START");
+  unsigned int png_encode_error = lodepng::encode(png, rgba_blob, width_, height_);
+  log("PNGENCODE END");
+  assert(!png_encode_error);
+  log("PNGSAVEFILE START");
+  lodepng::save_file(png, png_filename);
+  log("PNGSAVEFILE END");
 
   free(source_image_blob);
   free(rgba_blob);
-  free(png);
-
-  log("EXPORTPNG END");
 }
 
 void VulkanWorker::PrepareTest(std::vector<uint32_t> &vertex_spv, std::vector<uint32_t> &fragment_spv, const char *uniforms_string) {
@@ -1593,25 +1592,24 @@ void VulkanWorker::CleanTest() {
 }
 
 void VulkanWorker::DrawTest(const char *png_filename, bool skip_render) {
-  log("DRAWTEST START");
 
   if (skip_render) {
     log("SKIP_RENDER");
   } else {
+
+    log("DRAWTEST START");
     CreateSemaphore();
     AcquireNextImage();
     PrepareCommandBuffer();
     CreateFence();
-
     SubmitCommandBuffer();
+    log("DRAWTEST END");
+
     PresentToDisplay();
     ExportPNG(png_filename);
-
     DestroyFence();
     DestroySemaphore();
   }
-
-  log("DRAWTEST END");
 }
 
 void VulkanWorker::RunTest(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, bool skip_render) {
