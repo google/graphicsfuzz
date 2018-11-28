@@ -18,12 +18,15 @@ import argparse
 import os
 import subprocess
 import time
+import filecmp
+import shutil
 
 ################################################################################
 # Constants
 
 LOGFILE = 'vklog.txt'
 TIMEOUT_RUN = 30
+NUM_RENDER=3
 
 ################################################################################
 # Common
@@ -131,7 +134,7 @@ def run_android(vert, frag, json, skip_render):
     adb('logcat -c')
     cmd = ANDROID_APP + '/android.app.NativeActivity'
     # Explicitely set all options, don't rely on defaults
-    flags = '--num-render 3 --png-template image --sanity-before sanity_before.png --sanity-after sanity_after.png'
+    flags = '--num-render {} --png-template image --sanity-before sanity_before.png --sanity-after sanity_after.png'.format(NUM_RENDER)
     # Pass command line args as Intent extra. Need to nest-quote, hence the "\'blabla\'"
     cmd += '-e gfz "\'' + flags + '\'"'
     adb('shell am start ' + ANDROID_APP + '/android.app.NativeActivity')
@@ -176,32 +179,32 @@ def run_android(vert, frag, json, skip_render):
     elif not done:
         status = 'TIMEOUT'
 
+    # retrieve all files to results/
+    resdir = 'results'
+    if os.path.exists(resdir):
+        shutil.rmtree(resdir)
+    adb('pull ' + ANDROID_SDCARD + ' ' + resdir)
+
     # Check sanity
     if status == 'SUCCESS':
-        sanity_png_before = ANDROID_SDCARD + '/sanity_before.png'
-        sanity_png_after = ANDROID_SDCARD + '/sanity_after.png'
-        sanity_before_exists = adb('shell test -f ' + sanity_png_before).returncode == 0
-        sanity_after_exists = adb('shell test -f ' + sanity_png_after).returncode == 0
-        if sanity_before_exists and sanity_after_exists:
-            # diff the sanity images on device
-            retcode = adb('shell diff ' + sanity_png_before + ' ' + sanity_png_after).returncode
-            if retcode != 0:
+        sanity_before = resdir + '/sanity_before.png'
+        sanity_after = resdir + '/sanity_after.png'
+        if os.path.exists(sanity_before) and os.path.exists(sanity_after):
+            if not filecmp.cmp(sanity_before, sanity_after, shallow=False):
                 status = 'SANITY_ERROR'
 
     # Check nondet.
     if status == 'SUCCESS':
-        ref_image = ANDROID_SDCARD + '/image_0.png'
-        ref_image_exists = adb('shell test -f ' + ref_image).returncode == 0
-        if (ref_image_exists):
+        ref_image = resdir + '/image_0.png'
+        if os.path.exists(ref_image):
             # If reference image is here, report nondet if either other images a
-            # different, or missing, using return code of 'diff' on device
-            for i in range(1,3):
-                next_image = ANDROID_SDCARD + '/image_' + str(i) + '.png'
-                retcode = adb('shell diff ' + ref_image + ' ' + next_image).returncode
-                if retcode != 0:
+            # different, or missing
+            for i in range(1, NUM_RENDER):
+                next_image = resdir + '/image_{}.png'.format(i)
+                if not filecmp.cmp(ref_image, next_image, shallow=False):
                     status = 'NONDET'
-                    adb('pull ' + ref_image + ' nondet0.png')
-                    adb('pull ' + next_image + ' nondet1.png')
+                    shutil.copy(ref_image, 'nondet0.png')
+                    shutil.copy(next_image, 'nondet1.png')
 
     with open(LOGFILE, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
