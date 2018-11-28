@@ -45,7 +45,7 @@ GraphicsFuzz works by taking a *reference shader* and producing a family of *var
 The reference shader and its variants together are referred to as a *shader family*.
 
 The `glsl-generate` tool generates shader families. The inputs are a folder of reference shaders
-and a folder of *donor shaders* (not pictured above). In theory, these input shaders can be any GLSL fragment shaders. In practice, we designed our tools to support shaders from glslsandbox.com, and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed). 
+and a folder of *donor shaders* (not pictured above). In theory, these input shaders can be any GLSL fragment shaders. In practice, we designed our tools to support shaders from glslsandbox.com, and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed).
 Each shader file `shader.frag` must have a corresponding `shader.json` metadata file alongside it, which contains the values for the uniforms.
 
 > In fact, we refer to the `shader.json` as the **shader job**;
@@ -267,17 +267,17 @@ Don't care about the other kinds of worker?  [Skip ahead to running shaders on w
 
 You can use the `vulkan-worker-android` app
 to test the Vulkan drivers on an Android device.
-This worker requires running a `glsl-to-spirv-worker`
+This worker requires running a `glsl-to-spv-worker`
 on a desktop machine,
 with an Android device (connected via USB) that has the `vulkan-worker-android` app installed.
 
 ```
-glsl-server     <--- HTTP --->    glsl-to-spirv-worker    <--- adb commands --->    vulkan-worker-android app
-(on a desktop)                    (on a desktop)                                    (on an Android device)
+glsl-server     <--- HTTP --->    glsl-to-spv-worker    <--- adb commands --->    vulkan-worker-android app
+(on a desktop)                    (on a desktop)                                  (on an Android device)
 ```
 
 
-The `glsl-to-spirv-worker` script translates the GLSL shaders to SPIR-V
+The `glsl-to-spv-worker` script translates the GLSL shaders to SPIR-V
 via `glslangValidator` before sending the shader to
 the `vulkan-worker-android` app running on the Android device.
 
@@ -308,7 +308,7 @@ adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_S
 # and the serial number of the Android device (found using `adb devices`).
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
-glsl-to-spirv-worker galaxy-s9-vulkan --adbID 21372144e90c7fae
+glsl-to-spv-worker galaxy-s9-vulkan --adbID 21372144e90c7fae
 ```
 
 You should see `No job` repeatedly output to the terminal.
@@ -505,7 +505,7 @@ the reduction of this variant leads to the following files:
 
 * `command.log` is the command with which the reducer was started
 * `<variant>_reduced_<step_number>_<success_or_fail>.*` are the files associated with this given
-  step of the reduction; `success` or `fail` indicates whether the reduction step succeeded in preserving the bug or not 
+  step of the reduction; `success` or `fail` indicates whether the reduction step succeeded in preserving the bug or not
 * `<variant>_reduced_final.*` are the files at the final step of the
   reduction. It typically refers to the smallest shader the reducer could obtain
   for this particular reduction.
@@ -521,7 +521,7 @@ E.g.
 `glsl-reduce shaderfamilies/familiy01/variant_01.json --reduction-kind [etc.]`
 
 > You can try running these commands from the command line in the `work`
-> directory, although note that some "empty" arguments (i.e. "") 
+> directory, although note that some "empty" arguments (i.e. "")
 > and arguments with spaces (e.g. --error-string "Fatal signal 11") may need to be
 > quoted, and they will not be quoted in the reduction log.
 
@@ -535,12 +535,12 @@ similar to what the server would run.
 #  glsl-reduce shader_job.json --reduction-kind ABOVE_THRESHOLD --reference result.info.json [other options]
 
 glsl-reduce \
-  shaderfamilies/sf1/variant_004.json \                       
+  shaderfamilies/sf1/variant_004.json \
   --preserve-semantics \
   --reduction-kind ABOVE_THRESHOLD \
   --threshold 100.0 \
   --metric HISTOGRAM_CHISQR \
-  --reference processing/my-worker/sf1/reference.info.json \  
+  --reference processing/my-worker/sf1/reference.info.json \
   --output processing/my-worker/sf1/reductions/variant_004 \
   --max-steps 2000 \
   --timeout 30 \
@@ -559,8 +559,8 @@ Explanation:
 this is essential when doing bad image reductions.
 Thus, `glsl-reduce` will mainly just reverse the transformations that were added by `glsl-generate`,
 although it can also do some other straightforward semantics-preserving reductions that are not
-reversals, such as propagation of uniform values into the shader.                       
-* `--reduction-kind ABOVE_THRESHOLD`  
+reversals, such as propagation of uniform values into the shader.
+* `--reduction-kind ABOVE_THRESHOLD`
   * Interestingness test: the produced image is different from the reference image.
 I.e. the image comparison value is LARGER than the threshold.
 * `--threshold 100.0`
@@ -597,7 +597,7 @@ similar to what the server would run.
 #  glsl-reduce shader_job.json --reduction-kind NO_IMAGE --error-string "Fatal signal 11" [other options]
 
 glsl-reduce \
-  shaderfamilies/sf1/variant_007.json \                       
+  shaderfamilies/sf1/variant_007.json \
   --reduction-kind NO_IMAGE \
   --error-string "Fatal signal 11" \
   --output processing/my-worker/sf1/reductions/variant_007 \
@@ -611,7 +611,7 @@ glsl-reduce \
 
 Explanation:
 
-* `shaderfamilies/sf1/variant_007.json`                       
+* `shaderfamilies/sf1/variant_007.json`
   * The shader job to reduce.
 * `--reduction-kind NO_IMAGE`
   * Interestingness test: no image is produced, plus the error-string provided below must match
@@ -627,7 +627,7 @@ Explanation:
 * `--retry-limit 2`
   * If the worker fails to respond twice, assume the shader fails to render.
 * `--seed -136936935`
-  * Random seed for the reduction algorithm.  
+  * Random seed for the reduction algorithm.
 * `--server http://localhost:8080 --worker-name my-worker`
   * `glsl-reduce` will, by default, run shader jobs locally, which is not well-tested.
 We specify a server and worker name to run the shader jobs on a worker that is connected
@@ -636,4 +636,3 @@ to the server.
 ### Additional options
 
 See the [glsl-reduce manual](glsl-fuzz-reduce.md) for details on other options.
-
