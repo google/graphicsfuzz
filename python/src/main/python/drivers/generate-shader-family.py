@@ -183,28 +183,28 @@ def skip_due_to_invalid_shader(args, variant_file_prefix):
 
     if args.disable_validator:
         return False
-  for ext in [ ".frag", ".vert" ]:
-      variant_shader_file = variant_file_prefix + ext
-      if not os.path.isfile(variant_shader_file):
-          continue
-      if shader_is_valid(variant_shader_file):
-          continue
-      if not args.keep_bad_variants:
-          remove_if_exists(variant_file_frag)
-          remove_if_exists(variant_file_vert)
-          os.remove(variant_file_json)
-          os.remove(variant_file_probabilities)
-          return True
-      else:
-          move_if_exists(variant_file_frag, "bad_" + os.path.basename(variant_file_frag))
-          move_if_exists(variant_file_vert, "bad_" + os.path.basename(variant_file_vert))
-          shutil.move(variant_file_json, "bad_" + os.path.basename(variant_file_json))
-          shutil.move(variant_file_probabilities, "bad_" + os.path.basename(variant_file_probabilities))
-      if args.stop_on_fail:
-          if args.verbose:
-              print("Generated an invalid variant, stopping.")
-          exit(1)
-      return False
+    for ext in [ ".frag", ".vert" ]:
+        variant_shader_file = variant_file_prefix + ext
+        if not os.path.isfile(variant_shader_file):
+            continue
+        if shader_is_valid(variant_shader_file):
+            continue
+        if not args.keep_bad_variants:
+            remove_if_exists(variant_file_frag)
+            remove_if_exists(variant_file_vert)
+            os.remove(variant_file_json)
+            os.remove(variant_file_probabilities)
+            return True
+        else:
+            move_if_exists(variant_file_frag, "bad_" + os.path.basename(variant_file_frag))
+            move_if_exists(variant_file_vert, "bad_" + os.path.basename(variant_file_vert))
+            shutil.move(variant_file_json, "bad_" + os.path.basename(variant_file_json))
+            shutil.move(variant_file_probabilities, "bad_" + os.path.basename(variant_file_probabilities))
+        if args.stop_on_fail:
+            if args.verbose:
+                print("Generated an invalid variant, stopping.")
+            exit(1)
+        return False
 
 ### Argument parser
 parser = argparse.ArgumentParser(description="Variant generator")
