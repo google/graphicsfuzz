@@ -33,8 +33,8 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
 
 
 * **Pre-built binaries** are available on the [GitHub releases page](docs/glsl-fuzz-releases.md)
-* [Developer documentation](docs/glsl-fuzz-develop.md) covers how to compile
-  either from an IDE or the command line.
+* [**Build instructions**](docs/glsl-fuzz-develop.md)
+
 
 ## Contribute
 
