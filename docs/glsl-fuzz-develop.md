@@ -174,10 +174,10 @@ Note that the command (list of strings) contains a worker name (here,
 "my-laptop") which corresponds to the job queue that will receive ImageJobs that
 the worker will render.  The `queueName` parameter contains the same name: this
 corresponds to the queue of *commands* to which this command will be queued.
-Generally, commands (executable scripts or binaries, such as `run_shader_family`
+Generally, commands (executable scripts or binaries, such as `run-shader-family`
 or `glsl-reduce`) in a command queue will queue jobs to the corresponding
 worker's job queue or, in some cases, commands to the same command queue.
-Commands like `glsl-reduce` and `run_shader_family` are intercepted by the
+Commands like `glsl-reduce` and `run-shader-family` are intercepted by the
 server so that a corresponding Java method is executed directly in the server
 process, instead of launching a separate process.  Despite this, the `--server`
 parameter should still be set; it can typically be set to a dummy string, but if

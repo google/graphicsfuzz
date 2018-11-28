@@ -16,4 +16,4 @@
 @REM  limitations under the License.
 @REM
 
-python "%~dp0run_shader_family.py" %*
+python "%~dp0run-shader-family.py" %*
