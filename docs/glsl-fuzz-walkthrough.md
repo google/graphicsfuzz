@@ -56,7 +56,7 @@ However,
 our tools are mainly tested with GLSL fragment shaders
 such as those from
 [glslsandbox.com](http://glslsandbox.com/), and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed).
-Each shader file `shader.frag` must have a corresponding `shader.json` metadata file alongside it, which contains the values for the uniforms.
+Each shader file `shader.frag` must have a corresponding `shader.json` metadata file alongside it.  This file specifies values for the uniforms used by the shader(s); [we discuss the format of the JSON file in more detail below](#format-of-json-files).
 
 > In fact, we refer to the `shader.json` as the **shader job**;
 > in general, there can be `shader.frag`, `shader.vert`, and/or `shader.compute` alongside
@@ -646,3 +646,26 @@ to the server.
 ### Additional options
 
 See the [glsl-reduce manual](glsl-fuzz-reduce.md) for details on other options.
+
+## Format of JSON files
+
+As described above, a shader job is identified by a JSON file.  This file can be used to specify concrete values for uniforms used by the associated shaders.
+
+The file should contain a single dictionary of uniform value entries.
+
+Here is an example uniform value entry:
+
+```
+  "iDate": {
+    "func": "glUniform4f",
+    "args": [
+      2016.0,
+      9.0,
+      22.0,
+      61200.0
+    ],
+    "binding": 5
+  }
+```
+
+The key, `iDate`, is the name of the uniform.  This maps to a sub-dictionary specifying: via `func` the OpenGL function used to set the uniform (`glUniform4f` in this case, corresponding to a `vec4`), via `args` a sequence of values that should be used to populate the uniform (four floating point values in this case), and optionally via `binding` an integer which, if provided, must match the binding of the uniform buffer to which the uniform belongs.
