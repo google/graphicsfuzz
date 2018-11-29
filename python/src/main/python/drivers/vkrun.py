@@ -201,7 +201,11 @@ def run_android(vert, frag, json, skip_render):
             # different, or missing
             for i in range(1, NUM_RENDER):
                 next_image = resdir + '/image_{}.png'.format(i)
-                if not filecmp.cmp(ref_image, next_image, shallow=False):
+                if not os.path.exists(next_image):
+                    status = 'UNEXPECTED_ERROR'
+                    with open(LOGFILE, 'a') as f:
+                        f.write('\n Not all images are produce? Missing image: {}\n'.format(i))
+                elif not filecmp.cmp(ref_image, next_image, shallow=False):
                     status = 'NONDET'
                     shutil.copy(ref_image, 'nondet0.png')
                     shutil.copy(next_image, 'nondet1.png')
