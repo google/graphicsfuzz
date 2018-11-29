@@ -26,7 +26,7 @@ import shutil
 
 LOGFILE = 'vklog.txt'
 TIMEOUT_RUN = 30
-NUM_RENDER=3
+NUM_RENDER = 3
 
 ################################################################################
 # Common
@@ -133,7 +133,7 @@ def run_android(vert, frag, json, skip_render):
 
     adb('logcat -c')
 
-    cmd = 'adb shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity'
+    cmd = 'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity'
     # Explicitely set all options, don't rely on defaults
     flags = '--num-render {} --png-template image --sanity-before sanity_before.png --sanity-after sanity_after.png'.format(NUM_RENDER)
     # Pass command line args as Intent extra. Need to nest-quote, hence the "\'blabla\'"
