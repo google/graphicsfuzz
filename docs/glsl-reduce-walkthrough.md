@@ -65,13 +65,13 @@ cat glsl-reduce-walkthrough/colorgrid_modulo.frag
 # Output:
 # <contents of the original shader>
 
-# Run glsl-reduce
+# Run glsl-reduce, putting the tool's output in the 'reduction_results' directory (created if it does not exist)
 glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/interestingness_test --output reduction_results
 
 # Output:
 # <lots of messages about the reducer's progress>
 
-# Confirm that the reduced fragment shader file still reproduces the issue:
+# Confirm that the reduced fragment shader file still reproduces the issue
 python glsl-reduce-walkthrough/fake_compiler.py reduction_results/colorgrid_modulo_reduced_final.frag
 
 # Output:
@@ -98,6 +98,8 @@ glsl-reduce requires two arguments:
 
 * a *shader job*: a path to a `.json` file representing the shader or shaders of interest
 * an *interestingness test*: a path to an executable script encoding the properties a shader job must satisfy to be deemed interesting.
+
+It is advisable to also use the `--output` option to specify a directory for generated results; this will be the current directory by default.
 
 The `.json` file serves two purposes: (1) it tells glsl-reduce which shaders to operate on -- if it is called `foo.json` then at least one of `foo.frag`, `foo.vert` and `foo.comp` must be present, and any that are present will be reduced; (2) it allows metadata about these shaders to be stored.  At present, glsl-reduce does not allow any metadata when used in stand-alone mode, so the JSON file is required to simply contain `{}`.  (The file is used for meaningful metadata when glsl-reduce is used in conjunction with [glsl-fuzz](glsl-fuzz-intro.md).)
 
