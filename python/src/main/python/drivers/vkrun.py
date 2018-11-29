@@ -127,15 +127,12 @@ def run_android(vert, frag, json, skip_render):
     adb('push ' + frag + ' ' + ANDROID_SDCARD + '/test.frag.spv')
     adb('push ' + json + ' ' + ANDROID_SDCARD + '/test.json')
 
-
-    if skip_render:
-        adb('shell touch ' + ANDROID_SDCARD + '/SKIP_RENDER')
-
     adb('logcat -c')
 
     cmd = 'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity'
-    # Explicitely set all options, don't rely on defaults
-    flags = '--num-render {} --png-template image --sanity-before sanity_before.png --sanity-after sanity_after.png'.format(NUM_RENDER)
+    flags = '--num-render {}'.format(NUM_RENDER)
+    if skip_render:
+      flags += ' --skip-render'
     # Pass command line args as Intent extra. Need to nest-quote, hence the "\'blabla\'"
     cmd += ' -e gfz "\'' + flags + '\'"'
     adb(cmd)
