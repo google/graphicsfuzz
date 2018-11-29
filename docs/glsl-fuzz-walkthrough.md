@@ -19,13 +19,13 @@ Add the following directories to your path:
   * `graphicsfuzz-1.0/bin/Mac`
   * `graphicsfuzz-1.0/bin/Windows`
 
-The `graphicsfuzz-1.0/` directory is the unzipped graphicsfuzz release.
+The `graphicsfuzz-1.0/` directory is the unzipped release.
 If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
 
 You will also need to install the latest version of the Java 8 Development Kit,
 either:
 
-* From your system's package manager. E.g. `sudo apt-get install openjdk-8-jdk`.
+* From your system's package manager. E.g. Linux: `sudo apt-get install openjdk-8-jdk`.
 * By [downloading and installing Oracle's binary distribution](http://www.oracle.com/technetwork/java/javase/downloads/index.html) (look for Java SE 8uXXX then the JDK link).
 * By downloading and installing some other OpenJDK binary distribution for your platform.
 
@@ -45,7 +45,17 @@ GraphicsFuzz works by taking a *reference shader* and producing a family of *var
 The reference shader and its variants together are referred to as a *shader family*.
 
 The `glsl-generate` tool generates shader families. The inputs are a folder of reference shaders
-and a folder of *donor shaders* (not pictured above). In theory, these input shaders can be any GLSL fragment shaders. In practice, we designed our tools to support shaders from glslsandbox.com, and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed).
+and a folder of *donor shaders* (not pictured above).
+
+> The *donor shaders* are a corpus of shaders;
+> `glsl-generate` will copy chunks of code from the donor shaders
+> into each generated shader.
+
+In theory, these input shaders can be any GLSL fragment, vertex, or compute shaders. 
+However,
+our tools are mainly tested with GLSL fragment shaders
+such as those from
+[glslsandbox.com](http://glslsandbox.com/), and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed).
 Each shader file `shader.frag` must have a corresponding `shader.json` metadata file alongside it, which contains the values for the uniforms.
 
 > In fact, we refer to the `shader.json` as the **shader job**;

@@ -11,7 +11,7 @@ glsl-reduce [OPTIONS] SHADER_JOB INTERESTINGNESS_TEST
 
 ## Description
 
-glsl-reduce takes a *shader job* `SHADER_JOB`, and an executable script `INTERSTINGNESS_TEST` that takes a shader job as an argument.  `INTERESTINGNESS_TEST` must exit with code 0 when applied to the initial `SHADER_JOB`.  glsl-reduce will then try to simplify the given shader job to a smaller, simpler shader job for which `INTERESTINGESS_TEST` still exits with code 0.
+glsl-reduce takes a *shader job* `SHADER_JOB`, and an executable script `INTERESTINGNESS_TEST` that takes a shader job as an argument.  `INTERESTINGNESS_TEST` must exit with code 0 when applied to the initial `SHADER_JOB`.  glsl-reduce will then try to simplify the given shader job to a smaller, simpler shader job for which `INTERESTINGESS_TEST` still exits with code 0.
 
 `SHADER_JOB` must be a `.json` file containing simply `{}`.  (The role of this file is to provide metadata about shaders when glsl-reduce is used in conjunction with [glsl-fuzz](glsl-fuzz-intro.md).)  If the shader job is named `foo.json`, glsl-reduce will look for corresponding shaders named `foo.frag`, `foo.vert` and `foo.comp`, of which there must be at least one, and will apply reduction to all such shaders that are present.  On termination, the reduced shader job will be named `foo_reduced_final.json` (with associated shader files).
 

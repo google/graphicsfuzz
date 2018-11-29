@@ -4,7 +4,9 @@
 
 ## The problem
 
-A graphics driver takes a *shader program* as input and executes it on a GPU (graphics processing unit) to render an image.
+A graphics driver takes one or more *shaders* as input and executes them on a GPU (graphics processing unit) to render an image.
+Shaders are typically written in a C-like language,
+such as GLSL.
 
 ![shader program, to GPU, to image](images/shader-gpu-image.png)
 
@@ -48,4 +50,4 @@ The reduced variant *still exposes the bug*, and differs from the reference only
 
 GraphicsFuzz finds bugs in graphics drivers by rendering families of semantically equivalent shaders, and looking for output discrepancies. This approach is known as *metamorphic testing*. For each bug, the reducer saves a lot of debugging time by producing a simpler *minimal-difference test case* that still exposes the bug.
 
-To learn more, checkout the [walkthrough](glsl-fuzz-walkthrough.md), [test genrator manual](glsl-fuzz-generate.md) and [test reducer manual](glsl-fuzz-reduce.md).
+To learn more, check out the [walkthrough](glsl-fuzz-walkthrough.md).
