@@ -1317,9 +1317,9 @@ public class WebUi extends HttpServlet {
       args.add("--error-string");
       args.add(errorRegex);
     }
-    final String reduceEverywhere = request.getParameter("preserve-semantics");
-    if (reduceEverywhere != null) {
-      if (reduceEverywhere.equals("on")) {
+    final String preserveSemantics = request.getParameter("preserve-semantics");
+    if (preserveSemantics != null) {
+      if (preserveSemantics.equals("on")) {
         args.add("--preserve-semantics");
       }
     }
@@ -1918,7 +1918,7 @@ public class WebUi extends HttpServlet {
         "<table class='reduce_table'>",
         "<tr>",
         "<td align='right' class=''>",
-        "<p class='no_space'>Reduce Everywhere:</p>",
+        "<p class='no_space'>Preserve Semantics:</p>",
         "</td>",
         "<td class='checkbox'>",
         (success
