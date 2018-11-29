@@ -69,7 +69,7 @@ by glsl-generate.
 
 Options:
 
-```sh
+```
 
 Reduce GLSL shaders, driven by a criterion of interest.
 

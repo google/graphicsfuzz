@@ -5,6 +5,24 @@ by generating, running, and reducing GLSL shaders.
 
 In this walkthrough, we will briefly demonstrate most features of glsl-fuzz from start to finish, including our browser-based UI.
 
+The use of `glsl-fuzz` can be roughly split into the following steps:
+
+* **Generate some shaders** using `glsl-generate` on your desktop.
+* **Run the shaders** using `glsl-server` on your desktop 
+ and our *worker applications* on the devices you wish to test, such as Android devices.
+* **Reduce the buggy shaders**, again using `glsl-server` on your desktop
+and our *worker applications* on your devices.
+Internally, `glsl-server` calls the command line reducer tool
+`glsl-reduce`.
+
+The `glsl-generate` and `glsl-reduce` tools can be used
+stand-alone, without the `glsl-server` tool and worker applications,
+but we focus on using our entire set of tools 
+in this walkthrough.
+
+
+## Requirements
+
 We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
 You can download these from the [releases page](glsl-fuzz-releases.md)
 or [build them from source](glsl-fuzz-build.md).
@@ -51,21 +69,58 @@ and a folder of *donor shaders* (not pictured above).
 > `glsl-generate` will copy chunks of code from the donor shaders
 > into each generated shader.
 
-In theory, these input shaders can be any GLSL fragment, vertex, or compute shaders. 
-However,
-our tools are mainly tested with GLSL fragment shaders
-such as those from
-[glslsandbox.com](http://glslsandbox.com/), and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed).
-Each shader file `shader.frag` must have a corresponding `shader.json` metadata file alongside it.  This file specifies values for the uniforms used by the shader(s); [we discuss the format of the JSON file in more detail below](#format-of-json-files).
+Although `glsl-generator` supports 
+GLSL fragment, vertex, and compute shaders,
+our well-tested use-case is fragment shaders
+that only use uniforms as inputs,
+and our worker applications can only set uniforms
+(they cannot set textures, etc).
+Thus,
+we will focus on this use-case for the walkthrough.
 
-> In fact, we refer to the `shader.json` as the **shader job**;
-> in general, there can be `shader.frag`, `shader.vert`, and/or `shader.compute` alongside
-> this file, so we treat `shader.json` as the input file that represents all shaders
-> and metadata necessary for rendering an image.
-> Thus, the inputs are really a set of shader jobs,
-> but in this walkthrough, each shader job will just have an associated fragment shader.
+Each fragment shader input is, in fact,
+a JSON file that we refer to as a
+**shader job**.
+This file contains the set of uniforms (and their values)
+that will be set;
+[we discuss the format of the JSON file in more detail below](#format-of-json-files).
+For example, from our release zip:
 
-We can create some shader families as follows:
+`graphicsfuzz-1.0/samples/300es/squares.json`:
+
+```json
+{
+  "time": {
+    "func": "glUniform1f",
+    "args": [
+      0.0
+    ]
+  },
+  "mouse": {
+    "func": "glUniform2f",
+    "args": [
+      0.0,
+      0.0
+    ]
+  },
+  "resolution": {
+    "func": "glUniform2f",
+    "args": [
+      256.0,
+      256.0
+    ]
+  }
+}
+```
+
+The fragment shader file for this shader job
+must have the same name and be alongside the shader job file
+with a `.frag` extension;
+in this case, at `graphicsfuzz-1.0/samples/300es/squares.frag`.
+Thus, the inputs and outputs for `glsl-generate` are actually
+folders of shader jobs.
+
+We can create some shader families from our provided sample shader jobs as follows:
 
 ```sh
 # Copy the sample shaders into the current directory:
@@ -133,7 +188,9 @@ ls work/shaderfamilies/family_100_bubblesort_flag/*.json
 # variant_001.prob  variant_004.prob  variant_007.prob
 ```
 
-Note that `infolog.json` is not a shader job.
+Note that `infolog.json` is not a shader job;
+it is simply a JSON file containing some metadata about how the
+shader family was generated.
 
 ## Running the server
 
@@ -244,6 +301,16 @@ as if the app has crashed,
 but the app should then start and the screen will remain
 black with animated text,
 similar to the desktop worker.
+
+> Note that the `gles-worker-android` app may crash a lot,
+> and it will automatically restart;
+> this is usually because the graphics driver crashed when running
+> a complex shader.
+> However, it may terminate intentionally if it detects any errors,
+> such as when the network connection between the worker and server
+> fails.
+> The crash-happy approach is a self-defense mechanism to try
+> to ensure that we return to a good state before continuing.
 
 > To exit the app, you **must use the back button**, otherwise it will automatically restart.
 
@@ -396,6 +463,15 @@ The default reduction settings are sufficient, so just click
 "Start reduction".
 
 Once again, you should see the worker application rendering images.
+
+> Note that the server will not progress with the reduction until
+> all prior work for the specified worker has finished.
+> Thus, if you previously queued a large number of shader families
+> to this worker,
+> they will continue to run before the reduction starts executing
+> on the worker. You can kill and restart the server to clear its
+> work queues.
+
 Once the reduction has finished,
 refresh the page and you should see the result:
 

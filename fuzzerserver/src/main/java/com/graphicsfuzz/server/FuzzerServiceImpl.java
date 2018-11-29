@@ -151,7 +151,7 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
         }
 
       } catch (IOException exception) {
-        LOGGER.info("Failed to read existing platform info.", exception);
+        LOGGER.info("Failed to read existing platform info.");
       }
     }
 
