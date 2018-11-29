@@ -19,7 +19,6 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
 * [Introduction: my shader is being weird, now what?](docs/glsl-reduce-intro.md)
 * [glsl-reduce walkthrough](docs/glsl-reduce-walkthrough.md)
 * [glsl-reduce manual](docs/glsl-reduce.md)
-* [Developer documentation](docs/glsl-fuzz-develop.md)
 
 ### glsl-fuzz
 
@@ -27,13 +26,12 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
 * [glsl-fuzz walkthrough](docs/glsl-fuzz-walkthrough.md)
 * [glsl-generate manual](docs/glsl-fuzz-generate.md)
 * [glsl-reduce manual (for reducing fuzzed shaders)](docs/glsl-fuzz-reduce.md)
-* [Developer documentation](docs/glsl-fuzz-develop.md)
 
 ## Get the GraphicsFuzz tools
 
 
 * **Pre-built binaries** are available on the [GitHub releases page](docs/glsl-fuzz-releases.md)
-* [**Build instructions**](docs/glsl-fuzz-develop.md)
+* [**Developer documentation with build instructions**](docs/glsl-fuzz-develop.md)
 
 
 ## Contribute

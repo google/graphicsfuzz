@@ -108,7 +108,7 @@ The *interestingness test* (name inspired by [C-Reduce](https://embed.cs.utah.ed
 In the above example we deemed a shader job `foo.json` to be interesting if the associated fragment shader `foo.frag` caused the fake compiler to fail with the "`too much indexing`" message.  Have a look at `glsl-reduce-walkthrough/interestingness_test.py` (which is invoked by `glsl-reduce-walkthrough/interestingness_test` for Linux/Mac, and the corresponding `.bat` file for Windows): it checks precisely this.
 
 In a different setting we might be interested in reducing with respect to a completely different property, e.g. we might check whether rendering using a given shader causes a device's temperature to exceed some threshold, whether a shader causes a driver to consume more than a certain amount of memory, or whether a shader sends a shader compiler into
-a seemingly infinite loop.  Writing the interestingness test is entirely in the hands of the user of glsl-reduce.
+a seemingly infinite loop.  Writing the interestingness test is entirely in the hands of the user of glsl-reduce.  Notice that in each of these examples, the property we care about (temperature, memory or execution time) is non-binary; it needs to be turned into a binary property by using an appropriate limit on the resource in question inside the interestingness test.
 
 
 # Bug slippage: the need for a strong interestingness test
