@@ -134,8 +134,6 @@ ls work/shaderfamilies/family_100_bubblesort_flag/*.json
 ```
 
 Note that `infolog.json` is not a shader job.
-The `.prob` files give details on the transformations (and their probabilities)
-that were used to generate each shader.
 
 ## Running the server
 

@@ -158,6 +158,10 @@ public class Generate {
         .help("Do not generate the injectionSwitch uniform.")
         .action(Arguments.storeTrue());
 
+    // Hidden option; for developer debugging.
+    parser.addArgument("--write_probabilities")
+        .help(Arguments.SUPPRESS)
+        .action(Arguments.storeTrue());
   }
 
   /**
@@ -311,10 +315,12 @@ public class Generate {
         variantShaderJob,
         outputShaderJobFile);
 
-    fileOps.writeAdditionalInfo(
-        outputShaderJobFile,
-        ".prob",
-        generationInfo.toString());
+    if (ns.getBoolean("write_probabilities")) {
+      fileOps.writeAdditionalInfo(
+          outputShaderJobFile,
+          ".prob",
+          generationInfo.toString());
+    }
 
   }
 
