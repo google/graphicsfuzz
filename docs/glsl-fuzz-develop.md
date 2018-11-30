@@ -206,7 +206,7 @@ git clone https://github.com/google/graphicsfuzz.git
 cd graphicsfuzz
 ```
 
-The Vulkan worker build also requires git submodules to be cloned:
+The Vulkan worker build requires git submodules to be initialized and updated:
 
 ```sh
 git submodule update --init
