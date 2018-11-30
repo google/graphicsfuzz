@@ -173,19 +173,16 @@ Each shader family contains 11 shader jobs;
 1 for the reference shader, and 10 for the variant shaders:
 
 ```sh
-ls work/shaderfamilies/family_100_bubblesort_flag/*.json
+ls work/shaderfamilies/family_100_bubblesort_flag/
 
 # Output:
 
-# infolog.json      variant_002.frag  variant_005.frag  variant_008.frag
-# reference.frag    variant_002.json  variant_005.json  variant_008.json
-# reference.json    variant_002.prob  variant_005.prob  variant_008.prob
+# infolog.json      variant_001.json  variant_004.json  variant_007.json
+# reference.frag    variant_002.frag  variant_005.frag  variant_008.frag
+# reference.json    variant_002.json  variant_005.json  variant_008.json
 # variant_000.frag  variant_003.frag  variant_006.frag  variant_009.frag
 # variant_000.json  variant_003.json  variant_006.json  variant_009.json
-# variant_000.prob  variant_003.prob  variant_006.prob  variant_009.prob
 # variant_001.frag  variant_004.frag  variant_007.frag
-# variant_001.json  variant_004.json  variant_007.json
-# variant_001.prob  variant_004.prob  variant_007.prob
 ```
 
 Note that `infolog.json` is not a shader job;
