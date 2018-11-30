@@ -5,6 +5,24 @@ by generating, running, and reducing GLSL shaders.
 
 In this walkthrough, we will briefly demonstrate most features of glsl-fuzz from start to finish, including our browser-based UI.
 
+The use of `glsl-fuzz` can be roughly split into the following steps:
+
+* **Generate some shaders** using `glsl-generate` on your desktop.
+* **Run the shaders** using `glsl-server` on your desktop 
+ and our *worker applications* on the devices you wish to test, such as Android devices.
+* **Reduce the buggy shaders**, again using `glsl-server` on your desktop
+and our *worker applications* on your devices.
+Internally, `glsl-server` calls the command line reducer tool
+`glsl-reduce`.
+
+The `glsl-generate` and `glsl-reduce` tools can be used
+stand-alone, without the `glsl-server` tool and worker applications,
+but we focus on using our entire set of tools 
+in this walkthrough.
+
+
+## Requirements
+
 We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
 You can download these from the [releases page](glsl-fuzz-releases.md)
 or [build them from source](glsl-fuzz-build.md).
@@ -19,13 +37,13 @@ Add the following directories to your path:
   * `graphicsfuzz-1.0/bin/Mac`
   * `graphicsfuzz-1.0/bin/Windows`
 
-The `graphicsfuzz-1.0/` directory is the unzipped graphicsfuzz release.
+The `graphicsfuzz-1.0/` directory is the unzipped release.
 If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
 
 You will also need to install the latest version of the Java 8 Development Kit,
 either:
 
-* From your system's package manager. E.g. `sudo apt-get install openjdk-8-jdk`.
+* From your system's package manager. E.g. Linux: `sudo apt-get install openjdk-8-jdk`.
 * By [downloading and installing Oracle's binary distribution](http://www.oracle.com/technetwork/java/javase/downloads/index.html) (look for Java SE 8uXXX then the JDK link).
 * By downloading and installing some other OpenJDK binary distribution for your platform.
 
@@ -45,17 +63,64 @@ GraphicsFuzz works by taking a *reference shader* and producing a family of *var
 The reference shader and its variants together are referred to as a *shader family*.
 
 The `glsl-generate` tool generates shader families. The inputs are a folder of reference shaders
-and a folder of *donor shaders* (not pictured above). In theory, these input shaders can be any GLSL fragment shaders. In practice, we designed our tools to support shaders from glslsandbox.com, and so we currently only support shaders with uniforms as inputs (and the values for these will be fixed).
-Each shader file `shader.frag` must have a corresponding `shader.json` metadata file alongside it, which contains the values for the uniforms.
+and a folder of *donor shaders* (not pictured above).
 
-> In fact, we refer to the `shader.json` as the **shader job**;
-> in general, there can be `shader.frag`, `shader.vert`, and/or `shader.compute` alongside
-> this file, so we treat `shader.json` as the input file that represents all shaders
-> and metadata necessary for rendering an image.
-> Thus, the inputs are really a set of shader jobs,
-> but in this walkthrough, each shader job will just have an associated fragment shader.
+> The *donor shaders* are a corpus of shaders;
+> `glsl-generate` will copy chunks of code from the donor shaders
+> into each generated shader.
 
-We can create some shader families as follows:
+Although `glsl-generate` supports
+GLSL fragment, vertex, and compute shaders,
+our well-tested use-case is fragment shaders
+that only use uniforms as inputs,
+and our worker applications can only set uniforms
+(they cannot set textures, etc.).
+Thus,
+we will focus on this use-case for the walkthrough.
+
+Each fragment shader input is, in fact,
+a JSON file that we refer to as a
+**shader job**.
+This file contains the set of uniforms (and their values)
+that will be set;
+[we discuss the format of the JSON file in more detail below](#format-of-json-files).
+For example, from our release zip:
+
+`graphicsfuzz-1.0/samples/300es/squares.json`:
+
+```json
+{
+  "time": {
+    "func": "glUniform1f",
+    "args": [
+      0.0
+    ]
+  },
+  "mouse": {
+    "func": "glUniform2f",
+    "args": [
+      0.0,
+      0.0
+    ]
+  },
+  "resolution": {
+    "func": "glUniform2f",
+    "args": [
+      256.0,
+      256.0
+    ]
+  }
+}
+```
+
+The fragment shader file for this shader job
+must have the same name and be alongside the shader job file
+with a `.frag` extension;
+in this case, at `graphicsfuzz-1.0/samples/300es/squares.frag`.
+Thus, the inputs and outputs for `glsl-generate` are actually
+folders of shader jobs.
+
+We can create some shader families from our provided sample shader jobs as follows:
 
 ```sh
 # Copy the sample shaders into the current directory:
@@ -108,24 +173,21 @@ Each shader family contains 11 shader jobs;
 1 for the reference shader, and 10 for the variant shaders:
 
 ```sh
-ls work/shaderfamilies/family_100_bubblesort_flag/*.json
+ls work/shaderfamilies/family_100_bubblesort_flag/
 
 # Output:
 
-# infolog.json      variant_002.frag  variant_005.frag  variant_008.frag
-# reference.frag    variant_002.json  variant_005.json  variant_008.json
-# reference.json    variant_002.prob  variant_005.prob  variant_008.prob
+# infolog.json      variant_001.json  variant_004.json  variant_007.json
+# reference.frag    variant_002.frag  variant_005.frag  variant_008.frag
+# reference.json    variant_002.json  variant_005.json  variant_008.json
 # variant_000.frag  variant_003.frag  variant_006.frag  variant_009.frag
 # variant_000.json  variant_003.json  variant_006.json  variant_009.json
-# variant_000.prob  variant_003.prob  variant_006.prob  variant_009.prob
 # variant_001.frag  variant_004.frag  variant_007.frag
-# variant_001.json  variant_004.json  variant_007.json
-# variant_001.prob  variant_004.prob  variant_007.prob
 ```
 
-Note that `infolog.json` is not a shader job.
-The `.prob` files give details on the transformations (and their probabilities)
-that were used to generate each shader.
+Note that `infolog.json` is not a shader job;
+it is simply a JSON file containing some metadata about how the
+shader family was generated.
 
 ## Running the server
 
@@ -237,6 +299,16 @@ but the app should then start and the screen will remain
 black with animated text,
 similar to the desktop worker.
 
+> Note that the `gles-worker-android` app may crash a lot,
+> and it will automatically restart;
+> this is usually because the graphics driver crashed when running
+> a complex shader.
+> However, it may terminate intentionally if it detects any errors,
+> such as when the network connection between the worker and server
+> fails.
+> The crash-happy approach is a self-defense mechanism to try
+> to ensure that we return to a good state before continuing.
+
 > To exit the app, you **must use the back button**, otherwise it will automatically restart.
 
 The app should show a dialogue where you can enter the URL of the server.
@@ -308,8 +380,13 @@ adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_S
 # and the serial number of the Android device (found using `adb devices`).
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
+# Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.  
 glsl-to-spv-worker galaxy-s9-vulkan --adbID 21372144e90c7fae
 ```
+
+Note that running `spirv-opt` on each shader by adding the `--spirvopt=ARGS` argument
+can help find additional bugs that would otherwise not be found.
+This approach can also find bugs in `spirv-opt` itself.
 
 You should see `No job` repeatedly output to the terminal.
 
@@ -388,6 +465,15 @@ The default reduction settings are sufficient, so just click
 "Start reduction".
 
 Once again, you should see the worker application rendering images.
+
+> Note that the server will not progress with the reduction until
+> all prior work for the specified worker has finished.
+> Thus, if you previously queued a large number of shader families
+> to this worker,
+> they will continue to run before the reduction starts executing
+> on the worker. You can kill and restart the server to clear its
+> work queues.
+
 Once the reduction has finished,
 refresh the page and you should see the result:
 
@@ -518,7 +604,7 @@ In fact, the "reduction log" shown by the WebUI
 includes the command that was run on its first line.
 E.g.
 
-`glsl-reduce shaderfamilies/familiy01/variant_01.json --reduction-kind [etc.]`
+`glsl-reduce shaderfamilies/family01/variant_01.json --reduction-kind [etc.]`
 
 > You can try running these commands from the command line in the `work`
 > directory, although note that some "empty" arguments (i.e. "")
@@ -636,3 +722,26 @@ to the server.
 ### Additional options
 
 See the [glsl-reduce manual](glsl-fuzz-reduce.md) for details on other options.
+
+## Format of JSON files
+
+As described above, a shader job is identified by a JSON file.  This file can be used to specify concrete values for uniforms used by the associated shaders.
+
+The file should contain a single dictionary of uniform value entries.
+
+Here is an example uniform value entry:
+
+```
+  "iDate": {
+    "func": "glUniform4f",
+    "args": [
+      2016.0,
+      9.0,
+      22.0,
+      61200.0
+    ],
+    "binding": 5
+  }
+```
+
+The key, `iDate`, is the name of the uniform.  This maps to a sub-dictionary specifying: via `func` the OpenGL function used to set the uniform (`glUniform4f` in this case, corresponding to a `vec4`), via `args` a sequence of values that should be used to populate the uniform (four floating point values in this case), and optionally via `binding` an integer which, if provided, must match the binding of the uniform buffer to which the uniform belongs.

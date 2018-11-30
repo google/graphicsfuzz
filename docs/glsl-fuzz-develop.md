@@ -14,8 +14,13 @@ page](glsl-fuzz-releases.md).
 * [JDK 1.8+](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 * [Maven](https://maven.apache.org/)
 * [Python](https://www.python.org/)
-* For Android workers: [Android SDK & NDK](https://developer.android.com/studio/#command-tools)
-* For Vulkan worker: [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
+
+* For our Android workers: [Android SDK & NDK](https://developer.android.com/studio/#command-tools)
+* For the Vulkan desktop worker: [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
+
+> Our *workers* are applications that run on the device you wish to test;
+> they communicate with the `glsl-server` application that is typically run on
+> a more powerful x86 machine.
 
 ### Get a local copy of this repository
 
@@ -24,17 +29,14 @@ To clone this repository:
 ```sh
 git clone https://github.com/google/graphicsfuzz.git
 
-# Or: git clone git@github.com:google/graphicsfuzz.git
-
 # Change into the cloned directory:
 cd graphicsfuzz
 ```
 
-The Vulkan worker build also requires git submodules to be cloned:
+The Vulkan worker build requires git submodules to be initialized and updated:
 
 ```sh
-git submodule init
-git submodule update
+git submodule update --init
 ```
 
 ### Build the GraphicsFuzz package
@@ -204,11 +206,10 @@ git clone https://github.com/google/graphicsfuzz.git
 cd graphicsfuzz
 ```
 
-The Vulkan worker build also requires git submodules to be cloned:
+The Vulkan worker build requires git submodules to be initialized and updated:
 
 ```sh
-git submodule init
-git submodule update
+git submodule update --init
 ```
 
 ### Opening GraphicsFuzz in IntelliJ
@@ -342,7 +343,7 @@ manager.queueCommand(
     "shaderfamilies/shaderfamily1/variants/variant_1.json",
     "IDENTICAL",
     "--server", "http://localhost:8080",
-    "--woker", "my-laptop"
+    "--worker", "my-laptop"
    ],
    "my-laptop",
    "processing/my-laptop/shaderfamily1/reductions/variant_1/command.log")

@@ -4,8 +4,31 @@
 
 `glsl-generate [OPTIONS] DONORS REFERENCES NUM_VARIANTS GLSL_VERSION PREFIX OUTPUT_FOLDER`
 
-glsl-generate mutates some reference GLSL shaders to produce families of variant
-shaders.
+
+## Description
+
+glsl-generate takes two directories of GLSL shaders, `DONORS` and `REFERENCES`,
+and mutates the shaders in `REFERENCES` to produce families of variant
+shaders to `OUTPUT_FOLDER`.
+
+Each shader is provided (and output)
+as a **shader job** (a `.json` file)
+that represents all shaders and metadata needed to
+render an image.
+However, the common use-case
+is for each input shader to be a fragment shader, e.g. `shader.frag`,
+with a corresponding JSON file, `shader.json`, alongside.
+The JSON file can either contain `{}` or a dictionary of uniform values.
+See below for more details on shader jobs.
+
+`DONORS` is a corpus of shaders; code from these is injected into the `REFERENCES`.
+
+Each output shader family will have `NUM_VARIANTS` variant shaders, plus
+the original reference shader from which they are derived.
+
+`GLSL_VERSION` specifies the version of GLSL, such as `100` or `"310 es"`.
+
+Each shader family will be output to a directory starting with `OUTPUT_FOLDER/PREFIX_*`.
 
 ## Options
 
@@ -62,38 +85,116 @@ optional arguments:
 
 ## Example
 
-From the graphicsfuzz-1.0 directory:
+Assuming you have extracted the `graphicsfuzz-1.0.zip` file to get `graphicsfuzz-1.0/`:
 
-```shell
-mkdir generated
-glsl-generate shaders/src/main/glsl/samples/donors shaders/src/main/glsl/samples/310es 2 "310 es" my_prefix generated
+```sh
+# Copy the sample shaders into the current directory:
+cp -r graphicsfuzz-1.0/shaders/samples samples
+
+# Create a work directory to store our generated shader families.
+# The directory structure allows glsl-server
+# to find the shaders later.
+mkdir -p work/shaderfamilies
+
+# Generate several shader families from the set of sample shaders.
+# Synopsis:
+# glsl-generate [options] donors references num_variants glsl_version prefix output_folder
+
+# Generate some GLSL version 300 es shaders.
+glsl-generate --max_bytes 500000 --multi_pass samples/donors samples/300es 10 "300 es" family_300es work/shaderfamilies
+
+# Generate some GLSL version 100 shaders.
+glsl-generate --max_bytes 500000 --multi_pass samples/donors samples/100 10 "100" family_100 work/shaderfamilies
+
+# Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
+glsl-generate --max_bytes 500000 --multi_pass --generate_uniform_bindings --max_uniforms 10 samples/donors samples/310es 10 "310 es" family_vulkan work/shaderfamilies
+
+# The lines above will take approx. 1-2 minutes each, and will generate a shader family for every
+# shader in samples/300es or samples/100:
+ls work/shaderfamilies
+
+# Output:
+
+# family_100_bubblesort_flag
+# family_100_mandelbrot_blurry
+# family_100_squares
+# family_100_colorgrid_modulo
+# family_100_prefix_sum
+
+# family_300es_bubblesort_flag
+# family_300es_mandelbrot_blurry
+# family_300es_squares
+# family_300es_colorgrid_modulo
+# family_300es_prefix_sum
+
+# family_vulkan_bubblesort_flag
+# family_vulkan_mandelbrot_blurry
+# family_vulkan_squares
+# family_vulkan_colorgrid_modulo
+# family_vulkan_prefix_sum
 ```
 
-Note that the output directory must already exists.
+For this example, each shader family will contain 11 shaders;
+1 for the reference shader, and 10 for the variant shaders:
 
-The above command will produce:
+```sh
+ls work/shaderfamilies/family_100_bubblesort_flag/
 
-```shell
-generated/
-├── my_prefix_bubblesort_flag
-│   ├── infolog.json
-│   ├── reference.frag
-│   ├── reference.json
-│   ├── variant_000.frag
-│   ├── variant_000.json
-│   ├── variant_000.prob
-│   ├── variant_001.frag
-│   ├── variant_001.json
-│   └── variant_001.prob
-├── my_prefix_colorgrid_modulo
-│   ├── infolog.json
-│   ├── reference.frag
-│   ├── reference.json
-│   ├── variant_000.frag
-│   ├── variant_000.json
-│   ├── variant_000.prob
-│   ├── variant_001.frag
-│   ├── variant_001.json
-│   └── variant_001.prob
-[ ... etc ... ]
+# Output:
+
+# infolog.json      variant_001.json  variant_004.json  variant_007.json
+# reference.frag    variant_002.frag  variant_005.frag  variant_008.frag
+# reference.json    variant_002.json  variant_005.json  variant_008.json
+# variant_000.frag  variant_003.frag  variant_006.frag  variant_009.frag
+# variant_000.json  variant_003.json  variant_006.json  variant_009.json
+# variant_001.frag  variant_004.frag  variant_007.frag
 ```
+
+## Shader jobs
+
+Each input is, in fact,
+a JSON file that we refer to as a
+**shader job** that
+represents all shaders and metadata needed to
+render an image.
+However,
+our well-tested use-case is
+a shader job that contains a fragment shader
+and a set of uniform values.
+Our worker applications that are used to render a frame
+can only set uniforms
+(they cannot set textures, etc.).
+
+For example, from our release zip:
+
+`graphicsfuzz-1.0/samples/300es/squares.json`:
+
+```json
+{
+  "time": {
+    "func": "glUniform1f",
+    "args": [
+      0.0
+    ]
+  },
+  "mouse": {
+    "func": "glUniform2f",
+    "args": [
+      0.0,
+      0.0
+    ]
+  },
+  "resolution": {
+    "func": "glUniform2f",
+    "args": [
+      256.0,
+      256.0
+    ]
+  }
+}
+```
+
+The fragment shader file for this shader job
+must have the same name and be alongside the shader job file
+with a `.frag` extension;
+in this case, at `graphicsfuzz-1.0/samples/300es/squares.frag`.

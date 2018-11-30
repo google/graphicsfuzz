@@ -16,7 +16,7 @@ See below for common examples.
 glsl-reduce takes a *shader job* `SHADER_JOB` (a .json file) as an argument
 as well as further arguments or options to specify the interestingness test.
 glsl-reduce will try to simplify the given shader job to a smaller,
-simpler shader job for that is still deemed "interesting".
+simpler shader job that is still deemed "interesting".
 
 `SHADER_JOB` should be a `.json` shader job file that represents all shaders and metadata needed to
 render an image. If the shader job is named `foo.json`,
@@ -40,7 +40,7 @@ a shader job is interesting if it does *not* produce an
 image and, optionally, the run log from running the shader job includes the
 regular expression `ERROR`.
 This reduction kind is typically used **without** `--preserve-semantics`,
-so the the reducer can change the semantics of the shader;
+so the reducer can change the semantics of the shader;
 we are usually reducing a crash or incorrect shader compilation error,
 so changing the semantics of the shaders is fine, as they should still compile and run.
 Note that the reducer always produces valid shaders that should compile.
@@ -69,7 +69,7 @@ by glsl-generate.
 
 Options:
 
-```sh
+```
 
 Reduce GLSL shaders, driven by a criterion of interest.
 

@@ -29,6 +29,10 @@ def go():
         print("Skipping release because this is not the master branch.")
         sys.exit(0)
 
+    if "TRAVIS_TAG" not in os.environ:
+        print("Skipping release because this is not a tag build")
+        sys.exit(0)
+
     if "TRAVIS_PULL_REQUEST" in os.environ and os.environ["TRAVIS_PULL_REQUEST"] != "false":
         print("Skipping release because this is a pull request.")
         sys.exit(0)
@@ -37,6 +41,7 @@ def go():
         print("Please define TRAVIS_COMMIT")
         sys.exit(1)
     commit_hash = os.environ["TRAVIS_COMMIT"]
+    tag_name = os.environ["TRAVIS_TAG"]
 
     if not os.path.isdir("out"):
         print("Failing release because 'out' directory was not found.")
@@ -51,7 +56,7 @@ def go():
     subprocess.check_call([
         "github-release",
         repo_name,
-        "v-" + commit_hash,
+        tag_name,
         commit_hash,
         description + "\n" + git_log,
         "out/*"])
