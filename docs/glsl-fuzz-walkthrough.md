@@ -69,12 +69,12 @@ and a folder of *donor shaders* (not pictured above).
 > `glsl-generate` will copy chunks of code from the donor shaders
 > into each generated shader.
 
-Although `glsl-generator` supports 
+Although `glsl-generator` supports
 GLSL fragment, vertex, and compute shaders,
 our well-tested use-case is fragment shaders
 that only use uniforms as inputs,
 and our worker applications can only set uniforms
-(they cannot set textures, etc).
+(they cannot set textures, etc.).
 Thus,
 we will focus on this use-case for the walkthrough.
 
@@ -380,8 +380,13 @@ adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_S
 # and the serial number of the Android device (found using `adb devices`).
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
+# Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.  
 glsl-to-spv-worker galaxy-s9-vulkan --adbID 21372144e90c7fae
 ```
+
+Note that running `spirv-opt` on each shader by adding the `--spirvopt=ARGS` argument
+can help find additional bugs that would otherwise not be found.
+This approach can also find bugs in `spirv-opt` itself.
 
 You should see `No job` repeatedly output to the terminal.
 
