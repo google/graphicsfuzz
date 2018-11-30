@@ -1,5 +1,6 @@
 build/
 build_*/
+cmake-build-debug/
 local.properties
 gradle.properties
 .externalNativeBuild/
