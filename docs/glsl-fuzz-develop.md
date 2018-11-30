@@ -343,7 +343,7 @@ manager.queueCommand(
     "shaderfamilies/shaderfamily1/variants/variant_1.json",
     "IDENTICAL",
     "--server", "http://localhost:8080",
-    "--woker", "my-laptop"
+    "--worker", "my-laptop"
    ],
    "my-laptop",
    "processing/my-laptop/shaderfamily1/reductions/variant_1/command.log")

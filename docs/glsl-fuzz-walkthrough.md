@@ -599,7 +599,7 @@ In fact, the "reduction log" shown by the WebUI
 includes the command that was run on its first line.
 E.g.
 
-`glsl-reduce shaderfamilies/familiy01/variant_01.json --reduction-kind [etc.]`
+`glsl-reduce shaderfamilies/family01/variant_01.json --reduction-kind [etc.]`
 
 > You can try running these commands from the command line in the `work`
 > directory, although note that some "empty" arguments (i.e. "")

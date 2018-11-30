@@ -42,7 +42,7 @@ Finding bugs is not the end of the story: a variant shader that exposes a bug is
 
 Fortunately, our reducer is able to selectively reverse those transformations that are not relevant to the bug. After reduction, we obtain a small difference sufficient to expose the driver issue.
 
-![The same source code, the majority of which is highlighted in yellow and striked out, but parts of one statement remain.](images/variant-reduced.png)
+![The same source code, the majority of which is highlighted in yellow and struck out, but parts of one statement remain.](images/variant-reduced.png)
 
 The reduced variant *still exposes the bug*, and differs from the reference only slightly: this is a great starting point to isolate the root cause of the bug in the graphics driver.
 
