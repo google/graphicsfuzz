@@ -19,7 +19,7 @@ page](glsl-fuzz-releases.md).
 * For the Vulkan desktop worker: [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
 
 > Our *workers* are applications that run on the device you wish to test;
-> they communicate with the `glsl-server` that is typically run on
+> they communicate with the `glsl-server` application that is typically run on
 > a more powerful x86 machine.
 
 ### Get a local copy of this repository
