@@ -69,7 +69,7 @@ and a folder of *donor shaders* (not pictured above).
 > `glsl-generate` will copy chunks of code from the donor shaders
 > into each generated shader.
 
-Although `glsl-generator` supports
+Although `glsl-generate` supports
 GLSL fragment, vertex, and compute shaders,
 our well-tested use-case is fragment shaders
 that only use uniforms as inputs,
