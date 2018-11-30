@@ -36,8 +36,7 @@ cd graphicsfuzz
 The Vulkan worker build requires git submodules to be initialized and updated:
 
 ```sh
-git submodule init
-git submodule update
+git submodule update --init
 ```
 
 ### Build the GraphicsFuzz package
@@ -210,8 +209,7 @@ cd graphicsfuzz
 The Vulkan worker build also requires git submodules to be cloned:
 
 ```sh
-git submodule init
-git submodule update
+git submodule update --init
 ```
 
 ### Opening GraphicsFuzz in IntelliJ
