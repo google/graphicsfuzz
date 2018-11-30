@@ -29,6 +29,10 @@ def go():
         print("Skipping release because this is not the master branch.")
         sys.exit(0)
 
+    if "TRAVIS_TAG" not in os.environ:
+        print("Skipping release because this is not a tag build")
+        sys.exit(0)
+
     if "TRAVIS_PULL_REQUEST" in os.environ and os.environ["TRAVIS_PULL_REQUEST"] != "false":
         print("Skipping release because this is a pull request.")
         sys.exit(0)
