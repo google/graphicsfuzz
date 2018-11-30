@@ -25,10 +25,6 @@ def go():
     repo_name = "google/graphicsfuzz"
     log_depth = 3
 
-    if "TRAVIS_BRANCH" not in os.environ or os.environ["TRAVIS_BRANCH"] != "master":
-        print("Skipping release because this is not the master branch.")
-        sys.exit(0)
-
     if "TRAVIS_TAG" not in os.environ or len(os.environ["TRAVIS_TAG"]) == 0:
         print("Skipping release because this is not a tag build")
         sys.exit(0)
