@@ -28,7 +28,7 @@ you set the environment variables.
 You should also add the `android-sdk/platform-tools` directory
 to your path so that you can use tools like `adb`.
 
-## Android networking: connecting to Android apps
+## Android networking: connecting Android apps to the server
 
 There are two main ways to connect the gles worker 
 Android app to the server.
