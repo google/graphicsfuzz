@@ -8,7 +8,7 @@ In this walkthrough, we will briefly demonstrate most features of glsl-fuzz from
 The use of `glsl-fuzz` can be roughly split into the following steps:
 
 * **Generate some shaders** using `glsl-generate` on your desktop.
-* **Run the shaders** using `glsl-server` on your desktop 
+* **Run the shaders** using `glsl-server` on your desktop
  and our *worker applications* on the devices you wish to test, such as Android devices.
 * **Reduce the buggy shaders**, again using `glsl-server` on your desktop
 and our *worker applications* on your devices.
@@ -17,7 +17,7 @@ Internally, `glsl-server` calls the command line reducer tool
 
 The `glsl-generate` and `glsl-reduce` tools can be used
 stand-alone, without the `glsl-server` tool and worker applications,
-but we focus on using our entire set of tools 
+but we focus on using our entire set of tools
 in this walkthrough.
 
 
@@ -318,13 +318,11 @@ or your desktop/laptop IP address and port.
 
 E.g. `paul-laptop:8080` or `192.168.0.4:8080`.
 
-However, this usually won't work
-on university, public, or corporate networks.
-Alternatively, you can connect your device
-via USB, execute `adb reverse tcp:8080 tcp:8080` on your desktop/laptop,
-and use `localhost:8080` as the server address.
-See the [Android networking guide](android-networking-guide.md)
-for more detailed instructions.
+However, this usually won't work on university, public, or corporate networks.
+Alternatively, you can connect your device via USB, execute `adb reverse
+tcp:8080 tcp:8080` on your desktop/laptop, and use `localhost:8080` as the
+server address. See the [Android notes](android-notes.md) for more detailed
+instructions.
 
 > If you need to enter a new server address, you will need to clear the app's data. E.g. by uninstalling and reinstalling the app.
 
@@ -380,7 +378,7 @@ adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_S
 # and the serial number of the Android device (found using `adb devices`).
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
-# Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.  
+# Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.
 glsl-to-spv-worker galaxy-s9-vulkan --adbID 21372144e90c7fae
 ```
 
