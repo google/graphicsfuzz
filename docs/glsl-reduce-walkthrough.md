@@ -58,7 +58,7 @@ with a lot of indexing. Thus, we have found a compiler bug.
 
 Let's now use glsl-reduce to get a much smaller shader that causes the compiler to fail with this error:
 
-```
+```sh
 # Observe that the initial shader is reasonably large
 cat glsl-reduce-walkthrough/colorgrid_modulo.frag
 
@@ -117,7 +117,7 @@ Let's try our reduction again but with a different interestingness test.  Have a
 
 Let's use it to perform a reduction:
 
-```
+```sh
 # Run glsl-reduce
 glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/weak_interestingness_test --output slipped_reduction_results
 
