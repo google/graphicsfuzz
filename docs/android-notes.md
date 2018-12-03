@@ -1,10 +1,10 @@
 # Android notes
 
-The Android SDK is needed for building and developing the
-OpenGL worker (gles-worker).
+The Android SDK is needed for building and developing the OpenGL worker
+(gles-worker).
 
-The Android SDK and NDK are needed for building and developing the
-Vulkan worker (vulkan-worker).
+The Android SDK and NDK are needed for building and developing the Vulkan worker
+(vulkan-worker).
 
 ## Installing the Android SDK and NDK
 
@@ -28,9 +28,54 @@ you set the environment variables.
 You should also add the `android-sdk/platform-tools` directory
 to your path so that you can use tools like `adb`.
 
-## Android networking
+## Android networking: connecting the gles-worker Android app to the server
 
-See [Android networking guide](android-networking-guide.md).
+There are two main ways to connect the Android worker to the server.
+
+### Using the hostname or IP address of the server
+
+The most straightforward approach can be used if the Android device and server
+are on the same network, and can "see" each other. This does not always work on
+university, public, or corporate networks, as communication is often blocked.
+However, this approach should work, for example, if you are at home with both
+your desktop/laptop and Android phone/tablet connected to your router via WiFi
+and/or ethernet cable.
+
+* Open the GraphicsFuzz app on your device.
+* Enter the hostname of your desktop/laptop, plus the port on which
+the server application is listening (8080 by default).
+
+E.g. `paul-laptop:8080`
+
+* Alternatively, you can use the IP address of your desktop/laptop:
+
+E.g. `192.168.0.4:8080`
+
+### Using USB via `adb reverse`
+
+You may alternatively connect the device to the machine running the server using
+a USB cable. In this case, you will need to have access to the `adb` tool on
+your desktop/laptop, and to enable USB debugging in the developer settings on
+the Android device. For these two steps, you can refer to our [Android
+notes](android-notes.md). Then:
+
+* Connect the Android device via USB to the desktop/laptop running the server.
+* Ensure you unlock the phone/tablet (e.g. by using your finger print, entering
+  a PIN code, or just by swiping the lockscreen), so you can see the "Allow USB
+  debugging?" pop-up window.
+* Tap the "Always allow from this computer" button option, and press "OK" to
+  allow USB debugging.
+* From a terminal on your desktop/laptop, execute `adb devices` and ensure the
+  device shows up.
+* Assuming the server is listening on port 8080, execute `adb reverse tcp:8080
+  tcp:8080`.
+* Now open the gles-worker app and use the default server address:
+  `localhost:8080`
+
+**Note:** it is important to do the `adb reverse` command *before* starting the
+gles-worker app for the first time. If the server address set up is not offered
+when the app starts, we recommend to reinstall the app to whipe out any saved
+server setting.
 
 ## Installing apps via `adb`
 
@@ -56,6 +101,15 @@ already installed):
 
 `adb uninstall com.example.myapp > /dev/null 2>&1 ; adb install myapp.apk`
 
+## Multiple devices plugged at the same time
+
+If you have more than one device connected, you will have to tell `adb` which
+device to target with the option `-s <device-id>` on every command (e.g. `adb -s
+<device-id> logcat`).
+
+Use `adb devices -l` to get the device id alongside the model name of plugged
+devices.
+
 ## Useful device settings
 
 * On an Android device, open `Settings`, `About device`, and keep tapping build
@@ -71,6 +125,6 @@ already installed):
   `com.graphicsfuzz.` in the search text box and select `No filters` in the drop
   down.  This will ensure you see output from all processes; our worker uses
   three processes on Android.
-* Press the back button on the device to exit the OpenGL worker app on
+* Press the back button on the device to exit the gles-worker app on
   Android. Pressing home or other buttons won't work, as the app tries to stay
   in the foreground.
