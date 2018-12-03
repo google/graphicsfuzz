@@ -341,7 +341,7 @@ public class Main extends ApplicationAdapter {
             public void canceled() {
               showingTextInput = false;
             }
-          }, "Absent or invalid worker name, provide new name:", defaultWorker, "");
+          }, "Absent worker name (or could not validate it with the server). Please provide new name.", defaultWorker, "");
         }
 
         // Return: the text listener will be invoked on the next frame.

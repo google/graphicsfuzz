@@ -28,9 +28,15 @@ you set the environment variables.
 You should also add the `android-sdk/platform-tools` directory
 to your path so that you can use tools like `adb`.
 
-## Android networking: connecting the gles-worker Android app to the server
+## Android networking: connecting to Android apps
 
-There are two main ways to connect the Android worker to the server.
+There are two main ways to connect the gles worker 
+Android app to the server.
+
+> Tip: Recall that you must exit the gles worker app 
+> using the back button, otherwise it will restart.
+
+> Tip: This section also applies to the Vulkan worker Android app.
 
 ### Using the hostname or IP address of the server
 
@@ -55,9 +61,10 @@ E.g. `192.168.0.4:8080`
 
 You may alternatively connect the device to the machine running the server using
 a USB cable. In this case, you will need to have access to the `adb` tool on
-your desktop/laptop, and to enable USB debugging in the developer settings on
-the Android device. For these two steps, you can refer to our [Android
-notes](android-notes.md). Then:
+your desktop/laptop (one approach is to install the Android SDK,
+as described above), and you will need to 
+enable USB debugging in the developer settings on
+the Android device (described below in [useful device settings](#useful-device-settings)). Then:
 
 * Connect the Android device via USB to the desktop/laptop running the server.
 * Ensure you unlock the phone/tablet (e.g. by using your finger print, entering
@@ -72,12 +79,32 @@ notes](android-notes.md). Then:
 * Now open the gles-worker app and use the default server address:
   `localhost:8080`
 
-**Note:** it is important to do the `adb reverse` command *before* starting the
-gles-worker app for the first time. If the server address set up is not offered
-when the app starts, we recommend to reinstall the app to whipe out any saved
-server setting.
+> Tip: To change the server address,
+> you must uninstall and reinstall the app,
+> as described below.
 
-## Installing apps via `adb`
+
+**Warning:** 
+if the app initially cannot connect to the server
+then it will complain that the worker name is invalid
+because it cannot contact the server to validate the worker name.
+Thus, note the following:
+
+* We recommend that you execute `adb reverse` *before* starting the
+gles-worker app for the first time.
+* If the app cannot connect to the server
+then a dialogue will continue to show, making it impossible
+to exit the app.
+If you forget to execute `adb reverse tcp:8080 tcp:8080` then
+doing this may fix the issue.
+Otherwise,
+to close the app,
+use `adb install gles-worker-android-debug.apk` to reinstall the app (which stops the currently running instance),
+or `adb uninstall com.graphicsfuzz.glesworker` to uninstall the app,
+as described below.
+
+
+## Installing and uninstalling apps via `adb`
 
 Once you have `adb` on your path,
 you can install apps using:
@@ -88,18 +115,19 @@ If the app is already installed, you may get an error like:
 
 `adb: failed to install myapp.apk: Failure [INSTALL_FAILED_ALREADY_EXISTS: Attempt to re-install com.example.myapp without first uninstalling.]`
 
-In that case, you will have to uninstall first the app first, using:
+The app should still have installed correctly, but to be safe
+you can uninstall the app first, using:
 
 `adb uninstall com.example.myapp`
 
 Note that the package name (e.g. `com.example.myapp`) can be found in the error
 message.
 
-You can use the following one-liner to reinstall an APK (the output of uninstall
-is silenced because on some devices it may be quite verbose if the app is not
-already installed):
+You can use the following one-liner to reinstall an APK
+(silencing the uninstall output,
+which can be quite verbose if the app is not already installed):
 
-`adb uninstall com.example.myapp > /dev/null 2>&1 ; adb install myapp.apk`
+`adb uninstall com.example.myapp >/dev/null 2>&1 ; adb install myapp.apk`
 
 ## Multiple devices plugged at the same time
 
