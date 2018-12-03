@@ -42,7 +42,7 @@ static const uint64_t fence_timeout_nanoseconds_ = 100000000;
 // Clear with opaque black
 static const float clear_color_[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 // Sanity
-const char *sanity_unifoms_string = "{}";
+const char *sanity_uniforms_string = "{}";
 
 // Hardcoded quad
 #define RED2D(_x, _y)  (_x), (_y), 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f
@@ -1615,7 +1615,7 @@ void VulkanWorker::DrawTest(const char *png_filename, bool skip_render) {
 void VulkanWorker::RunTest(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, bool skip_render) {
 
   // Sanity before
-  PrepareTest(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_unifoms_string);
+  PrepareTest(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_uniforms_string);
   DrawTest(FLAGS_sanity_before.c_str(), false);
   CleanTest();
 
@@ -1637,7 +1637,7 @@ void VulkanWorker::RunTest(FILE *vertex_file, FILE *fragment_file, FILE *uniform
   free(uniforms_string);
 
   // Sanity after
-  PrepareTest(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_unifoms_string);
+  PrepareTest(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_uniforms_string);
   DrawTest(FLAGS_sanity_after.c_str(), false);
   CleanTest();
 }
