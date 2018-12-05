@@ -228,13 +228,19 @@ def dump_info_android():
     infofile = ANDROID_SDCARD + '/worker_info.json'
     adb('shell rm -f ' + infofile)
     adb('shell am force-stop ' + ANDROID_APP)
+    adb('shell shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
+    adb('shell shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
     adb('shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity -e gfz "\"--info\""')
-    deadline = time.time() + 1
+    deadline = time.time() + 5
     while time.time() < deadline:
         retcode = adb('shell test -f ' + infofile).returncode
         if retcode == 0:
-            adb('pull ' + infofile)
+            break
         time.sleep(0.1)
+    if adb('shell test -f ' + infofile).returncode == 0:
+        adb('pull ' + infofile)
+    else:
+        print('Error: cannot obtain worker informations')
     adb('shell am force-stop ' + ANDROID_APP)
 
 ################################################################################
