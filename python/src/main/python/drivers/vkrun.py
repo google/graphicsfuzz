@@ -231,6 +231,8 @@ def dump_info_android():
     adb('shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
     adb('shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
     adb('shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity -e gfz "\"--info\""')
+    # We wait up to timeout_seconds to let the app produce the worker info. We
+    # may have to wait several seconds as the app may take some time to launch.
     timeout_seconds = 5
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
