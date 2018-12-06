@@ -231,7 +231,8 @@ def dump_info_android():
     adb('shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
     adb('shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
     adb('shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity -e gfz "\"--info\""')
-    deadline = time.time() + 5
+    timeout_seconds = 5
+    deadline = time.time() + timeout_seconds
     while time.time() < deadline:
         retcode = adb('shell test -f ' + infofile).returncode
         if retcode == 0:
