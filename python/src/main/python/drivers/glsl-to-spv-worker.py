@@ -304,9 +304,11 @@ if args.linux:
 else:
     vkrun.dump_info_android()
 
-assert(os.path.exists(worker_info_file))
+if not os.path.exists(worker_info_file):
+    print('Failed to retrieve worker information. Make sure the app permission to write to external storage is enabled.')
+    exit(1)
 
-worker_info_json_string = '{}'  # Dummy but valid JSON string
+worker_info_json_string = '{}'  # Default value: dummy but valid JSON string
 with open(worker_info_file, 'r') as f:
     worker_info_json_string = f.read()
 
