@@ -270,6 +270,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    if not args.android and not args.serial and not args.linux:
+        print('You must set either --android, --serial or --linux option.')
+        exit(1)
+
     vert = prepare_shader(args.vert)
     frag = prepare_shader(args.frag)
 
