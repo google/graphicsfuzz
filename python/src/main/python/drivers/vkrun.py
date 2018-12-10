@@ -155,7 +155,9 @@ def run_android(vert, frag, json, skip_render):
             done = True
             break
 
-        retcode = adb('shell pidof ' + ANDROID_APP + ' > /dev/null').returncode
+        # Make sure to redirect to /dev/null on the device, otherwise this fails
+        # on Windows hosts.
+        retcode = adb('shell "pidof ' + ANDROID_APP + ' > /dev/null"').returncode
         if retcode == 1:
 
             # double check that no DONE file is present
