@@ -139,20 +139,26 @@ def run_android(vert, frag, json, skip_render):
 
     # Busy wait
     deadline = time.time() + TIMEOUT_APP
-    crash = False
-    done = False
+
+    status = 'UNEXPECTED_ERROR'
+
+    # If the app never starts, status remains as UNEXPECTED_ERROR.
+    # Once the app starts, status becomes TIMEOUT.
+    # If we break out of the loop below, the status is updated just before.
 
     while time.time() < deadline:
 
-        # Begin the busy-wait loop by sleeping to let the app start
-        # properly. The 'adb shell am start' may return before the app is
-        # actually started (this is all asynchronous), in which case we may not
-        # be able to detect the app pid.
-        time.sleep(0.1)
+        # Don't pass here until app has started.
+        if status == 'UNEXPECTED_ERROR':
+            if adb('shell test -f ' + ANDROID_SDCARD + '/STARTED').returncode != 0:
+                continue
+            status = 'TIMEOUT'
+
+        assert status == 'TIMEOUT'
 
         retcode = adb('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode
         if retcode == 0:
-            done = True
+            status = 'SUCCESS'
             break
 
         # Make sure to redirect to /dev/null on the device, otherwise this fails
@@ -163,21 +169,15 @@ def run_android(vert, frag, json, skip_render):
             # double check that no DONE file is present
             retcode = adb('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode
             if retcode == 0:
-                done = True
+                status = 'SUCCESS'
                 break
 
             # No pid, and no DONE file, this looks like a crash indeed.
-            crash = True
+            status = 'CRASH'
             break
 
     # Grab log
     adb('logcat -d > ' + LOGFILE)
-
-    status = 'SUCCESS'
-    if crash:
-        status = 'CRASH'
-    elif not done:
-        status = 'TIMEOUT'
 
     # retrieve all files to results/
     resdir = 'results'
@@ -204,7 +204,7 @@ def run_android(vert, frag, json, skip_render):
                 if not os.path.exists(next_image):
                     status = 'UNEXPECTED_ERROR'
                     with open(LOGFILE, 'a') as f:
-                        f.write('\n Not all images are produce? Missing image: {}\n'.format(i))
+                        f.write('\n Not all images were produced? Missing image: {}\n'.format(i))
                 elif not filecmp.cmp(ref_image, next_image, shallow=False):
                     status = 'NONDET'
                     shutil.copy(ref_image, 'nondet0.png')
@@ -212,6 +212,8 @@ def run_android(vert, frag, json, skip_render):
 
     with open(LOGFILE, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
+        if status == 'UNEXPECTED_ERROR':
+            f.write('\n App did not start?\n')
 
     with open('STATUS', 'w') as f:
         f.write(status)
