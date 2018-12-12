@@ -128,8 +128,8 @@ public class Generate {
           .type(String.class);
 
     parser.addArgument("--enable_only")
-        .help("Disable all but the given series of transformations.")
-        .type(String.class);
+          .help("Disable all but the given series of transformations.")
+          .type(String.class);
 
     parser.addArgument("--aggressively_complicate_control_flow")
           .help("Make control flow very complicated.")
@@ -144,24 +144,24 @@ public class Generate {
           .action(Arguments.storeTrue());
 
     parser.addArgument("--generate_uniform_bindings")
-        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
-            + "compatibility.")
-        .action(Arguments.storeTrue());
+          .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
+              + "compatibility.")
+          .action(Arguments.storeTrue());
 
     parser.addArgument("--max_uniforms")
-        .help("Ensure that generated shaders have no more than the given number of uniforms; "
-            + "required for Vulkan compatibility.")
-        .setDefault(0)
-        .type(Integer.class);
+          .help("Ensure that generated shaders have no more than the given number of uniforms; "
+              + "required for Vulkan compatibility.")
+          .setDefault(0)
+          .type(Integer.class);
 
     parser.addArgument("--no_injection_switch")
-        .help("Do not generate the injectionSwitch uniform.")
-        .action(Arguments.storeTrue());
+          .help("Do not generate the injectionSwitch uniform.")
+          .action(Arguments.storeTrue());
 
     // Hidden option; for developer debugging.
     parser.addArgument("--write_probabilities")
-        .help(Arguments.SUPPRESS)
-        .action(Arguments.storeTrue());
+          .help(Arguments.SUPPRESS)
+          .action(Arguments.storeTrue());
   }
 
   /**
