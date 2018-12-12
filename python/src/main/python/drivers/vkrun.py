@@ -147,6 +147,7 @@ def run_android(vert, frag, json, skip_render):
     # If we break out of the loop below, the status is updated just before.
 
     while time.time() < deadline:
+        time.sleep(0.1)
 
         # Don't pass here until app has started.
         if status == 'UNEXPECTED_ERROR':
