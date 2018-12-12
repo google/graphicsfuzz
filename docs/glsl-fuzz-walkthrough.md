@@ -379,7 +379,8 @@ adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_S
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
 # Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.
-glsl-to-spv-worker galaxy-s9-vulkan --adbID 21372144e90c7fae
+# Add `--adb-no-serial` to bypass serial ID requirement, useful for wireless adb
+glsl-to-spv-worker galaxy-s9-vulkan --serial 21372144e90c7fae
 ```
 
 Note that running `spirv-opt` on each shader by adding the `--spirvopt=ARGS` argument
