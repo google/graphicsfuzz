@@ -260,13 +260,18 @@ parser.add_argument(
     help='Worker name to identify to the server')
 
 parser.add_argument(
-    '--adbID',
-    help='adb (Android Debug Bridge) ID of the device to run tests on. Run "adb devices" to list these IDs')
+    '--serial',
+    help='Serial ID of device to target. Run "adb devices -l" to list these IDs')
 
 parser.add_argument(
     '--linux',
     action='store_true',
     help='Use Linux worker')
+
+parser.add_argument(
+    '--adb-no-serial',
+    action='store_true',
+    help='Force use adb without serial ID. Useful for wireless adb, but requires the connection to be set beforehand: https://developer.android.com/studio/command-line/adb#wireless')
 
 parser.add_argument(
     '--server',
@@ -284,13 +289,16 @@ print('Worker: ' + args.worker)
 server = args.server + '/request'
 print('server: ' + server)
 
-if not args.linux:
+if not args.linux and not args.adb_no_serial:
     # Set device ID
-    if args.adbID:
-        os.environ['ANDROID_SERIAL'] = args.adbID
+    if args.serial:
+        os.environ['ANDROID_SERIAL'] = args.serial
     else:
         if 'ANDROID_SERIAL' not in os.environ:
-            print('Please set ANDROID_SERIAL env variable, or use --adbID')
+            print('Please set ANDROID_SERIAL env variable, or use --serial.')
+            print('For wireless adb, make sure to establish the connection with:')
+            print('  https://developer.android.com/studio/command-line/adb#wireless')
+            print('then use --adb-no-serial to force no serial.')
             exit(1)
 
 service = None
@@ -315,7 +323,7 @@ with open(worker_info_file, 'r') as f:
 # Main loop
 while True:
 
-    if not args.linux and not isDeviceAvailable(os.environ['ANDROID_SERIAL']):
+    if not args.linux and not args.adb_no_serial and not isDeviceAvailable(os.environ['ANDROID_SERIAL']):
         print('#### ABORT: device {} is not available (either offline or not connected?)'.format(os.environ['ANDROID_SERIAL']))
         exit(1)
 
