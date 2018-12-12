@@ -1312,10 +1312,10 @@ public class WebUi extends HttpServlet {
       args.add("--threshold");
       args.add(threshold);
     }
-    final String errorRegex = request.getParameter("error-string");
-    if (errorRegex != null) {
+    final String errorString = request.getParameter("error-string");
+    if (errorString != null) {
       args.add("--error-string");
-      args.add(errorRegex);
+      args.add(errorString);
     }
     final String preserveSemantics = request.getParameter("preserve-semantics");
     if (preserveSemantics != null) {
@@ -1900,7 +1900,8 @@ public class WebUi extends HttpServlet {
             ? "<tr id='error_string_tr' class='invisible'>"
             : "<tr id='error_string_tr' class=''>"
         ),
-        "<td align='right'><p class='no_space'>Error Regex:</p></td>",
+        "<td align='right'><p class='no_space'>Error string to look for in log <br>",
+        "(no need to escape spaces):</p></td>",
         "<td><input class='reduce_col' name='error-string' value=''/></td>",
         "</tr>",
         "<tr>",

@@ -499,19 +499,11 @@ and click "Reduce result" to reveal the reduction panel:
 
 ![Single result page with crash](images/screenshot-single-result-crash.png)
 
-In the "Error Regex" text box, enter
-a substring from the "Run log" text box that
-will confirm the issue.
-For example,
-in this case,
-we could enter "Fatal signal 11".
-Ideally, we should enter something even more specific,
-such as a function name from a stack trace,
-but this is only possible if a stack trace is shown
-in the run log.
-
-> The "Error Regex" text will be prepended and appended with `.*`
-> and matched as a regular expression against the run log.
+In the "Error string" text box, enter a substring from the "Run log" text box
+that will confirm the issue.  For example, in this case, we could enter "Fatal
+signal 11".  Ideally, we should enter something even more specific, such as a
+function name from a stack trace, but this is only possible if a stack trace is
+shown in the run log.
 
 The other default settings are sufficient, so click "Start Reduction".
 
