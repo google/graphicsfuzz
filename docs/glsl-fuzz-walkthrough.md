@@ -375,11 +375,12 @@ adb shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_ST
 adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE
 
 # Execute the worker script. Pass the worker name as an argument
-# and the serial number of the Android device (found using `adb devices`).
+# and the serial number (or "IP:port") of the Android device (found using `adb devices -l`).
+# For more information on adb and serial numbers, see:
+#  https://developer.android.com/studio/command-line/adb
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
 # Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.
-# Add `--adb-no-serial` to bypass serial ID requirement, useful for wireless adb
 glsl-to-spv-worker galaxy-s9-vulkan --serial 21372144e90c7fae
 ```
 

@@ -261,7 +261,9 @@ parser.add_argument(
 
 parser.add_argument(
     '--serial',
-    help='Serial ID of device to target. Run "adb devices -l" to list these IDs')
+    help='Serial number of device to target. Run "adb devices -l" to list the serial numbers. '
+         'The serial number will have the form "IP:port" if using adb over TCP. '
+         'See: https://developer.android.com/studio/command-line/adb')
 
 parser.add_argument(
     '--linux',
@@ -271,7 +273,8 @@ parser.add_argument(
 parser.add_argument(
     '--adb-no-serial',
     action='store_true',
-    help='Force use adb without serial ID. Useful for wireless adb, but requires the connection to be set beforehand: https://developer.android.com/studio/command-line/adb#wireless')
+    help='Use adb without providing a device serial number; '
+         'this works if "adb devices" just shows one connected device.')
 
 parser.add_argument(
     '--server',
@@ -290,15 +293,15 @@ server = args.server + '/request'
 print('server: ' + server)
 
 if not args.linux and not args.adb_no_serial:
-    # Set device ID
+    # Set device serial number
     if args.serial:
         os.environ['ANDROID_SERIAL'] = args.serial
     else:
         if 'ANDROID_SERIAL' not in os.environ:
-            print('Please set ANDROID_SERIAL env variable, or use --serial.')
-            print('For wireless adb, make sure to establish the connection with:')
-            print('  https://developer.android.com/studio/command-line/adb#wireless')
-            print('then use --adb-no-serial to force no serial.')
+            print('Please set ANDROID_SERIAL env variable, or use --serial or --adb-no-serial.')
+            print('Use "adb devices -l" to find the device serial number,'
+                  ' which will have the form "IP:port" if using adb over TCP. '
+                  'See: https://developer.android.com/studio/command-line/adb')
             exit(1)
 
 service = None
