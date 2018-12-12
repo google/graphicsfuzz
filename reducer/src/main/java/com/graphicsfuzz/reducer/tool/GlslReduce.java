@@ -47,7 +47,6 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Pattern;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -371,8 +370,7 @@ public class GlslReduce {
         case NO_IMAGE:
           fileJudge =
                 new ImageGenErrorShaderFileJudge(
-                      (errorString == null || errorString.isEmpty()) ? null
-                            : Pattern.compile(".*" + errorString + ".*", Pattern.DOTALL),
+                      (errorString == null || errorString.isEmpty() ? null : errorString),
                       imageGenerator,
                       skipRender,
                       stopOnError, fileOps);
@@ -410,8 +408,7 @@ public class GlslReduce {
               fileOps);
           break;
         case VALIDATOR_ERROR:
-          fileJudge = new ValidatorErrorShaderFileJudge(errorString.isEmpty() ? null
-                : Pattern.compile(".*" + errorString + ".*", Pattern.DOTALL));
+          fileJudge = new ValidatorErrorShaderFileJudge(errorString.isEmpty() ? null : errorString);
           break;
         case ALWAYS_REDUCE:
           fileJudge = (shaderJobFile, shaderResultFile) -> true;

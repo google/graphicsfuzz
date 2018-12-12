@@ -375,11 +375,13 @@ adb shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_ST
 adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE
 
 # Execute the worker script. Pass the worker name as an argument
-# and the serial number of the Android device (found using `adb devices`).
+# and the serial number (or "IP:port") of the Android device (found using `adb devices -l`).
+# For more information on adb and serial numbers, see:
+#  https://developer.android.com/studio/command-line/adb
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
 # Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.
-glsl-to-spv-worker galaxy-s9-vulkan --adbID 21372144e90c7fae
+glsl-to-spv-worker galaxy-s9-vulkan --serial 21372144e90c7fae
 ```
 
 Note that running `spirv-opt` on each shader by adding the `--spirvopt=ARGS` argument
@@ -499,19 +501,11 @@ and click "Reduce result" to reveal the reduction panel:
 
 ![Single result page with crash](images/screenshot-single-result-crash.png)
 
-In the "Error Regex" text box, enter
-a substring from the "Run log" text box that
-will confirm the issue.
-For example,
-in this case,
-we could enter "Fatal signal 11".
-Ideally, we should enter something even more specific,
-such as a function name from a stack trace,
-but this is only possible if a stack trace is shown
-in the run log.
-
-> The "Error Regex" text will be prepended and appended with `.*`
-> and matched as a regular expression against the run log.
+In the "Error string" text box, enter a substring from the "Run log" text box
+that will confirm the issue.  For example, in this case, we could enter "Fatal
+signal 11".  Ideally, we should enter something even more specific, such as a
+function name from a stack trace, but this is only possible if a stack trace is
+shown in the run log.
 
 The other default settings are sufficient, so click "Start Reduction".
 

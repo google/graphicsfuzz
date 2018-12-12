@@ -25,12 +25,7 @@ import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Paths;
 import java.util.Optional;
-import java.util.regex.Pattern;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,19 +33,19 @@ public class ImageGenErrorShaderFileJudge implements IFileJudge {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ImageGenErrorShaderFileJudge.class);
 
-  private Pattern pattern;
+  private String errorString;
   private IShaderDispatcher imageGenerator;
   private final boolean skipRender;
   private final boolean throwExceptionOnValidationError;
   private final ShaderJobFileOperations fileOps;
 
   public ImageGenErrorShaderFileJudge(
-      Pattern pattern,
+      String errorString,
       IShaderDispatcher imageGenerator,
       boolean skipRender,
       boolean throwExceptionOnValidationError,
       ShaderJobFileOperations fileOps) {
-    this.pattern = pattern;
+    this.errorString = errorString;
     this.imageGenerator = imageGenerator;
     this.skipRender = skipRender;
     this.throwExceptionOnValidationError = throwExceptionOnValidationError;
@@ -90,15 +85,15 @@ public class ImageGenErrorShaderFileJudge implements IFileJudge {
           return false;
         default:
           LOGGER.info("get_image failed...which is good.");
-          if (pattern == null) {
+          if (errorString == null) {
             LOGGER.info("Interesting.");
             return true;
           }
-          if (pattern.matcher(imageRes.getLog()).matches()) {
-            LOGGER.info("Regex matched. Interesting");
+          if (imageRes.getLog().contains(errorString)) {
+            LOGGER.info("Error string was found. Interesting");
             return true;
           }
-          LOGGER.info("Regex did not match. Not interesting");
+          LOGGER.info("Error string was not found. Not interesting");
 
           return false;
       }

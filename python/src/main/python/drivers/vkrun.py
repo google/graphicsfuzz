@@ -155,7 +155,9 @@ def run_android(vert, frag, json, skip_render):
             done = True
             break
 
-        retcode = adb('shell pidof ' + ANDROID_APP + ' > /dev/null').returncode
+        # Make sure to redirect to /dev/null on the device, otherwise this fails
+        # on Windows hosts.
+        retcode = adb('shell "pidof ' + ANDROID_APP + ' > /dev/null"').returncode
         if retcode == 1:
 
             # double check that no DONE file is present
@@ -257,7 +259,7 @@ if __name__ == '__main__':
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-a', '--android', action='store_true', help='Render on Android')
-    group.add_argument('-i', '--serial', help='Android device serial ID. Implies --android')
+    group.add_argument('-i', '--serial', help='Android device serial number. Implies --android')
     group.add_argument('-l', '--linux', action='store_true', help='Render on Linux')
 
     parser.add_argument('-s', '--skip-render', action='store_true', help='Skip render')
@@ -267,6 +269,10 @@ if __name__ == '__main__':
     parser.add_argument('json', help='Uniforms values')
 
     args = parser.parse_args()
+
+    if not args.android and not args.serial and not args.linux:
+        print('You must set either --android, --serial or --linux option.')
+        exit(1)
 
     vert = prepare_shader(args.vert)
     frag = prepare_shader(args.frag)
