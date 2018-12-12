@@ -19,7 +19,6 @@ package com.graphicsfuzz.reducer.filejudge;
 import com.graphicsfuzz.reducer.FileJudgeException;
 import com.graphicsfuzz.reducer.IFileJudge;
 import java.io.File;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,10 +26,10 @@ public class ValidatorErrorShaderFileJudge implements IFileJudge {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ValidatorErrorShaderFileJudge.class);
 
-  private Pattern pattern;
+  private String errorString;
 
-  public ValidatorErrorShaderFileJudge(Pattern pattern) {
-    this.pattern = pattern;
+  public ValidatorErrorShaderFileJudge(String errorString) {
+    this.errorString = errorString;
   }
 
   @Override
@@ -54,22 +53,22 @@ public class ValidatorErrorShaderFileJudge implements IFileJudge {
 
       LOGGER.info("Shader failed to validate...which is good.");
 
-      if (pattern == null) {
+      if (errorString == null) {
         LOGGER.info("Interesting.");
         return true;
       }
 
-      if (pattern.matcher(res.stdout).matches()) {
-        LOGGER.info("Regex matched. Interesting");
+      if (res.stdout.contains(errorString)) {
+        LOGGER.info("Error string was found. Interesting");
         return true;
       }
 
-      if (pattern.matcher(res.stderr).matches()) {
-        LOGGER.info("Regex matched. Interesting");
+      if (res.stderr.contains(errorString)) {
+        LOGGER.info("Error string was found. Interesting");
         return true;
       }
 
-      LOGGER.info("Regex did not match. Not interesting");
+      LOGGER.info("Error string was not found. Not interesting");
 
       return false;
     } catch (InterruptedException | IOException exception) {

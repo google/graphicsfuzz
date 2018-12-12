@@ -262,13 +262,21 @@ parser.add_argument(
     help='Worker name to identify to the server')
 
 parser.add_argument(
-    '--adbID',
-    help='adb (Android Debug Bridge) ID of the device to run tests on. Run "adb devices" to list these IDs')
+    '--serial',
+    help='Serial number of device to target. Run "adb devices -l" to list the serial numbers. '
+         'The serial number will have the form "IP:port" if using adb over TCP. '
+         'See: https://developer.android.com/studio/command-line/adb')
 
 parser.add_argument(
     '--linux',
     action='store_true',
     help='Use Linux worker')
+
+parser.add_argument(
+    '--adb-no-serial',
+    action='store_true',
+    help='Use adb without providing a device serial number; '
+         'this works if "adb devices" just shows one connected device.')
 
 parser.add_argument(
     '--server',
@@ -286,13 +294,16 @@ print('Worker: ' + args.worker)
 server = args.server + '/request'
 print('server: ' + server)
 
-if not args.linux:
-    # Set device ID
-    if args.adbID:
-        os.environ['ANDROID_SERIAL'] = args.adbID
+if not args.linux and not args.adb_no_serial:
+    # Set device serial number
+    if args.serial:
+        os.environ['ANDROID_SERIAL'] = args.serial
     else:
         if 'ANDROID_SERIAL' not in os.environ:
-            print('Please set ANDROID_SERIAL env variable, or use --adbID')
+            print('Please set ANDROID_SERIAL env variable, or use --serial or --adb-no-serial.')
+            print('Use "adb devices -l" to find the device serial number,'
+                  ' which will have the form "IP:port" if using adb over TCP. '
+                  'See: https://developer.android.com/studio/command-line/adb')
             exit(1)
 
 service = None
@@ -317,7 +328,7 @@ with open(worker_info_file, 'r') as f:
 # Main loop
 while True:
 
-    if not args.linux and not isDeviceAvailable(os.environ['ANDROID_SERIAL']):
+    if not args.linux and not args.adb_no_serial and not isDeviceAvailable(os.environ['ANDROID_SERIAL']):
         print('#### ABORT: device {} is not available (either offline or not connected?)'.format(os.environ['ANDROID_SERIAL']))
         exit(1)
 

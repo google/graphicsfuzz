@@ -262,7 +262,7 @@ if __name__ == '__main__':
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-a', '--android', action='store_true', help='Render on Android')
-    group.add_argument('-i', '--serial', help='Android device serial ID. Implies --android')
+    group.add_argument('-i', '--serial', help='Android device serial number. Implies --android')
     group.add_argument('-l', '--linux', action='store_true', help='Render on Linux')
 
     parser.add_argument('-s', '--skip-render', action='store_true', help='Skip render')
