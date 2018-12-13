@@ -208,6 +208,32 @@ public class Generate {
 
   }
 
+  public static void generateVariant(ShaderJobFileOperations fileOps,
+                                     File referenceShaderJobFile,
+                                     File outputShaderJobFile,
+                                     GeneratorArguments generatorArguments,
+                                     boolean writeProbabilities)
+      throws IOException, ParseTimeoutException {
+    // This is mutated into the variant.
+    final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceShaderJobFile);
+
+    final StringBuilder generationInfo = generateVariant(
+        variantShaderJob,
+        generatorArguments);
+
+    fileOps.writeShaderJobFile(
+        variantShaderJob,
+        outputShaderJobFile);
+
+    if (writeProbabilities) {
+      fileOps.writeAdditionalInfo(
+          outputShaderJobFile,
+          ".prob",
+          generationInfo.toString());
+    }
+
+  }
+
   private static StringBuilder transformShader(TranslationUnit shaderToTransform,
                                                ShaderJob parentShaderJob,
                                                IRandom random,
@@ -266,31 +292,6 @@ public class Generate {
         random.spawnChild());
 
     return result;
-
-  }
-
-  public static void generateVariant(ShaderJobFileOperations fileOps,
-                                            File referenceShaderJobFile,
-                                            File outputShaderJobFile,
-                                            GeneratorArguments generatorArguments,
-                                            boolean writeProbabilities) throws IOException, ParseTimeoutException {
-    // This is mutated into the variant.
-    final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceShaderJobFile);
-
-    final StringBuilder generationInfo = generateVariant(
-        variantShaderJob,
-        generatorArguments);
-
-    fileOps.writeShaderJobFile(
-        variantShaderJob,
-        outputShaderJobFile);
-
-    if (writeProbabilities) {
-      fileOps.writeAdditionalInfo(
-          outputShaderJobFile,
-          ".prob",
-          generationInfo.toString());
-    }
 
   }
 

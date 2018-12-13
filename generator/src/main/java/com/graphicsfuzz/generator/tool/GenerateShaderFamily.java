@@ -16,16 +16,20 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -33,6 +37,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,11 +73,6 @@ public class GenerateShaderFamily {
         .help("Number of variants to produce.")
         .type(Integer.class)
         .setDefault(10);
-
-    parser.addArgument("--hash_file")
-        .help("Path to file containing git hash.")
-        .type(File.class)
-        .setDefault("TODO");
 
     parser.addArgument("--disable-validator")
         .help("Disable calling validation tools on generated variants.")
@@ -112,6 +112,14 @@ public class GenerateShaderFamily {
 
     Namespace ns = parse(args);
 
+    final String glslVersion = ns.getString("glsl_version");
+
+    if (ns.getBoolean("webgl") && !ShadingLanguageVersion.isWebGlCompatible(glslVersion)) {
+      // Check immediately that if --webgl has been passed, it is possible to get the given
+      // WebGL shading language version as a string.
+      throw new RuntimeException("Given GLSL version " + glslVersion + " is not WebGL-compatible.");
+    }
+
     final int seed = ns.getInt("seed");
     final boolean verbose = ns.getBoolean("verbose");
     if (verbose) {
@@ -148,32 +156,34 @@ public class GenerateShaderFamily {
         preparedReferenceShaderJob,
         ShadingLanguageVersion.fromVersionString(ns.getString("glsl_version")),
         ns.getBoolean("replace_float_literals"),
-        ns.getInt("max_uniforms") - 1, // We subtract 1 because we need to be able to add injectionSwitch
+        // We subtract 1 because we need to be able to add injectionSwitch
+        ns.getInt("max_uniforms") - 1,
         ns.getBoolean("generate_uniform_bindings"),
         fileOps);
 
     // Validate reference shaders.
     if (!ns.getBoolean("disable_validator")) {
-      if (!fileOps.areShadersValid(preparedReferenceShaderJob, false)) {
+      if (!(fileOps.areShadersValid(preparedReferenceShaderJob, false)
+          && fileOps.areShadersValidShaderTranslator(preparedReferenceShaderJob, false))) {
         throw new RuntimeException("One or more of the prepared shaders of shader job "
             + preparedReferenceShaderJob.getAbsolutePath() + " is not valid.");
       }
     }
 
     if (primitivesFile(referenceShaderJob).isFile()) {
-      /*
-      shutil.copyfile(primitives_file(args.reference_prefix),
-          args.output_folder + "reference.primitives")
-    primitives_data = json.load(open(primitives_file(args.reference_prefix)))
-    if "texture" in primitives_data:
-    texture_filename = primitives_data["texture"]
-    shutil.copyfile(texture_filename, args.output_folder + texture_filename)
-          */
+      FileUtils.copyFile(primitivesFile(referenceShaderJob),
+          new File(outputDir, "reference.primitives"));
+      final JsonObject primitivesJson =
+          new Gson().fromJson(new FileReader(primitivesFile(referenceShaderJob)),
+              JsonObject.class);
+      if (primitivesJson.has("texture")) {
+        final String textureFilename = primitivesJson.get("texture").getAsString();
+        FileUtils.copyFile(new File(textureFilename), new File(outputDir, textureFilename));
+      }
     }
 
     int generatedVariants = 0;
     int triedVariants = 0;
-    int chunkCount = 0;
 
     final int numVariants = ns.getInt("num_variants");
     final IRandom generator = new RandomWrapper(seed);
@@ -192,10 +202,9 @@ public class GenerateShaderFamily {
       final File variantShaderJobFile = new File(outputDir, "variant_" + String.format("%03d",
           generatedVariants) + ".json");
 
-      // Think about whether we need a timeout
       triedVariants++;
       try {
-        Generate.generateVariant(fileOps, preparedReferenceShaderJob, variantShaderJobFile,
+        Generate.generateVariant(fileOps, referenceShaderJob, variantShaderJobFile,
             Generate.getGeneratorArguments(ns), ns.getBoolean("write_probabilities"));
       } catch (Exception exception) {
         if (verbose) {
@@ -212,7 +221,8 @@ public class GenerateShaderFamily {
       }
 
       // Check the shader is valid
-      if (skipDueToInvalidShader(variantShaderJobFile, verbose)) {
+      if (skipDueToInvalidShader(fileOps, variantShaderJobFile, ns.getBoolean("disable_validator"),
+          ns.getBoolean("keep_bad_variants"), ns.getBoolean("stop_on_fail"))) {
         continue;
       }
 
@@ -228,38 +238,35 @@ public class GenerateShaderFamily {
       }
 
       if (primitivesFile(preparedReferenceShaderJob).isFile()) {
-        //shutil.copyfile("reference.primitives", primitives_file(variant_file_prefix))
+        FileUtils.copyFile(primitivesFile(preparedReferenceShaderJob),
+            primitivesFile(variantShaderJobFile));
       }
 
-      generatedVariants += 1;
+      final int chunkSize = 4;
+      generatedVariants++;
+      if ((generatedVariants % chunkSize) == 0) {
+        LOGGER.info("Done " + (100f * (float) generatedVariants / (float) numVariants) + "%");
+      }
     }
 
-    // Final steps
-    /*
-# Initialise json log file with version information
-        log_json = {
-        "git_hash": get_git_revision_hash(),
-        "glsl_version": args.glsl_version,
-        "webgl": args.webgl,
-        "seed": args.seed,
-        "reference_basename": os.path.basename(args.reference_prefix)
-            }
-            */
-    /*
-    # Output json log
-        dict = {}
-    dict['dict'] = log_json
-    log_json_file = open("infolog.json", 'w')
-    log_json_file.write(json.dumps(dict, sort_keys=True, indent=4))
-    log_json_file.close()
-    */
+    // Produce JSON file recording some info on what was generated.
+    final JsonObject infoLog = new JsonObject();
+    infoLog.addProperty("git_hash",
+        FileUtils.readFileToString(new File(new File(ToolPaths.getInstallDirectory()), "HASH"),
+            StandardCharsets.UTF_8));
+    infoLog.addProperty("args", String.join(" ", args));
+    infoLog.addProperty("seed", seed);
+
+    FileUtils.writeStringToFile(new File("infolog.json"),
+        infoLog.toString(), StandardCharsets.UTF_8);
 
     LOGGER.info("Generation complete -- generated " + generatedVariants + " variants in "
             + triedVariants + " tries.");
   }
 
   private static File primitivesFile(File shaderJob) {
-    throw new RuntimeException("TODO");
+    return new File(shaderJob.getParentFile(),
+        FilenameUtils.removeExtension(shaderJob.getName()) + ".primitives");
   }
 
   private static boolean generatedShadersTooLarge(ShaderJobFileOperations fileOps,
@@ -301,45 +308,35 @@ public class GenerateShaderFamily {
     return false;
   }
 
-  private static boolean skipDueToInvalidShader(File variantShaderJobFile,
-                                                boolean disableValidator) {
+  private static boolean skipDueToInvalidShader(ShaderJobFileOperations fileOps,
+                                                File variantShaderJobFile,
+                                                boolean disableValidator,
+                                                boolean keepBadVariants,
+                                                boolean stopOnFail)
+      throws IOException, InterruptedException {
+
     if (disableValidator) {
       // Validation has been disabled, so don't do any skipping.
       return false;
     }
 
-    throw new RuntimeException("TODO: finish this; need to make sure we invoke shader translator");
-
-    /*
-    variant_file_frag = variant_file_prefix + ".frag"
-    variant_file_vert = variant_file_prefix + ".vert"
-    variant_file_json = variant_file_prefix + ".json"
-    variant_file_probabilities = variant_file_prefix + ".prob"
-
-    for ext in [ ".frag", ".vert" ]:
-        variant_shader_file = variant_file_prefix + ext
-        if not os.path.isfile(variant_shader_file):
-            continue
-        if shader_is_valid(variant_shader_file):
-            continue
-        if not args.keep_bad_variants:
-            remove_if_exists(variant_file_frag)
-            remove_if_exists(variant_file_vert)
-            os.remove(variant_file_json)
-            os.remove(variant_file_probabilities)
-            return True
-        else:
-            move_if_exists(variant_file_frag, "bad_" + os.path.basename(variant_file_frag))
-            move_if_exists(variant_file_vert, "bad_" + os.path.basename(variant_file_vert))
-            shutil.move(variant_file_json, "bad_" + os.path.basename(variant_file_json))
-            shutil.move(variant_file_probabilities, "bad_" +
-            os.path.basename(variant_file_probabilities))
-        if args.stop_on_fail:
-            if args.verbose:
-                print("Generated an invalid variant, stopping.")
-            exit(1)
-        return False
-     */
+    if (!(fileOps.areShadersValid(variantShaderJobFile, false)
+        && fileOps.areShadersValidShaderTranslator(variantShaderJobFile, false))) {
+      if (keepBadVariants) {
+        fileOps.moveShaderJobFileTo(variantShaderJobFile,
+            new File(variantShaderJobFile.getParentFile(),
+                "bad_" + variantShaderJobFile.getName()), true);
+      } else {
+        fileOps.deleteShaderJobFile(variantShaderJobFile);
+      }
+      if (stopOnFail) {
+        final String message = "Generated an invalid variant, stopping.";
+        LOGGER.error(message);
+        throw new RuntimeException(message);
+      }
+      return true;
+    }
+    return false;
   }
 
   public static void main(String[] args) {
@@ -353,136 +350,5 @@ public class GenerateShaderFamily {
       System.exit(1);
     }
   }
-
-
-
-/*
-sys.path.append(os.path.split(os.path.abspath(__file__))[0] + os.path.sep + "..")
-from cmd_helpers import validate_frag
-from cmd_helpers import execute
-
-this_path = os.path.split(os.path.abspath(__file__))[0] + os.path.sep
-max_int = pow(2, 16)
-
-
-### Helper functions
-
-def abs_path_with_extension(prefix, extension):
-    return os.path.abspath(prefix + extension)
-
-def uniforms_file(prefix):
-    return abs_path_with_extension(prefix, ".json")
-
-def primitives_file(prefix):
-    return abs_path_with_extension(prefix, ".primitives")
-
-def license_file(prefix):
-    return abs_path_with_extension(prefix, ".license")
-
-def uniforms_present(prefix):
-    return os.path.isfile(uniforms_file(prefix))
-
-def kill_generator(generator_proc):
-    if args.verbose:
-        print("Timeout")
-    generator_proc.kill()
-
-
-
-def get_git_revision_hash():
-    git_hash = open(args.hash_file, 'r')
-    ret_val = git_hash.read()
-    git_hash.close()
-    return ret_val
-
-
-def shader_is_valid(shader_file):
-    if args.verbose:
-        print("Validating...")
-    validator_results = validate_frag(shader_file, args.validator_path, args.verbose)
-    if validator_results["returncode"] == 0 and args.webgl:
-        validator_results = execute([args.translator_path, "-s=w", shader_file], args.verbose)
-    elif validator_results["returncode"] == 0 and args.glsl_version == "100":
-        validator_results = execute([args.translator_path, shader_file], args.verbose)
-    if validator_results["returncode"] != 0:
-        if args.verbose:
-            print("Failed validating shader:")
-            print(validator_results["stdout"].decode("utf-8"))
-            print(validator_results["stderr"].decode("utf-8"))
-        return False
-    return True
-
-def generated_shaders_too_large(args, variant_file_prefix):
-    for ext in [ ".frag", ".vert" ]:
-        variant_shader_file = variant_file_prefix + ext
-        if not os.path.isfile(variant_shader_file):
-            continue
-        num_bytes_variant = os.path.getsize(variant_shader_file)
-        num_bytes_reference = os.path.getsize(args.reference_prefix + ext)
-
-        if args.max_factor is not None and float(num_bytes_variant) > args.max_factor *
-        float(num_bytes_reference):
-            if args.verbose:
-                print("Discarding " + ext + " shader of size " + str(num_bytes_variant) + " bytes;
-                more than " + str(args.max_factor) + " times larger than reference of size " +
-                str(num_bytes_reference))
-            return True
-
-        if args.max_bytes is not None and num_bytes_variant > args.max_bytes:
-            if args.verbose:
-                print("Discarding " + ext + " shader of size " + str(num_bytes_variant) + " bytes;
-                exceeds limit of " + str(args.max_bytes) + " bytes")
-            return True
-
-    return False
-
-def remove_if_exists(filename):
-    if os.path.isfile(filename):
-        os.remove(filename)
-
-def move_if_exists(src, dst):
-    print(src)
-    print(dst)
-    if os.path.isfile(src):
-        shutil.move(src, dst)
-
-def skip_due_to_invalid_shader(args, variant_file_prefix):
-    variant_file_frag = variant_file_prefix + ".frag"
-    variant_file_vert = variant_file_prefix + ".vert"
-    variant_file_json = variant_file_prefix + ".json"
-    variant_file_probabilities = variant_file_prefix + ".prob"
-
-    if args.disable_validator:
-        return False
-    for ext in [ ".frag", ".vert" ]:
-        variant_shader_file = variant_file_prefix + ext
-        if not os.path.isfile(variant_shader_file):
-            continue
-        if shader_is_valid(variant_shader_file):
-            continue
-        if not args.keep_bad_variants:
-            remove_if_exists(variant_file_frag)
-            remove_if_exists(variant_file_vert)
-            os.remove(variant_file_json)
-            os.remove(variant_file_probabilities)
-            return True
-        else:
-            move_if_exists(variant_file_frag, "bad_" + os.path.basename(variant_file_frag))
-            move_if_exists(variant_file_vert, "bad_" + os.path.basename(variant_file_vert))
-            shutil.move(variant_file_json, "bad_" + os.path.basename(variant_file_json))
-            shutil.move(variant_file_probabilities, "bad_" +
-            os.path.basename(variant_file_probabilities))
-        if args.stop_on_fail:
-            if args.verbose:
-                print("Generated an invalid variant, stopping.")
-            exit(1)
-        return False
-
-
-### Initial setup
-HERE
-
-
- */
 
 }
