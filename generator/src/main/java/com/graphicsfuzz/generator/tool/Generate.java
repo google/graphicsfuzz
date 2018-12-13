@@ -54,6 +54,7 @@ import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,7 +81,7 @@ public class Generate {
           .description("Generate a shader.");
 
     // Required arguments
-    parser.addArgument("reference_json")
+    parser.addArgument("reference-json")
         .help("Input reference shader json file.")
         .type(File.class);
 
@@ -88,7 +89,7 @@ public class Generate {
           .help("Path of folder of donor shaders.")
           .type(File.class);
 
-    parser.addArgument("glsl_version")
+    parser.addArgument("glsl-version")
           .help("Version of GLSL to target.")
           .type(String.class);
 
@@ -116,7 +117,7 @@ public class Generate {
           .help("Try to generate small shaders.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--avoid_long_loops")
+    parser.addArgument("--avoid-long-loops")
           .help("During live code injection, reduce the chances of injecting lengthy loops by "
                 + "ensuring that loops do not appear *directly* in the code being injected; they "
                 + "may still appear in functions called by the injected code (avoidance of this "
@@ -127,39 +128,39 @@ public class Generate {
           .help("Disable a given series of transformations.")
           .type(String.class);
 
-    parser.addArgument("--enable_only")
+    parser.addArgument("--enable-only")
           .help("Disable all but the given series of transformations.")
           .type(String.class);
 
-    parser.addArgument("--aggressively_complicate_control_flow")
+    parser.addArgument("--aggressively-complicate-control-flow")
           .help("Make control flow very complicated.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--multi_pass")
+    parser.addArgument("--multi-pass")
           .help("Apply multiple transformation passes, each with low probablity.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--replace_float_literals")
+    parser.addArgument("--replace-float-literals")
           .help("Replace float literals with uniforms.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--generate_uniform_bindings")
+    parser.addArgument("--generate-uniform-bindings")
           .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
               + "compatibility.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--max_uniforms")
+    parser.addArgument("--max-uniforms")
           .help("Ensure that generated shaders have no more than the given number of uniforms; "
               + "required for Vulkan compatibility.")
           .setDefault(0)
           .type(Integer.class);
 
-    parser.addArgument("--no_injection_switch")
+    parser.addArgument("--no-injection-switch")
           .help("Do not generate the injectionSwitch uniform.")
           .action(Arguments.storeTrue());
 
     // Hidden option; for developer debugging.
-    parser.addArgument("--write_probabilities")
+    parser.addArgument("--write-probabilities")
           .help(Arguments.SUPPRESS)
           .action(Arguments.storeTrue());
   }
@@ -268,6 +269,31 @@ public class Generate {
 
   }
 
+  public static void generateVariant(ShaderJobFileOperations fileOps,
+                                            File referenceShaderJobFile,
+                                            File outputShaderJobFile,
+                                            GeneratorArguments generatorArguments,
+                                            boolean writeProbabilities) throws IOException, ParseTimeoutException {
+    // This is mutated into the variant.
+    final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceShaderJobFile);
+
+    final StringBuilder generationInfo = generateVariant(
+        variantShaderJob,
+        generatorArguments);
+
+    fileOps.writeShaderJobFile(
+        variantShaderJob,
+        outputShaderJobFile);
+
+    if (writeProbabilities) {
+      fileOps.writeAdditionalInfo(
+          outputShaderJobFile,
+          ".prob",
+          generationInfo.toString());
+    }
+
+  }
+
   public static void main(String[] args) {
     try {
       mainHelper(args);
@@ -279,49 +305,33 @@ public class Generate {
 
   public static void mainHelper(String[] args)
       throws IOException, ParseTimeoutException, ArgumentParserException {
-
     final Namespace ns = parse(args);
+    generateVariant(
+        new ShaderJobFileOperations(),
+        ns.get("reference_json"),
+        ns.get("output"),
+        getGeneratorArguments(ns),
+        ns.getBoolean("write_probabilities"));
+  }
 
+  public static GeneratorArguments getGeneratorArguments(Namespace ns) {
     final EnabledTransformations enabledTransformations
-          = getTransformationDisablingFlags(ns);
+        = getTransformationDisablingFlags(ns);
     final ShadingLanguageVersion shadingLanguageVersion = ns.get("webgl")
         ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
         : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
-
-    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-
-    final File referenceFile = ns.get("reference_json");
-
-    // This is mutated into the variant.
-    final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceFile);
-    final StringBuilder generationInfo = generateVariant(
-        variantShaderJob,
-        new GeneratorArguments(shadingLanguageVersion,
-              ns.get("seed"),
-              ns.getBoolean("small"),
-              ns.getBoolean("avoid_long_loops"),
-              ns.getBoolean("multi_pass"),
-              ns.getBoolean("aggressively_complicate_control_flow"),
-              ns.getBoolean("replace_float_literals"),
-              ns.get("donors"),
-              ns.get("generate_uniform_bindings"),
-              ns.get("max_uniforms"),
-              enabledTransformations,
-              !ns.getBoolean("no_injection_switch")));
-
-    final File outputShaderJobFile = ns.get("output");
-
-    fileOps.writeShaderJobFile(
-        variantShaderJob,
-        outputShaderJobFile);
-
-    if (ns.getBoolean("write_probabilities")) {
-      fileOps.writeAdditionalInfo(
-          outputShaderJobFile,
-          ".prob",
-          generationInfo.toString());
-    }
-
+    return new GeneratorArguments(shadingLanguageVersion,
+        ns.get("seed"),
+        ns.getBoolean("small"),
+        ns.getBoolean("avoid_long_loops"),
+        ns.getBoolean("multi_pass"),
+        ns.getBoolean("aggressively_complicate_control_flow"),
+        ns.getBoolean("replace_float_literals"),
+        ns.get("donors"),
+        ns.get("generate_uniform_bindings"),
+        ns.get("max_uniforms"),
+        enabledTransformations,
+        !ns.getBoolean("no_injection_switch"));
   }
 
   public static EnabledTransformations getTransformationDisablingFlags(Namespace ns) {

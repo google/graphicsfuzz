@@ -16,13 +16,23 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.common.util.ShaderKind;
 import java.io.File;
-import java.util.Random;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Optional;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,28 +62,20 @@ public class GenerateShaderFamily {
         .help("Directory in which to store output shaders.")
         .type(File.class);
 
+    Generate.addGeneratorCommonArguments(parser);
+
     parser.addArgument("--num-variants")
         .help("Number of variants to produce.")
         .type(Integer.class)
         .setDefault(10);
-
-    parser.addArgument("--seed")
-        .help("Seed to initialize random number generator with.")
-        .type(Integer.class)
-        .setDefault(new Random().nextInt());
-
-    parser.addArgument("--timeout")
-        .help("Time in seconds after which execution of generation is terminated.")
-        .type(Integer.class)
-        .setDefault(30);
 
     parser.addArgument("--hash_file")
         .help("Path to file containing git hash.")
         .type(File.class)
         .setDefault("TODO");
 
-    parser.addArgument("--disable_validator")
-        .help("Disable calling glslangValidator for generated variants.")
+    parser.addArgument("--disable-validator")
+        .help("Disable calling validation tools on generated variants.")
         .action(Arguments.storeTrue());
 
     parser.addArgument("--keep-bad-variants")
@@ -88,14 +90,6 @@ public class GenerateShaderFamily {
         .help("Emit detailed information regarding the progress of the generation.")
         .action(Arguments.storeTrue());
 
-    parser.addArgument("--small")
-        .help("Restrict generation to small shader families.")
-        .action(Arguments.storeTrue());
-
-    parser.addArgument("--webgl")
-        .help("Restrict transformations to be WebGL-compatible.")
-        .action(Arguments.storeTrue());
-
     parser.addArgument("--max-bytes")
         .help("Maximum allowed size, in bytes, for variant shader (default: no limit).")
         .type(Integer.class);
@@ -104,42 +98,17 @@ public class GenerateShaderFamily {
         .help("Maximum blowup allowed, compared with size of reference shader (default: no limit).")
         .type(Float.class);
 
-    parser.addArgument("--avoid-long-loops")
-        .help("Avoid long-running loops during live code injection.")
-        .action(Arguments.storeTrue());
-
-    parser.addArgument("--aggressively-complicate-control-flow")
-        .help("Generate very complex control flow.")
-        .action(Arguments.storeTrue());
-
-    parser.addArgument("--multi-pass")
-        .help("Apply shader transformations multiple times.")
-        .action(Arguments.storeTrue());
-
-    parser.addArgument("--replace-float-literals")
-        .help("Replace floating-point literals with uniforms.")
-        .action(Arguments.storeTrue());
-
     parser.addArgument("--require-license")
         .help("Require a license file to be provided alongside the reference and pass details "
             + "through to generated shaders.")
         .action(Arguments.storeTrue());
 
-    parser.addArgument("--generate-uniform-bindings")
-        .help("Put all uniforms in uniform blocks and generate associated bindings.  Necessary for "
-            + "Vulkan compatibility.")
-        .action(Arguments.storeTrue());
-
-    parser.addArgument("--max-uniforms")
-        .help("Ensure that no more than the given number of uniforms are included in generated "
-            + "shaders.  Necessary for Vulkan compatibility.")
-        .type(Integer.class);
-
     return parser.parseArgs(args);
 
   }
 
-  public static void mainHelper(String[] args) throws ArgumentParserException {
+  public static void mainHelper(String[] args) throws ArgumentParserException,
+      InterruptedException, IOException, ParseTimeoutException {
 
     Namespace ns = parse(args);
 
@@ -149,59 +118,124 @@ public class GenerateShaderFamily {
       LOGGER.info("Using seed " + seed);
     }
 
-    final File outputDir = ns.get("output_dir") == null ? new File(".") : ns.get("output_dir");
-    final File donorsDir = ns.get("donors");
     final File referenceShaderJob = ns.get("reference_shader_job");
+    if (!referenceShaderJob.isFile()) {
+      throw new FileNotFoundException("Reference shader job " + referenceShaderJob.getAbsolutePath()
+          + " does not exist.");
+    }
 
+    final File donorsDir = ns.get("donors");
     if (verbose) {
-      LOGGER.info("Using donor foler " + donorsDir.getAbsolutePath());
+      LOGGER.info("Using donor folder " + donorsDir.getAbsolutePath());
     }
 
+    final File outputDir = ns.get("output_dir") == null ? new File(".") : ns.get("output_dir");
     if (outputDir.isDirectory()) {
-      LOGGER.info("Overwriting previous output directory (" + outputDir.getAbsolutePath());
+      LOGGER.info("Overwriting previous output directory (" + outputDir.getAbsolutePath() + ")");
     }
 
-    /*
-    shutil.rmtree(args.output_folder)
-    os.mkdir(args.output_folder)
+    FileUtils.deleteDirectory(outputDir);
+    if (!outputDir.mkdir()) {
+      throw new IOException("Problem creating output directory (" + outputDir.getAbsolutePath()
+          + ")");
+    }
 
-    if not uniforms_present(args.reference_prefix):
-    print("No uniforms file present for reference '" + args.reference_prefix + "'")
-    exit(1)
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-# Prepare reference shaders
-    prepare_reference_shaders(args.reference_prefix, args.output_folder + "reference",
-    args.glsl_version)
+    // Prepare reference shaders.
+    final File preparedReferenceShaderJob = new File(outputDir, "reference.json");
+    PrepareReference.prepareReference(referenceShaderJob,
+        preparedReferenceShaderJob,
+        ShadingLanguageVersion.fromVersionString(ns.getString("glsl_version")),
+        ns.getBoolean("replace_float_literals"),
+        ns.getInt("max_uniforms") - 1, // We subtract 1 because we need to be able to add injectionSwitch
+        ns.getBoolean("generate_uniform_bindings"),
+        fileOps);
 
-# Validate reference shaders
-    if not args.disable_validator:
-    if not shader_is_valid(args.output_folder + "reference.frag"):
-    print("The reference fragment shader is not valid, stopping.")
-    exit(1)
-    vertex_shader = args.output_folder + "reference.vert"
-    if os.path.isfile(vertex_shader) and not shader_is_valid(vertex_shader):
-    print("The reference vertex shader is not valid, stopping.")
-    exit(1)
+    // Validate reference shaders.
+    if (!ns.getBoolean("disable_validator")) {
+      if (!fileOps.areShadersValid(preparedReferenceShaderJob, false)) {
+        throw new RuntimeException("One or more of the prepared shaders of shader job "
+            + preparedReferenceShaderJob.getAbsolutePath() + " is not valid.");
+      }
+    }
 
-# Copy primitives for reference shaders, if they exist
-    if os.path.isfile(primitives_file(args.reference_prefix)):
-    shutil.copyfile(primitives_file(args.reference_prefix),
-        args.output_folder + "reference.primitives")
-
-# Copy texture if referenced by primitives
-    if os.path.isfile(primitives_file(args.reference_prefix)):
+    if (primitivesFile(referenceShaderJob).isFile()) {
+      /*
+      shutil.copyfile(primitives_file(args.reference_prefix),
+          args.output_folder + "reference.primitives")
     primitives_data = json.load(open(primitives_file(args.reference_prefix)))
     if "texture" in primitives_data:
     texture_filename = primitives_data["texture"]
     shutil.copyfile(texture_filename, args.output_folder + texture_filename)
+          */
+    }
 
-    os.chdir(args.output_folder)
+    int generatedVariants = 0;
+    int triedVariants = 0;
+    int chunkCount = 0;
 
-    donor_list = glob.glob(args.donors + os.path.sep + "*.frag")
-    if not donor_list:
-    print("Given donor folder contains no .frag files!")
-    exit(1)
+    final int numVariants = ns.getInt("num_variants");
+    final IRandom generator = new RandomWrapper(seed);
 
+    // Main variant generation loop
+    while (generatedVariants < numVariants) {
+      if (verbose) {
+        LOGGER.info("Trying variant " + triedVariants + " (produced " + generatedVariants
+            + " of " + numVariants + ")");
+      }
+      // Generate a variant
+      final int innerSeed = generator.nextInt(Integer.MAX_VALUE);
+      if (verbose) {
+        LOGGER.info("Generating variant with inner seed " + innerSeed);
+      }
+      final File variantShaderJobFile = new File(outputDir, "variant_" + String.format("%03d",
+          generatedVariants) + ".json");
+
+      // Think about whether we need a timeout
+      triedVariants++;
+      try {
+        Generate.generateVariant(fileOps, preparedReferenceShaderJob, variantShaderJobFile,
+            Generate.getGeneratorArguments(ns), ns.getBoolean("write_probabilities"));
+      } catch (Exception exception) {
+        if (verbose) {
+          LOGGER.error("Failed generating variant:");
+          LOGGER.error(exception.getMessage());
+          exception.printStackTrace();
+        }
+        if (ns.getBoolean("stop_on_fail")) {
+          final String message = "Failed generating a variant, stopping.";
+          LOGGER.info(message);
+          throw new RuntimeException(message);
+        }
+        continue;
+      }
+
+      // Check the shader is valid
+      if (skipDueToInvalidShader(variantShaderJobFile, verbose)) {
+        continue;
+      }
+
+      // Check code size
+      if (generatedShadersTooLarge(fileOps,
+          preparedReferenceShaderJob,
+          variantShaderJobFile,
+          ns.get("max_factor") == null ? Optional.empty() : Optional.of(ns.getFloat("max_factor")),
+          ns.get("max_bytes") == null ? Optional.empty() : Optional.of(ns.getInt("max_bytes")),
+          verbose)) {
+        // A generated shader is too large - discard it (but don't log it as bad)
+        continue;
+      }
+
+      if (primitivesFile(preparedReferenceShaderJob).isFile()) {
+        //shutil.copyfile("reference.primitives", primitives_file(variant_file_prefix))
+      }
+
+      generatedVariants += 1;
+    }
+
+    // Final steps
+    /*
 # Initialise json log file with version information
         log_json = {
         "git_hash": get_git_revision_hash(),
@@ -210,59 +244,102 @@ public class GenerateShaderFamily {
         "seed": args.seed,
         "reference_basename": os.path.basename(args.reference_prefix)
             }
-
-    gen_variants = 0
-    tried_variants = 0
-    chunk_count = 0
-
-# Main variant generation loop
-    while gen_variants < args.num_variants:
-
-    if args.verbose:
-    print("Trying variant %d (produced %d of %d)..." % (tried_variants, gen_variants,
-    args.num_variants))
-    # Generation
-        inner_seed = random.randint(0, max_int)
-    if args.verbose:
-    print("Generating variant with inner seed %d..." % inner_seed)
-    variant_file_prefix = "variant_" + "{0:0=3d}".format(gen_variants)
-    generator_results = generate_variant(args.reference_prefix, inner_seed, variant_file_prefix)
-    tried_variants += 1
-    if generator_results["returncode"] != 0:
-    if args.verbose:
-    print("Failed generating variant:")
-    print(generator_results["stderr"].decode("utf-8"))
-    if args.stop_on_fail:
-    if args.verbose:
-    print("Failed generating a variant, stopping.")
-    exit(1)
-    continue
-
-    # Check code size
-    if generated_shaders_too_large(args, variant_file_prefix):
-        # A generated shader is too large - discard it (but don't log it as bad)
-    continue
-
-    # Validation
-    if skip_due_to_invalid_shader(args, variant_file_prefix):
-    continue
-
-    if os.path.isfile("reference.primitives"):
-    shutil.copyfile("reference.primitives", primitives_file(variant_file_prefix))
-
-    gen_variants += 1
-
-### Final steps
-# Output json log
+            */
+    /*
+    # Output json log
         dict = {}
     dict['dict'] = log_json
     log_json_file = open("infolog.json", 'w')
     log_json_file.write(json.dumps(dict, sort_keys=True, indent=4))
     log_json_file.close()
+    */
 
-    print("Generation complete -- generated %d variants in %d tries." % (gen_variants,
-    tried_variants))
+    LOGGER.info("Generation complete -- generated " + generatedVariants + " variants in "
+            + triedVariants + " tries.");
+  }
 
+  private static File primitivesFile(File shaderJob) {
+    throw new RuntimeException("TODO");
+  }
+
+  private static boolean generatedShadersTooLarge(ShaderJobFileOperations fileOps,
+                                                  File preparedReferenceShaderJobFile,
+                                                  File variantShaderJobFile,
+                                                  Optional<Float> maxFactor,
+                                                  Optional<Integer> maxBytes,
+                                                  boolean verbose) {
+    // Go through all the shader kinds.
+    for (ShaderKind shaderKind : ShaderKind.values()) {
+      // Consider only those shader kinds that exist in the prepared reference shader job,
+      // and which should also exist in the variant shader job.
+      if (fileOps.doesShaderExist(preparedReferenceShaderJobFile, shaderKind)) {
+        assert fileOps.doesShaderExist(variantShaderJobFile, shaderKind);
+        final long numBytesReference = fileOps.getShaderLength(preparedReferenceShaderJobFile,
+            shaderKind);
+        final long numBytesVariant = fileOps.getShaderLength(variantShaderJobFile,
+            shaderKind);
+
+        final String logMessagePrefix = "Discarding " + shaderKind.getFileExtension()
+            + " shader of size " + numBytesVariant + " bytes; ";
+
+        if (maxFactor.isPresent() && numBytesVariant > maxFactor.get() * numBytesReference) {
+          if (verbose) {
+            LOGGER.info(logMessagePrefix + "more than " + maxFactor.get() + " times larger "
+                    + "than reference of size " + numBytesReference + " bytes");
+          }
+          return true;
+        }
+
+        if (maxBytes.isPresent() && numBytesVariant > maxBytes.get()) {
+          if (verbose) {
+            LOGGER.info(logMessagePrefix + "exceeds limit of " + maxBytes.get() + " bytes");
+          }
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private static boolean skipDueToInvalidShader(File variantShaderJobFile,
+                                                boolean disableValidator) {
+    if (disableValidator) {
+      // Validation has been disabled, so don't do any skipping.
+      return false;
+    }
+
+    throw new RuntimeException("TODO: finish this; need to make sure we invoke shader translator");
+
+    /*
+    variant_file_frag = variant_file_prefix + ".frag"
+    variant_file_vert = variant_file_prefix + ".vert"
+    variant_file_json = variant_file_prefix + ".json"
+    variant_file_probabilities = variant_file_prefix + ".prob"
+
+    for ext in [ ".frag", ".vert" ]:
+        variant_shader_file = variant_file_prefix + ext
+        if not os.path.isfile(variant_shader_file):
+            continue
+        if shader_is_valid(variant_shader_file):
+            continue
+        if not args.keep_bad_variants:
+            remove_if_exists(variant_file_frag)
+            remove_if_exists(variant_file_vert)
+            os.remove(variant_file_json)
+            os.remove(variant_file_probabilities)
+            return True
+        else:
+            move_if_exists(variant_file_frag, "bad_" + os.path.basename(variant_file_frag))
+            move_if_exists(variant_file_vert, "bad_" + os.path.basename(variant_file_vert))
+            shutil.move(variant_file_json, "bad_" + os.path.basename(variant_file_json))
+            shutil.move(variant_file_probabilities, "bad_" +
+            os.path.basename(variant_file_probabilities))
+        if args.stop_on_fail:
+            if args.verbose:
+                print("Generated an invalid variant, stopping.")
+            exit(1)
+        return False
+     */
   }
 
   public static void main(String[] args) {
@@ -310,71 +387,7 @@ def kill_generator(generator_proc):
         print("Timeout")
     generator_proc.kill()
 
-def generate_variant(reference_prefix, inner_seed, output_prefix):
-    cmd = ["java", "-ea",
-           "com.graphicsfuzz.generator.tool.Generate",
-           reference_prefix + ".json",
-           args.donors,
-           args.glsl_version,
-           output_prefix + ".json",
-           "--seed",
-           str(inner_seed) ]
-    if args.webgl:
-        cmd += [ "--webgl" ]
-    if args.small:
-        cmd += [ "--small" ]
-    if args.avoid_long_loops:
-        cmd += [ "--avoid_long_loops" ]
-    if args.replace_float_literals:
-        cmd += [ "--replace_float_literals" ]
-    if args.aggressively_complicate_control_flow:
-        cmd += [ "--aggressively_complicate_control_flow" ]
-    if args.multi_pass:
-        cmd += [ "--multi_pass" ]
-    if args.generate_uniform_bindings:
-        cmd += [ "--generate_uniform_bindings" ]
-    if args.max_uniforms is not None:
-        cmd += [ "--max_uniforms", str(args.max_uniforms) ]
-    if args.verbose:
-        print("Transform command: %s" % (" ".join(cmd)))
-    generator_proc = subprocess.Popen(cmd,
-                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    kill_timer = threading.Timer(args.timeout, lambda: kill_generator(generator_proc))
-    try:
-        kill_timer.start()
-        generator_stdout, generator_stderr = generator_proc.communicate()
-        assert (generator_proc.returncode is not None)
-    finally:
-        kill_timer.cancel()
-    return {"returncode": generator_proc.returncode,
-            "stdout": generator_stdout,
-            "stderr": generator_stderr,
-            "cmd": " ".join(cmd)}
 
-def prepare_reference_shaders(reference_prefix, output_file_prefix, glsl_version):
-    cmd = ["java",
-           "-ea",
-           "com.graphicsfuzz.generator.tool.PrepareReference",
-           reference_prefix + ".json",
-           output_file_prefix + ".json",
-           glsl_version ]
-    if args.replace_float_literals:
-        cmd += [ "--replace_float_literals" ]
-    if args.webgl:
-        cmd += [ "--webgl" ]
-    if args.generate_uniform_bindings:
-        cmd += [ "--generate_uniform_bindings" ]
-    if args.max_uniforms is not None:
-        cmd += [ "--max_uniforms", str(args.max_uniforms - 1) ] # We subtract 1 because we need to
-        be able to add injectionSwitch
-    if args.verbose:
-        print("Reference preparation command: %s" % (" ".join(cmd)))
-    prepare_reference_proc = subprocess.Popen(cmd,
-                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    prepare_reference_stdout, prepare_reference_stderr = prepare_reference_proc.communicate()
-    if prepare_reference_proc.returncode != 0:
-        print("Reference preparation resulted in errors: " + prepare_reference_stderr)
-        sys.exit(1)
 
 def get_git_revision_hash():
     git_hash = open(args.hash_file, 'r')
@@ -471,6 +484,5 @@ HERE
 
 
  */
-  }
 
 }
