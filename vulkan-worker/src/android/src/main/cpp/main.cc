@@ -176,6 +176,14 @@ void android_main(struct android_app* state) {
     assert(app_data->uniform_file != nullptr);
   }
 
+  // Write STARTED file.
+  {
+    FILE *started = fopen("/sdcard/graphicsfuzz/STARTED", "w");
+    assert(started != nullptr);
+    fprintf(started, "STARTED\n");
+    fclose(started);
+  }
+
   // Android: loop on things to do
   while (1) {
     int events;
