@@ -113,31 +113,42 @@ public class GenerateShaderFamily {
     Namespace ns = parse(args);
 
     final String glslVersion = ns.getString("glsl_version");
+    final File referenceShaderJob = ns.get("reference_shader_job");
+    final File donorsDir = ns.get("donors");
+    final File outputDir = ns.get("output_dir") == null ? new File(".") : ns.get("output_dir");
+    final boolean webgl = ns.getBoolean("webgl");
+    final boolean verbose = ns.getBoolean("verbose");
+    final boolean disableValidator = ns.getBoolean("disable_validator");
+    final boolean writeProbabilities = ns.getBoolean("write_probabilities");
+    final boolean keepBadVariants = ns.getBoolean("keep_bad_variants");
+    final boolean stopOnFail = ns.getBoolean("stop_on_fail");
+    final int seed = ns.getInt("seed");
+    final int numVariants = ns.getInt("num_variants");
+    Optional<Integer> maxBytes = ns.get("max_bytes") == null ? Optional.empty() :
+        Optional.of(ns.getInt("max_bytes"));
+    Optional<Float> maxFactor = ns.get("max_factor") == null ? Optional.empty() :
+        Optional.of(ns.getFloat("max_factor"));
+    final GeneratorArguments generatorArguments = Generate.getGeneratorArguments(ns);
 
-    if (ns.getBoolean("webgl") && !ShadingLanguageVersion.isWebGlCompatible(glslVersion)) {
+    if (webgl && !ShadingLanguageVersion.isWebGlCompatible(glslVersion)) {
       // Check immediately that if --webgl has been passed, it is possible to get the given
       // WebGL shading language version as a string.
       throw new RuntimeException("Given GLSL version " + glslVersion + " is not WebGL-compatible.");
     }
 
-    final int seed = ns.getInt("seed");
-    final boolean verbose = ns.getBoolean("verbose");
     if (verbose) {
       LOGGER.info("Using seed " + seed);
     }
 
-    final File referenceShaderJob = ns.get("reference_shader_job");
     if (!referenceShaderJob.isFile()) {
       throw new FileNotFoundException("Reference shader job " + referenceShaderJob.getAbsolutePath()
           + " does not exist.");
     }
 
-    final File donorsDir = ns.get("donors");
     if (verbose) {
       LOGGER.info("Using donor folder " + donorsDir.getAbsolutePath());
     }
 
-    final File outputDir = ns.get("output_dir") == null ? new File(".") : ns.get("output_dir");
     if (outputDir.isDirectory()) {
       LOGGER.info("Overwriting previous output directory (" + outputDir.getAbsolutePath() + ")");
     }
@@ -154,15 +165,15 @@ public class GenerateShaderFamily {
     final File preparedReferenceShaderJob = new File(outputDir, "reference.json");
     PrepareReference.prepareReference(referenceShaderJob,
         preparedReferenceShaderJob,
-        ShadingLanguageVersion.fromVersionString(ns.getString("glsl_version")),
-        ns.getBoolean("replace_float_literals"),
+        ShadingLanguageVersion.fromVersionString(glslVersion),
+        generatorArguments.getReplaceFloatLiterals(),
         // We subtract 1 because we need to be able to add injectionSwitch
-        ns.getInt("max_uniforms") - 1,
-        ns.getBoolean("generate_uniform_bindings"),
+        generatorArguments.getMaxUniforms() - 1,
+        generatorArguments.getGenerateUniformBindings(),
         fileOps);
 
     // Validate reference shaders.
-    if (!ns.getBoolean("disable_validator")) {
+    if (!disableValidator) {
       if (!(fileOps.areShadersValid(preparedReferenceShaderJob, false)
           && fileOps.areShadersValidShaderTranslator(preparedReferenceShaderJob, false))) {
         throw new RuntimeException("One or more of the prepared shaders of shader job "
@@ -185,7 +196,6 @@ public class GenerateShaderFamily {
     int generatedVariants = 0;
     int triedVariants = 0;
 
-    final int numVariants = ns.getInt("num_variants");
     final IRandom generator = new RandomWrapper(seed);
 
     // Main variant generation loop
@@ -205,14 +215,14 @@ public class GenerateShaderFamily {
       triedVariants++;
       try {
         Generate.generateVariant(fileOps, referenceShaderJob, variantShaderJobFile,
-            Generate.getGeneratorArguments(ns), ns.getBoolean("write_probabilities"));
+            generatorArguments, innerSeed, writeProbabilities);
       } catch (Exception exception) {
         if (verbose) {
           LOGGER.error("Failed generating variant:");
           LOGGER.error(exception.getMessage());
           exception.printStackTrace();
         }
-        if (ns.getBoolean("stop_on_fail")) {
+        if (stopOnFail) {
           final String message = "Failed generating a variant, stopping.";
           LOGGER.info(message);
           throw new RuntimeException(message);
@@ -221,8 +231,8 @@ public class GenerateShaderFamily {
       }
 
       // Check the shader is valid
-      if (skipDueToInvalidShader(fileOps, variantShaderJobFile, ns.getBoolean("disable_validator"),
-          ns.getBoolean("keep_bad_variants"), ns.getBoolean("stop_on_fail"))) {
+      if (skipDueToInvalidShader(fileOps, variantShaderJobFile, disableValidator,
+          keepBadVariants, stopOnFail)) {
         continue;
       }
 
@@ -230,8 +240,8 @@ public class GenerateShaderFamily {
       if (generatedShadersTooLarge(fileOps,
           preparedReferenceShaderJob,
           variantShaderJobFile,
-          ns.get("max_factor") == null ? Optional.empty() : Optional.of(ns.getFloat("max_factor")),
-          ns.get("max_bytes") == null ? Optional.empty() : Optional.of(ns.getInt("max_bytes")),
+          maxFactor,
+          maxBytes,
           verbose)) {
         // A generated shader is too large - discard it (but don't log it as bad)
         continue;

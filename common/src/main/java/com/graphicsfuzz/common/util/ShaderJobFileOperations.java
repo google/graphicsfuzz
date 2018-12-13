@@ -1069,7 +1069,7 @@ public class ShaderJobFileOperations {
       File shaderFile,
       boolean throwExceptionOnValidationError)
       throws IOException, InterruptedException {
-    return checkValidationResult(ToolHelper.runValidatorOnShader(ExecHelper.RedirectType.TO_LOG,
+    return checkValidationResult(ToolHelper.runValidatorOnShader(ExecHelper.RedirectType.TO_BUFFER,
         shaderFile), shaderFile.getName(), throwExceptionOnValidationError);
   }
 
@@ -1078,29 +1078,30 @@ public class ShaderJobFileOperations {
       ShadingLanguageVersion shadingLanguageVersion,
       boolean throwExceptionOnValidationError)
       throws IOException, InterruptedException {
-    String arg;
-    if (shadingLanguageVersion == ShadingLanguageVersion.WEBGL_SL) {
-      arg = "-s=w";
-    } else if (shadingLanguageVersion == ShadingLanguageVersion.WEBGL2_SL) {
-      arg = "-s=w2";
-    } else if (shadingLanguageVersion == ShadingLanguageVersion.ESSL_100) {
-      arg = "-s=e2";
-    } else if (shadingLanguageVersion == ShadingLanguageVersion.ESSL_300) {
-      arg = "-s=e3";
-    } else {
-      // Shader translator cannot handle this shading language version, so just say that it is
-      // valid.
-      //
-      // Shader translator does have a -s=e31 option, but it is still marked as "in development".
+    if (!ShaderTranslatorShadingLanguageVersionSupport.isVersionSupported(shadingLanguageVersion)) {
+      // Shader translator does not support this shading language version, so just say that the
+      // shader is valid.
+      return true;
+    }
+    final ExecResult shaderTranslatorResult = ToolHelper.runShaderTranslatorOnShader(
+        ExecHelper.RedirectType.TO_BUFFER,
+        shaderFile,
+        ShaderTranslatorShadingLanguageVersionSupport
+            .getShaderTranslatorArgument(shadingLanguageVersion));
+    if (isMemoryExhaustedError(shaderTranslatorResult)) {
       return true;
     }
     return checkValidationResult(
-        ToolHelper.runShaderTranslatorOnShader(
-          ExecHelper.RedirectType.TO_LOG,
-          shaderFile,
-          arg),
+        shaderTranslatorResult,
         shaderFile.getName(),
         throwExceptionOnValidationError);
+  }
+
+  // TODO(171): This is a workaround for an issue where shader_translator reports memory exhaustion.
+  // If the issue in shader_translator can be fixed, we should get rid of this check.
+  private boolean isMemoryExhaustedError(ExecResult shaderTranslatorResult) {
+    return shaderTranslatorResult.res != 0
+        && shaderTranslatorResult.stdout.toString().contains("memory exhausted");
   }
 
   private boolean checkValidationResult(ExecResult res,

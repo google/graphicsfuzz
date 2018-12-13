@@ -172,9 +172,10 @@ public class Generate {
    * @return Details of the transformations that were applied.
    */
   public static StringBuilder generateVariant(ShaderJob shaderJob,
-                                              GeneratorArguments args) {
+                                              GeneratorArguments args,
+                                              int seed) {
     final StringBuilder result = new StringBuilder();
-    final IRandom random = new RandomWrapper(args.getSeed());
+    final IRandom random = new RandomWrapper(seed);
 
     if (args.getAddInjectionSwitch()) {
       for (TranslationUnit shader : shaderJob.getShaders()) {
@@ -212,6 +213,7 @@ public class Generate {
                                      File referenceShaderJobFile,
                                      File outputShaderJobFile,
                                      GeneratorArguments generatorArguments,
+                                     int seed,
                                      boolean writeProbabilities)
       throws IOException, ParseTimeoutException {
     // This is mutated into the variant.
@@ -219,7 +221,8 @@ public class Generate {
 
     final StringBuilder generationInfo = generateVariant(
         variantShaderJob,
-        generatorArguments);
+        generatorArguments,
+        seed);
 
     fileOps.writeShaderJobFile(
         variantShaderJob,
@@ -312,6 +315,7 @@ public class Generate {
         ns.get("reference_json"),
         ns.get("output"),
         getGeneratorArguments(ns),
+        ns.getInt("seed"),
         ns.getBoolean("write_probabilities"));
   }
 
@@ -322,7 +326,6 @@ public class Generate {
         ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
         : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
     return new GeneratorArguments(shadingLanguageVersion,
-        ns.get("seed"),
         ns.getBoolean("small"),
         ns.getBoolean("avoid_long_loops"),
         ns.getBoolean("multi_pass"),
