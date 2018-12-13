@@ -189,6 +189,8 @@ def doImageJob(args, imageJob):
             res.status = tt.JobStatus.TIMEOUT
         elif status == 'SANITY_ERROR':
             res.status = tt.JobStatus.SANITY_ERROR
+        elif status == 'UNEXPECTED_ERROR':
+            res.status = tt.JobStatus.UNEXPECTED_ERROR
         elif status == 'NONDET':
             res.status = tt.JobStatus.NONDET
             with open('nondet0.png', 'rb') as f:
