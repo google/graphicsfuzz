@@ -195,7 +195,7 @@ public class GenerateShaderFamilyTest {
     options.addAll(extraOptions);
 
     GenerateShaderFamily.mainHelper(
-        options.stream().toArray(String[]::new)
+        options.toArray(new String[0])
     );
 
     assertTrue(new File(temporaryFolder.getRoot(), "reference.frag").isFile());

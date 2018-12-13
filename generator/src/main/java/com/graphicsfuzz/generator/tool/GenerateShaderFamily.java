@@ -56,7 +56,7 @@ public class GenerateShaderFamily {
         .type(File.class);
 
     parser.addArgument("donors")
-        .help("Path of folder of donor shaders.")
+        .help("Path to directory of donor shaders.")
         .type(File.class);
 
     parser.addArgument("glsl-version")
@@ -69,11 +69,18 @@ public class GenerateShaderFamily {
 
     Generate.addGeneratorCommonArguments(parser);
 
+    addFamilyGenerationArguments(parser);
+
     parser.addArgument("--num-variants")
         .help("Number of variants to produce.")
         .type(Integer.class)
         .setDefault(10);
 
+    return parser.parseArgs(args);
+
+  }
+
+  static void addFamilyGenerationArguments(ArgumentParser parser) {
     parser.addArgument("--disable-validator")
         .help("Disable calling validation tools on generated variants.")
         .action(Arguments.storeTrue());
@@ -102,9 +109,6 @@ public class GenerateShaderFamily {
         .help("Require a license file to be provided alongside the reference and pass details "
             + "through to generated shaders.")
         .action(Arguments.storeTrue());
-
-    return parser.parseArgs(args);
-
   }
 
   public static void mainHelper(String[] args) throws ArgumentParserException,
@@ -151,9 +155,9 @@ public class GenerateShaderFamily {
 
     if (outputDir.isDirectory()) {
       LOGGER.info("Overwriting previous output directory (" + outputDir.getAbsolutePath() + ")");
+      FileUtils.deleteDirectory(outputDir);
     }
 
-    FileUtils.deleteDirectory(outputDir);
     if (!outputDir.mkdir()) {
       throw new IOException("Problem creating output directory (" + outputDir.getAbsolutePath()
           + ")");
