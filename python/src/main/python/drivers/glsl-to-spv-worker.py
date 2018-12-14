@@ -85,18 +85,18 @@ def getBinType():
 
 ################################################################################
 
-def prepareShaders(frag):
-    shutil.copy(frag, 'test.frag')
+
+def prepare_shaders(frag_file, frag_spv_file, vert_spv_file):
     prepareVertFile()
 
     glslang = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/glslangValidator'
 
     # Frag
-    cmd = glslang + ' test.frag -V -o test.frag.spv'
+    cmd = glslang + ' ' + frag_file + ' -V -o ' + frag_spv_file
     subprocess.run(cmd, shell=True, check=True)
 
     # Vert
-    cmd = glslang + ' test.vert -V -o test.vert.spv'
+    cmd = glslang + ' test.vert -V -o ' + vert_spv_file
     subprocess.run(cmd, shell=True, check=True)
 
 
@@ -109,6 +109,9 @@ def doImageJob(args, imageJob):
     png = 'image_0.png'
     log = 'vklog.txt'
 
+    frag_spv_file = name + '.frag.spv'
+    vert_spv_file = name + '.vert.spv'
+
     res = tt.ImageJobResult()
 
     skipRender = imageJob.skipRender
@@ -119,16 +122,21 @@ def doImageJob(args, imageJob):
 
     writeToFile(imageJob.fragmentSource, fragFile)
     writeToFile(imageJob.uniformsInfo, jsonFile)
-    prepareShaders(fragFile)
-    shutil.copy(jsonFile, 'test.json')
+    prepare_shaders(fragFile, frag_spv_file, vert_spv_file)
 
     # Optimize
     if args.spirvopt:
-        cmd = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/spirv-opt ' + args.spirvopt + ' test.frag.spv -o test.frag.spv.opt'
+        frag_spv_file_opt = frag_spv_file + '.opt'
+        cmd = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/spirv-opt ' + \
+            args.spirvopt + ' ' + frag_spv_file + ' -o ' + frag_spv_file_opt
+
         try:
             res.log += 'spirv-opt flags: ' + args.spirvopt + '\n'
             print('Calling spirv-opt with flags: ' + args.spirvopt)
-            subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True, timeout=TIMEOUT_SPIRVOPT)
+            subprocess.run(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True, check=True, timeout=TIMEOUT_SPIRVOPT)
+
         except subprocess.CalledProcessError as err:
             # spirv-opt failed, early return
             res.log += 'Error triggered by spirv-opt\n'
@@ -152,18 +160,18 @@ def doImageJob(args, imageJob):
             res.status = tt.JobStatus.UNEXPECTED_ERROR
             return res
 
-        shutil.move('test.frag.spv.opt', 'test.frag.spv')
+        frag_spv_file = frag_spv_file_opt
 
     remove(png)
     remove(log)
 
     if args.linux:
-        vkrun.run_linux('test.vert.spv', 'test.frag.spv', 'test.json', skipRender)
+        vkrun.run_linux(vert_spv_file, frag_spv_file, jsonFile, skipRender)
     else:
-        vkrun.run_android('test.vert.spv', 'test.frag.spv', 'test.json', skipRender)
+        vkrun.run_android(vert_spv_file, frag_spv_file, jsonFile, skipRender)
 
     if os.path.exists(log):
-        with open(log, 'r') as f:
+        with open(log, 'r', encoding='utf-8', errors='ignore') as f:
             res.log += f.read()
 
     if os.path.exists(png):
@@ -181,6 +189,8 @@ def doImageJob(args, imageJob):
             res.status = tt.JobStatus.TIMEOUT
         elif status == 'SANITY_ERROR':
             res.status = tt.JobStatus.SANITY_ERROR
+        elif status == 'UNEXPECTED_ERROR':
+            res.status = tt.JobStatus.UNEXPECTED_ERROR
         elif status == 'NONDET':
             res.status = tt.JobStatus.NONDET
             with open('nondet0.png', 'rb') as f:
