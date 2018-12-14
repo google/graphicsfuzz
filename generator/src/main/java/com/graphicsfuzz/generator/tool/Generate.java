@@ -395,23 +395,29 @@ public class Generate {
       transformations = toKeep;
     }
 
-    List<ITransformation> done = new ArrayList<>();
+    List<ITransformation> nextRoundTransformations = new ArrayList<>();
     String result = "";
-    while (!shaderLargeEnough(reference, generator)) {
+    // Keep applying transformations until all transformations cease to be effective, or
+    // we get a large enough shader.
+    while (!transformations.isEmpty() && !shaderLargeEnough(reference, generator)) {
       ITransformation transformation = transformations.remove(generator.nextInt(
             transformations.size()));
       result += transformation.getName() + "\n";
-      transformation.apply(reference, probabilities, args.getShadingLanguageVersion(),
+      if (transformation.apply(reference, probabilities, args.getShadingLanguageVersion(),
             generator.spawnChild(),
-            generationParams);
-      // Keep the size down by stripping unused stuff.
-      StripUnusedFunctions.strip(reference);
-      StripUnusedGlobals.strip(reference);
-      assert canTypeCheckWithoutFailure(reference, args.getShadingLanguageVersion());
-      done.add(transformation);
+            generationParams)) {
+        // Keep the size down by stripping unused stuff.
+        StripUnusedFunctions.strip(reference);
+        StripUnusedGlobals.strip(reference);
+        assert canTypeCheckWithoutFailure(reference, args.getShadingLanguageVersion());
+
+        // Only if the transformation applied successfully (i.e., made a change), do we add it
+        // to the list of transformations to be applied next round.
+        nextRoundTransformations.add(transformation);
+      }
       if (transformations.isEmpty()) {
-        transformations = done;
-        done = new ArrayList<>();
+        transformations = nextRoundTransformations;
+        nextRoundTransformations = new ArrayList<>();
       }
     }
     return result;

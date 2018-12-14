@@ -57,7 +57,7 @@ public class AddSwitchStmts implements ITransformation {
   }
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
       ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
     List<IInjectionPoint> injectionPoints = new InjectionPoints(tu, generator,
@@ -68,6 +68,7 @@ public class AddSwitchStmts implements ITransformation {
       wrapStatementInSwitch(injectionPoint, generator, shadingLanguageVersion, generationParams);
     }
     applicationId++;
+    return !injectionPoints.isEmpty();
   }
 
   @Override

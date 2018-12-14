@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -122,6 +123,8 @@ public class GenerateShaderFamilyTest {
         glslVersionString, seed, Arrays.asList("--stop-on-fail", "--multi-pass"));
   }
 
+  // TODO(172)
+  @Ignore
   @Test
   public void testGenerateSmallWebGL1ShaderFamilyMultiPass() throws Exception {
     final String samplesSubdir = "100";

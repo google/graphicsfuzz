@@ -45,7 +45,7 @@ public class AddJumpStmts implements ITransformation {
   public static final String NAME = "jump";
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
         ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
     List<IInjectionPoint> injectionPoints = new InjectionPoints(tu, generator, x -> true)
@@ -55,6 +55,7 @@ public class AddJumpStmts implements ITransformation {
       injectionPoint.inject(prepareJumpStmt(injectionPoint, generator, shadingLanguageVersion,
             generationParams));
     }
+    return !injectionPoints.isEmpty();
   }
 
   @Override

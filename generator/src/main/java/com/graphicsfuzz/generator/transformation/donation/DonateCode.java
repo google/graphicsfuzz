@@ -208,12 +208,12 @@ public abstract class DonateCode implements ITransformation {
   }
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
         ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
 
     if (donorFiles.isEmpty()) {
-      return;
+      return false;
     }
 
     functionPrototypes.addAll(AstUtil.getFunctionPrototypesFromShader(tu));
@@ -234,6 +234,8 @@ public abstract class DonateCode implements ITransformation {
     donateFunctionsAndGlobals(tu);
     eliminateUsedDonors();
     makeInjectedArrayAccessesInBounds(tu, injectedStmts, shadingLanguageVersion);
+
+    return !injectionPoints.isEmpty();
 
   }
 
