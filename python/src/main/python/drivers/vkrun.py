@@ -15,11 +15,11 @@
 # limitations under the License.
 
 import argparse
+import filecmp
 import os
+import shutil
 import subprocess
 import time
-import filecmp
-import shutil
 
 ################################################################################
 # Constants
@@ -31,15 +31,24 @@ NUM_RENDER = 3
 ################################################################################
 # Common
 
-# prepare_shader translates a shader to binary spir-v
-# shader.frag -> shader.frag.spv
-# shader.vert -> shader.vert.spv
-# shader.frag.asm -> shader.frag.spv
-# shader.vert.asm -> shader.vert.spv
+
 def prepare_shader(shader):
+    """
+    Translates a shader to binary SPIR-V.
+
+    shader.frag -> shader.frag.spv
+    shader.vert -> shader.vert.spv
+    shader.frag.asm -> shader.frag.spv
+    shader.vert.asm -> shader.vert.spv
+
+    :param shader: e.g. shader.frag, shader.vert, shader.frag.asm
+    :return: the output .spv file
+    """
     assert(os.path.exists(shader))
 
     # Translate shader to spv
+
+    # noinspection PyUnusedLocal
     output = ''
     if shader[-5:] == '.frag' or shader[-5:] == '.vert':
         output = shader + '.spv'
@@ -58,6 +67,7 @@ def prepare_shader(shader):
 ################################################################################
 # Linux
 
+
 def run_linux(vert, frag, json, skip_render):
     assert(os.path.exists(vert))
     assert(os.path.exists(frag))
@@ -73,9 +83,9 @@ def run_linux(vert, frag, json, skip_render):
     status = 'SUCCESS'
     try:
         subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
-    except subprocess.TimeoutExpired as err:
+    except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
-    except subprocess.CalledProcessError as err:
+    except subprocess.CalledProcessError:
         status = 'CRASH'
 
     with open(LOGFILE, 'a') as f:
@@ -84,14 +94,15 @@ def run_linux(vert, frag, json, skip_render):
     with open('STATUS', 'w') as f:
         f.write(status)
 
+
 def dump_info_linux():
     cmd = 'vkworker --info'
     status = 'SUCCESS'
     try:
         subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
-    except subprocess.TimeoutExpired as err:
+    except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
-    except subprocess.CalledProcessError as err:
+    except subprocess.CalledProcessError:
         status = 'CRASH'
 
     with open('STATUS', 'w') as f:
@@ -100,21 +111,30 @@ def dump_info_linux():
 ################################################################################
 # Android
 
+
 ANDROID_SDCARD = '/sdcard/graphicsfuzz'
 ANDROID_APP = 'com.graphicsfuzz.vkworker'
 TIMEOUT_APP = 30
 
-def adb(adbargs):
 
-    adbcmd = 'adb ' + adbargs
+def adb(adb_args):
+
+    adb_cmd = 'adb ' + adb_args
 
     try:
-        p = subprocess.run(adbcmd, shell=True, timeout=TIMEOUT_RUN, stdout=subprocess.PIPE, universal_newlines=True)
+        p = subprocess.run(
+            adb_cmd,
+            shell=True,
+            timeout=TIMEOUT_RUN,
+            stdout=subprocess.PIPE,
+            universal_newlines=True)
+
     except subprocess.TimeoutExpired as err:
         print('ERROR: adb command timed out: ' + err.cmd)
         return err
     else:
         return p
+
 
 def run_android(vert, frag, json, skip_render):
     assert(os.path.exists(vert))
@@ -132,8 +152,9 @@ def run_android(vert, frag, json, skip_render):
     cmd = 'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity'
     flags = '--num-render {}'.format(NUM_RENDER)
     if skip_render:
-      flags += ' --skip-render'
-    # Pass command line args as Intent extra. Need to nest-quote, hence the "\'blabla\'"
+        flags += ' --skip-render'
+
+    # Pass command line args as Intent extra. Need to nest-quote, hence the "\'flags\'"
     cmd += ' -e gfz "\'' + flags + '\'"'
     adb(cmd)
 
@@ -157,19 +178,18 @@ def run_android(vert, frag, json, skip_render):
 
         assert status == 'TIMEOUT'
 
-        retcode = adb('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode
-        if retcode == 0:
+        return_code = adb('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode
+        if return_code == 0:
             status = 'SUCCESS'
             break
 
-        # Make sure to redirect to /dev/null on the device, otherwise this fails
-        # on Windows hosts.
-        retcode = adb('shell "pidof ' + ANDROID_APP + ' > /dev/null"').returncode
-        if retcode == 1:
+        # Make sure to redirect to /dev/null on the device, otherwise this fails on Windows hosts.
+        return_code = adb('shell "pidof ' + ANDROID_APP + ' > /dev/null"').returncode
+        if return_code == 1:
 
             # double check that no DONE file is present
-            retcode = adb('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode
-            if retcode == 0:
+            return_code = adb('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode
+            if return_code == 0:
                 status = 'SUCCESS'
                 break
 
@@ -177,31 +197,30 @@ def run_android(vert, frag, json, skip_render):
             status = 'CRASH'
             break
 
-    # Grab log
+    # Grab log:
     adb('logcat -d > ' + LOGFILE)
 
     # retrieve all files to results/
-    resdir = 'results'
-    if os.path.exists(resdir):
-        shutil.rmtree(resdir)
-    adb('pull ' + ANDROID_SDCARD + ' ' + resdir)
+    res_dir = 'results'
+    if os.path.exists(res_dir):
+        shutil.rmtree(res_dir)
+    adb('pull ' + ANDROID_SDCARD + ' ' + res_dir)
 
-    # Check sanity
+    # Check sanity:
     if status == 'SUCCESS':
-        sanity_before = resdir + '/sanity_before.png'
-        sanity_after = resdir + '/sanity_after.png'
+        sanity_before = res_dir + '/sanity_before.png'
+        sanity_after = res_dir + '/sanity_after.png'
         if os.path.exists(sanity_before) and os.path.exists(sanity_after):
             if not filecmp.cmp(sanity_before, sanity_after, shallow=False):
                 status = 'SANITY_ERROR'
 
-    # Check nondet.
+    # Check nondet:
     if status == 'SUCCESS':
-        ref_image = resdir + '/image_0.png'
+        ref_image = res_dir + '/image_0.png'
         if os.path.exists(ref_image):
-            # If reference image is here, report nondet if either other images a
-            # different, or missing
+            # If reference image is here then report nondet if any image is different or missing.
             for i in range(1, NUM_RENDER):
-                next_image = resdir + '/image_{}.png'.format(i)
+                next_image = res_dir + '/image_{}.png'.format(i)
                 if not os.path.exists(next_image):
                     status = 'UNEXPECTED_ERROR'
                     with open(LOGFILE, 'a') as f:
@@ -220,43 +239,45 @@ def run_android(vert, frag, json, skip_render):
         f.write(status)
 
     if status != 'SUCCESS':
-        # Something went wrong, make sure to stop the app in any case
+        # Something went wrong. Make sure we stop the app.
         adb('shell am force-stop ' + ANDROID_APP)
 
-    # Grab image if present
-    imagepath = ANDROID_SDCARD + '/image_0.png'
-    retcode = adb('shell test -f ' + imagepath).returncode
-    if retcode == 0:
-        adb('pull ' + imagepath)
+    # Grab image if present.
+    image_path = ANDROID_SDCARD + '/image_0.png'
+    return_code = adb('shell test -f ' + image_path).returncode
+    if return_code == 0:
+        adb('pull ' + image_path)
+
 
 def dump_info_android():
-    infofile = ANDROID_SDCARD + '/worker_info.json'
-    adb('shell rm -f ' + infofile)
+    info_file = ANDROID_SDCARD + '/worker_info.json'
+    adb('shell rm -f ' + info_file)
     adb('shell am force-stop ' + ANDROID_APP)
     adb('shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
     adb('shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
     adb('shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity -e gfz "\"--info\""')
-    # We wait up to timeout_seconds to let the app produce the worker info. We
-    # may have to wait several seconds as the app may take some time to launch.
+
+    # We wait up to timeout_seconds to let the app produce the worker info. We may have to wait
+    # several seconds as the app may take some time to launch.
     timeout_seconds = 5
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
-        retcode = adb('shell test -f ' + infofile).returncode
-        if retcode == 0:
+        ret_code = adb('shell test -f ' + info_file).returncode
+        if ret_code == 0:
             break
         time.sleep(0.1)
-    if adb('shell test -f ' + infofile).returncode == 0:
-        adb('pull ' + infofile)
+    if adb('shell test -f ' + info_file).returncode == 0:
+        adb('pull ' + info_file)
     else:
-        print('Error: cannot obtain worker informations')
+        print('Error: cannot obtain worker information')
     adb('shell am force-stop ' + ANDROID_APP)
 
 ################################################################################
 # Main
 
-if __name__ == '__main__':
 
-    desc='Run shaders on vulkan worker. Output: ' + LOGFILE + ', image.png'
+def main():
+    desc = 'Run shaders on vulkan worker. Output: ' + LOGFILE + ', image.png'
 
     parser = argparse.ArgumentParser(description=desc)
 
@@ -280,12 +301,22 @@ if __name__ == '__main__':
     vert = prepare_shader(args.vert)
     frag = prepare_shader(args.frag)
 
+    # These are mutually exclusive, but we return after each for clarity:
+
     if args.serial:
         os.environ['ANDROID_SERIAL'] = args.serial
         run_android(vert, frag, args.json, args.skip_render)
+        return
 
     if args.android:
         run_android(vert, frag, args.json, args.skip_render)
+        return
 
     if args.linux:
         run_linux(vert, frag, args.json, args.skip_render)
+        return
+
+
+if __name__ == '__main__':
+    main()
+
