@@ -259,9 +259,10 @@ public class GenerateShaderFamily {
 
     // Produce JSON file recording some info on what was generated.
     final JsonObject infoLog = new JsonObject();
-    infoLog.addProperty("git_hash",
-        FileUtils.readFileToString(new File(new File(ToolPaths.getInstallDirectory()), "HASH"),
-            StandardCharsets.UTF_8));
+    final File hashFile = new File(new File(ToolPaths.getInstallDirectory()), "HASH");
+    final String hashContents = hashFile.isFile() ? FileUtils.readFileToString(hashFile,
+        StandardCharsets.UTF_8) : "none";
+    infoLog.addProperty("git_hash", hashContents);
     infoLog.addProperty("args", String.join(" ", args));
     infoLog.addProperty("seed", seed);
 
