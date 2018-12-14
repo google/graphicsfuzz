@@ -41,9 +41,9 @@ public class GlslGenerateTest {
 
   @Test
   public void testSmall100ShaderFamilies() throws Exception {
-    final String references = Paths.get(ToolPaths.getInstallDirectory(), "shaders",
+    final String references = Paths.get(ToolPaths.getShadersDirectory(),
         "samples", "100").toString();
-    final String donors = Paths.get(ToolPaths.getInstallDirectory(), "shaders", "samples",
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
         "donors").toString();
     final int numVariants = 3;
     final String glslVersionString = "100";
@@ -56,9 +56,9 @@ public class GlslGenerateTest {
 
   @Test
   public void testVulkanShaderFamilies() throws Exception {
-    final String references = Paths.get(ToolPaths.getInstallDirectory(), "shaders",
+    final String references = Paths.get(ToolPaths.getShadersDirectory(),
         "samples", "310es").toString();
-    final String donors = Paths.get(ToolPaths.getInstallDirectory(), "shaders", "samples",
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
         "donors").toString();
     final int numVariants = 3;
     final String glslVersionString = "310 es";

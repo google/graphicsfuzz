@@ -175,10 +175,10 @@ public class GenerateShaderFamilyTest {
                                           int numVariants, String glslVersionString, int seed,
                                           List<String> extraOptions) throws ArgumentParserException,
       InterruptedException, IOException, ParseTimeoutException {
-    final String reference = Paths.get(ToolPaths.getInstallDirectory(), "shaders", "samples",
+    final String reference = Paths.get(ToolPaths.getShadersDirectory(), "samples",
         samplesSubdir, referenceShaderName
         + ".json").toString();
-    final String donors = Paths.get(ToolPaths.getInstallDirectory(), "shaders", "samples",
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
         "donors").toString();
 
     final List<String> options = new ArrayList<>();
