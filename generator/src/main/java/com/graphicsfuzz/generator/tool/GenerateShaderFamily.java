@@ -99,7 +99,8 @@ public class GenerateShaderFamily {
         .action(Arguments.storeTrue());
 
     parser.addArgument("--max-bytes")
-        .help("Maximum allowed size, in bytes, for variant shader (default: no limit).")
+        .help("Maximum allowed size, in bytes, for variant shader.")
+        .setDefault(500000)
         .type(Integer.class);
 
     parser.addArgument("--max-factor")

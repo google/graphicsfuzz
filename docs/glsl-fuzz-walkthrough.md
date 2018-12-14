@@ -132,13 +132,13 @@ cp -r graphicsfuzz-1.0/shaders/samples samples
 # glsl-generate [options] references donors num_variants glsl_version prefix output_folder
 
 # Generate some GLSL version 300 es shaders.
-glsl-generate --max-bytes 500000 samples/300es samples/donors 10 "300 es" family_300es work/shaderfamilies
+glsl-generate samples/300es samples/donors 10 "300 es" family_300es work/shaderfamilies
 
 # Generate some GLSL version 100 shaders.
-glsl-generate --max-bytes 500000 samples/100 samples/donors 10 "100" family_100 work/shaderfamilies
+glsl-generate samples/100 samples/donors 10 "100" family_100 work/shaderfamilies
 
 # Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --max-bytes 500000 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 "310 es" family_vulkan work/shaderfamilies
+glsl-generate --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 "310 es" family_vulkan work/shaderfamilies
 
 # The lines above will take approx. 1-2 minutes each, and will generate a shader family for every
 # shader in samples/300es or samples/100:
