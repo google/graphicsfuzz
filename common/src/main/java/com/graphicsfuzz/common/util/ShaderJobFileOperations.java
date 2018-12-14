@@ -21,6 +21,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -129,27 +130,35 @@ public class ShaderJobFileOperations {
 
   }
 
-  @SuppressWarnings("RedundantIfStatement")
   public boolean areShadersValid(
       File shaderJobFile,
       boolean throwExceptionOnInvalid)
       throws IOException, InterruptedException {
-    assertIsShaderJobFile(shaderJobFile);
-
-    String shaderJobFileNoExtension = FilenameUtils.removeExtension(shaderJobFile.toString());
-
-    final File fragmentShaderFile = new File(shaderJobFileNoExtension + ".frag");
-    final File vertexShaderFile = new File(shaderJobFileNoExtension + ".vert");
-    if (!isFile(fragmentShaderFile) && !isFile(vertexShaderFile)) {
-      throw new IllegalStateException("No frag or vert shader found for " + shaderJobFile);
+    for (ShaderKind shaderKind : ShaderKind.values()) {
+      //noinspection deprecation: OK from within this class.
+      final File shaderFile = getUnderlyingShaderFile(shaderJobFile, shaderKind);
+      if (shaderFile.isFile() && !shaderIsValid(shaderFile, throwExceptionOnInvalid)) {
+        return false;
+      }
     }
-    if (isFile(fragmentShaderFile)
-        && !shaderIsValid(fragmentShaderFile, throwExceptionOnInvalid)) {
-      return false;
-    }
-    if (isFile(vertexShaderFile)
-        && !shaderIsValid(vertexShaderFile, throwExceptionOnInvalid)) {
-      return false;
+    return true;
+  }
+
+  public boolean areShadersValidShaderTranslator(
+      File shaderJobFile,
+      boolean throwExceptionOnInvalid)
+      throws IOException, InterruptedException {
+    for (ShaderKind shaderKind : ShaderKind.values()) {
+      //noinspection deprecation: OK from within this class.
+      final File shaderFile = getUnderlyingShaderFile(shaderJobFile, shaderKind);
+      if (shaderFile.isFile()) {
+        final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion
+            .getGlslVersionFromFirstTwoLines(getFirstTwoLinesOfShader(shaderJobFile, shaderKind));
+        if (!shaderIsValidShaderTranslator(shaderFile, shadingLanguageVersion,
+            throwExceptionOnInvalid)) {
+          return false;
+        }
+      }
     }
     return true;
   }
@@ -399,6 +408,10 @@ public class ShaderJobFileOperations {
 
   public void mkdir(File directory) throws IOException {
     Files.createDirectories(directory.toPath());
+  }
+
+  public void forceMkdir(File outputDir) throws IOException {
+    FileUtils.forceMkdir(outputDir);
   }
 
   public void moveFile(File srcFile, File destFile, boolean replaceExisting) throws IOException {
@@ -1041,14 +1054,51 @@ public class ShaderJobFileOperations {
     }
   }
 
-  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   private boolean shaderIsValid(
       File shaderFile,
       boolean throwExceptionOnValidationError)
       throws IOException, InterruptedException {
-    ExecResult res = ToolHelper.runValidatorOnShader(ExecHelper.RedirectType.TO_LOG, shaderFile);
+    return checkValidationResult(ToolHelper.runValidatorOnShader(ExecHelper.RedirectType.TO_BUFFER,
+        shaderFile), shaderFile.getName(), throwExceptionOnValidationError);
+  }
+
+  private boolean shaderIsValidShaderTranslator(
+      File shaderFile,
+      ShadingLanguageVersion shadingLanguageVersion,
+      boolean throwExceptionOnValidationError)
+      throws IOException, InterruptedException {
+    if (!ShaderTranslatorShadingLanguageVersionSupport.isVersionSupported(shadingLanguageVersion)) {
+      // Shader translator does not support this shading language version, so just say that the
+      // shader is valid.
+      return true;
+    }
+    final ExecResult shaderTranslatorResult = ToolHelper.runShaderTranslatorOnShader(
+        ExecHelper.RedirectType.TO_BUFFER,
+        shaderFile,
+        ShaderTranslatorShadingLanguageVersionSupport
+            .getShaderTranslatorArgument(shadingLanguageVersion));
+    if (isMemoryExhaustedError(shaderTranslatorResult)) {
+      return true;
+    }
+    return checkValidationResult(
+        shaderTranslatorResult,
+        shaderFile.getName(),
+        throwExceptionOnValidationError);
+  }
+
+  // TODO(171): This is a workaround for an issue where shader_translator reports memory exhaustion.
+  // If the issue in shader_translator can be fixed, we should get rid of this check.
+  private boolean isMemoryExhaustedError(ExecResult shaderTranslatorResult) {
+    return shaderTranslatorResult.res != 0
+        && shaderTranslatorResult.stdout.toString().contains("memory exhausted");
+  }
+
+  private boolean checkValidationResult(ExecResult res,
+                                        String filename, boolean throwExceptionOnValidationError) {
     if (res.res != 0) {
-      LOGGER.warn("Shader {} failed to validate.", shaderFile.getName());
+      LOGGER.warn("Shader {} failed to validate.  Validator stdout: " + res.stdout + ".  "
+              + "Validator stderr: " + res.stderr,
+          filename);
       if (throwExceptionOnValidationError) {
         throw new RuntimeException("Validation failed.");
       }
@@ -1056,6 +1106,7 @@ public class ShaderJobFileOperations {
     }
     return true;
   }
+
 
   /**
    * This method is quite complicated compared to others in this class,

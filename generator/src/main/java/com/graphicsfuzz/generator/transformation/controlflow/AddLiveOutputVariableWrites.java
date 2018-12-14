@@ -49,19 +49,24 @@ public class AddLiveOutputVariableWrites extends AddOutputVariableWrites {
   public static final String NAME = "add_live_output_variable_writes";
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
         ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
     List<IInjectionPoint> injectionPoints = new InjectionPoints(tu, generator, x -> true)
           .getInjectionPoints(
                 probabilities::addLiveFragColorWrites);
+    // Records whether any writes were added.
+    boolean success = false;
     for (IInjectionPoint injectionPoint : injectionPoints) {
       if (hasAvailableOutVars(injectionPoint, shadingLanguageVersion, generationParams)) {
         injectionPoint.inject(prepareFragColorWrite(injectionPoint, generator,
             shadingLanguageVersion,
             generationParams));
+        // A write was added.
+        success = true;
       }
     }
+    return success;
   }
 
   private BlockStmt prepareFragColorWrite(IInjectionPoint injectionPoint, IRandom generator,

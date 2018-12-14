@@ -80,7 +80,7 @@ public class Generate {
           .description("Generate a shader.");
 
     // Required arguments
-    parser.addArgument("reference_json")
+    parser.addArgument("reference-json")
         .help("Input reference shader json file.")
         .type(File.class);
 
@@ -88,7 +88,7 @@ public class Generate {
           .help("Path of folder of donor shaders.")
           .type(File.class);
 
-    parser.addArgument("glsl_version")
+    parser.addArgument("glsl-version")
           .help("Version of GLSL to target.")
           .type(String.class);
 
@@ -116,52 +116,51 @@ public class Generate {
           .help("Try to generate small shaders.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--avoid_long_loops")
-          .help("During live code injection, reduce the chances of injecting lengthy loops by "
-                + "ensuring that loops do not appear *directly* in the code being injected; they "
-                + "may still appear in functions called by the injected code (avoidance of this "
-                + "could be added if needed).")
+    parser.addArgument("--allow-long-loops")
+          .help("During live code injection, care is taken by default to avoid loops with "
+              + "very long or infinite iteration counts.  This option disables this care so that "
+              + "loops may end up being very long running.")
           .action(Arguments.storeTrue());
 
     parser.addArgument("--disable")
           .help("Disable a given series of transformations.")
           .type(String.class);
 
-    parser.addArgument("--enable_only")
-        .help("Disable all but the given series of transformations.")
-        .type(String.class);
+    parser.addArgument("--enable-only")
+          .help("Disable all but the given series of transformations.")
+          .type(String.class);
 
-    parser.addArgument("--aggressively_complicate_control_flow")
+    parser.addArgument("--aggressively-complicate-control-flow")
           .help("Make control flow very complicated.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--multi_pass")
-          .help("Apply multiple transformation passes, each with low probablity.")
+    parser.addArgument("--single-pass")
+          .help("Do not apply any individual transformation pass more than once.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--replace_float_literals")
+    parser.addArgument("--replace-float-literals")
           .help("Replace float literals with uniforms.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--generate_uniform_bindings")
-        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
-            + "compatibility.")
-        .action(Arguments.storeTrue());
+    parser.addArgument("--generate-uniform-bindings")
+          .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
+              + "compatibility.")
+          .action(Arguments.storeTrue());
 
-    parser.addArgument("--max_uniforms")
-        .help("Ensure that generated shaders have no more than the given number of uniforms; "
-            + "required for Vulkan compatibility.")
-        .setDefault(0)
-        .type(Integer.class);
+    parser.addArgument("--max-uniforms")
+          .help("Ensure that generated shaders have no more than the given number of uniforms; "
+              + "required for Vulkan compatibility.")
+          .setDefault(0)
+          .type(Integer.class);
 
-    parser.addArgument("--no_injection_switch")
-        .help("Do not generate the injectionSwitch uniform.")
-        .action(Arguments.storeTrue());
+    parser.addArgument("--no-injection-switch")
+          .help("Do not generate the injectionSwitch uniform.")
+          .action(Arguments.storeTrue());
 
     // Hidden option; for developer debugging.
-    parser.addArgument("--write_probabilities")
-        .help(Arguments.SUPPRESS)
-        .action(Arguments.storeTrue());
+    parser.addArgument("--write-probabilities")
+          .help(Arguments.SUPPRESS)
+          .action(Arguments.storeTrue());
   }
 
   /**
@@ -171,9 +170,10 @@ public class Generate {
    * @return Details of the transformations that were applied.
    */
   public static StringBuilder generateVariant(ShaderJob shaderJob,
-                                              GeneratorArguments args) {
+                                              GeneratorArguments args,
+                                              int seed) {
     final StringBuilder result = new StringBuilder();
-    final IRandom random = new RandomWrapper(args.getSeed());
+    final IRandom random = new RandomWrapper(seed);
 
     if (args.getAddInjectionSwitch()) {
       for (TranslationUnit shader : shaderJob.getShaders()) {
@@ -204,6 +204,34 @@ public class Generate {
     }
 
     return result;
+
+  }
+
+  public static void generateVariant(ShaderJobFileOperations fileOps,
+                                     File referenceShaderJobFile,
+                                     File outputShaderJobFile,
+                                     GeneratorArguments generatorArguments,
+                                     int seed,
+                                     boolean writeProbabilities)
+      throws IOException, ParseTimeoutException {
+    // This is mutated into the variant.
+    final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceShaderJobFile);
+
+    final StringBuilder generationInfo = generateVariant(
+        variantShaderJob,
+        generatorArguments,
+        seed);
+
+    fileOps.writeShaderJobFile(
+        variantShaderJob,
+        outputShaderJobFile);
+
+    if (writeProbabilities) {
+      fileOps.writeAdditionalInfo(
+          outputShaderJobFile,
+          ".prob",
+          generationInfo.toString());
+    }
 
   }
 
@@ -240,15 +268,15 @@ public class Generate {
           random,
           generationParams,
           probabilities));
-    } else if (args.getMultiPass()) {
-      result.append(applyTransformationsMultiPass(
+    } else if (args.getSinglePass()) {
+      result.append(applyTransformationsSinglePass(
           args,
           shaderToTransform,
           random,
           generationParams,
           probabilities));
     } else {
-      result.append(applyTransformationsRandomly(
+      result.append(applyTransformationsMultiPass(
           args,
           shaderToTransform,
           random,
@@ -279,49 +307,33 @@ public class Generate {
 
   public static void mainHelper(String[] args)
       throws IOException, ParseTimeoutException, ArgumentParserException {
-
     final Namespace ns = parse(args);
+    generateVariant(
+        new ShaderJobFileOperations(),
+        ns.get("reference_json"),
+        ns.get("output"),
+        getGeneratorArguments(ns),
+        ns.getInt("seed"),
+        ns.getBoolean("write_probabilities"));
+  }
 
+  public static GeneratorArguments getGeneratorArguments(Namespace ns) {
     final EnabledTransformations enabledTransformations
-          = getTransformationDisablingFlags(ns);
+        = getTransformationDisablingFlags(ns);
     final ShadingLanguageVersion shadingLanguageVersion = ns.get("webgl")
         ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
         : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
-
-    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-
-    final File referenceFile = ns.get("reference_json");
-
-    // This is mutated into the variant.
-    final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceFile);
-    final StringBuilder generationInfo = generateVariant(
-        variantShaderJob,
-        new GeneratorArguments(shadingLanguageVersion,
-              ns.get("seed"),
-              ns.getBoolean("small"),
-              ns.getBoolean("avoid_long_loops"),
-              ns.getBoolean("multi_pass"),
-              ns.getBoolean("aggressively_complicate_control_flow"),
-              ns.getBoolean("replace_float_literals"),
-              ns.get("donors"),
-              ns.get("generate_uniform_bindings"),
-              ns.get("max_uniforms"),
-              enabledTransformations,
-              !ns.getBoolean("no_injection_switch")));
-
-    final File outputShaderJobFile = ns.get("output");
-
-    fileOps.writeShaderJobFile(
-        variantShaderJob,
-        outputShaderJobFile);
-
-    if (ns.getBoolean("write_probabilities")) {
-      fileOps.writeAdditionalInfo(
-          outputShaderJobFile,
-          ".prob",
-          generationInfo.toString());
-    }
-
+    return new GeneratorArguments(shadingLanguageVersion,
+        ns.getBoolean("small"),
+        ns.getBoolean("allow_long_loops"),
+        ns.getBoolean("single_pass"),
+        ns.getBoolean("aggressively_complicate_control_flow"),
+        ns.getBoolean("replace_float_literals"),
+        ns.get("donors"),
+        ns.get("generate_uniform_bindings"),
+        ns.get("max_uniforms"),
+        enabledTransformations,
+        !ns.getBoolean("no_injection_switch"));
   }
 
   public static EnabledTransformations getTransformationDisablingFlags(Namespace ns) {
@@ -347,10 +359,10 @@ public class Generate {
       return TransformationProbabilities.closeTo(generator,
             TransformationProbabilities.AGGRESSIVE_CONTROL_FLOW);
     }
-    if (args.getMultiPass()) {
-      return TransformationProbabilities.randomProbabilitiesMultiPass(generator);
+    if (args.getSinglePass()) {
+      return TransformationProbabilities.randomProbabilitiesSinglePass(generator);
     }
-    return TransformationProbabilities.randomProbabilitiesSinglePass(generator);
+    return TransformationProbabilities.randomProbabilitiesMultiPass(generator);
   }
 
   private static String applyTransformationsMultiPass(GeneratorArguments args,
@@ -382,23 +394,29 @@ public class Generate {
       transformations = toKeep;
     }
 
-    List<ITransformation> done = new ArrayList<>();
+    List<ITransformation> nextRoundTransformations = new ArrayList<>();
     String result = "";
-    while (!shaderLargeEnough(reference, generator)) {
+    // Keep applying transformations until all transformations cease to be effective, or
+    // we get a large enough shader.
+    while (!transformations.isEmpty() && !shaderLargeEnough(reference, generator)) {
       ITransformation transformation = transformations.remove(generator.nextInt(
             transformations.size()));
       result += transformation.getName() + "\n";
-      transformation.apply(reference, probabilities, args.getShadingLanguageVersion(),
+      if (transformation.apply(reference, probabilities, args.getShadingLanguageVersion(),
             generator.spawnChild(),
-            generationParams);
-      // Keep the size down by stripping unused stuff.
-      StripUnusedFunctions.strip(reference);
-      StripUnusedGlobals.strip(reference);
-      assert canTypeCheckWithoutFailure(reference, args.getShadingLanguageVersion());
-      done.add(transformation);
+            generationParams)) {
+        // Keep the size down by stripping unused stuff.
+        StripUnusedFunctions.strip(reference);
+        StripUnusedGlobals.strip(reference);
+        assert canTypeCheckWithoutFailure(reference, args.getShadingLanguageVersion());
+
+        // Only if the transformation applied successfully (i.e., made a change), do we add it
+        // to the list of transformations to be applied next round.
+        nextRoundTransformations.add(transformation);
+      }
       if (transformations.isEmpty()) {
-        transformations = done;
-        done = new ArrayList<>();
+        transformations = nextRoundTransformations;
+        nextRoundTransformations = new ArrayList<>();
       }
     }
     return result;
@@ -427,7 +445,7 @@ public class Generate {
 
   }
 
-  private static String applyTransformationsRandomly(
+  private static String applyTransformationsSinglePass(
         GeneratorArguments args,
         TranslationUnit reference,
         IRandom generator,
@@ -472,7 +490,7 @@ public class Generate {
     }
     if (flags.isEnabledLive()) {
       result.add(new DonateLiveCode(probabilities::donateLiveCodeAtStmt, args.getDonorsFolder(),
-              generationParams, args.getAvoidLongLoops()));
+              generationParams, args.getAllowLongLoops()));
     }
     if (flags.isEnabledMutate()) {
       result.add(new MutateExpressions());

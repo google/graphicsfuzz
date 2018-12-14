@@ -126,23 +126,19 @@ We can create some shader families from our provided sample shader jobs as follo
 # Copy the sample shaders into the current directory:
 cp -r graphicsfuzz-1.0/shaders/samples samples
 
-# Create a work directory to store our generated shader families.
-# The directory structure will allow the server
-# to find the shaders later.
-mkdir -p work/shaderfamilies
-
 # Generate several shader families from the set of sample shaders.
+# Placing the generated shaders under work/shaderfamilies will allow the server to find the shaders later.
 # Synopsis:
-# glsl-generate [options] donors references num_variants glsl_version prefix output_folder
+# glsl-generate [options] references donors num_variants glsl_version prefix output_folder
 
 # Generate some GLSL version 300 es shaders.
-glsl-generate --max_bytes 500000 --multi_pass samples/donors samples/300es 10 "300 es" family_300es work/shaderfamilies
+glsl-generate samples/300es samples/donors 10 "300 es" family_300es work/shaderfamilies
 
 # Generate some GLSL version 100 shaders.
-glsl-generate --max_bytes 500000 --multi_pass samples/donors samples/100 10 "100" family_100 work/shaderfamilies
+glsl-generate samples/100 samples/donors 10 "100" family_100 work/shaderfamilies
 
 # Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --max_bytes 500000 --multi_pass --generate_uniform_bindings --max_uniforms 10 samples/donors samples/310es 10 "310 es" family_vulkan work/shaderfamilies
+glsl-generate --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 "310 es" family_vulkan work/shaderfamilies
 
 # The lines above will take approx. 1-2 minutes each, and will generate a shader family for every
 # shader in samples/300es or samples/100:

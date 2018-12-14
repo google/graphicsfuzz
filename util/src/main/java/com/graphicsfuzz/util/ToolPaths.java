@@ -104,4 +104,19 @@ public class ToolPaths {
     return jarDir.getParentFile().toString();
   }
 
+  public static String getShadersDirectory() {
+    File jarDir = getJarDirectory();
+
+    if (isRunningFromIde(jarDir)) {
+      return Paths.get(
+          getSourceRoot(jarDir),
+          "shaders",
+          "src",
+          "main",
+          "glsl").toString();
+    }
+
+    return Paths.get(getInstallDirectory(), "shaders").toString();
+  }
+
 }

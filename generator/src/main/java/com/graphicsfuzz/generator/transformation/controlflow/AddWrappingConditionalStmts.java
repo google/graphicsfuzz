@@ -61,7 +61,7 @@ public class AddWrappingConditionalStmts implements ITransformation {
   private static final int NUM_SORTS_OF_WRAP = 4;
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
         ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
     List<IInjectionPoint> injectionPoints = new InjectionPoints(tu, generator,
@@ -77,6 +77,7 @@ public class AddWrappingConditionalStmts implements ITransformation {
       }
       injectionPoint.replaceNext(wrapped);
     }
+    return !injectionPoints.isEmpty();
   }
 
   private static boolean suitableForWrapping(IInjectionPoint injectionPoint) {

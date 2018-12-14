@@ -52,7 +52,7 @@ public class GenerateAndRunShaders {
           .help("Path of folder of donor shaders.")
           .type(File.class);
 
-    parser.addArgument("output_dir")
+    parser.addArgument("output-dir")
           .help("Output directory.")
           .type(File.class);
 
@@ -64,18 +64,18 @@ public class GenerateAndRunShaders {
           .help("Worker name.")
           .type(String.class);
 
-    parser.addArgument("glsl_version")
+    parser.addArgument("glsl-version")
           .help("Version of GLSL to target.")
           .type(String.class);
 
     // Optional arguments
     Generate.addGeneratorCommonArguments(parser);
 
-    parser.addArgument("--ignore_crash_strings")
+    parser.addArgument("--ignore-crash-strings")
         .help("File containing crash strings to ignore, one per line.")
         .type(File.class);
 
-    parser.addArgument("--only_variants")
+    parser.addArgument("--only-variants")
         .help("Only run variant shaders (so sacrifice finding wrong images in favour of crashes.")
         .type(Boolean.class)
         .action(Arguments.storeTrue());

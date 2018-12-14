@@ -22,10 +22,9 @@ import java.io.File;
 public class GeneratorArguments {
 
   private final ShadingLanguageVersion shadingLanguageVersion;
-  private final int seed;
   private final boolean small;
-  private final boolean avoidLongLoops;
-  private final boolean multiPass;
+  private final boolean allowLongLoops;
+  private final boolean singlePass;
   private final boolean aggressivelyComplicateControlFlow;
   private final boolean replaceFloatLiterals;
   private final File donorsFolder;
@@ -36,10 +35,9 @@ public class GeneratorArguments {
 
   public GeneratorArguments(
         ShadingLanguageVersion shadingLanguageVersion,
-        int seed,
         boolean small,
-        boolean avoidLongLoops,
-        boolean multiPass,
+        boolean allowLongLoops,
+        boolean singlePass,
         boolean aggressivelyComplicateControlFlow,
         boolean replaceFloatLiterals,
         File donorsFolder,
@@ -48,10 +46,9 @@ public class GeneratorArguments {
         EnabledTransformations enabledTransformations,
         boolean addInjectionSwitch) {
     this.shadingLanguageVersion = shadingLanguageVersion;
-    this.seed = seed;
     this.small = small;
-    this.avoidLongLoops = avoidLongLoops;
-    this.multiPass = multiPass;
+    this.allowLongLoops = allowLongLoops;
+    this.singlePass = singlePass;
     this.aggressivelyComplicateControlFlow = aggressivelyComplicateControlFlow;
     this.replaceFloatLiterals = replaceFloatLiterals;
     this.donorsFolder = donorsFolder;
@@ -65,20 +62,16 @@ public class GeneratorArguments {
     return shadingLanguageVersion;
   }
 
-  public int getSeed() {
-    return seed;
-  }
-
   public boolean getSmall() {
     return small;
   }
 
-  public boolean getAvoidLongLoops() {
-    return avoidLongLoops;
+  public boolean getAllowLongLoops() {
+    return allowLongLoops;
   }
 
-  public boolean getMultiPass() {
-    return multiPass;
+  public boolean getSinglePass() {
+    return singlePass;
   }
 
   public boolean getAggressivelyComplicateControlFlow() {
@@ -118,8 +111,8 @@ public class GeneratorArguments {
     final StringBuilder sb = new StringBuilder();
     sb.append("shadingLanguageVersion: " + shadingLanguageVersion + "\n");
     sb.append("small: " + small + "\n");
-    sb.append("avoidLongLoops: " + avoidLongLoops + "\n");
-    sb.append("multiPass: " + multiPass + "\n");
+    sb.append("allowLongLoops: " + allowLongLoops + "\n");
+    sb.append("singlePass: " + singlePass + "\n");
     sb.append("aggressivelyComplicateControlFlow: " + aggressivelyComplicateControlFlow + "\n");
     sb.append("replaceFloatLiterals: " + replaceFloatLiterals + "\n");
     sb.append("donorsFolder: " + donorsFolder.getName() + "\n");

@@ -118,13 +118,19 @@ public interface ShadingLanguageVersion {
     throw new RuntimeException("Unknown version string " + versionString);
   }
 
+  static boolean isWebGlCompatible(String versionString) {
+    return allWebGlSlVersions().stream().map(item -> item.getVersionString())
+        .anyMatch(item -> item.equals(versionString));
+  }
+
   static ShadingLanguageVersion webGlFromVersionString(String versionString) {
-    for (ShadingLanguageVersion shadingLanguageVersion : allWebGlSlVersions()) {
-      if (shadingLanguageVersion.getVersionString().equals(versionString)) {
-        return shadingLanguageVersion;
-      }
+    if (!isWebGlCompatible(versionString)) {
+      throw new RuntimeException("Unknown WebGL shading language version string " + versionString);
     }
-    throw new RuntimeException("Unknown WebGL shading language version string " + versionString);
+    return allWebGlSlVersions()
+        .stream()
+        .filter(item -> item.getVersionString().equals(versionString))
+        .findAny().get();
   }
 
   String getVersionString();

@@ -52,7 +52,7 @@ public class SplitForLoops implements ITransformation {
   private int loopVariableRenameCounter = 0;
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
       ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
     List<IInjectionPoint> injectionPoints = new InjectionPoints(tu, generator,
@@ -63,6 +63,7 @@ public class SplitForLoops implements ITransformation {
       assert suitableForSplitting(injectionPoint);
       injectionPoint.replaceNext(splitForLoop(injectionPoint, generator));
     }
+    return !injectionPoints.isEmpty();
   }
 
   private Stmt splitForLoop(IInjectionPoint injectionPoint, IRandom generator) {

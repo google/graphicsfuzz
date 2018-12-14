@@ -80,10 +80,9 @@ public class ShaderProducer implements Runnable {
     final GeneratorArguments generatorArguments =
         new GeneratorArguments(
             shadingLanguageVersion,
-            generator.nextInt(Integer.MAX_VALUE),
             ns.get("small"),
-            ns.get("avoid_long_loops"),
-            ns.get("multi_pass"),
+            ns.get("allow_long_loops"),
+            ns.get("single_pass"),
             ns.get("aggressively_complicate_control_flow"),
             ns.get("replace_float_literals"),
             donorsDir,
@@ -111,7 +110,7 @@ public class ShaderProducer implements Runnable {
             generatorArguments.getReplaceFloatLiterals(),
             generatorArguments.getMaxUniforms(),
             generatorArguments.getGenerateUniformBindings());
-        Generate.generateVariant(variantShaderJob, generatorArguments);
+        Generate.generateVariant(variantShaderJob, generatorArguments, ns.getInt("seed"));
         try {
           queue.put(new ImmutablePair<>(referenceShaderJob, variantShaderJob));
         } catch (InterruptedException exception) {
