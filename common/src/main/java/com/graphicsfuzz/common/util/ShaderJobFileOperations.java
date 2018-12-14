@@ -410,6 +410,10 @@ public class ShaderJobFileOperations {
     Files.createDirectories(directory.toPath());
   }
 
+  public void forceMkdir(File outputDir) throws IOException {
+    FileUtils.forceMkdir(outputDir);
+  }
+
   public void moveFile(File srcFile, File destFile, boolean replaceExisting) throws IOException {
     if (replaceExisting) {
       Files.move(srcFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);

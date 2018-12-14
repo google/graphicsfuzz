@@ -86,10 +86,12 @@ public class GlslGenerate {
     final boolean verbose = ns.getBoolean("verbose");
     final int seed = ns.getInt("seed");
 
-    FileUtils.forceMkdir(outputDir);
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-    final File[] referenceShaderJobFiles = referencesDir.listFiles((dir, name) -> name.endsWith(
-        ".json"));
+    fileOps.forceMkdir(outputDir);
+
+    final File[] referenceShaderJobFiles =
+        fileOps.listShaderJobFiles(referencesDir, (dir, name) -> true);
     if (referenceShaderJobFiles.length == 0) {
       LOGGER.warn("Warning: no reference shader jobs found in " + referencesDir.getAbsolutePath()
           + ".");

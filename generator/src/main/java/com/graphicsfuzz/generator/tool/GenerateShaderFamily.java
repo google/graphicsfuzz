@@ -155,9 +155,9 @@ public class GenerateShaderFamily {
       LOGGER.info("Using donor folder " + donorsDir.getAbsolutePath());
     }
 
-    FileUtils.forceMkdir(outputDir);
-
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+    fileOps.forceMkdir(outputDir);
 
     // Prepare reference shaders.
     final File preparedReferenceShaderJob = new File(outputDir, "reference.json");
