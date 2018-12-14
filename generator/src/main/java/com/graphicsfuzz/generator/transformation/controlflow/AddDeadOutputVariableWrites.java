@@ -41,19 +41,24 @@ public class AddDeadOutputVariableWrites extends AddOutputVariableWrites {
   public static final String NAME = "add_dead_output_variable_writes";
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
         ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
     List<IInjectionPoint> injectionPoints = new InjectionPoints(tu, generator, x -> true)
           .getInjectionPoints(
                 probabilities::addDeadFragColorWrites);
+    // Records whether any dead writes were added.
+    boolean success = false;
     for (IInjectionPoint injectionPoint : injectionPoints) {
       if (hasAvailableOutVars(injectionPoint, shadingLanguageVersion, generationParams)) {
         injectionPoint.inject(prepareFragColorWrite(injectionPoint, generator,
             shadingLanguageVersion,
             generationParams));
+        // A dead write was added.
+        success = true;
       }
     }
+    return success;
   }
 
   private IfStmt prepareFragColorWrite(IInjectionPoint injectionPoint, IRandom generator,

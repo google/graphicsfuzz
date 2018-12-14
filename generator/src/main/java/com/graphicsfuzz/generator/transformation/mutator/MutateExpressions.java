@@ -30,12 +30,13 @@ public class MutateExpressions implements ITransformation {
   public static final String NAME = "mutate_expressions";
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
         ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
         GenerationParams generationParams) {
     List<IMutationPoint> mutationPoints = new MutationPoints(new Typer(tu, shadingLanguageVersion),
         tu, shadingLanguageVersion, generator, generationParams).getMutationPoints(probabilities);
     mutationPoints.forEach(IMutationPoint::applyMutation);
+    return !mutationPoints.isEmpty();
   }
 
   @Override

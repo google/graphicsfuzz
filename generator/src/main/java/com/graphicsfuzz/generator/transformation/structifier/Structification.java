@@ -31,7 +31,7 @@ public class Structification implements ITransformation {
   private IdGenerator idGenerator = new IdGenerator();
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
       ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
 
@@ -41,6 +41,7 @@ public class Structification implements ITransformation {
     for (StructificationOpportunity so : structificationOpportunities) {
       so.apply(idGenerator, generator, generationParams);
     }
+    return !structificationOpportunities.isEmpty();
   }
 
   @Override

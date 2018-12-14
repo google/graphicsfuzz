@@ -248,7 +248,7 @@ public class GenerateTest {
 
   @Test
   public void testValidityOfVertexShaderJumpTransformations() throws Exception {
-    testValidityOfVertexShaderTransformations(Arrays.asList("--enable_only", "jump"), 5);
+    testValidityOfVertexShaderTransformations(Arrays.asList("--enable-only", "jump"), 5);
   }
 
   private void testValidityOfVertexShaderTransformations(List<String> extraArgs, int repeatCount) throws IOException, InterruptedException, ParseTimeoutException, ArgumentParserException {
@@ -351,7 +351,7 @@ public class GenerateTest {
     final File output = temporaryFolder.newFile("output.json");
 
     Generate.mainHelper(new String[] { json.getAbsolutePath(), donors.getAbsolutePath(), "100",
-        output.getAbsolutePath(), "--no_injection_switch", "--seed", "0" });
+        output.getAbsolutePath(), "--no-injection-switch", "--seed", "0" });
 
     final ShaderJob shaderJob = fileOps.readShaderJobFile(output);
 

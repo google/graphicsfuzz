@@ -17,8 +17,12 @@
 package com.graphicsfuzz.common.glslversion;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
+import com.graphicsfuzz.common.util.ShaderTranslatorShadingLanguageVersionSupport;
+import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
@@ -105,48 +109,58 @@ public class ShadingLanguageVersionTest {
       throws IOException, InterruptedException {
     final boolean expectedInvalid = !shadingLanguageVersion.supportedDoStmt();
     final String program = programWithDoStmt(shadingLanguageVersion).toString();
-    checkValidity(expectedInvalid, program);
+    checkValidity(expectedInvalid, program, shadingLanguageVersion);
   }
 
   private void checkSwitchStmtSupport(ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
     final boolean expectedInvalid = !shadingLanguageVersion.supportedSwitchStmt();
     final String program = programWithSwitchStmt(shadingLanguageVersion).toString();
-    checkValidity(expectedInvalid, program);
+    checkValidity(expectedInvalid, program, shadingLanguageVersion);
   }
 
   private void checkUnsignedSupport(ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
     final boolean expectedInvalid = !shadingLanguageVersion.supportedUnsigned();
     final String program = programWithUnsigned(shadingLanguageVersion).toString();
-    checkValidity(expectedInvalid, program);
+    checkValidity(expectedInvalid, program, shadingLanguageVersion);
   }
 
   private void checkInitializersOfConstMustBeConst(ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
     final boolean expectedInvalid = shadingLanguageVersion.initializersOfConstMustBeConst();
     final String program = constInitializedWithNonConst(shadingLanguageVersion).toString();
-    checkValidity(expectedInvalid, program);
+    checkValidity(expectedInvalid, program, shadingLanguageVersion);
   }
 
   private void checkGlobalVariableInitializersMustBeConst(ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
     final boolean expectedInvalid = shadingLanguageVersion.globalVariableInitializersMustBeConst();
     final String program = globalWithNonConstInitializer(shadingLanguageVersion).toString();
-    checkValidity(expectedInvalid, program);
+    checkValidity(expectedInvalid, program, shadingLanguageVersion);
   }
 
-  private void checkValidity(boolean expectedInvalid, String program)
+  private void checkValidity(boolean expectedInvalid, String program,
+                             ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
     final File shader = temporaryFolder.newFile("temp.frag");
     FileUtils.writeStringToFile(shader,
         program,
         StandardCharsets.UTF_8);
-    final ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, shader);
+    final boolean glslangValidatorSaysOk = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
+        shader).res == 0;
+    final boolean shaderTranslatorSaysOk =
+        !ShaderTranslatorShadingLanguageVersionSupport.isVersionSupported(shadingLanguageVersion)
+          || ToolHelper.runShaderTranslatorOnShader(RedirectType.TO_BUFFER, shader,
+              ShaderTranslatorShadingLanguageVersionSupport
+                  .getShaderTranslatorArgument(shadingLanguageVersion)).res == 0;
     if (expectedInvalid) {
-      assertNotEquals(0, result.res);
+      // If the shader is supposed to be invalid, at least one of the tools should say so
+      // (they sometimes differ in their strictness)
+      assertFalse(shaderTranslatorSaysOk && glslangValidatorSaysOk);
     } else {
-      assertEquals(0, result.res);
+      // If it is supposed to be valid, both tools should say so.
+      assertTrue(shaderTranslatorSaysOk && glslangValidatorSaysOk);
     }
     shader.delete();
   }

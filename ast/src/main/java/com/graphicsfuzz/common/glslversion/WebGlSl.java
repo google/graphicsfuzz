@@ -35,4 +35,10 @@ final class WebGlSl extends CompositeShadingLanguageVersion {
     return true;
   }
 
+  @Override
+  public boolean supportedDoStmt() {
+    // do ... while loops are not supported in WebGL 1.0
+    return false;
+  }
+
 }

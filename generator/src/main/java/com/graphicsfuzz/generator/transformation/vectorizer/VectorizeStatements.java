@@ -29,13 +29,14 @@ public class VectorizeStatements implements ITransformation {
   public static final String NAME = "vectorize_statements";
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
       ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
     List<VectorizationOpportunity> vectorizationOpportunities =
           new VectorizationOpportunities(tu, shadingLanguageVersion, generator)
                 .getOpportunities(probabilities);
     vectorizationOpportunities.forEach(VectorizationOpportunity::apply);
+    return !vectorizationOpportunities.isEmpty();
   }
 
   @Override

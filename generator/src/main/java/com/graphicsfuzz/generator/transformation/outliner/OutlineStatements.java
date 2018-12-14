@@ -35,7 +35,7 @@ public class OutlineStatements implements ITransformation {
   }
 
   @Override
-  public void apply(TranslationUnit tu, TransformationProbabilities probabilities,
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
         ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
     List<OutlineStatementOpportunity> outlineStatementOpportunities =
@@ -44,6 +44,7 @@ public class OutlineStatements implements ITransformation {
     for (OutlineStatementOpportunity op : outlineStatementOpportunities) {
       op.apply(idGenerator);
     }
+    return !outlineStatementOpportunities.isEmpty();
   }
 
   @Override
