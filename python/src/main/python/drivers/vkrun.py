@@ -20,9 +20,11 @@ import os
 import shutil
 import subprocess
 import time
+from typing import Union, IO, Any
 
 ################################################################################
 # Constants
+
 
 LOGFILE = 'vklog.txt'
 TIMEOUT_RUN = 30
@@ -32,7 +34,7 @@ NUM_RENDER = 3
 # Common
 
 
-def prepare_shader(shader):
+def prepare_shader(shader: str):
     """
     Translates a shader to binary SPIR-V.
 
@@ -44,23 +46,22 @@ def prepare_shader(shader):
     :param shader: e.g. shader.frag, shader.vert, shader.frag.asm
     :return: the output .spv file
     """
-    assert(os.path.exists(shader))
-
-    # Translate shader to spv
+    assert(os.path.isfile(shader))
 
     # noinspection PyUnusedLocal
     output = ''
-    if shader[-5:] == '.frag' or shader[-5:] == '.vert':
+    if shader.endswith('.frag') or shader.endswith('.vert'):
         output = shader + '.spv'
         cmd = 'glslangValidator -V ' + shader + ' -o ' + output
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
-    elif shader[-9:] == '.frag.asm' or shader[-9:] == '.vert.asm':
-        output = shader.replace('.asm', '.spv')
+    elif shader.endswith('.frag.asm') or shader.endswith('.vert.asm'):
+        output = shader[:-4] + '.spv'
         cmd = 'spirv-as ' + shader + ' -o ' + output
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
-    else:
-        assert(shader[-4:] == '.spv')
+    elif shader[-4:] == '.spv':
         output = shader
+    else:
+        assert False, 'unexpected shader extension: {}'.format(shader)
 
     return output
 
@@ -69,14 +70,14 @@ def prepare_shader(shader):
 
 
 def run_linux(vert, frag, json, skip_render):
-    assert(os.path.exists(vert))
-    assert(os.path.exists(frag))
-    assert(os.path.exists(json))
+    assert(os.path.isfile(vert))
+    assert(os.path.isfile(frag))
+    assert(os.path.isfile(json))
 
     if skip_render:
         with open('SKIP_RENDER', 'w') as f:
             f.write('SKIP_RENDER')
-    elif os.path.exists('SKIP_RENDER'):
+    elif os.path.isfile('SKIP_RENDER'):
         os.remove('SKIP_RENDER')
 
     cmd = 'vkworker ' + vert + ' ' + frag + ' ' + json + ' > ' + LOGFILE
@@ -117,7 +118,7 @@ ANDROID_APP = 'com.graphicsfuzz.vkworker'
 TIMEOUT_APP = 30
 
 
-def adb(adb_args):
+def adb_helper(adb_args, check, stdout: Union[None, int, IO[Any]]):
 
     adb_cmd = 'adb ' + adb_args
 
@@ -125,29 +126,37 @@ def adb(adb_args):
         p = subprocess.run(
             adb_cmd,
             shell=True,
+            check=check,
             timeout=TIMEOUT_RUN,
-            stdout=subprocess.PIPE,
+            stdout=stdout,
             universal_newlines=True)
+        return p
 
     except subprocess.TimeoutExpired as err:
         print('ERROR: adb command timed out: ' + err.cmd)
-        return err
-    else:
-        return p
+        raise err
+
+
+def adb_check(adb_args, stdout: Union[None, int, IO[Any]] = subprocess.PIPE):
+    return adb_helper(adb_args, True, stdout)
+
+
+def adb_can_fail(adb_args, stdout: Union[None, int, IO[Any]] = subprocess.PIPE):
+    return adb_helper(adb_args, False, stdout)
 
 
 def run_android(vert, frag, json, skip_render):
-    assert(os.path.exists(vert))
-    assert(os.path.exists(frag))
-    assert(os.path.exists(json))
+    assert(os.path.isfile(vert))
+    assert(os.path.isfile(frag))
+    assert(os.path.isfile(json))
 
-    adb('shell rm -rf ' + ANDROID_SDCARD)
-    adb('shell mkdir -p ' + ANDROID_SDCARD)
-    adb('push ' + vert + ' ' + ANDROID_SDCARD + '/test.vert.spv')
-    adb('push ' + frag + ' ' + ANDROID_SDCARD + '/test.frag.spv')
-    adb('push ' + json + ' ' + ANDROID_SDCARD + '/test.json')
+    adb_can_fail('shell rm -rf ' + ANDROID_SDCARD)
+    adb_check('shell mkdir -p ' + ANDROID_SDCARD)
+    adb_check('push ' + vert + ' ' + ANDROID_SDCARD + '/test.vert.spv')
+    adb_check('push ' + frag + ' ' + ANDROID_SDCARD + '/test.frag.spv')
+    adb_check('push ' + json + ' ' + ANDROID_SDCARD + '/test.json')
 
-    adb('logcat -c')
+    adb_check('logcat -c')
 
     cmd = 'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity'
     flags = '--num-render {}'.format(NUM_RENDER)
@@ -156,7 +165,7 @@ def run_android(vert, frag, json, skip_render):
 
     # Pass command line args as Intent extra. Need to nest-quote, hence the "\'flags\'"
     cmd += ' -e gfz "\'' + flags + '\'"'
-    adb(cmd)
+    adb_check(cmd)
 
     # Busy wait
     deadline = time.time() + TIMEOUT_APP
@@ -165,63 +174,57 @@ def run_android(vert, frag, json, skip_render):
 
     # If the app never starts, status remains as UNEXPECTED_ERROR.
     # Once the app starts, status becomes TIMEOUT.
-    # If we break out of the loop below, the status is updated just before.
+    # If we reach the end of the loop below, we break and the status is updated just before.
 
     while time.time() < deadline:
         time.sleep(0.1)
 
         # Don't pass here until app has started.
         if status == 'UNEXPECTED_ERROR':
-            if adb('shell test -f ' + ANDROID_SDCARD + '/STARTED').returncode != 0:
+            if adb_can_fail('shell test -f ' + ANDROID_SDCARD + '/STARTED').returncode != 0:
                 continue
             status = 'TIMEOUT'
 
         assert status == 'TIMEOUT'
 
-        return_code = adb('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode
-        if return_code == 0:
+        # Don't pass here until the app has terminated.
+        # Quote >/dev/null otherwise this fails on Windows hosts.
+        if adb_can_fail('shell "pidof ' + ANDROID_APP + ' > /dev/null"').returncode == 0:
+            continue
+
+        if adb_can_fail('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode == 0:
             status = 'SUCCESS'
-            break
-
-        # Make sure to redirect to /dev/null on the device, otherwise this fails on Windows hosts.
-        return_code = adb('shell "pidof ' + ANDROID_APP + ' > /dev/null"').returncode
-        if return_code == 1:
-
-            # double check that no DONE file is present
-            return_code = adb('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode
-            if return_code == 0:
-                status = 'SUCCESS'
-                break
-
-            # No pid, and no DONE file, this looks like a crash indeed.
+        else:
+            # App has terminated and there is no DONE file; this looks like a crash.
             status = 'CRASH'
-            break
+        break
 
     # Grab log:
-    adb('logcat -d > ' + LOGFILE)
+    with open(LOGFILE, 'w', encoding='utf8', errors='ignore') as f:
+        adb_check('logcat -d', stdout=f)
 
     # retrieve all files to results/
     res_dir = 'results'
     if os.path.exists(res_dir):
         shutil.rmtree(res_dir)
-    adb('pull ' + ANDROID_SDCARD + ' ' + res_dir)
+    adb_check('pull ' + ANDROID_SDCARD + ' ' + res_dir)
 
     # Check sanity:
     if status == 'SUCCESS':
         sanity_before = res_dir + '/sanity_before.png'
         sanity_after = res_dir + '/sanity_after.png'
-        if os.path.exists(sanity_before) and os.path.exists(sanity_after):
+        if os.path.isfile(sanity_before) and os.path.isfile(sanity_after):
             if not filecmp.cmp(sanity_before, sanity_after, shallow=False):
                 status = 'SANITY_ERROR'
 
     # Check nondet:
     if status == 'SUCCESS':
         ref_image = res_dir + '/image_0.png'
-        if os.path.exists(ref_image):
+        if os.path.isfile(ref_image):
             # If reference image is here then report nondet if any image is different or missing.
             for i in range(1, NUM_RENDER):
                 next_image = res_dir + '/image_{}.png'.format(i)
-                if not os.path.exists(next_image):
+                if not os.path.isfile(next_image):
                     status = 'UNEXPECTED_ERROR'
                     with open(LOGFILE, 'a') as f:
                         f.write('\n Not all images were produced? Missing image: {}\n'.format(i))
@@ -240,37 +243,37 @@ def run_android(vert, frag, json, skip_render):
 
     if status != 'SUCCESS':
         # Something went wrong. Make sure we stop the app.
-        adb('shell am force-stop ' + ANDROID_APP)
+        adb_can_fail('shell am force-stop ' + ANDROID_APP)
 
     # Grab image if present.
     image_path = ANDROID_SDCARD + '/image_0.png'
-    return_code = adb('shell test -f ' + image_path).returncode
+    return_code = adb_can_fail('shell test -f ' + image_path).returncode
     if return_code == 0:
-        adb('pull ' + image_path)
+        adb_check('pull ' + image_path)
 
 
 def dump_info_android():
     info_file = ANDROID_SDCARD + '/worker_info.json'
-    adb('shell rm -f ' + info_file)
-    adb('shell am force-stop ' + ANDROID_APP)
-    adb('shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
-    adb('shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
-    adb('shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity -e gfz "\"--info\""')
+    adb_can_fail('shell rm -f ' + info_file)
+    adb_can_fail('shell am force-stop ' + ANDROID_APP)
+    adb_check('shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
+    adb_check('shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
+    adb_check(
+        'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity -e gfz "\'--info\'"')
 
     # We wait up to timeout_seconds to let the app produce the worker info. We may have to wait
     # several seconds as the app may take some time to launch.
     timeout_seconds = 5
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
-        ret_code = adb('shell test -f ' + info_file).returncode
-        if ret_code == 0:
+        if adb_can_fail('shell test -f ' + info_file).returncode == 0:
             break
         time.sleep(0.1)
-    if adb('shell test -f ' + info_file).returncode == 0:
-        adb('pull ' + info_file)
+    if adb_can_fail('shell test -f ' + info_file).returncode == 0:
+        adb_check('pull ' + info_file)
     else:
         print('Error: cannot obtain worker information')
-    adb('shell am force-stop ' + ANDROID_APP)
+    adb_can_fail('shell am force-stop ' + ANDROID_APP)
 
 ################################################################################
 # Main
@@ -319,4 +322,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

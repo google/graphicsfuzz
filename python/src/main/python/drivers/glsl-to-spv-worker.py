@@ -112,7 +112,7 @@ def prepare_shaders(frag_file, frag_spv_file, vert_spv_file):
 
 
 def do_image_job(args, image_job):
-    name = image_job.name.replace('.frag', '')
+    name = image_job.name[:-5]
     frag_file = name + '.frag'
     json_file = name + '.json'
     png = 'image_0.png'
@@ -178,15 +178,15 @@ def do_image_job(args, image_job):
     else:
         vkrun.run_android(vert_spv_file, frag_spv_file, json_file, skip_render)
 
-    if os.path.exists(log):
+    if os.path.isfile(log):
         with open(log, 'r', encoding='utf-8', errors='ignore') as f:
             res.log += f.read()
 
-    if os.path.exists(png):
+    if os.path.isfile(png):
         with open(png, 'rb') as f:
             res.PNG = f.read()
 
-    if os.path.exists('STATUS'):
+    if os.path.isfile('STATUS'):
         with open('STATUS', 'r') as f:
             status = f.read().rstrip()
         if status == 'SUCCESS':
@@ -244,8 +244,7 @@ def get_service(server, args, worker_info_json_string):
         print("Got worker: " + worker)
         assert(worker == args.worker)
 
-        if not os.path.exists(args.worker):
-            os.makedirs(args.worker)
+        os.makedirs(args.worker, exist_ok=True)
 
         # Set working dir
         os.chdir(args.worker)
@@ -340,7 +339,7 @@ def main():
     else:
         vkrun.dump_info_android()
 
-    if not os.path.exists(worker_info_file):
+    if not os.path.isfile(worker_info_file):
         print('Failed to retrieve worker information. '
               'Make sure the app permission to write to external storage is enabled.')
         exit(1)
