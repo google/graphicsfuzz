@@ -19,6 +19,7 @@ package com.graphicsfuzz.generator.tool;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,12 +33,12 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GenerateShaderFamilies {
+public class GlslGenerate {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(GenerateShaderFamilies.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GlslGenerate.class);
 
   private static Namespace parse(String[] args) throws ArgumentParserException {
-    ArgumentParser parser = ArgumentParsers.newArgumentParser("GenerateShaderFamilies")
+    ArgumentParser parser = ArgumentParsers.newArgumentParser("GlslGenerate")
         .defaultHelp(true)
         .description("Generate a set of shader families.");
 
@@ -85,15 +86,7 @@ public class GenerateShaderFamilies {
     final boolean verbose = ns.getBoolean("verbose");
     final int seed = ns.getInt("seed");
 
-    if (outputDir.isDirectory()) {
-      LOGGER.info("Overwriting previous output directory (" + outputDir.getAbsolutePath() + ")");
-      FileUtils.deleteDirectory(outputDir);
-    }
-
-    if (!outputDir.mkdir()) {
-      throw new IOException("Problem creating output directory (" + outputDir.getAbsolutePath()
-          + ")");
-    }
+    FileUtils.forceMkdir(outputDir);
 
     final File[] referenceShaderJobFiles = referencesDir.listFiles((dir, name) -> name.endsWith(
         ".json"));

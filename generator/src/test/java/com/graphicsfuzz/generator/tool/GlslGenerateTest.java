@@ -34,7 +34,7 @@ import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.*;
 
-public class GenerateShaderFamiliesTest {
+public class GlslGenerateTest {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -90,7 +90,7 @@ public class GenerateShaderFamiliesTest {
 
     options.addAll(extraArgs);
 
-    GenerateShaderFamilies.mainHelper(
+    GlslGenerate.mainHelper(
         options.toArray(new String[0])
     );
 
@@ -99,6 +99,7 @@ public class GenerateShaderFamiliesTest {
       final File expectedOutputDirectory = new File(temporaryFolder.getRoot(), prefix
           + "_" + reference);
       assertTrue(expectedOutputDirectory.isDirectory());
+      assertTrue(new File(expectedOutputDirectory, "infolog.json").isFile());
       assertTrue(new File(expectedOutputDirectory, "reference.frag").isFile());
       assertTrue(new File(expectedOutputDirectory, "reference.json").isFile());
       for (int i = 0; i < numVariants; i++) {

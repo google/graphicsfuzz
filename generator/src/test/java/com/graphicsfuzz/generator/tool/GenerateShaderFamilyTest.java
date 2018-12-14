@@ -201,6 +201,7 @@ public class GenerateShaderFamilyTest {
         options.toArray(new String[0])
     );
 
+    assertTrue(new File(temporaryFolder.getRoot(), "infolog.json").isFile());
     assertTrue(new File(temporaryFolder.getRoot(), "reference.frag").isFile());
     assertTrue(new File(temporaryFolder.getRoot(), "reference.json").isFile());
     for (int i = 0; i < numVariants; i++) {

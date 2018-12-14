@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.tool;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
@@ -153,15 +154,7 @@ public class GenerateShaderFamily {
       LOGGER.info("Using donor folder " + donorsDir.getAbsolutePath());
     }
 
-    if (outputDir.isDirectory()) {
-      LOGGER.info("Overwriting previous output directory (" + outputDir.getAbsolutePath() + ")");
-      FileUtils.deleteDirectory(outputDir);
-    }
-
-    if (!outputDir.mkdir()) {
-      throw new IOException("Problem creating output directory (" + outputDir.getAbsolutePath()
-          + ")");
-    }
+    FileUtils.forceMkdir(outputDir);
 
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
@@ -271,8 +264,10 @@ public class GenerateShaderFamily {
     infoLog.addProperty("args", String.join(" ", args));
     infoLog.addProperty("seed", seed);
 
-    FileUtils.writeStringToFile(new File("infolog.json"),
-        infoLog.toString(), StandardCharsets.UTF_8);
+    // Pretty-print the info log.
+    FileUtils.writeStringToFile(new File(outputDir,"infolog.json"),
+        new GsonBuilder().setPrettyPrinting().create()
+            .toJson(infoLog), StandardCharsets.UTF_8);
 
     LOGGER.info("Generation complete -- generated " + generatedVariants + " variants in "
             + triedVariants + " tries.");
