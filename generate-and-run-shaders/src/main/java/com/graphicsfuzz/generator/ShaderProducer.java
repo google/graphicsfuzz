@@ -81,7 +81,7 @@ public class ShaderProducer implements Runnable {
         new GeneratorArguments(
             shadingLanguageVersion,
             ns.get("small"),
-            ns.get("avoid_long_loops"),
+            ns.get("allow_long_loops"),
             ns.get("multi_pass"),
             ns.get("aggressively_complicate_control_flow"),
             ns.get("replace_float_literals"),

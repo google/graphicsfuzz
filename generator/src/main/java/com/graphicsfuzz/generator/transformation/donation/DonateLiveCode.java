@@ -45,12 +45,13 @@ import java.util.function.Function;
 public class DonateLiveCode extends DonateCode {
 
   public static final String NAME = "donate_live_code";
-  private final boolean avoidLongLoops;
+
+  private final boolean allowLongLoops;
 
   public DonateLiveCode(Function<IRandom, Boolean> probabilityOfDonation, File donorsDirectory,
-        GenerationParams generationParams, boolean avoidLongLoops) {
+        GenerationParams generationParams, boolean allowLongLoops) {
     super(probabilityOfDonation, donorsDirectory, generationParams);
-    this.avoidLongLoops = avoidLongLoops;
+    this.allowLongLoops = allowLongLoops;
   }
 
   @Override
@@ -95,7 +96,7 @@ public class DonateLiveCode extends DonateCode {
 
   @Override
   void adaptTranslationUnitForSpecificDonation(TranslationUnit tu, IRandom generator) {
-    if (avoidLongLoops) {
+    if (!allowLongLoops) {
       new TruncateLoops(3 + generator.nextInt(5), addPrefix(""), tu, false);
     }
   }

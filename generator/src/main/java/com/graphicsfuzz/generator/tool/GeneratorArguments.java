@@ -23,7 +23,7 @@ public class GeneratorArguments {
 
   private final ShadingLanguageVersion shadingLanguageVersion;
   private final boolean small;
-  private final boolean avoidLongLoops;
+  private final boolean allowLongLoops;
   private final boolean multiPass;
   private final boolean aggressivelyComplicateControlFlow;
   private final boolean replaceFloatLiterals;
@@ -36,7 +36,7 @@ public class GeneratorArguments {
   public GeneratorArguments(
         ShadingLanguageVersion shadingLanguageVersion,
         boolean small,
-        boolean avoidLongLoops,
+        boolean allowLongLoops,
         boolean multiPass,
         boolean aggressivelyComplicateControlFlow,
         boolean replaceFloatLiterals,
@@ -47,7 +47,7 @@ public class GeneratorArguments {
         boolean addInjectionSwitch) {
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.small = small;
-    this.avoidLongLoops = avoidLongLoops;
+    this.allowLongLoops = allowLongLoops;
     this.multiPass = multiPass;
     this.aggressivelyComplicateControlFlow = aggressivelyComplicateControlFlow;
     this.replaceFloatLiterals = replaceFloatLiterals;
@@ -66,8 +66,8 @@ public class GeneratorArguments {
     return small;
   }
 
-  public boolean getAvoidLongLoops() {
-    return avoidLongLoops;
+  public boolean getAllowLongLoops() {
+    return allowLongLoops;
   }
 
   public boolean getMultiPass() {
@@ -111,7 +111,7 @@ public class GeneratorArguments {
     final StringBuilder sb = new StringBuilder();
     sb.append("shadingLanguageVersion: " + shadingLanguageVersion + "\n");
     sb.append("small: " + small + "\n");
-    sb.append("avoidLongLoops: " + avoidLongLoops + "\n");
+    sb.append("allowLongLoops: " + allowLongLoops + "\n");
     sb.append("multiPass: " + multiPass + "\n");
     sb.append("aggressivelyComplicateControlFlow: " + aggressivelyComplicateControlFlow + "\n");
     sb.append("replaceFloatLiterals: " + replaceFloatLiterals + "\n");

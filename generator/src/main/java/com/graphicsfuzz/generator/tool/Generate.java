@@ -116,11 +116,10 @@ public class Generate {
           .help("Try to generate small shaders.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--avoid-long-loops")
-          .help("During live code injection, reduce the chances of injecting lengthy loops by "
-                + "ensuring that loops do not appear *directly* in the code being injected; they "
-                + "may still appear in functions called by the injected code (avoidance of this "
-                + "could be added if needed).")
+    parser.addArgument("--allow-long-loops")
+          .help("During live code injection, care is taken by default to avoid loops with "
+              + "very long or infinite iteration counts.  This option disables this care so that "
+              + "loops may end up being very long running.")
           .action(Arguments.storeTrue());
 
     parser.addArgument("--disable")
@@ -326,7 +325,7 @@ public class Generate {
         : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
     return new GeneratorArguments(shadingLanguageVersion,
         ns.getBoolean("small"),
-        ns.getBoolean("avoid_long_loops"),
+        ns.getBoolean("allow_long_loops"),
         ns.getBoolean("multi_pass"),
         ns.getBoolean("aggressively_complicate_control_flow"),
         ns.getBoolean("replace_float_literals"),
@@ -491,7 +490,7 @@ public class Generate {
     }
     if (flags.isEnabledLive()) {
       result.add(new DonateLiveCode(probabilities::donateLiveCodeAtStmt, args.getDonorsFolder(),
-              generationParams, args.getAvoidLongLoops()));
+              generationParams, args.getAllowLongLoops()));
     }
     if (flags.isEnabledMutate()) {
       result.add(new MutateExpressions());
