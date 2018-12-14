@@ -67,8 +67,8 @@ public class GlslGenerateTest {
     final int seed = 1;
     checkShaderFamilyGeneration(references, donors, numVariants, glslVersionString, prefix,
         outputDir, seed, Arrays.asList("--generate-uniform-bindings", "--max-uniforms",
-            String.valueOf(10), "--stop-on-fail", "--max-factor", String.valueOf(10f),
-            "--max-bytes", String.valueOf(200000), "--disable",
+            String.valueOf(10), "--stop-on-fail", "--max-factor", String.valueOf(100f),
+            "--max-bytes", String.valueOf(500000), "--disable",
             DonateDeadCode.NAME + "," + MutateExpressions.NAME));
   }
 

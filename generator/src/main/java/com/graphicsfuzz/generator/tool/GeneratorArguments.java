@@ -24,7 +24,7 @@ public class GeneratorArguments {
   private final ShadingLanguageVersion shadingLanguageVersion;
   private final boolean small;
   private final boolean allowLongLoops;
-  private final boolean multiPass;
+  private final boolean singlePass;
   private final boolean aggressivelyComplicateControlFlow;
   private final boolean replaceFloatLiterals;
   private final File donorsFolder;
@@ -37,7 +37,7 @@ public class GeneratorArguments {
         ShadingLanguageVersion shadingLanguageVersion,
         boolean small,
         boolean allowLongLoops,
-        boolean multiPass,
+        boolean singlePass,
         boolean aggressivelyComplicateControlFlow,
         boolean replaceFloatLiterals,
         File donorsFolder,
@@ -48,7 +48,7 @@ public class GeneratorArguments {
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.small = small;
     this.allowLongLoops = allowLongLoops;
-    this.multiPass = multiPass;
+    this.singlePass = singlePass;
     this.aggressivelyComplicateControlFlow = aggressivelyComplicateControlFlow;
     this.replaceFloatLiterals = replaceFloatLiterals;
     this.donorsFolder = donorsFolder;
@@ -70,8 +70,8 @@ public class GeneratorArguments {
     return allowLongLoops;
   }
 
-  public boolean getMultiPass() {
-    return multiPass;
+  public boolean getSinglePass() {
+    return singlePass;
   }
 
   public boolean getAggressivelyComplicateControlFlow() {
@@ -112,7 +112,7 @@ public class GeneratorArguments {
     sb.append("shadingLanguageVersion: " + shadingLanguageVersion + "\n");
     sb.append("small: " + small + "\n");
     sb.append("allowLongLoops: " + allowLongLoops + "\n");
-    sb.append("multiPass: " + multiPass + "\n");
+    sb.append("singlePass: " + singlePass + "\n");
     sb.append("aggressivelyComplicateControlFlow: " + aggressivelyComplicateControlFlow + "\n");
     sb.append("replaceFloatLiterals: " + replaceFloatLiterals + "\n");
     sb.append("donorsFolder: " + donorsFolder.getName() + "\n");

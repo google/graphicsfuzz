@@ -134,8 +134,8 @@ public class Generate {
           .help("Make control flow very complicated.")
           .action(Arguments.storeTrue());
 
-    parser.addArgument("--multi-pass")
-          .help("Apply multiple transformation passes, each with low probablity.")
+    parser.addArgument("--single-pass")
+          .help("Do not apply any individual transformation pass more than once.")
           .action(Arguments.storeTrue());
 
     parser.addArgument("--replace-float-literals")
@@ -268,15 +268,15 @@ public class Generate {
           random,
           generationParams,
           probabilities));
-    } else if (args.getMultiPass()) {
-      result.append(applyTransformationsMultiPass(
+    } else if (args.getSinglePass()) {
+      result.append(applyTransformationsSinglePass(
           args,
           shaderToTransform,
           random,
           generationParams,
           probabilities));
     } else {
-      result.append(applyTransformationsRandomly(
+      result.append(applyTransformationsMultiPass(
           args,
           shaderToTransform,
           random,
@@ -326,7 +326,7 @@ public class Generate {
     return new GeneratorArguments(shadingLanguageVersion,
         ns.getBoolean("small"),
         ns.getBoolean("allow_long_loops"),
-        ns.getBoolean("multi_pass"),
+        ns.getBoolean("single_pass"),
         ns.getBoolean("aggressively_complicate_control_flow"),
         ns.getBoolean("replace_float_literals"),
         ns.get("donors"),
@@ -359,10 +359,10 @@ public class Generate {
       return TransformationProbabilities.closeTo(generator,
             TransformationProbabilities.AGGRESSIVE_CONTROL_FLOW);
     }
-    if (args.getMultiPass()) {
-      return TransformationProbabilities.randomProbabilitiesMultiPass(generator);
+    if (args.getSinglePass()) {
+      return TransformationProbabilities.randomProbabilitiesSinglePass(generator);
     }
-    return TransformationProbabilities.randomProbabilitiesSinglePass(generator);
+    return TransformationProbabilities.randomProbabilitiesMultiPass(generator);
   }
 
   private static String applyTransformationsMultiPass(GeneratorArguments args,
@@ -445,7 +445,7 @@ public class Generate {
 
   }
 
-  private static String applyTransformationsRandomly(
+  private static String applyTransformationsSinglePass(
         GeneratorArguments args,
         TranslationUnit reference,
         IRandom generator,

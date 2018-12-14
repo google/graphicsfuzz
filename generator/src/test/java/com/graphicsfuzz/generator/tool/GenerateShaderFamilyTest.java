@@ -46,7 +46,7 @@ public class GenerateShaderFamilyTest {
     final String glslVersionString = "100";
     int seed = 0;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail"));
+        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--single-pass"));
   }
 
   @Test
@@ -57,7 +57,7 @@ public class GenerateShaderFamilyTest {
     final String glslVersionString = "100";
     int seed = 1;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl"));
+        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl", "--single-pass"));
   }
 
   @Test
@@ -68,7 +68,7 @@ public class GenerateShaderFamilyTest {
     final String glslVersionString = "300 es";
     int seed = 2;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail"));
+        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--single-pass"));
   }
 
   @Test
@@ -79,7 +79,7 @@ public class GenerateShaderFamilyTest {
     final String glslVersionString = "300 es";
     int seed = 3;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl"));
+        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl", "--single-pass"));
   }
 
   @Test
@@ -92,7 +92,7 @@ public class GenerateShaderFamilyTest {
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
         glslVersionString, seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
             String.valueOf(10),
-            "--generate-uniform-bindings"));
+            "--generate-uniform-bindings", "--single-pass"));
   }
 
   @Test
@@ -120,7 +120,7 @@ public class GenerateShaderFamilyTest {
     final String glslVersionString = "100";
     int seed = 5;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--multi-pass"));
+        glslVersionString, seed, Arrays.asList("--stop-on-fail"));
   }
 
   // TODO(172)
@@ -133,7 +133,7 @@ public class GenerateShaderFamilyTest {
     final String glslVersionString = "100";
     int seed = 6;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl", "--multi-pass"));
+        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl"));
   }
 
   @Test
@@ -144,7 +144,7 @@ public class GenerateShaderFamilyTest {
     final String glslVersionString = "300 es";
     int seed = 7;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--multi-pass"));
+        glslVersionString, seed, Arrays.asList("--stop-on-fail"));
   }
 
   @Test
@@ -155,7 +155,7 @@ public class GenerateShaderFamilyTest {
     final String glslVersionString = "300 es";
     int seed = 8;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl", "--multi-pass"));
+        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl"));
   }
 
   @Test
@@ -166,7 +166,7 @@ public class GenerateShaderFamilyTest {
     final String glslVersionString = "310 es";
     int seed = 9;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--multi-pass", "--max-uniforms",
+        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
             String.valueOf(10),
             "--generate-uniform-bindings"));
   }
