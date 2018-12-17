@@ -375,6 +375,17 @@ the `vulkan-worker-android` app running on the Android device.
 > re-run SPIR-V shaders on the device.
 > [We describe this in more detail below](#running-shaders-from-the-command-line).
 
+The intermediate files are saved to the current directory.
+For example:
+
+```
+test.vert             # The default GLSL vertex shader.
+variant_005.json      # The shader job file (containing uniforms data).
+variant_005.frag      # The GLSL fragment shader.
+variant_005.frag.spv  # The SPIR-V version of the fragment shader.
+variant_005.vert.spv  # The SPIR-V version of the default vertex shader.
+```
+
 Download the latest `vulkan-worker-android-debug.apk` file
 from the [releases page](glsl-fuzz-releases.md)
 and install it on your Android device.
