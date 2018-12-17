@@ -118,7 +118,9 @@ def prepare_shaders(frag_file, frag_spv_file, vert_spv_file):
 
 
 def do_image_job(args, image_job):
-    name = remove_end(image_job.name, '.frag')
+    name = image_job.name
+    if name.endswith('.frag'):
+        name = remove_end(name, '.frag')
     frag_file = name + '.frag'
     json_file = name + '.json'
     png = 'image_0.png'
@@ -320,6 +322,11 @@ def main():
         action='store_true',
         help='Do not wait for the device\'s screen to be on; just continue.')
 
+    parser.add_argument(
+        '--local-shader-job',
+        help='Execute a single, locally stored shader job (for debugging), instead of using the '
+             'server.')
+
     args = parser.parse_args()
 
     print('Worker: ' + args.worker)
@@ -370,6 +377,33 @@ def main():
             print('#### ABORT: device {} is not available (either offline or not connected?)'
                   .format(os.environ['ANDROID_SERIAL']))
             exit(1)
+
+        # Special case: local shader job for debugging.
+        if args.local_shader_job:
+            assert args.local_shader_job.endswith('.json'), \
+                'Expected local shader job "{}" to end with .json'
+
+            shader_job_prefix = remove_end(args.local_shader_job, '.json')
+
+            fake_job = tt.ImageJob()
+            fake_job.name = os.path.basename(shader_job_prefix)
+
+            assert os.path.isfile(args.local_shader_job), \
+                'Shader job {} does not exist'.format(args.local_shader_job)
+            with open(args.local_shader_job, 'r', encoding='utf-8', errors='ignore') as f:
+                fake_job.uniformsInfo = f.read()
+            if os.path.isfile(shader_job_prefix + '.frag'):
+                with open(shader_job_prefix + '.frag', 'r', encoding='utf-8', errors='ignore') as f:
+                    fake_job.fragmentSource = f.read()
+            if os.path.isfile(shader_job_prefix + '.vert'):
+                with open(shader_job_prefix + '.vert', 'r', encoding='utf-8', errors='ignore') as f:
+                    fake_job.vertexSource = f.read()
+            if os.path.isfile(shader_job_prefix + '.comp'):
+                with open(shader_job_prefix + '.comp', 'r', encoding='utf-8', errors='ignore') as f:
+                    fake_job.computeSource = f.read()
+                fake_job.computeInfo = fake_job.uniformsInfo
+            do_image_job(args, fake_job)
+            return
 
         if not service:
             service, worker = get_service(server, args, worker_info_json_string)
