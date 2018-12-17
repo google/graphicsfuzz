@@ -84,6 +84,13 @@ void main (void) {
 ################################################################################
 
 
+def remove_end(str_in: str, str_end: str):
+    assert str_in.endswith(str_end), 'Expected {} to end with {}'.format(str_in, str_end)
+    return str_in[:-len(str_end)]
+
+################################################################################
+
+
 def get_bin_type():
     host = platform.system()
     if host == 'Linux' or host == 'Windows':
@@ -112,7 +119,7 @@ def prepare_shaders(frag_file, frag_spv_file, vert_spv_file):
 
 
 def do_image_job(args, image_job):
-    name = image_job.name[:-5]
+    name = remove_end(image_job.name, '.frag')
     frag_file = name + '.frag'
     json_file = name + '.json'
     png = 'image_0.png'

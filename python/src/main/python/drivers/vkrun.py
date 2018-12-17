@@ -36,6 +36,11 @@ BUSY_WAIT_SLEEP_FAST = 0.1
 # Common
 
 
+def remove_end(str_in: str, str_end: str):
+    assert str_in.endswith(str_end), 'Expected {} to end with {}'.format(str_in, str_end)
+    return str_in[:-len(str_end)]
+
+
 def prepare_shader(shader: str):
     """
     Translates a shader to binary SPIR-V.
@@ -57,10 +62,10 @@ def prepare_shader(shader: str):
         cmd = 'glslangValidator -V ' + shader + ' -o ' + output
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
     elif shader.endswith('.frag.asm') or shader.endswith('.vert.asm'):
-        output = shader[:-4] + '.spv'
+        output = remove_end(shader, '.asm') + '.spv'
         cmd = 'spirv-as ' + shader + ' -o ' + output
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
-    elif shader[-4:] == '.spv':
+    elif shader.endswith('.spv'):
         output = shader
     else:
         assert False, 'unexpected shader extension: {}'.format(shader)
@@ -166,9 +171,9 @@ def is_screen_off_or_locked():
 
     stdout = str(res.stdout)
     # You will often find "mScreenState=OFF_LOCKED", but this catches OFF too, which is good.
-    if stdout.find('mScreenState=OFF') != -1:
+    if stdout.find('mScreenState=OFF') >= 0:
         return True
-    if stdout.find('mScreenState=ON_LOCKED') != -1:
+    if stdout.find('mScreenState=ON_LOCKED') >= 0:
         return True
 
     return False
@@ -238,7 +243,7 @@ def run_android(vert, frag, json, skip_render, wait_for_screen):
         break
 
     # Grab log:
-    with open(LOGFILE, 'w', encoding='utf8', errors='ignore') as f:
+    with open(LOGFILE, 'w', encoding='utf-8', errors='ignore') as f:
         adb_check('logcat -d', stdout=f)
 
     # retrieve all files to results/
