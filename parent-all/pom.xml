@@ -421,7 +421,7 @@ limitations under the License.
         <artifactId>util</artifactId>
         <version>1.0</version>
       </dependency>
-      
+
       <dependency>
         <groupId>com.graphicsfuzz</groupId>
         <artifactId>tool-webglfuzz</artifactId>
@@ -458,6 +458,13 @@ limitations under the License.
       <dependency>
         <groupId>com.graphicsfuzz.thirdparty</groupId>
         <artifactId>jquery-js</artifactId>
+        <version>1.0</version>
+        <type>zip</type>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphicsfuzz.thirdparty</groupId>
+        <artifactId>python-six</artifactId>
         <version>1.0</version>
         <type>zip</type>
       </dependency>

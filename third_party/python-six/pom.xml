@@ -1,0 +1,67 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.graphicsfuzz.thirdparty</groupId>
+  <artifactId>python-six</artifactId>
+  <name>python-six</name>
+  <packaging>pom</packaging>
+
+  <parent>
+    <groupId>com.graphicsfuzz</groupId>
+    <artifactId>parent-all</artifactId>
+    <version>1.0</version>
+    <relativePath>../../parent-all/pom.xml</relativePath>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>ant-contrib</groupId>
+      <artifactId>ant-contrib</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>1</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
+
+                <property name="scripts-dir" value="${project.basedir}/src/main/scripts"/>
+                <property name="zip-file" value="${project.build.directory}/${project.artifactId}-${project.version}.zip"/>
+                <property name="touched-file" value="${project.build.directory}/touched.txt"/>
+
+                <outofdate>
+                  <sourcefiles>
+                    <fileset dir="${scripts-dir}"/>
+                  </sourcefiles>
+                  <targetfiles path="${touched-file}"/>
+                  <sequential>
+                    <delete dir="${zip-file}"/>
+                    <zip destfile="${zip-file}" basedir="${scripts-dir}"/>
+                    <touch file="${touched-file}"/>
+                  </sequential>
+                </outofdate>
+                <attachartifact file="${zip-file}" type="zip"/>
+              </target>
+            </configuration>
+          </execution>
+
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>

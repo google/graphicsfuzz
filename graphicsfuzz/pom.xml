@@ -121,6 +121,13 @@ limitations under the License.
     </dependency>
 
     <dependency>
+      <groupId>com.graphicsfuzz.thirdparty</groupId>
+      <artifactId>python-six</artifactId>
+      <type>zip</type>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
       <groupId>ant-contrib</groupId>
       <artifactId>ant-contrib</artifactId>
       <scope>provided</scope>
@@ -225,6 +232,7 @@ limitations under the License.
                     <pathelement location="${com.graphicsfuzz.thirdparty:thrift-py:zip}"/>
                     <pathelement location="${com.graphicsfuzz.thirdparty:thrift-js:zip}"/>
                     <pathelement location="${com.graphicsfuzz.thirdparty:jquery-js:zip}"/>
+                    <pathelement location="${com.graphicsfuzz.thirdparty:python-six:zip}"/>
                     <pathelement location="${com.graphicsfuzz:server-static-public:zip}"/>
                     <pathelement location="${com.graphicsfuzz:thrift:zip:python}"/>
                     <pathelement location="${com.graphicsfuzz:thrift:zip:js}"/>
@@ -246,6 +254,7 @@ limitations under the License.
                       <zipfileset src="${com.graphicsfuzz.thirdparty:jquery-js:zip}" prefix="server-static/jquery"/>
                       <zipfileset src="${com.graphicsfuzz:server-static-public:zip}"/>
                       <zipfileset src="${com.graphicsfuzz:thrift:zip:python}" prefix="python/fuzzer_service"/>
+                      <zipfileset src="${com.graphicsfuzz.thirdparty:python-six:zip}" prefix="python"/>
                       <zipfileset src="${com.graphicsfuzz:thrift:zip:js}" prefix="server-static/gen-js"/>
                       <zipfileset src="${com.graphicsfuzz:tester:zip:shaders}" prefix="test-shaders"/>
                       <zipfileset src="${com.graphicsfuzz.thirdparty:semantic-ui:zip}" prefix="server-static/semantic"/>
