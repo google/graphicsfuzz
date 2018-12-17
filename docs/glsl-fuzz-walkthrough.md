@@ -562,6 +562,19 @@ In the above example,
 a function body that contains a somewhat complex `pow` function call
 is enough to trigger the bug.
 
+
+## After updating a device
+
+If you update a device,
+its "fingerprint" will change
+and the server will usually reject it.
+The solution is to give the worker a new name.
+This also allows you to compare
+results across different versions of your device
+in the Web UI,
+without having to delete your old results.
+
+
 ## Exploring results in the file system
 
 You can see results in the file system within the server's working directory at the following locations:
