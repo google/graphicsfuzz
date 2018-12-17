@@ -357,14 +357,23 @@ on a desktop machine,
 with an Android device (connected via USB) that has the `vulkan-worker-android` app installed.
 
 ```
-glsl-server     <--- HTTP --->    glsl-to-spv-worker    <--- adb commands --->    vulkan-worker-android app
-(on a desktop)                    (on a desktop)                                  (on an Android device)
+glsl-server     <--- HTTP --->    glsl-to-spv-worker (calls vkrun.py)   --- adb commands --->    vulkan-worker-android app
+(on a desktop)                    (on a desktop)                                                 (on an Android device)
 ```
 
 
 The `glsl-to-spv-worker` script translates the GLSL shaders to SPIR-V
 via `glslangValidator` before sending the shader to
 the `vulkan-worker-android` app running on the Android device.
+
+> Note that the `vkrun.py` Python script
+> uses the `adb` tool to 
+> copy the SPIR-V files to the device,
+> run the `vulkan-worker-android` app,
+> and copy back the results.
+> `vkrun` can be used as a standalone tool to 
+> re-run SPIR-V shaders on the device.
+> [We describe this in more detail below](#running-shaders-from-the-command-line).
 
 Download the latest `vulkan-worker-android-debug.apk` file
 from the [releases page](glsl-fuzz-releases.md)
@@ -602,6 +611,48 @@ the reduction of this variant leads to the following files:
 * `<variant>_reduced_final.*` are the files at the final step of the
   reduction. It typically refers to the smallest shader the reducer could obtain
   for this particular reduction.
+
+## Running shaders from the command line
+
+Sometimes it can be useful to run individual shaders
+from the command line.
+
+This can be achieved using the `run-shader-family` script,
+which runs a single shader or a shader family
+on a device, via the server.
+For example:
+
+```sh
+# Run one shader
+run-shader-family variant_001.json --server http://localhost:8080 --worker pixel3
+
+# Run shader family directory `bubblesort_family`
+run-shader-family bubblesort_family --output results/ --server http://localhost:8080 --worker pixel3
+```
+
+The results will be output to the current directory by default, or to the directory specified
+by `--output`.
+The output `.txt` files contain the run log for each shader.
+
+### vkrun
+
+As described earlier,
+the Vulkan worker uses `vkrun`
+to run SPIR-V shaders on the device.
+You can use this script directly
+if you want to re-run some SPIR-V shaders.
+Your device must show in `adb devices`.
+For example:
+
+```sh
+vkrun test.vert variant_005.frag variant_005.json --serial ABCD
+```
+
+where `ABCD` is the device serial number shown in `adb devices`.
+The `.spv` output files will be written to the current directory,
+and the results of running the shader will be output to
+`results/`. 
+
 
 ## Reducing shaders from the command line using `glsl-reduce`
 
