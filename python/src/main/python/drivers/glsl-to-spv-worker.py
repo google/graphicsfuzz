@@ -176,7 +176,8 @@ def do_image_job(args, image_job):
     if args.linux:
         vkrun.run_linux(vert_spv_file, frag_spv_file, json_file, skip_render)
     else:
-        vkrun.run_android(vert_spv_file, frag_spv_file, json_file, skip_render)
+        wait_for_screen = not args.force
+        vkrun.run_android(vert_spv_file, frag_spv_file, json_file, skip_render, wait_for_screen)
 
     if os.path.isfile(log):
         with open(log, 'r', encoding='utf-8', errors='ignore') as f:
@@ -260,7 +261,7 @@ def get_service(server, args, worker_info_json_string):
 def is_device_available(serial):
     cmd = 'adb devices'
     devices = subprocess.run(cmd, shell=True, universal_newlines=True, stdout=subprocess.PIPE,
-                             timeout=2).stdout.splitlines()
+                             timeout=vkrun.TIMEOUT_RUN).stdout.splitlines()
     for line in devices:
         if serial in line:
             parts = line.split()
@@ -307,6 +308,11 @@ def main():
     parser.add_argument(
         '--spirvopt',
         help='Enable spirv-opt with these optimisation flags (e.g. --spirvopt=-O)')
+
+    parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='Do not wait for the device\'s screen to be on; just continue.')
 
     args = parser.parse_args()
 

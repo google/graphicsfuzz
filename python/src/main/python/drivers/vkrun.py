@@ -29,6 +29,8 @@ from typing import Union, IO, Any
 LOGFILE = 'vklog.txt'
 TIMEOUT_RUN = 30
 NUM_RENDER = 3
+BUSY_WAIT_SLEEP_SLOW = 1.0
+BUSY_WAIT_SLEEP_FAST = 0.1
 
 ################################################################################
 # Common
@@ -129,7 +131,10 @@ def adb_helper(adb_args, check, stdout: Union[None, int, IO[Any]]):
             check=check,
             timeout=TIMEOUT_RUN,
             stdout=stdout,
-            universal_newlines=True)
+            universal_newlines=True,
+            encoding='utf-8',
+            errors='ignore'
+        )
         return p
 
     except subprocess.TimeoutExpired as err:
@@ -145,7 +150,31 @@ def adb_can_fail(adb_args, stdout: Union[None, int, IO[Any]] = subprocess.PIPE):
     return adb_helper(adb_args, False, stdout)
 
 
-def run_android(vert, frag, json, skip_render):
+def stay_awake_warning():
+    res = adb_check('adb shell settings get global stay_on_while_plugged_in')
+    if str(res.stdout).strip() == '0':
+        print('\nWARNING: please enable "Stay Awake" from developer settings\n')
+
+
+def is_screen_off_or_locked():
+    """
+    :return: True: the screen is off or locked. False: unknown.
+    """
+    res = adb_can_fail('adb shell dumpsys nfc')
+    if res.returncode != 0:
+        return False
+
+    stdout = str(res.stdout)
+    # You will often find "mScreenState=OFF_LOCKED", but this catches OFF too, which is good.
+    if stdout.find('mScreenState=OFF') != -1:
+        return True
+    if stdout.find('mScreenState=ON_LOCKED') != -1:
+        return True
+
+    return False
+
+
+def run_android(vert, frag, json, skip_render, wait_for_screen):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
     assert(os.path.isfile(json))
@@ -155,6 +184,15 @@ def run_android(vert, frag, json, skip_render):
     adb_check('push ' + vert + ' ' + ANDROID_SDCARD + '/test.vert.spv')
     adb_check('push ' + frag + ' ' + ANDROID_SDCARD + '/test.frag.spv')
     adb_check('push ' + json + ' ' + ANDROID_SDCARD + '/test.json')
+
+    if wait_for_screen:
+        stay_awake_warning()
+        # We cannot reliably know if the screen is on, but this function definitely knows if it is
+        # off or locked. So we wait here while we definitely know there is an issue.
+        while is_screen_off_or_locked():
+            print('\nWARNING: The screen appears to be off or locked. Please unlock the device and '
+                  'ensure "Stay Awake" is enabled in developer settings.\n')
+            time.sleep(BUSY_WAIT_SLEEP_SLOW)
 
     adb_check('logcat -c')
 
@@ -177,7 +215,7 @@ def run_android(vert, frag, json, skip_render):
     # If we reach the end of the loop below, we break and the status is updated just before.
 
     while time.time() < deadline:
-        time.sleep(0.1)
+        time.sleep(BUSY_WAIT_SLEEP_SLOW)
 
         # Don't pass here until app has started.
         if status == 'UNEXPECTED_ERROR':
@@ -268,7 +306,7 @@ def dump_info_android():
     while time.time() < deadline:
         if adb_can_fail('shell test -f ' + info_file).returncode == 0:
             break
-        time.sleep(0.1)
+        time.sleep(BUSY_WAIT_SLEEP_FAST)
     if adb_can_fail('shell test -f ' + info_file).returncode == 0:
         adb_check('pull ' + info_file)
     else:
@@ -291,6 +329,9 @@ def main():
 
     parser.add_argument('-s', '--skip-render', action='store_true', help='Skip render')
 
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='Do not wait for the device\'s screen to be on; just continue.')
+
     parser.add_argument('vert', help='Vertex shader: shader.vert[.asm|.spv]')
     parser.add_argument('frag', help='Fragment shader: shader.frag[.asm|.spv]')
     parser.add_argument('json', help='Uniforms values')
@@ -304,15 +345,17 @@ def main():
     vert = prepare_shader(args.vert)
     frag = prepare_shader(args.frag)
 
+    wait_for_screen = not args.force
+
     # These are mutually exclusive, but we return after each for clarity:
 
     if args.serial:
         os.environ['ANDROID_SERIAL'] = args.serial
-        run_android(vert, frag, args.json, args.skip_render)
+        run_android(vert, frag, args.json, args.skip_render, wait_for_screen)
         return
 
     if args.android:
-        run_android(vert, frag, args.json, args.skip_render)
+        run_android(vert, frag, args.json, args.skip_render, wait_for_screen)
         return
 
     if args.linux:
