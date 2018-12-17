@@ -179,16 +179,13 @@ def is_screen_off_or_locked():
     return False
 
 
-def run_android(vert, frag, json, skip_render, wait_for_screen):
-    assert(os.path.isfile(vert))
-    assert(os.path.isfile(frag))
-    assert(os.path.isfile(json))
-
+def prepare_device(wait_for_screen):
+    adb_check('logcat -c')
+    adb_check('shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
+    adb_check('shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
+    adb_can_fail('shell am force-stop ' + ANDROID_APP)
     adb_can_fail('shell rm -rf ' + ANDROID_SDCARD)
     adb_check('shell mkdir -p ' + ANDROID_SDCARD)
-    adb_check('push ' + vert + ' ' + ANDROID_SDCARD + '/test.vert.spv')
-    adb_check('push ' + frag + ' ' + ANDROID_SDCARD + '/test.frag.spv')
-    adb_check('push ' + json + ' ' + ANDROID_SDCARD + '/test.json')
 
     if wait_for_screen:
         stay_awake_warning()
@@ -199,7 +196,17 @@ def run_android(vert, frag, json, skip_render, wait_for_screen):
                   'ensure "Stay Awake" is enabled in developer settings.\n')
             time.sleep(BUSY_WAIT_SLEEP_SLOW)
 
-    adb_check('logcat -c')
+
+def run_android(vert, frag, json, skip_render, wait_for_screen):
+    assert(os.path.isfile(vert))
+    assert(os.path.isfile(frag))
+    assert(os.path.isfile(json))
+
+    prepare_device(wait_for_screen)
+
+    adb_check('push ' + vert + ' ' + ANDROID_SDCARD + '/test.vert.spv')
+    adb_check('push ' + frag + ' ' + ANDROID_SDCARD + '/test.frag.spv')
+    adb_check('push ' + json + ' ' + ANDROID_SDCARD + '/test.json')
 
     cmd = 'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity'
     flags = '--num-render {}'.format(NUM_RENDER)
@@ -295,27 +302,25 @@ def run_android(vert, frag, json, skip_render, wait_for_screen):
         adb_check('pull ' + image_path)
 
 
-def dump_info_android():
+def dump_info_android(wait_for_screen):
+    prepare_device(wait_for_screen)
+
     info_file = ANDROID_SDCARD + '/worker_info.json'
-    adb_can_fail('shell rm -f ' + info_file)
-    adb_can_fail('shell am force-stop ' + ANDROID_APP)
-    adb_check('shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
-    adb_check('shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
+
     adb_check(
         'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity -e gfz "\'--info\'"')
 
-    # We wait up to timeout_seconds to let the app produce the worker info. We may have to wait
-    # several seconds as the app may take some time to launch.
-    timeout_seconds = 5
-    deadline = time.time() + timeout_seconds
+    # Busy wait for the app to write the gpu info.
+    deadline = time.time() + TIMEOUT_APP
     while time.time() < deadline:
         if adb_can_fail('shell test -f ' + info_file).returncode == 0:
             break
         time.sleep(BUSY_WAIT_SLEEP_FAST)
+
     if adb_can_fail('shell test -f ' + info_file).returncode == 0:
         adb_check('pull ' + info_file)
     else:
-        print('Error: cannot obtain worker information')
+        print('Error: failed to obtain worker information')
     adb_can_fail('shell am force-stop ' + ANDROID_APP)
 
 ################################################################################

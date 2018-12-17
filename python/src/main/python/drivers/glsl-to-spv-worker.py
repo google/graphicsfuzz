@@ -350,7 +350,7 @@ def main():
     if args.linux:
         vkrun.dump_info_linux()
     else:
-        vkrun.dump_info_android()
+        vkrun.dump_info_android(wait_for_screen=not args.force)
 
     if not os.path.isfile(worker_info_file):
         print('Failed to retrieve worker information. '
