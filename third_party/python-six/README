@@ -1,0 +1,6 @@
+Version: 1.12.0
+
+Downloaded source tar from:
+https://pypi.org/project/six/#files
+
+Renamed six.py to __init__.py in a "six" directory.

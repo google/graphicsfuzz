@@ -23,6 +23,10 @@ in this walkthrough.
 
 ## Requirements
 
+**Summary:** the latest release zip and worker applications, Java 8+, and Python 3.5+.
+
+### Release zip and workers
+
 We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
 You can download these from the [releases page](glsl-fuzz-releases.md)
 or [build them from source](glsl-fuzz-build.md).
@@ -40,10 +44,12 @@ Add the following directories to your path:
 The `graphicsfuzz-1.0/` directory is the unzipped release.
 If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
 
+### Java 8+
+
 You will also need to install the latest version of the Java 8 Development Kit,
 either:
 
-* From your system's package manager. E.g. Linux: `sudo apt-get install openjdk-8-jdk`.
+* From your system's package manager. E.g. Ubuntu: `sudo apt-get install openjdk-8-jdk`.
 * By [downloading and installing Oracle's binary distribution](http://www.oracle.com/technetwork/java/javase/downloads/index.html) (look for Java SE 8uXXX then the JDK link).
 * By downloading and installing some other OpenJDK binary distribution for your platform.
 
@@ -53,6 +59,15 @@ either:
 java -version
 # Output: openjdk version "1.8.0_181"
 ```
+
+### Python 3.5+
+
+You will need to install Python 3.5 or higher, either:
+
+* From your system's package manager. E.g. Ubuntu: `sudo apt-get install python3`.
+* By downloading from [https://www.python.org/downloads/](https://www.python.org/downloads/).
+* By downloading and installing some other Python 3 distribution.
+
 
 ## Generating shaders using `glsl-generate`
 
@@ -331,6 +346,10 @@ Don't care about the other kinds of worker?  [Skip ahead to running shaders on w
 
 ### `vulkan-worker-android`
 
+> Warning: you must ensure the screen of your Android device stays on.
+> You should therefore enable "Stay awake" in developer settings.
+> See [Android notes](android-notes.md#useful-device-settings) for a description of how to enable this setting.
+
 You can use the `vulkan-worker-android` app
 to test the Vulkan drivers on an Android device.
 This worker requires running a `glsl-to-spv-worker`
@@ -338,14 +357,36 @@ on a desktop machine,
 with an Android device (connected via USB) that has the `vulkan-worker-android` app installed.
 
 ```
-glsl-server     <--- HTTP --->    glsl-to-spv-worker    <--- adb commands --->    vulkan-worker-android app
-(on a desktop)                    (on a desktop)                                  (on an Android device)
+glsl-server     <--- HTTP --->    glsl-to-spv-worker (calls vkrun.py)   --- adb commands --->    vulkan-worker-android app
+(on a desktop)                    (on a desktop)                                                 (on an Android device)
 ```
 
 
 The `glsl-to-spv-worker` script translates the GLSL shaders to SPIR-V
 via `glslangValidator` before sending the shader to
 the `vulkan-worker-android` app running on the Android device.
+
+> Note that the `vkrun.py` Python script
+> uses the `adb` tool to 
+> copy the SPIR-V files to the device,
+> run the `vulkan-worker-android` app,
+> and copy back the results.
+> `vkrun` can be used as a standalone tool to 
+> re-run SPIR-V shaders on the device.
+> [We describe this in more detail below](#running-shaders-from-the-command-line).
+
+The intermediate files are saved to the current directory.
+For example:
+
+```
+test.vert                # The default GLSL vertex shader.
+variant_005.json         # The shader job file (containing uniforms data).
+variant_005.frag         # The GLSL fragment shader.
+variant_005.frag.spv     # The SPIR-V version of the fragment shader.
+variant_005.frag.spv.opt # The optimized SPIR-V version of the fragment shader
+                         # (assuming e.g. --spirvopt=-O was passed to glsl-to-spirv-worker).
+variant_005.vert.spv     # The SPIR-V version of the default vertex shader.
+```
 
 Download the latest `vulkan-worker-android-debug.apk` file
 from the [releases page](glsl-fuzz-releases.md)
@@ -523,6 +564,19 @@ In the above example,
 a function body that contains a somewhat complex `pow` function call
 is enough to trigger the bug.
 
+
+## After updating a device
+
+If you update a device,
+its "fingerprint" will change
+and the server will usually reject it.
+The solution is to give the worker a new name.
+This also allows you to compare
+results across different versions of your device
+in the Web UI,
+without having to delete your old results.
+
+
 ## Exploring results in the file system
 
 You can see results in the file system within the server's working directory at the following locations:
@@ -583,6 +637,47 @@ the reduction of this variant leads to the following files:
 * `<variant>_reduced_final.*` are the files at the final step of the
   reduction. It typically refers to the smallest shader the reducer could obtain
   for this particular reduction.
+
+## Running shaders from the command line
+
+Sometimes it can be useful to run individual shaders
+from the command line.
+
+This can be achieved using the `run-shader-family` script,
+which runs a single shader or a shader family
+on a device, via the server.
+For example:
+
+```sh
+# Run one shader
+run-shader-family variant_001.json --server http://localhost:8080 --worker pixel3
+
+# Run shader family directory `bubblesort_family`
+run-shader-family bubblesort_family --output results/ --server http://localhost:8080 --worker pixel3
+```
+
+The results will be output to the current directory by default, or to the directory specified
+by `--output`.
+The output `.txt` files contain the run log for each shader.
+
+### vkrun
+
+As described earlier,
+the Vulkan worker uses `vkrun`
+to run SPIR-V shaders on the device.
+You can use this script directly
+if you want to re-run some SPIR-V shaders.
+Your device must show in `adb devices`.
+For example:
+
+```sh
+vkrun variant_005.vert.spv variant_005.frag.spv variant_005.json --serial ABCD
+```
+
+where `ABCD` is the device serial number shown in `adb devices`.
+The results of running the shader will be output to
+`results/`.
+
 
 ## Reducing shaders from the command line using `glsl-reduce`
 

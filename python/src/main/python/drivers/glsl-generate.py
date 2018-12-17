@@ -23,7 +23,8 @@ java_tool_path = os.sep.join(
 
 # Run the generator
 
-cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.generator.tool.GlslGenerate" ] + sys.argv[1:]
+cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.generator.tool.GlslGenerate"] \
+      + sys.argv[1:]
 
 generate_proc = subprocess.Popen(cmd)
 generate_proc.communicate()

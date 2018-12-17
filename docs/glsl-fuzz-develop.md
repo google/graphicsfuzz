@@ -13,7 +13,7 @@ page](glsl-fuzz-releases.md).
 
 * [JDK 1.8+](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 * [Maven](https://maven.apache.org/)
-* [Python](https://www.python.org/)
+* [Python 3.5+](https://www.python.org/)
 
 * For our Android workers: [Android SDK & NDK](https://developer.android.com/studio/#command-tools)
 * For the Vulkan desktop worker: [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
