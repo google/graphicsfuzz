@@ -23,6 +23,10 @@ in this walkthrough.
 
 ## Requirements
 
+**Summary:** the latest release zip and worker applications, Java 8+, and Python 3.5+.
+
+### Release zip and workers
+
 We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
 You can download these from the [releases page](glsl-fuzz-releases.md)
 or [build them from source](glsl-fuzz-build.md).
@@ -40,10 +44,12 @@ Add the following directories to your path:
 The `graphicsfuzz-1.0/` directory is the unzipped release.
 If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
 
+### Java 8+
+
 You will also need to install the latest version of the Java 8 Development Kit,
 either:
 
-* From your system's package manager. E.g. Linux: `sudo apt-get install openjdk-8-jdk`.
+* From your system's package manager. E.g. Ubuntu: `sudo apt-get install openjdk-8-jdk`.
 * By [downloading and installing Oracle's binary distribution](http://www.oracle.com/technetwork/java/javase/downloads/index.html) (look for Java SE 8uXXX then the JDK link).
 * By downloading and installing some other OpenJDK binary distribution for your platform.
 
@@ -53,6 +59,15 @@ either:
 java -version
 # Output: openjdk version "1.8.0_181"
 ```
+
+### Python 3.5+
+
+You will need to install Python 3.5 or higher, either:
+
+* From your system's package manager. E.g. Ubuntu: `sudo apt-get install python3`.
+* By downloading from [https://www.python.org/downloads/](https://www.python.org/downloads/).
+* By downloading and installing some other Python 3 distribution.
+
 
 ## Generating shaders using `glsl-generate`
 
