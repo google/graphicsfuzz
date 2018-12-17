@@ -379,11 +379,13 @@ The intermediate files are saved to the current directory.
 For example:
 
 ```
-test.vert             # The default GLSL vertex shader.
-variant_005.json      # The shader job file (containing uniforms data).
-variant_005.frag      # The GLSL fragment shader.
-variant_005.frag.spv  # The SPIR-V version of the fragment shader.
-variant_005.vert.spv  # The SPIR-V version of the default vertex shader.
+test.vert                # The default GLSL vertex shader.
+variant_005.json         # The shader job file (containing uniforms data).
+variant_005.frag         # The GLSL fragment shader.
+variant_005.frag.spv     # The SPIR-V version of the fragment shader.
+variant_005.frag.spv.opt # The optimized SPIR-V version of the fragment shader
+                         # (assuming e.g. --spirvopt=-O was passed to glsl-to-spirv-worker).
+variant_005.vert.spv     # The SPIR-V version of the default vertex shader.
 ```
 
 Download the latest `vulkan-worker-android-debug.apk` file
