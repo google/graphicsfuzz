@@ -669,13 +669,12 @@ Your device must show in `adb devices`.
 For example:
 
 ```sh
-vkrun test.vert variant_005.frag variant_005.json --serial ABCD
+vkrun variant_005.vert.spv variant_005.frag.spv variant_005.json --serial ABCD
 ```
 
 where `ABCD` is the device serial number shown in `adb devices`.
-The `.spv` output files will be written to the current directory,
-and the results of running the shader will be output to
-`results/`. 
+The results of running the shader will be output to
+`results/`.
 
 
 ## Reducing shaders from the command line using `glsl-reduce`
