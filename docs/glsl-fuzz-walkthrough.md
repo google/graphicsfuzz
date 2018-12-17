@@ -331,6 +331,10 @@ Don't care about the other kinds of worker?  [Skip ahead to running shaders on w
 
 ### `vulkan-worker-android`
 
+> Warning: you must ensure the screen of your Android device stays on.
+> You should therefore enable "Stay awake" in developer settings.
+> See [Android notes](android-notes.md#useful-device-settings) for a description of how to enable this setting.
+
 You can use the `vulkan-worker-android` app
 to test the Vulkan drivers on an Android device.
 This worker requires running a `glsl-to-spv-worker`

@@ -30,10 +30,10 @@ to your path so that you can use tools like `adb`.
 
 ## Android networking: connecting Android apps to the server
 
-There are two main ways to connect the gles worker 
+There are two main ways to connect the gles worker
 Android app to the server.
 
-> Tip: Recall that you must exit the gles worker app 
+> Tip: Recall that you must exit the gles worker app
 > using the back button, otherwise it will restart.
 
 > Tip: This section also applies to the Vulkan worker Android app.
@@ -62,7 +62,7 @@ E.g. `192.168.0.4:8080`
 You may alternatively connect the device to the machine running the server using
 a USB cable. In this case, you will need to have access to the `adb` tool on
 your desktop/laptop (one approach is to install the Android SDK,
-as described above), and you will need to 
+as described above), and you will need to
 enable USB debugging in the developer settings on
 the Android device (described below in [useful device settings](#useful-device-settings)). Then:
 
@@ -84,7 +84,7 @@ the Android device (described below in [useful device settings](#useful-device-s
 > as described below.
 
 
-**Warning:** 
+**Warning:**
 if the app initially cannot connect to the server
 then it will complain that the worker name is invalid
 because it cannot contact the server to validate the worker name.
@@ -140,11 +140,11 @@ devices.
 
 ## Useful device settings
 
-* On an Android device, open `Settings`, `About device`, and keep tapping build
-  number until developer settings are enabled.  The build number might be under
+* On an Android device, open `Settings`, `About device`, and keep tapping `Build
+  number` until developer settings are enabled.  The build number might be under
   a further `Software information` option.
 * In developer settings, enable `USB debugging` and `Stay awake` to make sure
-  the phone does not goes to sleep while it is plugged in USB.
+  the phone does not goes to sleep while it is plugged in.
 * In security settings (which might be under `Lock screen and security`), enable
   installing apps from unknown sources.
 * You can download and install graphicsfuzz APKs directly on the phone from the
