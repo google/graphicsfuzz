@@ -26,10 +26,9 @@ import vkrun
 
 HERE = os.path.abspath(__file__)
 
-# Set path to higher-level directory for access to dependencies
-sys.path.append(
-    os.path.dirname(os.path.dirname(HERE))
-)
+# Add directory above to Python path for access to dependencies.
+# Prepend it so we override any globally installed dependencies.
+sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))
 
 # noinspection PyPep8
 from fuzzer_service import FuzzerService
