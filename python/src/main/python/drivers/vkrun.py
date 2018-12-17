@@ -137,8 +137,6 @@ def adb_helper(adb_args, check, stdout: Union[None, int, IO[Any]]):
             timeout=TIMEOUT_RUN,
             stdout=stdout,
             universal_newlines=True,
-            encoding='utf-8',
-            errors='ignore'
         )
         return p
 
@@ -156,7 +154,7 @@ def adb_can_fail(adb_args, stdout: Union[None, int, IO[Any]] = subprocess.PIPE):
 
 
 def stay_awake_warning():
-    res = adb_check('adb shell settings get global stay_on_while_plugged_in')
+    res = adb_check('shell settings get global stay_on_while_plugged_in')
     if str(res.stdout).strip() == '0':
         print('\nWARNING: please enable "Stay Awake" from developer settings\n')
 
@@ -165,7 +163,7 @@ def is_screen_off_or_locked():
     """
     :return: True: the screen is off or locked. False: unknown.
     """
-    res = adb_can_fail('adb shell dumpsys nfc')
+    res = adb_can_fail('shell dumpsys nfc')
     if res.returncode != 0:
         return False
 
@@ -237,16 +235,23 @@ def run_android(vert, frag, json, skip_render, wait_for_screen):
 
         assert status == 'TIMEOUT'
 
-        # Don't pass here until the app has terminated.
+        # DONE file indicates app is done.
+        if adb_can_fail('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode == 0:
+            status = 'SUCCESS'
+            break
+
+        # Otherwise, keep looping/waiting while the app is still running.
         # Quote >/dev/null otherwise this fails on Windows hosts.
         if adb_can_fail('shell "pidof ' + ANDROID_APP + ' > /dev/null"').returncode == 0:
             continue
 
+        # The app has crashed. Check for DONE file one more time.
         if adb_can_fail('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode == 0:
             status = 'SUCCESS'
-        else:
-            # App has terminated and there is no DONE file; this looks like a crash.
-            status = 'CRASH'
+            break
+
+        # App has terminated and there is no DONE file; this definitely looks like a crash.
+        status = 'CRASH'
         break
 
     # Grab log:
