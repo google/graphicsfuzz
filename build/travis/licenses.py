@@ -484,6 +484,14 @@ def get_maven_dependencies_populated():
             ],
             'skipped': '',
         },
+        'com.graphicsfuzz.thirdparty:python-six': {
+            'comment': 'Used by thrift',
+            'name': 'six',
+            'url': 'https://pypi.org/project/six/',
+            'license_url': '',
+            'license_file': 'third_party/python-six/LICENSE',
+            'skipped': '',
+        },
         'com.graphicsfuzz:python': {
             'comment': '',
             'name': '',

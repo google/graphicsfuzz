@@ -54,6 +54,7 @@ limitations under the License.
     <module>third_party/alphanum-comparator</module>
     <module>third_party/gif-sequence-writer</module>
     <module>third_party/jquery-js</module>
+    <module>third_party/python-six</module>
     <module>third_party/semantic-ui</module>
     <module>third_party/thrift-js</module>
     <module>third_party/thrift-py</module>

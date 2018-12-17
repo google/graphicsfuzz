@@ -15,44 +15,50 @@
 # limitations under the License.
 
 import argparse
-import io
 import os
 import platform
 import shutil
+import subprocess
 import sys
 import time
-import subprocess
-from subprocess import CalledProcessError
+
+import vkrun
 
 HERE = os.path.abspath(__file__)
 
-# Set path to higher-level directory for access to dependencies
-sys.path.append(
-    os.path.dirname(os.path.dirname(HERE))
-)
+# Add directory above to Python path for access to dependencies.
+# Prepend it so we override any globally installed dependencies.
+sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))
 
+# noinspection PyPep8
 from fuzzer_service import FuzzerService
+# noinspection PyPep8
 import fuzzer_service.ttypes as tt
+# noinspection PyPep8
 from thrift.transport import THttpClient, TTransport
+# noinspection PyPep8
 from thrift.Thrift import TApplicationException
+# noinspection PyPep8
 from thrift.protocol import TBinaryProtocol
 
-import vkrun
 
 ################################################################################
 # Timeouts, in seconds
 
-TIMEOUT_SPIRVOPT=120
-TIMEOUT_APP=30
-TIMEOUT_ADB_CMD=5
+
+TIMEOUT_SPIRV_OPT = 120
+TIMEOUT_APP = 30
+TIMEOUT_ADB_CMD = 5
 
 ################################################################################
 
-def writeToFile(content, filename):
+
+def write_to_file(content, filename):
     with open(filename, 'w') as f:
         f.write(content)
 
 ################################################################################
+
 
 def remove(f):
     if os.path.isdir(f):
@@ -62,20 +68,29 @@ def remove(f):
 
 ################################################################################
 
-def prepareVertFile():
-    vertFilename = 'test.vert'
-    vertFileDefaultContent = '''#version 310 es
+
+def prepare_vert_file():
+    vert_filename = 'test.vert'
+    vert_file_default_content = '''#version 310 es
 layout(location=0) in highp vec4 a_position;
 void main (void) {
   gl_Position = a_position;
 }
 '''
-    if not os.path.isfile(vertFilename):
-        writeToFile(vertFileDefaultContent, vertFilename)
+    if not os.path.isfile(vert_filename):
+        write_to_file(vert_file_default_content, vert_filename)
 
 ################################################################################
 
-def getBinType():
+
+def remove_end(str_in: str, str_end: str):
+    assert str_in.endswith(str_end), 'Expected {} to end with {}'.format(str_in, str_end)
+    return str_in[:-len(str_end)]
+
+################################################################################
+
+
+def get_bin_type():
     host = platform.system()
     if host == 'Linux' or host == 'Windows':
         return host
@@ -87,9 +102,9 @@ def getBinType():
 
 
 def prepare_shaders(frag_file, frag_spv_file, vert_spv_file):
-    prepareVertFile()
+    prepare_vert_file()
 
-    glslang = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/glslangValidator'
+    glslang = os.path.dirname(HERE) + '/../../bin/' + get_bin_type() + '/glslangValidator'
 
     # Frag
     cmd = glslang + ' ' + frag_file + ' -V -o ' + frag_spv_file
@@ -99,13 +114,15 @@ def prepare_shaders(frag_file, frag_spv_file, vert_spv_file):
     cmd = glslang + ' test.vert -V -o ' + vert_spv_file
     subprocess.run(cmd, shell=True, check=True)
 
-
 ################################################################################
 
-def doImageJob(args, imageJob):
-    name = imageJob.name.replace('.frag','')
-    fragFile = name + '.frag'
-    jsonFile = name + '.json'
+
+def do_image_job(args, image_job):
+    name = image_job.name
+    if name.endswith('.frag'):
+        name = remove_end(name, '.frag')
+    frag_file = name + '.frag'
+    json_file = name + '.json'
     png = 'image_0.png'
     log = 'vklog.txt'
 
@@ -114,20 +131,20 @@ def doImageJob(args, imageJob):
 
     res = tt.ImageJobResult()
 
-    skipRender = imageJob.skipRender
+    skip_render = image_job.skipRender
 
     # Set nice defaults to fields we will not update anyway
     res.passSanityCheck = True
     res.log = 'Start: ' + name + '\n'
 
-    writeToFile(imageJob.fragmentSource, fragFile)
-    writeToFile(imageJob.uniformsInfo, jsonFile)
-    prepare_shaders(fragFile, frag_spv_file, vert_spv_file)
+    write_to_file(image_job.fragmentSource, frag_file)
+    write_to_file(image_job.uniformsInfo, json_file)
+    prepare_shaders(frag_file, frag_spv_file, vert_spv_file)
 
     # Optimize
     if args.spirvopt:
         frag_spv_file_opt = frag_spv_file + '.opt'
-        cmd = os.path.dirname(HERE) + '/../../bin/' + getBinType() + '/spirv-opt ' + \
+        cmd = os.path.dirname(HERE) + '/../../bin/' + get_bin_type() + '/spirv-opt ' + \
             args.spirvopt + ' ' + frag_spv_file + ' -o ' + frag_spv_file_opt
 
         try:
@@ -135,8 +152,7 @@ def doImageJob(args, imageJob):
             print('Calling spirv-opt with flags: ' + args.spirvopt)
             subprocess.run(
                 cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                universal_newlines=True, check=True, timeout=TIMEOUT_SPIRVOPT)
-
+                universal_newlines=True, check=True, timeout=TIMEOUT_SPIRV_OPT)
         except subprocess.CalledProcessError as err:
             # spirv-opt failed, early return
             res.log += 'Error triggered by spirv-opt\n'
@@ -166,19 +182,20 @@ def doImageJob(args, imageJob):
     remove(log)
 
     if args.linux:
-        vkrun.run_linux(vert_spv_file, frag_spv_file, jsonFile, skipRender)
+        vkrun.run_linux(vert_spv_file, frag_spv_file, json_file, skip_render)
     else:
-        vkrun.run_android(vert_spv_file, frag_spv_file, jsonFile, skipRender)
+        wait_for_screen = not args.force
+        vkrun.run_android(vert_spv_file, frag_spv_file, json_file, skip_render, wait_for_screen)
 
-    if os.path.exists(log):
+    if os.path.isfile(log):
         with open(log, 'r', encoding='utf-8', errors='ignore') as f:
             res.log += f.read()
 
-    if os.path.exists(png):
+    if os.path.isfile(png):
         with open(png, 'rb') as f:
             res.PNG = f.read()
 
-    if os.path.exists('STATUS'):
+    if os.path.isfile('STATUS'):
         with open('STATUS', 'r') as f:
             status = f.read().rstrip()
         if status == 'SUCCESS':
@@ -209,51 +226,54 @@ def doImageJob(args, imageJob):
 
 ################################################################################
 
+
 def get_service(server, args, worker_info_json_string):
     try:
-        httpClient = THttpClient.THttpClient(server)
-        transport = TTransport.TBufferedTransport(httpClient)
+        http_client = THttpClient.THttpClient(server)
+        transport = TTransport.TBufferedTransport(http_client)
         protocol = TBinaryProtocol.TBinaryProtocol(transport)
         service = FuzzerService.Client(protocol)
         transport.open()
 
         # Get worker name
-        platforminfo = worker_info_json_string
+        platform_info = worker_info_json_string
 
-        tryWorker = args.worker
-        print("Call getWorkername()")
-        workerRes = service.getWorkerName(platforminfo, tryWorker)
-        assert type(workerRes) != None
+        try_worker = args.worker
+        print("Call getWorkerName()")
+        worker_res = service.getWorkerName(platform_info, try_worker)
+        assert type(worker_res) is not None
 
-        if workerRes.workerName == None:
-            print('Worker error: ' + tt.WorkerNameError._VALUES_TO_NAMES[workerRes.error])
+        if worker_res.workerName is None:
+            # noinspection PyProtectedMember
+            print('Worker error: ' + tt.WorkerNameError._VALUES_TO_NAMES[worker_res.error])
             exit(1)
 
-        worker = workerRes.workerName
+        worker = worker_res.workerName
 
         print("Got worker: " + worker)
         assert(worker == args.worker)
 
-        if not os.path.exists(args.worker):
-            os.makedirs(args.worker)
+        os.makedirs(args.worker, exist_ok=True)
 
         # Set working dir
         os.chdir(args.worker)
 
         return service, worker
 
-    except (TApplicationException, ConnectionRefusedError, ConnectionResetError) as exception:
+    except (TApplicationException, ConnectionRefusedError, ConnectionResetError):
         return None, None
 
 ################################################################################
 
-def isDeviceAvailable(serial):
+
+def is_device_available(serial):
     cmd = 'adb devices'
-    devices = subprocess.run(cmd, shell=True, universal_newlines=True, stdout=subprocess.PIPE, timeout=2).stdout.splitlines()
+    devices = subprocess.run(cmd, shell=True, universal_newlines=True, stdout=subprocess.PIPE,
+                             timeout=vkrun.TIMEOUT_RUN).stdout.splitlines()
     for line in devices:
         if serial in line:
-            l = line.split()
-            if l[1] == 'device':
+            parts = line.split()
+            if parts[1] == 'device':
                 return True
             else:
                 return False
@@ -263,110 +283,158 @@ def isDeviceAvailable(serial):
 ################################################################################
 # Main
 
-parser = argparse.ArgumentParser()
 
-parser.add_argument(
-    'worker',
-    help='Worker name to identify to the server')
+def main():
+    parser = argparse.ArgumentParser()
 
-parser.add_argument(
-    '--serial',
-    help='Serial number of device to target. Run "adb devices -l" to list the serial numbers. '
-         'The serial number will have the form "IP:port" if using adb over TCP. '
-         'See: https://developer.android.com/studio/command-line/adb')
+    parser.add_argument(
+        'worker',
+        help='Worker name to identify to the server')
 
-parser.add_argument(
-    '--linux',
-    action='store_true',
-    help='Use Linux worker')
+    parser.add_argument(
+        '--serial',
+        help='Serial number of device to target. Run "adb devices -l" to list the serial numbers. '
+             'The serial number will have the form "IP:port" if using adb over TCP. '
+             'See: https://developer.android.com/studio/command-line/adb')
 
-parser.add_argument(
-    '--adb-no-serial',
-    action='store_true',
-    help='Use adb without providing a device serial number; '
-         'this works if "adb devices" just shows one connected device.')
+    parser.add_argument(
+        '--linux',
+        action='store_true',
+        help='Use Linux worker')
 
-parser.add_argument(
-    '--server',
-    default='http://localhost:8080',
-    help='Server URL (default: http://localhost:8080 )')
+    parser.add_argument(
+        '--adb-no-serial',
+        action='store_true',
+        help='Use adb without providing a device serial number; '
+             'this works if "adb devices" just shows one connected device.')
 
-parser.add_argument(
-    '--spirvopt',
-    help='Enable spirv-opt with these optimisation flags (e.g. --spirvopt=-O)')
+    parser.add_argument(
+        '--server',
+        default='http://localhost:8080',
+        help='Server URL (default: http://localhost:8080 )')
 
-args = parser.parse_args()
+    parser.add_argument(
+        '--spirvopt',
+        help='Enable spirv-opt with these optimisation flags (e.g. --spirvopt=-O)')
 
-print('Worker: ' + args.worker)
+    parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='Do not wait for the device\'s screen to be on; just continue.')
 
-server = args.server + '/request'
-print('server: ' + server)
+    parser.add_argument(
+        '--local-shader-job',
+        help='Execute a single, locally stored shader job (for debugging), instead of using the '
+             'server.')
 
-if not args.linux and not args.adb_no_serial:
-    # Set device serial number
-    if args.serial:
-        os.environ['ANDROID_SERIAL'] = args.serial
+    args = parser.parse_args()
+
+    print('Worker: ' + args.worker)
+
+    server = args.server + '/request'
+    print('server: ' + server)
+
+    if not args.linux and not args.adb_no_serial:
+        # Set device serial number
+        if args.serial:
+            os.environ['ANDROID_SERIAL'] = args.serial
+        else:
+            if 'ANDROID_SERIAL' not in os.environ:
+                print('Please set ANDROID_SERIAL env variable, or use --serial or --adb-no-serial.')
+                print('Use "adb devices -l" to find the device serial number,'
+                      ' which will have the form "IP:port" if using adb over TCP. '
+                      'See: https://developer.android.com/studio/command-line/adb')
+                exit(1)
+
+    service = None
+    worker = None
+
+    # Get worker info
+    worker_info_file = 'worker_info.json'
+    remove(worker_info_file)
+
+    if args.linux:
+        vkrun.dump_info_linux()
     else:
-        if 'ANDROID_SERIAL' not in os.environ:
-            print('Please set ANDROID_SERIAL env variable, or use --serial or --adb-no-serial.')
-            print('Use "adb devices -l" to find the device serial number,'
-                  ' which will have the form "IP:port" if using adb over TCP. '
-                  'See: https://developer.android.com/studio/command-line/adb')
-            exit(1)
+        vkrun.dump_info_android(wait_for_screen=not args.force)
 
-service = None
-
-# Get worker info
-worker_info_file = 'worker_info.json'
-remove(worker_info_file)
-
-if args.linux:
-    vkrun.dump_info_linux()
-else:
-    vkrun.dump_info_android()
-
-if not os.path.exists(worker_info_file):
-    print('Failed to retrieve worker information. Make sure the app permission to write to external storage is enabled.')
-    exit(1)
-
-worker_info_json_string = '{}'  # Default value: dummy but valid JSON string
-with open(worker_info_file, 'r') as f:
-    worker_info_json_string = f.read()
-
-# Main loop
-while True:
-
-    if not args.linux and not args.adb_no_serial and not isDeviceAvailable(os.environ['ANDROID_SERIAL']):
-        print('#### ABORT: device {} is not available (either offline or not connected?)'.format(os.environ['ANDROID_SERIAL']))
+    if not os.path.isfile(worker_info_file):
+        print('Failed to retrieve worker information. '
+              'Make sure the app permission to write to external storage is enabled.')
         exit(1)
 
-    if not(service):
-        service, worker = get_service(server, args, worker_info_json_string)
+    # noinspection PyUnusedLocal
+    worker_info_json_string = '{}'  # Default value: dummy but valid JSON string
+    with open(worker_info_file, 'r') as f:
+        worker_info_json_string = f.read()
 
-        if not(service):
-            print("Cannot connect to server, retry in a second...")
-            time.sleep(1)
-            continue
+    # Main loop
+    while True:
 
-    try:
-        job = service.getJob(worker)
+        if not args.linux \
+                and not args.adb_no_serial \
+                and not is_device_available(os.environ['ANDROID_SERIAL']):
+            print('#### ABORT: device {} is not available (either offline or not connected?)'
+                  .format(os.environ['ANDROID_SERIAL']))
+            exit(1)
 
-        if job.noJob != None:
-            print("No job")
+        # Special case: local shader job for debugging.
+        if args.local_shader_job:
+            assert args.local_shader_job.endswith('.json'), \
+                'Expected local shader job "{}" to end with .json'
 
-        elif job.skipJob != None:
-            print("Skip job")
-            service.jobDone(worker, job)
+            shader_job_prefix = remove_end(args.local_shader_job, '.json')
 
-        else:
-            assert(job.imageJob != None)
-            print("#### Image job: " + job.imageJob.name)
-            job.imageJob.result = doImageJob(args, job.imageJob)
-            print("Send back, results status: {}".format(job.imageJob.result.status))
-            service.jobDone(worker, job)
+            fake_job = tt.ImageJob()
+            fake_job.name = os.path.basename(shader_job_prefix)
 
-    except (TApplicationException, ConnectionError) as exception:
-        print("Connection to server lost. Re-initialising client.")
-        service = None
+            assert os.path.isfile(args.local_shader_job), \
+                'Shader job {} does not exist'.format(args.local_shader_job)
+            with open(args.local_shader_job, 'r', encoding='utf-8', errors='ignore') as f:
+                fake_job.uniformsInfo = f.read()
+            if os.path.isfile(shader_job_prefix + '.frag'):
+                with open(shader_job_prefix + '.frag', 'r', encoding='utf-8', errors='ignore') as f:
+                    fake_job.fragmentSource = f.read()
+            if os.path.isfile(shader_job_prefix + '.vert'):
+                with open(shader_job_prefix + '.vert', 'r', encoding='utf-8', errors='ignore') as f:
+                    fake_job.vertexSource = f.read()
+            if os.path.isfile(shader_job_prefix + '.comp'):
+                with open(shader_job_prefix + '.comp', 'r', encoding='utf-8', errors='ignore') as f:
+                    fake_job.computeSource = f.read()
+                fake_job.computeInfo = fake_job.uniformsInfo
+            do_image_job(args, fake_job)
+            return
 
-    time.sleep(1)
+        if not service:
+            service, worker = get_service(server, args, worker_info_json_string)
+
+            if not service:
+                print("Cannot connect to server, retry in a second...")
+                time.sleep(1)
+                continue
+
+        assert worker is not None
+
+        try:
+            job = service.getJob(worker)
+
+            if job.noJob is not None:
+                print("No job")
+            elif job.skipJob is not None:
+                print("Skip job")
+                service.jobDone(worker, job)
+            else:
+                assert job.imageJob is not None
+                print("#### Image job: " + job.imageJob.name)
+                job.imageJob.result = do_image_job(args, job.imageJob)
+                print("Send back, results status: {}".format(job.imageJob.result.status))
+                service.jobDone(worker, job)
+        except (TApplicationException, ConnectionError):
+            print("Connection to server lost. Re-initialising client.")
+            service = None
+
+        time.sleep(1)
+
+
+if __name__ == '__main__':
+    main()
