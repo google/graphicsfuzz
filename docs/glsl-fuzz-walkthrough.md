@@ -404,7 +404,9 @@ or you can install it using `adb`.
 There is no point in manually running this app from the Android device; it will crash unless
 it finds shaders in the `/sdcard/graphicsfuzz` directory.
 
-You can run the worker as follows:
+You can run the worker as follows.
+
+> Note that the `glsl-to-spv-worker` assumes `adb` is on your PATH.
 
 ```sh
 # Install the apk, if not installed already.
