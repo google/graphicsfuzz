@@ -146,6 +146,9 @@ cp -r graphicsfuzz-1.0/shaders/samples samples
 # Synopsis:
 # glsl-generate [options] references donors num_variants glsl_version prefix output_folder
 
+# Add `--seed 12345` if you want to enure that running the same glsl-generate command again
+# will deterministically generate the same shaders.
+
 # Generate some GLSL version 300 es shaders.
 glsl-generate samples/300es samples/donors 10 "300 es" family_300es work/shaderfamilies
 
