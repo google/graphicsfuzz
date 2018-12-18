@@ -39,11 +39,22 @@ and the reference image will no longer be valid.
 a shader job is interesting if it does *not* produce an
 image and, optionally, the run log from running the shader job includes the
 regular expression `ERROR`.
-This reduction kind is typically used **without** `--preserve-semantics`,
+  * This reduction kind is typically used **without** `--preserve-semantics`,
 so the reducer can change the semantics of the shader;
 we are usually reducing a crash or incorrect shader compilation error,
 so changing the semantics of the shaders is fine, as they should still compile and run.
 Note that the reducer always produces valid shaders that should compile.
+  * This reduction kind is often used with `--skip-render`,
+which causes remote workers to skip rendering the shader.
+This can be much faster.
+In cases
+where the interesting error occurs during shader compilation,
+there is no need to render the shader to check if the error still occurs
+so `--skip-render` should be used.
+However, if the error occurs while rendering the shader,
+or as a result of rendering the shader,
+`--skip-render` should **not** be used.
+
 
 Given a shader job `shader-job.json`,
 the following are common reduction commands:
@@ -52,7 +63,14 @@ the following are common reduction commands:
 # Wrong image reduction.
 glsl-reduce shader-job.json --preserve-semantics --reduction-kind ABOVE_THRESHOLD --reference reference.info.json
 
-# No image reduction:
+# No image reduction for a crash that occurs during shader compilation.
+# --skip-render can be used since the error occurs during shader compilation;
+# successful shader compilation will be regarded as uninteresting. 
+glsl-reduce shader-job.json --reduction-kind NO_IMAGE --error-string "Fatal signal 11" --skip-render
+
+# No image reduction for a crash that occurs during rendering.
+# --skip-render should NOT be used since the error occurs during rendering;
+# we need to render to reproduce the crash.
 glsl-reduce shader-job.json --reduction-kind NO_IMAGE --error-string "Fatal signal 11"
 
 # Custom interestingness test:
