@@ -33,53 +33,80 @@ Each shader family will be output to a directory starting with `OUTPUT_FOLDER/PR
 ## Options
 
 ```shell
-usage: glsl-generate.py [-h] [--webgl] [--keep_bad_variants] [--stop_on_fail]
-                        [--verbose] [--small] [--avoid_long_loops]
-                        [--max_bytes MAX_BYTES] [--max_factor MAX_FACTOR]
-                        [--replace_float_literals] [--multi_pass]
-                        [--require_license] [--generate_uniform_bindings]
-                        [--max_uniforms MAX_UNIFORMS]
-                        donors references num_variants glsl_version prefix
-                        output_folder
+usage: glsl-generate [-h] [--seed SEED] [--webgl] [--small]
+                     [--allow-long-loops] [--disable DISABLE]
+                     [--enable-only ENABLE_ONLY]
+                     [--aggressively-complicate-control-flow]
+                     [--single-pass] [--replace-float-literals]
+                     [--generate-uniform-bindings]
+                     [--max-uniforms MAX_UNIFORMS] [--no-injection-switch]
+                     [--disable-validator] [--keep-bad-variants]
+                     [--stop-on-fail] [--verbose] [--max-bytes MAX_BYTES]
+                     [--max-factor MAX_FACTOR] [--require-license]
+                     references donors num_variants glsl_version prefix
+                     output_dir
 
-Generate a set of shader families
+Generate a set of shader families.
 
 positional arguments:
-  donors                Path to directory of donor shaders.
-  references            Path to directory of reference shaders.
-  num_variants          Number of variants to be produced for each shader in
-                        the donor set.
-  glsl_version          Version of GLSL to be used.
-  prefix                String with which to prefix shader family name.
-  output_folder         Output directory for shader families.
+  references             Path to directory of reference shaders.
+  donors                 Path to directory of donor shaders.
+  num_variants           Number  of  variants  to   be  produced  for  each
+                         generated shader family.
+  glsl_version           Version of GLSL to target.
+  prefix                 String with which to prefix shader family names.
+  output_dir             Output directory for shader families.
 
 optional arguments:
-  -h, --help            show this help message and exit
-  --webgl               Restrict transformations to be WebGL-compatible.
-  --keep_bad_variants   Do not remove invalid variants upon generation.
-  --stop_on_fail        Quit if an invalid variant is generated.
-  --verbose             Emit detailed information regarding the progress of
-                        the generation.
-  --small               Try to generate smaller variants.
-  --avoid_long_loops    Avoid long-running loops during live code injection.
-  --max_bytes MAX_BYTES
-                        Restrict maximum size of generated variants.
-  --max_factor MAX_FACTOR
-                        Maximum blowup allowed, compared with size of
-                        reference shader (default: no limit).
-  --replace_float_literals
-                        Replace float literals with uniforms.
-  --multi_pass          Apply multiple transformation passes.
-  --require_license     Require that each shader has an accompanying license,
-                        and use this during generation.
-  --generate_uniform_bindings
-                        Put all uniforms in uniform blocks and generate
-                        associated bindings. Necessary for Vulkan
-                        compatibility.
-  --max_uniforms MAX_UNIFORMS
-                        Ensure that no more than the given number of uniforms
-                        are included in generated shaders. Necessary for
-                        Vulkan compatibility.
+  -h, --help             show this help message and exit
+  --seed SEED            Seed to initialize  random  number generator with.
+                         (default: -1946162367)
+  --webgl                Restrict to  WebGL-compatible  features. (default:
+                         false)
+  --small                Try to generate small shaders. (default: false)
+  --allow-long-loops     During live  code  injection,  care  is  taken  by
+                         default to avoid loops with  very long or infinite
+                         iteration counts.  This option  disables this care
+                         so that loops may end  up being very long running.
+                         (default: false)
+  --disable DISABLE      Disable a given series of transformations.
+  --enable-only ENABLE_ONLY
+                         Disable   all   but    the    given    series   of
+                         transformations.
+  --aggressively-complicate-control-flow
+                         Make  control  flow  very  complicated.  (default:
+                         false)
+  --single-pass          Do not apply  any  individual  transformation pass
+                         more than once. (default: false)
+  --replace-float-literals
+                         Replace float  literals  with  uniforms. (default:
+                         false)
+  --generate-uniform-bindings
+                         Put all uniforms  in  uniform  blocks and generate
+                         bindings;  required   for   Vulkan  compatibility.
+                         (default: false)
+  --max-uniforms MAX_UNIFORMS
+                         Ensure that generated  shaders  have  no more than
+                         the given number of  uniforms; required for Vulkan
+                         compatibility. (default: 0)
+  --no-injection-switch  Do  not  generate   the  injectionSwitch  uniform.
+                         (default: false)
+  --disable-validator    Disable  calling  validation  tools  on  generated
+                         variants. (default: false)
+  --keep-bad-variants    Do not remove  invalid  variants  upon generation.
+                         (default: false)
+  --stop-on-fail         Quit  if   an   invalid   variant   is  generated.
+                         (default: false)
+  --verbose              Emit detailed information  regarding  the progress
+                         of the generation. (default: false)
+  --max-bytes MAX_BYTES  Maximum  allowed  size,  in   bytes,  for  variant
+                         shader. (default: 500000)
+  --max-factor MAX_FACTOR
+                         Maximum blowup  allowed,  compared  with  size  of
+                         reference shader (default: no limit).
+  --require-license      Require a license  file  to  be provided alongside
+                         the  reference  and   pass   details   through  to
+                         generated shaders. (default: false)
 
 ```
 
@@ -101,13 +128,13 @@ mkdir -p work/shaderfamilies
 # glsl-generate [options] donors references num_variants glsl_version prefix output_folder
 
 # Generate some GLSL version 300 es shaders.
-glsl-generate --max_bytes 500000 --multi_pass samples/donors samples/300es 10 "300 es" family_300es work/shaderfamilies
+glsl-generate samples/donors samples/300es 10 "300 es" family_300es work/shaderfamilies
 
 # Generate some GLSL version 100 shaders.
-glsl-generate --max_bytes 500000 --multi_pass samples/donors samples/100 10 "100" family_100 work/shaderfamilies
+glsl-generate samples/donors samples/100 10 "100" family_100 work/shaderfamilies
 
 # Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --max_bytes 500000 --multi_pass --generate_uniform_bindings --max_uniforms 10 samples/donors samples/310es 10 "310 es" family_vulkan work/shaderfamilies
+glsl-generate --generate_uniform_bindings --max_uniforms 10 samples/donors samples/310es 10 "310 es" family_vulkan work/shaderfamilies
 
 # The lines above will take approx. 1-2 minutes each, and will generate a shader family for every
 # shader in samples/300es or samples/100:
