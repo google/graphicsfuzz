@@ -529,7 +529,8 @@ was enough to cause the wrong image to be rendered.
 ## Queuing a no image reduction
 
 The results table for the shader family below shows
-that `variant_004` failed to render due to a crash:
+that `variant_004` failed to render due to a crash
+during shader compilation:
 
 ![Table of image results](images/screenshot-results-table-crash.png)
 
@@ -544,19 +545,36 @@ signal 11".  Ideally, we should enter something even more specific, such as a
 function name from a stack trace, but this is only possible if a stack trace is
 shown in the run log.
 
+We can also surmise that the error occurs during shader compilation,
+and so any successful shader compilation during the reduction process
+is uninteresting.
+As such,
+we can greatly speed up the reduction by enabling the "Skip Render"
+option.
+
+> The "Skip Render" option causes the worker to only compile the shader,
+> without rendering an image, which is much faster.
+> In this case,
+> a successful compilation is regarded as uninteresting for the reduction.
+> You should not enable this option if the error you are reducing
+> occurs during rendering, or as a result of rendering.
+
 The other default settings are sufficient, so click "Start Reduction".
 
-This time, you will not see the worker rendering images, because the "Skip Render" option has been set.  This is because to reduce a shader compiler crash bug there is no need to actually render using the shader if it compiles successfully.
+This time, you will not see the worker rendering the image,
+because the "Skip Render" option has been set,
+although you may still see the "sanity image" being rendered,
+which is used to check that the graphics driver is still
+able to render a basic image.
 
 Once the reduction has finished,
 refresh the page and you should see the result.
 However, for crash reductions,
 the diff view makes little sense,
 as the reducer will have removed as much code as possible
-(due to the "Reduce Everywhere" option).
+(because the "Preserve Semantics" option was disabled).
 Thus, click "View reduced shader" to
 see the small, simple shader that triggers the bug:
-
 
 ![Reduced result](images/screenshot-crash-reduction-result.png)
 
