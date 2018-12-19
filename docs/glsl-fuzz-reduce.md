@@ -15,8 +15,8 @@ See below for common examples.
 
 glsl-reduce takes a *shader job* `SHADER_JOB` (a .json file) as an argument
 as well as further arguments or options to specify the interestingness test.
-glsl-reduce will try to simplify the given shader job to a smaller,
-simpler shader job that is still deemed "interesting".
+glsl-reduce will try to simplify the given shader to a smaller,
+simpler shader that is still deemed "interesting".
 
 `SHADER_JOB` should be a `.json` shader job file that represents all shaders and metadata needed to
 render an image. If the shader job is named `foo.json`,
@@ -55,6 +55,8 @@ However, if the error occurs while rendering the shader,
 or as a result of rendering the shader,
 `--skip-render` should **not** be used.
 
+Note that unless `--preserve-semantics` is passed, changes made by the reducer can cause a shader to exhibit very high or infinite runtime. For example, the reducer might remove statements from a loop that prevent the loop from terminating.
+
 
 Given a shader job `shader-job.json`,
 the following are common reduction commands:
@@ -88,8 +90,21 @@ by glsl-generate.
 Options:
 
 ```
+usage: glsl-reduce [-h] [--reduction-kind REDUCTION_KIND] [--output OUTPUT]
+                   [--preserve-semantics] [--max-steps MAX_STEPS]
+                   [--verbose] [--seed SEED] [--timeout TIMEOUT]
+                   [--metric METRIC] [--reference REFERENCE]
+                   [--threshold THRESHOLD] [--retry-limit RETRY_LIMIT]
+                   [--skip-render] [--error-string ERROR_STRING]
+                   [--server SERVER] [--worker WORKER] [--stop-on-error]
+                   [--swiftshader] [--continue-previous-reduction]
+                   shader_job [interestingness_test]
 
-Reduce GLSL shaders, driven by a criterion of interest.
+Reduce GLSL shaders, driven by a  criterion  of  interest. The tool takes a
+"shader job" as input, which is a  json  file (e.g. NAME.json) and a set of
+files with the samename  in  the  same  directory.  NAME.json is a metadata
+file that can  just  contain  "{}".  There  should  also  be  some graphics
+shaders (NAME.frag and/or NAME.vert) or a compute shader (NAME.comp).
 
 positional arguments:
   shader_job             Path  of  shader   job   to   be   reduced.   E.g.
@@ -122,48 +137,54 @@ optional arguments:
                          ALWAYS_REDUCE        Always  reduces  (useful  for
                          testing)
                           (default: CUSTOM)
-  --metric METRIC        Metric to be used  for  image comparison.  Options
-                         are:
+  --output OUTPUT        Directory  to  which  reduction  intermediate  and
+                         final results will be written. (default: .)
+  --preserve-semantics   Only  perform   semantics-preserving   reductions.
+                         (default: false)
+  --max-steps MAX_STEPS  The maximum  number  of  reduction  steps  to take
+                         before giving up and  outputting the final reduced
+                         file. (default: 2000)
+  --verbose              Emit   detailed   information   related   to   the
+                         reduction process. (default: false)
+  --seed SEED            Seed with which  to  initialize  the random number
+                         generator  that  is  used   to  control  reduction
+                         decisions.
+  --timeout TIMEOUT      Time   in    seconds    after    which    checking
+                         interestingness  of  a  shader   job  is  aborted.
+                         (default: 30)
+  --metric METRIC        Metric used for image comparison.  Options are:
                             HISTOGRAM_CHISQR
                             PSNR
                           (default: HISTOGRAM_CHISQR)
   --reference REFERENCE  Path to reference  .info.json  result  (with image
                          result) for comparison.
-  --threshold THRESHOLD  Threshold   used   for   histogram   differencing.
-                         (default: 100.0)
-  --timeout TIMEOUT      Time  in  seconds  after  which  execution  of  an
-                         individual   variant    is    terminated    during
-                         reduction. (default: 30)
-  --max-steps MAX_STEPS  The maximum  number  of  reduction  steps  to take
-                         before giving up and  outputting the final reduced
-                         file. (default: 250)
+  --threshold THRESHOLD  Threshold used  for  image  comparison.  (default:
+                         100.0)
   --retry-limit RETRY_LIMIT
                          When getting an image  via  the server, the number
-                         of times the  server  should  allow  the client to
+                         of times the  server  should  allow  the worker to
                          retry a shader before  assuming the shader crashes
-                         the client and marking it as SKIPPED. (default: 2)
-  --verbose              Emit   detailed   information   related   to   the
-                         reduction process. (default: false)
-  --skip-render          Don't render the shader  on remote clients. Useful
-                         when reducing compile  or  link  errors. (default:
-                         false)
-  --seed SEED            Seed to initialize  random  number generator with.
-                         (default: 1354327545)
+                         the worker and marking it as SKIPPED. (default: 2)
+  --skip-render          Don't render (just compile)  the  shader on remote
+                         workers. Useful  when  reducing  compile  or  link
+                         errors. (default: false)
   --error-string ERROR_STRING
-                         String checked for  containment  in  validation or
-                         compilation tool error message.
-  --server SERVER        Server URL to which image jobs are sent.
-  --token TOKEN          Client token to which  image  jobs  are sent. Used
-                         with --server.
-  --output OUTPUT        Output directory. (default: .)
-  --preserve-semantics   Only  perform   semantics-preserving   reductions.
-                         (default: false)
+                         For  NO_IMAGE  reductions,  a   shader  is  deemed
+                         interesting if this  string  is  found  in the run
+                         log. E.g. "Signal 11".
+  --server SERVER        For non-CUSTOM  reductions,  shaders  will  be run
+                         via a worker connected to this server URL.
+  --worker WORKER        For non-CUSTOM reductions, shaders  will be run on
+                         this worker. Use with --server.
   --stop-on-error        Quit if  something  goes  wrong  during reduction;
                          useful for testing. (default: false)
   --swiftshader          Use swiftshader for rendering. (default: false)
   --continue-previous-reduction
                          Carry on from where  a  previous reduction attempt
-                         left off. (default: false)
+                         left off.  Requires  the  temporary  files written
+                         by the previous reduction  to be intact, including
+                         the  presence  of   a  REDUCTION_INCOMPLETE  file.
+                         (default: false)
 
 ```
 
