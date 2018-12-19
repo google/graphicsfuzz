@@ -155,7 +155,7 @@ cat slipped_reduction_results/colorgrid_modulo_reduced_final.frag
 # <a shader with an empty main>
 
 # Does it still give us the fatal error?
-glsl-reduce-walkthrough/fake_compiler reduction_results/colorgrid_modulo_reduced_final.frag
+glsl-reduce-walkthrough/fake_compiler slipped_reduction_results/colorgrid_modulo_reduced_final.frag
 
 # Output:
 # Internal error: something went wrong inlining 'floor'.
