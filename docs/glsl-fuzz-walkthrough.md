@@ -396,8 +396,10 @@ the `vulkan-worker-android` app running on the Android device.
 > re-run SPIR-V shaders on the device.
 > [We describe this in more detail below](#running-shaders-from-the-command-line).
 
-The intermediate files are saved to the current directory.
-For example:
+The intermediate files are saved in the current directory under
+a `WORKERNAME/` directory.
+For example, we might have a worker name of `pixel3`
+and so under `pixel3/` we will see:
 
 ```
 test.vert                # The default GLSL vertex shader.
