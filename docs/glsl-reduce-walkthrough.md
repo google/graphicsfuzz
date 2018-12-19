@@ -5,9 +5,15 @@ glsl-reduce is a tool for automatically reducing a GLSL shader with respect to a
 In this walkthrough, we will use a mock shader compiler bug to demonstrate how
 to use glsl-reduce in action.
 
+## Requirements
+
+**Summary:** the latest release zip, Java 8+, and Python 3.5+.
+
+### Release zip
+
 We will be using the latest release zip `graphicsfuzz-1.0.zip`.
 You can download this from the [releases page](glsl-fuzz-releases.md)
-or [build it from source](glsl-fuzz-build.md).
+or [build it from source](glsl-fuzz-develop.md).
 
 Add the following directories to your path:
 
@@ -17,13 +23,15 @@ Add the following directories to your path:
   * `graphicsfuzz-1.0/bin/Mac`
   * `graphicsfuzz-1.0/bin/Windows`
 
-The `graphicsfuzz-1.0/` directory is the unzipped graphicsfuzz release.
+The `graphicsfuzz-1.0/` directory is the unzipped release.
 If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
+
+### Java 8+
 
 You will also need to install the latest version of the Java 8 Development Kit,
 either:
 
-* From your system's package manager. E.g. `sudo apt-get install openjdk-8-jdk`.
+* From your system's package manager. E.g. Ubuntu: `sudo apt-get install openjdk-8-jdk`.
 * By [downloading and installing Oracle's binary distribution](http://www.oracle.com/technetwork/java/javase/downloads/index.html) (look for Java SE 8uXXX then the JDK link).
 * By downloading and installing some other OpenJDK binary distribution for your platform.
 
@@ -34,16 +42,32 @@ java -version
 # Output: openjdk version "1.8.0_181"
 ```
 
+### Python 3.5+
+
+You will need to install Python 3.5 or higher, either:
+
+* From your system's package manager. E.g. Ubuntu: `sudo apt-get install python3`.
+* By downloading from [https://www.python.org/downloads/](https://www.python.org/downloads/).
+* By downloading and installing some other Python 3 distribution.
+
+For Windows: most recent installers of Python
+add `py`, a Python launcher, to your path.
+Our scripts attempt to use `py -3 SCRIPT.py` to
+execute `SCRIPT.py` using Python 3.5+.
+
+
 ## glsl-reduce in action
 
-We'll start by illustrating a mock shader compiler bug.  We present commands assuming a Linux/Mac environment, but they should be easy to adapt to a Windows setting.
+We'll start by illustrating a mock shader compiler bug.  We present commands assuming a Linux/Mac environment,
+but Windows users can adapt the commands or
+use the Git Bash shell.
 
 ```sh
-# Copy the sample shaders into the current directory:
+# Copy the sample files into the current directory:
 cp -r graphicsfuzz-1.0/examples/glsl-reduce-walkthrough .
 
 # Run the fake shader compiler on the fragment shader file:
-python glsl-reduce-walkthrough/fake_compiler.py glsl-reduce-walkthrough/colorgrid_modulo.frag
+glsl-reduce-walkthrough/fake_compiler glsl-reduce-walkthrough/colorgrid_modulo.frag
 
 # Output:
 # Fatal error: too much indexing.
@@ -53,7 +77,7 @@ python glsl-reduce-walkthrough/fake_compiler.py glsl-reduce-walkthrough/colorgri
 Our fake compiler fails to compile the valid shader because it cannot handle shaders
 with a lot of indexing. Thus, we have found a compiler bug.
 
-> Take a look at `fake_compiler.py` if you want to see why the fake compiler generates this error
+> Take a look at `glsl-reduce-walkthrough/fake_compiler.py` if you want to see why the fake compiler generates this error
 > message for the shader. This is not important for understanding how to use the reducer.
 
 Let's now use glsl-reduce to get a much smaller shader that causes the compiler to fail with this error:
@@ -72,7 +96,7 @@ glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthro
 # <lots of messages about the reducer's progress>
 
 # Confirm that the reduced fragment shader file still reproduces the issue
-python glsl-reduce-walkthrough/fake_compiler.py reduction_results/colorgrid_modulo_reduced_final.frag
+glsl-reduce-walkthrough/fake_compiler reduction_results/colorgrid_modulo_reduced_final.frag
 
 # Output:
 # Fatal error: too much indexing.
@@ -131,7 +155,7 @@ cat slipped_reduction_results/colorgrid_modulo_reduced_final.frag
 # <a shader with an empty main>
 
 # Does it still give us the fatal error?
-python glsl-reduce-walkthrough/fake_compiler.py reduction_results/colorgrid_modulo_reduced_final.frag
+glsl-reduce-walkthrough/fake_compiler reduction_results/colorgrid_modulo_reduced_final.frag
 
 # Output:
 # Internal error: something went wrong inlining 'floor'.
