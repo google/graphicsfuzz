@@ -41,11 +41,11 @@ import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.LocalShaderDispatcher;
 import com.graphicsfuzz.shadersets.MetricImageFileComparator;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
+import com.graphicsfuzz.util.ArgsUtil;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -156,7 +156,6 @@ public class GlslReduce {
     parser.addArgument("--seed")
           .help("Seed with which to initialize the random number that is used to control "
               + "reduction decisions.")
-          .setDefault(new Random().nextInt())
           .type(Integer.class);
 
     parser.addArgument("--error-string")
@@ -265,7 +264,7 @@ public class GlslReduce {
       final Integer retryLimit = ns.get("retry_limit");
       final Boolean verbose = ns.get("verbose");
       final boolean skipRender = ns.get("skip_render");
-      final int seed = ns.get("seed");
+      final int seed = ArgsUtil.getSeedArgument(ns);
       final String errorString = ns.get("error_string");
       final boolean reduceEverywhere = !ns.getBoolean("preserve_semantics");
       final boolean stopOnError = ns.get("stop_on_error");
