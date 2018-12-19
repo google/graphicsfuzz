@@ -25,6 +25,7 @@ import com.graphicsfuzz.generator.tool.EnabledTransformations;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.tool.GeneratorArguments;
 import com.graphicsfuzz.generator.tool.PrepareReference;
+import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
@@ -110,7 +111,8 @@ public class ShaderProducer implements Runnable {
             generatorArguments.getReplaceFloatLiterals(),
             generatorArguments.getMaxUniforms(),
             generatorArguments.getGenerateUniformBindings());
-        Generate.generateVariant(variantShaderJob, generatorArguments, ns.getInt("seed"));
+        final int seed = ArgsUtil.getSeedArgument(ns);
+        Generate.generateVariant(variantShaderJob, generatorArguments, seed);
         try {
           queue.put(new ImmutablePair<>(referenceShaderJob, variantShaderJob));
         } catch (InterruptedException exception) {

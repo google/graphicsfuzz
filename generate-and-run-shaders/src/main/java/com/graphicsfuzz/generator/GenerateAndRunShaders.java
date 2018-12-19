@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.generator.tool.Generate;
+import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -141,10 +142,12 @@ public class GenerateAndRunShaders {
         fileOps));
     consumer.start();
 
+    final int seed = ArgsUtil.getSeedArgument(ns);
+
     final Thread producer = new Thread(new ShaderProducer(
         LIMIT,
         shaderJobFiles,
-        new RandomWrapper(ns.get("seed")),
+        new RandomWrapper(seed),
         queue,
         referencesDir,
         shadingLanguageVersion,

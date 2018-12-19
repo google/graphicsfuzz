@@ -25,13 +25,13 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
+import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Random;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -66,7 +66,6 @@ public class ReducerBugPoint {
 
     parser.addArgument("--seed")
           .help("Seed to initialize random number generator with.")
-          .setDefault(new Random().nextInt())
           .type(Integer.class);
 
     parser.addArgument("--preserve-semantics")
@@ -94,7 +93,7 @@ public class ReducerBugPoint {
 
     final Namespace ns = parse(args);
 
-    final int seed = ns.get("seed");
+    final int seed = ArgsUtil.getSeedArgument(ns);
 
     final int maxIterations = ns.get("max_iterations");
 

@@ -28,11 +28,11 @@ import com.graphicsfuzz.reducer.reductionopportunities.Compatibility;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
+import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -60,7 +60,6 @@ public class ReducerBugPointBasic {
 
     parser.addArgument("--seed")
           .help("Seed to initialize random number generator with.")
-          .setDefault(new Random().nextInt())
           .type(Integer.class);
 
     parser.addArgument("--preserve-semantics")
@@ -94,7 +93,9 @@ public class ReducerBugPointBasic {
             .getGlslVersionFromFirstTwoLines(
                 fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
 
-    final IRandom generator = new RandomWrapper(ns.get("seed"));
+    final int seed = ArgsUtil.getSeedArgument(ns);
+
+    final IRandom generator = new RandomWrapper(seed);
 
     final ShaderJob originalShaderJob = fileOps.readShaderJobFile(shaderJobFile);
 
