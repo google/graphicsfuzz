@@ -98,7 +98,7 @@ public class ToolPaths {
           getSourceRoot(jarDir),
           "graphicsfuzz",
           "target",
-          "graphicsfuzz-1.0").toString();
+          "graphicsfuzz").toString();
     }
 
     return jarDir.getParentFile().toString();

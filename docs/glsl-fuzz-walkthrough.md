@@ -30,7 +30,7 @@ in this walkthrough.
 
 ### Release zip and workers
 
-We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
+We will be using the latest release zip `graphicsfuzz.zip` and worker applications.
 You can download these from the [releases page](glsl-fuzz-releases.md)
 or [build them from source](glsl-fuzz-develop.md).
 If you want to use the Android worker you will also need an Android device
@@ -38,14 +38,14 @@ or the Android device emulator.
 
 Add the following directories to your path:
 
-* `graphicsfuzz-1.0/python/drivers`
+* `graphicsfuzz/python/drivers`
 * One of:
-  * `graphicsfuzz-1.0/bin/Linux`
-  * `graphicsfuzz-1.0/bin/Mac`
-  * `graphicsfuzz-1.0/bin/Windows`
+  * `graphicsfuzz/bin/Linux`
+  * `graphicsfuzz/bin/Mac`
+  * `graphicsfuzz/bin/Windows`
 
-The `graphicsfuzz-1.0/` directory is the unzipped release.
-If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
+The `graphicsfuzz/` directory is the unzipped release.
+If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz/`.
 
 ### Java 8+
 
@@ -118,7 +118,7 @@ that will be set;
 [we discuss the format of the JSON file in more detail below](#format-of-json-files).
 For example, from our release zip:
 
-`graphicsfuzz-1.0/samples/300es/squares.json`:
+`graphicsfuzz/samples/300es/squares.json`:
 
 ```json
 {
@@ -148,7 +148,7 @@ For example, from our release zip:
 The fragment shader file for this shader job
 must have the same name and be alongside the shader job file
 with a `.frag` extension;
-in this case, at `graphicsfuzz-1.0/samples/300es/squares.frag`.
+in this case, at `graphicsfuzz/samples/300es/squares.frag`.
 Thus, the inputs and outputs for `glsl-generate` are actually
 folders of shader jobs.
 
@@ -156,7 +156,7 @@ We can create some shader families from our provided sample shader jobs as follo
 
 ```sh
 # Copy the sample shaders into the current directory:
-cp -r graphicsfuzz-1.0/shaders/samples samples
+cp -r graphicsfuzz/shaders/samples .
 
 # Generate several shader families from the set of sample shaders.
 # Placing the generated shaders under work/shaderfamilies will allow the server to find the shaders later.
@@ -273,7 +273,7 @@ the workers run.
 To test the OpenGL drivers on a
 Mac, Linux, or Windows desktop device,
 open a new terminal, navigate to a location of your choice, and
-download the latest `gles-worker-desktop-1.0.jar` file from the
+download the latest `gles-worker-desktop.jar` file from the
 [releases page](glsl-fuzz-releases.md) into your current directory.
 
 You will need to create a `worker-name.txt` file in your current directory with one
@@ -288,7 +288,7 @@ Then execute the following:
 ```sh
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080/)
-java -ea -jar gles-worker-desktop-1.0.jar
+java -ea -jar gles-worker-desktop.jar
 ```
 
 You should see a small window containing some animated white text on

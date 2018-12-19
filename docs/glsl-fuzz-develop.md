@@ -41,7 +41,7 @@ git submodule update --init
 
 ### Build the GraphicsFuzz package
 
-The main GraphicsFuzz package `graphicsfuzz-1.0.zip`
+The main GraphicsFuzz package `graphicsfuzz.zip`
 includes the main command line tools
 (`glsl-generate`, `glsl-reduce`)
 and the server (`glsl-server`),
@@ -69,15 +69,15 @@ mvn package -DskipTests=true -Dcheckstyle.skip
 mvn package -P imageTests
 ```
 
-The package is output to `graphicsfuzz/target/graphicsfuzz-1.0.zip`, and is unzipped at the same location `graphicsfuzz/target/graphicsfuzz-1.0/`.
+The package is output to `graphicsfuzz/target/graphicsfuzz.zip`, and is unzipped at the same location `graphicsfuzz/target/graphicsfuzz/`.
 
 You should add the following to your path:
 
-* `graphicsfuzz/target/graphicsfuzz-1.0/python/drivers`
+* `graphicsfuzz/target/graphicsfuzz/python/drivers`
 * Optionally, for third-party tools like `glslangValidator` and `spirv-opt`, add one of:
-  * `graphicsfuzz/target/graphicsfuzz-1.0/bin/Linux`
-  * `graphicsfuzz/target/graphicsfuzz-1.0/bin/Mac`
-  * `graphicsfuzz/target/graphicsfuzz-1.0/bin/Windows`
+  * `graphicsfuzz/target/graphicsfuzz/bin/Linux`
+  * `graphicsfuzz/target/graphicsfuzz/bin/Mac`
+  * `graphicsfuzz/target/graphicsfuzz/bin/Windows`
 
 You can now run e.g. `glsl-generate`, `glsl-reduce`, `glsl-server`, `glslangValidator`, `spirv-opt`.
 
@@ -167,7 +167,7 @@ cd gles-worker/
 
 The resulting JAR is here:
 
-`gles-worker/desktop/build/libs/gles-desktop-worker-1.0.jar`
+`gles-worker/desktop/build/libs/gles-desktop-worker.jar`
 
 #### iOS
 
@@ -301,9 +301,9 @@ and start certain reductions.
 
 ```bash
 # From source repo:
-export PYTHONPATH=/path/to/repo/graphicsfuzz/target/graphicsfuzz-1.0/python
+export PYTHONPATH=/path/to/repo/graphicsfuzz/target/graphicsfuzz/python
 # OR: from unzipped graphicsfuzz package:
-export PYTHONPATH=/path/to/graphicsfuzz-1.0/python
+export PYTHONPATH=/path/to/graphicsfuzz/python
 # OR: if you are writing a python script that is in `python/drivers`,
 #     start with:
 import os
