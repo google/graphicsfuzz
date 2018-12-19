@@ -4,6 +4,9 @@ glsl-fuzz is a testing framework for automatically finding and simplifying bugs 
 by generating, running, and reducing GLSL shaders.
 
 In this walkthrough, we will briefly demonstrate most features of glsl-fuzz from start to finish, including our browser-based UI.
+We present commands assuming a Linux/Mac environment,
+but Windows users can adapt the commands or
+use the Git Bash shell.
 
 The use of `glsl-fuzz` can be roughly split into the following steps:
 
@@ -70,8 +73,8 @@ You will need to install Python 3.5 or higher, either:
 
 For Windows: most recent installers of Python
 add `py`, a Python launcher, to your path.
-We assume that `py -3 SCRIPT.py` works,
-and executes `SCRIPT.py` using Python 3.5+.
+Our scripts attempt to use `py -3 SCRIPT.py` to
+execute `SCRIPT.py` using Python 3.5+.
 
 ### `adb`
 
