@@ -4,6 +4,9 @@ glsl-fuzz is a testing framework for automatically finding and simplifying bugs 
 by generating, running, and reducing GLSL shaders.
 
 In this walkthrough, we will briefly demonstrate most features of glsl-fuzz from start to finish, including our browser-based UI.
+We present commands assuming a Linux/Mac environment,
+but Windows users can adapt the commands or
+use the Git Bash shell.
 
 The use of `glsl-fuzz` can be roughly split into the following steps:
 
@@ -67,6 +70,11 @@ You will need to install Python 3.5 or higher, either:
 * From your system's package manager. E.g. Ubuntu: `sudo apt-get install python3`.
 * By downloading from [https://www.python.org/downloads/](https://www.python.org/downloads/).
 * By downloading and installing some other Python 3 distribution.
+
+For Windows: most recent installers of Python
+add `py`, a Python launcher, to your path.
+Our scripts attempt to use `py -3 SCRIPT.py` to
+execute `SCRIPT.py` using Python 3.5+.
 
 ### `adb`
 
@@ -164,7 +172,7 @@ glsl-generate --seed 0 samples/100 samples/donors 10 "100" family_100 work/shade
 # Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
 glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 "310 es" family_vulkan work/shaderfamilies
 
-# The lines above will take approx. 1-2 minutes each, and will generate a shader family for every
+# Each line above will take approx. 1 minute, and will generate a shader family for every
 # shader in samples/300es or samples/100:
 ls work/shaderfamilies
 
@@ -388,8 +396,10 @@ the `vulkan-worker-android` app running on the Android device.
 > re-run SPIR-V shaders on the device.
 > [We describe this in more detail below](#running-shaders-from-the-command-line).
 
-The intermediate files are saved to the current directory.
-For example:
+The intermediate files are saved in the current directory under
+a `WORKERNAME/` directory.
+For example, we might have a worker name of `pixel3`
+and so under `pixel3/` we will see:
 
 ```
 test.vert                # The default GLSL vertex shader.

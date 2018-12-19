@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-${BASH_SOURCE}.py "$@"
-
