@@ -25,6 +25,7 @@ import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.util.ArgsUtil;
 import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -128,7 +129,7 @@ public class GenerateShaderFamily {
     final boolean writeProbabilities = ns.getBoolean("write_probabilities");
     final boolean keepBadVariants = ns.getBoolean("keep_bad_variants");
     final boolean stopOnFail = ns.getBoolean("stop_on_fail");
-    final int seed = ns.getInt("seed");
+    final int seed = ArgsUtil.getSeedArgument(ns);
     final int numVariants = ns.getInt("num_variants");
     Optional<Integer> maxBytes = ns.get("max_bytes") == null ? Optional.empty() :
         Optional.of(ns.getInt("max_bytes"));

@@ -20,11 +20,13 @@ import os
 import shutil
 import subprocess
 import time
+import platform
 from typing import Union, IO, Any
 
 ################################################################################
 # Constants
 
+HERE = os.path.abspath(__file__)
 
 LOGFILE = 'vklog.txt'
 TIMEOUT_RUN = 30
@@ -34,6 +36,43 @@ BUSY_WAIT_SLEEP_FAST = 0.1
 
 ################################################################################
 # Common
+
+
+def get_platform():
+    host = platform.system()
+    if host == 'Linux' or host == 'Windows':
+        return host
+    elif host == 'Darwin':
+        return 'Mac'
+    else:
+        raise AssertionError('Unsupported platform: {}'.format(host))
+
+
+def get_bin_dir():
+    # graphics-fuzz/python/drivers/
+    bin_dir = os.path.dirname(HERE)
+    # graphics-fuzz/
+    bin_dir = os.path.join(bin_dir, os.path.pardir, os.path.pardir)
+    # e.g. graphics-fuzz/bin/Linux
+    bin_dir = os.path.join(bin_dir, 'bin', get_platform())
+    return bin_dir
+
+
+BIN_DIR = get_bin_dir()
+
+
+def glslang_path():
+    glslang = os.path.join(BIN_DIR, 'glslangValidator')
+    if os.path.isfile(glslang):
+        return glslang
+    return 'glslangValidator'
+
+
+def spirvas_path():
+    spirvas = os.path.join(BIN_DIR, 'spirv-as')
+    if os.path.isfile(spirvas):
+        return spirvas
+    return 'spirv-as'
 
 
 def remove_end(str_in: str, str_end: str):
@@ -59,11 +98,11 @@ def prepare_shader(shader: str):
     output = ''
     if shader.endswith('.frag') or shader.endswith('.vert'):
         output = shader + '.spv'
-        cmd = 'glslangValidator -V ' + shader + ' -o ' + output
+        cmd = glslang_path() + ' -V ' + shader + ' -o ' + output
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
     elif shader.endswith('.frag.asm') or shader.endswith('.vert.asm'):
         output = remove_end(shader, '.asm') + '.spv'
-        cmd = 'spirv-as ' + shader + ' -o ' + output
+        cmd = spirvas_path() + ' ' + shader + ' -o ' + output
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
     elif shader.endswith('.spv'):
         output = shader

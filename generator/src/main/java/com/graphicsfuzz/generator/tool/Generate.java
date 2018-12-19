@@ -105,7 +105,6 @@ public class Generate {
   public static void addGeneratorCommonArguments(ArgumentParser parser) {
     parser.addArgument("--seed")
           .help("Seed to initialize random number generator with.")
-          .setDefault(new Random().nextInt())
           .type(Integer.class);
 
     parser.addArgument("--webgl")
@@ -308,12 +307,18 @@ public class Generate {
   public static void mainHelper(String[] args)
       throws IOException, ParseTimeoutException, ArgumentParserException {
     final Namespace ns = parse(args);
+
+    Integer seed = ns.get("seed");
+    if (seed == null) {
+      seed = new Random().nextInt();
+    }
+
     generateVariant(
         new ShaderJobFileOperations(),
         ns.get("reference_json"),
         ns.get("output"),
         getGeneratorArguments(ns),
-        ns.getInt("seed"),
+        seed,
         ns.getBoolean("write_probabilities"));
   }
 
@@ -582,7 +587,7 @@ public class Generate {
           .collect(Collectors.toList())
           .contains(Constants.INJECTION_SWITCH);
   }
-  
+
   public static void setInjectionSwitch(UniformsInfo uniformsInfo) {
     uniformsInfo.addUniform(Constants.INJECTION_SWITCH, BasicType.VEC2, Optional.empty(),
           Arrays.asList(new Float(0.0), new Float(1.0)));

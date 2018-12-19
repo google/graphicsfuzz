@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -84,7 +85,7 @@ public class GlslGenerate {
     final String prefix = ns.get("prefix");
     final int numVariants = ns.getInt("num_variants");
     final boolean verbose = ns.getBoolean("verbose");
-    final int seed = ns.getInt("seed");
+    final int seed = ArgsUtil.getSeedArgument(ns);
 
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 

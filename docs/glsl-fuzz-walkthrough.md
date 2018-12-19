@@ -23,13 +23,13 @@ in this walkthrough.
 
 ## Requirements
 
-**Summary:** the latest release zip and worker applications, Java 8+, and Python 3.5+.
+**Summary:** the latest release zip and worker applications, Java 8+, Python 3.5+, and (if you want to do Vulkan Android testing) `adb` on your path.
 
 ### Release zip and workers
 
 We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
 You can download these from the [releases page](glsl-fuzz-releases.md)
-or [build them from source](glsl-fuzz-build.md).
+or [build them from source](glsl-fuzz-develop.md).
 If you want to use the Android worker you will also need an Android device
 or the Android device emulator.
 
@@ -67,6 +67,15 @@ You will need to install Python 3.5 or higher, either:
 * From your system's package manager. E.g. Ubuntu: `sudo apt-get install python3`.
 * By downloading from [https://www.python.org/downloads/](https://www.python.org/downloads/).
 * By downloading and installing some other Python 3 distribution.
+
+### `adb`
+
+The Vulkan worker for Android requires that `adb` is on your path.
+We recommend installing the Android SDK,
+[as described in our Android notes documentation](android-notes.md),
+and adding the `platform-tools` directory to your path,
+although you can technically just unzip the
+platform tools zip file without installing the rest of the SDK.
 
 
 ## Generating shaders using `glsl-generate`
@@ -147,13 +156,13 @@ cp -r graphicsfuzz-1.0/shaders/samples samples
 # glsl-generate [options] references donors num_variants glsl_version prefix output_folder
 
 # Generate some GLSL version 300 es shaders.
-glsl-generate samples/300es samples/donors 10 "300 es" family_300es work/shaderfamilies
+glsl-generate --seed 0 samples/300es samples/donors 10 "300 es" family_300es work/shaderfamilies
 
 # Generate some GLSL version 100 shaders.
-glsl-generate samples/100 samples/donors 10 "100" family_100 work/shaderfamilies
+glsl-generate --seed 0 samples/100 samples/donors 10 "100" family_100 work/shaderfamilies
 
 # Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 "310 es" family_vulkan work/shaderfamilies
+glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 "310 es" family_vulkan work/shaderfamilies
 
 # The lines above will take approx. 1-2 minutes each, and will generate a shader family for every
 # shader in samples/300es or samples/100:
@@ -179,6 +188,10 @@ ls work/shaderfamilies
 # family_vulkan_colorgrid_modulo
 # family_vulkan_prefix_sum
 ```
+
+> The commands above are deterministic because we passed `--seed 0`.
+> Omit this argument to use a random seed and generate different
+> shaders each time.
 
 Each shader family contains 11 shader jobs;
 1 for the reference shader, and 10 for the variant shaders:
@@ -401,7 +414,9 @@ or you can install it using `adb`.
 There is no point in manually running this app from the Android device; it will crash unless
 it finds shaders in the `/sdcard/graphicsfuzz` directory.
 
-You can run the worker as follows:
+You can run the worker as follows.
+
+> Note that `glsl-to-spv-worker` assumes `adb` is on your PATH.
 
 ```sh
 # Install the apk, if not installed already.
@@ -529,7 +544,8 @@ was enough to cause the wrong image to be rendered.
 ## Queuing a no image reduction
 
 The results table for the shader family below shows
-that `variant_004` failed to render due to a crash:
+that `variant_004` failed to render due to a crash
+during shader compilation:
 
 ![Table of image results](images/screenshot-results-table-crash.png)
 
@@ -544,19 +560,36 @@ signal 11".  Ideally, we should enter something even more specific, such as a
 function name from a stack trace, but this is only possible if a stack trace is
 shown in the run log.
 
+We can also surmise that the error occurs during shader compilation,
+and so any successful shader compilation during the reduction process
+is uninteresting.
+As such,
+we can greatly speed up the reduction by enabling the "Skip Render"
+option.
+
+> The "Skip Render" option causes the worker to only compile the shader,
+> without rendering an image, which is much faster.
+> In this case,
+> a successful compilation is regarded as uninteresting for the reduction.
+> You should not enable this option if the error you are reducing
+> occurs during rendering, or as a result of rendering.
+
 The other default settings are sufficient, so click "Start Reduction".
 
-This time, you will not see the worker rendering images, because the "Skip Render" option has been set.  This is because to reduce a shader compiler crash bug there is no need to actually render using the shader if it compiles successfully.
+This time, you will not see the worker rendering the image,
+because the "Skip Render" option has been set,
+although you may still see the "sanity image" being rendered,
+which is used to check that the graphics driver is still
+able to render a basic image.
 
 Once the reduction has finished,
 refresh the page and you should see the result.
 However, for crash reductions,
 the diff view makes little sense,
 as the reducer will have removed as much code as possible
-(due to the "Reduce Everywhere" option).
+(because the "Preserve Semantics" option was disabled).
 Thus, click "View reduced shader" to
 see the small, simple shader that triggers the bug:
-
 
 ![Reduced result](images/screenshot-crash-reduction-result.png)
 
@@ -588,7 +621,7 @@ You can see results in the file system within the server's working directory at 
 Under `work/processing/<worker>/<shader_family>/`, each variant produces the following files:
 * `<variant>.info.json`
 * `<variant>.txt`
-* `<variant>.png` (only when `SUCCESS` status)
+* `<variant>.png` (only for `SUCCESS` status)
 * `<variant>.gif` (only for `NONDET` status)
 * `<variant>_nondet1.png` (only for `NONDET` status)
 * `<variant>_nondet2.png` (only for `NONDET` status)
@@ -616,7 +649,7 @@ This JSON also contains other fields, including different image comparison metri
 from comparing the variant image and the reference image.
 
 `<variant>.txt` contains the log of the variant run. On Android, it is a dump of
-the android logcat, and can contain precious information, such as details on a
+the Android logcat, and can contain useful information, such as details on a
 driver crash.
 
 `<variant>.png` is the image produced by this variant. This file is present only
