@@ -23,7 +23,7 @@ in this walkthrough.
 
 ## Requirements
 
-**Summary:** the latest release zip and worker applications, Java 8+, Python 3.5+, and `adb` on your path.
+**Summary:** the latest release zip and worker applications, Java 8+, Python 3.5+, and (if you want to do Vulkan Android testing) `adb` on your path.
 
 ### Release zip and workers
 
@@ -70,7 +70,7 @@ You will need to install Python 3.5 or higher, either:
 
 ### `adb`
 
-The Vulkan worker requires that `adb` is on your path.
+The Vulkan worker for Android requires that `adb` is on your path.
 We recommend installing the Android SDK,
 [as described in our Android notes documentation](android-notes.md),
 and adding the `platform-tools` directory to your path,
