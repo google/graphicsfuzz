@@ -212,8 +212,8 @@ limitations under the License.
                 <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
                 <property name="touched-file" value="${project.build.directory}/touched.txt"/>
 
-                <property name="assembly-zip" value="${project.build.directory}/${project.artifactId}-${project.version}.zip"/>
-                <property name="assembly-dir" value="${project.build.directory}/${project.artifactId}-${project.version}"/>
+                <property name="assembly-zip" value="${project.build.directory}/${project.artifactId}.zip"/>
+                <property name="assembly-dir" value="${project.build.directory}/${project.artifactId}"/>
 
                 <property name="git-file" value="${project.build.directory}/HASH"/>
 
