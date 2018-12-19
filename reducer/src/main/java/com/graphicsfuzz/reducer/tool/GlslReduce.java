@@ -68,7 +68,7 @@ public class GlslReduce {
         .description("Reduce GLSL shaders, driven by a criterion of interest. "
             + "The tool takes a \"shader job\" as input, "
             + "which is a set of files with the same name (e.g. NAME) in the same directory, "
-            + "including NAME.json (a metadata file that can be empty) "
+            + "including NAME.json (a metadata file that can just contain \"{}\") "
             + "and some graphics shaders (NAME.frag and/or NAME.vert) "
             + "or a compute shader (NAME.comp).");
 
