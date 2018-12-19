@@ -65,12 +65,13 @@ the following are common reduction commands:
 # Wrong image reduction.
 glsl-reduce shader-job.json --preserve-semantics --reduction-kind ABOVE_THRESHOLD --reference reference.info.json
 
-# No image reduction for a crash that occurs during shader compilation.
-# --skip-render can be used since the error occurs during shader compilation;
-# successful shader compilation will be regarded as uninteresting. 
+# A "no image" reduction for a crash that occurs during shader compilation.
+# --skip-render should be used to speed up the interestingness test,
+# since the error occurs during shader compilation; successful shader 
+# compilation will be regarded as uninteresting. 
 glsl-reduce shader-job.json --reduction-kind NO_IMAGE --error-string "Fatal signal 11" --skip-render
 
-# No image reduction for a crash that occurs during rendering.
+# A "no image" reduction for a crash that occurs during rendering.
 # --skip-render should NOT be used since the error occurs during rendering;
 # we need to render to reproduce the crash.
 glsl-reduce shader-job.json --reduction-kind NO_IMAGE --error-string "Fatal signal 11"
