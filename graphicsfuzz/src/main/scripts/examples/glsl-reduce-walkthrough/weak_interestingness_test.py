@@ -37,5 +37,5 @@ if p.returncode != 0:
     # Interesting: the compiler failed.
     exit(0)
 
-# Boring: the compiler either succeeded, or failed with an irrelevant message.
+# Boring: the compiler succeeded.
 exit(1)
