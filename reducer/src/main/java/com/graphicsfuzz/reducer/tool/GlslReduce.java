@@ -65,12 +65,12 @@ public class GlslReduce {
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("glsl-reduce")
         .defaultHelp(true)
-        .description("Reduce GLSL shaders, driven by a criterion of interest. "
-            + "The tool takes a \"shader job\" as input, "
-            + "which is a set of files with the same name (e.g. NAME) in the same directory, "
-            + "including NAME.json (a metadata file that can just contain \"{}\") "
-            + "and some graphics shaders (NAME.frag and/or NAME.vert) "
-            + "or a compute shader (NAME.comp).");
+        .description("glsl-reduce takes a shader job `SHADER_JOB.json` "
+            + "(a .json file alongside shader files with the same name, such as SHADER_JOB.frag "
+            + "and/or SHADER_JOB.vert or SHADER_JOB.comp), "
+            + "as well as further arguments or options to specify the interestingness test."
+            + "glsl-reduce will try to simplify the given shader to a smaller,"
+            + "simpler shader that is still deemed \"interesting\".");
 
     // Required arguments
     parser.addArgument("shader-job")
@@ -108,8 +108,39 @@ public class GlslReduce {
           .setDefault("CUSTOM")
           .type(String.class);
 
+    parser.addArgument("--output")
+        .help("Directory to which reduction intermediate and final results will be written.")
+        .setDefault(new File("."))
+        .type(File.class);
+
+    parser.addArgument("--preserve-semantics")
+        .help("Only perform semantics-preserving reductions.")
+        .action(Arguments.storeTrue());
+
+    parser.addArgument("--max-steps")
+        .help(
+            "The maximum number of reduction steps to take before giving up and outputting the "
+                + "final reduced file.")
+        .setDefault(2000)
+        .type(Integer.class);
+
+    parser.addArgument("--verbose")
+        .help("Emit detailed information related to the reduction process.")
+        .action(Arguments.storeTrue());
+
+    parser.addArgument("--seed")
+        .help("Seed with which to initialize the random number generator that is used to control "
+            + "reduction decisions.")
+        .type(Integer.class);
+
+    parser.addArgument("--timeout")
+        .help(
+            "Time in seconds after which checking interestingness of a shader job is aborted.")
+        .setDefault(30)
+        .type(Integer.class);
+
     parser.addArgument("--metric")
-        .help("Metric to be used for image comparison.  Options are:\n"
+        .help("Metric used for image comparison.  Options are:\n"
             + "   " + ImageComparisonMetric.HISTOGRAM_CHISQR + "\n"
             + "   " + ImageComparisonMetric.PSNR + "\n")
         .setDefault(ImageComparisonMetric.HISTOGRAM_CHISQR.toString())
@@ -120,64 +151,36 @@ public class GlslReduce {
           .type(File.class);
 
     parser.addArgument("--threshold")
-          .help("Threshold used for histogram differencing.")
+          .help("Threshold used for image comparison.")
           .setDefault(100.0)
           .type(Double.class);
 
-    parser.addArgument("--timeout")
-          .help(
-                "Time in seconds after which checking interestingness of a shader job is aborted.")
-          .setDefault(30)
-          .type(Integer.class);
-
-    parser.addArgument("--max-steps")
-          .help(
-                "The maximum number of reduction steps to take before giving up and outputting the "
-                      + "final reduced file.")
-          .setDefault(250)
-          .type(Integer.class);
-
     parser.addArgument("--retry-limit")
           .help("When getting an image via the server, the number of times the server should "
-                + "allow the client to retry a shader before assuming the shader crashes the "
-                + "client and marking it as SKIPPED.")
+                + "allow the worker to retry a shader before assuming the shader crashes the "
+                + "worker and marking it as SKIPPED.")
           .setDefault(2)
           .type(Integer.class);
 
-    parser.addArgument("--verbose")
-          .help("Emit detailed information related to the reduction process.")
-          .action(Arguments.storeTrue());
-
     parser.addArgument("--skip-render")
-          .help("Don't render the shader on remote clients. Useful when reducing compile or link "
-                + "errors.")
+          .help("Don't render (just compile) the shader on remote workers. "
+              + "Useful when reducing compile or link errors.")
           .action(Arguments.storeTrue());
-
-    parser.addArgument("--seed")
-          .help("Seed with which to initialize the random number that is used to control "
-              + "reduction decisions.")
-          .type(Integer.class);
 
     parser.addArgument("--error-string")
-          .help("String checked for containment in validation or compilation tool error message.")
+          .help("For NO_IMAGE reductions, a shader is deemed interesting if this string is found "
+              + "in the run log. E.g. \"Signal 11\".")
           .type(String.class);
 
     parser.addArgument("--server")
-          .help("Server URL to which image jobs are sent.")
+          .help("For non-CUSTOM reductions, shaders will be run via a worker connected to "
+              + "this server URL.")
           .type(String.class);
 
     parser.addArgument("--worker")
-          .help("Name of worker to which image jobs are sent. Used with --server.")
+          .help("For non-CUSTOM reductions, shaders will be run on this worker. "
+              + "Use with --server.")
           .type(String.class);
-
-    parser.addArgument("--output")
-          .help("Directory to which reduction intermediate and final results will be written.")
-          .setDefault(new File("."))
-          .type(File.class);
-
-    parser.addArgument("--preserve-semantics")
-          .help("Only perform semantics-preserving reductions.")
-          .action(Arguments.storeTrue());
 
     parser.addArgument("--stop-on-error")
           .help("Quit if something goes wrong during reduction; useful for testing.")
