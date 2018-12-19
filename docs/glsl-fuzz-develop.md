@@ -89,6 +89,9 @@ or read the [walkthrough for a brief overview of using all tools
 
 #### Android
 
+Ensure that the `ANDROID_HOME=/path/to/android-sdk` and
+`ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle` environment variables are set.
+
 ```shell
 cd vulkan-worker
 ./gradlew assembleDebug
