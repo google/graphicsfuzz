@@ -68,6 +68,11 @@ You will need to install Python 3.5 or higher, either:
 * By downloading from [https://www.python.org/downloads/](https://www.python.org/downloads/).
 * By downloading and installing some other Python 3 distribution.
 
+For Windows: most recent installers of Python
+add `py`, a Python launcher, to your path.
+We assume that `py -3 SCRIPT.py` works,
+and executes `SCRIPT.py` using Python 3.5+.
+
 ### `adb`
 
 The Vulkan worker for Android requires that `adb` is on your path.
