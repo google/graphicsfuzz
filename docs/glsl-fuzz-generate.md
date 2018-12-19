@@ -59,8 +59,7 @@ positional arguments:
 
 optional arguments:
   -h, --help             show this help message and exit
-  --seed SEED            Seed to initialize  random  number generator with.
-                         (default: -1946162367)
+  --seed SEED            Seed to initialize random number generator with.
   --webgl                Restrict to  WebGL-compatible  features. (default:
                          false)
   --small                Try to generate small shaders. (default: false)
