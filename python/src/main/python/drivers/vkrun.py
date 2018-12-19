@@ -37,6 +37,13 @@ BUSY_WAIT_SLEEP_FAST = 0.1
 ################################################################################
 # Common
 
+orig_print = print
+
+
+# noinspection PyShadowingBuiltins
+def print(s):
+    orig_print(s, flush=True)
+
 
 def get_platform():
     host = platform.system()

@@ -16,4 +16,14 @@
 @REM  limitations under the License.
 @REM
 
-python "%~dp0run-shader-family.py" %*
+where /q py
+IF ERRORLEVEL 0 (
+  py -3 "%~dpn0.py" %*
+) ELSE (
+  where /q python3
+  IF ERRORLEVEL 0 (
+    python3 "%~dpn0.py" %*
+  ) ELSE (
+    python "%~dpn0.py" %*
+  )
+)

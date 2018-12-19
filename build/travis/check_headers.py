@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright 2018 The GraphicsFuzz Project Authors
 #
@@ -33,6 +33,8 @@ def exclude_dirname(f: str):
         "__pycache__",
         ".externalNativeBuild",
         ".mvn",
+        "cmake-build-debug",
+        "cmake-build-release",
 
     ]
 

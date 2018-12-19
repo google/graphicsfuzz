@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright 2018 The GraphicsFuzz Project Authors
 #
@@ -18,18 +18,25 @@ import os
 import subprocess
 import sys
 
+HERE = os.path.abspath(__file__)
+
 frag = os.path.splitext(sys.argv[1])[0] + ".frag"
 print(frag)
 
-cmd = [ "python", os.path.dirname(os.path.realpath(__file__)) + os.sep + "fake_compiler.py", frag ]
+cmd = os.path.join(os.path.dirname(HERE), "fake_compiler") + " " + frag
 
-proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-proc_stdout, proc_stderr = proc.communicate()
+p = subprocess.run(
+    cmd,
+    shell=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    universal_newlines=True,
+)
 
-if proc.returncode != 0:
-  if "too much indexing" in proc_stderr:
-    # Interesting: the compiler failed with a relevant message.
-    exit(0)
+if p.returncode != 0:
+    if "too much indexing" in p.stderr:
+        # Interesting: the compiler failed with a relevant message.
+        exit(0)
 
 # Boring: the compiler either succeeded, or failed with an irrelevant message.
 exit(1)

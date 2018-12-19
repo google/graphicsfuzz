@@ -15,7 +15,7 @@ page](glsl-fuzz-releases.md).
 * [Maven](https://maven.apache.org/)
 * [Python 3.5+](https://www.python.org/)
 
-* For our Android workers: [Android SDK & NDK](https://developer.android.com/studio/#command-tools)
+* For our Android workers: [Android SDK & NDK](android-notes.md)
 * For the Vulkan desktop worker: [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
 
 > Our *workers* are applications that run on the device you wish to test;
@@ -88,6 +88,9 @@ or read the [walkthrough for a brief overview of using all tools
 ### Build the Vulkan worker (vulkan-worker)
 
 #### Android
+
+Ensure that the `ANDROID_HOME=/path/to/android-sdk` and
+`ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle` environment variables are set.
 
 ```shell
 cd vulkan-worker

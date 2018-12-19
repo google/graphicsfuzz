@@ -135,7 +135,7 @@ glsl-generate --seed 0 samples/donors samples/100 10 "100" family_100 work/shade
 # Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
 glsl-generate --seed 0 --generate_uniform_bindings --max_uniforms 10 samples/donors samples/310es 10 "310 es" family_vulkan work/shaderfamilies
 
-# The lines above will take approx. 1-2 minutes each, and will generate a shader family for every
+# Each line above will take approx. 1 minute, and will generate a shader family for every
 # shader in samples/300es or samples/100:
 ls work/shaderfamilies
 
