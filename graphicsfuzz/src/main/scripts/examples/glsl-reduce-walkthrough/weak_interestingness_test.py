@@ -18,16 +18,24 @@ import os
 import subprocess
 import sys
 
+HERE = os.path.abspath(__file__)
+
 frag = os.path.splitext(sys.argv[1])[0] + ".frag"
 print(frag)
 
-cmd = [ "python", os.path.dirname(os.path.realpath(__file__)) + os.sep + "fake_compiler.py", frag ]
-proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-proc.communicate()
+cmd = os.path.join(os.path.dirname(HERE), "fake_compiler") + " " + frag
 
-if proc.returncode != 0:
-  # Interesting: the compiler failed.
-  exit(0)
+p = subprocess.run(
+    cmd,
+    shell=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    universal_newlines=True,
+)
 
-# Boring: the compiler succeeded.
+if p.returncode != 0:
+    # Interesting: the compiler failed.
+    exit(0)
+
+# Boring: the compiler either succeeded, or failed with an irrelevant message.
 exit(1)
