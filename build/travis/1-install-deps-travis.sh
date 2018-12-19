@@ -48,7 +48,7 @@ tar xf "github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_ARCH
 popd
 
 
-# Android SDK (ANDROID_HOST_PLATFORM must be set to linux, darwin, or windows, and ANDROID_HOME must be set some directory).
+# Android SDK (ANDROID_HOST_PLATFORM must be set to linux, darwin, or windows, and ANDROID_HOME must be set to some directory).
 
 ANDROID_TOOLS_FILENAME="sdk-tools-${ANDROID_HOST_PLATFORM}-4333796.zip"
 ANDROID_NDK_FILENAME="android-ndk-r18b-${ANDROID_HOST_PLATFORM}-x86_64.zip"
