@@ -72,7 +72,7 @@ glsl-reduce shader-job.json --preserve-semantics --reduction-kind ABOVE_THRESHOL
 glsl-reduce shader-job.json --reduction-kind NO_IMAGE --error-string "Fatal signal 11" --skip-render
 
 # A "no image" reduction for a crash that occurs during rendering.
-# --skip-render should NOT be used since the error occurs during rendering;
+# --skip-render must NOT be used since the error occurs during rendering;
 # we need to render to reproduce the crash.
 glsl-reduce shader-job.json --reduction-kind NO_IMAGE --error-string "Fatal signal 11"
 
