@@ -22,8 +22,9 @@ the download of the Android SDK starts about halfway down.
 You may need to set some environment variables as specified in the comments.
 On Windows, you can use the Git Bash shell.
 
-Ensure that the `ANDROID_HOME=/path/to/android-sdk` and `ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle` environment variables are set;
-you may need to open IntelliJ IDEA from the terminal depending on how
+Ensure that the `ANDROID_HOME=/path/to/android-sdk` and `ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle` environment variables are set.
+If using IntelliJ and/or Android Studio,
+you may need to open your IDE from the terminal depending on how
 you set the environment variables.
 
 You should also add the `android-sdk/platform-tools` directory
