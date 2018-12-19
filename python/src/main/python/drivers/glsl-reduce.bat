@@ -16,4 +16,4 @@
 @REM  limitations under the License.
 @REM
 
-python "%~dpn0.py" %*
+py -3 "%~dpn0.py" %*
