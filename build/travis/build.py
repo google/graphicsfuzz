@@ -89,8 +89,8 @@ def go():
 
     # Copy output.
     shutil.copy2(
-        path("graphicsfuzz", "target", "graphicsfuzz-1.0.zip"),
-        path("out", "graphicsfuzz-1.0.zip")
+        path("graphicsfuzz", "target", "graphicsfuzz.zip"),
+        path("out", "graphicsfuzz.zip")
     )
 
     source_root = os.path.abspath(".")
@@ -103,8 +103,8 @@ def go():
 
     # Copy desktop worker.
     shutil.copy2(
-        path("desktop", "build", "libs", "gles-worker-desktop-1.0.jar"),
-        path(source_root, "out", "gles-worker-desktop-1.0.jar")
+        path("desktop", "build", "libs", "gles-worker-desktop.jar"),
+        path(source_root, "out", "gles-worker-desktop.jar")
     )
 
     # Build Android worker

@@ -111,11 +111,11 @@ optional arguments:
 
 ## Example
 
-Assuming you have extracted the `graphicsfuzz-1.0.zip` file to get `graphicsfuzz-1.0/`:
+Assuming you have extracted the `graphicsfuzz.zip` file to get `graphicsfuzz/`:
 
 ```sh
 # Copy the sample shaders into the current directory:
-cp -r graphicsfuzz-1.0/shaders/samples samples
+cp -r graphicsfuzz/shaders/samples samples
 
 # Create a work directory to store our generated shader families.
 # The directory structure allows glsl-server
@@ -193,7 +193,7 @@ can only set uniforms
 
 For example, from our release zip:
 
-`graphicsfuzz-1.0/samples/300es/squares.json`:
+`graphicsfuzz/samples/300es/squares.json`:
 
 ```json
 {
@@ -223,4 +223,4 @@ For example, from our release zip:
 The fragment shader file for this shader job
 must have the same name and be alongside the shader job file
 with a `.frag` extension;
-in this case, at `graphicsfuzz-1.0/samples/300es/squares.frag`.
+in this case, at `graphicsfuzz/samples/300es/squares.frag`.

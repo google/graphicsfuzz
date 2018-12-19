@@ -11,20 +11,20 @@ to use glsl-reduce in action.
 
 ### Release zip
 
-We will be using the latest release zip `graphicsfuzz-1.0.zip`.
+We will be using the latest release zip `graphicsfuzz.zip`.
 You can download this from the [releases page](glsl-fuzz-releases.md)
 or [build it from source](glsl-fuzz-develop.md).
 
 Add the following directories to your path:
 
-* `graphicsfuzz-1.0/python/drivers`
+* `graphicsfuzz/python/drivers`
 * One of:
-  * `graphicsfuzz-1.0/bin/Linux`
-  * `graphicsfuzz-1.0/bin/Mac`
-  * `graphicsfuzz-1.0/bin/Windows`
+  * `graphicsfuzz/bin/Linux`
+  * `graphicsfuzz/bin/Mac`
+  * `graphicsfuzz/bin/Windows`
 
-The `graphicsfuzz-1.0/` directory is the unzipped release.
-If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz-1.0/`.
+The `graphicsfuzz/` directory is the unzipped release.
+If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz/`.
 
 ### Java 8+
 
@@ -64,7 +64,7 @@ use the Git Bash shell.
 
 ```sh
 # Copy the sample files into the current directory:
-cp -r graphicsfuzz-1.0/examples/glsl-reduce-walkthrough .
+cp -r graphicsfuzz/examples/glsl-reduce-walkthrough .
 
 # Run the fake shader compiler on the fragment shader file:
 glsl-reduce-walkthrough/fake_compiler glsl-reduce-walkthrough/colorgrid_modulo.frag
