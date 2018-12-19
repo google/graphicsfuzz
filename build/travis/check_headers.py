@@ -33,6 +33,8 @@ def exclude_dirname(f: str):
         "__pycache__",
         ".externalNativeBuild",
         ".mvn",
+        "cmake-build-debug",
+        "cmake-build-release",
 
     ]
 
