@@ -23,13 +23,13 @@ in this walkthrough.
 
 ## Requirements
 
-**Summary:** the latest release zip and worker applications, Java 8+, and Python 3.5+.
+**Summary:** the latest release zip and worker applications, Java 8+, Python 3.5+, and `adb` on your path.
 
 ### Release zip and workers
 
 We will be using the latest release zip `graphicsfuzz-1.0.zip` and worker applications.
 You can download these from the [releases page](glsl-fuzz-releases.md)
-or [build them from source](glsl-fuzz-build.md).
+or [build them from source](glsl-fuzz-develop.md).
 If you want to use the Android worker you will also need an Android device
 or the Android device emulator.
 
@@ -67,6 +67,15 @@ You will need to install Python 3.5 or higher, either:
 * From your system's package manager. E.g. Ubuntu: `sudo apt-get install python3`.
 * By downloading from [https://www.python.org/downloads/](https://www.python.org/downloads/).
 * By downloading and installing some other Python 3 distribution.
+
+### `adb`
+
+The Vulkan worker requires that `adb` is on your path.
+We recommend installing the Android SDK,
+[as described in our Android notes documentation](android-notes.md),
+and adding the `platform-tools` directory to your path,
+although you can technically just unzip the
+platform tools zip file without installing the rest of the SDK.
 
 
 ## Generating shaders using `glsl-generate`

@@ -26,7 +26,8 @@ you may need to open IntelliJ IDEA from the terminal depending on how
 you set the environment variables.
 
 You should also add the `android-sdk/platform-tools` directory
-to your path so that you can use tools like `adb`.
+to your path so that you can use `adb`.
+The Vulkan worker requires that `adb` is on your path.
 
 ## Android networking: connecting Android apps to the server
 
