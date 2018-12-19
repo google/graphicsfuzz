@@ -52,6 +52,15 @@ TIMEOUT_ADB_CMD = 5
 
 ################################################################################
 
+orig_print = print
+
+
+# noinspection PyShadowingBuiltins
+def print(s):
+    orig_print(s, flush=True)
+
+################################################################################
+
 
 def write_to_file(content, filename):
     with open(filename, 'w') as f:
