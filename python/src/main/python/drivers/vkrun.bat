@@ -16,4 +16,14 @@
 @REM  limitations under the License.
 @REM
 
-py -3 "%~dpn0.py" %*
+where /q py
+IF ERRORLEVEL 0 (
+  py -3 "%~dpn0.py" %*
+  EXIT /B
+)
+where /q python3
+IF ERRORLEVEL 0 (
+  python3 "%~dpn0.py" %*
+  EXIT /B
+)
+python "%~dpn0.py" %*
