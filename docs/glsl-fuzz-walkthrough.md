@@ -146,17 +146,14 @@ cp -r graphicsfuzz-1.0/shaders/samples samples
 # Synopsis:
 # glsl-generate [options] references donors num_variants glsl_version prefix output_folder
 
-# Add `--seed 12345` if you want to enure that running the same glsl-generate command again
-# will deterministically generate the same shaders.
-
 # Generate some GLSL version 300 es shaders.
-glsl-generate samples/300es samples/donors 10 "300 es" family_300es work/shaderfamilies
+glsl-generate --seed 0 samples/300es samples/donors 10 "300 es" family_300es work/shaderfamilies
 
 # Generate some GLSL version 100 shaders.
-glsl-generate samples/100 samples/donors 10 "100" family_100 work/shaderfamilies
+glsl-generate --seed 0 samples/100 samples/donors 10 "100" family_100 work/shaderfamilies
 
 # Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 "310 es" family_vulkan work/shaderfamilies
+glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 "310 es" family_vulkan work/shaderfamilies
 
 # The lines above will take approx. 1-2 minutes each, and will generate a shader family for every
 # shader in samples/300es or samples/100:
@@ -182,6 +179,10 @@ ls work/shaderfamilies
 # family_vulkan_colorgrid_modulo
 # family_vulkan_prefix_sum
 ```
+
+> The commands above are deterministic because we passed `--seed 0`.
+> Omit this argument to use a random seed and generate different
+> shaders each time.
 
 Each shader family contains 11 shader jobs;
 1 for the reference shader, and 10 for the variant shaders:
