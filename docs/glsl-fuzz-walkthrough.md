@@ -406,7 +406,7 @@ it finds shaders in the `/sdcard/graphicsfuzz` directory.
 
 You can run the worker as follows.
 
-> Note that the `glsl-to-spv-worker` assumes `adb` is on your PATH.
+> Note that `glsl-to-spv-worker` assumes `adb` is on your PATH.
 
 ```sh
 # Install the apk, if not installed already.
@@ -611,7 +611,7 @@ You can see results in the file system within the server's working directory at 
 Under `work/processing/<worker>/<shader_family>/`, each variant produces the following files:
 * `<variant>.info.json`
 * `<variant>.txt`
-* `<variant>.png` (only when `SUCCESS` status)
+* `<variant>.png` (only for `SUCCESS` status)
 * `<variant>.gif` (only for `NONDET` status)
 * `<variant>_nondet1.png` (only for `NONDET` status)
 * `<variant>_nondet2.png` (only for `NONDET` status)
@@ -639,7 +639,7 @@ This JSON also contains other fields, including different image comparison metri
 from comparing the variant image and the reference image.
 
 `<variant>.txt` contains the log of the variant run. On Android, it is a dump of
-the android logcat, and can contain precious information, such as details on a
+the Android logcat, and can contain useful information, such as details on a
 driver crash.
 
 `<variant>.png` is the image produced by this variant. This file is present only
