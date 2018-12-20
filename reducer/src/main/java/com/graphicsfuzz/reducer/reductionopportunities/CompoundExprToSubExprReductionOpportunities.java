@@ -18,9 +18,13 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
@@ -48,10 +52,8 @@ public class CompoundExprToSubExprReductionOpportunities
       // We need to be careful about removing parentheses, as this can change precedence.
       // We only remove parentheses if they are at the root of an expression, immediately under
       // other parentheses, or immediately under a function call.
-      if (parent instanceof Expr) {
-        if (!(parent instanceof ParenExpr || parent instanceof FunctionCallExpr)) {
-          return;
-        }
+      if (!isOkToRemoveParens(parent, (ParenExpr) child)) {
+        return;
       }
     }
 
@@ -76,6 +78,38 @@ public class CompoundExprToSubExprReductionOpportunities
                   // to a constant.
                   getVistitationDepth().deeper()));
     }
+  }
+
+  private boolean isOkToRemoveParens(IAstNode parent, ParenExpr child) {
+
+    if (child.getExpr() instanceof ConstantExpr
+        || child.getExpr() instanceof VariableIdentifierExpr
+        || child.getExpr() instanceof FunctionCallExpr) {
+      // It's fine to remove parentheses in cases such as (5), (x) and (sin(a)).
+      return true;
+    }
+
+    if (!(parent instanceof Expr)) {
+      // These are outer-most parentheses; fine to remove them.
+      return true;
+    }
+    if (parent instanceof ParenExpr) {
+      // These are parentheses within parentheses; fine to remove them.
+      return true;
+    }
+    if (parent instanceof FunctionCallExpr) {
+      // These are parentheses under a function call argument.  Fine to remove them *unless*
+      // they enclose a use of the comma operator; e.g. we don't want to turn sin((a, b)) into
+      // sin(a, b).
+      if (child.getExpr()
+          instanceof BinaryExpr && ((BinaryExpr) child.getExpr()).getOp() == BinOp.COMMA) {
+        return false;
+      }
+      return true;
+    }
+    // Conservatively say that it is not OK to remove parentheses.  We could be more aggressive
+    // with attention to operator precedence.
+    return false;
   }
 
   static List<SimplifyExprReductionOpportunity> findOpportunities(

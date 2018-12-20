@@ -347,13 +347,15 @@ public class Typer extends ScopeTreeBuilder {
       case NE:
         types.put(binaryExpr, resolveBooleanResultType(lhsType, rhsType));
         return;
+      case COMMA:
+        // The type of "e1, e2" is the type of "e2".
+        types.put(binaryExpr, rhsType);
+        return;
       case BAND_ASSIGN:
         break;
       case BOR_ASSIGN:
         break;
       case BXOR_ASSIGN:
-        break;
-      case COMMA:
         break;
       case MOD_ASSIGN:
         break;

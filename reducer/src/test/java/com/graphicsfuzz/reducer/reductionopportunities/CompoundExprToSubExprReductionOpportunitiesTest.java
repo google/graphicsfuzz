@@ -121,6 +121,49 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
     check(true, original, expected1, expected2);
   }
 
+  @Test
+  public void commaOperatorInParentheses() throws Exception {
+    final String original = "void main() {"
+        + "  sin((3.4, 3.5));"
+        + "}";
+    final String expected1 = "void main() {"
+        + "  sin((3.4));"
+        + "}";
+    final String expected2 = "void main() {"
+        + "  sin((3.5));"
+        + "}";
+    final String expected3 = "void main() {"
+        + "  (3.5);"
+        + "}";
+    // We don't want to get "sin(3.4, 3.5)"
+    check(true, original, expected1, expected2, expected3);
+  }
+
+  @Test
+  public void identifiersAndConstantsInParentheses() throws Exception {
+    final String original = "void main() {"
+        + "  float x;"
+        + "  (5.0) + (x);"
+        + "}";
+    final String expected1 = "void main() {"
+        + "  float x;"
+        + "  5.0 + (x);"
+        + "}";
+    final String expected2 = "void main() {"
+        + "  float x;"
+        + "  (5.0) + x;"
+        + "}";
+    final String expected3 = "void main() {"
+        + "  float x;"
+        + "  (5.0);"
+        + "}";
+    final String expected4 = "void main() {"
+        + "  float x;"
+        + "  (x);"
+        + "}";
+    check(true, original, expected1, expected2, expected3, expected4);
+  }
+
   private List<SimplifyExprReductionOpportunity> getOps(TranslationUnit tu,
         boolean reduceEverywhere) {
     return CompoundExprToSubExprReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
