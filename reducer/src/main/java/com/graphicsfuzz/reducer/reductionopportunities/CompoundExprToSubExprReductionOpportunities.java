@@ -19,6 +19,8 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
+import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
@@ -42,6 +44,17 @@ public class CompoundExprToSubExprReductionOpportunities
     if (inLValueContext()) {
       return;
     }
+    if (child instanceof ParenExpr) {
+      // We need to be careful about removing parentheses, as this can change precedence.
+      // We only remove parentheses if they are at the root of an expression, immediately under
+      // other parentheses, or immediately under a function call.
+      if (parent instanceof Expr) {
+        if (!(parent instanceof ParenExpr || parent instanceof FunctionCallExpr)) {
+          return;
+        }
+      }
+    }
+
     final Type resultType = typer.lookupType(child);
     if (resultType == null) {
       return;
