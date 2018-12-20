@@ -133,7 +133,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
         + "  sin((3.5));"
         + "}";
     final String expected3 = "void main() {"
-        + "  (3.5);"
+        + "  (3.4, 3.5);"
         + "}";
     // We don't want to get "sin(3.4, 3.5)"
     check(true, original, expected1, expected2, expected3);
