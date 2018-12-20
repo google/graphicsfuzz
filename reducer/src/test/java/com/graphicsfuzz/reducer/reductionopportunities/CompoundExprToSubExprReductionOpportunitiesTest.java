@@ -104,6 +104,23 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
     assertEquals(expectedSet, actualSet);
   }
 
+  @Test
+  public void vectorIndexing() throws Exception {
+    final String original = "void main() {"
+        + "  vec4 a, b;"
+        + "  (a * b)[3];"
+        + "}";
+    final String expected1 = "void main() {"
+        + "  vec4 a, b;"
+        + "  (a)[3];"
+        + "}";
+    final String expected2 = "void main() {"
+        + "  vec4 a, b;"
+        + "  (b)[3];"
+        + "}";
+    check(true, original, expected1, expected2);
+  }
+
   private List<SimplifyExprReductionOpportunity> getOps(TranslationUnit tu,
         boolean reduceEverywhere) {
     return CompoundExprToSubExprReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
