@@ -19,17 +19,21 @@ package com.graphicsfuzz.reducer;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.reducer.glslreducers.IReductionPlan;
-import com.graphicsfuzz.reducer.glslreducers.MasterPlan;
-import com.graphicsfuzz.reducer.glslreducers.NoMoreToReduceException;
-import com.graphicsfuzz.reducer.reductionopportunities.FailedReductionException;
+import com.graphicsfuzz.reducer.glslreducers.IReductionPass;
+import com.graphicsfuzz.reducer.glslreducers.IReductionPassManager;
+import com.graphicsfuzz.reducer.glslreducers.OriginalReductionPassManager;
+import com.graphicsfuzz.reducer.glslreducers.RandomizedReductionPass;
+import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
+import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunityFinder;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.reducer.util.Simplify;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,67 +48,92 @@ public class ReductionDriver {
 
   private static final int NUM_INITIAL_TRIES = 5;
 
-  private final boolean verbose;
-
   private final ReducerContext context;
-
-  private final IReductionPlan plan;
 
   private final ShaderJobFileOperations fileOps;
 
-  private ShaderJob newState;
+  private final IFileJudge judge;
 
-  // This is used for Vulkan compatibility.
-  private final boolean requiresUniformBindings;
+  private final File workDir;
 
-  private ShaderJob state;
-  private int numReductionAttempts;
-  private int numSuccessfulReductions = -1;
+  private int numSuccessfulReductions = 0;
 
-  private final Set<String> failHashes;
-  private final Set<String> passHashes;
+  private final Set<String> failHashCache;
+  private final Set<String> passHashCache;
+
+  private int failHashCacheHits;
+
+  private final IReductionPassManager passManager;
 
   public ReductionDriver(ReducerContext context,
                          boolean verbose,
                          ShaderJobFileOperations fileOps,
-                         ShaderJob initialState) {
-    this.verbose = verbose;
+                         IFileJudge judge,
+                         File workDir) {
     this.context = context;
     this.fileOps = fileOps;
-    this.plan = new MasterPlan(context, verbose);
-    this.state = null;
-    this.newState = initialState;
-    this.requiresUniformBindings = this.newState.hasUniformBindings();
-    this.failHashes = new HashSet<>();
-    this.passHashes = new HashSet<>();
+    this.judge = judge;
+    this.workDir = workDir;
+    this.failHashCache = new HashSet<>();
+    this.passHashCache = new HashSet<>();
+    this.failHashCacheHits = 0;
 
-    if (this.newState.hasUniformBindings()) {
-      // We eliminate uniform bindings while applying reduction steps, and re-introduce them
-      // each time we emit shaders.
-      this.newState.removeUniformBindings();
+    final List<IReductionPass> passes = new ArrayList<>();
+    for (IReductionOpportunityFinder finder : new IReductionOpportunityFinder[]{
+        IReductionOpportunityFinder.vectorizationFinder(),
+        IReductionOpportunityFinder.mutationFinder(),
+        IReductionOpportunityFinder.unswitchifyFinder(),
+        IReductionOpportunityFinder.stmtFinder(),
+        IReductionOpportunityFinder.functionFinder(),
+        IReductionOpportunityFinder.exprToConstantFinder(),
+        IReductionOpportunityFinder.functionFinder(),
+        IReductionOpportunityFinder.compoundExprToSubExprFinder(),
+        IReductionOpportunityFinder.functionFinder(),
+        IReductionOpportunityFinder.loopMergeFinder(),
+        IReductionOpportunityFinder.compoundToBlockFinder(),
+        IReductionOpportunityFinder.inlineInitializerFinder(),
+        IReductionOpportunityFinder.outlinedStatementFinder(),
+        IReductionOpportunityFinder.unwrapFinder(),
+        IReductionOpportunityFinder.removeStructFieldFinder(),
+        IReductionOpportunityFinder.destructifyFinder(),
+        IReductionOpportunityFinder.inlineStructFieldFinder(),
+        IReductionOpportunityFinder.liveFragColorWriteFinder(),
+        IReductionOpportunityFinder.inlineFunctionFinder(),
+        IReductionOpportunityFinder.functionFinder(),
+        IReductionOpportunityFinder.variableDeclFinder(),
+        IReductionOpportunityFinder.globalVariablesDeclarationFinder(),
+        IReductionOpportunityFinder.unusedParamFinder(),
+        IReductionOpportunityFinder.foldConstantFinder(),
+        IReductionOpportunityFinder.inlineUniformFinder(),
+    }) {
+      passes.add(new RandomizedReductionPass(context, verbose, finder));
     }
+    this.passManager = new OriginalReductionPassManager(passes);
 
   }
 
   public String doReduction(
+        ShaderJob initialState,
         String shaderJobShortName,
         int fileCountOffset, // Used when continuing a reduction - added on to the number associated
         // with each reduction step during the current reduction.
-        IFileJudge judge,
-        File workDir,
         int stepLimit) throws IOException {
 
-    try {
+    // This is used for Vulkan compatibility.
+    final boolean requiresUniformBindings = initialState.hasUniformBindings();
+    if (initialState.hasUniformBindings()) {
+      // We eliminate uniform bindings while applying reduction steps, and re-introduce them
+      // each time we emit shaders.
+      initialState.removeUniformBindings();
+    }
 
+    try {
       if (fileCountOffset > 0) {
         LOGGER.info("Continuing reduction for {}", shaderJobShortName);
       } else {
         LOGGER.info("Starting reduction for {}", shaderJobShortName);
         for (int i = 1; ; i++) {
-          if (judge.isInteresting(
-              new File(workDir, shaderJobShortName + ".json"),
-              new File(workDir, shaderJobShortName + ".info.json")
-          )) {
+          if (isInterestingNoCache(initialState, requiresUniformBindings, shaderJobShortName)) {
             break;
           }
           LOGGER.info("Result from initial state is not interesting (attempt " + i + ")");
@@ -117,61 +146,64 @@ public class ReductionDriver {
         LOGGER.info("Result from initial state is interesting - proceeding with reduction.");
       }
 
-      boolean isInteresting = true;
+      ShaderJob currentState = initialState;
+
       int stepCount = 0;
       boolean stoppedEarly = false;
+
       while (true) {
-        notifyNewStateInteresting(isInteresting);
-        ShaderJob newState = doReductionStep();
-        if (newState == null) {
+        LOGGER.info("Trying reduction attempt " + stepCount + " (" + numSuccessfulReductions
+            + " successful so far).");
+        final Optional<ShaderJob> maybeNewState = passManager.applyReduction(currentState);
+        if (!maybeNewState.isPresent()) {
+          LOGGER.info("No more to reduce; stopping.");
           break;
         }
-        ++stepCount;
-        final int currentReductionAttempt = numReductionAttempts + fileCountOffset;
+        final ShaderJob newState = maybeNewState.get();
+        stepCount++;
+        final int currentReductionAttempt = stepCount + fileCountOffset;
         String currentShaderJobShortName =
             getReductionStepShaderJobShortName(
                 shaderJobShortName,
                 currentReductionAttempt);
-        writeState(newState, new File(workDir, currentShaderJobShortName + ".json"));
-
-        isInteresting = isInterestingWithCache(
-            judge,
-            new File(workDir, currentShaderJobShortName + ".json"),
-            new File(workDir, currentShaderJobShortName + ".info.json"));
-
-        // Includes "_success" or "_fail".
-        String currentStepShaderJobShortNameWithOutcome =
+        final boolean interesting = isInterestingWithCache(newState,
+            requiresUniformBindings,
+            currentShaderJobShortName);
+        passManager.notifyInteresting(interesting);
+        final String currentStepShaderJobShortNameWithOutcome =
             getReductionStepShaderJobShortName(
-              shaderJobShortName,
-              currentReductionAttempt,
-              Optional.of(isInteresting ? "success" : "fail"));
-
+                shaderJobShortName,
+                currentReductionAttempt,
+                Optional.of(interesting ? "success" : "fail"));
         fileOps.moveShaderJobFileTo(
             new File(workDir, currentShaderJobShortName + ".json"),
             new File(workDir, currentStepShaderJobShortNameWithOutcome + ".json"),
             true
         );
+        if (interesting) {
+          LOGGER.info("Successful reduction.");
+          numSuccessfulReductions++;
+          currentState = newState;
+        } else {
+          LOGGER.info("Failed reduction.");
+        }
 
         if (stepLimit > -1 && stepCount >= stepLimit) {
           LOGGER.info("Stopping reduction due to hitting step limit {}.", stepLimit);
-          giveUp();
           stoppedEarly = true;
           break;
         }
       }
 
-      ShaderJob finalState = getSimplifiedState();
+      ShaderJob finalState = finaliseReduction(currentState);
 
       String finalOutputFilePrefix = shaderJobShortName + "_reduced_final";
-      writeState(finalState, new File(workDir, finalOutputFilePrefix + ".json"));
 
-      if (!judge.isInteresting(
-          new File(workDir, finalOutputFilePrefix + ".json"),
-          new File(workDir, finalOutputFilePrefix + ".info.json")
-      )) {
+      if (!isInterestingNoCache(finalState, requiresUniformBindings, finalOutputFilePrefix)) {
         LOGGER.info(
             "Failed to simplify final reduction state! Reverting to the non-simplified state.");
-        writeState(state, new File(workDir, finalOutputFilePrefix + ".json"));
+        writeState(currentState, new File(workDir, finalOutputFilePrefix + ".json"),
+            requiresUniformBindings);
       }
 
       if (stoppedEarly) {
@@ -179,13 +211,64 @@ public class ReductionDriver {
         fileOps.createFile(new File(workDir, Constants.REDUCTION_INCOMPLETE));
       }
 
+      LOGGER.info("Total fail hash cache hits: " + failHashCacheHits);
       return finalOutputFilePrefix;
     } catch (FileNotFoundException | FileJudgeException exception) {
       throw new RuntimeException(exception);
     }
   }
 
-  private void writeState(ShaderJob state, File shaderJobFileOutput) throws FileNotFoundException {
+  private boolean isInteresting(ShaderJob state,
+                                boolean requiresUniformBindings,
+                                String shaderJobShortName,
+                                boolean useCache) throws IOException, FileJudgeException {
+    final File shaderJobFile = new File(workDir, shaderJobShortName + ".json");
+    final File resultFile = new File(workDir, shaderJobShortName + ".info.json");
+    writeState(state, shaderJobFile, requiresUniformBindings);
+
+    String hash = null;
+    if (useCache) {
+      hash = fileOps.getShaderJobFileHash(shaderJobFile);
+      if (failHashCache.contains(hash)) {
+        LOGGER.info(
+            "Fail hash cache hit.");
+        failHashCacheHits++;
+        return false;
+      }
+      if (passHashCache.contains(hash)) {
+        throw new RuntimeException("Reduction loop detected!");
+      }
+    }
+
+    if (judge.isInteresting(
+        shaderJobFile,
+        resultFile)) {
+      if (useCache) {
+        passHashCache.add(hash);
+      }
+      return true;
+    }
+    if (useCache) {
+      failHashCache.add(hash);
+    }
+    return false;
+  }
+
+  private boolean isInterestingWithCache(ShaderJob state,
+                                boolean requiresUniformBindings,
+                                String shaderJobShortName) throws IOException, FileJudgeException {
+
+    return isInteresting(state, requiresUniformBindings, shaderJobShortName, true);
+  }
+
+  private boolean isInterestingNoCache(ShaderJob state,
+                                boolean requiresUniformBindings,
+                                String shaderJobShortName) throws IOException, FileJudgeException {
+    return isInteresting(state, requiresUniformBindings, shaderJobShortName, false);
+  }
+
+  private void writeState(ShaderJob state, File shaderJobFileOutput,
+                          boolean requiresUniformBindings) throws FileNotFoundException {
     if (requiresUniformBindings) {
       assert !state.hasUniformBindings();
       state.makeUniformBindings();
@@ -199,31 +282,6 @@ public class ReductionDriver {
       assert state.hasUniformBindings();
       state.removeUniformBindings();
     }
-  }
-
-  private boolean isInterestingWithCache(
-      IFileJudge judge,
-      File shaderJobFile,
-      File shaderResultFileOutput)
-        throws FileJudgeException, IOException {
-
-    final String hash = fileOps.getShaderJobFileHash(shaderJobFile);
-    if (failHashes.contains(hash)) {
-      return false;
-    }
-    if (passHashes.contains(hash)) {
-      throw new RuntimeException("Reduction loop detected!");
-    }
-    boolean result = judge.isInteresting(
-        shaderJobFile,
-        shaderResultFileOutput
-    );
-    if (result) {
-      passHashes.add(hash);
-    } else {
-      failHashes.add(hash);
-    }
-    return result;
   }
 
   public static String getReductionStepShaderJobShortName(String variantPrefix,
@@ -241,85 +299,7 @@ public class ReductionDriver {
         Optional.empty());
   }
 
-
-
-  public ShaderJob doReductionStep() {
-    LOGGER.info("Trying reduction attempt " + numReductionAttempts + " (" + numSuccessfulReductions
-          + " successful so far).");
-    if (newState != null) {
-      throw new IllegalStateException("Called doReductionStep yet a newState is already set.");
-    }
-    try {
-      final ShaderJob reductionStepResult = applyReduction(state);
-      numReductionAttempts++;
-      newState = reductionStepResult;
-      return newState;
-    } catch (NoMoreToReduceException exception) {
-      LOGGER.info("No more to reduce; stopping.");
-      return null;
-    }
-  }
-
-  private ShaderJob applyReduction(ShaderJob state) throws NoMoreToReduceException {
-    int attempts = 0;
-    final int maxAttempts = 3;
-    while (true) {
-      try {
-        return plan.applyReduction(state);
-      } catch (FailedReductionException exception) {
-        attempts++;
-        if (attempts == maxAttempts) {
-          throw exception;
-        }
-      }
-    }
-  }
-
-  private void notifyNewStateInteresting(boolean isInteresting) {
-    if (newState == null) {
-      throw new IllegalStateException(
-            "Called notifyNewStateInteresting when there was no newState.");
-    }
-    if (isInteresting) {
-      // If the reduction attempt is interesting, the new state becomes
-      // the current reduction state
-      LOGGER.info("Successful reduction.");
-      numSuccessfulReductions++;
-      state = newState;
-    } else {
-      LOGGER.info("Failed reduction.");
-    }
-    plan.update(isInteresting);
-    newState = null;
-
-    if (state == null) {
-      throw new IllegalStateException(
-            "Called notifyNewStateInteresting(" + isInteresting + ") and "
-                  + "there was no interesting state. Perhaps you forgot to call "
-                  + "notifyNewStateInteresting(true) initially?");
-    }
-  }
-
-  private ShaderJob getSimplifiedState() {
-    if (newState != null) {
-      throw new IllegalStateException("Called getSimplifiedState yet a newState is set.");
-    }
-    if (state == null) {
-      throw new IllegalStateException("Called getSimplifiedState yet state is null.");
-    }
-    return finaliseReduction();
-  }
-
-  private void giveUp() {
-    if (state == null) {
-      throw new IllegalStateException(
-            "Called giveUp yet state is null. "
-                  + "Perhaps you forgot to call notifyNewStateInteresting(true) initially?");
-    }
-    newState = null;
-  }
-
-  public final ShaderJob finaliseReduction() {
+  public final ShaderJob finaliseReduction(ShaderJob state) {
     // Do final cleanup pass to get rid of macros
     return new GlslShaderJob(
         state.getLicense(),
