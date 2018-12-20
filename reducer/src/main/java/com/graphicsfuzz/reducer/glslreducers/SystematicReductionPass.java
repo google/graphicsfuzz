@@ -20,22 +20,29 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunityFinder;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
 public class SystematicReductionPass extends AbstractReductionPass {
 
-  private static final int MAXIMUM_GRANULARITY = 1000;
-
   private boolean isInitialized;
   private int index;
   private int granularity;
+  private final int maximumGranularity;
 
   public SystematicReductionPass(ReducerContext reducerContext,
-                                 boolean verbose, IReductionOpportunityFinder finder) {
+                                 boolean verbose, IReductionOpportunityFinder finder,
+                                 int maximumGranularity) {
     // Ignore verbose argument for now.
     super(reducerContext, finder);
     this.isInitialized = false;
+    this.maximumGranularity = maximumGranularity;
+  }
+
+  public SystematicReductionPass(ReducerContext reducerContext,
+                                 boolean verbose, IReductionOpportunityFinder finder) {
+    this(reducerContext, verbose, finder, Integer.MAX_VALUE);
   }
 
   @Override
@@ -44,12 +51,12 @@ public class SystematicReductionPass extends AbstractReductionPass {
     List<? extends IReductionOpportunity> opportunities =
         getFinder().findOpportunities(workingShaderJob, getReducerContext());
 
-    opportunities.sort((first, second) -> second.depth().compareTo(first.depth()));
+    opportunities.sort(Comparator.comparing(IReductionOpportunity::depth));
 
     if (!isInitialized) {
       isInitialized = true;
       index = 0;
-      granularity = /*Math.min(MAXIMUM_GRANULARITY,*/ Math.max(1, opportunities.size())/*)*/;
+      granularity = Math.min(maximumGranularity, Math.max(1, opportunities.size()));
     }
 
     assert granularity > 0;

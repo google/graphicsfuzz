@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
+import com.graphicsfuzz.common.util.StatsVisitor;
 
 public class SimplifyExprReductionOpportunity extends AbstractReductionOpportunity {
 
@@ -26,12 +27,19 @@ public class SimplifyExprReductionOpportunity extends AbstractReductionOpportuni
   private final Expr newChild;
   private final Expr originalChild;
 
+  // This tracks the number of nodes that will be removed by applying the opportunity at its
+  // time of creation (this number may be different when the opportunity is actually applied,
+  // due to the effects of other opportunities).
+  private final int numRemovableNodes;
+
   public SimplifyExprReductionOpportunity(IAstNode parent, Expr newChild, Expr originalChild,
         VisitationDepth depth) {
     super(depth);
     this.parent = parent;
     this.newChild = newChild;
     this.originalChild = originalChild;
+    this.numRemovableNodes =
+        new StatsVisitor(originalChild).getNumNodes() - new StatsVisitor(newChild).getNumNodes();
   }
 
   @Override
@@ -51,4 +59,9 @@ public class SimplifyExprReductionOpportunity extends AbstractReductionOpportuni
     }
     return true;
   }
+
+  public int getNumRemovableNodes() {
+    return numRemovableNodes;
+  }
+
 }

@@ -21,11 +21,8 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.glslreducers.IReductionPass;
 import com.graphicsfuzz.reducer.glslreducers.IReductionPassManager;
-import com.graphicsfuzz.reducer.glslreducers.OriginalReductionPassManager;
-import com.graphicsfuzz.reducer.glslreducers.RandomizedReductionPass;
 import com.graphicsfuzz.reducer.glslreducers.SystematicReductionPass;
 import com.graphicsfuzz.reducer.glslreducers.SystematicReductionPassManager;
-import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunityFinder;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.reducer.util.Simplify;
@@ -80,47 +77,55 @@ public class ReductionDriver {
     this.passHashCache = new HashSet<>();
     this.failHashCacheHits = 0;
 
+    final List<IReductionPass> initialPasses = new ArrayList<>();
+    initialPasses.add(new SystematicReductionPass(context, verbose,
+        IReductionOpportunityFinder.largestStmtsFinder(10), 1));
+    initialPasses.add(new SystematicReductionPass(context, verbose,
+        IReductionOpportunityFinder.largestFunctionsFinder(5), 1));
+
     final List<IReductionPass> cleanupPasses = new ArrayList<>();
-    for (IReductionOpportunityFinder ops : new IReductionOpportunityFinder[]{
+    for (IReductionOpportunityFinder finder : new IReductionOpportunityFinder[]{
         IReductionOpportunityFinder.inlineUniformFinder(),
         IReductionOpportunityFinder.inlineInitializerFinder(),
         IReductionOpportunityFinder.inlineFunctionFinder(),
         IReductionOpportunityFinder.unusedParamFinder(),
-        IReductionOpportunityFinder.variableDeclFinder(),
-        IReductionOpportunityFinder.globalVariablesDeclarationFinder(),
         IReductionOpportunityFinder.foldConstantFinder(),
-        IReductionOpportunityFinder.functionFinder(),
     }) {
       cleanupPasses.add(new SystematicReductionPass(context,
           verbose,
-          ops));
+          finder));
     }
 
     final List<IReductionPass> corePasses = new ArrayList<>();
-    for (IReductionOpportunityFinder ops : new IReductionOpportunityFinder[]{
+    for (IReductionOpportunityFinder finder : new IReductionOpportunityFinder[]{
         IReductionOpportunityFinder.vectorizationFinder(),
         IReductionOpportunityFinder.unswitchifyFinder(),
-        IReductionOpportunityFinder.liveFragColorWriteFinder(),
-        IReductionOpportunityFinder.loopMergeFinder(),
-        IReductionOpportunityFinder.outlinedStatementFinder(),
-        IReductionOpportunityFinder.compoundToBlockFinder(),
         IReductionOpportunityFinder.stmtFinder(),
-        IReductionOpportunityFinder.exprToConstantFinder(),
-        IReductionOpportunityFinder.compoundExprToSubExprFinder(),
-        IReductionOpportunityFinder.mutationFinder(),
         IReductionOpportunityFinder.functionFinder(),
+        IReductionOpportunityFinder.exprToConstantFinder(),
+        IReductionOpportunityFinder.functionFinder(),
+        IReductionOpportunityFinder.compoundExprToSubExprFinder(),
+        IReductionOpportunityFinder.functionFinder(),
+        IReductionOpportunityFinder.mutationFinder(),
+        IReductionOpportunityFinder.loopMergeFinder(),
+        IReductionOpportunityFinder.compoundToBlockFinder(),
+        IReductionOpportunityFinder.outlinedStatementFinder(),
         IReductionOpportunityFinder.unwrapFinder(),
         IReductionOpportunityFinder.removeStructFieldFinder(),
         IReductionOpportunityFinder.destructifyFinder(),
         IReductionOpportunityFinder.inlineStructFieldFinder(),
+        IReductionOpportunityFinder.liveFragColorWriteFinder(),
+        IReductionOpportunityFinder.functionFinder(),
+        IReductionOpportunityFinder.variableDeclFinder(),
+        IReductionOpportunityFinder.globalVariablesDeclarationFinder(),
     }) {
       final SystematicReductionPass pass = new SystematicReductionPass(context,
           verbose,
-          ops);
+          finder);
       corePasses.add(pass);
       cleanupPasses.add(pass);
     }
-    this.passManager = new SystematicReductionPassManager(corePasses, cleanupPasses);
+    this.passManager = new SystematicReductionPassManager(initialPasses, corePasses, cleanupPasses);
 
   }
 

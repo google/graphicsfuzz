@@ -17,6 +17,7 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import java.util.Comparator;
 import java.util.List;
 
 public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
@@ -369,6 +370,91 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
       @Override
       public String getName() {
         return "inlineUniforms";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<StmtReductionOpportunity>
+      largestStmtsFinder(int maxOpportunities) {
+    return new IReductionOpportunityFinder<StmtReductionOpportunity>() {
+      @Override
+      public List<StmtReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        List<StmtReductionOpportunity> ops = stmtFinder().findOpportunities(shaderJob, context);
+        ops.sort(Comparator.comparingInt(
+            StmtReductionOpportunity::getNumRemovableNodes).reversed());
+        return ops.subList(0, Math.min(ops.size(), maxOpportunities));
+      }
+
+      @Override
+      public String getName() {
+        return "largestStmts";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<FunctionReductionOpportunity>
+      largestFunctionsFinder(int maxOpportunities) {
+    return new IReductionOpportunityFinder<FunctionReductionOpportunity>() {
+      @Override
+      public List<FunctionReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        List<FunctionReductionOpportunity> ops = functionFinder().findOpportunities(shaderJob,
+            context);
+        ops.sort(Comparator.comparingInt(
+            FunctionReductionOpportunity::getNumRemovableNodes).reversed());
+        return ops.subList(0, Math.min(ops.size(), maxOpportunities));
+      }
+
+      @Override
+      public String getName() {
+        return "largestFunctions";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<SimplifyExprReductionOpportunity>
+      largestExprToConstantFinder(int maxOpportunities) {
+    return new IReductionOpportunityFinder<SimplifyExprReductionOpportunity>() {
+      @Override
+      public List<SimplifyExprReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        List<SimplifyExprReductionOpportunity> ops =
+            exprToConstantFinder().findOpportunities(shaderJob,
+            context);
+        ops.sort(Comparator.comparingInt(
+            SimplifyExprReductionOpportunity::getNumRemovableNodes).reversed());
+        return ops.subList(0, Math.min(ops.size(), maxOpportunities));
+      }
+
+      @Override
+      public String getName() {
+        return "largestExprToConstant";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<SimplifyExprReductionOpportunity>
+      largestCompoundExprToSubExpr(int maxOpportunities) {
+    return new IReductionOpportunityFinder<SimplifyExprReductionOpportunity>() {
+      @Override
+      public List<SimplifyExprReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        List<SimplifyExprReductionOpportunity> ops =
+            compoundExprToSubExprFinder().findOpportunities(shaderJob,
+            context);
+        ops.sort(Comparator.comparingInt(
+            SimplifyExprReductionOpportunity::getNumRemovableNodes).reversed());
+        return ops.subList(0, Math.min(ops.size(), maxOpportunities));
+      }
+
+      @Override
+      public String getName() {
+        return "largestCompoundExprToSubExpr";
       }
     };
   }

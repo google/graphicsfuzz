@@ -28,11 +28,14 @@ public class SystematicReductionPassManager implements IReductionPassManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(
       SystematicReductionPassManager.class);
 
+  // Initial passes that aim to make big gains.
+  private final List<IReductionPass> initialPasses;
+
   // The core passes to be iterated over frequently.
   private final List<IReductionPass> corePasses;
 
-  // Passes to be used once in a while to clean up.
-  private final List<IReductionPass> cleanupPasses;
+  // Passes to be used at the end of a reduction so that a minimum is reached.
+  private final List<IReductionPass> exhaustivePasses;
 
   // Starts by referring to core, then switches to cleanup.
   private List<IReductionPass> currentPasses;
@@ -44,14 +47,17 @@ public class SystematicReductionPassManager implements IReductionPassManager {
   // The index of the pass currently being applied.
   private int passIndex;
 
-  public SystematicReductionPassManager(List<IReductionPass> corePasses,
-                                        List<IReductionPass> cleanupPasses) {
+  public SystematicReductionPassManager(List<IReductionPass> initialPasses,
+                                        List<IReductionPass> corePasses,
+                                        List<IReductionPass> exhaustivePasses) {
+    this.initialPasses = new ArrayList<>();
+    this.initialPasses.addAll(initialPasses);
     this.corePasses = new ArrayList<>();
     this.corePasses.addAll(corePasses);
-    this.cleanupPasses = new ArrayList<>();
-    this.cleanupPasses.addAll(cleanupPasses);
+    this.exhaustivePasses = new ArrayList<>();
+    this.exhaustivePasses.addAll(exhaustivePasses);
     this.anotherRoundWorthwhile = false;
-    this.currentPasses = this.corePasses;
+    this.currentPasses = this.initialPasses;
     this.passIndex = 0;
   }
 
@@ -71,19 +77,21 @@ public class SystematicReductionPassManager implements IReductionPassManager {
       if (passIndex < currentPasses.size()) {
         anotherRoundWorthwhile |= !getCurrentPass().reachedMinimumGranularity();
       } else if (anotherRoundWorthwhile) {
-        startNewRound();
+        startNewRound(currentPasses);
+      } else if (currentPasses == initialPasses) {
+        startNewRound(corePasses);
       } else if (currentPasses == corePasses) {
-        currentPasses = cleanupPasses;
-        startNewRound();
+        startNewRound(exhaustivePasses);
       } else {
         return Optional.empty();
       }
     }
   }
 
-  public void startNewRound() {
+  public void startNewRound(List<IReductionPass> passes) {
     passIndex = 0;
     anotherRoundWorthwhile = false;
+    currentPasses = passes;
   }
 
   @Override
