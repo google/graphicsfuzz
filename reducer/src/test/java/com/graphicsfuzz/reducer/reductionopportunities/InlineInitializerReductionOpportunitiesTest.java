@@ -45,8 +45,8 @@ public class InlineInitializerReductionOpportunitiesTest {
   public void testDoNotInlineLargeInitializer() throws Exception {
 
     final String largeProgram = make1Plus1Plus1Program(100);
-    final String smallProgram = make1Plus1Plus1Program(10);
-    final String smallProgramInlined = make1Plus1Plus1ProgramInlined(10);
+    final String smallProgram = make1Plus1Plus1Program(5);
+    final String smallProgramInlined = make1Plus1Plus1ProgramInlined(5);
 
     final TranslationUnit largeProgramTu = ParseHelper.parse(largeProgram);
     final TranslationUnit smallProgramTu = ParseHelper.parse(smallProgram);

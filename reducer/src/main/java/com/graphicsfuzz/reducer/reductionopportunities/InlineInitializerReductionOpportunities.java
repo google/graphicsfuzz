@@ -38,7 +38,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class InlineInitializerReductionOpportunities
       extends ReductionOpportunitiesBase<SimplifyExprReductionOpportunity> {
 
-  private static final int INITIALIZER_NODE_LIMIT = 20;
+  private static final int INITIALIZER_NODE_LIMIT = 10;
 
   // All variable identifier expressions that can be potentially replaced with initializers.
   private final List<Pair<VariableDeclInfo, VariableIdentifierExpr>> inlineableUsages;
