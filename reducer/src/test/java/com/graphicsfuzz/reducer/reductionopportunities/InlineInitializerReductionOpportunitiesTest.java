@@ -124,4 +124,27 @@ public class InlineInitializerReductionOpportunitiesTest {
     assertEquals(0, ops.size());
   }
 
+  @Test
+  public void testNoInliningWithNameShadowing1() throws Exception {
+    // We don't want to inline the "int x = x" initializer as it will lead to an identical program.
+    final String program  = "void main() { int x; { int x = x; x; } }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    List<SimplifyExprReductionOpportunity> ops =
+        InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
+    assertEquals(0, ops.size());
+  }
+
+  @Test
+  public void testNoInliningWithNameShadowing2() throws Exception {
+    // We don't want to inline the "int x = a" as it will lead to a name clash that will cause
+    // a type error.
+    final String program  = "void main() { int a; int x = a; { float a; int k; k = x; } }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    List<SimplifyExprReductionOpportunity> ops =
+        InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
+    assertEquals(0, ops.size());
+  }
+
 }
