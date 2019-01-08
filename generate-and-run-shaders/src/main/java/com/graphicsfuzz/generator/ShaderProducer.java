@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.generator.tool.EnabledTransformations;
 import com.graphicsfuzz.generator.tool.Generate;
@@ -42,7 +43,7 @@ public class ShaderProducer implements Runnable {
   private final int limit;
   private final File[] shaderJobFiles;
   private final IRandom generator;
-  private final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue;
+  private final BlockingQueue<ShaderJob> queue;
   private final File referencesDir;
   private final ShadingLanguageVersion shadingLanguageVersion;
   private final Namespace ns;
@@ -53,7 +54,7 @@ public class ShaderProducer implements Runnable {
       int limit,
       File[] shaderJobFiles,
       IRandom generator,
-      BlockingQueue<Pair<ShaderJob, ShaderJob>> queue,
+      BlockingQueue<ShaderJob> queue,
       File referencesDir,
       ShadingLanguageVersion shadingLanguageVersion,
       File donorsDir,
@@ -93,28 +94,23 @@ public class ShaderProducer implements Runnable {
             !ns.getBoolean("no_injection_switch")
         );
 
+    final int outerSeed = ArgsUtil.getSeedArgument(ns);
+    final IRandom generator = new RandomWrapper(outerSeed);
+
     int sent = 0;
     for (int counter = 0; sent < limit; counter++) {
 
       File referenceShaderJobFile = shaderJobFiles[counter % shaderJobFiles.length];
 
       try {
-        LOGGER.info("Preparing shader job pair based on {}.", referenceShaderJobFile);
-
-        final ShaderJob referenceShaderJob =
+        LOGGER.info("Preparing variant shader job based on {}.", referenceShaderJobFile);
+        final ShaderJob shaderJob =
             fileOps.readShaderJobFile(referenceShaderJobFile);
-        final ShaderJob variantShaderJob = referenceShaderJob.clone();
-
-        PrepareReference.prepareReference(
-            referenceShaderJob,
-            shadingLanguageVersion,
-            generatorArguments.getReplaceFloatLiterals(),
-            generatorArguments.getMaxUniforms(),
-            generatorArguments.getGenerateUniformBindings());
-        final int seed = ArgsUtil.getSeedArgument(ns);
-        Generate.generateVariant(variantShaderJob, generatorArguments, seed);
+        Generate.generateVariant(shaderJob, generatorArguments,
+            generator.nextInt(Integer.MAX_VALUE));
+        restrictOutputColors(shaderJob, generator);
         try {
-          queue.put(new ImmutablePair<>(referenceShaderJob, variantShaderJob));
+          queue.put(shaderJob);
         } catch (InterruptedException exception) {
           LOGGER.error("Problem putting to queue.", exception);
           throw new RuntimeException(exception);
@@ -127,6 +123,11 @@ public class ShaderProducer implements Runnable {
         continue;
       }
     }
+  }
+
+  private void restrictOutputColors(ShaderJob shaderJob, IRandom generator) {
+    throw new RuntimeException("To implement: hijack the shader so that it can only emit R, G or "
+        + "B.");
   }
 
 }

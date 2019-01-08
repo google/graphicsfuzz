@@ -39,25 +39,23 @@ public class ShaderConsumer implements Runnable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ShaderConsumer.class);
 
   private final int limit;
-  private final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue;
+  private final BlockingQueue<ShaderJob> queue;
   private final File outputDir;
   private final File tempDir;
   private final String server;
   private final String worker;
   private final ShadingLanguageVersion shadingLanguageVersion;
   private final Set<String> crashStringsToIgnore;
-  private final boolean onlyVariants;
   private final ShaderJobFileOperations fileOps;
 
   public ShaderConsumer(
       int limit,
-      BlockingQueue<Pair<ShaderJob, ShaderJob>> queue,
+      BlockingQueue<ShaderJob> queue,
       File outputDir,
       String server,
       String worker,
       ShadingLanguageVersion shadingLanguageVersion,
       Set<String> crashStringsToIgnore,
-      boolean onlyVariants,
       ShaderJobFileOperations fileOps) {
     this.limit = limit;
     this.queue = queue;
@@ -67,7 +65,6 @@ public class ShaderConsumer implements Runnable {
     this.worker = worker;
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.crashStringsToIgnore = crashStringsToIgnore;
-    this.onlyVariants = onlyVariants;
     this.fileOps = fileOps;
   }
 
@@ -79,18 +76,15 @@ public class ShaderConsumer implements Runnable {
 
     final File invalidDirectory = new File(outputDir, "INVALID");
 
-    final File referenceShaderJobFile = new File(tempDir, "temp_reference.json");
-    final File referenceShaderJobResultFile = new File(tempDir, "temp_reference.info.json");
-
     final File variantShaderJobFile = new File(tempDir, "temp_variant.json");
     final File variantShaderJobResultFile = new File(tempDir, "temp_variant.info.json");
 
 
     for (int received = 0; received < limit; received++) {
       LOGGER.info("Consuming shader job " + received);
-      Pair<ShaderJob, ShaderJob> shaderPair;
+      ShaderJob variantShaderJob;
       try {
-        shaderPair = queue.take();
+        variantShaderJob = queue.take();
       } catch (InterruptedException exception) {
         LOGGER.error("Problem taking from queue.", exception);
         throw new RuntimeException(exception);
@@ -107,7 +101,6 @@ public class ShaderConsumer implements Runnable {
 
       final String counterString = String.format("%04d", received);
 
-      final ShaderJob variantShaderJob = shaderPair.getRight();
       final Optional<ImageJobResult> variantResult =
           runShaderJob(
               variantShaderJob,
@@ -126,38 +119,6 @@ public class ShaderConsumer implements Runnable {
           variantShaderJobFile,
           variantShaderJobResultFile,
           counterString);
-
-      if (!onlyVariants) {
-
-        final ShaderJob referenceShaderJob = shaderPair.getLeft();
-        final Optional<ImageJobResult> referenceResult =
-            runShaderJob(
-                referenceShaderJob,
-                referenceShaderJobFile,
-                referenceShaderJobResultFile,
-                imageGenerator,
-                counterString,
-                invalidDirectory);
-        if (!referenceResult.isPresent()) {
-          continue;
-        }
-
-        maybeLogFailure(
-            referenceResult.get(),
-            referenceShaderJobFile,
-            referenceShaderJobResultFile,
-            counterString);
-
-        maybeLogWrongImage(
-            referenceResult.get(),
-            variantResult.get(),
-            referenceShaderJobFile,
-            referenceShaderJobResultFile,
-            variantShaderJobFile,
-            variantShaderJobResultFile,
-            counterString);
-      }
-
     }
   }
 
@@ -166,15 +127,18 @@ public class ShaderConsumer implements Runnable {
       File shaderJobFile,
       File shaderJobResultFile,
       String counter) {
-    switch (imageJobResult.getStatus()) {
-      case CRASH:
-      case COMPILE_ERROR:
-      case LINK_ERROR:
-      case TIMEOUT:
-      case UNEXPECTED_ERROR:
-      case SANITY_ERROR:
-      case NONDET:
-        try {
+    try {
+      switch (imageJobResult.getStatus()) {
+        case SUCCESS:
+          maybeLogWrongImage(imageJobResult, shaderJobFile, shaderJobResultFile, counter);
+          break;
+        case CRASH:
+        case COMPILE_ERROR:
+        case LINK_ERROR:
+        case TIMEOUT:
+        case UNEXPECTED_ERROR:
+        case SANITY_ERROR:
+        case NONDET:
           File triageDirectory = new File(outputDir, imageJobResult.getStatus().toString());
           fileOps.mkdir(triageDirectory);
           if (JobStatus.CRASH.equals(imageJobResult.getStatus())) {
@@ -192,26 +156,25 @@ public class ShaderConsumer implements Runnable {
               shaderJobResultFile,
               new File(triageDirectory, counter + shaderJobResultFile.getName()),
               false);
-          return;
-        } catch (IOException exception) {
-          LOGGER.error(
-              "A problem occurred when logging failures; defeats the point of the exercise.",
-              exception);
-          throw new RuntimeException(exception);
-        }
-      default:
-        // nothing
+          break;
+        default:
+          // nothing
+          break;
+      }
+    } catch (IOException exception) {
+      LOGGER.error(
+          "A problem occurred when logging failures; defeats the point of the exercise.",
+          exception);
+      throw new RuntimeException(exception);
     }
   }
 
-  private void maybeLogWrongImage(ImageJobResult referenceResult,
-                                  ImageJobResult variantResult,
-                                  File referenceShaderJobFile,
-                                  File referenceShaderJobFileResult,
+  private void maybeLogWrongImage(ImageJobResult variantResult,
                                   File variantShaderJobFile,
                                   File variantShaderJobFileResult,
                                   String counter) {
     // TODO: implement.
+    throw new RuntimeException("Check image colours.");
   }
 
   private Optional<ImageJobResult> runShaderJob(ShaderJob shaderJob,
