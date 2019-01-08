@@ -710,7 +710,7 @@ the Vulkan worker uses `vkrun`
 to run SPIR-V shaders on the device.
 You can use this script directly
 if you want to re-run some SPIR-V shaders.
-The vertex shader must be provided explicitely, by default you can use our "passthrough"
+The vertex shader must be provided explicitly, by default you can use our "passthrough"
 vertex shader available in
 `vulkan-worker/samples/shader.vert.spv`.
 Your device must show in `adb devices`.
