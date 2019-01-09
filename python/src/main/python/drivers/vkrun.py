@@ -491,6 +491,7 @@ def run_vkrunner(vert, frag, uniform_json):
     assert(os.path.isfile(frag))
     assert(os.path.isfile(uniform_json))
 
+    # Produce VkScript
     script = vkscriptify(vert, frag, uniform_json)
 
     tmpfile = 'tmpscript.shader_test'
@@ -498,16 +499,30 @@ def run_vkrunner(vert, frag, uniform_json):
     with open(tmpfile, 'w') as f:
         f.write(script)
 
-    # call vkrunner
-    cmd = 'vkrunner -i image.ppm ' + tmpfile
+    # Prepare files on device. vkrunner cannot be made executable under
+    # /sdcard/, hence we work under /data/local/tmp
+    device_dir = '/data/local/tmp'
+    adb_check('push ' + tmpfile + ' ' + device_dir)
 
-    status = 'SUCCESS'
-    try:
-        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
-    except subprocess.TimeoutExpired:
-        status = 'TIMEOUT'
-    except subprocess.CalledProcessError:
-        status = 'CRASH'
+    device_image = device_dir + '/image.ppm'
+    adb_check('shell rm -f ' + device_image)
+
+    # call vkrunner
+    cmd = 'shell "cd ' + device_dir + '; ./vkrunner -i image.ppm ' + tmpfile + '"'
+
+    adb_check('logcat -c')
+    adb_check(cmd)
+
+    # Get result
+    status = 'UNEXPECTED_ERROR'
+    if adb_can_fail('shell test -f' + device_image).returncode == 0:
+        status = 'SUCCESS'
+        adb_check('pull ' + device_image)
+        subprocess.run('convert image.ppm image_0.png', shell=True)
+
+    # Grab log:
+    with open(LOGFILE, 'w', encoding='utf-8', errors='ignore') as f:
+        adb_check('logcat -d', stdout=f)
 
     with open(LOGFILE, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
@@ -515,8 +530,6 @@ def run_vkrunner(vert, frag, uniform_json):
     with open('STATUS', 'w') as f:
         f.write(status)
 
-    if status == 'SUCCESS':
-        subprocess.run('convert image.ppm image_0.png', shell=True)
 
 ################################################################################
 # Main
