@@ -134,7 +134,34 @@ void FreeGflagsArgs(int argc, char **argv) {
   free(argv);
 }
 
+bool CanReadWriteExternalStorage() {
+  static bool first_try = true;
+
+  if (!first_try) {
+    return true;
+  } else {
+    first_try = false;
+  }
+
+  const char* filename = "/sdcard/graphicsfuzz/test_permission";
+
+  FILE *f = fopen(filename, "w");
+
+  if (f == nullptr) {
+    return false;
+  } else {
+    fclose(f);
+    remove(filename);
+    return true;
+  }
+}
+
 void android_main(struct android_app* state) {
+
+  if (!CanReadWriteExternalStorage()) {
+    log("ERROR: cannot write in /sdcard/graphicsfuzz/, please double check App permission to access external storage");
+    std::terminate();
+  }
 
   // Reset all default values, as any change may survive the exiting of this
   // android_main() function and still be set when android_main() is called

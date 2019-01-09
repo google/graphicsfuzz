@@ -388,11 +388,11 @@ via `glslangValidator` before sending the shader to
 the `vulkan-worker-android` app running on the Android device.
 
 > Note that the `vkrun.py` Python script
-> uses the `adb` tool to 
+> uses the `adb` tool to
 > copy the SPIR-V files to the device,
 > run the `vulkan-worker-android` app,
 > and copy back the results.
-> `vkrun` can be used as a standalone tool to 
+> `vkrun` can be used as a standalone tool to
 > re-run SPIR-V shaders on the device.
 > [We describe this in more detail below](#running-shaders-from-the-command-line).
 
@@ -710,6 +710,9 @@ the Vulkan worker uses `vkrun`
 to run SPIR-V shaders on the device.
 You can use this script directly
 if you want to re-run some SPIR-V shaders.
+The vertex shader must be provided explicitly, by default you can use our "passthrough"
+vertex shader available in
+`vulkan-worker/samples/shader.vert.spv`.
 Your device must show in `adb devices`.
 For example:
 
@@ -720,7 +723,6 @@ vkrun variant_005.vert.spv variant_005.frag.spv variant_005.json --serial ABCD
 where `ABCD` is the device serial number shown in `adb devices`.
 The results of running the shader will be output to
 `results/`.
-
 
 ## Reducing shaders from the command line using `glsl-reduce`
 
