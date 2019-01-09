@@ -18,6 +18,7 @@ import os
 import io
 import sys
 import re
+from os.path import normpath
 
 path = os.path.join
 
@@ -41,9 +42,10 @@ def exclude_dirname(f: str):
 
 
 def exclude_dirpath(f: str):
+    f = normpath(f)
     return \
-        f.startswith("./vulkan-worker/build") or \
-        f in [
+        f.startswith(normpath("./vulkan-worker/build")) or \
+        f in [normpath(p) for p in [
             "./gles-worker/build",
             "./gles-worker/android/build",
             "./gles-worker/android/libs",
@@ -52,8 +54,9 @@ def exclude_dirpath(f: str):
             "./gles-worker/gradle/wrapper",
             "./build/licenses",
             "./vulkan-worker/src/android/build",
-            "./temp"
-        ]
+            "./temp",
+            "./out"
+        ]]
 
 
 def no_ext_or_endswith_bat(f: str):
@@ -75,10 +78,9 @@ def is_command_wrapper(f: str):
 
 
 def exclude_filepath(f: str):
+    f = normpath(f)
     return \
-        f.startswith("./python/src/main/python/drivers/") and is_command_wrapper(f) or \
-        f.startswith("./graphicsfuzz/src/main/scripts/examples/glsl-reduce-walkthrough/") and is_command_wrapper(f) or \
-        f in [
+        f in [normpath(p) for p in [
             "./graphicsfuzz/src/main/scripts/server-static/shaders/shader.vert",
             "./server-static-public/src/main/files/server-static/runner_multi_template.html",
             "./gles-worker/build.gradle",
@@ -94,7 +96,7 @@ def exclude_filepath(f: str):
             "./mvnw",
             "./mvnw.cmd"
 
-        ]
+        ]]
 
 
 def exclude_filename(f: str):
@@ -116,6 +118,8 @@ def exclude_filename(f: str):
             "CODEOWNERS",
             "CONTRIBUTORS",
             "LICENSE",
+            "LICENSE.TXT",
+            "OPEN_SOURCE_LICENSES.TXT",
             "HASH",
             "local.properties",
             "gradlew",
@@ -144,22 +148,25 @@ def go():
             if exclude_filepath(file):
                 continue
             try:
-                with io.open(file, 'r') as fin:
+                with io.open(file, "r") as fin:
                     contents = fin.read()
 
-                    # Generated files don't need a header
-                    if contents.split('\n')[0].find("generated") > -1:
+                    # Generated files don't need a header.
+                    if contents.split("\n")[0].find("generated") > -1:
+                        # This file is OK. Continue to the next file.
                         continue
 
-                    # Other files must contain a header for any year
-                    if copyright_pattern.search(contents) is None:
+                    first_lines = "\n".join(contents.split("\n")[:10])
+                    # Other files must contain a header for any year within the first few lines.
+                    if copyright_pattern.search(first_lines) is None:
                         fail = True
                         print("Missing license header " + file)
                         continue
 
-                    # This file is OK. Continue to next file.
-            except:
+                    # This file is OK. Continue to the next file.
+            except Exception as ex:
                 print("Failed to check license header of file " + file)
+                print(ex)
                 fail = True
 
     if fail:

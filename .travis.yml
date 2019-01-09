@@ -18,8 +18,6 @@ language: generic
 # First matrix entry builds graphicsfuzz repo and GLES workers.
 # Second matrix entry builds vulkan-worker.
 
-# The matrix entries install different versions of the Android SDK (for now).
-
 matrix:
   include:
     - os: linux

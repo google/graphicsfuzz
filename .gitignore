@@ -21,3 +21,5 @@ venv/
 /envbuild.py
 
 /OPEN_SOURCE_LICENSES.TXT
+/graphicsfuzz/src/main/scripts/OPEN_SOURCE_LICENSES.TXT
+/out/

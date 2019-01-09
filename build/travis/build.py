@@ -21,6 +21,8 @@ import shutil
 import licenses
 import check_headers
 
+assert sys.version_info >= (3, 6), \
+    "Requires Python 3.6+. Run with `python3.6 build/travis/build.py`."
 path = os.path.join
 
 
@@ -55,12 +57,13 @@ def check_call_filter(cmd):
 def go():
     os.environ["GRADLE_OPTS"] = "-Dorg.gradle.daemon=false"
 
-    os.mkdir("out")
+    os.makedirs("out", exist_ok=True)
 
     # Check licenses
     check_headers.go()
 
     # Build with no tests.
+    check_call_filter(["mvn", "clean"])
     check_call_filter(["mvn", "package", "-Dmaven.test.skip=true"])
 
     # Generate third party licenses file.
@@ -78,11 +81,6 @@ def go():
         path("graphicsfuzz", "src", "main", "scripts", "OPEN_SOURCE_LICENSES.TXT")
     )
 
-    shutil.copy2(
-        "LICENSE",
-        path("graphicsfuzz", "src", "main", "scripts", "LICENSE.TXT")
-    )
-
     # Rebuild with tests.
     check_call_filter(["mvn", "clean"])
     check_call_filter(["mvn", "package"])  # TODO: Enable image tests.
@@ -93,13 +91,14 @@ def go():
         path("out", "graphicsfuzz.zip")
     )
 
-    source_root = os.path.abspath(".")
+    source_root = os.path.abspath(os.curdir)
 
     os.chdir(path("gles-worker"))
 
+    gradlew = path(os.curdir, "gradlew")
+
     # Build desktop worker.
-    subprocess.check_call(
-        ["./gradlew", "desktop:dist"])
+    subprocess.check_call(gradlew + " desktop:dist", shell=True)
 
     # Copy desktop worker.
     shutil.copy2(
@@ -108,8 +107,7 @@ def go():
     )
 
     # Build Android worker
-    subprocess.check_call(
-        ["./gradlew", "android:assembleDebug"])
+    subprocess.check_call(gradlew + " android:assembleDebug", shell=True)
 
     # Copy Android worker.
     shutil.copy2(
@@ -118,6 +116,10 @@ def go():
     )
 
     os.chdir(source_root)
+
+    # Check licenses again to ensure that build outputs don't trigger header failures to ensure that
+    # we can run this file repeatedly without removing all outputs.
+    check_headers.go()
 
 
 if __name__ == "__main__":
