@@ -1185,6 +1185,10 @@ void VulkanWorker::UpdateImageLayout(VkCommandBuffer command_buffer, VkImage ima
       image_memory_barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
       break;
 
+    case VK_IMAGE_LAYOUT_GENERAL:
+      image_memory_barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+      break;
+
     default:
       break;
   }
