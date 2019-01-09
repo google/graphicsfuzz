@@ -192,6 +192,8 @@ def do_image_job(args, image_job):
 
     if args.linux:
         vkrun.run_linux(vert_spv_file, frag_spv_file, json_file, skip_render)
+    elif args.vkrunner:
+        vkrun.run_vkrunner(vert_spv_file, frag_spv_file, json_file)
     else:
         wait_for_screen = not args.force
         vkrun.run_android(vert_spv_file, frag_spv_file, json_file, skip_render, wait_for_screen)
@@ -310,6 +312,11 @@ def main():
         '--linux',
         action='store_true',
         help='Use Linux worker')
+
+    parser.add_argument(
+        '--vkrunner',
+        action='store_true',
+        help='Use VkRunner to render on device')
 
     parser.add_argument(
         '--adb-no-serial',
