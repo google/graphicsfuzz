@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2018 The GraphicsFuzz Project Authors
+# Copyright 2019 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,13 +18,5 @@ set -x
 set -e
 set -u
 
-pushd vulkan-worker
-./gradlew assembleDebug
-popd
-
-find vulkan-worker/src/android/build/outputs/
-
-mkdir -p out
-cp vulkan-worker/src/android/build/outputs/apk/debug/vulkan-worker-android-debug.apk out/vulkan-worker-android-debug.apk
-
-find out/
+build/travis/build
+build/ci_vulkan_worker/2-build-travis.sh
