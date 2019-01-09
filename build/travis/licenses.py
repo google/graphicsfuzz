@@ -48,8 +48,8 @@ def get_extras():
             'comment': 'Used by angle',
             'name': 'libpng',
             'url': 'http://libpng.org/pub/png/libpng.html',
-            'license_file': '',
-            'license_url': 'http://libpng.org/pub/png/src/libpng-LICENSE.txt',
+            'license_file': 'build/licenses/libpng-LICENSE.txt',
+            'license_url': '',
             'skipped': '',
         },
 
