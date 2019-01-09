@@ -18,6 +18,7 @@ import argparse
 import filecmp
 import os
 import shutil
+import struct
 import subprocess
 import time
 import platform
@@ -375,6 +376,106 @@ def dump_info_android(wait_for_screen):
     adb_can_fail('shell am force-stop ' + ANDROID_APP)
 
 ################################################################################
+# VkRunner
+
+
+UNIFORM_TYPE = {
+    'glUniform1i': 'int',
+    'glUniform2i': 'ivec2',
+    'glUniform3i': 'ivec3',
+    'glUniform4i': 'ivec4',
+    'glUniform1f': 'float',
+    'glUniform2f': 'vec2',
+    'glUniform3f': 'vec3',
+    'glUniform4f': 'vec4',
+}
+
+
+def spv_get_bin_as_uint(shader_filename):
+
+    print('Shader filename: ' + shader_filename)
+
+    with open(shader_filename, 'rb') as f:
+        data = f.read()
+    print(len(data))
+    assert(len(data) >= 4)
+    assert(len(data) % 4 == 0)
+
+    # Check SPIRV magic header to guess endianness
+    header = struct.unpack('>I', data[0:4])[0]
+
+    if header == 0x07230203:
+        endianness = '>'
+    elif header == 0x03022307:
+        endianness = '<'
+    else:
+        print('Invalid magic header for SPIRV file')
+        exit(1)
+
+    fmt = endianness + 'I'
+
+    result = ''
+    for i in range(0, len(data), 4):
+        word = struct.unpack(fmt, data[i:i+4])[0]
+        result += ' {:x}'.format(word)
+
+    return result
+
+
+def vkscriptify(vert, frag, json):
+    '''
+    Generates a VkScript representation of a test
+    '''
+
+    script = '# Generated\n'
+
+    script += '[vertex shader binary]\n'
+    script += spv_get_bin_as_uint(vert)
+    script += '\n\n'
+
+    script += '[fragment shader binary]\n'
+    script += spv_get_bin_as_uint(frag)
+    script += '\n\n'
+
+    script += '[test]\n'
+    script += 'draw rect -1 -1 2 2\n'
+
+    return script
+
+
+def run_vkrunner(vert, frag, json):
+    assert(os.path.isfile(vert))
+    assert(os.path.isfile(frag))
+    assert(os.path.isfile(json))
+
+    script = vkscriptify(vert, frag, json)
+
+    tmpfile = 'tmpscript.shader_test'
+
+    with open(tmpfile, 'w') as f:
+        f.write(script)
+
+    # call vkrunner
+    cmd = 'vkrunner -i image.ppm ' + tmpfile
+
+    status = 'SUCCESS'
+    try:
+        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+    except subprocess.TimeoutExpired:
+        status = 'TIMEOUT'
+    except subprocess.CalledProcessError:
+        status = 'CRASH'
+
+    with open(LOGFILE, 'a') as f:
+        f.write('\nSTATUS ' + status + '\n')
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
+
+    if status == 'SUCCESS':
+        subprocess.run('convert image.ppm image_0.png', shell=True)
+
+################################################################################
 # Main
 
 
@@ -387,6 +488,7 @@ def main():
     group.add_argument('-a', '--android', action='store_true', help='Render on Android')
     group.add_argument('-i', '--serial', help='Android device serial number. Implies --android')
     group.add_argument('-l', '--linux', action='store_true', help='Render on Linux')
+    group.add_argument('--vkrunner', action='store_true', help='Render using vkrunner')
 
     parser.add_argument('-s', '--skip-render', action='store_true', help='Skip render')
 
@@ -399,8 +501,8 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.android and not args.serial and not args.linux:
-        print('You must set either --android, --serial or --linux option.')
+    if not args.android and not args.serial and not args.linux and not args.vkrunner:
+        print('You must set either --android, --serial, --linux or --vkrunner option.')
         exit(1)
 
     vert = prepare_shader(args.vert)
@@ -423,6 +525,8 @@ def main():
         run_linux(vert, frag, args.json, args.skip_render)
         return
 
+    if args.vkrunner:
+        run_vkrunner(vert, frag, args.json)
 
 if __name__ == '__main__':
     main()
