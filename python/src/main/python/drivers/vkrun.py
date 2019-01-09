@@ -22,6 +22,7 @@ import struct
 import subprocess
 import time
 import platform
+import json
 from typing import Union, IO, Any
 
 ################################################################################
@@ -123,10 +124,10 @@ def prepare_shader(shader: str):
 # Linux
 
 
-def run_linux(vert, frag, json, skip_render):
+def run_linux(vert, frag, uniform_json, skip_render):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
-    assert(os.path.isfile(json))
+    assert(os.path.isfile(uniform_json))
 
     if skip_render:
         with open('SKIP_RENDER', 'w') as f:
@@ -134,7 +135,7 @@ def run_linux(vert, frag, json, skip_render):
     elif os.path.isfile('SKIP_RENDER'):
         os.remove('SKIP_RENDER')
 
-    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + json + ' > ' + LOGFILE
+    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + uniform_json + ' > ' + LOGFILE
     status = 'SUCCESS'
     try:
         subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
@@ -242,16 +243,16 @@ def prepare_device(wait_for_screen):
             time.sleep(BUSY_WAIT_SLEEP_SLOW)
 
 
-def run_android(vert, frag, json, skip_render, wait_for_screen):
+def run_android(vert, frag, uniform_json, skip_render, wait_for_screen):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
-    assert(os.path.isfile(json))
+    assert(os.path.isfile(uniform_json))
 
     prepare_device(wait_for_screen)
 
     adb_check('push ' + vert + ' ' + ANDROID_SDCARD + '/test.vert.spv')
     adb_check('push ' + frag + ' ' + ANDROID_SDCARD + '/test.frag.spv')
-    adb_check('push ' + json + ' ' + ANDROID_SDCARD + '/test.json')
+    adb_check('push ' + uniform_json + ' ' + ANDROID_SDCARD + '/test.json')
 
     cmd = 'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity'
     flags = '--num-render {}'.format(NUM_RENDER)
@@ -379,22 +380,7 @@ def dump_info_android(wait_for_screen):
 # VkRunner
 
 
-UNIFORM_TYPE = {
-    'glUniform1i': 'int',
-    'glUniform2i': 'ivec2',
-    'glUniform3i': 'ivec3',
-    'glUniform4i': 'ivec4',
-    'glUniform1f': 'float',
-    'glUniform2f': 'vec2',
-    'glUniform3f': 'vec3',
-    'glUniform4f': 'vec4',
-}
-
-
 def spv_get_bin_as_uint(shader_filename):
-
-    print('Shader filename: ' + shader_filename)
-
     with open(shader_filename, 'rb') as f:
         data = f.read()
     print(len(data))
@@ -422,7 +408,61 @@ def spv_get_bin_as_uint(shader_filename):
     return result
 
 
-def vkscriptify(vert, frag, json):
+def uniforms_json_to_vkscript(uniform_json):
+    '''
+    Returns the string representing VkScript version of uniform declarations.
+
+    {
+      "myuniform": {
+        "func": "glUniform1f",
+        "args": [ 42.0 ],
+        "binding": 3
+      }
+    }
+
+    becomes:
+
+    # myuniform
+    uniform ubo 0:3 float 0 42.0
+
+    '''
+
+    UNIFORM_TYPE = {
+        'glUniform1i': 'int',
+        'glUniform2i': 'ivec2',
+        'glUniform3i': 'ivec3',
+        'glUniform4i': 'ivec4',
+        'glUniform1f': 'float',
+        'glUniform2f': 'vec2',
+        'glUniform3f': 'vec3',
+        'glUniform4f': 'vec4',
+    }
+
+    descriptor_set = 0  # always 0 in our tests
+    offset = 0          # We never have uniform offset in our tests
+
+    result = ''
+    with open(uniform_json, 'r') as f:
+        j = json.load(f)
+    for name, entry in j.items():
+
+        func = entry['func']
+        if func not in UNIFORM_TYPE.keys():
+            print('Error: unknown uniform type for function: ' + func)
+            exit(1)
+        uniform_type = UNIFORM_TYPE[func]
+
+        result += '# ' + name + '\n'
+        result += 'uniform ubo {}:{}'.format(descriptor_set, entry['binding'])
+        result += ' ' + uniform_type
+        result += ' {}'.format(offset)
+        for arg in entry['args']:
+            result += ' {}'.format(arg)
+        result += '\n'
+
+    return result
+
+def vkscriptify(vert, frag, uniform_json):
     '''
     Generates a VkScript representation of a test
     '''
@@ -438,17 +478,20 @@ def vkscriptify(vert, frag, json):
     script += '\n\n'
 
     script += '[test]\n'
+    script += '## Uniforms\n'
+    script += uniforms_json_to_vkscript(uniform_json)
+    script += '\n'
     script += 'draw rect -1 -1 2 2\n'
 
     return script
 
 
-def run_vkrunner(vert, frag, json):
+def run_vkrunner(vert, frag, uniform_json):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
-    assert(os.path.isfile(json))
+    assert(os.path.isfile(uniform_json))
 
-    script = vkscriptify(vert, frag, json)
+    script = vkscriptify(vert, frag, uniform_json)
 
     tmpfile = 'tmpscript.shader_test'
 
