@@ -17,6 +17,7 @@
 import os
 import io
 import sys
+import re
 
 path = os.path.join
 
@@ -127,6 +128,8 @@ def exclude_filename(f: str):
 
 def go():
     fail = False
+    copyright_pattern = re.compile(r"Copyright (2018|2019) The GraphicsFuzz Project Authors")
+
     for (dirpath, dirnames, filenames) in os.walk(os.curdir, topdown=True):
 
         # dirnames[:] = <--- modifies in-place to ignore certain directories
@@ -144,13 +147,17 @@ def go():
                 with io.open(file, 'r') as fin:
                     contents = fin.read()
 
-                    # File must contain Copyright header anywhere
-                    # or "generated" on the first line.
+                    # Generated files don't need a header
+                    if contents.split('\n')[0].find("generated") > -1:
+                        continue
 
-                    if contents.find("Copyright 2018 The GraphicsFuzz Project Authors") == -1 and \
-                            contents.split('\n')[0].find("generated") == -1:
+                    # Other files must contain a header for any year
+                    if copyright_pattern.search(contents) is None:
                         fail = True
                         print("Missing license header " + file)
+                        continue
+
+                    # This file is OK. Continue to next file.
             except:
                 print("Failed to check license header of file " + file)
                 fail = True
