@@ -862,7 +862,7 @@ def read_maven_dependencies(
         dependencies_dict: typing.Dict[str, typing.Dict],
         dependencies_file: str):
 
-    with io.open(dependencies_file, 'r') as fin:
+    with io.open(dependencies_file, 'r', encoding='utf-8', errors='ignore') as fin:
         for line in fin:
             if not line.startswith("   "):
                 continue
@@ -880,7 +880,7 @@ def read_maven_dependencies(
 def write_license_from_file(fout: typing.TextIO, license_file: str) -> None:
     fout.write("\n")
     fout.write("\n")
-    with io.open(license_file, 'r') as fin:
+    with io.open(license_file, 'r', encoding='utf-8', errors='ignore') as fin:
         contents = fin.read()
         fout.write(contents)
 

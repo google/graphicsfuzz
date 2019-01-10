@@ -30,18 +30,18 @@ mkdir -p "${ANDROID_HOME}"
 pushd "${ANDROID_HOME}"
 
 # Android: "sdk-tools.zip" "tools":
-curl -qo "${ANDROID_TOOLS_FILENAME}" "http://dl.google.com/android/repository/${ANDROID_TOOLS_FILENAME}"
+curl -sSo "${ANDROID_TOOLS_FILENAME}" "http://dl.google.com/android/repository/${ANDROID_TOOLS_FILENAME}"
 unzip -q "${ANDROID_TOOLS_FILENAME}"
 rm "${ANDROID_TOOLS_FILENAME}"
 
 # Android "android-ndk.zip" "ndk-bundle"
-curl -qo "${ANDROID_NDK_FILENAME}" "https://dl.google.com/android/repository/${ANDROID_NDK_FILENAME}"
+curl -sSo "${ANDROID_NDK_FILENAME}" "https://dl.google.com/android/repository/${ANDROID_NDK_FILENAME}"
 unzip -q "${ANDROID_NDK_FILENAME}"
 rm "${ANDROID_NDK_FILENAME}"
 mv android-ndk-*/ ndk-bundle
 
 # Android "platform-tools.zip" "platform-tools"
-curl -qo "${ANDROID_PLATFORM_TOOLS_FILENAME}" "https://dl.google.com/android/repository/${ANDROID_PLATFORM_TOOLS_FILENAME}"
+curl -sSo "${ANDROID_PLATFORM_TOOLS_FILENAME}" "https://dl.google.com/android/repository/${ANDROID_PLATFORM_TOOLS_FILENAME}"
 unzip -q "${ANDROID_PLATFORM_TOOLS_FILENAME}"
 rm "${ANDROID_PLATFORM_TOOLS_FILENAME}"
 
