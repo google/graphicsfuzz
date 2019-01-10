@@ -18,35 +18,7 @@ set -x
 set -e
 set -u
 
-sudo mkdir -p /data/bin
-sudo chmod uga+rwx /data/bin
-
-GITHUB_RELEASE_TOOL_USER="c4milo"
-GITHUB_RELEASE_TOOL_VERSION="v1.1.0"
-
-if [ "$(uname)" == "Darwin" ];
-then
-  brew install python3 unzip
-  GITHUB_RELEASE_TOOL_ARCH="darwin_amd64"
-  ANDROID_HOST_PLATFORM="darwin"
-fi
-
-if [ "$(uname)" == "Linux" ];
-then
-  sudo add-apt-repository ppa:deadsnakes/ppa -y
-  sudo apt-get update -q
-  sudo apt-get install python3.6 unzip -y
-  GITHUB_RELEASE_TOOL_ARCH="linux_amd64"
-  ANDROID_HOST_PLATFORM="linux"
-fi
-
-
-pushd /data/bin
-curl -Lo "github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_ARCH}.tar.gz" \
-  "https://github.com/${GITHUB_RELEASE_TOOL_USER}/github-release/releases/download/${GITHUB_RELEASE_TOOL_VERSION}/github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_ARCH}.tar.gz"
-tar xf "github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_ARCH}.tar.gz"
-popd
-
+echo "Installing Android SDK and NDK ${ANDROID_HOST_PLATFORM} to ${ANDROID_HOME}"
 
 # Android SDK (ANDROID_HOST_PLATFORM must be set to linux, darwin, or windows, and ANDROID_HOME must be set to some directory).
 

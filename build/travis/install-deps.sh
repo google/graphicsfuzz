@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 The GraphicsFuzz Project Authors
+# Copyright 2018 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,4 +18,27 @@ set -x
 set -e
 set -u
 
-build/travis/build-and-test-graphicsfuzz.sh
+echo "Installing packing manager dependencies suitable for travis builds."
+
+
+kernel="$(uname -s)"
+case "${kernel}" in
+    Linux*)
+        sudo add-apt-repository ppa:deadsnakes/ppa -y
+        sudo apt-get update -q
+        sudo apt-get install python3.6 unzip -y
+        ;;
+    Darwin*)
+        brew install python3 unzip
+        ;;
+    CYGWIN*)
+        platform=Windows
+        ;;
+    MINGW*)
+        platform=Windows
+        ;;
+    *)
+        echo "Unknown platform ${kernel}."
+        exit 1
+esac
+

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 The GraphicsFuzz Project Authors
+# Copyright 2018 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,4 +18,8 @@ set -x
 set -e
 set -u
 
-build/travis/build-and-test-graphicsfuzz.sh
+source build/travis/travis-env.sh
+
+time build/travis/install-android-sdk-and-ndk.sh
+time build/travis/build-and-test-graphicsfuzz.sh
+time build/travis/build-and-test-vulkan-worker.sh

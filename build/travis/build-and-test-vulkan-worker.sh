@@ -18,13 +18,12 @@ set -x
 set -e
 set -u
 
+test -d temp
+test -d build/travis
+
 pushd vulkan-worker
 ./gradlew assembleDebug
 popd
 
-find vulkan-worker/src/android/build/outputs/
-
 mkdir -p out
 cp vulkan-worker/src/android/build/outputs/apk/debug/vulkan-worker-android-debug.apk out/vulkan-worker-android-debug.apk
-
-find out/

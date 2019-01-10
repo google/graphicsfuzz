@@ -14,20 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script is different to others, as it tries to use python3.6+.
+set -x
+set -e
+set -u
 
-if type -P python3.9 >/dev/null; then
-  python3.9 ${BASH_SOURCE}.py "$@"
-elif type -P python3.8 >/dev/null; then
-  python3.8 ${BASH_SOURCE}.py "$@"
-elif type -P python3.7 >/dev/null; then
-  python3.7 ${BASH_SOURCE}.py "$@"
-elif type -P python3.6 >/dev/null; then
-  python3.6 ${BASH_SOURCE}.py "$@"
-elif type -P py >/dev/null; then
-  py -3 ${BASH_SOURCE}.py "$@"
-elif type -P python3 >/dev/null; then
-  python3 ${BASH_SOURCE}.py "$@"
-else
-  python ${BASH_SOURCE}.py "$@"
-fi
+build/travis/python-launch build/travis/release.py

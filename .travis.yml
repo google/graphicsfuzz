@@ -15,42 +15,41 @@
 
 language: generic
 
-# First matrix entry builds graphicsfuzz repo and GLES workers.
-# Second matrix entry builds vulkan-worker.
 
 matrix:
   include:
+
     - os: linux
       dist: trusty
       sudo: required
       env:
         - TITLE="GraphicsFuzz and GLES workers"
-        - INSTALL_SCRIPT="build/travis/1-install-deps-travis.sh"
-        - BUILD_SCRIPT="python3.6 build/travis/build.py"
-        - RELEASE_SCRIPT="python3.6 build/travis/release.py"
+      script:
+        - pyenv global 3.6.3
+        - build/travis/travis-build-test-release-graphicsfuzz-and-gles-workers.sh
       cache:
         directories:
         - $HOME/.m2
         - $HOME/.gradle
+
+
     - os: linux
       dist: trusty
       sudo: required
       env:
         - TITLE="Vulkan worker"
-        - INSTALL_SCRIPT="build/travis/1-install-deps-travis.sh"
-        - BUILD_SCRIPT="build/ci_vulkan_worker/2-build-travis.sh"
-        - RELEASE_SCRIPT="python3.6 build/travis/release.py"
-        - ANDROID_NDK_HOME=/opt/android-sdk/ndk-bundle
+      script:
+        - pyenv global 3.6.3
+        - build/travis/travis-build-release-vulkan-worker.sh
+      cache:
+        directories:
+          - $HOME/.gradle
 
+    - os: linux
+      dist: xenial
+      sudo: required
+      env:
+        - TITLE="Xenial"
+      script:
+        - build/travis/travis-build-test-all.sh
 
-
-install:
-  - export ANDROID_HOME=/opt/android-sdk
-  - export PATH="${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${ANDROID_HOME}/platform-tools:/data/bin:$PATH"
-  - $INSTALL_SCRIPT
-
-script:
-  - $BUILD_SCRIPT
-
-after_success:
-  - $RELEASE_SCRIPT

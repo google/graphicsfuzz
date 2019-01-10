@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 The GraphicsFuzz Project Authors
+# Copyright 2018 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,4 +18,5 @@ set -x
 set -e
 set -u
 
-build/travis/build-and-test-graphicsfuzz.sh
+sudo add-apt-repository ppa:deadsnakes/ppa -yu
+sudo apt-get install python3.6 -y
