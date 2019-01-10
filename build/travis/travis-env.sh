@@ -21,8 +21,8 @@ set -u
 test -d temp
 test -d build/travis
 
-export PATH="$(pwd)/build/travis:$(pwd)/temp/bin:${PATH}"
-export GITHUB_RELEASE_TOOL_BIN_DIR="$(pwd)/temp/bin"
+export PATH="$(pwd)/build/travis:/data/bin:${PATH}"
+export GITHUB_RELEASE_TOOL_BIN_DIR="/data/bin"
 export ANDROID_HOME=/opt/android-sdk
 export ANDROID_NDK_HOME=/opt/android-sdk/ndk-bundle
 

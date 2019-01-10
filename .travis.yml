@@ -18,38 +18,50 @@ language: generic
 
 matrix:
   include:
-
     - os: linux
       dist: trusty
       sudo: required
+      language: minimal
       env:
-        - TITLE="GraphicsFuzz and GLES workers"
+        - TITLE="Docker build"
       script:
-        - pyenv global 3.6.3
-        - build/travis/travis-build-test-release-graphicsfuzz-and-gles-workers.sh
-      cache:
-        directories:
-        - $HOME/.m2
-        - $HOME/.gradle
+        - export BUILD_SCRIPT="echo hello world"
+        - docker build -t temp-image -f build/travis/docker-runner/Dockerfile .
+        - docker create -it -e GITHUB_TOKEN -e BUILD_SCRIPT --name temp-container temp-image
+        - docker start -ia temp-container
 
 
-    - os: linux
-      dist: trusty
-      sudo: required
-      env:
-        - TITLE="Vulkan worker"
-      script:
-        - pyenv global 3.6.3
-        - build/travis/travis-build-release-vulkan-worker.sh
-      cache:
-        directories:
-          - $HOME/.gradle
+#    - os: linux
+#      dist: trusty
+#      sudo: required
+#      env:
+#        - TITLE="GraphicsFuzz and GLES workers"
+#      script:
+#        - pyenv global 3.6.3
+#        - build/travis/travis-build-test-release-graphicsfuzz-and-gles-workers.sh
+#      cache:
+#        directories:
+#        - $HOME/.m2
+#        - $HOME/.gradle
 
-    - os: linux
-      dist: xenial
-      sudo: required
-      env:
-        - TITLE="Xenial"
-      script:
-        - build/travis/travis-build-test-all.sh
+
+#    - os: linux
+#      dist: trusty
+#      sudo: required
+#      env:
+#        - TITLE="Vulkan worker"
+#      script:
+#        - pyenv global 3.6.3
+#        - build/travis/travis-build-release-vulkan-worker.sh
+#      cache:
+#        directories:
+#          - $HOME/.gradle
+#
+#    - os: linux
+#      dist: xenial
+#      sudo: required
+#      env:
+#        - TITLE="Xenial"
+#      script:
+#        - build/travis/travis-build-test-all.sh
 
