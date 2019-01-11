@@ -31,7 +31,7 @@ cp OPEN_SOURCE_LICENSES.TXT out/OPEN_SOURCE_LICENSES.TXT
 build/travis/python-launch build/travis/check_headers.py
 
 mvn clean
-mvn package -P imageTests
+mvn package
 
 cp graphicsfuzz/target/graphicsfuzz.zip out/graphicsfuzz.zip
 
