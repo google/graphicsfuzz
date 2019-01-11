@@ -18,9 +18,11 @@ import argparse
 import filecmp
 import os
 import shutil
+import struct
 import subprocess
 import time
 import platform
+import json
 from typing import Union, IO, Any
 
 ################################################################################
@@ -122,10 +124,10 @@ def prepare_shader(shader: str):
 # Linux
 
 
-def run_linux(vert, frag, json, skip_render):
+def run_linux(vert, frag, uniform_json, skip_render):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
-    assert(os.path.isfile(json))
+    assert(os.path.isfile(uniform_json))
 
     if skip_render:
         with open('SKIP_RENDER', 'w') as f:
@@ -133,7 +135,7 @@ def run_linux(vert, frag, json, skip_render):
     elif os.path.isfile('SKIP_RENDER'):
         os.remove('SKIP_RENDER')
 
-    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + json + ' > ' + LOGFILE
+    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + uniform_json + ' > ' + LOGFILE
     status = 'SUCCESS'
     try:
         subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
@@ -241,16 +243,16 @@ def prepare_device(wait_for_screen):
             time.sleep(BUSY_WAIT_SLEEP_SLOW)
 
 
-def run_android(vert, frag, json, skip_render, wait_for_screen):
+def run_android(vert, frag, uniform_json, skip_render, wait_for_screen):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
-    assert(os.path.isfile(json))
+    assert(os.path.isfile(uniform_json))
 
     prepare_device(wait_for_screen)
 
     adb_check('push ' + vert + ' ' + ANDROID_SDCARD + '/test.vert.spv')
     adb_check('push ' + frag + ' ' + ANDROID_SDCARD + '/test.frag.spv')
-    adb_check('push ' + json + ' ' + ANDROID_SDCARD + '/test.json')
+    adb_check('push ' + uniform_json + ' ' + ANDROID_SDCARD + '/test.json')
 
     cmd = 'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity'
     flags = '--num-render {}'.format(NUM_RENDER)
@@ -375,6 +377,161 @@ def dump_info_android(wait_for_screen):
     adb_can_fail('shell am force-stop ' + ANDROID_APP)
 
 ################################################################################
+# VkRunner
+
+
+def spv_get_bin_as_uint(shader_filename):
+    with open(shader_filename, 'rb') as f:
+        data = f.read()
+    print(len(data))
+    assert(len(data) >= 4)
+    assert(len(data) % 4 == 0)
+
+    # Check SPIRV magic header to guess endianness
+    header = struct.unpack('>I', data[0:4])[0]
+
+    if header == 0x07230203:
+        endianness = '>'
+    elif header == 0x03022307:
+        endianness = '<'
+    else:
+        print('Invalid magic header for SPIRV file')
+        exit(1)
+
+    fmt = endianness + 'I'
+
+    result = ''
+    for i in range(0, len(data), 4):
+        word = struct.unpack(fmt, data[i:i+4])[0]
+        result += ' {:x}'.format(word)
+
+    return result
+
+
+def uniforms_json_to_vkscript(uniform_json):
+    '''
+    Returns the string representing VkScript version of uniform declarations.
+
+    {
+      "myuniform": {
+        "func": "glUniform1f",
+        "args": [ 42.0 ],
+        "binding": 3
+      }
+    }
+
+    becomes:
+
+    # myuniform
+    uniform ubo 0:3 float 0 42.0
+
+    '''
+
+    UNIFORM_TYPE = {
+        'glUniform1i': 'int',
+        'glUniform2i': 'ivec2',
+        'glUniform3i': 'ivec3',
+        'glUniform4i': 'ivec4',
+        'glUniform1f': 'float',
+        'glUniform2f': 'vec2',
+        'glUniform3f': 'vec3',
+        'glUniform4f': 'vec4',
+    }
+
+    descriptor_set = 0  # always 0 in our tests
+    offset = 0          # We never have uniform offset in our tests
+
+    result = ''
+    with open(uniform_json, 'r') as f:
+        j = json.load(f)
+    for name, entry in j.items():
+
+        func = entry['func']
+        if func not in UNIFORM_TYPE.keys():
+            print('Error: unknown uniform type for function: ' + func)
+            exit(1)
+        uniform_type = UNIFORM_TYPE[func]
+
+        result += '# ' + name + '\n'
+        result += 'uniform ubo {}:{}'.format(descriptor_set, entry['binding'])
+        result += ' ' + uniform_type
+        result += ' {}'.format(offset)
+        for arg in entry['args']:
+            result += ' {}'.format(arg)
+        result += '\n'
+
+    return result
+
+def vkscriptify(vert, frag, uniform_json):
+    '''
+    Generates a VkScript representation of a test
+    '''
+
+    script = '# Generated\n'
+
+    script += '[vertex shader binary]\n'
+    script += spv_get_bin_as_uint(vert)
+    script += '\n\n'
+
+    script += '[fragment shader binary]\n'
+    script += spv_get_bin_as_uint(frag)
+    script += '\n\n'
+
+    script += '[test]\n'
+    script += '## Uniforms\n'
+    script += uniforms_json_to_vkscript(uniform_json)
+    script += '\n'
+    script += 'draw rect -1 -1 2 2\n'
+
+    return script
+
+
+def run_vkrunner(vert, frag, uniform_json):
+    assert(os.path.isfile(vert))
+    assert(os.path.isfile(frag))
+    assert(os.path.isfile(uniform_json))
+
+    # Produce VkScript
+    script = vkscriptify(vert, frag, uniform_json)
+
+    tmpfile = 'tmpscript.shader_test'
+
+    with open(tmpfile, 'w') as f:
+        f.write(script)
+
+    # Prepare files on device. vkrunner cannot be made executable under
+    # /sdcard/, hence we work under /data/local/tmp
+    device_dir = '/data/local/tmp'
+    adb_check('push ' + tmpfile + ' ' + device_dir)
+
+    device_image = device_dir + '/image.ppm'
+    adb_check('shell rm -f ' + device_image)
+
+    # call vkrunner
+    cmd = 'shell "cd ' + device_dir + '; ./vkrunner -i image.ppm ' + tmpfile + '"'
+
+    adb_check('logcat -c')
+    adb_check(cmd)
+
+    # Get result
+    status = 'UNEXPECTED_ERROR'
+    if adb_can_fail('shell test -f' + device_image).returncode == 0:
+        status = 'SUCCESS'
+        adb_check('pull ' + device_image)
+        subprocess.run('convert image.ppm image_0.png', shell=True)
+
+    # Grab log:
+    with open(LOGFILE, 'w', encoding='utf-8', errors='ignore') as f:
+        adb_check('logcat -d', stdout=f)
+
+    with open(LOGFILE, 'a') as f:
+        f.write('\nSTATUS ' + status + '\n')
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
+
+
+################################################################################
 # Main
 
 
@@ -387,6 +544,7 @@ def main():
     group.add_argument('-a', '--android', action='store_true', help='Render on Android')
     group.add_argument('-i', '--serial', help='Android device serial number. Implies --android')
     group.add_argument('-l', '--linux', action='store_true', help='Render on Linux')
+    group.add_argument('--vkrunner', action='store_true', help='Render using vkrunner')
 
     parser.add_argument('-s', '--skip-render', action='store_true', help='Skip render')
 
@@ -399,8 +557,8 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.android and not args.serial and not args.linux:
-        print('You must set either --android, --serial or --linux option.')
+    if not args.android and not args.serial and not args.linux and not args.vkrunner:
+        print('You must set either --android, --serial, --linux or --vkrunner option.')
         exit(1)
 
     vert = prepare_shader(args.vert)
@@ -423,6 +581,8 @@ def main():
         run_linux(vert, frag, args.json, args.skip_render)
         return
 
+    if args.vkrunner:
+        run_vkrunner(vert, frag, args.json)
 
 if __name__ == '__main__':
     main()
