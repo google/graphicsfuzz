@@ -18,9 +18,22 @@ set -x
 set -e
 set -u
 
-source build/travis/travis-env.sh
+test -d temp
+test -d build/travis
+test -f OPEN_SOURCE_LICENSES.TXT
 
-time build/travis/install-github-release-tool.sh
-time build/travis/install-android-sdk-and-ndk.sh
-time build/travis/build-and-test-graphicsfuzz.sh
-time build/travis/release-out.sh
+mkdir -p out/
+
+cp OPEN_SOURCE_LICENSES.TXT graphicsfuzz/src/main/scripts/OPEN_SOURCE_LICENSES.TXT
+cp OPEN_SOURCE_LICENSES.TXT out/OPEN_SOURCE_LICENSES.TXT
+
+# Check headers.
+build/travis/python-launch build/travis/check_headers.py
+
+mvn clean
+mvn package
+
+cp graphicsfuzz/target/graphicsfuzz.zip out/graphicsfuzz.zip
+
+# Check headers again.
+build/travis/python-launch build/travis/check_headers.py

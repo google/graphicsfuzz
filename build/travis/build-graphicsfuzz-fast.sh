@@ -18,9 +18,19 @@ set -x
 set -e
 set -u
 
-source build/travis/travis-env.sh
+test -d temp
+test -d build/travis
 
-time build/travis/install-github-release-tool.sh
-time build/travis/install-android-sdk-and-ndk.sh
-time build/travis/build-and-test-vulkan-worker.sh
-time build/travis/release-out.sh
+mkdir -p out/
+
+# Check headers.
+build/travis/python-launch build/travis/check_headers.py
+
+mvn clean
+mvn package -Dmaven.test.skip=true
+
+# Generate third party licenses file.
+build/travis/python-launch build/travis/licenses.py
+
+# Check headers again.
+build/travis/python-launch build/travis/check_headers.py

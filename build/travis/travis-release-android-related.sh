@@ -21,5 +21,11 @@ set -u
 test -d temp
 test -d build/travis
 
-build/travis/python-launch build/travis/build.py
-build/travis/cmd-tests.sh
+source build/travis/travis-env.sh
+
+test -z "${SKIP_DEPS}" && time build/travis/install-github-release-tool.sh
+test -z "${SKIP_DEPS}" && time build/travis/install-android-sdk-and-ndk.sh
+time build/travis/build-graphicsfuzz-fast.sh
+time build/travis/build-gles-worker-android.sh
+time build/travis/build-vulkan-worker-android.sh
+time build/travis/release-out.sh

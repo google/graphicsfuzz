@@ -888,14 +888,16 @@ def write_license_from_file(fout: typing.TextIO, license_file: str) -> None:
 def write_license_from_url(fout: typing.TextIO, url: str) -> None:
     fout.write('\n')
     fout.write('\n')
-    response: http.client.HTTPResponse
+
+    # noinspection PyUnusedLocal
+    response = None  # type: http.client.HTTPResponse
     with urllib.request.urlopen(url) as response:
         contents = response.read()
         fout.write(contents.decode())
 
 
 def go():
-    maven_dependencies: typing.Dict[str, typing.Dict] = dict()
+    maven_dependencies = dict()  # type: typing.Dict[str, typing.Dict]
     read_maven_dependencies(maven_dependencies, path('graphicsfuzz', 'target', 'dependencies.txt'))
     dependencies_populated = get_maven_dependencies_populated()
     dependencies_populated.update(get_extras())

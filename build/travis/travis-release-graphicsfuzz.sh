@@ -18,7 +18,12 @@ set -x
 set -e
 set -u
 
+test -d temp
+test -d build/travis
+
 source build/travis/travis-env.sh
 
-time build/travis/build-and-test-graphicsfuzz.sh
+test -z "${SKIP_DEPS}" && time build/travis/install-github-release-tool.sh
+time build/travis/build-graphicsfuzz-fast.sh
+time build/travis/build-graphicsfuzz-medium.sh
 time build/travis/release-out.sh

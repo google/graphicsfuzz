@@ -18,8 +18,16 @@ set -x
 set -e
 set -u
 
-source build/travis/travis-env.sh
+test -d temp
+test -d build/travis
 
-time build/travis/install-android-sdk-and-ndk.sh
-time build/travis/build-and-test-graphicsfuzz.sh
-time build/travis/build-and-test-vulkan-worker.sh
+mkdir -p out/
+
+pushd gles-worker
+./gradlew desktop:dist
+popd
+
+cp gles-worker/desktop/build/libs/gles-worker-desktop.jar out/gles-worker-desktop.jar
+
+# Check headers.
+build/travis/python-launch build/travis/check_headers.py

@@ -18,10 +18,16 @@ set -x
 set -e
 set -u
 
-source build/travis/travis-env.sh
+test -d temp
+test -d build/travis
 
-time build/travis/install-github-release-tool.sh
-time build/travis/install-android-sdk-and-ndk.sh
-time build/travis/build-and-test-graphicsfuzz.sh
-time build/travis/build-and-test-vulkan-worker.sh
-time build/travis/release-out.sh
+mkdir -p out/
+
+pushd vulkan-worker
+./gradlew assembleDebug
+popd
+
+cp vulkan-worker/src/android/build/outputs/apk/debug/vulkan-worker-android-debug.apk out/vulkan-worker-android-debug.apk
+
+# Check headers.
+build/travis/python-launch build/travis/check_headers.py

@@ -24,11 +24,11 @@ matrix:
       language: minimal
       env:
         - TITLE="Docker build"
-      script:
-        - export BUILD_SCRIPT="build/travis/travisd-build-test-release-graphicsfuzz-and-gles-workers.sh"
-        - docker build -t temp-image -f build/travis/docker-runner/Dockerfile .
-        - docker create -it -e GITHUB_TOKEN -e BUILD_SCRIPT --name temp-container temp-image
-        - docker start -ia temp-container
+#      script:
+#        - export BUILD_SCRIPT="build/travis/travisd-build-test-release-graphicsfuzz-and-gles-workers.sh"
+#        - docker build -t temp-image -f build/travis/docker-runner/Dockerfile .
+#        - docker create -it -e GITHUB_TOKEN -e BUILD_SCRIPT --name temp-container temp-image
+#        - docker start -ia temp-container
 
 
 #    - os: linux

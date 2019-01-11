@@ -21,9 +21,13 @@ set -u
 test -d temp
 test -d build/travis
 
-pushd vulkan-worker
-./gradlew assembleDebug
+mkdir -p out/
+
+pushd gles-worker
+./gradlew android:assembleDebug
 popd
 
-mkdir -p out
-cp vulkan-worker/src/android/build/outputs/apk/debug/vulkan-worker-android-debug.apk out/vulkan-worker-android-debug.apk
+cp gles-worker/android/build/outputs/apk/debug/gles-worker-android-debug.apk out/gles-worker-android-debug.apk
+
+# Check headers.
+build/travis/python-launch build/travis/check_headers.py
