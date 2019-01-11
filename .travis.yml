@@ -34,6 +34,7 @@ matrix:
       env:
         - TITLE="travis-release-graphicsfuzz.sh"
       script:
+        - export PYTHON_GF="python3.5"
         - |
           build/travis/travis-install-trusty-deps.sh && \
           build/travis/travis-release-graphicsfuzz.sh
