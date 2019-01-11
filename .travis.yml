@@ -37,6 +37,7 @@ matrix:
         - export PYTHON_GF="python3.5"
         - |
           jdk_switcher use openjdk8 && \
+          pyenv versions && \
           pyenv global 3.5.6 && \
           build/travis/travis-release-graphicsfuzz.sh
 
