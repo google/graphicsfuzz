@@ -26,7 +26,7 @@ matrix:
         - TITLE="Docker travis-release-graphicsfuzz.sh"
       script:
         - export BUILD_SCRIPT="build/travis/travis-release-graphicsfuzz.sh"
-        - docker build -t temp-image -f build/travis/docker-runner/Dockerfile .
+        - docker build -t temp-image -f build/travis/docker-images/runner-image.dockerfile .
         - docker create -it -e GITHUB_TOKEN -e BUILD_SCRIPT -e SKIP_DEPS=1 -e TRAVIS_TAG -e TRAVIS_PULL_REQUEST -e TRAVIS_COMMIT --name temp-container temp-image
         - docker start -ia temp-container
 
