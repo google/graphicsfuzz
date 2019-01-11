@@ -36,6 +36,7 @@ matrix:
       script:
         - export PYTHON_GF="python3.5"
         - |
+          jdk_switcher use openjdk8 && \
           build/travis/travis-install-trusty-deps.sh && \
           build/travis/travis-release-graphicsfuzz.sh
 
