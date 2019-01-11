@@ -95,8 +95,10 @@ def prepare_shader(shader: str):
 
     shader.frag -> shader.frag.spv
     shader.vert -> shader.vert.spv
+    shader.comp -> shader.comp.spv
     shader.frag.asm -> shader.frag.spv
     shader.vert.asm -> shader.vert.spv
+    shader.comp.asm -> shader.comp.spv
 
     :param shader: e.g. shader.frag, shader.vert, shader.frag.asm
     :return: the output .spv file
@@ -105,11 +107,11 @@ def prepare_shader(shader: str):
 
     # noinspection PyUnusedLocal
     output = ''
-    if shader.endswith('.frag') or shader.endswith('.vert'):
+    if shader.endswith('.frag') or shader.endswith('.vert') or shader.endswith('.comp'):
         output = shader + '.spv'
         cmd = glslang_path() + ' -V ' + shader + ' -o ' + output
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
-    elif shader.endswith('.frag.asm') or shader.endswith('.vert.asm'):
+    elif shader.endswith('.frag.asm') or shader.endswith('.vert.asm') or shader.endswith('.comp.asm'):
         output = remove_end(shader, '.asm') + '.spv'
         cmd = spirvas_path() + ' ' + shader + ' -o ' + output
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
@@ -408,7 +410,7 @@ def spv_get_bin_as_uint(shader_filename):
     return result
 
 
-def uniforms_json_to_vkscript(uniform_json):
+def uniform_json_to_vkscript(uniform_json):
     '''
     Returns the string representing VkScript version of uniform declarations.
 
@@ -462,9 +464,10 @@ def uniforms_json_to_vkscript(uniform_json):
 
     return result
 
-def vkscriptify(vert, frag, uniform_json):
+
+def vkscriptify_img(vert, frag, uniform_json):
     '''
-    Generates a VkScript representation of a test
+    Generates a VkScript representation of an image test
     '''
 
     script = '# Generated\n'
@@ -479,7 +482,7 @@ def vkscriptify(vert, frag, uniform_json):
 
     script += '[test]\n'
     script += '## Uniforms\n'
-    script += uniforms_json_to_vkscript(uniform_json)
+    script += uniform_json_to_vkscript(uniform_json)
     script += '\n'
     script += 'draw rect -1 -1 2 2\n'
 
@@ -492,7 +495,7 @@ def run_vkrunner(vert, frag, uniform_json):
     assert(os.path.isfile(uniform_json))
 
     # Produce VkScript
-    script = vkscriptify(vert, frag, uniform_json)
+    script = vkscriptify_img(vert, frag, uniform_json)
 
     tmpfile = 'tmpscript.shader_test'
 
@@ -532,6 +535,118 @@ def run_vkrunner(vert, frag, uniform_json):
 
 
 ################################################################################
+# Compute
+
+
+def comp_json_to_vkscript(comp_json):
+    '''
+    Returns the string representing VkScript version of compute shader setup.
+
+      {
+        "num_groups": [12, 13, 14];
+        "buffer": {
+          "binding": 123,
+          "input": [42, 43, 44, 45]
+        }
+      }
+
+    becomes:
+
+      ssbo 123 subdata int 0 42 43 44 45
+
+      compute 12 13 14
+
+    '''
+
+    offset = 0
+
+    with open(comp_json, 'r') as f:
+        j = json.load(f)
+
+    binding = j['buffer']['binding']
+    data = j['buffer']['input']
+
+    result = 'ssbo ' + str(binding) + ' subdata int ' + str(offset)
+    for d in data:
+        result += ' ' + str(d)
+    result += '\n\n'
+
+    result += 'compute'
+    result += ' '  + str(j['num_groups'][0])
+    result += ' '  + str(j['num_groups'][1])
+    result += ' '  + str(j['num_groups'][2])
+    result += '\n'
+
+    return result
+
+
+def vkscriptify_comp(comp, comp_json):
+    '''
+    Generates a VkScript representation of a compute test
+    '''
+
+    script = '# Generated\n'
+
+    script += '[compute shader binary]\n'
+    script += spv_get_bin_as_uint(comp)
+    script += '\n\n'
+
+    script += '[test]\n'
+    script += '## SSBO\n'
+    script += comp_json_to_vkscript(comp_json)
+    script += '\n'
+
+    return script
+
+
+def run_compute(comp, comp_json):
+    assert(os.path.isfile(comp))
+    assert(os.path.isfile(comp_json))
+
+    script = vkscriptify_comp(comp, comp_json)
+
+    tmpfile = 'tmpscript.shader_test'
+
+    with open(tmpfile, 'w') as f:
+        f.write(script)
+
+    # Prepare files on device. vkrunner cannot be made executable under
+    # /sdcard/, hence we work under /data/local/tmp
+    device_dir = '/data/local/tmp'
+    adb_check('push ' + tmpfile + ' ' + device_dir)
+
+    device_ssbo = device_dir + '/ssbo'
+    adb_check('shell rm -f ' + device_ssbo)
+
+    # call vkrunner
+    # FIXME: in case of multiple ssbo, we should pass the binding of the one to dump
+    cmd = 'shell "cd ' + device_dir + '; ./vkrunner -b ssbo ' + tmpfile + '"'
+
+    adb_check('logcat -c')
+
+    if adb_can_fail(cmd).returncode != 0:
+        status = 'CRASH'
+    else:
+        status = 'SUCCESS'
+
+    if status == 'SUCCESS':
+        if adb_can_fail('shell test -f' + device_ssbo).returncode != 0:
+            status = 'UNEXPECTED_ERROR'
+        else:
+            adb_check('pull ' + device_ssbo)
+
+    # Grab log:
+    with open(LOGFILE, 'w', encoding='utf-8', errors='ignore') as f:
+        adb_check('logcat -d', stdout=f)
+
+    with open(LOGFILE, 'a') as f:
+        f.write('\nSTATUS ' + status + '\n')
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
+
+
+################################################################################
 # Main
 
 
@@ -545,6 +660,7 @@ def main():
     group.add_argument('-i', '--serial', help='Android device serial number. Implies --android')
     group.add_argument('-l', '--linux', action='store_true', help='Render on Linux')
     group.add_argument('--vkrunner', action='store_true', help='Render using vkrunner')
+    group.add_argument('--compute', help='Run compute shader using vkrunner. Temp: Values for vert and frag arguments must be provided, but will be ignored.')
 
     parser.add_argument('-s', '--skip-render', action='store_true', help='Skip render')
 
@@ -557,9 +673,14 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.android and not args.serial and not args.linux and not args.vkrunner:
-        print('You must set either --android, --serial, --linux or --vkrunner option.')
+    if not args.android and not args.serial and not args.linux and not args.vkrunner and not args.compute:
+        print('You must set either --android, --serial, --linux, --vkrunner or --compute option.')
         exit(1)
+
+    if args.compute:
+        comp = prepare_shader(args.compute)
+        run_compute(comp, args.json)
+        return
 
     vert = prepare_shader(args.vert)
     frag = prepare_shader(args.frag)
@@ -583,6 +704,7 @@ def main():
 
     if args.vkrunner:
         run_vkrunner(vert, frag, args.json)
+        return
 
 if __name__ == '__main__':
     main()
