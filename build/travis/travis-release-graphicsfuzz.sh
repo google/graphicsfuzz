@@ -23,7 +23,7 @@ test -d build/travis
 
 source build/travis/travis-env.sh
 
-test -z "${SKIP_DEPS}" && time build/travis/install-github-release-tool.sh
+test -z "${SKIP_DEPS+x}" && time build/travis/install-github-release-tool.sh
 time build/travis/build-graphicsfuzz-fast.sh
 time build/travis/build-graphicsfuzz-medium.sh
 time build/travis/release-out.sh
