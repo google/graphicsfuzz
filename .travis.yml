@@ -23,12 +23,12 @@ matrix:
       sudo: required
       language: minimal
       env:
-        - TITLE="Docker build"
-#      script:
-#        - export BUILD_SCRIPT="build/travis/travisd-build-test-release-graphicsfuzz-and-gles-workers.sh"
-#        - docker build -t temp-image -f build/travis/docker-runner/Dockerfile .
-#        - docker create -it -e GITHUB_TOKEN -e BUILD_SCRIPT --name temp-container temp-image
-#        - docker start -ia temp-container
+        - TITLE="Docker travis-release-graphicsfuzz.sh"
+      script:
+        - export BUILD_SCRIPT="build/travis/travis-release-graphicsfuzz.sh"
+        - docker build -t temp-image -f build/travis/docker-runner/Dockerfile .
+        - docker create -it -e GITHUB_TOKEN -e BUILD_SCRIPT -e SKIP_DEPS=1 -e TRAVIS_TAG -e TRAVIS_PULL_REQUEST -e TRAVIS_COMMIT --name temp-container temp-image
+        - docker start -ia temp-container
 
 
 #    - os: linux

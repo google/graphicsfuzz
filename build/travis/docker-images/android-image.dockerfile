@@ -15,7 +15,7 @@
 
 FROM ubuntu:14.04
 
-ENV JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64" PATH="/data/maven/bin:${PATH}" PYTHON_GF="python3.6"
+ENV JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64" PATH="/data/maven/bin:${PATH}" PYTHON_GF="python3.5" MAVEN_OPTS="-Djava.net.preferIPv4Stack=true"
 
 RUN \
   apt-get update -q && \
@@ -23,7 +23,7 @@ RUN \
   add-apt-repository ppa:deadsnakes/ppa -y && \
   add-apt-repository ppa:openjdk-r/ppa -y && \
   apt-get update -q && \
-  apt-get -y install openjdk-8-jdk python3.6 git unzip curl ca-certificates-java && \
+  apt-get -y install openjdk-8-jdk python3.5 git unzip curl ca-certificates-java && \
   apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
   update-java-alternatives --set java-1.8.0-openjdk-amd64 && \
   mkdir -p /data && \

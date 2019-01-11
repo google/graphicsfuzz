@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM paulthomson/graphicsfuzz-build:2019-01-10-b
+FROM paulthomson/graphicsfuzz-build:2019-01-11-a
 
 COPY . /data/graphicsfuzz/
 
