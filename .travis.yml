@@ -22,12 +22,17 @@ matrix:
       dist: trusty
       sudo: required
       language: generic
-      python: "3.5"
-      java: "openjdk8"
+      addons:
+        apt:
+          sources:
+            - deadsnakes
+          packages:
+            - python3.5
       env:
         - TITLE="GraphicsFuzz tools"
       script:
-        - build/travis/travis-release-graphicsfuzz.sh
+        - export PYTHON_GF="python3.5"
+        - jdk_switcher use openjdk8 && build/travis/travis-release-graphicsfuzz.sh
 #        - export BUILD_SCRIPT="build/travis/travis-release-graphicsfuzz.sh"
 #        - docker build -t temp-image -f build/travis/docker-images/runner-image.dockerfile .
 #        - docker create -it -e GITHUB_TOKEN -e BUILD_SCRIPT -e TRAVIS_TAG -e TRAVIS_PULL_REQUEST -e TRAVIS_COMMIT --name temp-container temp-image
