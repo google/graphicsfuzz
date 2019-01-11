@@ -14,17 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x
-set -e
-set -u
-
-test -d temp
-test -d build/travis
-
-export PATH="$(pwd)/build/travis:/data/bin:${PATH}"
-export GITHUB_RELEASE_TOOL_BIN_DIR="/data/bin"
-export ANDROID_HOME=/opt/android-sdk
-export ANDROID_NDK_HOME=/opt/android-sdk/ndk-bundle
 
 kernel="$(uname -s)"
 case "${kernel}" in
@@ -48,3 +37,4 @@ case "${kernel}" in
         echo "Unknown platform ${kernel}."
         exit 1
 esac
+

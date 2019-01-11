@@ -18,27 +18,18 @@ set -x
 set -e
 set -u
 
-echo "Installing packing manager dependencies suitable for travis builds."
+MAVEN_VERSION="3.6.0"
+MAVEN_FILE="apache-maven-${MAVEN_VERSION}-bin.zip"
+MAVEN_URL="https://www-us.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/${MAVEN_FILE}"
 
+echo "Installing maven ${MAVEN_VERSION} to $(pwd)/apache-maven-${MAVEN_VERSION}"
 
-kernel="$(uname -s)"
-case "${kernel}" in
-    Linux*)
-        sudo add-apt-repository ppa:deadsnakes/ppa -y
-        sudo apt-get update -q
-        sudo apt-get install python3.6 unzip -y
-        ;;
-    Darwin*)
-        brew install python3 unzip
-        ;;
-    CYGWIN*)
-        platform=Windows
-        ;;
-    MINGW*)
-        platform=Windows
-        ;;
-    *)
-        echo "Unknown platform ${kernel}."
-        exit 1
-esac
+if test ! -f "${MAVEN_FILE}.touch"; then
+  curl -sSo "${MAVEN_FILE}" "${MAVEN_URL}"
+  unzip "${MAVEN_FILE}"
+  rm "${MAVEN_FILE}"
+  test -d "$(pwd)/apache-maven-${MAVEN_VERSION}/bin"
+  touch "${MAVEN_FILE}.touch"
+fi
 
+export PATH="$(pwd)/apache-maven-${MAVEN_VERSION}/bin:${PATH}"

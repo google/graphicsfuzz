@@ -18,16 +18,18 @@ set -x
 set -e
 set -u
 
-echo "Installing github-release ${GITHUB_RELEASE_TOOL_PLATFORM} tool to ${GITHUB_RELEASE_TOOL_BIN_DIR}."
-
-mkdir -p "${GITHUB_RELEASE_TOOL_BIN_DIR}"
-pushd "${GITHUB_RELEASE_TOOL_BIN_DIR}"
+echo "Installing github-release ${GITHUB_RELEASE_TOOL_PLATFORM} (linux_amd64, darwin_amd64, windows_amd64, etc.) tool to $(pwd)."
 
 GITHUB_RELEASE_TOOL_USER="c4milo"
 GITHUB_RELEASE_TOOL_VERSION="v1.1.0"
+GITHUB_RELEASE_TOOL_FILE="github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_PLATFORM}.tar.gz"
 
-curl -Lo "github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_PLATFORM}.tar.gz" \
-  "https://github.com/${GITHUB_RELEASE_TOOL_USER}/github-release/releases/download/${GITHUB_RELEASE_TOOL_VERSION}/github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_PLATFORM}.tar.gz"
-tar xf "github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_PLATFORM}.tar.gz"
+if test ! -f "${GITHUB_RELEASE_TOOL_FILE}.touch"; then
+  curl -Lo "${GITHUB_RELEASE_TOOL_FILE}" \
+    "https://github.com/${GITHUB_RELEASE_TOOL_USER}/github-release/releases/download/${GITHUB_RELEASE_TOOL_VERSION}/${GITHUB_RELEASE_TOOL_FILE}"
+  tar xf "${GITHUB_RELEASE_TOOL_FILE}"
+  rm "${GITHUB_RELEASE_TOOL_FILE}"
+  touch "${GITHUB_RELEASE_TOOL_FILE}.touch"
+fi
 
-popd
+export PATH="$(pwd):${PATH}"

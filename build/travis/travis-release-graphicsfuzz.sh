@@ -18,12 +18,22 @@ set -x
 set -e
 set -u
 
-test -d temp
-test -d build/travis
-
 source build/travis/travis-env.sh
 
-test -z "${SKIP_DEPS+x}" && time build/travis/install-github-release-tool.sh
+SOURCE="$(pwd)"
+
+pushd "${HOME}"
+
+  mkdir -p bin
+
+  pushd bin
+  time source "${SOURCE}/build/travis/install-github-release-tool.sh"
+  popd
+
+  time source "${SOURCE}/build/travis/install-maven.sh"
+
+popd
+
 time build/travis/build-graphicsfuzz-fast.sh
 time build/travis/build-graphicsfuzz-medium.sh
 time build/travis/release-out.sh

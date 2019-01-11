@@ -18,5 +18,8 @@ set -x
 set -e
 set -u
 
-sudo add-apt-repository ppa:deadsnakes/ppa -yu
-sudo apt-get install python3.6 -y
+add-apt-repository ppa:deadsnakes/ppa -y
+add-apt-repository ppa:openjdk-r/ppa -y
+apt-get update -q
+apt-get -y install openjdk-8-jdk python3.5 git unzip curl ca-certificates-java
+update-java-alternatives --set java-1.8.0-openjdk-amd64
