@@ -26,7 +26,7 @@ echo "Installing maven ${MAVEN_VERSION} to $(pwd)/apache-maven-${MAVEN_VERSION}"
 
 if test ! -f "${MAVEN_FILE}.touch"; then
   curl -sSo "${MAVEN_FILE}" "${MAVEN_URL}"
-  unzip "${MAVEN_FILE}"
+  unzip -q "${MAVEN_FILE}"
   rm "${MAVEN_FILE}"
   test -d "$(pwd)/apache-maven-${MAVEN_VERSION}/bin"
   touch "${MAVEN_FILE}.touch"
