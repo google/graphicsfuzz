@@ -38,8 +38,8 @@ matrix:
         - |
           jdk_switcher use openjdk8 && \
           pyenv install --list && \
-          pyenv install 3.5.5 && \
-          pyenv global 3.5.5 && \
+          pyenv install 3.5.4 && \
+          pyenv global 3.5.4 && \
           build/travis/travis-release-graphicsfuzz.sh
 
 
