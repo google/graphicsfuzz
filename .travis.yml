@@ -34,9 +34,9 @@ matrix:
       env:
         - TITLE="travis-release-graphicsfuzz.sh"
       script:
-        - build/travis/travis-install-trusty-deps.sh
-        - build/travis/travis-release-graphicsfuzz.sh
-
+        - |
+          build/travis/travis-install-trusty-deps.sh && \
+          build/travis/travis-release-graphicsfuzz.sh
 
 
 #    - os: linux

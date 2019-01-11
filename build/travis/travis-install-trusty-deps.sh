@@ -18,8 +18,8 @@ set -x
 set -e
 set -u
 
-add-apt-repository ppa:deadsnakes/ppa -y
-add-apt-repository ppa:openjdk-r/ppa -y
-apt-get update -q
-apt-get -y install openjdk-8-jdk python3.5 git unzip curl ca-certificates-java
-update-java-alternatives --set java-1.8.0-openjdk-amd64
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo add-apt-repository ppa:openjdk-r/ppa -y
+sudo apt-get update -q
+sudo apt-get -y install openjdk-8-jdk python3.5 git unzip curl ca-certificates-java
+sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
