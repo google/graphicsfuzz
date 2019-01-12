@@ -42,6 +42,7 @@ pushd "${HOME}"
 popd
 
 time build/travis/build-graphicsfuzz-fast.sh
+time build/travis/build-gles-worker-desktop.sh
 time build/travis/build-gles-worker-android.sh
 time build/travis/build-vulkan-worker-android.sh
 time build/travis/release-out.sh

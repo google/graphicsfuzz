@@ -21,16 +21,17 @@ before_cache:
 
 cache:
   directories:
-    - $HOME/.m2
+    - $HOME/.m2/
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
+    - $HOME/android-sdk/
 
 matrix:
   include:
     - os: linux
       dist: trusty
       sudo: required
-      language: generic
+      language: minimal
       addons:
         apt:
           sources:
@@ -42,10 +43,22 @@ matrix:
       script:
         - export PYTHON_GF="python3.5"
         - jdk_switcher use openjdk8 && build/travis/travis-release-graphicsfuzz.sh
-#        - export BUILD_SCRIPT="build/travis/travis-release-graphicsfuzz.sh"
-#        - docker build -t temp-image -f build/travis/docker-images/runner-image.dockerfile .
-#        - docker create -it -e GITHUB_TOKEN -e BUILD_SCRIPT -e TRAVIS_TAG -e TRAVIS_PULL_REQUEST -e TRAVIS_COMMIT --name temp-container temp-image
-#        - docker start -ia temp-container
+
+    - os: linux
+      dist: trusty
+      sudo: required
+      language: minimal
+      addons:
+        apt:
+          sources:
+            - deadsnakes
+          packages:
+            - python3.5
+      env:
+        - TITLE="GLES and Vulkan workers"
+      script:
+        - export PYTHON_GF="python3.5"
+        - jdk_switcher use openjdk8 && build/travis/travis-release-graphicsfuzz.sh
 
 
 #    - os: linux
