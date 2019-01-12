@@ -56,7 +56,7 @@ matrix:
         - TITLE="GLES and Vulkan workers"
       script:
         - export PYTHON_GF="python3.5"
-        - jdk_switcher use openjdk8 && build/travis/travis-android-related.sh
+        - jdk_switcher use openjdk8 && build/travis/travis-release-android-related.sh
 
 
 #    - os: linux
