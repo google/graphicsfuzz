@@ -18,31 +18,16 @@ set -x
 set -e
 set -u
 
-source build/travis/travis-env.sh
+test -d temp
+test -d build/travis
 
-SOURCE="$(pwd)"
+mkdir -p out/
 
-pushd "${HOME}"
+# Check headers.
+build/travis/python-launch build/travis/check_headers.py
 
-  mkdir -p bin
-  mkdir -p android-sdk
+mvn clean
+mvn package -Dmaven.test.skip=true -am -pl gles-worker-dependencies
 
-  pushd bin
-  time source "${SOURCE}/build/travis/install-github-release-tool.sh"
-  popd
-
-  time source "${SOURCE}/build/travis/install-maven.sh"
-
-  pushd android-sdk
-  time source "${SOURCE}/build/travis/install-android-sdk.sh"
-  popd
-
-  time source "${SOURCE}/build/travis/install-android-ndk.sh"
-
-popd
-
-time build/travis/build-gles-worker-dependencies.sh
-time build/travis/build-gles-worker-desktop.sh
-time build/travis/build-gles-worker-android.sh
-time build/travis/build-vulkan-worker-android.sh
-time build/travis/release-out.sh
+# Check headers again.
+build/travis/python-launch build/travis/check_headers.py
