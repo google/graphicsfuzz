@@ -16,15 +16,17 @@
 language: generic
 
 before_cache:
-  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+  - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
 
 cache:
   directories:
     - $HOME/.m2/
-    - $HOME/.gradle/caches/
+    - $HOME/.gradle/caches/modules-2/
     - $HOME/.gradle/wrapper/
     - $HOME/android-sdk/
+
+env:
+  - GRADLE_OPTS="-Dorg.gradle.daemon=false" MAVEN_OPTS="-Djava.net.preferIPv4Stack=true"
 
 matrix:
   include:
@@ -57,39 +59,4 @@ matrix:
       script:
         - export PYTHON_GF="python3.5"
         - jdk_switcher use openjdk8 && build/travis/travis-release-android-related.sh
-
-
-#    - os: linux
-#      dist: trusty
-#      sudo: required
-#      env:
-#        - TITLE="GraphicsFuzz and GLES workers"
-#      script:
-#        - pyenv global 3.6.3
-#        - build/travis/travis-build-test-release-graphicsfuzz-and-gles-workers.sh
-#      cache:
-#        directories:
-#        - $HOME/.m2
-#        - $HOME/.gradle
-
-
-#    - os: linux
-#      dist: trusty
-#      sudo: required
-#      env:
-#        - TITLE="Vulkan worker"
-#      script:
-#        - pyenv global 3.6.3
-#        - build/travis/travis-build-release-vulkan-worker.sh
-#      cache:
-#        directories:
-#          - $HOME/.gradle
-#
-#    - os: linux
-#      dist: xenial
-#      sudo: required
-#      env:
-#        - TITLE="Xenial"
-#      script:
-#        - build/travis/travis-build-test-all.sh
 
