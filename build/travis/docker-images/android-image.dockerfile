@@ -33,7 +33,7 @@ RUN \
   mv apache-maven-3.6.0 maven && \
   git clone --recursive https://github.com/google/graphicsfuzz.git && \
   cd graphicsfuzz && \
-  git checkout cmd_tests && \
+  git checkout master && \
   build/travis/travis-release-android-related.sh && \
   cd .. && \
   rm -rf graphicsfuzz
