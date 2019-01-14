@@ -26,8 +26,8 @@ mkdir -p out/
 # Check headers.
 build/travis/python-launch build/travis/check_headers.py
 
-mvn clean
-mvn package -Dmaven.test.skip=true
+mvn clean -B
+mvn package -B -Dmaven.test.skip=true
 
 # Generate third party licenses file.
 build/travis/python-launch build/travis/licenses.py

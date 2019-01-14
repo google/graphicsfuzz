@@ -41,8 +41,9 @@ pushd "${HOME}"
 
 popd
 
-time build/travis/build-gles-worker-dependencies.sh | grep -v "^Downloading from" | grep -v "^Downloaded from" | grep -v "Looking for opportunities"
-time build/travis/build-gles-worker-desktop.sh | grep -v "^Downloading from" | grep -v "^Downloaded from"
-time build/travis/build-gles-worker-android.sh | grep -v "^Downloading from" | grep -v "^Downloaded from"
-time build/travis/build-vulkan-worker-android.sh | grep -v "^Downloading from" | grep -v "^Downloaded from"
+
+time build/travis/build-gles-worker-dependencies.sh
+time build/travis/build-gles-worker-desktop.sh
+time build/travis/build-gles-worker-android.sh
+time build/travis/build-vulkan-worker-android.sh
 time build/travis/release-out.sh

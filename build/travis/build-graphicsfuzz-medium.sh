@@ -30,8 +30,11 @@ cp OPEN_SOURCE_LICENSES.TXT out/OPEN_SOURCE_LICENSES.TXT
 # Check headers.
 build/travis/python-launch build/travis/check_headers.py
 
-mvn clean
-mvn package
+# TODO: Add image tests.
+# The grep command reduces log output during tests.
+
+mvn clean -B
+mvn package -B  | grep -v "Looking for opportunities"
 
 cp graphicsfuzz/target/graphicsfuzz.zip out/graphicsfuzz.zip
 

@@ -25,8 +25,16 @@ cache:
     - $HOME/.gradle/wrapper/
     - $HOME/android-sdk/
 
+
+# -Dorg.gradle.daemon=false:
+#   Disabling the gradle daemon is helpful to make sure the build process terminates so we can
+#   cache $HOME/.gradle files.
+# -Djava.net.preferIPv4Stack=true
+#   Probably not needed but can help with the issue where Maven dependency downloading freezes.
+# -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+#   Increase log level of the "Download*" messages from Maven so they are hidden.
 env:
-  - GRADLE_OPTS="-Dorg.gradle.daemon=false" MAVEN_OPTS="-Djava.net.preferIPv4Stack=true"
+  - GRADLE_OPTS="-Dorg.gradle.daemon=false" MAVEN_OPTS="-Djava.net.preferIPv4Stack=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
 
 matrix:
   include:

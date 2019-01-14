@@ -26,8 +26,8 @@ mkdir -p out/
 # Check headers.
 build/travis/python-launch build/travis/check_headers.py
 
-mvn clean
-mvn package -Dmaven.test.skip=true -am -pl gles-worker-dependencies
+mvn clean -B
+mvn package -B -Dmaven.test.skip=true -am -pl gles-worker-dependencies
 
 # Check headers again.
 build/travis/python-launch build/travis/check_headers.py
