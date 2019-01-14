@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2018 The GraphicsFuzz Project Authors
 #
@@ -14,8 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x
-set -e
-set -u
-
-docker start fuzzer-ci-container
+if test -n "${PYTHON_GF}"; then
+  "${PYTHON_GF}" "$@"
+elif type -P python3 >/dev/null; then
+  python3 "$@"
+elif type -P py >/dev/null; then
+  py -3 "$@"
+else
+  python "$@"
+fi

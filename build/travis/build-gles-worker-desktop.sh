@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2018 The GraphicsFuzz Project Authors
 #
@@ -14,7 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-umask 002
+set -x
+set -e
+set -u
 
-exec "$@"
+test -d temp
+test -d build/travis
 
+mkdir -p out/
+
+pushd gles-worker
+./gradlew desktop:dist
+popd
+
+cp gles-worker/desktop/build/libs/gles-worker-desktop.jar out/gles-worker-desktop.jar
+
+# Check headers.
+build/travis/python-launch build/travis/check_headers.py

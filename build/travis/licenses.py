@@ -862,99 +862,104 @@ def read_maven_dependencies(
         dependencies_dict: typing.Dict[str, typing.Dict],
         dependencies_file: str):
 
-    with io.open(dependencies_file, 'r') as fin:
+    with io.open(dependencies_file, 'r', encoding='utf-8', errors='ignore') as fin:
         for line in fin:
-            if not line.startswith("   "):
+            if not line.startswith('   '):
                 continue
             line = line.strip()
-            line = line.split(":")
-            dependency = line[0] + ":" + line[1]
+            line = line.split(':')
+            dependency = line[0] + ':' + line[1]
             # Ignore com.graphicsfuzz: internal projects
             # Note that third party internal projects start with com.graphicsfuzz.thirdparty:
-            if dependency.startswith("com.graphicsfuzz:"):
+            if dependency.startswith('com.graphicsfuzz:'):
                 continue
             if dependency not in dependencies_dict:
                 dependencies_dict[dependency] = dict()
 
 
 def write_license_from_file(fout: typing.TextIO, license_file: str) -> None:
-    fout.write("\n")
-    fout.write("\n")
-    with io.open(license_file, 'r') as fin:
+    fout.write('\n')
+    fout.write('\n')
+    with io.open(license_file, 'r', encoding='utf-8', errors='ignore') as fin:
         contents = fin.read()
         fout.write(contents)
 
 
 def write_license_from_url(fout: typing.TextIO, url: str) -> None:
-    fout.write("\n")
-    fout.write("\n")
-    response: http.client.HTTPResponse
+    fout.write('\n')
+    fout.write('\n')
+
+    # noinspection PyUnusedLocal
+    response = None  # type: http.client.HTTPResponse
     with urllib.request.urlopen(url) as response:
         contents = response.read()
         fout.write(contents.decode())
 
 
 def go():
-    maven_dependencies: typing.Dict[str, typing.Dict] = dict()
-    read_maven_dependencies(maven_dependencies, path("graphicsfuzz", "target", "dependencies.txt"))
+    maven_dependencies = dict()  # type: typing.Dict[str, typing.Dict]
+    read_maven_dependencies(maven_dependencies, path('graphicsfuzz', 'target', 'dependencies.txt'))
     dependencies_populated = get_maven_dependencies_populated()
     dependencies_populated.update(get_extras())
 
     # Find maven dependencies for which we have not provided license information.
     for dep in maven_dependencies:
         if dep not in dependencies_populated:
-            print("Missing dependency license information " + dep)
+            print('Missing dependency license information ' + dep)
             sys.exit(1)
 
     # Write an OPEN_SOURCE_LICENSES.TXT file.
-    with io.open("OPEN_SOURCE_LICENSES.TXT", "w", newline='\r\n') as fout:
+    with io.open(
+            'OPEN_SOURCE_LICENSES.TXT',
+            'w',
+            newline='\r\n',
+            encoding='utf-8',
+            errors='ignore') as fout:
 
-        fout.write("\n")
-        fout.write("Summary of projects:\n\n")
+        fout.write('\n')
+        fout.write('Summary of projects:\n\n')
 
         for (dep, details) in dependencies_populated.items():
-            print("Dependency: " + dep)
-            if len(details["skipped"]) > 0:
-                print("Skipping (" + details["skipped"] + ")")
+            print('Dependency: ' + dep)
+            if len(details['skipped']) > 0:
+                print('Skipping (' + details['skipped'] + ')')
                 continue
 
-            fout.write("  " + details["name"] + " (" + dep + ") ")
-            project_url = details["url"]
+            fout.write('  ' + details['name'] + ' (' + dep + ') ')
+            project_url = details['url']
             if isinstance(project_url, list):
                 for url in project_url:
-                    fout.write(url + " ")
+                    fout.write(url + ' ')
             else:
                 fout.write(project_url)
 
-            fout.write("\n")
+            fout.write('\n')
 
-        fout.write("\n")
-        fout.write("All projects and licenses:\n")
-
-
+        fout.write('\n')
+        fout.write('All projects and licenses:\n')
 
         for (dep, details) in dependencies_populated.items():
-            print("Dependency: " + dep)
-            if len(details["skipped"]) > 0:
-                print("Skipping (" + details["skipped"] + ")")
+            print('Dependency: ' + dep)
+            if len(details['skipped']) > 0:
+                print('Skipping (' + details['skipped'] + ')')
                 continue
 
-            fout.write("\n\n")
-            fout.write("Name: " + details["name"] + "\n")
-            fout.write("Short name: " + dep + "\n")
+            fout.write('\n\n')
+            fout.write('Name: ' + details['name'] + '\n')
+            fout.write('Short name: ' + dep + '\n')
 
-            project_url = details["url"]
+            project_url = details['url']
             if isinstance(project_url, list):
-                fout.write("Project URL: ")
+                fout.write('Project URL: ')
                 for url in project_url:
-                    fout.write(url + " ")
+                    fout.write(url + ' ')
             else:
-                fout.write("Project URL: " + project_url)
+                fout.write('Project URL: ' + project_url)
 
-            fout.write("\n")
+            fout.write('\n')
 
-            license_url = details["license_url"]
-            license_file = details["license_file"]
+            license_url = details['license_url']
+            license_file = details['license_file']
 
             # license_url xor license_file should be present.
             assert (len(license_url) == 0) != (len(license_file) == 0)
@@ -974,6 +979,6 @@ def go():
                     write_license_from_file(fout, license_file)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     go()
 

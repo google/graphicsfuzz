@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 The GraphicsFuzz Project Authors
+# Copyright 2018 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,4 +18,22 @@ set -x
 set -e
 set -u
 
-build/travis/build-and-test-all.sh
+source build/travis/travis-env.sh
+
+SOURCE="$(pwd)"
+
+pushd "${HOME}"
+
+  mkdir -p bin
+
+  pushd bin
+  time source "${SOURCE}/build/travis/install-github-release-tool.sh"
+  popd
+
+  time source "${SOURCE}/build/travis/install-maven.sh"
+
+popd
+
+time build/travis/build-graphicsfuzz-fast.sh
+time build/travis/build-graphicsfuzz-medium.sh
+time build/travis/release-out.sh

@@ -15,9 +15,6 @@
         </value>
       </option>
     </JavaCodeStyleSettings>
-    <editorconfig>
-      <option name="ENABLED" value="false" />
-    </editorconfig>
     <codeStyleSettings language="JAVA">
       <option name="BINARY_OPERATION_SIGN_ON_NEXT_LINE" value="true" />
       <option name="WRAP_LONG_LINES" value="true" />
