@@ -110,18 +110,23 @@ def get_bin_type():
 ################################################################################
 
 
-def prepare_shaders(frag_file, frag_spv_file, vert_spv_file):
-    prepare_vert_file()
-
+def glsl2spv(glsl, spv):
     glslang = os.path.dirname(HERE) + '/../../bin/' + get_bin_type() + '/glslangValidator'
-
-    # Frag
-    cmd = glslang + ' ' + frag_file + ' -V -o ' + frag_spv_file
+    cmd = glslang + ' ' + glsl + ' -V -o ' + spv
     subprocess.run(cmd, shell=True, check=True)
+
+
+################################################################################
+
+
+def prepare_shaders(frag_file, frag_spv_file, vert_spv_file):
 
     # Vert
-    cmd = glslang + ' test.vert -V -o ' + vert_spv_file
-    subprocess.run(cmd, shell=True, check=True)
+    prepare_vert_file()
+    glsl2spv('test.vert', vert_spv_file)
+
+    # Frag
+    glsl2spv(frag_file, frag_spv_file)
 
 ################################################################################
 
@@ -133,7 +138,6 @@ def do_image_job(args, image_job):
     frag_file = name + '.frag'
     json_file = name + '.json'
     png = 'image_0.png'
-    log = 'vklog.txt'
 
     frag_spv_file = name + '.frag.spv'
     vert_spv_file = name + '.vert.spv'
@@ -188,7 +192,7 @@ def do_image_job(args, image_job):
         frag_spv_file = frag_spv_file_opt
 
     remove(png)
-    remove(log)
+    remove(vkrun.LOGFILE)
 
     if args.linux:
         vkrun.run_linux(vert_spv_file, frag_spv_file, json_file, skip_render)
@@ -198,8 +202,8 @@ def do_image_job(args, image_job):
         wait_for_screen = not args.force
         vkrun.run_android(vert_spv_file, frag_spv_file, json_file, skip_render, wait_for_screen)
 
-    if os.path.isfile(log):
-        with open(log, 'r', encoding='utf-8', errors='ignore') as f:
+    if os.path.isfile(vkrun.LOGFILE):
+        with open(vkrun.LOGFILE, 'r', encoding='utf-8', errors='ignore') as f:
             res.log += f.read()
 
     if os.path.isfile(png):
@@ -225,6 +229,49 @@ def do_image_job(args, image_job):
                 res.PNG = f.read()
             with open('nondet1.png', 'rb') as f:
                 res.PNG2 = f.read()
+        else:
+            res.log += '\nUnknown status value: ' + status + '\n'
+            res.status = tt.JobStatus.UNEXPECTED_ERROR
+    else:
+        # Not even a status file?
+        res.log += '\nNo STATUS file\n'
+        res.status = tt.JobStatus.UNEXPECTED_ERROR
+
+    return res
+
+################################################################################
+
+
+def do_compute_job(args, comp_job):
+    ssbo = 'ssbo'
+    tmpcomp = 'tmp.comp'
+    tmpcompspv = 'tmp.comp.spv'
+    write_to_file(comp_job.computeSource, tmpcomp)
+    glsl2spv(tmpcomp, tmpcompspv)
+
+    tmpjson = 'tmp.json'
+    write_to_file(comp_job.computeInfo, tmpjson)
+
+    remove(ssbo)
+
+    vkrun.run_compute(tmpcompspv, tmpjson)
+
+    res = tt.ImageJobResult()
+    res.log = '#### Start compute shader\n\n'
+
+    if os.path.isfile(vkrun.LOGFILE):
+        with open(vkrun.LOGFILE, 'r', encoding='utf-8', errors='ignore') as f:
+            res.log += f.read()
+
+    if os.path.isfile('STATUS'):
+        with open('STATUS', 'r') as f:
+            status = f.read().rstrip()
+        if status == 'SUCCESS':
+            res.status = tt.JobStatus.SUCCESS
+        elif status == 'CRASH':
+            res.status = tt.JobStatus.CRASH
+        elif status == 'TIMEOUT':
+            res.status = tt.JobStatus.TIMEOUT
         else:
             res.log += '\nUnknown status value: ' + status + '\n'
             res.status = tt.JobStatus.UNEXPECTED_ERROR
@@ -441,10 +488,19 @@ def main():
                 service.jobDone(worker, job)
             else:
                 assert job.imageJob is not None
-                print("#### Image job: " + job.imageJob.name)
-                job.imageJob.result = do_image_job(args, job.imageJob)
+
+                if job.imageJob.computeSource:
+                    print("#### Compute job: " + job.imageJob.name)
+                    job.imageJob.result = do_compute_job(args, job.imageJob)
+
+                else:
+                    print("#### Image job: " + job.imageJob.name)
+                    job.imageJob.result = do_image_job(args, job.imageJob)
+
                 print("Send back, results status: {}".format(job.imageJob.result.status))
                 service.jobDone(worker, job)
+                continue
+
         except (TApplicationException, ConnectionError):
             print("Connection to server lost. Re-initialising client.")
             service = None
