@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2018 The GraphicsFuzz Project Authors
 #
@@ -18,4 +18,11 @@ set -x
 set -e
 set -u
 
-docker build -t fuzzer-ci-image .
+test -d temp
+test -d build/travis
+
+time build/travis/build-graphicsfuzz-fast.sh
+time build/travis/build-graphicsfuzz-medium.sh
+time build/travis/build-gles-worker-desktop.sh
+time build/travis/build-gles-worker-android.sh
+time build/travis/build-vulkan-worker-android.sh
