@@ -14,17 +14,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x
-set -e
-set -u
 
-pushd vulkan-worker
-./gradlew assembleDebug
-popd
+kernel="$(uname -s)"
+case "${kernel}" in
+    Linux*)
+        export ANDROID_HOST_PLATFORM=linux
+        export GITHUB_RELEASE_TOOL_PLATFORM=linux_amd64
+        ;;
+    Darwin*)
+        export ANDROID_HOST_PLATFORM=darwin
+        export GITHUB_RELEASE_TOOL_PLATFORM=darwin_amd64
+        ;;
+    CYGWIN*)
+        export ANDROID_HOST_PLATFORM=windows
+        export GITHUB_RELEASE_TOOL_PLATFORM=windows_amd64
+        ;;
+    MINGW*)
+        export ANDROID_HOST_PLATFORM=windows
+        export GITHUB_RELEASE_TOOL_PLATFORM=windows_amd64
+        ;;
+    *)
+        echo "Unknown platform ${kernel}."
+        exit 1
+esac
 
-find vulkan-worker/src/android/build/outputs/
-
-mkdir -p out
-cp vulkan-worker/src/android/build/outputs/apk/debug/vulkan-worker-android-debug.apk out/vulkan-worker-android-debug.apk
-
-find out/

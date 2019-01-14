@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 # Copyright 2018 The GraphicsFuzz Project Authors
 #
@@ -13,21 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:16.04
+set -x
+set -e
+set -u
 
-RUN \
-  apt-get update && \
-  apt-get -y install openjdk-8-jdk python maven && \
-  apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-RUN \
-  mkdir -p /data/source
-
-COPY \
-  build/docker/scripts/build.sh \
-  graphicsfuzz/src/main/scripts/docker/scripts/umask-wrapper.sh \
-  /data/
-
-WORKDIR /data
-
-CMD ["./umask-wrapper.sh", "./build.sh"]
+build/travis/python-launch build/travis/release.py
