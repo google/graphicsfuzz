@@ -18,4 +18,4 @@ set -x
 set -e
 set -u
 
-build/travis/build-and-test-graphicsfuzz.sh
+build/travis/build-and-test-all.sh
