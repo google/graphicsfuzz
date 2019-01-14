@@ -385,7 +385,6 @@ def dump_info_android(wait_for_screen):
 def spv_get_bin_as_uint(shader_filename):
     with open(shader_filename, 'rb') as f:
         data = f.read()
-    print(len(data))
     assert(len(data) >= 4)
     assert(len(data) % 4 == 0)
 
@@ -598,6 +597,26 @@ def vkscriptify_comp(comp, comp_json):
 
     return script
 
+def ssbo_bin_to_json(ssbo_bin_file, ssbo_json_file):
+    '''
+    Read the ssbo_bin_file and extract its contents to a json file as a single array of ints.
+
+    Assumes: binary in little endian (which is almost ubiquitous on ARM CPUs) storing 32 bit ints.
+    '''
+
+    with open(ssbo_bin_file, 'rb') as f:
+        data = f.read()
+
+    int_width = 4 # 4 bytes for each 32 bits int
+    assert(len(data) % int_width == 0)
+
+    ssbo = []
+    for i in range(0, len(data), int_width):
+        int_val = struct.unpack('<I', data[i:i + int_width])[0]
+        ssbo.append(int_val)
+
+    with open(ssbo_json_file, 'w') as f:
+        f.write(json.dumps(ssbo))
 
 def run_compute(comp, comp_json):
     assert(os.path.isfile(comp))
@@ -634,6 +653,7 @@ def run_compute(comp, comp_json):
             status = 'UNEXPECTED_ERROR'
         else:
             adb_check('pull ' + device_ssbo)
+            ssbo_bin_to_json('ssbo', 'ssbo.json')
 
     # Grab log:
     with open(LOGFILE, 'w', encoding='utf-8', errors='ignore') as f:
