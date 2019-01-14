@@ -615,8 +615,10 @@ def ssbo_bin_to_json(ssbo_bin_file, ssbo_json_file):
         int_val = struct.unpack('<I', data[i:i + int_width])[0]
         ssbo.append(int_val)
 
+    ssbo_json_obj = { 'ssbo': ssbo }
+
     with open(ssbo_json_file, 'w') as f:
-        f.write(json.dumps(ssbo))
+        f.write(json.dumps(ssbo_json_obj))
 
 def run_compute(comp, comp_json):
     assert(os.path.isfile(comp))

@@ -268,6 +268,10 @@ def do_compute_job(args, comp_job):
             status = f.read().rstrip()
         if status == 'SUCCESS':
             res.status = tt.JobStatus.SUCCESS
+            assert(os.path.isfile('ssbo.json'))
+            with open('ssbo.json', 'r') as f:
+                res.computeOutputs = f.read()
+
         elif status == 'CRASH':
             res.status = tt.JobStatus.CRASH
         elif status == 'TIMEOUT':
