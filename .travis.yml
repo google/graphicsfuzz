@@ -34,7 +34,9 @@ cache:
 # -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
 #   Increase log level of the "Download*" messages from Maven so they are hidden.
 env:
-  - GRADLE_OPTS="-Dorg.gradle.daemon=false" MAVEN_OPTS="-Djava.net.preferIPv4Stack=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+  global:
+    - GRADLE_OPTS="-Dorg.gradle.daemon=false"
+    - MAVEN_OPTS="-Djava.net.preferIPv4Stack=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
 
 matrix:
   include:
