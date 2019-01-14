@@ -34,6 +34,6 @@ pushd "${HOME}"
 
 popd
 
-time build/travis/build-graphicsfuzz-fast.sh
-time build/travis/build-graphicsfuzz-medium.sh
+time build/travis/build-graphicsfuzz-fast.sh | grep -v "^Downloading from" | grep -v "^Downloaded from" | grep -v "Looking for opportunities"
+time build/travis/build-graphicsfuzz-medium.sh | grep -v "^Downloading from" | grep -v "^Downloaded from" | grep -v "Looking for opportunities"
 time build/travis/release-out.sh
