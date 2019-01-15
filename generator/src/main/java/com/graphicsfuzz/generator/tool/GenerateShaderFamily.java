@@ -217,9 +217,11 @@ public class GenerateShaderFamily {
             generatorArguments, innerSeed, writeProbabilities);
       } catch (Exception exception) {
         if (verbose) {
-          LOGGER.error("Failed generating variant:");
-          LOGGER.error(exception.getMessage());
-          exception.printStackTrace();
+          LOGGER.error("Failed generating variant: " + exception.getMessage()
+              + exception.getStackTrace()
+              + "\nGenerator arguments: " + generatorArguments
+              + "\nReference shader job: " + referenceShaderJob
+              + "\nSeed: " + innerSeed);
         }
         if (stopOnFail) {
           final String message = "Failed generating a variant, stopping.";
