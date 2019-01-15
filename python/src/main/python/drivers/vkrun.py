@@ -513,14 +513,22 @@ def run_vkrunner(vert, frag, uniform_json):
     cmd = 'shell "cd ' + device_dir + '; ./vkrunner -i image.ppm ' + tmpfile + '"'
 
     adb_check('logcat -c')
-    adb_check(cmd)
 
-    # Get result
     status = 'UNEXPECTED_ERROR'
-    if adb_can_fail('shell test -f' + device_image).returncode == 0:
-        status = 'SUCCESS'
-        adb_check('pull ' + device_image)
-        subprocess.run('convert image.ppm image_0.png', shell=True)
+
+    try:
+        result = adb_can_fail(cmd)
+    except subprocess.TimeoutExpired as err:
+        status = 'TIMEOUT'
+
+    if status != 'TIMEOUT':
+        if result.returncode != 0:
+            status = 'CRASH'
+        else:
+            if adb_can_fail('shell test -f' + device_image).returncode == 0:
+                status = 'SUCCESS'
+                adb_check('pull ' + device_image)
+                subprocess.run('convert image.ppm image_0.png', shell=True)
 
     # Grab log:
     with open(LOGFILE, 'w', encoding='utf-8', errors='ignore') as f:
@@ -645,17 +653,21 @@ def run_compute(comp, comp_json):
 
     adb_check('logcat -c')
 
-    if adb_can_fail(cmd).returncode != 0:
-        status = 'CRASH'
-    else:
-        status = 'SUCCESS'
+    status = 'UNEXPECTED_ERROR'
 
-    if status == 'SUCCESS':
-        if adb_can_fail('shell test -f' + device_ssbo).returncode != 0:
-            status = 'UNEXPECTED_ERROR'
+    try:
+        result = adb_can_fail(cmd)
+    except subprocess.TimeoutExpired as err:
+        status = 'TIMEOUT'
+
+    if status != 'TIMEOUT':
+        if result.returncode != 0:
+            status = 'CRASH'
         else:
-            adb_check('pull ' + device_ssbo)
-            ssbo_bin_to_json('ssbo', 'ssbo.json')
+            if adb_can_fail('shell test -f' + device_ssbo).returncode == 0:
+                status = 'SUCCESS'
+                adb_check('pull ' + device_ssbo)
+                ssbo_bin_to_json('ssbo', 'ssbo.json')
 
     # Grab log:
     with open(LOGFILE, 'w', encoding='utf-8', errors='ignore') as f:
