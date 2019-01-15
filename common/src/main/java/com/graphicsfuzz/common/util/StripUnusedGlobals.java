@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
@@ -65,6 +66,15 @@ public class StripUnusedGlobals extends ScopeTreeBuilder {
   public void visitStructNameType(StructNameType structNameType) {
     super.visitStructNameType(structNameType);
     unusedStructs.remove(currentScope.lookupStructName(structNameType.getName()));
+  }
+
+  @Override
+  public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
+    super.visitTypeConstructorExpr(typeConstructorExpr);
+    // If a struct name is used in a type constructor, the struct counts as being used.
+    // The type constructor here might not be a struct type, e.g. it could be "float" or "vec2".
+    // That's OK: lookupStructName will just return null so nothing will be removed.
+    unusedStructs.remove(currentScope.lookupStructName(typeConstructorExpr.getTypename()));
   }
 
   @Override
