@@ -1,3 +1,5 @@
+@echo off
+
 @REM
 @REM  Copyright 2018 The GraphicsFuzz Project Authors
 @REM
@@ -14,4 +16,14 @@
 @REM  limitations under the License.
 @REM
 
-python %~dpn0 %*
+where /q py
+IF ERRORLEVEL 0 (
+  py -3 %*
+) ELSE (
+  where /q python3
+  IF ERRORLEVEL 0 (
+    python3 %*
+  ) ELSE (
+    python %*
+  )
+)

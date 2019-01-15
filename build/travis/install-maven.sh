@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2018 The GraphicsFuzz Project Authors
 #
@@ -18,4 +18,18 @@ set -x
 set -e
 set -u
 
-docker build -t fuzzer-ci-image .
+MAVEN_VERSION="3.6.0"
+MAVEN_FILE="apache-maven-${MAVEN_VERSION}-bin.zip"
+MAVEN_URL="https://www-us.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/${MAVEN_FILE}"
+
+echo "Installing maven ${MAVEN_VERSION} to $(pwd)/apache-maven-${MAVEN_VERSION}"
+
+if test ! -f "${MAVEN_FILE}.touch"; then
+  curl -sSo "${MAVEN_FILE}" "${MAVEN_URL}"
+  unzip -q "${MAVEN_FILE}"
+  rm "${MAVEN_FILE}"
+  test -d "$(pwd)/apache-maven-${MAVEN_VERSION}/bin"
+  touch "${MAVEN_FILE}.touch"
+fi
+
+export PATH="$(pwd)/apache-maven-${MAVEN_VERSION}/bin:${PATH}"

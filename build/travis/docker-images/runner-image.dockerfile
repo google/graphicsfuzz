@@ -1,6 +1,5 @@
-#!/usr/bin/env bash
 
-# Copyright 2019 The GraphicsFuzz Project Authors
+# Copyright 2018 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x
-set -e
-set -u
+FROM paulthomson/graphicsfuzz-build:2019-01-11-a
 
-build/travis/build-and-test-all.sh
+COPY . /data/graphicsfuzz/
+
+WORKDIR /data/graphicsfuzz
+
+CMD ["/bin/bash", "-c", "${BUILD_SCRIPT}"]

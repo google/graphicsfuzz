@@ -14,20 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script is different to others, as it tries to use python3.6+.
+set -x
+set -e
+set -u
 
-if type -P python3.9 >/dev/null; then
-  python3.9 ${BASH_SOURCE}.py "$@"
-elif type -P python3.8 >/dev/null; then
-  python3.8 ${BASH_SOURCE}.py "$@"
-elif type -P python3.7 >/dev/null; then
-  python3.7 ${BASH_SOURCE}.py "$@"
-elif type -P python3.6 >/dev/null; then
-  python3.6 ${BASH_SOURCE}.py "$@"
-elif type -P py >/dev/null; then
-  py -3 ${BASH_SOURCE}.py "$@"
-elif type -P python3 >/dev/null; then
-  python3 ${BASH_SOURCE}.py "$@"
-else
-  python ${BASH_SOURCE}.py "$@"
-fi
+test -d temp
+test -d build/travis
+
+mkdir -p out/
+
+pushd gles-worker
+./gradlew android:assembleDebug
+popd
+
+cp gles-worker/android/build/outputs/apk/debug/gles-worker-android-debug.apk out/gles-worker-android-debug.apk
+
+# Check headers.
+build/travis/python-launch build/travis/check_headers.py

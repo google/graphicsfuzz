@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 The GraphicsFuzz Project Authors
+# Copyright 2018 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,4 +18,16 @@ set -x
 set -e
 set -u
 
-build/travis/build-and-test-all.sh
+test -d temp
+test -d build/travis
+
+mkdir -p out/
+
+pushd vulkan-worker
+./gradlew assembleDebug
+popd
+
+cp vulkan-worker/src/android/build/outputs/apk/debug/vulkan-worker-android-debug.apk out/vulkan-worker-android-debug.apk
+
+# Check headers.
+build/travis/python-launch build/travis/check_headers.py

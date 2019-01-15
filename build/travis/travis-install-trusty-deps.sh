@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2018 The GraphicsFuzz Project Authors
 #
@@ -18,6 +18,6 @@ set -x
 set -e
 set -u
 
-docker stop fuzzer-ci-container | true
-docker rm fuzzer-ci-container | true
-docker create -it --name fuzzer-ci-container --restart always fuzzer-ci-image
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt-get update -q
+sudo apt-get -y install python3.5 git unzip curl

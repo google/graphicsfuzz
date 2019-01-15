@@ -15,42 +15,72 @@
 
 language: generic
 
-# First matrix entry builds graphicsfuzz repo and GLES workers.
-# Second matrix entry builds vulkan-worker.
+before_cache:
+  - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+
+cache:
+  directories:
+    - $HOME/.m2/
+    - $HOME/.gradle/caches/modules-2/
+    - $HOME/.gradle/wrapper/
+    - $HOME/android-sdk/
+
+
+# -Dorg.gradle.daemon=false:
+#   Disabling the gradle daemon is helpful to make sure the build process terminates so we can
+#   cache $HOME/.gradle files.
+# -Djava.net.preferIPv4Stack=true
+#   Probably not needed but can help with the issue where Maven dependency downloading freezes.
+# -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+#   Increase log level of the "Download*" messages from Maven so they are hidden.
+env:
+  global:
+    - GRADLE_OPTS="-Dorg.gradle.daemon=false"
+    - MAVEN_OPTS="-Djava.net.preferIPv4Stack=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
 
 matrix:
   include:
     - os: linux
       dist: trusty
       sudo: required
+      addons:
+        apt:
+          sources:
+            - deadsnakes
+          packages:
+            - python3.5
       env:
-        - TITLE="GraphicsFuzz and GLES workers"
-        - INSTALL_SCRIPT="build/travis/1-install-deps-travis.sh"
-        - BUILD_SCRIPT="python3.6 build/travis/build.py"
-        - RELEASE_SCRIPT="python3.6 build/travis/release.py"
-      cache:
-        directories:
-        - $HOME/.m2
-        - $HOME/.gradle
+        - TITLE="GraphicsFuzz tools"
+      script:
+        - export PYTHON_GF="python3.5"
+        - jdk_switcher use openjdk8 && build/travis/travis-release-graphicsfuzz.sh
+
     - os: linux
       dist: trusty
       sudo: required
+      addons:
+        apt:
+          sources:
+            - deadsnakes
+          packages:
+            - python3.5
       env:
-        - TITLE="Vulkan worker"
-        - INSTALL_SCRIPT="build/travis/1-install-deps-travis.sh"
-        - BUILD_SCRIPT="build/ci_vulkan_worker/2-build-travis.sh"
-        - RELEASE_SCRIPT="python3.6 build/travis/release.py"
-        - ANDROID_NDK_HOME=/opt/android-sdk/ndk-bundle
+        - TITLE="GLES and Vulkan workers"
+      script:
+        - export PYTHON_GF="python3.5"
+        - jdk_switcher use openjdk8 && build/travis/travis-release-android-related.sh
 
 
-
-install:
-  - export ANDROID_HOME=/opt/android-sdk
-  - export PATH="${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${ANDROID_HOME}/platform-tools:/data/bin:$PATH"
-  - $INSTALL_SCRIPT
-
-script:
-  - $BUILD_SCRIPT
-
-after_success:
-  - $RELEASE_SCRIPT
+# Docker build. Not currently needed but can be useful as it is faster than installing many
+# packages.
+#    - os: linux
+#      dist: trusty
+#      sudo: required
+#      language: minimal
+#      env:
+#        - TITLE="Docker build"
+#      script:
+#        - export BUILD_SCRIPT="build/travis/travis-release-graphicsfuzz.sh"
+#        - docker build -t temp-image -f build/travis/docker-images/runner-image.dockerfile .
+#        - docker create -it -e GITHUB_TOKEN -e BUILD_SCRIPT -e TRAVIS_TAG -e TRAVIS_PULL_REQUEST -e TRAVIS_COMMIT --name temp-container temp-image
+#        - docker start -ia temp-container

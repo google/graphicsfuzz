@@ -76,6 +76,12 @@ add `py`, a Python launcher, to your path.
 Our scripts attempt to use `py -3 SCRIPT.py` to
 execute `SCRIPT.py` using Python 3.5+.
 
+For shells (other than Windows command prompt):
+our scripts attempt to use `python3`,
+then `py -3`, then `python`.
+Set `PYTHON_GF` to override the Python
+command. For example, `export PYTHON_GF=python3.6`.
+
 ### `adb`
 
 The Vulkan worker for Android requires that `adb` is on your path.
