@@ -16,9 +16,14 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.util.ParseHelper;
 import java.util.ArrayList;
 import org.junit.Test;
 
@@ -50,6 +55,44 @@ public class ForStmtTest {
     assertTrue(newIncrement == forStmt.getIncrement());
     assertTrue(newBody == forStmt.getBody());
 
+  }
+
+  @Test
+  public void testInitIsNullStmt() throws Exception {
+    // Tests that the init of a for loop with essentially no initializer is a null statement,
+    // rather than actually being null.
+    final TranslationUnit tu = ParseHelper.parse("void main() { for( ; 1; 1) { } }");
+    final ForStmt stmt =
+        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+        .getStmt(0);
+    assertTrue(stmt.getInit() instanceof NullStmt);
+  }
+
+  @Test
+  public void testHasIncrementButNoCond() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() { for( 1; ; 1) { } }");
+    final ForStmt stmt =
+        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+        .getStmt(0);
+    assertFalse(stmt
+        .hasCond());
+    assertFalse(stmt
+        .hasCond());
+    assertTrue(stmt
+        .hasIncrement());
+
+  }
+
+  @Test
+  public void testHasCondButNoIncrement() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() { for( 1; 1; ) { } }");
+    final ForStmt stmt =
+        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+        .getStmt(0);
+    assertTrue(stmt
+        .hasCond());
+    assertFalse(stmt
+        .hasIncrement());
   }
 
 }

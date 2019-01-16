@@ -263,9 +263,14 @@ public abstract class StandardVisitor implements IAstVisitor {
 
   @Override
   public void visitForStmt(ForStmt forStmt) {
+    // A ForStmt always has an initializer; it will be a NullStmt in the case of "for( ; cond; inc)"
     visitChildFromParent(forStmt.getInit(), forStmt);
-    visitChildFromParent(forStmt.getCondition(), forStmt);
-    visitChildFromParent(forStmt.getIncrement(), forStmt);
+    if (forStmt.hasCond()) {
+      visitChildFromParent(forStmt.getCondition(), forStmt);
+    }
+    if (forStmt.hasIncrement()) {
+      visitChildFromParent(forStmt.getIncrement(), forStmt);
+    }
     visitChildFromParent(forStmt.getBody(), forStmt);
   }
 
