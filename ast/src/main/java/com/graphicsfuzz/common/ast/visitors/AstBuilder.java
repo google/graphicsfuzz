@@ -918,7 +918,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   @Override
   public CaseLabel visitCase_label(Case_labelContext ctx) {
     if (ctx.DEFAULT() != null) {
-      return DefaultCaseLabel.INSTANCE;
+      return new DefaultCaseLabel();
     }
     return new ExprCaseLabel(visitExpression(ctx.expression()));
   }

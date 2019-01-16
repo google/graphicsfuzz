@@ -22,13 +22,13 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-public class NullStmtTest {
+public class DefaultCaseLabelTest {
 
   @Test
-  public void testNullStmt() {
-    assertEquals(";\n", new NullStmt().getText());
-    final NullStmt nullStmt = new NullStmt();
-    assertNotSame(nullStmt, nullStmt.clone());
+  public void testDefaultCaseLabel() {
+    assertEquals("default:\n", new DefaultCaseLabel().getText());
+    final DefaultCaseLabel defaultCaseLabel = new DefaultCaseLabel();
+    assertNotSame(defaultCaseLabel, defaultCaseLabel.clone());
   }
 
 }

@@ -20,12 +20,6 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public final class DefaultCaseLabel extends CaseLabel {
 
-  private DefaultCaseLabel() {
-    // Singleton
-  }
-
-  public static final DefaultCaseLabel INSTANCE = new DefaultCaseLabel();
-
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitDefaultCaseLabel(this);
@@ -33,6 +27,6 @@ public final class DefaultCaseLabel extends CaseLabel {
 
   @Override
   public DefaultCaseLabel clone() {
-    return this;
+    return new DefaultCaseLabel();
   }
 }

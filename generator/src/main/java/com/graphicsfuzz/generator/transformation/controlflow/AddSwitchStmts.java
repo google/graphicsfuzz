@@ -186,7 +186,7 @@ public class AddSwitchStmts implements ITransformation {
     switchBodyStmts.addAll(generateReachableSwitchCases(block, casesDuring, usedLabels, generator));
     switchBodyStmts.addAll(generateUnreachableSwitchContent(casesAfter,
           usedLabels, stmtFuzzer, generator));
-    switchBodyStmts.add(DefaultCaseLabel.INSTANCE);
+    switchBodyStmts.add(new DefaultCaseLabel());
     switchBodyStmts.add(new ExprStmt(new IntConstantExpr("1")));
 
     final Expr zero =
