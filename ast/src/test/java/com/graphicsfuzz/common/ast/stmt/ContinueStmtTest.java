@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.ast.stmt;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -25,8 +26,9 @@ public class ContinueStmtTest {
 
   @Test
   public void testContinueStmt() {
-    assertEquals("continue;\n", ContinueStmt.INSTANCE.getText());
-    assertTrue(ContinueStmt.INSTANCE == ContinueStmt.INSTANCE.clone());
+    assertEquals("continue;\n", new ContinueStmt().getText());
+    final ContinueStmt continueStmt = new ContinueStmt();
+    assertNotSame(continueStmt, continueStmt.clone());
   }
 
 }

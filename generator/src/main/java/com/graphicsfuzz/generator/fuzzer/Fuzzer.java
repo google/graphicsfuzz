@@ -417,7 +417,7 @@ public class Fuzzer {
     while (true) {
       int num = generator.nextInt(120);
       if (inRange(num, 0, 5) && fuzzingContext.inLoop()) {
-        return ContinueStmt.INSTANCE;
+        return new ContinueStmt();
       }
       if (inRange(num, 6, 10) && fuzzingContext.inLoop()) {
         return new BreakStmt();

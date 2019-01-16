@@ -979,7 +979,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   @Override
   public Stmt visitJump_statement(Jump_statementContext ctx) {
     if (ctx.CONTINUE() != null) {
-      return ContinueStmt.INSTANCE;
+      return new ContinueStmt();
     }
     if (ctx.BREAK() != null) {
       return new BreakStmt();
