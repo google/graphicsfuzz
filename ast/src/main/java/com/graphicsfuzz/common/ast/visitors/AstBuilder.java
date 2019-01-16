@@ -991,7 +991,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       return new ReturnStmt(visitExpression(ctx.expression()));
     }
     assert ctx.DISCARD() != null;
-    return DiscardStmt.INSTANCE;
+    return new DiscardStmt();
   }
 
   @Override

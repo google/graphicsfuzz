@@ -20,12 +20,6 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class DiscardStmt extends Stmt {
 
-  public static final DiscardStmt INSTANCE = new DiscardStmt();
-
-  private DiscardStmt() {
-    // Singleton
-  }
-
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitDiscardStmt(this);
@@ -33,7 +27,7 @@ public class DiscardStmt extends Stmt {
 
   @Override
   public DiscardStmt clone() {
-    return this;
+    return new DiscardStmt();
   }
 
 }

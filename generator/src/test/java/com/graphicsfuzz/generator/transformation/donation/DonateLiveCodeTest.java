@@ -65,7 +65,7 @@ public class DonateLiveCodeTest {
         new DonateLiveCode(IRandom::nextBoolean, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT, true),
             false);
 
-    DonationContext dc = new DonationContext(DiscardStmt.INSTANCE, new HashMap<>(),
+    DonationContext dc = new DonationContext(new DiscardStmt(), new HashMap<>(),
         new ArrayList<>(), null);
     Stmt donated = dlc.prepareStatementToDonate(null, dc, TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
         ShadingLanguageVersion.ESSL_100);

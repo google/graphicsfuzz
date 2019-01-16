@@ -427,7 +427,7 @@ public class Fuzzer {
       }
       if (inRange(num, 15, 17)
           && generationParams.getShaderKind() == ShaderKind.FRAGMENT) {
-        return DiscardStmt.INSTANCE;
+        return new DiscardStmt();
       }
 
       if (inRange(num, 17, 27)

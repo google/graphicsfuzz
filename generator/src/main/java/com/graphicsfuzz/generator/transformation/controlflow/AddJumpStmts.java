@@ -124,7 +124,7 @@ public class AddJumpStmts implements ITransformation {
   private IfStmt prepareDiscardStmt(IInjectionPoint injectionPoint,
         IRandom generator, ShadingLanguageVersion shadingLanguageVersion,
       GenerationParams generationParams) {
-    return makeDeadConditional(injectionPoint, DiscardStmt.INSTANCE, generator,
+    return makeDeadConditional(injectionPoint, new DiscardStmt(), generator,
         shadingLanguageVersion,
           generationParams);
   }

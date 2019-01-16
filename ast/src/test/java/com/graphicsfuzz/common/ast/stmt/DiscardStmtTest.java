@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.ast.stmt;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -25,8 +26,9 @@ public class DiscardStmtTest {
 
   @Test
   public void testDiscardStmt() {
-    assertEquals("discard;\n", DiscardStmt.INSTANCE.getText());
-    assertTrue(DiscardStmt.INSTANCE == DiscardStmt.INSTANCE.clone());
+    assertEquals("discard;\n", new DiscardStmt().getText());
+    final DiscardStmt discardStmt = new DiscardStmt();
+    assertNotSame(discardStmt, discardStmt.clone());
   }
 
 }

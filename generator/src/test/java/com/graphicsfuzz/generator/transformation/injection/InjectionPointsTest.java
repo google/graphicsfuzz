@@ -50,7 +50,6 @@ public class InjectionPointsTest {
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
-  @Ignore
   @Test
   public void testDiscardStmtInjectionPoints() throws Exception {
     final String prog = "void main() { discard; discard; discard; discard; discard; discard; }";
