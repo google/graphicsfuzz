@@ -982,7 +982,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       return ContinueStmt.INSTANCE;
     }
     if (ctx.BREAK() != null) {
-      return BreakStmt.INSTANCE;
+      return new BreakStmt();
     }
     if (ctx.RETURN() != null) {
       if (ctx.expression() == null) {

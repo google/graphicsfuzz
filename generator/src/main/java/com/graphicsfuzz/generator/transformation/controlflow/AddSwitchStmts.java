@@ -226,7 +226,7 @@ public class AddSwitchStmts implements ITransformation {
             .collect(Collectors.toList()));
       result.add(block.getStmt(i));
     }
-    result.add(BreakStmt.INSTANCE);
+    result.add(new BreakStmt());
     return result;
   }
 

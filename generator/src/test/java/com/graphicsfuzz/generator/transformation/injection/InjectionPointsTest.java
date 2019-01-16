@@ -23,6 +23,7 @@ import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -37,6 +38,7 @@ public class InjectionPointsTest {
     assertEquals(4, injectionPointList.size());
   }
 
+  @Ignore
   @Test
   public void testNullStmtInjectionPoints() throws Exception {
     final String prog = "void main() { ; ; ; ; ; ; }";
@@ -48,6 +50,7 @@ public class InjectionPointsTest {
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
+  @Ignore
   @Test
   public void testDiscardStmtInjectionPoints() throws Exception {
     final String prog = "void main() { discard; discard; discard; discard; discard; discard; }";

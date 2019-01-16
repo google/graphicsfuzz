@@ -420,7 +420,7 @@ public class Fuzzer {
         return ContinueStmt.INSTANCE;
       }
       if (inRange(num, 6, 10) && fuzzingContext.inLoop()) {
-        return BreakStmt.INSTANCE;
+        return new BreakStmt();
       }
       if (inRange(num, 10, 15)) {
         return NullStmt.INSTANCE;
