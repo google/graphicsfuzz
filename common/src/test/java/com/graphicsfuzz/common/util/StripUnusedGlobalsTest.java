@@ -67,4 +67,19 @@ public class StripUnusedGlobalsTest {
     CompareAsts.assertEqualAsts(original, tu);
   }
 
+  @Test
+  public void testDoNotStripStructOnlyUsedAsConstructor() throws Exception {
+    final String original = ""
+        + "struct S { int a; };"
+        + "void main() {"
+        + "  vec2(1.0, 2.0);" // Present to check that struct removal analysis is robust in the
+                              // presence of non-struct type constructors.
+        + "  S(3);" // Present to check that the use of a type constructor is enough to ensure that
+                    // "S" does not get removed.
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    StripUnusedGlobals.strip(tu);
+    CompareAsts.assertEqualAsts(original, tu);
+  }
+
 }
