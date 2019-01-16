@@ -25,7 +25,7 @@ public class RemoveDiscardStatements extends RemoveStatements {
 
   public RemoveDiscardStatements(IAstNode node) {
     super(item -> item instanceof DiscardStmt,
-        item -> Optional.of(NullStmt.INSTANCE), node);
+        item -> Optional.of(new NullStmt()), node);
   }
 
 }

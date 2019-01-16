@@ -16,18 +16,19 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
-import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
-public class NullStmt extends Stmt {
+import org.junit.Test;
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitNullStmt(this);
-  }
+public class NullStmtTest {
 
-  @Override
-  public NullStmt clone() {
-    return new NullStmt();
+  @Test
+  public void testNullStmt() {
+    assertEquals(";\n", new NullStmt().getText());
+    final NullStmt nullStmt = new NullStmt();
+    assertNotSame(nullStmt, nullStmt.clone());
   }
 
 }

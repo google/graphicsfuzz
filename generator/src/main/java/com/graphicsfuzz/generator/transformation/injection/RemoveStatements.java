@@ -102,7 +102,7 @@ public abstract class RemoveStatements extends StandardVisitor {
 
   private Stmt getReplacementStmt(Stmt stmt) {
     Optional<Stmt> possibleReplacement = maybeReplaceWith.apply(stmt);
-    return possibleReplacement.isPresent() ? possibleReplacement.get() : NullStmt.INSTANCE;
+    return possibleReplacement.isPresent() ? possibleReplacement.get() : new NullStmt();
   }
 
 }

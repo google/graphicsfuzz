@@ -423,7 +423,7 @@ public class Fuzzer {
         return new BreakStmt();
       }
       if (inRange(num, 10, 15)) {
-        return NullStmt.INSTANCE;
+        return new NullStmt();
       }
       if (inRange(num, 15, 17)
           && generationParams.getShaderKind() == ShaderKind.FRAGMENT) {

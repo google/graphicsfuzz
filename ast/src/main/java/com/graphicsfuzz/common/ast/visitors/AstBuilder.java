@@ -830,7 +830,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   @Override
   public Stmt visitExpression_statement(Expression_statementContext ctx) {
     if (ctx.expression() == null) {
-      return NullStmt.INSTANCE;
+      return new NullStmt();
     }
     return new ExprStmt(visitExpression(ctx.expression()));
   }

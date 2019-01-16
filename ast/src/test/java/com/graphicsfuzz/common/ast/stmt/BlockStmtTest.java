@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.ast.stmt;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
 import java.util.Arrays;
@@ -26,12 +27,12 @@ public class BlockStmtTest {
 
   @Test
   public void testInsertStmt() {
-    BlockStmt b = new BlockStmt(Arrays.asList(NullStmt.INSTANCE), true);
+    BlockStmt b = new BlockStmt(Arrays.asList(new NullStmt()), true);
     assertEquals(1, b.getNumStmts());
     b.insertStmt(0, new ExprStmt(BoolConstantExpr.TRUE));
     assertEquals(2, b.getNumStmts());
     assertEquals(BoolConstantExpr.TRUE, ((ExprStmt)b.getStmt(0)).getExpr());
-    assertEquals(NullStmt.INSTANCE, b.getStmt(1));
+    assertTrue(b.getStmt(1) instanceof NullStmt);
   }
 
   @Test
@@ -39,9 +40,9 @@ public class BlockStmtTest {
     ExprStmt stmt = new ExprStmt(BoolConstantExpr.TRUE);
     BlockStmt b = new BlockStmt(Arrays.asList(stmt), true);
     assertEquals(1, b.getNumStmts());
-    b.insertBefore(stmt, NullStmt.INSTANCE);
+    b.insertBefore(stmt, new NullStmt());
     assertEquals(2, b.getNumStmts());
-    assertEquals(NullStmt.INSTANCE, b.getStmt(0));
+    assertTrue(b.getStmt(0) instanceof NullStmt);
     assertEquals(stmt, b.getStmt(1));
   }
 
@@ -51,14 +52,14 @@ public class BlockStmtTest {
     ExprStmt stmt2 = new ExprStmt(BoolConstantExpr.FALSE);
     BlockStmt b = new BlockStmt(Arrays.asList(stmt1, stmt2), true);
     assertEquals(2, b.getNumStmts());
-    b.insertAfter(stmt1, NullStmt.INSTANCE);
+    b.insertAfter(stmt1, new NullStmt());
     assertEquals(3, b.getNumStmts());
-    b.insertAfter(stmt2, NullStmt.INSTANCE);
+    b.insertAfter(stmt2, new NullStmt());
     assertEquals(4, b.getNumStmts());
     assertEquals(stmt1, b.getStmt(0));
-    assertEquals(NullStmt.INSTANCE, b.getStmt(1));
+    assertTrue(b.getStmt(1) instanceof NullStmt);
     assertEquals(stmt2, b.getStmt(2));
-    assertEquals(NullStmt.INSTANCE, b.getStmt(3));
+    assertTrue(b.getStmt(3) instanceof NullStmt);
   }
 
 }

@@ -38,7 +38,6 @@ public class InjectionPointsTest {
     assertEquals(4, injectionPointList.size());
   }
 
-  @Ignore
   @Test
   public void testNullStmtInjectionPoints() throws Exception {
     final String prog = "void main() { ; ; ; ; ; ; }";
