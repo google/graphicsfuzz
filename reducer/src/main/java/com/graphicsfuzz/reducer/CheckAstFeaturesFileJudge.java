@@ -52,7 +52,7 @@ public class CheckAstFeaturesFileJudge implements IFileJudge {
       assert shaderJob.getShaders().size() == 1;
       final TranslationUnit tu = shaderJob.getShaders().get(0);
       return visitorSuppliers.stream().allMatch(item -> item.get().check(tu));
-    } catch (IOException | ParseTimeoutException exception) {
+    } catch (IOException | ParseTimeoutException | InterruptedException exception) {
       throw new RuntimeException(exception);
     }
   }

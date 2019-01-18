@@ -51,13 +51,13 @@ public class ParseHelperTest {
   public static String TEST_PROGRAM = "void foo() { } void bar() { } void baz() { }";
 
   @Test
-  public void testParseFromString() throws IOException, ParseTimeoutException {
+  public void testParseFromString() throws Exception {
     TranslationUnit tu = ParseHelper.parse(TEST_PROGRAM);
     checkTranslationUnit(tu);
   }
 
   @Test
-  public void testParseFromFile() throws IOException, ParseTimeoutException {
+  public void testParseFromFile() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
     bw.write(TEST_PROGRAM);
@@ -68,7 +68,7 @@ public class ParseHelperTest {
   }
 
   @Test
-  public void testParseFromFileWithHeader() throws IOException, ParseTimeoutException {
+  public void testParseFromFileWithHeader() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
     bw.write("arbitrary\nstuff\n" + ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES + "\n" + TEST_PROGRAM);

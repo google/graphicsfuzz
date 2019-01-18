@@ -107,7 +107,7 @@ public abstract class DonateCode implements ITransformation {
   abstract void adaptTranslationUnitForSpecificDonation(TranslationUnit tu, IRandom generator);
 
   private TranslationUnit prepareTranslationUnit(File donorFile, IRandom generator)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     TranslationUnit tu = ParseHelper.parse(donorFile);
     addPrefixes(tu, getDeclaredFunctionNames(tu));
     // Add prefixed versions of these builtins, in case they are used
@@ -578,7 +578,7 @@ public abstract class DonateCode implements ITransformation {
         globalVariables.putAll(getGlobalVariablesFromShader(donor));
         structNames.addAll(getStructNamesFromShader(donor));
         donorsToTranslationUnits.put(donorFile, donor);
-      } catch (IOException | ParseTimeoutException exception) {
+      } catch (IOException | ParseTimeoutException | InterruptedException exception) {
         throw new RuntimeException("An exception occurred during donor parsing.", exception);
       }
     }

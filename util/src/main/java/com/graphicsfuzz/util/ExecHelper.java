@@ -18,11 +18,13 @@ package com.graphicsfuzz.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +70,7 @@ public class ExecHelper {
       RedirectType redirectType,
       File directory,
       boolean shell,
+      InputStream inputStream,
       String... command) throws IOException, InterruptedException {
 
     LOGGER.info(String.join(" ", command));
@@ -140,7 +143,12 @@ public class ExecHelper {
         assert false;
     }
 
+    // If an input stream has been provided, copy it to the process's standard input.
+    if (inputStream != null) {
+      IOUtils.copy(inputStream, process.getOutputStream());
+    }
     process.getOutputStream().close();
+
     int res = process.waitFor();
 
     if (outputGobbler != null) {
@@ -155,6 +163,17 @@ public class ExecHelper {
     LOGGER.info("Result: {}", res);
 
     return new ExecResult(res, stdout, stderr, stdoutFile, stderrFile);
+  }
+
+  /**
+   * An overload that does not take an input stream.
+   */
+  public ExecResult exec(
+      RedirectType redirectType,
+      File directory,
+      boolean shell,
+      String... command) throws IOException, InterruptedException {
+    return exec(redirectType, directory, shell, null, command);
   }
 
   public static void addToPath(Map<String, String> envVars, String pathToAdd) {

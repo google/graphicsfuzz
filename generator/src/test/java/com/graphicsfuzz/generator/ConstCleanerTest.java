@@ -18,8 +18,8 @@ package com.graphicsfuzz.generator;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
-import com.graphicsfuzz.generator.util.TestingHelpers;
 import org.junit.Test;
 
 public class ConstCleanerTest {
@@ -42,7 +42,7 @@ public class ConstCleanerTest {
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
 
-    TestingHelpers.assertShadersMatch(expectedProgram, tu);
+    CompareAsts.assertEqualAsts(expectedProgram, tu);
 
   }
 
@@ -66,7 +66,7 @@ public class ConstCleanerTest {
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.GLSL_440);
 
-    TestingHelpers.assertShadersMatch(expectedProgram, tu);
+    CompareAsts.assertEqualAsts(expectedProgram, tu);
 
   }
 
@@ -89,7 +89,7 @@ public class ConstCleanerTest {
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
 
-    TestingHelpers.assertShadersMatch(expectedProgram, tu);
+    CompareAsts.assertEqualAsts(expectedProgram, tu);
 
   }
 
@@ -112,7 +112,7 @@ public class ConstCleanerTest {
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
 
-    TestingHelpers.assertShadersMatch(expectedProgram, tu);
+    CompareAsts.assertEqualAsts(expectedProgram, tu);
 
   }
 
@@ -134,7 +134,7 @@ public class ConstCleanerTest {
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.GLSL_440);
 
-    TestingHelpers.assertShadersMatch(expectedProgram, tu);
+    CompareAsts.assertEqualAsts(expectedProgram, tu);
 
   }
 
@@ -159,7 +159,7 @@ public class ConstCleanerTest {
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
 
-    TestingHelpers.assertShadersMatch(expectedProgram, tu);
+    CompareAsts.assertEqualAsts(expectedProgram, tu);
 
   }
 
@@ -177,7 +177,7 @@ public class ConstCleanerTest {
 
     ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
 
-    TestingHelpers.assertShadersMatch(program, tu);
+    CompareAsts.assertEqualAsts(program, tu);
 
   }
 

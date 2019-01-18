@@ -195,7 +195,7 @@ public class InlineUniformReductionOpportunitiesTest {
   }
 
   private ShaderJob checkCanReduceToTarget(ShaderJob shaderJob, int expectedSize, String target)
-      throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     boolean found = false;
     for (int i = 0; i < expectedSize; i++) {
       final ShaderJob temp = shaderJob.clone();

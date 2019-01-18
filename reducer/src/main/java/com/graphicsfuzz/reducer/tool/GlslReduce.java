@@ -215,7 +215,7 @@ public class GlslReduce {
   public static void mainHelper(
         String[] args,
         FuzzerServiceManager.Iface managerOverride)
-        throws ArgumentParserException, IOException, ParseTimeoutException {
+      throws ArgumentParserException, IOException, ParseTimeoutException, InterruptedException {
 
     ArgumentParser parser = getParser();
 
@@ -461,7 +461,7 @@ public class GlslReduce {
       boolean continuePreviousReduction,
       boolean verbose,
       ShaderJobFileOperations fileOps)
-      throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     final ShadingLanguageVersion shadingLanguageVersion =
         getGlslVersionForShaderJob(initialShaderJobFile, fileOps);
     final IRandom random = new RandomWrapper(seed);

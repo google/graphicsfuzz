@@ -46,7 +46,7 @@ public class ReductionOpportunitiesTest {
   private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @Test
-  public void testDeadConditionalNotReplaced() throws IOException, ParseTimeoutException {
+  public void testDeadConditionalNotReplaced() throws Exception {
     // Regression test for a bug where the guard of a dead conditional was being replaced by "true"
     String prog = "void main() {" +
       "if(" + Constants.GLF_DEAD + "(" + Constants.GLF_IDENTITY + "(false, true && "
@@ -503,7 +503,7 @@ public class ReductionOpportunitiesTest {
   }
 
   private void tryAllCompatibleOpportunities(String program)
-      throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     TranslationUnit tu = ParseHelper.parse(program);
     int numOps = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(false,
