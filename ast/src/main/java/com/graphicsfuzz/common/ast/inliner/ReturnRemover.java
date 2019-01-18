@@ -144,7 +144,7 @@ public class ReturnRemover {
                 Arrays.asList(
                       new IfStmt(
                         makeHasReturned(),
-                        new BlockStmt(Arrays.asList(BreakStmt.INSTANCE), true),
+                        new BlockStmt(Arrays.asList(new BreakStmt()), true),
                         null),
                       forStmt.getBody()),
                 false));

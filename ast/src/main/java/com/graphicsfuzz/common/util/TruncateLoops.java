@@ -102,7 +102,7 @@ public class TruncateLoops extends StandardVisitor {
                   new VariableIdentifierExpr(limiterName),
                   new IntConstantExpr(String.valueOf(limit)),
                   BinOp.GE),
-            new BlockStmt(Arrays.asList(BreakStmt.INSTANCE), true),
+            new BlockStmt(Arrays.asList(new BreakStmt()), true),
             null),
           new ExprStmt(new UnaryExpr(
             new VariableIdentifierExpr(limiterName),

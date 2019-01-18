@@ -31,6 +31,22 @@ public class ForStmt extends LoopStmt {
     this.increment = increment;
   }
 
+  /**
+   * Reports whether a condition for the loop is present (it is not in e.g. "for(init; ; inc)"
+   * @return Whether condition is present.
+   */
+  public boolean hasCond() {
+    return getCondition() != null;
+  }
+
+  /**
+   * Reports whether a condition for the loop is present (it is not in e.g. "for(init; cond; )"
+   * @return Whether increment is present.
+   */
+  public boolean hasIncrement() {
+    return getIncrement() != null;
+  }
+
   public Stmt getInit() {
     return init;
   }

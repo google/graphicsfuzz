@@ -20,12 +20,6 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public final class BreakStmt extends Stmt {
 
-  public static final BreakStmt INSTANCE = new BreakStmt();
-
-  private BreakStmt() {
-    // Singleton
-  }
-
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitBreakStmt(this);
@@ -33,7 +27,7 @@ public final class BreakStmt extends Stmt {
 
   @Override
   public BreakStmt clone() {
-    return this;
+    return new BreakStmt();
   }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The GraphicsFuzz Project Authors
+ * Copyright 2019 The GraphicsFuzz Project Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,19 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
-import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
-public class DiscardStmt extends Stmt {
+import org.junit.Test;
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitDiscardStmt(this);
-  }
+public class NullStmtTest {
 
-  @Override
-  public DiscardStmt clone() {
-    return new DiscardStmt();
+  @Test
+  public void testNullStmt() {
+    assertEquals(";\n", new NullStmt().getText());
+    final NullStmt nullStmt = new NullStmt();
+    assertNotSame(nullStmt, nullStmt.clone());
   }
 
 }

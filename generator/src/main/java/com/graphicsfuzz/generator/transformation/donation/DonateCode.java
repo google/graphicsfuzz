@@ -197,7 +197,7 @@ public abstract class DonateCode implements ITransformation {
       if (incompatible(injectionPoint, donationContext, shadingLanguageVersion)) {
         tries++;
         if (tries == maxTries) {
-          return NullStmt.INSTANCE;
+          return new NullStmt();
         }
       } else {
         return prepareStatementToDonate(injectionPoint, donationContext, probabilities,

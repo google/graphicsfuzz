@@ -20,12 +20,6 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public final class ContinueStmt extends Stmt {
 
-  public static final ContinueStmt INSTANCE = new ContinueStmt();
-
-  private ContinueStmt() {
-    // Singleton
-  }
-
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitContinueStmt(this);
@@ -33,7 +27,7 @@ public final class ContinueStmt extends Stmt {
 
   @Override
   public ContinueStmt clone() {
-    return this;
+    return new ContinueStmt();
   }
 
 }
