@@ -132,17 +132,13 @@ public class GenerateAndRunShaders {
         outputDir,
         ns.get("server"),
         ns.get("worker"),
-        shadingLanguageVersion,
         crashStringsToIgnore,
         fileOps));
     consumer.start();
 
-    final int seed = ArgsUtil.getSeedArgument(ns);
-
     final Thread producer = new Thread(new ShaderProducer(
         LIMIT,
         shaderJobFiles,
-        new RandomWrapper(seed),
         queue,
         referencesDir,
         shadingLanguageVersion,

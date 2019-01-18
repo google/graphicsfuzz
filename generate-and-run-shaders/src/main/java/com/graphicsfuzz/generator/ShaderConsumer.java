@@ -16,21 +16,23 @@
 
 package com.graphicsfuzz.generator;
 
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ImageColorComponents;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.generator.transformation.RestrictFragmentShaderColors;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.JobStatus;
 import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
 import com.graphicsfuzz.shadersets.RunShaderFamily;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +46,6 @@ public class ShaderConsumer implements Runnable {
   private final File tempDir;
   private final String server;
   private final String worker;
-  private final ShadingLanguageVersion shadingLanguageVersion;
   private final Set<String> crashStringsToIgnore;
   private final ShaderJobFileOperations fileOps;
 
@@ -54,7 +55,6 @@ public class ShaderConsumer implements Runnable {
       File outputDir,
       String server,
       String worker,
-      ShadingLanguageVersion shadingLanguageVersion,
       Set<String> crashStringsToIgnore,
       ShaderJobFileOperations fileOps) {
     this.limit = limit;
@@ -63,7 +63,6 @@ public class ShaderConsumer implements Runnable {
     this.tempDir = new File(outputDir, "temp");
     this.server = server;
     this.worker = worker;
-    this.shadingLanguageVersion = shadingLanguageVersion;
     this.crashStringsToIgnore = crashStringsToIgnore;
     this.fileOps = fileOps;
   }
@@ -130,7 +129,12 @@ public class ShaderConsumer implements Runnable {
     try {
       switch (imageJobResult.getStatus()) {
         case SUCCESS:
-          maybeLogWrongImage(imageJobResult, shaderJobFile, shaderJobResultFile, counter);
+          if (!ImageColorComponents.containsOnlyGivenComponentValues(
+              fileOps.getBufferedImageFromShaderJobResultFile(shaderJobResultFile),
+              Arrays.asList(RestrictFragmentShaderColors.HI_COLOR_COMPONENT_VALUE,
+                  RestrictFragmentShaderColors.LO_COLOR_COMPONENT_VALUE))) {
+            triageIssue(imageJobResult, shaderJobFile, shaderJobResultFile, counter);
+          }
           break;
         case CRASH:
         case COMPILE_ERROR:
@@ -139,23 +143,7 @@ public class ShaderConsumer implements Runnable {
         case UNEXPECTED_ERROR:
         case SANITY_ERROR:
         case NONDET:
-          File triageDirectory = new File(outputDir, imageJobResult.getStatus().toString());
-          fileOps.mkdir(triageDirectory);
-          if (JobStatus.CRASH.equals(imageJobResult.getStatus())) {
-
-            if (crashStringsToIgnore.stream().anyMatch(imageJobResult.getLog()::contains)) {
-              triageDirectory = new File(triageDirectory, "IGNORE");
-              fileOps.mkdir(triageDirectory);
-            }
-          }
-          fileOps.copyShaderJobFileTo(
-              shaderJobFile,
-              new File(triageDirectory, counter + shaderJobFile.getName()),
-              false);
-          fileOps.copyShaderJobResultFileTo(
-              shaderJobResultFile,
-              new File(triageDirectory, counter + shaderJobResultFile.getName()),
-              false);
+          triageIssue(imageJobResult, shaderJobFile, shaderJobResultFile, counter);
           break;
         default:
           // nothing
@@ -169,12 +157,25 @@ public class ShaderConsumer implements Runnable {
     }
   }
 
-  private void maybeLogWrongImage(ImageJobResult variantResult,
-                                  File variantShaderJobFile,
-                                  File variantShaderJobFileResult,
-                                  String counter) {
-    // TODO: implement.
-    throw new RuntimeException("Check image colours.");
+  private void triageIssue(ImageJobResult imageJobResult, File shaderJobFile,
+                           File shaderJobResultFile, String counter) throws IOException {
+    File triageDirectory = new File(outputDir, imageJobResult.getStatus().toString());
+    fileOps.mkdir(triageDirectory);
+    if (JobStatus.CRASH.equals(imageJobResult.getStatus())) {
+
+      if (crashStringsToIgnore.stream().anyMatch(imageJobResult.getLog()::contains)) {
+        triageDirectory = new File(triageDirectory, "IGNORE");
+        fileOps.mkdir(triageDirectory);
+      }
+    }
+    fileOps.copyShaderJobFileTo(
+        shaderJobFile,
+        new File(triageDirectory, counter + shaderJobFile.getName()),
+        false);
+    fileOps.copyShaderJobResultFileTo(
+        shaderJobResultFile,
+        new File(triageDirectory, counter + shaderJobResultFile.getName()),
+        false);
   }
 
   private Optional<ImageJobResult> runShaderJob(ShaderJob shaderJob,
