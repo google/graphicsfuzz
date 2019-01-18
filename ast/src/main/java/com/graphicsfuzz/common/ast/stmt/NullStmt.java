@@ -20,12 +20,6 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class NullStmt extends Stmt {
 
-  public static final NullStmt INSTANCE = new NullStmt();
-
-  private NullStmt() {
-    // Singleton
-  }
-
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitNullStmt(this);
@@ -33,7 +27,7 @@ public class NullStmt extends Stmt {
 
   @Override
   public NullStmt clone() {
-    return this;
+    return new NullStmt();
   }
 
 }

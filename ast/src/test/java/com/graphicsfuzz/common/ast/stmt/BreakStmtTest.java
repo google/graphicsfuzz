@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.ast.stmt;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -25,8 +26,9 @@ public class BreakStmtTest {
 
   @Test
   public void testBreakStmt() {
-    assertEquals("break;\n", BreakStmt.INSTANCE.getText());
-    assertTrue(BreakStmt.INSTANCE == BreakStmt.INSTANCE.clone());
+    assertEquals("break;\n", new BreakStmt().getText());
+    final BreakStmt breakStmt = new BreakStmt();
+    assertNotSame(breakStmt, breakStmt.clone());
   }
 
 }

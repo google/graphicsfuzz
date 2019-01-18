@@ -46,7 +46,7 @@ public class ExprTest {
   public void replaceChildBad2() throws Exception {
     VariableIdentifierExpr v = new VariableIdentifierExpr("v");
     Expr pe = new ParenExpr(v);
-    pe.replaceChild(v, NullStmt.INSTANCE);
+    pe.replaceChild(v, new NullStmt());
   }
 
 }

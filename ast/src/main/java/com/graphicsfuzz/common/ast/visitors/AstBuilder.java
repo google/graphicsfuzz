@@ -830,7 +830,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   @Override
   public Stmt visitExpression_statement(Expression_statementContext ctx) {
     if (ctx.expression() == null) {
-      return NullStmt.INSTANCE;
+      return new NullStmt();
     }
     return new ExprStmt(visitExpression(ctx.expression()));
   }
@@ -918,7 +918,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   @Override
   public CaseLabel visitCase_label(Case_labelContext ctx) {
     if (ctx.DEFAULT() != null) {
-      return DefaultCaseLabel.INSTANCE;
+      return new DefaultCaseLabel();
     }
     return new ExprCaseLabel(visitExpression(ctx.expression()));
   }
@@ -979,10 +979,10 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   @Override
   public Stmt visitJump_statement(Jump_statementContext ctx) {
     if (ctx.CONTINUE() != null) {
-      return ContinueStmt.INSTANCE;
+      return new ContinueStmt();
     }
     if (ctx.BREAK() != null) {
-      return BreakStmt.INSTANCE;
+      return new BreakStmt();
     }
     if (ctx.RETURN() != null) {
       if (ctx.expression() == null) {
@@ -991,7 +991,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       return new ReturnStmt(visitExpression(ctx.expression()));
     }
     assert ctx.DISCARD() != null;
-    return DiscardStmt.INSTANCE;
+    return new DiscardStmt();
   }
 
   @Override

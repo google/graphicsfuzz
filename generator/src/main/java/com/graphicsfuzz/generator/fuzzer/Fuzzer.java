@@ -417,17 +417,17 @@ public class Fuzzer {
     while (true) {
       int num = generator.nextInt(120);
       if (inRange(num, 0, 5) && fuzzingContext.inLoop()) {
-        return ContinueStmt.INSTANCE;
+        return new ContinueStmt();
       }
       if (inRange(num, 6, 10) && fuzzingContext.inLoop()) {
-        return BreakStmt.INSTANCE;
+        return new BreakStmt();
       }
       if (inRange(num, 10, 15)) {
-        return NullStmt.INSTANCE;
+        return new NullStmt();
       }
       if (inRange(num, 15, 17)
           && generationParams.getShaderKind() == ShaderKind.FRAGMENT) {
-        return DiscardStmt.INSTANCE;
+        return new DiscardStmt();
       }
 
       if (inRange(num, 17, 27)

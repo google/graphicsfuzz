@@ -32,7 +32,7 @@ public class RemoveImmediateBreakAndContinueStatements extends RemoveStatements 
 
   public RemoveImmediateBreakAndContinueStatements(IAstNode node) {
     super(item -> item instanceof BreakStmt || item instanceof ContinueStmt,
-        item -> Optional.of(NullStmt.INSTANCE), node);
+        item -> Optional.of(new NullStmt()), node);
   }
 
   @Override
