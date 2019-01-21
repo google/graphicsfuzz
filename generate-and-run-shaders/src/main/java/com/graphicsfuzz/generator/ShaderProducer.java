@@ -121,7 +121,8 @@ public class ShaderProducer implements Runnable {
         }
         sent++;
         LOGGER.info("Sent shader job pair.");
-      } catch (ParseTimeoutException | IOException | AssertionError exception) {
+      } catch (ParseTimeoutException | IOException | AssertionError
+          | InterruptedException exception) {
         // Something went wrong - log the details and move on.
         LOGGER.error("Error during generation.", exception);
         continue;

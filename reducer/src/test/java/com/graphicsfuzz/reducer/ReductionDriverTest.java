@@ -174,7 +174,7 @@ public class ReductionDriverTest {
 
   private String reduce(IFileJudge judge, String program, String jsonString,
                         boolean reduceEverywhere)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     return reduce(judge, program, jsonString, reduceEverywhere,
           -1, 0);
   }
@@ -183,7 +183,7 @@ public class ReductionDriverTest {
                         boolean reduceEverywhere,
                         int stepLimit,
                         int seed)
-      throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     return reduce(judge, fragmentShader, Optional.empty(), jsonString,
         reduceEverywhere,
         stepLimit,
@@ -197,7 +197,7 @@ public class ReductionDriverTest {
                         boolean reduceEverywhere,
                         int stepLimit,
                         int seed)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     assertFalse(new File(testFolder.getRoot(), "temp.frag").exists());
     File tempFragmentShaderFile = testFolder.newFile("temp.frag");
     Optional<File> tempVertexShaderFile = vertexShader.isPresent() ?

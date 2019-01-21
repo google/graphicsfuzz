@@ -82,7 +82,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
   }
 
   private void check(boolean reduceEverywhere, String original, String... expected)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<SimplifyExprReductionOpportunity> ops =
           getOps(tu, reduceEverywhere);

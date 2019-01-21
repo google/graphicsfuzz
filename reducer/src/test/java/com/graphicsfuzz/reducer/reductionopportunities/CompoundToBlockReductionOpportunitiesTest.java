@@ -40,7 +40,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
   private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @Test
-  public void testUnderUnreachableSwitch() throws IOException, ParseTimeoutException {
+  public void testUnderUnreachableSwitch() throws Exception {
     final String original = "void main() {"
           + "  switch(" + Constants.GLF_SWITCH + "(0)) {"
           + "    case 1:"
@@ -124,7 +124,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
   }
 
   @Test
-  public void testDoNotRemoveDeadIf() throws IOException, ParseTimeoutException {
+  public void testDoNotRemoveDeadIf() throws Exception {
     final String original = ""
           + "void main() {"
           + "  if (" + Constants.GLF_DEAD + "(false)) {"
@@ -138,7 +138,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
   }
 
   @Test
-  public void testInDeadCode() throws IOException, ParseTimeoutException {
+  public void testInDeadCode() throws Exception {
     final String original = ""
           + "void main() {"
           + "  if (" + Constants.GLF_DEAD + "(false)) {"
@@ -161,7 +161,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
   }
 
   @Test
-  public void testInDeadCode2() throws IOException, ParseTimeoutException {
+  public void testInDeadCode2() throws Exception {
     final String original = ""
           + "void main() {"
           + "  int a = 4;"
@@ -213,7 +213,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
   }
 
   @Test
-  public void testInLiveCode() throws IOException, ParseTimeoutException {
+  public void testInLiveCode() throws Exception {
     final String original = "void main() {"
           + "  int x;"
           + "  {"
@@ -239,7 +239,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
   }
 
   @Test
-  public void testInDeadFunction() throws IOException, ParseTimeoutException {
+  public void testInDeadFunction() throws Exception {
     final String original = ""
           + "int foo(int x) {"
           + "  do {"
@@ -409,7 +409,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
   }
 
   private void check(boolean reduceEverywhere, String original, String... expected)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<CompoundToBlockReductionOpportunity> ops =
           getOps(tu, reduceEverywhere);

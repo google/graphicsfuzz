@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 public class StripUnusedFunctionsTest {
 
   @Test
-  public void strip() throws IOException, ParseTimeoutException {
+  public void strip() throws Exception {
     String programBefore =
           "void foo();\n"
         + "void bar() {\n"

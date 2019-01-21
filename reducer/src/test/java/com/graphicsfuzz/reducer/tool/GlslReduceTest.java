@@ -155,7 +155,7 @@ public class GlslReduceTest {
         ParseHelper.parse(reducedFinal[0]));
   }
 
-  private File getShaderJobReady() throws IOException, ParseTimeoutException {
+  private File getShaderJobReady() throws IOException, ParseTimeoutException, InterruptedException {
     final String fragmentShader = "#version 100\n" +
         "int a;" +
         "int b;" +

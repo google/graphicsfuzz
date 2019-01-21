@@ -128,7 +128,8 @@ public class ObfuscatorTest {
 
   }
 
-  private void check(String original, String expected) throws IOException, ParseTimeoutException {
+  private void check(String original, String expected) throws IOException, ParseTimeoutException,
+      InterruptedException {
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), new UniformsInfo(),
         ParseHelper.parse(original));
     final IRandom generator = new ZeroCannedRandom();

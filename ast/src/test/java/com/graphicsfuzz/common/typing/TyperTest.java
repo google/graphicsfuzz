@@ -390,7 +390,7 @@ public class TyperTest {
   }
 
   private void checkComputeShaderBuiltin(String builtin, String builtinConstant, BasicType baseType,
-      TypeQualifier qualifier) throws IOException, ParseTimeoutException {
+      TypeQualifier qualifier) throws IOException, ParseTimeoutException, InterruptedException {
     TranslationUnit tu = ParseHelper.parse("void main() { " + builtin + "; }");
     Typer typer = new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_310);
     new StandardVisitor() {

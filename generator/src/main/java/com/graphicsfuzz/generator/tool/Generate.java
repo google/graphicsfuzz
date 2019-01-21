@@ -212,7 +212,7 @@ public class Generate {
                                      GeneratorArguments generatorArguments,
                                      int seed,
                                      boolean writeProbabilities)
-      throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     // This is mutated into the variant.
     final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceShaderJobFile);
 
@@ -305,7 +305,7 @@ public class Generate {
   }
 
   public static void mainHelper(String[] args)
-      throws IOException, ParseTimeoutException, ArgumentParserException {
+      throws IOException, ParseTimeoutException, ArgumentParserException, InterruptedException {
     final Namespace ns = parse(args);
 
     Integer seed = ns.get("seed");

@@ -16,6 +16,7 @@
 
 package com.graphicsfuzz.common.util;
 
+import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
@@ -50,13 +51,13 @@ public class ParseHelperTest {
   public static String TEST_PROGRAM = "void foo() { } void bar() { } void baz() { }";
 
   @Test
-  public void testParseFromString() throws IOException, ParseTimeoutException {
+  public void testParseFromString() throws Exception {
     TranslationUnit tu = ParseHelper.parse(TEST_PROGRAM);
     checkTranslationUnit(tu);
   }
 
   @Test
-  public void testParseFromFile() throws IOException, ParseTimeoutException {
+  public void testParseFromFile() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
     bw.write(TEST_PROGRAM);
@@ -67,7 +68,7 @@ public class ParseHelperTest {
   }
 
   @Test
-  public void testParseFromFileWithHeader() throws IOException, ParseTimeoutException {
+  public void testParseFromFileWithHeader() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile));
     bw.write("arbitrary\nstuff\n" + ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES + "\n" + TEST_PROGRAM);
@@ -208,7 +209,7 @@ public class ParseHelperTest {
 
   @Test
   public void testDoNotStripHeader() throws Exception {
-    final String withHeader =
+    final String withoutHeader =
         "#version 310 es\n"
             + "//WebGL\n"
             + "//Some\n"
@@ -216,11 +217,150 @@ public class ParseHelperTest {
             + "void main()\n"
             + "{\n"
             + "}\n";
-    final InputStream is = new ByteArrayInputStream(withHeader.getBytes(StandardCharsets.UTF_8));
+    final InputStream is = new ByteArrayInputStream(withoutHeader.getBytes(StandardCharsets.UTF_8));
     final InputStream strippedIs = ParseHelper.stripGraphicsFuzzDefines(is);
     assertSame(is, strippedIs);
   }
 
+  @Test
+  public void testHashDefinePreprocessing() throws Exception {
+    final String original = "#version 310 es\n"
+        + "#define N 100\n"
+        + "#define NAME main\n"
+        + "#define OPEN (\n"
+        + "#define CLOSE )\n"
+        + "#define VOID void\n"
+        + "VOID NAME OPEN CLOSE {\n"
+        + "  N;\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  100;\n"
+        + "}\n";
+    CompareAstsDuplicate.assertEqualAsts(original, expected);
+  }
+
+  @Test
+  public void testIfdefPreprocessing() throws Exception {
+    final String original = "#version 310 es\n"
+        + "#define N 100\n"
+        + "#ifdef N\n"
+        + "#define NAME main\n"
+        + "#else\n"
+        + "some nonsense\n"
+        + "#endif\n"
+        + "#define OPEN (\n"
+        + "#define CLOSE )\n"
+        + "#define VOID void\n"
+        + "VOID NAME OPEN CLOSE {\n"
+        + "#ifdef NAME\n"
+        + "  N;\n"
+        + "#endif\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  100;\n"
+        + "}\n";
+    CompareAstsDuplicate.assertEqualAsts(original, expected);
+  }
+
+  @Test
+  public void testIfdefPreprocessing2() throws Exception {
+    final String original = "#version 310 es\n"
+        + "#define N 100\n"
+        + "#ifdef M\n"
+        + "some nonsense\n"
+        + "#else\n"
+        + "#define NAME main\n"
+        + "#endif\n"
+        + "#define OPEN (\n"
+        + "#define CLOSE )\n"
+        + "#define VOID void\n"
+        + "VOID NAME OPEN CLOSE {\n"
+        + "#ifdef Z\n"
+        + "#else\n"
+        + "  N;\n"
+        + "#endif\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  100;\n"
+        + "}\n";
+    CompareAstsDuplicate.assertEqualAsts(original, expected);
+  }
+
+  @Test
+  public void testIfndefPreprocessing() throws Exception {
+    final String original = "#version 310 es\n"
+        + "#define N 100\n"
+        + "#ifndef N\n"
+        + "some nonsense\n"
+        + "#else\n"
+        + "#define NAME main\n"
+        + "#endif\n"
+        + "#define OPEN (\n"
+        + "#define CLOSE )\n"
+        + "#define VOID void\n"
+        + "VOID NAME OPEN CLOSE {\n"
+        + "#ifndef NAME\n"
+        + "#else\n"
+        + "  N;\n"
+        + "#endif\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  100;\n"
+        + "}\n";
+    CompareAstsDuplicate.assertEqualAsts(original, expected);
+  }
+
+  @Test
+  public void testIfndefPreprocessing2() throws Exception {
+    final String original = "#version 310 es\n"
+        + "#define N 100\n"
+        + "#ifndef M\n"
+        + "#define NAME main\n"
+        + "#else\n"
+        + "some nonsense\n"
+        + "#endif\n"
+        + "#define OPEN (\n"
+        + "#define CLOSE )\n"
+        + "#define VOID void\n"
+        + "VOID NAME OPEN CLOSE {\n"
+        + "#ifndef Z\n"
+        + "  N;\n"
+        + "#else\n"
+        + "#endif\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  100;\n"
+        + "}\n";
+    CompareAstsDuplicate.assertEqualAsts(original, expected);
+  }
+
+  @Test
+  public void testStripHeaderAndPreprocess() throws Exception {
+
+    // Checks that special GraphicsFuzz headers are stripped *before* preprocessing.
+
+    final String original = "#version 310 es\n"
+        + "//Some stuff\n"
+        + "#define leave_me_alone ZZZZ\n"
+        + "\n\n\n"
+        + "// END OF GENERATED HEADER\n"
+        + "#define N 100\n"
+        + "void main()\n"
+        + "{\n"
+        + "  int leave_me_alone = N;\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main()\n"
+        + "{\n"
+        + "  int leave_me_alone = 100;\n"
+        + "}\n";
+    CompareAstsDuplicate.assertEqualAsts(original, expected);
+  }
 
   private String getStringFromInputStream(InputStream strippedIs) throws IOException {
     StringWriter writer = new StringWriter();

@@ -61,7 +61,7 @@ public class MiscellaneousGenerateThenReduceTest {
   }
 
   private void checkControlFlowWrapElimination(String program)
-      throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     TranslationUnit tu = ParseHelper.parse(program);
 
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
