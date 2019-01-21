@@ -81,14 +81,14 @@ public final class PrepareReference {
     } catch (ArgumentParserException exception) {
       exception.getParser().handleError(exception);
       System.exit(1);
-    } catch (IOException | ParseTimeoutException exception) {
+    } catch (IOException | ParseTimeoutException | InterruptedException exception) {
       exception.printStackTrace();
       System.exit(1);
     }
   }
 
   public static void mainHelper(String[] args) throws ArgumentParserException, IOException,
-      ParseTimeoutException {
+      ParseTimeoutException, InterruptedException {
 
     Namespace ns = parse(args);
 
@@ -118,7 +118,8 @@ public final class PrepareReference {
       boolean replaceFloatLiterals,
       int maxUniforms,
       boolean generateUniformBindings,
-      ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException {
+      ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException,
+      InterruptedException {
 
     final ShaderJob shaderJob = fileOps.readShaderJobFile(referenceShaderJobFile);
 

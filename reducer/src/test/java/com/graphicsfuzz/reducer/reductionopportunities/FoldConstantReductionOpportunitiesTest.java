@@ -420,7 +420,8 @@ public class FoldConstantReductionOpportunitiesTest {
         "void main() { vec3(9.98, 9.98, 9.975); }");
   }
 
-  private void check(String before, int numOps, String after) throws IOException, ParseTimeoutException {
+  private void check(String before, int numOps, String after) throws IOException,
+      ParseTimeoutException, InterruptedException {
     final TranslationUnit tu = ParseHelper.parse(before);
     final List<SimplifyExprReductionOpportunity> ops = FoldConstantReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,

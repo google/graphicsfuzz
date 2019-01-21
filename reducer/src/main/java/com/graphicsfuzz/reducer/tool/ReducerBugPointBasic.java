@@ -246,7 +246,8 @@ public class ReducerBugPointBasic {
   private static void recordThrowsExceptionWhenGettingReductionOpportunities(
       ShaderJob shaderJob,
       Exception exception,
-      ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException {
+      ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException,
+      InterruptedException {
     File tempShaderJobFile = new File("temp.json");
 
     fileOps.writeShaderJobFile(

@@ -32,7 +32,7 @@ import org.junit.rules.TemporaryFolder;
 public class AddBracesTest {
 
   @Test
-  public void danglingElse() throws IOException, ParseTimeoutException {
+  public void danglingElse() throws Exception {
     String program = "void main() { if (a) if (b) s1; else s2; }";
     TranslationUnit tu = ParseHelper.parse(program);
     TranslationUnit transformed = AddBraces.transform(tu);
@@ -46,7 +46,7 @@ public class AddBracesTest {
   }
 
   @Test
-  public void loops() throws IOException, ParseTimeoutException {
+  public void loops() throws Exception {
     String program =      "void main() { for (a; b; c) while (d) do e; while (f); }";
     String programAfter = "void main() { for (a; b; c) { while (d) { do { e; } while (f); } } }";
 
@@ -62,7 +62,7 @@ public class AddBracesTest {
   public TemporaryFolder testFolder = new TemporaryFolder();
 
   @Test
-  public void testMain() throws IOException, ParseTimeoutException {
+  public void testMain() throws Exception {
     File input = testFolder.newFile("input.frag");
     String program = "void main() { for (a; b; c) while (d) do e; while (f); }";
     BufferedWriter bw = new BufferedWriter(new FileWriter(input));

@@ -455,7 +455,7 @@ public class ShaderJobFileOperations {
   }
 
   public ShaderJob readShaderJobFile(File shaderJobFile)
-      throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
 
     assertIsShaderJobFile(shaderJobFile);
 

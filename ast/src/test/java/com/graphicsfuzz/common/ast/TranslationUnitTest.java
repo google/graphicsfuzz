@@ -37,9 +37,10 @@ public class TranslationUnitTest {
     final File frag = temporaryFolder.newFile("a.frag");
     final File vert = temporaryFolder.newFile("a.vert");
     final File comp = temporaryFolder.newFile("a.comp");
-    FileUtils.writeStringToFile(frag, "void main() { }", StandardCharsets.UTF_8);
-    FileUtils.writeStringToFile(vert, "void main() { }", StandardCharsets.UTF_8);
-    FileUtils.writeStringToFile(comp, "void main() { }", StandardCharsets.UTF_8);
+    final String emptyShader = "#version 310 es\nvoid main() { }\n";
+    FileUtils.writeStringToFile(frag, emptyShader, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(vert, emptyShader, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(comp, emptyShader, StandardCharsets.UTF_8);
     final TranslationUnit fragTu = ParseHelper.parse(frag);
     final TranslationUnit vertTu = ParseHelper.parse(vert);
     final TranslationUnit compTu = ParseHelper.parse(comp);

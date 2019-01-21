@@ -98,7 +98,8 @@ public final class AddBraces {
 
   }
 
-  public static void main(String[] args) throws IOException, ParseTimeoutException {
+  public static void main(String[] args) throws IOException, ParseTimeoutException,
+      InterruptedException {
     TranslationUnit tu = ParseHelper.parse(new File(args[0]));
     new PrettyPrinterVisitor(System.out).visit(transform(tu));
   }
