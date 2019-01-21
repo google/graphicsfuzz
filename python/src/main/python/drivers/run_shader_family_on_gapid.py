@@ -19,13 +19,9 @@ import argparse
 from pathlib import Path
 from typing import List
 import subprocess
-import atexit
 import re
-import os
 import typing
-from multiprocessing import Process
 import io
-import pathlib
 glsl_generate = __import__("glsl-generate")
 
 # Types:
@@ -39,18 +35,23 @@ class RunInfo(object):
         self.output_png = 'output.png'
         self.orig_capture_id = ''
         self.orig_capture_file = 'capture.gfxtrace'
+        self.output_capture_prefix = 'capture_'
         self.shaders_dir = 'shaders'
         self.donors = 'donors'
+        self.families_dir = 'families'
         self.num_variants = 10
         self.seed = 0
-        # This is a Python process (not an OS process id).
+        # Only replace a specific shader handle in the trace.
+        self.specific_handle = None  # type: str
+        # Only replace a specific variant index in the trace.
+        self.specific_variant_index = None  # type: int
         self.gapis_process = None  # type: subprocess.Popen
+        self.get_screenshots = False
 
 
 ri = RunInfo()
 
 # Regex:
-
 
 replaced_capture_id_regex = re.compile('New capture id: ([a-z0-9]*)\n')
 
@@ -58,15 +59,23 @@ replaced_capture_id_regex = re.compile('New capture id: ([a-z0-9]*)\n')
 # load a capture into gapis and get its ID.
 screenshot_capture_id_regex = re.compile('Getting screenshot from capture id: ([a-z0-9]*)\n')
 
-# Commands:
-
 
 # Functions:
+
+
+def nz(s):
+    assert len(s) > 0
+    return s
 
 
 def remove_end(s: str, end: str):
     assert s.endswith(end)
     return s[:-len(end)]
+
+
+def remove_start(s: str, start: str):
+    assert s.startswith(start)
+    return s[len(start):]
 
 
 def call(args: List[str], cwd=None):
@@ -95,15 +104,26 @@ def call_async(args: List[str]):
 
 def run_gapit_screenshot_file(info: RunInfo):
     res = call([
-        info.gapit,
+        nz(info.gapit),
         'screenshot',
-        '-gapis-port='+info.gapis_port,
-        '-out='+info.output_png,
-        info.orig_capture_file
+        '-gapis-port='+nz(info.gapis_port),
+        '-out='+nz(info.output_png),
+        nz(info.orig_capture_file)
     ])
 
     stdout = res.stdout  # type: str
     info.orig_capture_id = screenshot_capture_id_regex.search(stdout).group(1)
+
+
+def run_gapit_screenshot_capture_id(info: RunInfo, capture_id: str, out: str):
+    res = call([
+        nz(info.gapit),
+        'screenshot',
+        '-gapis-port='+nz(info.gapis_port),
+        '-out='+nz(out),
+        '-captureid',
+        nz(capture_id)
+    ])
 
 
 def dump_shaders_trace_id(info: RunInfo):
@@ -111,20 +131,20 @@ def dump_shaders_trace_id(info: RunInfo):
     Path(info.shaders_dir).mkdir(parents=True, exist_ok=True)
 
     call([
-        info.gapit,
+        nz(info.gapit),
         'dump_resources',
         '-captureid',
-        '-gapis-port='+info.gapis_port,
-        info.orig_capture_id
-    ], cwd=info.shaders_dir)
+        '-gapis-port='+nz(info.gapis_port),
+        nz(info.orig_capture_id)
+    ], cwd=nz(info.shaders_dir))
 
 
 def run_gapis_async(info: RunInfo):
     info.gapis_process = call_async([
-        info.gapis,
+        nz(info.gapis),
         '-enable-local-files',
         '-persist',
-        '-rpc', 'localhost:'+info.gapis_port,
+        '-rpc', 'localhost:'+nz(info.gapis_port),
     ])
 
 
@@ -135,96 +155,138 @@ def run_gapis(info: RunInfo):
 
 def process_shaders(info: RunInfo):
     for f in Path(info.shaders_dir).iterdir():  # type: Path
+        # TODO: change this once gapit outputs shaders with .frag extension.
         if f.name.endswith(".Fragment"):
             frag_file = f.with_name(remove_end(f.name, ".Fragment") + ".frag")
             json_file = f.with_name(remove_end(f.name, ".Fragment") + ".json")
+            print(frag_file)
             f.rename(frag_file)
             with io.open(str(json_file), "w", encoding='utf-8') as json:
                 json.write("{}\n")
+            print(json_file)
 
 
 def fuzz_shaders(info: RunInfo):
-    if len(info.donors) == 0:
-        raise Exception("Please set donors directory")
 
     # glsl-generate --seed 0 references donors 10 100 test out --no-injection-switch
     res = glsl_generate.go([
-        "--seed", str(info.seed),
-        info.shaders_dir,
-        info.donors,
-        str(info.num_variants),
+        "--seed", nz(str(info.seed)),
+        nz(info.shaders_dir),
+        nz(info.donors),
+        nz(str(info.num_variants)),
         "100",
         "family",
-        "families",
+        nz(info.families_dir),
         "--no-injection-switch",
     ])
 
     assert res == 0, "glsl-generate failed"
 
 
-# def run_shader(info: RunInfo):
-#     # Call gapit replace_resource to create a new capture in gapis with the replaced shader source.
-#     # The new capture id is output to stdout.
-#     res = call([
-#         info.gapit,
-#         'replace_resource',
-#         '-skipoutput=true',
-#         '-resourcepath='+info.shader_source_file,
-#         '-handle='+info.shader_handle,
-#         '-gapis-port='+info.gapis_port,
-#         '-captureid',  # This is a bool flag, not an arg that takes a string.
-#         info.orig_capture_id])
-#
-#     stdout = res.stdout  # type: str
-#     new_capture_id = replaced_capture_id_regex.search(stdout).group(1)
-#
-#     info = info._replace(
-#         output_png=str(Path(info.out_dir) / (Path(info.shader_source_file).stem + ".png"))
-#     )
-#
-#     # Now call gapit screenshot to capture and write out the screenshot.
-#     res = call(gapit + [
-#         'screenshot',
-#         '-gapis-port='+info.gapis_port,
-#         '-out='+info.output_png,
-#         '-captureid',  # This is a bool flag, not an arg that takes a string.
-#         new_capture_id
-#     ])
+def create_traces(info: RunInfo):
+    handle_to_variant_list = {}  # type: typing.Dict[str, typing.List[str]]
+    for family in Path(info.families_dir).iterdir():  # type: Path
+        if family.name.startswith("family_"):
+            shader_handle = remove_start(family.name, "family_")
+            if info.specific_handle is not None and info.specific_handle != shader_handle:
+                continue
+            variant_shaders = list(family.glob("variant_*.frag"))
+            # Prepend directory:
+            variant_shaders = [str(v) for v in variant_shaders]
+            handle_to_variant_list[shader_handle] = variant_shaders
+
+    for i in range(0, info.num_variants):
+        if info.specific_variant_index is not None and info.specific_variant_index != i:
+            continue
+        output_prefix = info.output_capture_prefix + '{:03d}'.format(i)
+        output_file =  output_prefix + ".gfxtrace"
+        output_screenshot =  output_prefix + ".png"
+        # For each shader handle, replace the shader with variant i.
+        # After each replacement, we get a new trace, so we overwrite the capture id.
+        capture_id = nz(info.orig_capture_id)
+        for handle, variants in handle_to_variant_list.items():
+            # TODO: could optimize by only outputting file on final replacement.
+            capture_id = run_replace_shader(info, capture_id, handle, variants[i], output_file)
+
+        # While we have the capture id, get a screenshot;
+        # it might be difficult otherwise due to file caching.
+        if info.get_screenshots:
+            run_gapit_screenshot_capture_id(info, capture_id, output_screenshot)
+
+    print("Warning: gapis caches the contents of files, and the new trace files are usually "
+          "rewritten several times, so gapis may not be able to read the latest contents. "
+          "You may need to restart gapis.")
 
 
-# def run_shader_family(info: RunInfo):
-#     frag_dir = Path(info.frag_files_dir)
-#     for f in frag_dir.iterdir():
-#         if f.is_file() and f.name.endswith('.frag'):
-#             info = info._replace(
-#                 shader_source_file=str(frag_dir / f)
-#             )
-#             run_shader(info)
+def run_replace_shader(info: RunInfo, capture_id: str, shader_handle: str, shader_source_file: str,
+                       output_file: str):
+    # Call gapit replace_resource to create a new capture in gapis with the replaced shader source.
+    # The new capture id is output to stdout.
+    res = call([
+        nz(info.gapit),
+        'replace_resource',
+        '-skipoutput=true' if output_file is None else '-outputtracefile='+output_file,
+        '-resourcepath='+nz(shader_source_file),
+        '-handle='+nz(shader_handle),
+        '-gapis-port='+nz(info.gapis_port),
+        '-captureid',  # This is a bool flag, not an arg that takes a string.
+        nz(capture_id)])
+
+    stdout = res.stdout  # type: str
+    new_capture_id = replaced_capture_id_regex.search(stdout).group(1)
+
+    return new_capture_id
+
+
+def fuzz_trace(info: RunInfo):
+
+    run_gapis_async(info)
+
+    # This is one way of loading the capture into gapis and getting its id.
+    # TODO: this requires the device to be present, so use a different approach to load capture.
+    run_gapit_screenshot_file(info)
+
+    dump_shaders_trace_id(info)
+    process_shaders(info)
+    fuzz_shaders(info)
+    create_traces(info)
 
 
 def go(argv):
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="Run shaders via gapid. First:\n"
-                    "$ gapis -enable-local-files -persist -rpc 'localhost:40000'\n"
-                    "$ gapit screenshot -gapis-port 40000 capture.linear.gfxtrace (and make a note "
-                    "of the capture id)")
+        description="Fuzz traces:\n"
+                    "For now, ensure there exists:\n"
+                    " - capture.gfxtrace\n"
+                    " - donors/\n\n"
+                    "Alternatively, import this file and do: fuzz_shaders(ri)\n")
 
-    parser.add_argument("frag_files_dir", type=str, action="store",
-                        help="directory containing .frag files")
-    parser.add_argument("gapis_port", type=str, action="store",
-                        help="port on which gapis is listening")
-    parser.add_argument("shader_handle", type=str, action="store",
-                        help="the shader handle within the capture in gapis that should be "
-                             "replaced")
-    parser.add_argument("orig_capture_id", type=str, action="store",
-                        help="the capture id that is already loaded in gapis "
-                             "(e.g. via gapit screenshot)")
-    parser.add_argument("out_dir", type=str, action="store",
-                        help="the output directory that will receive .png files")
+    parser.add_argument("capture_file",
+                        type=str,
+                        action="store",
+                        default="capture.gfx",
+                        help="trace file to fuzz")
+
+    parser.add_argument("donors",
+                        type=str,
+                        action="store",
+                        default="donors",
+                        help="directory of donor shader jobs")
+
+    parser.add_argument("output_capture_prefix",
+                        type=str,
+                        action="store",
+                        default="capture_",
+                        help="prefix path and filename for generated trace files")
 
     args = parser.parse_args(argv)
+
+    ri.orig_capture_file = args.capture_file
+    ri.donors = args.donors
+    ri.output_capture_prefix = args.output_capture_prefix
+
+    fuzz_shaders(ri)
 
 
 if __name__ == "__main__":
