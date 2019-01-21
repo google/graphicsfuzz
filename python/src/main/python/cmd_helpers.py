@@ -28,7 +28,6 @@ def get_tool_path():
 def get_bin_jar_dirs():
     def try_get_jar_bin_dirs(install_root):
         bin_dir = path(install_root, "bin")
-        print(bin_dir)
         jar_dir = path(install_root, "jar")
         if os.path.isdir(bin_dir) and os.path.isdir(jar_dir):
             return os.path.abspath(bin_dir), os.path.abspath(jar_dir)

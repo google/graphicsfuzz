@@ -262,19 +262,19 @@ def go(argv):
                     " - donors/\n\n"
                     "Alternatively, import this file and do: fuzz_shaders(ri)\n")
 
-    parser.add_argument("capture_file",
+    parser.add_argument("-capture_file",
                         type=str,
                         action="store",
-                        default="capture.gfx",
+                        default="capture.gfxtrace",
                         help="trace file to fuzz")
 
-    parser.add_argument("donors",
+    parser.add_argument("-donors",
                         type=str,
                         action="store",
                         default="donors",
                         help="directory of donor shader jobs")
 
-    parser.add_argument("output_capture_prefix",
+    parser.add_argument("-output_capture_prefix",
                         type=str,
                         action="store",
                         default="capture_",
@@ -286,7 +286,7 @@ def go(argv):
     ri.donors = args.donors
     ri.output_capture_prefix = args.output_capture_prefix
 
-    fuzz_shaders(ri)
+    fuzz_trace(ri)
 
 
 if __name__ == "__main__":

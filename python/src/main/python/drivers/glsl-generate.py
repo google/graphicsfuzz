@@ -33,6 +33,7 @@ def go(argv):
 
     cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.generator.tool.GlslGenerate"] \
         + argv
+    print(cmd)
 
     generate_proc = subprocess.Popen(cmd)
     generate_proc.communicate()
