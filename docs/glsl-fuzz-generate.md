@@ -2,12 +2,12 @@
 
 ## Synopsis
 
-`glsl-generate [OPTIONS] DONORS REFERENCES NUM_VARIANTS GLSL_VERSION PREFIX OUTPUT_FOLDER`
+`glsl-generate [OPTIONS] REFERENCES DONORS NUM_VARIANTS GLSL_VERSION PREFIX OUTPUT_FOLDER`
 
 
 ## Description
 
-glsl-generate takes two directories of GLSL shaders, `DONORS` and `REFERENCES`,
+glsl-generate takes two directories of GLSL shaders, `REFERENCES` and `DONORS`,
 and mutates the shaders in `REFERENCES` to produce families of variant
 shaders to `OUTPUT_FOLDER`.
 
@@ -124,16 +124,16 @@ mkdir -p work/shaderfamilies
 
 # Generate several shader families from the set of sample shaders.
 # Synopsis:
-# glsl-generate [options] donors references num_variants glsl_version prefix output_folder
+# glsl-generate [options] references donors num_variants glsl_version prefix output_folder
 
 # Generate some GLSL version 300 es shaders.
-glsl-generate --seed 0 samples/donors samples/300es 10 "300 es" family_300es work/shaderfamilies
+glsl-generate --seed 0 samples/300es samples/donors 10 "300 es" family_300es work/shaderfamilies
 
 # Generate some GLSL version 100 shaders.
-glsl-generate --seed 0 samples/donors samples/100 10 "100" family_100 work/shaderfamilies
+glsl-generate --seed 0 samples/100 samples/donors 10 "100" family_100 work/shaderfamilies
 
 # Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --seed 0 --generate_uniform_bindings --max_uniforms 10 samples/donors samples/310es 10 "310 es" family_vulkan work/shaderfamilies
+glsl-generate --seed 0 --generate_uniform_bindings --max_uniforms 10 samples/310es samples/donors 10 "310 es" family_vulkan work/shaderfamilies
 
 # Each line above will take approx. 1 minute, and will generate a shader family for every
 # shader in samples/300es or samples/100:
