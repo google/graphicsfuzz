@@ -115,7 +115,7 @@ Assuming you have extracted the `graphicsfuzz.zip` file to get `graphicsfuzz/`:
 
 ```sh
 # Copy the sample shaders into the current directory:
-cp -r graphicsfuzz/shaders/samples samples
+cp -r graphicsfuzz/shaders/src/main/glsl/samples samples
 
 # Create a work directory to store our generated shader families.
 # The directory structure allows glsl-server
