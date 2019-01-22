@@ -20,18 +20,21 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.tool.EnabledTransformations;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.tool.GeneratorArguments;
-import com.graphicsfuzz.generator.tool.PrepareReference;
+import com.graphicsfuzz.generator.transformation.RestrictFragmentShaderColors;
+import com.graphicsfuzz.generator.transformation.injection.RemoveDiscardStatements;
+import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.ArgsUtil;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +44,7 @@ public class ShaderProducer implements Runnable {
 
   private final int limit;
   private final File[] shaderJobFiles;
-  private final IRandom generator;
-  private final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue;
+  private final BlockingQueue<ShaderJob> queue;
   private final File referencesDir;
   private final ShadingLanguageVersion shadingLanguageVersion;
   private final Namespace ns;
@@ -52,8 +54,7 @@ public class ShaderProducer implements Runnable {
   ShaderProducer(
       int limit,
       File[] shaderJobFiles,
-      IRandom generator,
-      BlockingQueue<Pair<ShaderJob, ShaderJob>> queue,
+      BlockingQueue<ShaderJob> queue,
       File referencesDir,
       ShadingLanguageVersion shadingLanguageVersion,
       File donorsDir,
@@ -61,7 +62,6 @@ public class ShaderProducer implements Runnable {
       ShaderJobFileOperations fileOps) {
     this.limit = limit;
     this.shaderJobFiles = shaderJobFiles;
-    this.generator = generator;
     this.queue = queue;
     this.referencesDir = referencesDir;
     this.shadingLanguageVersion = shadingLanguageVersion;
@@ -93,39 +93,49 @@ public class ShaderProducer implements Runnable {
             !ns.getBoolean("no_injection_switch")
         );
 
+    final int outerSeed = ArgsUtil.getSeedArgument(ns);
+    final IRandom generator = new RandomWrapper(outerSeed);
+
     int sent = 0;
     for (int counter = 0; sent < limit; counter++) {
 
       File referenceShaderJobFile = shaderJobFiles[counter % shaderJobFiles.length];
 
       try {
-        LOGGER.info("Preparing shader job pair based on {}.", referenceShaderJobFile);
-
-        final ShaderJob referenceShaderJob =
+        LOGGER.info("Preparing variant shader job based on {}.", referenceShaderJobFile);
+        final ShaderJob shaderJob =
             fileOps.readShaderJobFile(referenceShaderJobFile);
-        final ShaderJob variantShaderJob = referenceShaderJob.clone();
 
-        PrepareReference.prepareReference(
-            referenceShaderJob,
+        // Remove discard statements from the original shader.  We are going to hijack the colors
+        // the shader can write, and we want to be able to regard absence of a color as a bug.
+        new RemoveDiscardStatements(shaderJob.getFragmentShader().get());
+
+        // Create a variant.
+        Generate.generateVariant(shaderJob, generatorArguments,
+            generator.nextInt(Integer.MAX_VALUE));
+
+        // Restrict the colors that the variant can emit.
+        final float probabilityOfAddingNewColorWrite = 0.01f;
+        if (!RestrictFragmentShaderColors.restrictFragmentShaderColors(shaderJob, generator,
+            Constants.GLF_COLOR, GenerationParams.normal(ShaderKind.FRAGMENT,
+                generatorArguments.getAddInjectionSwitch()),
             shadingLanguageVersion,
-            generatorArguments.getReplaceFloatLiterals(),
-            generatorArguments.getMaxUniforms(),
-            generatorArguments.getGenerateUniformBindings());
-        final int seed = ArgsUtil.getSeedArgument(ns);
-        Generate.generateVariant(variantShaderJob, generatorArguments, seed);
+            probabilityOfAddingNewColorWrite)) {
+          LOGGER.info("Skipping variant as fragment shader colors could not be restricted.");
+          continue;
+        }
         try {
-          queue.put(new ImmutablePair<>(referenceShaderJob, variantShaderJob));
+          queue.put(shaderJob);
         } catch (InterruptedException exception) {
           LOGGER.error("Problem putting to queue.", exception);
           throw new RuntimeException(exception);
         }
+        LOGGER.info("Sent shader job " + sent + ".");
         sent++;
-        LOGGER.info("Sent shader job pair.");
       } catch (ParseTimeoutException | IOException | AssertionError
           | InterruptedException exception) {
         // Something went wrong - log the details and move on.
         LOGGER.error("Error during generation.", exception);
-        continue;
       }
     }
   }
