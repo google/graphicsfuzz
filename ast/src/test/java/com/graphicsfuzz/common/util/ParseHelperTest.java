@@ -26,6 +26,7 @@ import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
+import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
@@ -391,7 +392,7 @@ public class ParseHelperTest {
   public void testParseHexIntLiteral() throws Exception {
     final String shader = "#version 300 es\n"
         + "void main() {"
-        + "  int x = 0xA03B;"
+        + "  int x = 0xa03b;"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
     assertTrue(
@@ -400,7 +401,7 @@ public class ParseHelperTest {
           public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
             super.visitScalarInitializer(scalarInitializer);
             if (scalarInitializer.getExpr() instanceof IntConstantExpr
-                && ((IntConstantExpr) scalarInitializer.getExpr()).getValue().equals("0xA03B")) {
+                && ((IntConstantExpr) scalarInitializer.getExpr()).getValue().equals("0xa03b")) {
               predicateHolds();
             }
           }
@@ -445,6 +446,22 @@ public class ParseHelperTest {
             }
           }
         }.test(tu));
+  }
+
+  @Test
+  public void testParseUnsignedZero() throws Exception {
+    final String program = "uint foo() { return 0u; }";
+    assertTrue(
+        new CheckPredicateVisitor() {
+          @Override
+          public void visitReturnStmt(ReturnStmt returnStmt) {
+            super.visitReturnStmt(returnStmt);
+            if (returnStmt.getExpr() instanceof UIntConstantExpr &&
+                ((UIntConstantExpr) returnStmt.getExpr()).getValue().equals("0u")) {
+              predicateHolds();
+            }
+          }
+        }.test(ParseHelper.parse(program)));
   }
 
   private String getStringFromInputStream(InputStream strippedIs) throws IOException {

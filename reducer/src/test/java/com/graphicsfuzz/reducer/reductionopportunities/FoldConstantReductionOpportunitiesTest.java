@@ -431,7 +431,7 @@ public class FoldConstantReductionOpportunitiesTest {
   @Test
   public void testFoldHexInt() throws Exception {
     // Results for integer constant folding are in decimal.
-    check("void main() { 0xAB + 0xCD; }",
+    check("void main() { 0xAB + 0xCd; }",
         1,
         "void main() { 376; }");
   }
@@ -447,7 +447,7 @@ public class FoldConstantReductionOpportunitiesTest {
   @Test
   public void testFoldHexUInt() throws Exception {
     // Results for unsigned integer constant folding are in decimal.
-    check("void main() { 0xFEF + 0xEFE; }",
+    check("void main() { 0xFEF + 0xeFe; }",
         1,
         "void main() { 7917; }");
   }
@@ -463,7 +463,7 @@ public class FoldConstantReductionOpportunitiesTest {
   @Test
   public void testFoldHexAndDecimalInt() throws Exception {
     // Results for integer constant folding are in decimal.
-    check("void main() { 0xABCD + 17; }",
+    check("void main() { 0xAbCD + 17; }",
         1,
         "void main() { 43998; }");
   }

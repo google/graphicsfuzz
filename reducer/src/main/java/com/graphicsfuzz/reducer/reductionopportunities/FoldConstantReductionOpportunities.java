@@ -27,6 +27,7 @@ import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UnOp;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
@@ -85,6 +86,8 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
           findFoldAddZeroOpportunities(parent, child, lhs, rhs);
           findFoldAddZeroOpportunities(parent, child, rhs, lhs);
           findFoldFpAddOpportunities(parent, child, lhs, rhs);
+          findFoldIntAddOpportunities(parent, child, lhs, rhs);
+          findFoldUintAddOpportunities(parent, child, lhs, rhs);
           findFoldFpScalarVectorAddOpportunities(parent, child, lhs, rhs);
           return;
 
@@ -326,6 +329,20 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     findFoldFpBinaryOpportunities(parent, child, lhs, rhs, Float::sum);
   }
 
+  private void findFoldIntAddOpportunities(IAstNode parent,
+                                          Expr child,
+                                          Expr lhs,
+                                          Expr rhs) {
+    findFoldIntBinaryOpportunities(parent, child, lhs, rhs, Integer::sum);
+  }
+
+  private void findFoldUintAddOpportunities(IAstNode parent,
+                                       Expr child,
+                                       Expr lhs,
+                                       Expr rhs) {
+    findFoldUintBinaryOpportunities(parent, child, lhs, rhs, Integer::sum);
+  }
+
   private void findFoldFpSubOpportunities(IAstNode parent,
                                           Expr child,
                                           Expr lhs,
@@ -346,6 +363,26 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       addReplaceWithExpr(parent, child, new FloatConstantExpr(
           op.apply(Float.valueOf(((FloatConstantExpr) lhs).getValue()),
               Float.valueOf(((FloatConstantExpr) rhs).getValue())).toString()));
+    }
+  }
+
+  private void findFoldIntBinaryOpportunities(IAstNode parent, Expr child, Expr lhs, Expr rhs,
+                                             BinaryOperator<Integer> op) {
+    if (isIntConstant(lhs) && isIntConstant(rhs)) {
+      addReplaceWithExpr(parent, child, new IntConstantExpr(
+             op.apply(
+            ((IntConstantExpr) lhs).getNumericValue(),
+            ((IntConstantExpr) rhs).getNumericValue()).toString()));
+    }
+  }
+
+  private void findFoldUintBinaryOpportunities(IAstNode parent, Expr child, Expr lhs, Expr rhs,
+                                              BinaryOperator<Integer> op) {
+    if (isUintConstant(lhs) && isUintConstant(rhs)) {
+      addReplaceWithExpr(parent, child, new UIntConstantExpr(
+          op.apply(
+              ((UIntConstantExpr) lhs).getNumericValue(),
+              ((UIntConstantExpr) rhs).getNumericValue()).toString() + "u"));
     }
   }
 
@@ -539,6 +576,14 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
 
   private static boolean isFpConstant(Expr expr) {
     return expr instanceof FloatConstantExpr;
+  }
+
+  private static boolean isIntConstant(Expr expr) {
+    return expr instanceof IntConstantExpr;
+  }
+
+  private static boolean isUintConstant(Expr expr) {
+    return expr instanceof UIntConstantExpr;
   }
 
   private static boolean isFpVectorConstant(Expr expr) {

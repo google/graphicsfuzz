@@ -731,8 +731,7 @@ MEDIUMP: 'mediump' ;
 LOWP: 'lowp' ;
 PRECISION: 'precision' ;
 VERSION: { ignoreNewLine = false; } [ \t]*'#'[ \t]*'version' ;
-INTCONSTANT: DIGIT+ ; // REVISIT
-
+INTCONSTANT: DECIMAL_DIGITS | OCTAL_DIGITS | HEX_DIGITS;
 CONST_TOK: 'const' ;
 PRECISE: 'precise' ;
 INVARIANT: 'invariant' ;
@@ -749,7 +748,7 @@ VARYING: 'varying' ;
 READONLY: 'readonly' ;
 WRITEONLY: 'writeonly' ;
 LAYOUT_TOK: 'layout' ; // REVISIT
-UINTCONSTANT: DIGIT+ 'u' ; // REVISIT
+UINTCONSTANT: (DECIMAL_DIGITS | OCTAL_DIGITS | HEX_DIGITS) + 'u';
 ROW_MAJOR: 'row_major' ;
 PACKED_TOK: 'packed' ;
 FLOATCONSTANT: ((DIGIT+ ('.' DIGIT*)?) | ('.' DIGIT+)) (('e' | 'E') ('+' | '-')? DIGIT*)?; // REVISIT
@@ -956,8 +955,11 @@ QUERY_OP: '?' ;
 ASSIGN_OP: '=' ;
 
 IDENTIFIER: ('a'..'z' | 'A'..'Z' | '_') (DIGIT | 'a'..'z' | 'A'..'Z' | '_')*;
-fragment DIGIT  : '0'..'9';
 
+fragment DECIMAL_DIGITS: '0' | ('1'..'9' DIGIT*);
+fragment OCTAL_DIGITS: '0' '0'..'7'+;
+fragment HEX_DIGITS: '0x' (DIGIT | 'a'..'f' | 'A'..'F')+;
+fragment DIGIT  : '0'..'9';
 
 COMMENT: ('//' ~('\n'|'\r')* '\r'? '\n' |   '/*' (.)*? '*/') -> skip ;
 
