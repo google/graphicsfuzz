@@ -57,7 +57,7 @@ replaced_capture_id_regex = re.compile('New capture id: ([a-z0-9]*)\n')
 
 # When using gapit screenshot filename, the capture ID is output which can be a nice way to
 # load a capture into gapis and get its ID.
-screenshot_capture_id_regex = re.compile('Getting screenshot from capture id: ([a-z0-9]*)\n')
+load_capture_id = re.compile('Loaded capture; id: ([a-z0-9]*)\n')
 
 
 # Functions:
@@ -112,7 +112,18 @@ def run_gapit_screenshot_file(info: RunInfo):
     ])
 
     stdout = res.stdout  # type: str
-    info.orig_capture_id = screenshot_capture_id_regex.search(stdout).group(1)
+    return load_capture_id.search(stdout).group(1)
+
+
+def run_gapit_commands_file(info: RunInfo):
+    res = call([
+        nz(info.gapit),
+        'commands',
+        '-gapis-port='+nz(info.gapis_port),
+        nz(info.orig_capture_file)
+    ])
+    stdout = res.stdout  # type: str
+    info.orig_capture_id = load_capture_id.search(stdout).group(1)
 
 
 def run_gapit_screenshot_capture_id(info: RunInfo, capture_id: str, out: str):
@@ -241,9 +252,8 @@ def fuzz_trace(info: RunInfo):
 
     run_gapis_async(info)
 
-    # This is one way of loading the capture into gapis and getting its id.
-    # TODO: this requires the device to be present, so use a different approach to load capture.
-    run_gapit_screenshot_file(info)
+    # Ask for the commands in order to load the capture and get its id.
+    run_gapit_commands_file(info)
 
     dump_shaders_trace_id(info)
     process_shaders(info)
