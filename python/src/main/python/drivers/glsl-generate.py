@@ -18,14 +18,27 @@ import os
 import subprocess
 import sys
 
-java_tool_path = os.sep.join(
-    [os.path.dirname(os.path.abspath(__file__)), "..", "..", "jar", "tool-1.0.jar"])
+HERE = os.path.abspath(__file__)
 
-# Run the generator
+sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))
 
-cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.generator.tool.GlslGenerate"] \
-      + sys.argv[1:]
+import cmd_helpers
 
-generate_proc = subprocess.Popen(cmd)
-generate_proc.communicate()
-sys.exit(generate_proc.returncode)
+
+def go(argv):
+    java_tool_path = cmd_helpers.get_tool_path()
+    print(java_tool_path)
+
+    # Run the generator
+
+    cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.generator.tool.GlslGenerate"] \
+        + argv
+    print(cmd)
+
+    generate_proc = subprocess.Popen(cmd)
+    generate_proc.communicate()
+    return generate_proc.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(go(sys.argv[1:]))

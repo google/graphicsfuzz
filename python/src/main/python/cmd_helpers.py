@@ -14,6 +14,37 @@
 # limitations under the License.
 
 import subprocess
+import os
+
+HERE = os.path.abspath(__file__)
+
+path = os.path.join
+
+
+def get_tool_path():
+    return path(get_bin_jar_dirs()[1], "tool-1.0.jar")
+
+
+def get_bin_jar_dirs():
+    def try_get_jar_bin_dirs(install_root):
+        bin_dir = path(install_root, "bin")
+        jar_dir = path(install_root, "jar")
+        if os.path.isdir(bin_dir) and os.path.isdir(jar_dir):
+            return os.path.abspath(bin_dir), os.path.abspath(jar_dir)
+        return None
+
+    # Perhaps we are running from the zip.
+    res = try_get_jar_bin_dirs(path(os.path.dirname(HERE), os.pardir))
+    if res is not None:
+        return res
+
+    # Perhaps we are running from the IDE.
+    res = try_get_jar_bin_dirs(path(os.path.dirname(HERE), os.pardir, os.pardir, os.pardir,
+                                    os.pardir, "graphicsfuzz", "target", "graphicsfuzz"))
+    if res is not None:
+        return res
+
+    raise Exception("Could not find bin and jar directories")
 
 
 def execute(cmd, verbose):
