@@ -19,12 +19,14 @@ package com.graphicsfuzz.common.typing;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
+import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
@@ -35,11 +37,13 @@ import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TernaryExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
@@ -387,6 +391,65 @@ public class TyperTest {
         OpenGlConstants.GL_LOCAL_INVOCATION_INDEX,
         BasicType.UINT,
         TypeQualifier.SHADER_INPUT);
+  }
+  @Test
+  public void testOctalIntLiteralTyped() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() {"
+        + "  int x = 031;"
+        + "}");
+    new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300) {
+      @Override
+      public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
+        super.visitScalarInitializer(scalarInitializer);
+        assertSame(lookupType(scalarInitializer.getExpr()), BasicType.INT);
+      }
+    }.visit(tu);
+  }
+
+  @Test
+  public void testHexIntLiteralTyped() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() {"
+        + "  int x = 0xA03B;"
+        + "}");
+    new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300) {
+      @Override
+      public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
+        super.visitScalarInitializer(scalarInitializer);
+        assertSame(lookupType(scalarInitializer.getExpr()), BasicType.INT);
+      }
+    }.visit(tu);
+  }
+
+  @Test
+  public void testOctalUnsignedIntLiteralTyped() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() {"
+        + "  int x = 031u;"
+        + "}");
+    new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300) {
+      @Override
+      public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
+        super.visitScalarInitializer(scalarInitializer);
+        assertSame(lookupType(scalarInitializer.getExpr()), BasicType.UINT);
+      }
+    }.visit(tu);
+  }
+
+  @Test
+  public void testHexUnsignedIntLiteralTyped() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() {"
+        + "  int x = 0xA03Bu;"
+        + "}");
+    new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300) {
+      @Override
+      public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
+        super.visitScalarInitializer(scalarInitializer);
+        assertSame(lookupType(scalarInitializer.getExpr()), BasicType.UINT);
+      }
+    }.visit(tu);
   }
 
   private void checkComputeShaderBuiltin(String builtin, String builtinConstant, BasicType baseType,

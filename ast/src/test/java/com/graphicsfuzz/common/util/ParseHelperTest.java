@@ -21,8 +21,13 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
+import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -360,6 +365,86 @@ public class ParseHelperTest {
         + "  int leave_me_alone = 100;\n"
         + "}\n";
     CompareAstsDuplicate.assertEqualAsts(original, expected);
+  }
+
+  @Test
+  public void testParseOctalIntLiteral() throws Exception {
+    final String shader = "#version 300 es\n"
+        + "void main() {"
+        + "  int x = 031;"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    assertTrue(
+      new CheckPredicateVisitor() {
+        @Override
+        public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
+          super.visitScalarInitializer(scalarInitializer);
+          if (scalarInitializer.getExpr() instanceof IntConstantExpr
+            && ((IntConstantExpr) scalarInitializer.getExpr()).getValue().equals("031")) {
+            predicateHolds();
+          }
+        }
+      }.test(tu));
+  }
+
+  @Test
+  public void testParseHexIntLiteral() throws Exception {
+    final String shader = "#version 300 es\n"
+        + "void main() {"
+        + "  int x = 0xA03B;"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    assertTrue(
+        new CheckPredicateVisitor() {
+          @Override
+          public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
+            super.visitScalarInitializer(scalarInitializer);
+            if (scalarInitializer.getExpr() instanceof IntConstantExpr
+                && ((IntConstantExpr) scalarInitializer.getExpr()).getValue().equals("0xA03B")) {
+              predicateHolds();
+            }
+          }
+        }.test(tu));
+  }
+
+  @Test
+  public void testParseOctalUnsignedIntLiteral() throws Exception {
+    final String shader = "#version 300 es\n"
+        + "void main() {"
+        + "  int x = 031u;"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    assertTrue(
+        new CheckPredicateVisitor() {
+          @Override
+          public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
+            super.visitScalarInitializer(scalarInitializer);
+            if (scalarInitializer.getExpr() instanceof UIntConstantExpr
+                && ((UIntConstantExpr) scalarInitializer.getExpr()).getValue().equals("031u")) {
+              predicateHolds();
+            }
+          }
+        }.test(tu));
+  }
+
+  @Test
+  public void testParseHexUnsignedIntLiteral() throws Exception {
+    final String shader = "#version 300 es\n"
+        + "void main() {"
+        + "  int x = 0xA03Bu;"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    assertTrue(
+        new CheckPredicateVisitor() {
+          @Override
+          public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
+            super.visitScalarInitializer(scalarInitializer);
+            if (scalarInitializer.getExpr() instanceof UIntConstantExpr
+                && ((UIntConstantExpr) scalarInitializer.getExpr()).getValue().equals("0xA03Bu")) {
+              predicateHolds();
+            }
+          }
+        }.test(tu));
   }
 
   private String getStringFromInputStream(InputStream strippedIs) throws IOException {

@@ -420,6 +420,135 @@ public class FoldConstantReductionOpportunitiesTest {
         "void main() { vec3(9.98, 9.98, 9.975); }");
   }
 
+  @Test
+  public void testFoldOctalInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 012 + 017; }",
+        1,
+        "void main() { 25; }");
+  }
+
+  @Test
+  public void testFoldHexInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 0xAB + 0xCD; }",
+        1,
+        "void main() { 376; }");
+  }
+
+  @Test
+  public void testFoldOctalUInt() throws Exception {
+    // Results for unsigned integer constant folding are in decimal.
+    check("void main() { 026u + 073u; }",
+        1,
+        "void main() { 81u; }");
+  }
+
+  @Test
+  public void testFoldHexUInt() throws Exception {
+    // Results for unsigned integer constant folding are in decimal.
+    check("void main() { 0xFEF + 0xEFE; }",
+        1,
+        "void main() { 7917; }");
+  }
+
+  @Test
+  public void testFoldDecimalAndHexInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 1 + 0xF; }",
+        1,
+        "void main() { 16; }");
+  }
+
+  @Test
+  public void testFoldHexAndDecimalInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 0xABCD + 17; }",
+        1,
+        "void main() { 43998; }");
+  }
+
+  @Test
+  public void testFoldDecimalAndOctalInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 1 + 077; }",
+        1,
+        "void main() { 64; }");
+  }
+
+  @Test
+  public void testFoldOctalAndDecimalInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 052 + 17; }",
+        1,
+        "void main() { 59; }");
+  }
+
+  @Test
+  public void testFoldOctalAndHexInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 017 + 0xF; }",
+        1,
+        "void main() { 30; }");
+  }
+
+  @Test
+  public void testFoldHexAndOctalInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 0xABCD + 0333; }",
+        1,
+        "void main() { 44200; }");
+  }
+
+  @Test
+  public void testFoldDecimalAndHexUInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 1u + 0xFu; }",
+        1,
+        "void main() { 16u; }");
+  }
+
+  @Test
+  public void testFoldHexAndDecimalUInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 0xABCDu + 17u; }",
+        1,
+        "void main() { 43998u; }");
+  }
+
+  @Test
+  public void testFoldDecimalAndOctalUInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 1u + 077u; }",
+        1,
+        "void main() { 64u; }");
+  }
+
+  @Test
+  public void testFoldOctalAndDecimalUInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 052u + 17u; }",
+        1,
+        "void main() { 59u; }");
+  }
+
+  @Test
+  public void testFoldOctalAndHexUInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 017u + 0xFu; }",
+        1,
+        "void main() { 30u; }");
+  }
+
+  @Test
+  public void testFoldHexAndOctalUInt() throws Exception {
+    // Results for integer constant folding are in decimal.
+    check("void main() { 0xABCDu + 0333u; }",
+        1,
+        "void main() { 44200u; }");
+  }
+
+
   private void check(String before, int numOps, String after) throws IOException,
       ParseTimeoutException, InterruptedException {
     final TranslationUnit tu = ParseHelper.parse(before);
