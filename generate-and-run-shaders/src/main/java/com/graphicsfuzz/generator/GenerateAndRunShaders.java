@@ -76,11 +76,6 @@ public class GenerateAndRunShaders {
         .help("File containing crash strings to ignore, one per line.")
         .type(File.class);
 
-    parser.addArgument("--only-variants")
-        .help("Only run variant shaders (so sacrifice finding wrong images in favour of crashes.")
-        .type(Boolean.class)
-        .action(Arguments.storeTrue());
-
     return parser.parseArgs(args);
 
   }
@@ -112,11 +107,8 @@ public class GenerateAndRunShaders {
     fileOps.deleteDirectory(outputDir);
     fileOps.mkdir(outputDir);
 
-    final ShadingLanguageVersion shadingLanguageVersion = ns.get("webgl")
-        ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
-        : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
-
-    final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue =
+    // Queue of shader jobs to be processed.
+    final BlockingQueue<ShaderJob> queue =
         new LinkedBlockingQueue<>();
 
     final File crashStringsToIgnoreFile = ns.get("ignore_crash_strings");
@@ -136,21 +128,15 @@ public class GenerateAndRunShaders {
         outputDir,
         ns.get("server"),
         ns.get("worker"),
-        shadingLanguageVersion,
         crashStringsToIgnore,
-        ns.get("only_variants"),
         fileOps));
     consumer.start();
-
-    final int seed = ArgsUtil.getSeedArgument(ns);
 
     final Thread producer = new Thread(new ShaderProducer(
         LIMIT,
         shaderJobFiles,
-        new RandomWrapper(seed),
         queue,
         referencesDir,
-        shadingLanguageVersion,
         donors,
         ns,
         fileOps));

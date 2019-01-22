@@ -53,12 +53,10 @@ public class FloatLiteralReplacer extends StandardVisitor {
    * floating-point literals changes whether intializers are compile-time constants.
    * @param tu Translation unit to be mutated
    * @param uniformsInfo Structure in which to place info about uniforms
-   * @param shadingLanguageVersion GLSL version being used
    */
-  public static void replace(TranslationUnit tu, UniformsInfo uniformsInfo,
-      ShadingLanguageVersion shadingLanguageVersion) {
+  public static void replace(TranslationUnit tu, UniformsInfo uniformsInfo) {
     FloatLiteralReplacer floatLiteralReplacer = new FloatLiteralReplacer(tu);
-    ConstCleaner.clean(tu, shadingLanguageVersion);
+    ConstCleaner.clean(tu);
     List<Float> literals = new ArrayList<>();
     for (int i = 0; i < floatLiteralReplacer.uniformIndex; i++) {
       literals.add(null);

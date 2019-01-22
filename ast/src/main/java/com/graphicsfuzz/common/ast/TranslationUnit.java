@@ -72,12 +72,24 @@ public class TranslationUnit implements IAstNode {
     return Collections.unmodifiableList(topLevelDeclarations);
   }
 
+  /**
+   * Determines whether the translation unit records an explicit GLSL version.
+   * @return Whether an explicit GLSL version is present in the translation unit.
+   */
   public boolean hasShadingLanguageVersion() {
     return shadingLanguageVersion.isPresent();
   }
 
+  /**
+   * Yields the shading language version for the translation unit, which is GLSL ES 100 if not
+   * explicitly specified.
+   * @return The shading language version associated with the translation unit.
+   */
   public ShadingLanguageVersion getShadingLanguageVersion() {
-    return shadingLanguageVersion.get();
+    if (hasShadingLanguageVersion()) {
+      return shadingLanguageVersion.get();
+    }
+    return ShadingLanguageVersion.ESSL_100;
   }
 
   public void setShadingLanguageVersion(ShadingLanguageVersion shadingLanguageVersion) {

@@ -16,21 +16,23 @@
 
 package com.graphicsfuzz.generator;
 
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ImageColorComponents;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.generator.transformation.RestrictFragmentShaderColors;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.JobStatus;
 import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import com.graphicsfuzz.shadersets.RemoteShaderDispatcher;
 import com.graphicsfuzz.shadersets.RunShaderFamily;
 import com.graphicsfuzz.shadersets.ShaderDispatchException;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,25 +41,21 @@ public class ShaderConsumer implements Runnable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ShaderConsumer.class);
 
   private final int limit;
-  private final BlockingQueue<Pair<ShaderJob, ShaderJob>> queue;
+  private final BlockingQueue<ShaderJob> queue;
   private final File outputDir;
   private final File tempDir;
   private final String server;
   private final String worker;
-  private final ShadingLanguageVersion shadingLanguageVersion;
   private final Set<String> crashStringsToIgnore;
-  private final boolean onlyVariants;
   private final ShaderJobFileOperations fileOps;
 
   public ShaderConsumer(
       int limit,
-      BlockingQueue<Pair<ShaderJob, ShaderJob>> queue,
+      BlockingQueue<ShaderJob> queue,
       File outputDir,
       String server,
       String worker,
-      ShadingLanguageVersion shadingLanguageVersion,
       Set<String> crashStringsToIgnore,
-      boolean onlyVariants,
       ShaderJobFileOperations fileOps) {
     this.limit = limit;
     this.queue = queue;
@@ -65,9 +63,7 @@ public class ShaderConsumer implements Runnable {
     this.tempDir = new File(outputDir, "temp");
     this.server = server;
     this.worker = worker;
-    this.shadingLanguageVersion = shadingLanguageVersion;
     this.crashStringsToIgnore = crashStringsToIgnore;
-    this.onlyVariants = onlyVariants;
     this.fileOps = fileOps;
   }
 
@@ -79,18 +75,15 @@ public class ShaderConsumer implements Runnable {
 
     final File invalidDirectory = new File(outputDir, "INVALID");
 
-    final File referenceShaderJobFile = new File(tempDir, "temp_reference.json");
-    final File referenceShaderJobResultFile = new File(tempDir, "temp_reference.info.json");
-
     final File variantShaderJobFile = new File(tempDir, "temp_variant.json");
     final File variantShaderJobResultFile = new File(tempDir, "temp_variant.info.json");
 
 
     for (int received = 0; received < limit; received++) {
       LOGGER.info("Consuming shader job " + received);
-      Pair<ShaderJob, ShaderJob> shaderPair;
+      ShaderJob variantShaderJob;
       try {
-        shaderPair = queue.take();
+        variantShaderJob = queue.take();
       } catch (InterruptedException exception) {
         LOGGER.error("Problem taking from queue.", exception);
         throw new RuntimeException(exception);
@@ -107,7 +100,6 @@ public class ShaderConsumer implements Runnable {
 
       final String counterString = String.format("%04d", received);
 
-      final ShaderJob variantShaderJob = shaderPair.getRight();
       final Optional<ImageJobResult> variantResult =
           runShaderJob(
               variantShaderJob,
@@ -126,38 +118,6 @@ public class ShaderConsumer implements Runnable {
           variantShaderJobFile,
           variantShaderJobResultFile,
           counterString);
-
-      if (!onlyVariants) {
-
-        final ShaderJob referenceShaderJob = shaderPair.getLeft();
-        final Optional<ImageJobResult> referenceResult =
-            runShaderJob(
-                referenceShaderJob,
-                referenceShaderJobFile,
-                referenceShaderJobResultFile,
-                imageGenerator,
-                counterString,
-                invalidDirectory);
-        if (!referenceResult.isPresent()) {
-          continue;
-        }
-
-        maybeLogFailure(
-            referenceResult.get(),
-            referenceShaderJobFile,
-            referenceShaderJobResultFile,
-            counterString);
-
-        maybeLogWrongImage(
-            referenceResult.get(),
-            variantResult.get(),
-            referenceShaderJobFile,
-            referenceShaderJobResultFile,
-            variantShaderJobFile,
-            variantShaderJobResultFile,
-            counterString);
-      }
-
     }
   }
 
@@ -166,52 +126,56 @@ public class ShaderConsumer implements Runnable {
       File shaderJobFile,
       File shaderJobResultFile,
       String counter) {
-    switch (imageJobResult.getStatus()) {
-      case CRASH:
-      case COMPILE_ERROR:
-      case LINK_ERROR:
-      case TIMEOUT:
-      case UNEXPECTED_ERROR:
-      case SANITY_ERROR:
-      case NONDET:
-        try {
-          File triageDirectory = new File(outputDir, imageJobResult.getStatus().toString());
-          fileOps.mkdir(triageDirectory);
-          if (JobStatus.CRASH.equals(imageJobResult.getStatus())) {
-
-            if (crashStringsToIgnore.stream().anyMatch(imageJobResult.getLog()::contains)) {
-              triageDirectory = new File(triageDirectory, "IGNORE");
-              fileOps.mkdir(triageDirectory);
-            }
+    try {
+      switch (imageJobResult.getStatus()) {
+        case SUCCESS:
+          if (!ImageColorComponents.containsOnlyGivenComponentValues(
+              fileOps.getBufferedImageFromShaderJobResultFile(shaderJobResultFile),
+              Arrays.asList(RestrictFragmentShaderColors.HI_COLOR_COMPONENT_VALUE,
+                  RestrictFragmentShaderColors.LO_COLOR_COMPONENT_VALUE))) {
+            triageIssue(imageJobResult, shaderJobFile, shaderJobResultFile, counter);
           }
-          fileOps.copyShaderJobFileTo(
-              shaderJobFile,
-              new File(triageDirectory, counter + shaderJobFile.getName()),
-              false);
-          fileOps.copyShaderJobResultFileTo(
-              shaderJobResultFile,
-              new File(triageDirectory, counter + shaderJobResultFile.getName()),
-              false);
-          return;
-        } catch (IOException exception) {
-          LOGGER.error(
-              "A problem occurred when logging failures; defeats the point of the exercise.",
-              exception);
-          throw new RuntimeException(exception);
-        }
-      default:
-        // nothing
+          break;
+        case CRASH:
+        case COMPILE_ERROR:
+        case LINK_ERROR:
+        case TIMEOUT:
+        case UNEXPECTED_ERROR:
+        case SANITY_ERROR:
+        case NONDET:
+          triageIssue(imageJobResult, shaderJobFile, shaderJobResultFile, counter);
+          break;
+        default:
+          // nothing
+          break;
+      }
+    } catch (IOException exception) {
+      LOGGER.error(
+          "A problem occurred when logging failures; defeats the point of the exercise.",
+          exception);
+      throw new RuntimeException(exception);
     }
   }
 
-  private void maybeLogWrongImage(ImageJobResult referenceResult,
-                                  ImageJobResult variantResult,
-                                  File referenceShaderJobFile,
-                                  File referenceShaderJobFileResult,
-                                  File variantShaderJobFile,
-                                  File variantShaderJobFileResult,
-                                  String counter) {
-    // TODO: implement.
+  private void triageIssue(ImageJobResult imageJobResult, File shaderJobFile,
+                           File shaderJobResultFile, String counter) throws IOException {
+    File triageDirectory = new File(outputDir, imageJobResult.getStatus().toString());
+    fileOps.mkdir(triageDirectory);
+    if (JobStatus.CRASH.equals(imageJobResult.getStatus())) {
+
+      if (crashStringsToIgnore.stream().anyMatch(imageJobResult.getLog()::contains)) {
+        triageDirectory = new File(triageDirectory, "IGNORE");
+        fileOps.mkdir(triageDirectory);
+      }
+    }
+    fileOps.copyShaderJobFileTo(
+        shaderJobFile,
+        new File(triageDirectory, counter + shaderJobFile.getName()),
+        false);
+    fileOps.copyShaderJobResultFileTo(
+        shaderJobResultFile,
+        new File(triageDirectory, counter + shaderJobResultFile.getName()),
+        false);
   }
 
   private Optional<ImageJobResult> runShaderJob(ShaderJob shaderJob,

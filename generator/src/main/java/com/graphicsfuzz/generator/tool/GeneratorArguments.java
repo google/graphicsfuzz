@@ -21,7 +21,6 @@ import java.io.File;
 
 public class GeneratorArguments {
 
-  private final ShadingLanguageVersion shadingLanguageVersion;
   private final boolean small;
   private final boolean allowLongLoops;
   private final boolean singlePass;
@@ -34,7 +33,6 @@ public class GeneratorArguments {
   private final boolean addInjectionSwitch;
 
   public GeneratorArguments(
-        ShadingLanguageVersion shadingLanguageVersion,
         boolean small,
         boolean allowLongLoops,
         boolean singlePass,
@@ -45,7 +43,6 @@ public class GeneratorArguments {
         int maxUniforms,
         EnabledTransformations enabledTransformations,
         boolean addInjectionSwitch) {
-    this.shadingLanguageVersion = shadingLanguageVersion;
     this.small = small;
     this.allowLongLoops = allowLongLoops;
     this.singlePass = singlePass;
@@ -56,10 +53,6 @@ public class GeneratorArguments {
     this.maxUniforms = maxUniforms;
     this.enabledTransformations = enabledTransformations;
     this.addInjectionSwitch = addInjectionSwitch;
-  }
-
-  public ShadingLanguageVersion getShadingLanguageVersion() {
-    return shadingLanguageVersion;
   }
 
   public boolean getSmall() {
@@ -109,7 +102,6 @@ public class GeneratorArguments {
   @Override
   public final String toString() {
     final StringBuilder sb = new StringBuilder();
-    sb.append("shadingLanguageVersion: " + shadingLanguageVersion + "\n");
     sb.append("small: " + small + "\n");
     sb.append("allowLongLoops: " + allowLongLoops + "\n");
     sb.append("singlePass: " + singlePass + "\n");
