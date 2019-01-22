@@ -107,10 +107,6 @@ public class GenerateAndRunShaders {
     fileOps.deleteDirectory(outputDir);
     fileOps.mkdir(outputDir);
 
-    final ShadingLanguageVersion shadingLanguageVersion = ns.get("webgl")
-        ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
-        : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
-
     // Queue of shader jobs to be processed.
     final BlockingQueue<ShaderJob> queue =
         new LinkedBlockingQueue<>();
@@ -141,7 +137,6 @@ public class GenerateAndRunShaders {
         shaderJobFiles,
         queue,
         referencesDir,
-        shadingLanguageVersion,
         donors,
         ns,
         fileOps));

@@ -1,4 +1,5 @@
-#version 300 es
+#version 100
+//WebGL
 
 /*
  * Copyright 2018 The GraphicsFuzz Project Authors
@@ -15,8 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-layout(location = 0) out vec4 _GLF_color;
 
 uniform vec2 injectionSwitch;
 uniform vec2 resolution;
@@ -51,5 +50,5 @@ void main()
     c.x = mod(c.x, 1.0);
     c.y = mod(c.y, 1.0);
     c.z = mod(c.z, 1.0);
-    _GLF_color = c;
+    gl_FragColor = c;
 }

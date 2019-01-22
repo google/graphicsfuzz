@@ -158,7 +158,9 @@ in this case, at `graphicsfuzz/samples/300es/squares.frag`.
 Thus, the inputs and outputs for `glsl-generate` are actually
 folders of shader jobs.
 
-We can create some shader families from our provided sample shader jobs as follows:
+### Generating some shader families
+
+We can create some shader families from our provided sample shader jobs as follows, assuming you have extracted the `graphicsfuzz.zip` file to get `graphicsfuzz/`:
 
 ```sh
 # Copy the sample shaders into the current directory:
@@ -167,16 +169,16 @@ cp -r graphicsfuzz/shaders/samples .
 # Generate several shader families from the set of sample shaders.
 # Placing the generated shaders under work/shaderfamilies will allow the server to find the shaders later.
 # Synopsis:
-# glsl-generate [options] references donors num_variants glsl_version prefix output_folder
+# glsl-generate [options] references donors num_variants prefix output_folder
 
 # Generate some GLSL version 300 es shaders.
-glsl-generate --seed 0 samples/300es samples/donors 10 "300 es" family_300es work/shaderfamilies
+glsl-generate --seed 0 samples/300es samples/donors 10 family_300es work/shaderfamilies
 
 # Generate some GLSL version 100 shaders.
-glsl-generate --seed 0 samples/100 samples/donors 10 "100" family_100 work/shaderfamilies
+glsl-generate --seed 0 samples/100 samples/donors 10 family_100 work/shaderfamilies
 
-# Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 "310 es" family_vulkan work/shaderfamilies
+# Generate some "Vulkan-compatible" GLSL version 310 es shaders that can be translated to SPIR-V for Vulkan testing.
+glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 family_vulkan work/shaderfamilies
 
 # Each line above will take approx. 1 minute, and will generate a shader family for every
 # shader in samples/300es or samples/100:

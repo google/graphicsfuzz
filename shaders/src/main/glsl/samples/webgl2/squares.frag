@@ -1,4 +1,5 @@
-#version 100
+#version 300 es
+//WebGL
 
 /*
  * Copyright 2018 The GraphicsFuzz Project Authors
@@ -15,6 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+layout(location = 0) out vec4 _GLF_color;
 
 uniform float time;
 
@@ -130,5 +133,5 @@ void main() {
     vec3 mixed;
     mixed = mix(point1, point2, vec3(0.3));
     mixed = mix(mixed, point3, vec3(0.3));
-    gl_FragColor = vec4(mixed, 1.0);
+    _GLF_color = vec4(mixed, 1.0);
 }

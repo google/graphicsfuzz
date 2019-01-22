@@ -1,4 +1,5 @@
 #version 100
+//WebGL
 
 /*
  * Copyright 2018 The GraphicsFuzz Project Authors

@@ -17,7 +17,6 @@
 package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
@@ -46,10 +45,6 @@ public final class PrepareReference {
     parser.addArgument("output")
         .help("Output shader job file (.json).")
         .type(File.class);
-
-    parser.addArgument("glsl_version")
-        .help("Version of GLSL to target.")
-        .type(String.class);
 
     // Optional arguments
     parser.addArgument("--replace_float_literals")
@@ -94,15 +89,9 @@ public final class PrepareReference {
 
     ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-    final ShadingLanguageVersion shadingLanguageVersion =
-        ns.getBoolean("webgl")
-            ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
-            : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
-
     prepareReference(
         ns.get("reference"),
         ns.get("output"),
-        shadingLanguageVersion,
         ns.get("replace_float_literals"),
         ns.get("max_uniforms"),
         ns.get("generate_uniform_bindings"),
@@ -114,7 +103,6 @@ public final class PrepareReference {
   public static void prepareReference(
       File referenceShaderJobFile,
       File outputShaderJobFile,
-      ShadingLanguageVersion shadingLanguageVersion,
       boolean replaceFloatLiterals,
       int maxUniforms,
       boolean generateUniformBindings,
@@ -125,7 +113,6 @@ public final class PrepareReference {
 
     prepareReference(
         shaderJob,
-        shadingLanguageVersion,
         replaceFloatLiterals,
         maxUniforms,
         generateUniformBindings);
@@ -134,7 +121,6 @@ public final class PrepareReference {
   }
 
   public static void prepareReference(ShaderJob shaderJob,
-                                      ShadingLanguageVersion shadingLanguageVersion,
                                       boolean replaceFloatLiterals,
                                       int maxUniforms,
                                       boolean generateUniformBindings) {
@@ -142,7 +128,6 @@ public final class PrepareReference {
     for (TranslationUnit tu : shaderJob.getShaders()) {
       prepareReferenceShader(
           tu,
-          shadingLanguageVersion,
           replaceFloatLiterals,
           shaderJob.getUniformsInfo());
     }
@@ -157,18 +142,12 @@ public final class PrepareReference {
   }
 
   private static void prepareReferenceShader(TranslationUnit tu,
-                                             ShadingLanguageVersion shadingLanguageVersion,
                                              boolean replaceFloatLiterals,
                                              UniformsInfo uniformsInfo) {
     uniformsInfo.zeroUnsetUniforms(tu);
     if (replaceFloatLiterals) {
-      FloatLiteralReplacer.replace(tu, uniformsInfo, shadingLanguageVersion);
+      FloatLiteralReplacer.replace(tu, uniformsInfo);
     }
-    // TODO: at the moment we assume during generation that shaders do not have version strings.
-    // It may turn out to be good to change this, but for now we assert it to document the
-    // decision.
-    assert !tu.hasShadingLanguageVersion();
-    tu.setShadingLanguageVersion(shadingLanguageVersion);
   }
 
 }

@@ -2,12 +2,12 @@
 
 ## Synopsis
 
-`glsl-generate [OPTIONS] DONORS REFERENCES NUM_VARIANTS GLSL_VERSION PREFIX OUTPUT_FOLDER`
+`glsl-generate [OPTIONS] REFERENCES DONORS NUM_VARIANTS PREFIX OUTPUT_FOLDER`
 
 
 ## Description
 
-glsl-generate takes two directories of GLSL shaders, `DONORS` and `REFERENCES`,
+glsl-generate takes two directories of GLSL shaders, `REFERENCES` and `DONORS`,
 and mutates the shaders in `REFERENCES` to produce families of variant
 shaders to `OUTPUT_FOLDER`.
 
@@ -26,25 +26,21 @@ See below for more details on shader jobs.
 Each output shader family will have `NUM_VARIANTS` variant shaders, plus
 the original reference shader from which they are derived.
 
-`GLSL_VERSION` specifies the version of GLSL, such as `100` or `"310 es"`.
-
 Each shader family will be output to a directory starting with `OUTPUT_FOLDER/PREFIX_*`.
 
 ## Options
 
 ```shell
-usage: glsl-generate [-h] [--seed SEED] [--webgl] [--small]
-                     [--allow-long-loops] [--disable DISABLE]
-                     [--enable-only ENABLE_ONLY]
-                     [--aggressively-complicate-control-flow]
-                     [--single-pass] [--replace-float-literals]
-                     [--generate-uniform-bindings]
-                     [--max-uniforms MAX_UNIFORMS] [--no-injection-switch]
-                     [--disable-validator] [--keep-bad-variants]
-                     [--stop-on-fail] [--verbose] [--max-bytes MAX_BYTES]
-                     [--max-factor MAX_FACTOR] [--require-license]
-                     references donors num_variants glsl_version prefix
-                     output_dir
+usage: GlslGenerate [-h] [--seed SEED] [--small] [--allow-long-loops]
+                    [--disable DISABLE] [--enable-only ENABLE_ONLY]
+                    [--aggressively-complicate-control-flow]
+                    [--single-pass] [--replace-float-literals]
+                    [--generate-uniform-bindings]
+                    [--max-uniforms MAX_UNIFORMS] [--no-injection-switch]
+                    [--disable-validator] [--keep-bad-variants]
+                    [--stop-on-fail] [--verbose] [--max-bytes MAX_BYTES]
+                    [--max-factor MAX_FACTOR] [--require-license]
+                    references donors num_variants prefix output_dir
 
 Generate a set of shader families.
 
@@ -53,15 +49,12 @@ positional arguments:
   donors                 Path to directory of donor shaders.
   num_variants           Number  of  variants  to   be  produced  for  each
                          generated shader family.
-  glsl_version           Version of GLSL to target.
   prefix                 String with which to prefix shader family names.
   output_dir             Output directory for shader families.
 
 optional arguments:
   -h, --help             show this help message and exit
   --seed SEED            Seed to initialize random number generator with.
-  --webgl                Restrict to  WebGL-compatible  features. (default:
-                         false)
   --small                Try to generate small shaders. (default: false)
   --allow-long-loops     During live  code  injection,  care  is  taken  by
                          default to avoid loops with  very long or infinite
@@ -106,75 +99,12 @@ optional arguments:
   --require-license      Require a license  file  to  be provided alongside
                          the  reference  and   pass   details   through  to
                          generated shaders. (default: false)
-
 ```
 
 ## Example
 
-Assuming you have extracted the `graphicsfuzz.zip` file to get `graphicsfuzz/`:
-
-```sh
-# Copy the sample shaders into the current directory:
-cp -r graphicsfuzz/shaders/samples samples
-
-# Create a work directory to store our generated shader families.
-# The directory structure allows glsl-server
-# to find the shaders later.
-mkdir -p work/shaderfamilies
-
-# Generate several shader families from the set of sample shaders.
-# Synopsis:
-# glsl-generate [options] donors references num_variants glsl_version prefix output_folder
-
-# Generate some GLSL version 300 es shaders.
-glsl-generate --seed 0 samples/donors samples/300es 10 "300 es" family_300es work/shaderfamilies
-
-# Generate some GLSL version 100 shaders.
-glsl-generate --seed 0 samples/donors samples/100 10 "100" family_100 work/shaderfamilies
-
-# Generate some "Vulkan-compatible" GLSL version 300 es shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --seed 0 --generate_uniform_bindings --max_uniforms 10 samples/donors samples/310es 10 "310 es" family_vulkan work/shaderfamilies
-
-# Each line above will take approx. 1 minute, and will generate a shader family for every
-# shader in samples/300es or samples/100:
-ls work/shaderfamilies
-
-# Output:
-
-# family_100_bubblesort_flag
-# family_100_mandelbrot_blurry
-# family_100_squares
-# family_100_colorgrid_modulo
-# family_100_prefix_sum
-
-# family_300es_bubblesort_flag
-# family_300es_mandelbrot_blurry
-# family_300es_squares
-# family_300es_colorgrid_modulo
-# family_300es_prefix_sum
-
-# family_vulkan_bubblesort_flag
-# family_vulkan_mandelbrot_blurry
-# family_vulkan_squares
-# family_vulkan_colorgrid_modulo
-# family_vulkan_prefix_sum
-```
-
-For this example, each shader family will contain 11 shaders;
-1 for the reference shader, and 10 for the variant shaders:
-
-```sh
-ls work/shaderfamilies/family_100_bubblesort_flag/
-
-# Output:
-
-# infolog.json      variant_001.json  variant_004.json  variant_007.json
-# reference.frag    variant_002.frag  variant_005.frag  variant_008.frag
-# reference.json    variant_002.json  variant_005.json  variant_008.json
-# variant_000.frag  variant_003.frag  variant_006.frag  variant_009.frag
-# variant_000.json  variant_003.json  variant_006.json  variant_009.json
-# variant_001.frag  variant_004.frag  variant_007.frag
-```
+See [the glsl-fuzz walkthrough](glsl-fuzz-walkthrough.md#generating-some-shader-families)
+for a detailed guide on how to generate some shader families.
 
 ## Shader jobs
 
