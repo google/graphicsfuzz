@@ -43,7 +43,7 @@ class RunInfo(object):
         self.seed = 0
         # Only replace a specific shader handle in the trace.
         self.specific_handle = None  # type: str
-        # Only replace a specific variant index in the trace.
+        # Only use a specific variant index.
         self.specific_variant_index = None  # type: int
         self.gapis_process = None  # type: subprocess.Popen
         self.get_screenshots = False
@@ -254,13 +254,22 @@ def fuzz_trace(info: RunInfo):
 
 def go(argv):
 
+    # Combine formatters using multiple inheritance.
+    class ArgParseFormatter(argparse.RawDescriptionHelpFormatter,
+                            argparse.ArgumentDefaultsHelpFormatter):
+        pass
+
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="Fuzz traces:\n"
-                    "For now, ensure there exists:\n"
+        formatter_class=ArgParseFormatter,
+        description="Fuzz traces. Ensure there exists:\n\n"
                     " - capture.gfxtrace\n"
                     " - donors/\n\n"
-                    "Alternatively, import this file and do: fuzz_shaders(ri)\n")
+                    "Alternatively, do:\n\n"
+                    "ipython3\n"
+                    "from gapidfuzz import *\n"
+                    "# optional: modify parameters\n"
+                    "ri.get_screenshots = True\n"
+                    "fuzz_shaders(ri)\n")
 
     parser.add_argument("-capture_file",
                         type=str,
