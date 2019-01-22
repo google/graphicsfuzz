@@ -116,7 +116,7 @@ def run_gapit_screenshot_file(info: RunInfo):
 
 
 def run_gapit_screenshot_capture_id(info: RunInfo, capture_id: str, out: str):
-    res = call([
+    call([
         nz(info.gapit),
         'screenshot',
         '-gapis-port='+nz(info.gapis_port),
@@ -155,20 +155,15 @@ def run_gapis(info: RunInfo):
 
 def process_shaders(info: RunInfo):
     for f in Path(info.shaders_dir).iterdir():  # type: Path
-        # TODO: change this once gapit outputs shaders with .frag extension.
-        if f.name.endswith(".Fragment"):
-            frag_file = f.with_name(remove_end(f.name, ".Fragment") + ".frag")
-            json_file = f.with_name(remove_end(f.name, ".Fragment") + ".json")
-            print(frag_file)
-            f.rename(frag_file)
+        if f.name.endswith(".frag"):
+            json_file = f.with_name(f.stem + ".json")
             with io.open(str(json_file), "w", encoding='utf-8') as json:
                 json.write("{}\n")
             print(json_file)
 
 
 def fuzz_shaders(info: RunInfo):
-
-    # glsl-generate --seed 0 references donors 10 100 test out --no-injection-switch
+    # glsl-generate --seed 0 references donors 10 100 prefix out --no-injection-switch
     res = glsl_generate.go([
         "--seed", nz(str(info.seed)),
         nz(info.shaders_dir),
@@ -184,6 +179,9 @@ def fuzz_shaders(info: RunInfo):
 
 
 def create_traces(info: RunInfo):
+
+    # Create map from shader handle to list of variant paths.
+    # E.g. "Shader<001><002>" -> ["path_to/variant_001.frag", "path_to/variant_002.frag]
     handle_to_variant_list = {}  # type: typing.Dict[str, typing.List[str]]
     for family in Path(info.families_dir).iterdir():  # type: Path
         if family.name.startswith("family_"):
@@ -191,16 +189,17 @@ def create_traces(info: RunInfo):
             if info.specific_handle is not None and info.specific_handle != shader_handle:
                 continue
             variant_shaders = list(family.glob("variant_*.frag"))
-            # Prepend directory:
+            # to string
             variant_shaders = [str(v) for v in variant_shaders]
             handle_to_variant_list[shader_handle] = variant_shaders
 
+    # For each variant index i, create capture_i.gfxtrace with all shaders replaced with variant i.
     for i in range(0, info.num_variants):
         if info.specific_variant_index is not None and info.specific_variant_index != i:
             continue
         output_prefix = info.output_capture_prefix + '{:03d}'.format(i)
-        output_file =  output_prefix + ".gfxtrace"
-        output_screenshot =  output_prefix + ".png"
+        output_file = output_prefix + ".gfxtrace"
+        output_screenshot = output_prefix + ".png"
         # For each shader handle, replace the shader with variant i.
         # After each replacement, we get a new trace, so we overwrite the capture id.
         capture_id = nz(info.orig_capture_id)
@@ -300,4 +299,3 @@ def go(argv):
 
 if __name__ == "__main__":
     go(sys.argv[1:])
-
