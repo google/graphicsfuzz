@@ -24,6 +24,7 @@ public class UIntConstantExpr extends ConstantExpr {
   private String value;
 
   public UIntConstantExpr(String text) {
+    assert text.endsWith("u");
     this.value = text;
   }
 
@@ -36,6 +37,16 @@ public class UIntConstantExpr extends ConstantExpr {
     return value;
   }
 
+  public int getNumericValue() {
+    if (isOctal()) {
+      return Integer.parseInt(getValueWithoutSuffix(), 8);
+    }
+    if (isHex()) {
+      return Integer.parseInt(getValueWithoutSuffix().substring("0x".length()), 16);
+    }
+    return Integer.parseInt(getValueWithoutSuffix());
+  }
+
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitUIntConstantExpr(this);
@@ -44,6 +55,20 @@ public class UIntConstantExpr extends ConstantExpr {
   @Override
   public UIntConstantExpr clone() {
     return new UIntConstantExpr(value);
+  }
+
+  private String getValueWithoutSuffix() {
+    assert value.endsWith("u");
+    return value.substring(0, value.length() - 1);
+  }
+
+  private boolean isOctal() {
+    return getValueWithoutSuffix().startsWith("0") && getValueWithoutSuffix().length() > 1
+        && !isHex();
+  }
+
+  private boolean isHex() {
+    return getValueWithoutSuffix().startsWith("0x");
   }
 
 }
