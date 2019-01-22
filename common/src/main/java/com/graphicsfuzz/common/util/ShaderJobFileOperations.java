@@ -757,6 +757,18 @@ public class ShaderJobFileOperations {
     FileUtils.writeStringToFile(file, contents, Charset.defaultCharset());
   }
 
+  /**
+   * Provides an in-memory representation of the image associated with a shader job result.
+   * Assumes that an image file is present as part of the shader job result.
+   * @param shaderJobResultFile The shader job for which a result image is to be processed.
+   * @return In-memory representation of image.
+   * @throws IOException on absence of an image file or failing to read the file.
+   */
+  public BufferedImage getBufferedImageFromShaderJobResultFile(File shaderJobResultFile)
+      throws IOException {
+    return ImageIO.read(getUnderlyingImageFileFromShaderJobResultFile(shaderJobResultFile));
+  }
+
   private static void assertIsShaderJobFile(File shaderJobFile) {
     if (!shaderJobFile.getName().endsWith(".json")
         || shaderJobFile.getName().endsWith(".info.json")) {

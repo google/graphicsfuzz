@@ -17,4 +17,20 @@
 package com.graphicsfuzz.common.ast.visitors;
 
 public class AbortVisitationException extends RuntimeException {
+
+  /**
+   * Simple form of the exception, with no message.
+   */
+  public AbortVisitationException() {
+
+  }
+
+  /**
+   * Provide a message to explain why visitation was aborted.
+   * @param message A message providing details of the abort.
+   */
+  public AbortVisitationException(String message) {
+    super(message);
+  }
+
 }
