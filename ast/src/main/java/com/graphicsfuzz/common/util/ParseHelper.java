@@ -22,6 +22,9 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.parser.GLSLLexer;
 import com.graphicsfuzz.parser.GLSLParser;
 import com.graphicsfuzz.parser.GLSLParser.Translation_unitContext;
+import com.graphicsfuzz.util.ExecHelper;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolPaths;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -53,20 +56,20 @@ public class ParseHelper {
   public static final String END_OF_GRAPHICSFUZZ_DEFINES = "// END OF GENERATED HEADER";
 
   public static Optional<TranslationUnit> maybeParseShader(File shader)
-      throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     return shader.isFile()
         ? Optional.of(parse(shader))
         : Optional.empty();
   }
 
   public static synchronized TranslationUnit parse(File file)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     return parseInputStream(new ByteArrayInputStream(FileUtils.readFileToByteArray(file)),
         ShaderKind.fromExtension(FilenameUtils.getExtension(file.getName())));
   }
 
   public static synchronized TranslationUnit parse(String string, ShaderKind shaderKind)
-      throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     return parseInputStream(new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8)),
         shaderKind);
   }
@@ -80,14 +83,18 @@ public class ParseHelper {
    * @throws ParseTimeoutException Thrown if parsing takes to long.
    */
   public static synchronized TranslationUnit parse(String string)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     return parse(string, ShaderKind.FRAGMENT);
   }
 
   private static synchronized TranslationUnit parseInputStream(InputStream input,
                                                                ShaderKind shaderKind)
-        throws IOException, ParseTimeoutException {
-    final InputStream strippedInput = stripGraphicsFuzzDefines(input);
+      throws IOException, ParseTimeoutException, InterruptedException {
+
+    // Strip special GraphicsFuzz defines and run preprocessor
+    final InputStream preprocessedInput = preprocess(stripGraphicsFuzzDefines(input), shaderKind);
+
+    // Parse the preprocessed shader
     final int timeLimit = 60;
     ParseTreeListener listener =
         new TimeoutParseTreeListener(
@@ -95,17 +102,33 @@ public class ParseHelper {
     Translation_unitContext ctx;
     try {
       try {
-        strippedInput.reset();
-        ctx = tryFastParse(strippedInput, listener);
+        ctx = tryFastParse(preprocessedInput, listener);
       } catch (ParseCancellationException exception) {
-        strippedInput.reset();
-        ctx = slowParse(strippedInput, listener);
+        preprocessedInput.reset();
+        ctx = slowParse(preprocessedInput, listener);
       }
     } catch (ParseTimeoutRuntimeException exception) {
       throw new ParseTimeoutException(exception);
     }
 
     return AstBuilder.getTranslationUnit(ctx, shaderKind);
+  }
+
+  private static InputStream preprocess(InputStream inputStream, ShaderKind shaderKind)
+      throws IOException,
+      InterruptedException {
+    // Preprocess the shader using glslangValidator
+    final ExecResult preprocessorResult = new ExecHelper().exec(ExecHelper.RedirectType.TO_BUFFER,
+        null,
+        false,
+        inputStream,
+        ToolPaths.glslangValidator(), "-E", "--stdin", "-S", shaderKind.getFileExtension());
+    if (preprocessorResult.res != 0) {
+      throw new RuntimeException("Preprocessing failed with exit code " + preprocessorResult.res
+          + ": " + preprocessorResult.stderr);
+    }
+    return new ByteArrayInputStream(preprocessorResult.stdout
+        .toString().getBytes(StandardCharsets.UTF_8));
   }
 
   private static Translation_unitContext tryFastParse(
@@ -164,7 +187,6 @@ public class ParseHelper {
       return inputStream;
     }
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    inputStream.reset();
     try (
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(outputStream));
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
@@ -194,18 +216,20 @@ public class ParseHelper {
 
   private static boolean containsEndOfGraphicsFuzzDefines(InputStream inputStream)
       throws IOException {
-    BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-    try {
+    boolean result = false;
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
       String line;
       while ((line = br.readLine()) != null) {
         if (line.trim().startsWith(END_OF_GRAPHICSFUZZ_DEFINES)) {
-          return true;
+          result = true;
+          break;
         }
       }
-      return false;
-    } finally {
-      br.close();
     }
+    // Reset the input stream so that we can consume it again once we know the answer to the
+    // question of whether the GraphicsFuzz defines are present.
+    inputStream.reset();
+    return result;
   }
 
 }

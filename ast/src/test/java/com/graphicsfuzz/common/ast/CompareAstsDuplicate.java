@@ -32,7 +32,7 @@ import java.io.IOException;
 public class CompareAstsDuplicate {
 
   public static void assertEqualAsts(String first, String second)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     assertEquals(
           PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first)),
           PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second))
@@ -40,12 +40,12 @@ public class CompareAstsDuplicate {
   }
 
   public static void assertEqualAsts(String string, TranslationUnit tu)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     assertEqualAsts(string, PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
   public static void assertEqualAsts(TranslationUnit first, TranslationUnit second)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     assertEqualAsts(PrettyPrinterVisitor.prettyPrintAsString(first),
           PrettyPrinterVisitor.prettyPrintAsString(second));
   }

@@ -32,7 +32,7 @@ public class TruncateLoopsTest {
       "int x = 10"};
 
   @Test
-  public void intConstantsTest() throws IOException, ParseTimeoutException {
+  public void intConstantsTest() throws Exception {
     final String programBody =
         "void main() {"
             + "int u = 10;"
@@ -58,7 +58,8 @@ public class TruncateLoopsTest {
     }
   }
 
-  private void testProgram(String program, boolean isSane) throws IOException, ParseTimeoutException {
+  private void testProgram(String program, boolean isSane) throws IOException,
+      ParseTimeoutException, InterruptedException {
     TranslationUnit tu =  ParseHelper.parse(program);
     new TruncateLoops(30, "webGL_", tu, true);
     if(isSane) {
@@ -72,7 +73,7 @@ public class TruncateLoopsTest {
   }
 
   private void assertProgramsNotEqual(String program, TranslationUnit otherProgram)
-      throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     assert !PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program))
         .equals(PrettyPrinterVisitor.prettyPrintAsString(otherProgram));
   }

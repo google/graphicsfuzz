@@ -35,7 +35,8 @@ public class Simplifier {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Simplifier.class);
 
-  public static void main(String[] args) throws IOException, ParseTimeoutException {
+  public static void main(String[] args) throws IOException, ParseTimeoutException,
+      InterruptedException {
     if (args.length != 1) {
       System.err.println("Usage: Simplifier <file>.json");
       System.exit(1);

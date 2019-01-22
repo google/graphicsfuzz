@@ -89,7 +89,7 @@ public class ReducerBugPoint {
 
 
   public static void main(String[] args)
-      throws IOException, ParseTimeoutException, ArgumentParserException {
+      throws IOException, ParseTimeoutException, ArgumentParserException, InterruptedException {
 
     final Namespace ns = parse(args);
 

@@ -18,9 +18,9 @@ package com.graphicsfuzz.generator;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.UniformsInfo;
-import com.graphicsfuzz.generator.util.TestingHelpers;
 import org.junit.Test;
 
 public class FloatLiteralReplacerTest {
@@ -47,7 +47,7 @@ public class FloatLiteralReplacerTest {
         + "}"
         + "void main() { }";
 
-    TestingHelpers.assertShadersMatch(expectedProgram, tu);
+    CompareAsts.assertEqualAsts(expectedProgram, tu);
 
   }
 
@@ -72,7 +72,7 @@ public class FloatLiteralReplacerTest {
         + "}"
         + "void main() { }";
 
-    TestingHelpers.assertShadersMatch(expectedProgram, tu);
+    CompareAsts.assertEqualAsts(expectedProgram, tu);
 
   }
 

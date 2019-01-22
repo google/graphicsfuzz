@@ -25,7 +25,7 @@ import java.io.IOException;
 public class CompareAsts {
 
   public static void assertEqualAsts(String first, String second)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     assertEquals(
           PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first)),
           PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second))
@@ -33,25 +33,25 @@ public class CompareAsts {
   }
 
   public static void assertEqualAsts(String string, TranslationUnit tu)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     assertEqualAsts(string, PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
   public static void assertEqualAsts(TranslationUnit first, TranslationUnit second)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     assertEqualAsts(PrettyPrinterVisitor.prettyPrintAsString(first),
           PrettyPrinterVisitor.prettyPrintAsString(second));
   }
 
   public static boolean isEqualAsts(String first, String second) throws IOException,
-      ParseTimeoutException {
+      ParseTimeoutException, InterruptedException {
     return PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first))
         .equals(
             PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second)));
   }
 
   public static boolean isEqualAsts(String first, TranslationUnit second) throws IOException,
-      ParseTimeoutException {
+      ParseTimeoutException, InterruptedException {
     return isEqualAsts(first, PrettyPrinterVisitor.prettyPrintAsString(second));
   }
 

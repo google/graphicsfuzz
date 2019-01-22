@@ -19,10 +19,8 @@ package com.graphicsfuzz.generator.transformation.vectorizer;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CannedRandom;
+import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
-import com.graphicsfuzz.common.util.ParseTimeoutException;
-import com.graphicsfuzz.generator.util.TestingHelpers;
-import java.io.IOException;
 import java.util.List;
 import org.junit.Test;
 
@@ -31,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 public class VectorizationOpportunitiesTest {
 
   @Test
-  public void testVectorizationOpportunities() throws IOException, ParseTimeoutException {
+  public void testVectorizationOpportunities() throws Exception {
     final String program =
             "vec3 f()\n"
             + "{\n"
@@ -60,7 +58,7 @@ public class VectorizationOpportunitiesTest {
             new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
     assertEquals(1, ops.size());
     ops.get(0).apply();
-    TestingHelpers.assertShadersMatch(expected, tu);
+    CompareAsts.assertEqualAsts(expected, tu);
   }
 
   @Test
@@ -90,7 +88,7 @@ public class VectorizationOpportunitiesTest {
             new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
     assertEquals(1, ops.size());
     ops.get(0).apply();
-    TestingHelpers.assertShadersMatch(expected, tu);
+    CompareAsts.assertEqualAsts(expected, tu);
 
   }
 
@@ -150,7 +148,7 @@ public class VectorizationOpportunitiesTest {
   }
 
   @Test
-  public void testVectorizationOpportunitiesNested() throws IOException, ParseTimeoutException {
+  public void testVectorizationOpportunitiesNested() throws Exception {
     final String program =
           "float f()\n"
                 + "{\n"
@@ -214,7 +212,7 @@ public class VectorizationOpportunitiesTest {
                 new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
     assertEquals(1, ops.size());
     ops.get(0).apply();
-    TestingHelpers.assertShadersMatch(expectedFirst, tu);
+    CompareAsts.assertEqualAsts(expectedFirst, tu);
 
     // Now do a nested application
     ops =
@@ -222,9 +220,9 @@ public class VectorizationOpportunitiesTest {
                 new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
     assertEquals(2, ops.size());
     ops.get(0).apply();
-    TestingHelpers.assertShadersMatch(expectedSecond, tu);
+    CompareAsts.assertEqualAsts(expectedSecond, tu);
     ops.get(1).apply();
-    TestingHelpers.assertShadersMatch(expectedThird, tu);
+    CompareAsts.assertEqualAsts(expectedThird, tu);
 
   }
 

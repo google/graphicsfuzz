@@ -26,7 +26,8 @@ import java.io.IOException;
 public class ReportShaderSize {
 
 
-  public static void main(String[] args) throws IOException, ParseTimeoutException {
+  public static void main(String[] args) throws IOException, ParseTimeoutException,
+      InterruptedException {
     if (args.length != 1) {
       System.err.println("Usage: ReportShaderSize <file>");
       System.exit(1);

@@ -51,7 +51,7 @@ import org.junit.Test;
 public class InlineStructifiedFieldReductionOpportunityTest {
 
   @Test
-  public void applyReduction() throws IOException, ParseTimeoutException {
+  public void applyReduction() throws Exception {
 
     final String innerStructTypeName = makeStructName(0);
     final StructDefinitionType innerStructDefinitionType = new StructDefinitionType(new StructNameType(innerStructTypeName),

@@ -145,7 +145,8 @@ public class ReducerUnitTest {
 
   private TranslationUnit generateSizeLimitedShader(File fragmentShader,
       List<ITransformationSupplier> transformations, IRandom generator,
-      ShadingLanguageVersion shadingLanguageVersion) throws IOException, ParseTimeoutException {
+      ShadingLanguageVersion shadingLanguageVersion) throws IOException, ParseTimeoutException,
+      InterruptedException {
     while (true) {
       List<ITransformationSupplier> transformationsCopy = new ArrayList<>();
       transformationsCopy.addAll(transformations);
@@ -373,7 +374,7 @@ public class ReducerUnitTest {
   }
 
   private String runReductionOnShader(File shaderJobFile, IFileJudge fileJudge)
-        throws IOException, ParseTimeoutException {
+      throws IOException, ParseTimeoutException, InterruptedException {
     final String shaderJobShortName = FilenameUtils.removeExtension(shaderJobFile.getName());
     final ShadingLanguageVersion version =
         ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(
