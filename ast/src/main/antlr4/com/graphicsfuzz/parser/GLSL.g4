@@ -748,7 +748,7 @@ VARYING: 'varying' ;
 READONLY: 'readonly' ;
 WRITEONLY: 'writeonly' ;
 LAYOUT_TOK: 'layout' ; // REVISIT
-UINTCONSTANT: (DECIMAL_DIGITS | OCTAL_DIGITS | HEX_DIGITS) + 'u';
+UINTCONSTANT: (DECIMAL_DIGITS | OCTAL_DIGITS | HEX_DIGITS) 'u';
 ROW_MAJOR: 'row_major' ;
 PACKED_TOK: 'packed' ;
 FLOATCONSTANT: ((DIGIT+ ('.' DIGIT*)?) | ('.' DIGIT+)) (('e' | 'E') ('+' | '-')? DIGIT*)?; // REVISIT
