@@ -180,7 +180,6 @@ def fuzz_shaders(info: RunInfo):
         nz(info.shaders_dir),
         nz(info.donors),
         nz(str(info.num_variants)),
-        "100",
         "family",
         nz(info.families_dir),
         "--no-injection-switch",
