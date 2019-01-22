@@ -37,7 +37,7 @@ public class FloatLiteralReplacerTest {
     final TranslationUnit tu = ParseHelper.parse(program);
 
     final UniformsInfo uniformsInfo = new UniformsInfo();
-    FloatLiteralReplacer.replace(tu, uniformsInfo, ShadingLanguageVersion.ESSL_100);
+    FloatLiteralReplacer.replace(tu, uniformsInfo);
 
     final String expectedProgram = ""
         + "uniform float _FLOAT_CONST[1];"
@@ -53,7 +53,7 @@ public class FloatLiteralReplacerTest {
 
   @Test
   public void testNothingToReplace() throws Exception {
-    final String program = ""
+    final String program = "#version 130\n"
         + "int foo(vec3 p, vec2 t) {"
         + "  ivec2 q = ivec2(0);"
         + "  return 0;"
@@ -63,9 +63,9 @@ public class FloatLiteralReplacerTest {
     final TranslationUnit tu = ParseHelper.parse(program);
 
     final UniformsInfo uniformsInfo = new UniformsInfo();
-    FloatLiteralReplacer.replace(tu, uniformsInfo, ShadingLanguageVersion.GLSL_130);
+    FloatLiteralReplacer.replace(tu, uniformsInfo);
 
-    final String expectedProgram = ""
+    final String expectedProgram = "#version 130\n"
         + "int foo(vec3 p, vec2 t) {"
         + "  ivec2 q = ivec2(0);"
         + "  return 0;"

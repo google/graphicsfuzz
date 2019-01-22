@@ -43,21 +43,19 @@ public class GenerateShaderFamilyTest {
     final String samplesSubdir = "100";
     final String referenceShaderName = "bubblesort_flag";
     final int numVariants = 3;
-    final String glslVersionString = "100";
     int seed = 0;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--single-pass"));
+        seed, Arrays.asList("--stop-on-fail", "--single-pass"));
   }
 
   @Test
   public void testGenerateSmallWebGL1ShaderFamily() throws Exception {
-    final String samplesSubdir = "100";
+    final String samplesSubdir = "webgl1";
     final String referenceShaderName = "colorgrid_modulo";
     final int numVariants = 3;
-    final String glslVersionString = "100";
     int seed = 1;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl", "--single-pass"));
+        seed, Arrays.asList("--stop-on-fail", "--single-pass"));
   }
 
   @Test
@@ -65,21 +63,19 @@ public class GenerateShaderFamilyTest {
     final String samplesSubdir = "300es";
     final String referenceShaderName = "mandelbrot_blurry";
     final int numVariants = 3;
-    final String glslVersionString = "300 es";
     int seed = 2;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--single-pass"));
+        seed, Arrays.asList("--stop-on-fail", "--single-pass"));
   }
 
   @Test
   public void testGenerateSmallWebGL2ShaderFamily() throws Exception {
-    final String samplesSubdir = "300es";
+    final String samplesSubdir = "webgl2";
     final String referenceShaderName = "prefix_sum";
     final int numVariants = 3;
-    final String glslVersionString = "300 es";
     int seed = 3;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl", "--single-pass"));
+        seed, Arrays.asList("--stop-on-fail", "--single-pass"));
   }
 
   @Test
@@ -87,29 +83,11 @@ public class GenerateShaderFamilyTest {
     final String samplesSubdir = "310es";
     final String referenceShaderName = "prefix_sum";
     final int numVariants = 3;
-    final String glslVersionString = "310 es";
     int seed = 4;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
+        seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
             String.valueOf(10),
             "--generate-uniform-bindings", "--single-pass"));
-  }
-
-  @Test
-  public void testExceptionWhenTryingToGenerateWebGL310EsShaderFamily() throws Exception {
-    final String samplesSubdir = "310es";
-    final String referenceShaderName = "prefix_sum";
-    final int numVariants = 3;
-    final String glslVersionString = "310 es";
-    int seed = 0;
-    try {
-      checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-          glslVersionString, seed, Collections.singletonList("--webgl"));
-      fail("Runtime exception expected");
-    } catch (RuntimeException expected) {
-      // Check that we get a WebGL-related runtime exception.
-      assertTrue(expected.getMessage().contains("WebGL"));
-    }
   }
 
   @Test
@@ -117,23 +95,21 @@ public class GenerateShaderFamilyTest {
     final String samplesSubdir = "100";
     final String referenceShaderName = "squares";
     final int numVariants = 3;
-    final String glslVersionString = "100";
     int seed = 5;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail"));
+        seed, Arrays.asList("--stop-on-fail"));
   }
 
   // TODO(172)
   @Ignore
   @Test
   public void testGenerateSmallWebGL1ShaderFamilyMultiPass() throws Exception {
-    final String samplesSubdir = "100";
+    final String samplesSubdir = "webgl1";
     final String referenceShaderName = "mandelbrot_blurry";
     final int numVariants = 3;
-    final String glslVersionString = "100";
     int seed = 6;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl"));
+        seed, Arrays.asList("--stop-on-fail"));
   }
 
   @Test
@@ -141,21 +117,19 @@ public class GenerateShaderFamilyTest {
     final String samplesSubdir = "300es";
     final String referenceShaderName = "colorgrid_modulo";
     final int numVariants = 3;
-    final String glslVersionString = "300 es";
     int seed = 7;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail"));
+        seed, Arrays.asList("--stop-on-fail"));
   }
 
   @Test
   public void testGenerateSmallWebGL2ShaderFamilyMultiPass() throws Exception {
-    final String samplesSubdir = "300es";
+    final String samplesSubdir = "webgl2";
     final String referenceShaderName = "prefix_sum";
     final int numVariants = 3;
-    final String glslVersionString = "300 es";
     int seed = 8;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--webgl"));
+        seed, Arrays.asList("--stop-on-fail"));
   }
 
   @Test
@@ -163,16 +137,15 @@ public class GenerateShaderFamilyTest {
     final String samplesSubdir = "310es";
     final String referenceShaderName = "bubblesort_flag";
     final int numVariants = 3;
-    final String glslVersionString = "310 es";
     int seed = 9;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        glslVersionString, seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
+        seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
             String.valueOf(10),
             "--generate-uniform-bindings"));
   }
 
   private void checkShaderFamilyGeneration(String samplesSubdir, String referenceShaderName,
-                                          int numVariants, String glslVersionString, int seed,
+                                          int numVariants, int seed,
                                           List<String> extraOptions) throws ArgumentParserException,
       InterruptedException, IOException, ParseTimeoutException {
     final String reference = Paths.get(ToolPaths.getShadersDirectory(), "samples",
@@ -186,7 +159,6 @@ public class GenerateShaderFamilyTest {
     options.addAll(Arrays.asList(
         reference,
         donors,
-        glslVersionString,
         temporaryFolder.getRoot().getAbsolutePath(),
         "--seed",
         String.valueOf(seed),

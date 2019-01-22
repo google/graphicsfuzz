@@ -35,10 +35,12 @@ public class PrepareReferenceTest {
   public void testPreparedReferenceIsValid() throws Exception {
 
     final String json = "{ }";
-    final String vert = "layout(location=0) in highp vec4 a_position;\n" +
-        "void main() { gl_Position = a_position; }";
-    final String frag = "layout(location=0) out highp vec4 _GLF_color;\n" +
-        "void main() { _GLF_color = vec4(1.0, 0.0, 0.0, 1.0); }";
+    final String vert = "#version 300 es\n"
+        + "layout(location=0) in highp vec4 a_position;\n"
+        + "void main() { gl_Position = a_position; }";
+    final String frag = "#version 300 es\n"
+        + "layout(location=0) out highp vec4 _GLF_color;\n"
+        + "void main() { _GLF_color = vec4(1.0, 0.0, 0.0, 1.0); }";
 
     final File jsonFile = temporaryFolder.newFile("shader.json");
     final File vertFile = temporaryFolder.newFile("shader.vert");
@@ -53,8 +55,7 @@ public class PrepareReferenceTest {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
     PrepareReference.mainHelper(new String[] { jsonFile.getAbsolutePath(),
-        output.getAbsolutePath(),
-        "310 es" });
+        output.getAbsolutePath() });
 
 
     assertTrue(fileOps.areShadersValid(output, false));

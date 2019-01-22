@@ -61,10 +61,6 @@ public class GenerateShaderFamily {
         .help("Path to directory of donor shaders.")
         .type(File.class);
 
-    parser.addArgument("glsl-version")
-        .help("Version of GLSL to target.")
-        .type(String.class);
-
     parser.addArgument("output-dir")
         .help("Directory in which to store output shaders.")
         .type(File.class);
@@ -119,11 +115,9 @@ public class GenerateShaderFamily {
 
     Namespace ns = parse(args);
 
-    final String glslVersion = ns.getString("glsl_version");
     final File referenceShaderJob = ns.get("reference_shader_job");
     final File donorsDir = ns.get("donors");
     final File outputDir = ns.get("output_dir") == null ? new File(".") : ns.get("output_dir");
-    final boolean webgl = ns.getBoolean("webgl");
     final boolean verbose = ns.getBoolean("verbose");
     final boolean disableValidator = ns.getBoolean("disable_validator");
     final boolean writeProbabilities = ns.getBoolean("write_probabilities");
@@ -136,12 +130,6 @@ public class GenerateShaderFamily {
     Optional<Float> maxFactor = ns.get("max_factor") == null ? Optional.empty() :
         Optional.of(ns.getFloat("max_factor"));
     final GeneratorArguments generatorArguments = Generate.getGeneratorArguments(ns);
-
-    if (webgl && !ShadingLanguageVersion.isWebGlCompatible(glslVersion)) {
-      // Check immediately that if --webgl has been passed, it is possible to get the given
-      // WebGL shading language version as a string.
-      throw new RuntimeException("Given GLSL version " + glslVersion + " is not WebGL-compatible.");
-    }
 
     if (verbose) {
       LOGGER.info("Using seed " + seed);
@@ -164,7 +152,6 @@ public class GenerateShaderFamily {
     final File preparedReferenceShaderJob = new File(outputDir, "reference.json");
     PrepareReference.prepareReference(referenceShaderJob,
         preparedReferenceShaderJob,
-        ShadingLanguageVersion.fromVersionString(glslVersion),
         generatorArguments.getReplaceFloatLiterals(),
         // We subtract 1 because we need to be able to add injectionSwitch
         generatorArguments.getMaxUniforms() - 1,

@@ -40,7 +40,7 @@ public class ConstCleanerTest {
 
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
+    ConstCleaner.clean(tu);
 
     CompareAsts.assertEqualAsts(expectedProgram, tu);
 
@@ -49,14 +49,16 @@ public class ConstCleanerTest {
   @Test
   public void testCleanLarger() throws Exception {
     final String program =
-        "void main() {"
+        "#version 440\n"
+            + "void main() {"
             + "  int x;"
             + "  const int y = x + 2;"
             + "  const int z = 2 + y;"
             + "}";
 
     final String expectedProgram =
-        "void main() {"
+        "#version 440\n"
+            + "void main() {"
             + "  int x;"
             + "  int y = x + 2;"
             + "  int z = 2 + y;"
@@ -64,7 +66,7 @@ public class ConstCleanerTest {
 
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    ConstCleaner.clean(tu, ShadingLanguageVersion.GLSL_440);
+    ConstCleaner.clean(tu);
 
     CompareAsts.assertEqualAsts(expectedProgram, tu);
 
@@ -87,7 +89,7 @@ public class ConstCleanerTest {
 
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
+    ConstCleaner.clean(tu);
 
     CompareAsts.assertEqualAsts(expectedProgram, tu);
 
@@ -110,7 +112,7 @@ public class ConstCleanerTest {
 
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
+    ConstCleaner.clean(tu);
 
     CompareAsts.assertEqualAsts(expectedProgram, tu);
 
@@ -118,13 +120,13 @@ public class ConstCleanerTest {
 
   @Test
   public void testCleanWithGlobalsGLSL440() throws Exception {
-    final String program = ""
+    final String program = "#version 440\n"
         + "int g1;"
         + "int g2 = g1;"
         + "void main() {"
         + "}";
 
-    final String expectedProgram = ""
+    final String expectedProgram = "#version 440\n"
         + "int g1;"
         + "int g2 = g1;"
         + "void main() {"
@@ -132,7 +134,7 @@ public class ConstCleanerTest {
 
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    ConstCleaner.clean(tu, ShadingLanguageVersion.GLSL_440);
+    ConstCleaner.clean(tu);
 
     CompareAsts.assertEqualAsts(expectedProgram, tu);
 
@@ -157,7 +159,7 @@ public class ConstCleanerTest {
 
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
+    ConstCleaner.clean(tu);
 
     CompareAsts.assertEqualAsts(expectedProgram, tu);
 
@@ -175,7 +177,7 @@ public class ConstCleanerTest {
 
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    ConstCleaner.clean(tu, ShadingLanguageVersion.ESSL_100);
+    ConstCleaner.clean(tu);
 
     CompareAsts.assertEqualAsts(program, tu);
 

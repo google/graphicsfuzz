@@ -44,15 +44,11 @@ public interface ShadingLanguageVersion {
   ShadingLanguageVersion WEBGL_SL = WebGlSl.INSTANCE;
   ShadingLanguageVersion WEBGL2_SL = WebGl2Sl.INSTANCE;
 
-  static ShadingLanguageVersion getGlslVersionFromFirstTwoLines(String[] lines)
-        throws IOException {
+  static ShadingLanguageVersion getGlslVersionFromFirstTwoLines(String[] lines) {
     String[] components = lines[0].trim().split(" ");
     if (!lines[0].startsWith("#version") || components.length < 2) {
-      final String message = "File must specify a version on the first line, using #version";
-      System.err
-            .println(message);
-      throw new RuntimeException(
-            message);
+      // The default shading language version is 100 es.
+      return ESSL_100;
     }
     String version = components[1];
     for (int i = 2; i < components.length; i++) {

@@ -107,10 +107,6 @@ public class Generate {
           .help("Seed to initialize random number generator with.")
           .type(Integer.class);
 
-    parser.addArgument("--webgl")
-          .help("Restrict to WebGL-compatible features.")
-          .action(Arguments.storeTrue());
-
     parser.addArgument("--small")
           .help("Try to generate small shaders.")
           .action(Arguments.storeTrue());
@@ -187,7 +183,6 @@ public class Generate {
           shaderJob,
           random.spawnChild(),
           args));
-      tu.setShadingLanguageVersion(args.getShadingLanguageVersion());
     }
 
     if (args.limitUniforms()) {
@@ -206,6 +201,19 @@ public class Generate {
 
   }
 
+  /**
+   * Transforms the given shader job to produce a variant.
+   * @param fileOps Handle for performing file operations.
+   * @param referenceShaderJobFile The shader job to be transformed.
+   * @param outputShaderJobFile Output file for the variant.
+   * @param generatorArguments Arguments to control generation.
+   * @param seed Seed for random number generation.
+   * @param writeProbabilities Records whether details about probabilities should be written.
+   * @throws IOException if file reading or writing goes wrong.
+   * @throws ParseTimeoutException if parsing takes too long.
+   * @throws InterruptedException if something goes wrong invoking an external tool such as the
+   *      preprocessor or validator.
+   */
   public static void generateVariant(ShaderJobFileOperations fileOps,
                                      File referenceShaderJobFile,
                                      File outputShaderJobFile,
@@ -245,8 +253,7 @@ public class Generate {
     if (args.getReplaceFloatLiterals()) {
       FloatLiteralReplacer.replace(
           shaderToTransform,
-          parentShaderJob.getUniformsInfo(),
-          args.getShadingLanguageVersion());
+          parentShaderJob.getUniformsInfo());
     }
     parentShaderJob.getUniformsInfo().zeroUnsetUniforms(shaderToTransform);
 
@@ -322,13 +329,11 @@ public class Generate {
         ns.getBoolean("write_probabilities"));
   }
 
-  public static GeneratorArguments getGeneratorArguments(Namespace ns) {
+  public static GeneratorArguments getGeneratorArguments(
+      Namespace ns) {
     final EnabledTransformations enabledTransformations
         = getTransformationDisablingFlags(ns);
-    final ShadingLanguageVersion shadingLanguageVersion = ns.get("webgl")
-        ? ShadingLanguageVersion.webGlFromVersionString(ns.get("glsl_version"))
-        : ShadingLanguageVersion.fromVersionString(ns.get("glsl_version"));
-    return new GeneratorArguments(shadingLanguageVersion,
+    return new GeneratorArguments(
         ns.getBoolean("small"),
         ns.getBoolean("allow_long_loops"),
         ns.getBoolean("single_pass"),
@@ -374,7 +379,7 @@ public class Generate {
         TranslationUnit reference, IRandom generator,
         GenerationParams generationParams, TransformationProbabilities probabilities) {
     List<ITransformation> transformations = populateTransformations(args,
-          generationParams, probabilities);
+          generationParams, probabilities, reference.getShadingLanguageVersion());
     {
       // Keep roughly half of them
       final List<ITransformation> toKeep = new ArrayList<>();
@@ -407,13 +412,13 @@ public class Generate {
       ITransformation transformation = transformations.remove(generator.nextInt(
             transformations.size()));
       result += transformation.getName() + "\n";
-      if (transformation.apply(reference, probabilities, args.getShadingLanguageVersion(),
+      if (transformation.apply(reference, probabilities, reference.getShadingLanguageVersion(),
             generator.spawnChild(),
             generationParams)) {
         // Keep the size down by stripping unused stuff.
         StripUnusedFunctions.strip(reference);
         StripUnusedGlobals.strip(reference);
-        assert canTypeCheckWithoutFailure(reference, args.getShadingLanguageVersion());
+        assert canTypeCheckWithoutFailure(reference, reference.getShadingLanguageVersion());
 
         // Only if the transformation applied successfully (i.e., made a change), do we add it
         // to the list of transformations to be applied next round.
@@ -459,7 +464,7 @@ public class Generate {
     String result = "";
 
     final List<ITransformation> transformations = populateTransformations(args,
-          generationParams, probabilities);
+          generationParams, probabilities, reference.getShadingLanguageVersion());
 
     int numTransformationsApplied = 0;
     while (!transformations.isEmpty()) {
@@ -471,7 +476,7 @@ public class Generate {
       if ((transformations.isEmpty() && numTransformationsApplied == 0)
             || decideToApplyTransformation(generator, numTransformationsApplied)) {
         result += transformation.getName() + "\n";
-        transformation.apply(reference, probabilities, args.getShadingLanguageVersion(),
+        transformation.apply(reference, probabilities, reference.getShadingLanguageVersion(),
               generator.spawnChild(),
               generationParams);
         numTransformationsApplied++;
@@ -483,7 +488,8 @@ public class Generate {
   private static List<ITransformation> populateTransformations(
           GeneratorArguments args,
           GenerationParams generationParams,
-          TransformationProbabilities probabilities) {
+          TransformationProbabilities probabilities,
+          ShadingLanguageVersion shadingLanguageVersion) {
     List<ITransformation> result = new ArrayList<>();
     final EnabledTransformations flags = args.getEnabledTransformations();
     if (flags.isEnabledDead()) {
@@ -510,7 +516,7 @@ public class Generate {
       result.add(new Structification());
     }
     if (flags.isEnabledSwitch()
-            && args.getShadingLanguageVersion().supportedSwitchStmt()) {
+            && shadingLanguageVersion.supportedSwitchStmt()) {
       result.add(new AddSwitchStmts());
     }
     if (flags.isEnabledVec()) {
@@ -555,7 +561,7 @@ public class Generate {
       ITransformation transformation = transformations
             .get(generator.nextInt(transformations.size()));
       transformation
-            .apply(reference, probabilities, args.getShadingLanguageVersion(),
+            .apply(reference, probabilities, reference.getShadingLanguageVersion(),
                 generator, generationParams);
       result += transformation.getName() + "\n";
     }

@@ -55,10 +55,6 @@ public class GlslGenerate {
         .help("Number of variants to be produced for each generated shader family.")
         .type(Integer.class);
 
-    parser.addArgument("glsl-version")
-        .help("Version of GLSL to target.")
-        .type(String.class);
-
     parser.addArgument("prefix")
         .help("String with which to prefix shader family names.")
         .type(String.class);
@@ -128,7 +124,6 @@ public class GlslGenerate {
     List<String> result = new ArrayList<>();
     result.add(shaderJobFile.getAbsolutePath());
     result.add(ns.get("donors").toString());
-    result.add(ns.getString("glsl_version"));
     result.add(new File(overallOutputDir,
         prefix + "_" + FilenameUtils.removeExtension(shaderJobFile.getName())).getAbsolutePath());
     result.add("--seed");
@@ -138,7 +133,6 @@ public class GlslGenerate {
       switch (arg) {
         // These arguments are either dealt with above, or are irrelevant.
         case "donors":
-        case "glsl_version":
         case "output_dir":
         case "prefix":
         case "references":

@@ -1,3 +1,5 @@
+#version 300 es
+
 /*
  * Copyright 2018 The GraphicsFuzz Project Authors
  *
