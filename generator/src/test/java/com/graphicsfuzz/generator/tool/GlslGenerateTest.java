@@ -46,11 +46,10 @@ public class GlslGenerateTest {
     final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
         "donors").toString();
     final int numVariants = 3;
-    final String glslVersionString = "100";
     final String prefix = "someprefix";
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
     final int seed = 0;
-    checkShaderFamilyGeneration(references, donors, numVariants, glslVersionString, prefix,
+    checkShaderFamilyGeneration(references, donors, numVariants, prefix,
         outputDir, seed, Collections.singletonList("--stop-on-fail"));
   }
 
@@ -61,26 +60,30 @@ public class GlslGenerateTest {
     final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
         "donors").toString();
     final int numVariants = 3;
-    final String glslVersionString = "310 es";
     final String prefix = "someprefix";
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
     final int seed = 1;
-    checkShaderFamilyGeneration(references, donors, numVariants, glslVersionString, prefix,
+    checkShaderFamilyGeneration(references, donors, numVariants, prefix,
         outputDir, seed, Arrays.asList("--generate-uniform-bindings", "--max-uniforms",
             String.valueOf(10), "--stop-on-fail", "--max-factor", String.valueOf(100f),
             "--max-bytes", String.valueOf(500000), "--disable",
             DonateDeadCode.NAME + "," + MutateExpressions.NAME));
   }
 
-  public void checkShaderFamilyGeneration(String references, String donors, int numVariants,
-                                          String glslVersionString, String prefix, String outputDir, int seed, List<String> extraArgs) throws ArgumentParserException, InterruptedException, IOException, ParseTimeoutException {
+  public void checkShaderFamilyGeneration(String references,
+                                          String donors,
+                                          int numVariants,
+                                          String prefix,
+                                          String outputDir,
+                                          int seed,
+                                          List<String> extraArgs)
+      throws ArgumentParserException, InterruptedException, IOException, ParseTimeoutException {
     final List<String> options = new ArrayList<>();
 
     options.addAll(Arrays.asList(
         references,
         donors,
         String.valueOf(numVariants),
-        glslVersionString,
         prefix,
         outputDir,
         "--seed",

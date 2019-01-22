@@ -49,7 +49,7 @@ import static org.junit.Assert.assertTrue;
 
 public class GenerateTest {
 
-  public static final String A_VERTEX_SHADER = "" +
+  public static final String A_VERTEX_SHADER = "#version 300 es\n" +
       "layout(location=0) in highp vec4 a_position;" +
       "float foo(float b) {" +
       "  for (int i = 0; i < 10; i++) {" +
@@ -80,7 +80,8 @@ public class GenerateTest {
     ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     // TODO: Use fileOps more.
 
-    final String program = "layout(location=0) out highp vec4 _GLF_color;"
+    final String program = "#version 300 es\n"
+        + "layout(location=0) out highp vec4 _GLF_color;"
         + "uniform vec2 injectionSwitch;\n"
         + "\n"
         + "void main()\n"

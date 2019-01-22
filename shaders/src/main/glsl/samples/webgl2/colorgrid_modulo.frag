@@ -1,4 +1,5 @@
 #version 300 es
+//WebGL
 
 /*
  * Copyright 2018 The GraphicsFuzz Project Authors

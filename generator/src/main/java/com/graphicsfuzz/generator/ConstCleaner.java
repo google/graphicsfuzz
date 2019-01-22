@@ -46,11 +46,11 @@ class ConstCleaner extends ScopeTreeBuilder {
   private final List<VariablesDeclaration> globalsToBeReInitialized;
   private final ShadingLanguageVersion shadingLanguageVersion;
 
-  private ConstCleaner(TranslationUnit tu, ShadingLanguageVersion shadingLanguageVersion) {
+  private ConstCleaner(TranslationUnit tu) {
     this.atGlobalScope = true;
     this.currentVariablesDeclaration = Optional.empty();
     this.globalsToBeReInitialized = new ArrayList<>();
-    this.shadingLanguageVersion = shadingLanguageVersion;
+    this.shadingLanguageVersion = tu.getShadingLanguageVersion();
     visit(tu);
     addGlobalInitializers(tu
         .getTopLevelDeclarations()
@@ -62,8 +62,8 @@ class ConstCleaner extends ScopeTreeBuilder {
         .get(0));
   }
 
-  public static void clean(TranslationUnit tu, ShadingLanguageVersion shadingLanguageVersion) {
-    new ConstCleaner(tu, shadingLanguageVersion);
+  public static void clean(TranslationUnit tu) {
+    new ConstCleaner(tu);
   }
 
   @Override

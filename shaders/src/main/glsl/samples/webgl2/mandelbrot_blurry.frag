@@ -1,4 +1,5 @@
-#version 100
+#version 300 es
+//WebGL
 
 /*
  * Copyright 2018 The GraphicsFuzz Project Authors
@@ -15,6 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+layout(location = 0) out vec4 _GLF_color;
 
 uniform vec2 resolution;
 
@@ -58,5 +61,5 @@ void main() {
     sum += data[i];
   }
   sum /= vec3(9.0);
-  gl_FragColor = vec4(sum, 1.0);
+  _GLF_color = vec4(sum, 1.0);
 }

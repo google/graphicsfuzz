@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.generator;
 
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -46,7 +45,6 @@ public class ShaderProducer implements Runnable {
   private final File[] shaderJobFiles;
   private final BlockingQueue<ShaderJob> queue;
   private final File referencesDir;
-  private final ShadingLanguageVersion shadingLanguageVersion;
   private final Namespace ns;
   private final File donorsDir;
   private final ShaderJobFileOperations fileOps;
@@ -56,7 +54,6 @@ public class ShaderProducer implements Runnable {
       File[] shaderJobFiles,
       BlockingQueue<ShaderJob> queue,
       File referencesDir,
-      ShadingLanguageVersion shadingLanguageVersion,
       File donorsDir,
       Namespace ns,
       ShaderJobFileOperations fileOps) {
@@ -64,7 +61,6 @@ public class ShaderProducer implements Runnable {
     this.shaderJobFiles = shaderJobFiles;
     this.queue = queue;
     this.referencesDir = referencesDir;
-    this.shadingLanguageVersion = shadingLanguageVersion;
     this.donorsDir = donorsDir;
     this.ns = ns;
     this.fileOps = fileOps;
@@ -80,7 +76,6 @@ public class ShaderProducer implements Runnable {
 
     final GeneratorArguments generatorArguments =
         new GeneratorArguments(
-            shadingLanguageVersion,
             ns.get("small"),
             ns.get("allow_long_loops"),
             ns.get("single_pass"),
@@ -119,7 +114,6 @@ public class ShaderProducer implements Runnable {
         if (!RestrictFragmentShaderColors.restrictFragmentShaderColors(shaderJob, generator,
             Constants.GLF_COLOR, GenerationParams.normal(ShaderKind.FRAGMENT,
                 generatorArguments.getAddInjectionSwitch()),
-            shadingLanguageVersion,
             probabilityOfAddingNewColorWrite)) {
           LOGGER.info("Skipping variant as fragment shader colors could not be restricted.");
           continue;

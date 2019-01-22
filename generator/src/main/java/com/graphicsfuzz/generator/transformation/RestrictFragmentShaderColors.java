@@ -72,13 +72,12 @@ public class RestrictFragmentShaderColors {
   private RestrictFragmentShaderColors(ShaderJob shaderJob, IRandom generator,
                                        String outputVariableName,
                                        GenerationParams generationParams,
-                                       ShadingLanguageVersion shadingLanguageVersion,
                                        float probabilityOfAddingNewWrite) {
     this.shaderJob = shaderJob;
     this.generator = generator;
     this.outputVariableName = outputVariableName;
     this.generationParams = generationParams;
-    this.shadingLanguageVersion = shadingLanguageVersion;
+    this.shadingLanguageVersion = shaderJob.getFragmentShader().get().getShadingLanguageVersion();
     this.probabilityOfAddingNewWrite = probabilityOfAddingNewWrite;
   }
 
@@ -105,10 +104,9 @@ public class RestrictFragmentShaderColors {
                                                      IRandom generator,
                                                      String outputVariableName,
                                                      GenerationParams generationParams,
-                                                     ShadingLanguageVersion shadingLanguageVersion,
                                                      float probabilityOfAddingNewWrite) {
     return new RestrictFragmentShaderColors(shaderJob, generator, outputVariableName,
-        generationParams, shadingLanguageVersion, probabilityOfAddingNewWrite).apply();
+        generationParams, probabilityOfAddingNewWrite).apply();
   }
 
   private boolean apply() {
