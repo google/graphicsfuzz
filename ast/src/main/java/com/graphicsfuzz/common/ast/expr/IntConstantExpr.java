@@ -38,6 +38,16 @@ public class IntConstantExpr extends ConstantExpr {
     return value;
   }
 
+  public int getNumericValue() {
+    if (isOctal()) {
+      return Integer.parseInt(getValue(), 8);
+    }
+    if (isHex()) {
+      return Integer.parseInt(getValue().substring("0x".length()), 16);
+    }
+    return Integer.parseInt(getValue());
+  }
+
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitIntConstantExpr(this);
@@ -46,6 +56,14 @@ public class IntConstantExpr extends ConstantExpr {
   @Override
   public IntConstantExpr clone() {
     return new IntConstantExpr(value);
+  }
+
+  private boolean isOctal() {
+    return getValue().startsWith("0") && getValue().length() > 1 && !isHex();
+  }
+
+  private boolean isHex() {
+    return getValue().startsWith("0x");
   }
 
 }
