@@ -170,6 +170,9 @@ public class Typer extends ScopeTreeBuilder {
     }
 
     switch (variableIdentifierExpr.getName()) {
+      case OpenGlConstants.GL_POINT_SIZE:
+        types.put(variableIdentifierExpr, BasicType.FLOAT);
+        return;
       case OpenGlConstants.GL_FRAG_COORD:
       case OpenGlConstants.GL_FRAG_COLOR:
       case OpenGlConstants.GL_POSITION:
