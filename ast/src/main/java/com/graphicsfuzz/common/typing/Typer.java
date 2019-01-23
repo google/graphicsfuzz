@@ -168,34 +168,8 @@ public class Typer extends ScopeTreeBuilder {
       types.put(variableIdentifierExpr, type);
       return;
     }
-
-    switch (variableIdentifierExpr.getName()) {
-      case OpenGlConstants.GL_POINT_SIZE:
-        types.put(variableIdentifierExpr, BasicType.FLOAT);
-        return;
-      case OpenGlConstants.GL_FRAG_COORD:
-      case OpenGlConstants.GL_FRAG_COLOR:
-      case OpenGlConstants.GL_POSITION:
-        types.put(variableIdentifierExpr, BasicType.VEC4);
-        return;
-      case OpenGlConstants.GL_NUM_WORK_GROUPS:
-      case OpenGlConstants.GL_WORK_GROUP_ID:
-      case OpenGlConstants.GL_LOCAL_INVOCATION_ID:
-      case OpenGlConstants.GL_GLOBAL_INVOCATION_ID:
-        types.put(variableIdentifierExpr,
-            new QualifiedType(BasicType.UVEC3, Arrays.asList(TypeQualifier.SHADER_INPUT)));
-        return;
-      case OpenGlConstants.GL_WORK_GROUP_SIZE:
-        types.put(variableIdentifierExpr,
-            new QualifiedType(BasicType.UVEC3, Arrays.asList(TypeQualifier.CONST)));
-        return;
-      case OpenGlConstants.GL_LOCAL_INVOCATION_INDEX:
-        types.put(variableIdentifierExpr,
-            new QualifiedType(BasicType.UINT, Arrays.asList(TypeQualifier.SHADER_INPUT)));
-        return;
-      default:
-        return;
-    }
+    maybeGetTypeOfBuiltinVariable(variableIdentifierExpr.getName())
+        .ifPresent(item -> types.put(variableIdentifierExpr, item));
   }
 
   @Override
@@ -523,6 +497,37 @@ public class Typer extends ScopeTreeBuilder {
       elementType = ((ArrayType) arrayType).getBaseType();
     }
     types.put(arrayIndexExpr, elementType);
+  }
+
+  /**
+   * If the given name corresponds to an OpenGL builtin variable, yields the type of the
+   * variable.
+   * @param name The name of a candidate builtin variable.
+   * @return The type of the variable if it is indeed a builtin, otherwise empty.
+   */
+  public static Optional<Type> maybeGetTypeOfBuiltinVariable(String name) {
+    switch (name) {
+      case OpenGlConstants.GL_POINT_SIZE:
+        return Optional.of(BasicType.FLOAT);
+      case OpenGlConstants.GL_FRAG_COORD:
+      case OpenGlConstants.GL_FRAG_COLOR:
+      case OpenGlConstants.GL_POSITION:
+        return Optional.of(BasicType.VEC4);
+      case OpenGlConstants.GL_NUM_WORK_GROUPS:
+      case OpenGlConstants.GL_WORK_GROUP_ID:
+      case OpenGlConstants.GL_LOCAL_INVOCATION_ID:
+      case OpenGlConstants.GL_GLOBAL_INVOCATION_ID:
+        return Optional.of(new QualifiedType(BasicType.UVEC3,
+            Collections.singletonList(TypeQualifier.SHADER_INPUT)));
+      case OpenGlConstants.GL_WORK_GROUP_SIZE:
+        return Optional.of(new QualifiedType(BasicType.UVEC3,
+            Collections.singletonList(TypeQualifier.CONST)));
+      case OpenGlConstants.GL_LOCAL_INVOCATION_INDEX:
+        return Optional.of(new QualifiedType(BasicType.UINT,
+            Collections.singletonList(TypeQualifier.SHADER_INPUT)));
+      default:
+        return Optional.empty();
+    }
   }
 
 }
