@@ -29,6 +29,7 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -484,6 +485,13 @@ public class ParseHelperTest {
     } catch (RuntimeException runtimeException) {
       assertTrue(runtimeException.getMessage().startsWith("Syntax errors occurred during parsing"));
     }
+  }
+
+  @Test
+  public void testParseEssl320() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 320 es\n"
+        + "void main() { }");
+    assertSame(ShadingLanguageVersion.ESSL_320, tu.getShadingLanguageVersion());
   }
 
   private String getStringFromInputStream(InputStream strippedIs) throws IOException {
