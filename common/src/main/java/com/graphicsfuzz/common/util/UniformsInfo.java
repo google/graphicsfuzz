@@ -149,10 +149,29 @@ public final class UniformsInfo {
     String result = "glUniform";
 
     if (type.isMatrix()) {
-      throw new RuntimeException("Not dealing with matrices yet.");
+      result += "Matrix";
+      if (type == BasicType.MAT2X2) {
+        result += "2";
+      } else if (type == BasicType.MAT2X3) {
+        result += "2x3";
+      } else if (type == BasicType.MAT2X4) {
+        result += "2x4";
+      } else if (type == BasicType.MAT3X2) {
+        result += "3x2";
+      } else if (type == BasicType.MAT3X3) {
+        result += "3";
+      } else if (type == BasicType.MAT3X4) {
+        result += "3x4";
+      } else if (type == BasicType.MAT4X2) {
+        result += "4x2";
+      } else if (type == BasicType.MAT4X3) {
+        result += "4x3";
+      } else if (type == BasicType.MAT4X4) {
+        result += "4";
+      }
+    } else {
+      result += type.getNumElements();
     }
-
-    result += type.getNumElements();
 
     if (type.getElementType() == BasicType.FLOAT) {
       result += "f";
@@ -165,7 +184,7 @@ public final class UniformsInfo {
       result += "i";
     }
 
-    if (isArray) {
+    if (type.isMatrix() || isArray) {
       result += "v";
     }
 
