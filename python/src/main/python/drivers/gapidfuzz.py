@@ -47,7 +47,7 @@ class Params(object):
         self.specific_variant_index = None  # type: int
         self.gapis_process = None  # type: subprocess.Popen
         self.get_screenshots = False
-        self.just_frag = True
+        self.just_frag = False
 
     def __str__(self):
         return pprint.pformat(self.__dict__)
@@ -116,7 +116,7 @@ def run_gapit_screenshot_file(params: Params):
     ])
 
     stdout = res.stdout  # type: str
-    return load_capture_id.search(stdout).group(1)
+    params.orig_capture_id = load_capture_id.search(stdout).group(1)
 
 
 def run_gapit_commands_file(params: Params):
@@ -143,8 +143,10 @@ def run_gapit_screenshot_capture_id(params: Params, capture_id: str, out: str):
 
 def dump_shaders_trace_id(params: Params):
 
+    # mkdir -p shaders_dir
     Path(params.shaders_dir).mkdir(parents=True, exist_ok=True)
 
+    # gapit dump_resources
     call([
         nz(params.gapit),
         'dump_resources',
@@ -192,7 +194,9 @@ def process_shaders(params: Params):
 
 
 def fuzz_shaders(params: Params):
-    # glsl-generate --seed 0 references donors 10 prefix out --no-injection-switch
+    # Generate shader families from the set of references (extracted shaders).
+
+    # for reference: glsl-generate --seed 0 references donors 10 prefix out --no-injection-switch
     res = glsl_generate.go([
         "--seed", nz(str(params.seed)),
         nz(params.shaders_dir),
@@ -265,24 +269,61 @@ def run_replace_shader(params: Params, capture_id: str, shader_handle: str, shad
     return new_capture_id
 
 
-def fuzz_trace(params: Params):
+def fuzz_trace(p: Params):
+    # Shadowing p here so that you can copy and paste these into an ipython 3 shell.
 
-    run_gapis_async(params)
+    run_gapis_async(p)
 
-    # Get commands to load the capture and get its id.
-    run_gapit_commands_file(params)
+    # We should find a better way to load the capture;
+    # getting a screenshot is unnecessarily heavy.
+    if p.orig_capture_id is None:
+        run_gapit_screenshot_file(p)
 
-    dump_shaders_trace_id(params)
-    process_shaders(params)
-    fuzz_shaders(params)
-    create_traces(params)
+    dump_shaders_trace_id(p)
+    process_shaders(p)
+    fuzz_shaders(p)
+    create_traces(p)
 
 
 def go(argv):
 
-    print("\n\nParams p object:\n\n" + str(p) + "\n\n")
-    print("Usage: gapidfuzz [PYTHON_CODE]\n")
-    print("E.g.\n$ gapidfuzz ' p.just_frag=False; p.donors=\"shaders/corpus\"; p.gapis=None; '\n\n")
+    print("\n\nParams p object:\n\n" + str(p) + "\n")
+
+    print("""
+Usage: gapidfuzz [PYTHON_CODE]
+
+E.g.
+$ gapidfuzz
+
+Or:
+$ gapidfuzz ' p.just_frag=False; p.donors="shaders/corpus"; p.gapis=None; '
+
+Ensure you have:
+- a recent version of gapid master
+- gapis and gapit on PATH (add gapid/bazel-bin/pkg to PATH)
+- killed any previous gapis instance using port 40000 (gapis will not be killed for you)
+- a 'donors/' directory (in current directory)
+- a 'capture.gfxtrace' OpenGL trace file (in current directory)
+
+This script works from within the source tree or from the release zip.
+        
+However, more fine-grained use is available via ipython3.
+You must be in drivers/ or use PYTHONPATH=/path/to/python/drivers
+
+$ ipython3
+from gapidfuzz import *
+p.just_frag = False
+p.orig_capture_file = "game/game.gfxtrace"
+fuzz_trace(p)  # do everything
+fuzz_shaders(p)  # just do the glsl-generate command (already extracted shaders)
+
+Take a look at the Params class for the parameters that can be changed. Or just do:
+$ p
+
+""")
+
+    # We could kill gapis automatically, but gapis may start gapir and killing a process tree
+    # in a portable way is nontrivial, annoyingly.
 
     assert len(argv) <= 1
 
