@@ -26,6 +26,7 @@ public interface ShadingLanguageVersion {
   ShadingLanguageVersion ESSL_100 = Essl100.INSTANCE;
   ShadingLanguageVersion ESSL_300 = Essl300.INSTANCE;
   ShadingLanguageVersion ESSL_310 = Essl310.INSTANCE;
+  ShadingLanguageVersion ESSL_320 = Essl320.INSTANCE;
 
   ShadingLanguageVersion GLSL_110 = Glsl110.INSTANCE;
   ShadingLanguageVersion GLSL_120 = Glsl120.INSTANCE;
@@ -85,7 +86,8 @@ public interface ShadingLanguageVersion {
     return Arrays.asList(
         ESSL_100,
         ESSL_300,
-        ESSL_310);
+        ESSL_310,
+        ESSL_320);
   }
 
   static List<ShadingLanguageVersion> allWebGlSlVersions() {
