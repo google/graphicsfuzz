@@ -751,7 +751,7 @@ LAYOUT_TOK: 'layout' ; // REVISIT
 UINTCONSTANT: (DECIMAL_DIGITS | OCTAL_DIGITS | HEX_DIGITS) 'u';
 ROW_MAJOR: 'row_major' ;
 PACKED_TOK: 'packed' ;
-FLOATCONSTANT: ((DIGIT+ ('.' DIGIT*)?) | ('.' DIGIT+)) (('e' | 'E') ('+' | '-')? DIGIT*)?; // REVISIT
+FLOATCONSTANT: ((DIGIT+ ('.' DIGIT*)?) | ('.' DIGIT+)) (('e' | 'E') ('+' | '-')? DIGIT*)? 'f'?;
 BOOLCONSTANT: 'true' | 'false' ;
 INC_OP: '++' ;
 DEC_OP: '--' ;
