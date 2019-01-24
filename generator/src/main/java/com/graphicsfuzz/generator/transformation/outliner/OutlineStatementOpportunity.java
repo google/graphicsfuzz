@@ -35,12 +35,14 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.typing.Scope;
+import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class OutlineStatementOpportunity {
@@ -92,14 +94,14 @@ public class OutlineStatementOpportunity {
   }
 
   public void apply(IdGenerator idGenerator) {
-    BinaryExpr be = (BinaryExpr) toOutline.getExpr();
-    assert be.getOp() == BinOp.ASSIGN;
+    BinaryExpr binaryExpr = (BinaryExpr) toOutline.getExpr();
+    assert binaryExpr.getOp() == BinOp.ASSIGN;
 
-    final List<String> referencedVariables = getReferencedVariables(be.getRhs());
+    final List<String> referencedVariables = getReferencedVariables(binaryExpr.getRhs());
     final String newFunctionName = Constants.OUTLINED_FUNCTION_PREFIX + idGenerator.freshId();
 
     toOutline.setExpr(new BinaryExpr(
-        be.getLhs().clone(), new FunctionCallExpr(newFunctionName,
+        binaryExpr.getLhs().clone(), new FunctionCallExpr(newFunctionName,
         referencedVariables.stream().map(item -> new VariableIdentifierExpr(item))
             .collect(Collectors.toList())), BinOp.ASSIGN));
 
@@ -112,17 +114,16 @@ public class OutlineStatementOpportunity {
       params.add(new ParameterDecl(v, varType, null));
     }
     Type returnType = scopeOfStmt.lookupType(
-        ((VariableIdentifierExpr) be.getLhs()).getName());
+        ((VariableIdentifierExpr) binaryExpr.getLhs()).getName());
     if (returnType == null) {
-      switch (((VariableIdentifierExpr) be.getLhs()).getName()) {
-        case OpenGlConstants.GL_FRAG_COLOR:
-        case OpenGlConstants.GL_FRAG_COORD:
-        case OpenGlConstants.GL_POSITION:
-          returnType = BasicType.VEC4;
-          break;
-        default:
-          assert returnType != null : "No type for "
-              + ((VariableIdentifierExpr) be.getLhs()).getName();
+      final Optional<Type> maybeTypeOfBuiltin =
+          Typer.maybeGetTypeOfBuiltinVariable(((VariableIdentifierExpr) binaryExpr.getLhs())
+              .getName());
+      if (maybeTypeOfBuiltin.isPresent()) {
+        returnType = maybeTypeOfBuiltin.get();
+      } else {
+        throw new RuntimeException("No type for "
+              + ((VariableIdentifierExpr) binaryExpr.getLhs()).getName());
       }
     }
     returnType = returnType.getWithoutQualifiers();
@@ -131,7 +132,7 @@ public class OutlineStatementOpportunity {
         returnType,
         params),
         new BlockStmt(Arrays.asList(
-            new ReturnStmt(be.getRhs().clone())), false)),
+            new ReturnStmt(binaryExpr.getRhs().clone())), false)),
         enclosingFunction);
   }
 
