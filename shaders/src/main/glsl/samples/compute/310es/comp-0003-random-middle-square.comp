@@ -33,9 +33,7 @@ layout(local_size_x=16, local_size_y=1) in;
 
 int middle_square(int val) {
   int new = val * val;
-  // GraphicsFuzz parser do not support hexadecimal notation, so use the decimal
-  // value of 0x00FFFF00 == 16776960.
-  int mask_middle = 16776960;
+  int mask_middle = 0x00FFFF00;
   new = new & mask_middle;
   new = new >> 8;
   return new;
