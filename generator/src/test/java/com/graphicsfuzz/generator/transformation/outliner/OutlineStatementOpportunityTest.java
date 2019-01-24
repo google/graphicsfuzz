@@ -31,6 +31,7 @@ import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -152,6 +153,32 @@ public class OutlineStatementOpportunityTest {
         + "}\n";
     assertEquals(expectedDecl, tu.getTopLevelDeclarations().get(0).getText());
     assertEquals("x = " + Constants.OUTLINED_FUNCTION_PREFIX + "0(x);\n",
+        toOutline.getText());
+
+  }
+
+  @Test
+  public void apply5() throws Exception {
+
+    ExprStmt toOutline = new ExprStmt(new BinaryExpr(
+        new VariableIdentifierExpr(OpenGlConstants.GL_POINT_SIZE),
+        new BinaryExpr(new VariableIdentifierExpr("x"),
+            new VariableIdentifierExpr("x"),
+            BinOp.ADD),
+        BinOp.ASSIGN));
+
+    Scope fakeScope = new Scope(null);
+    fakeScope.add("x", BasicType.FLOAT, Optional.empty());
+
+    new OutlineStatementOpportunity(toOutline, fakeScope, tu, fakeFunction).apply(new IdGenerator());
+
+    final String expectedDecl = "float " + Constants.OUTLINED_FUNCTION_PREFIX + "0(float x)\n"
+        + "{\n"
+        + PrettyPrinterVisitor.defaultIndent(1) + "return x + x;\n"
+        + "}\n";
+    assertEquals(expectedDecl, tu.getTopLevelDeclarations().get(0).getText());
+    assertEquals(OpenGlConstants.GL_POINT_SIZE + " = " + Constants.OUTLINED_FUNCTION_PREFIX + "0"
+            + "(x);\n",
         toOutline.getText());
 
   }

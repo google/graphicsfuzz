@@ -340,6 +340,22 @@ public class TyperTest {
   }
 
   @Test
+  public void testGlPointSizeTyped() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("void main() { gl_PointSize = 1.0; }");
+    Typer typer = new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300);
+    new StandardVisitor() {
+      @Override
+      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        super.visitVariableIdentifierExpr(variableIdentifierExpr);
+        if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_POINT_SIZE)) {
+          assertEquals(BasicType.FLOAT, typer.lookupType(variableIdentifierExpr));
+        }
+      }
+    }.visit(tu);
+
+  }
+
+  @Test
   public void testGlNumWorkGroupsTyped() throws Exception {
     checkComputeShaderBuiltin(
         "gl_NumWorkGroups",
