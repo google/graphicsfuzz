@@ -47,7 +47,7 @@ class Params(object):
         self.specific_variant_index = None  # type: int
         self.gapis_process = None  # type: subprocess.Popen
         self.get_screenshots = False
-        self.just_frag = True
+        self.just_frag = False
 
     def __str__(self):
         return pprint.pformat(self.__dict__)
@@ -116,7 +116,7 @@ def run_gapit_screenshot_file(params: Params):
     ])
 
     stdout = res.stdout  # type: str
-    p.orig_capture_id = load_capture_id.search(stdout).group(1)
+    params.orig_capture_id = load_capture_id.search(stdout).group(1)
 
 
 def run_gapit_commands_file(params: Params):
@@ -270,6 +270,7 @@ def run_replace_shader(params: Params, capture_id: str, shader_handle: str, shad
 
 
 def fuzz_trace(p: Params):
+    # Shadowing p here so that you can copy and paste these into an ipython 3 shell.
 
     run_gapis_async(p)
 
