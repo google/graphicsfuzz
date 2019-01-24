@@ -23,10 +23,12 @@ import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
+import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -492,6 +494,25 @@ public class ParseHelperTest {
     TranslationUnit tu = ParseHelper.parse("#version 320 es\n"
         + "void main() { }");
     assertSame(ShadingLanguageVersion.ESSL_320, tu.getShadingLanguageVersion());
+  }
+
+  @Test
+  public void testParseInPlacePrecisionAndFloatSuffix() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "\n"
+        + "void main() {\n"
+        + "    mediump vec3 color = 1.00f;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    final VariablesDeclaration variablesDeclaration =
+        ((DeclarationStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+        .getStmt(0)).getVariablesDeclaration();
+    final Type baseType =
+        variablesDeclaration.getBaseType();
+    assertTrue(baseType.hasQualifier(TypeQualifier.MEDIUMP));
+    assertEquals("1.00f",
+        ((FloatConstantExpr) ((ScalarInitializer) variablesDeclaration.getDeclInfo(0)
+            .getInitializer()).getExpr()).getValue());
   }
 
   private String getStringFromInputStream(InputStream strippedIs) throws IOException {
