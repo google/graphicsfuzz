@@ -43,7 +43,7 @@ public class MacroNames {
   }
 
   public static boolean isFuzzed(Expr expr) {
-    return isCallToNamedFunction(expr, Constants.GLF_FUZED);
+    return isCallToNamedFunction(expr, Constants.GLF_FUZZED);
   }
 
   public static boolean isDeadByConstruction(Expr expr) {

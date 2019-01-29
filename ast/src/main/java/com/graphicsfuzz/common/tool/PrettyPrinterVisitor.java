@@ -699,7 +699,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append("#define " + Constants.GLF_TRUE + "(X, Y)          (Y)\n");
     out.append("#define " + Constants.GLF_IDENTITY + "(X, Y)      (Y)\n");
     out.append("#define " + Constants.GLF_DEAD + "(X)             (X)\n");
-    out.append("#define " + Constants.GLF_FUZED + "(X)           (X)\n");
+    out.append("#define " + Constants.GLF_FUZZED + "(X)           (X)\n");
     out.append("#define " + Constants.GLF_WRAPPED_LOOP + "(X)     X\n");
     out.append("#define " + Constants.GLF_WRAPPED_IF_TRUE + "(X)  X\n");
     out.append("#define " + Constants.GLF_WRAPPED_IF_FALSE + "(X) X\n");
