@@ -50,7 +50,7 @@ public class ReductionOpportunitiesTest {
     // Regression test for a bug where the guard of a dead conditional was being replaced by "true"
     String prog = "void main() {" +
       "if(" + Constants.GLF_DEAD + "(" + Constants.GLF_IDENTITY + "(false, true && "
-        + Constants.GLF_IDENTITY + "(false, (true ? false : " + Constants.GLF_FUZED
+        + Constants.GLF_IDENTITY + "(false, (true ? false : " + Constants.GLF_FUZZED
         + "(true)))))) {"
         + "  }"
         + "}\n";

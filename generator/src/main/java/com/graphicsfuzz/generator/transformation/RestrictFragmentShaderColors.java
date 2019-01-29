@@ -25,7 +25,6 @@ import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
-import com.graphicsfuzz.common.ast.expr.TernaryExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
@@ -48,7 +47,6 @@ import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -172,7 +170,7 @@ public class RestrictFragmentShaderColors {
         super.visitFunctionCallExpr(functionCallExpr);
         Set<String> acceptableFunctionNames = new HashSet<>();
         acceptableFunctionNames.addAll(TyperHelper.getBuiltins(shadingLanguageVersion).keySet());
-        acceptableFunctionNames.add(Constants.GLF_FUZED);
+        acceptableFunctionNames.add(Constants.GLF_FUZZED);
         acceptableFunctionNames.add(Constants.GLF_IDENTITY);
         if (acceptableFunctionNames.contains(functionCallExpr.getCallee())
             || functionCallExpr.getCallee().startsWith(Constants.OUTLINED_FUNCTION_PREFIX)) {
