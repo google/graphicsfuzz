@@ -38,7 +38,7 @@ public final class Constants {
   public static final String GLF_ONE = "_GLF_ONE";
   public static final String GLF_FALSE = "_GLF_FALSE";
   public static final String GLF_TRUE = "_GLF_TRUE";
-  public static final String GLF_FUZED = "_GLF_FUZZED";
+  public static final String GLF_FUZZED = "_GLF_FUZZED";
   public static final String GLF_WRAPPED_LOOP = "_GLF_WRAPPED_LOOP";
   public static final String GLF_WRAPPED_IF_TRUE = "_GLF_WRAPPED_IF_TRUE";
   public static final String GLF_WRAPPED_IF_FALSE = "_GLF_WRAPPED_IF_FALSE";

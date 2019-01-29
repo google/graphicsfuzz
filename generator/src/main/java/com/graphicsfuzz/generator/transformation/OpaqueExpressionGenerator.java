@@ -290,7 +290,7 @@ public final class OpaqueExpressionGenerator {
   }
 
   public Expr fuzzedConstructor(Expr expr) {
-    return macroConstructor(Constants.GLF_FUZED, expr);
+    return macroConstructor(Constants.GLF_FUZZED, expr);
   }
 
   private Expr identityConstructor(Expr original, Expr withIdentityApplied) {
