@@ -276,7 +276,7 @@ def fuzz_trace(p: Params):
 
     # We should find a better way to load the capture;
     # getting a screenshot is unnecessarily heavy.
-    if p.orig_capture_id is None:
+    if len(p.orig_capture_id) == 0:
         run_gapit_screenshot_file(p)
 
     dump_shaders_trace_id(p)
@@ -306,7 +306,7 @@ Ensure you have:
 - a 'capture.gfxtrace' OpenGL trace file (in current directory)
 
 This script works from within the source tree or from the release zip.
-        
+
 However, more fine-grained use is available via ipython3.
 You must be in drivers/ or use PYTHONPATH=/path/to/python/drivers
 
