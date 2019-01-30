@@ -25,6 +25,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.Typer;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -213,6 +214,7 @@ public class Generate {
    * @throws ParseTimeoutException if parsing takes too long.
    * @throws InterruptedException if something goes wrong invoking an external tool such as the
    *      preprocessor or validator.
+   * @throws GlslParserException if a shader in the job fails to parse.
    */
   public static void generateVariant(ShaderJobFileOperations fileOps,
                                      File referenceShaderJobFile,
@@ -220,7 +222,7 @@ public class Generate {
                                      GeneratorArguments generatorArguments,
                                      int seed,
                                      boolean writeProbabilities)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     // This is mutated into the variant.
     final ShaderJob variantShaderJob = fileOps.readShaderJobFile(referenceShaderJobFile);
 
@@ -312,7 +314,8 @@ public class Generate {
   }
 
   public static void mainHelper(String[] args)
-      throws IOException, ParseTimeoutException, ArgumentParserException, InterruptedException {
+      throws IOException, ParseTimeoutException, ArgumentParserException, InterruptedException,
+      GlslParserException {
     final Namespace ns = parse(args);
 
     Integer seed = ns.get("seed");

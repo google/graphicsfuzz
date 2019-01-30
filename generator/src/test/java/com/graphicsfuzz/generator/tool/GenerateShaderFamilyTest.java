@@ -16,14 +16,12 @@
 
 package com.graphicsfuzz.generator.tool;
 
-import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.Ignore;
@@ -147,7 +145,7 @@ public class GenerateShaderFamilyTest {
   private void checkShaderFamilyGeneration(String samplesSubdir, String referenceShaderName,
                                           int numVariants, int seed,
                                           List<String> extraOptions) throws ArgumentParserException,
-      InterruptedException, IOException, ParseTimeoutException {
+      InterruptedException, IOException, ReferencePreparationException {
     final String reference = Paths.get(ToolPaths.getShadersDirectory(), "samples",
         samplesSubdir, referenceShaderName
         + ".json").toString();

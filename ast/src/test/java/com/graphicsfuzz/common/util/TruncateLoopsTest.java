@@ -59,7 +59,7 @@ public class TruncateLoopsTest {
   }
 
   private void testProgram(String program, boolean isSane) throws IOException,
-      ParseTimeoutException, InterruptedException {
+      ParseTimeoutException, InterruptedException, GlslParserException {
     TranslationUnit tu =  ParseHelper.parse(program);
     new TruncateLoops(30, "webGL_", tu, true);
     if(isSane) {
@@ -73,7 +73,7 @@ public class TruncateLoopsTest {
   }
 
   private void assertProgramsNotEqual(String program, TranslationUnit otherProgram)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     assert !PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program))
         .equals(PrettyPrinterVisitor.prettyPrintAsString(otherProgram));
   }

@@ -18,6 +18,7 @@ package com.graphicsfuzz.reducer.tool;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -89,7 +90,8 @@ public class ReducerBugPoint {
 
 
   public static void main(String[] args)
-      throws IOException, ParseTimeoutException, ArgumentParserException, InterruptedException {
+      throws IOException, ParseTimeoutException, ArgumentParserException, InterruptedException,
+      GlslParserException {
 
     final Namespace ns = parse(args);
 

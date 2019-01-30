@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.StatsVisitor;
@@ -27,7 +28,7 @@ public class ReportShaderSize {
 
 
   public static void main(String[] args) throws IOException, ParseTimeoutException,
-      InterruptedException {
+      InterruptedException, GlslParserException {
     if (args.length != 1) {
       System.err.println("Usage: ReportShaderSize <file>");
       System.exit(1);

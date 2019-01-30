@@ -21,6 +21,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.AvoidDeprecatedGlFragColor;
@@ -201,7 +202,7 @@ public class GeneratorUnitTest {
   private void testTransformation(List<ITransformationSupplier> transformations,
         TransformationProbabilities probabilities, String suffix, List<String> blacklist,
         ShadingLanguageVersion shadingLanguageVersion)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     for (File originalShaderJobFile : Util.getReferenceShaderJobFiles()) {
       final List<ITransformation> transformationsList = new ArrayList<>();
       for (ITransformationSupplier supplier : transformations) {
@@ -229,14 +230,14 @@ public class GeneratorUnitTest {
 
   private void testTransformation100(List<ITransformationSupplier> transformations,
         TransformationProbabilities probabilities, String suffix, List<String> blacklist)
-        throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformation(transformations, probabilities, suffix, blacklist,
           ShadingLanguageVersion.ESSL_100);
   }
 
   private void testTransformation300es(List<ITransformationSupplier> transformations,
         TransformationProbabilities probabilities, String suffix, List<String> blacklist)
-        throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformation(transformations, probabilities, suffix, blacklist,
           ShadingLanguageVersion.ESSL_300);
   }
@@ -246,7 +247,7 @@ public class GeneratorUnitTest {
                                                String suffix,
                                                List<String> blacklist100,
                                                List<String> blacklist300es)
-        throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformation100(transformations, probabilities, suffix, blacklist100);
     testTransformation300es(transformations, probabilities, suffix, blacklist300es);
   }
@@ -255,21 +256,21 @@ public class GeneratorUnitTest {
       TransformationProbabilities probabilities, String suffix,
                                                List<String> blacklist100,
                                                List<String> blacklist300es)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformationMultiVersions(Arrays.asList(transformation), probabilities,
         suffix, blacklist100, blacklist300es);
   }
 
   private void testTransformationMultiVersions(List<ITransformationSupplier> transformations,
         TransformationProbabilities probabilities, String suffix)
-        throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformationMultiVersions(transformations, probabilities, suffix, new ArrayList<>(),
         new ArrayList<>());
   }
 
   private void testTransformationMultiVersions(ITransformationSupplier transformation,
       TransformationProbabilities probabilities, String suffix)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformationMultiVersions(Arrays.asList(transformation), probabilities, suffix,
         new ArrayList<>(), new ArrayList<>());
   }
@@ -278,7 +279,8 @@ public class GeneratorUnitTest {
       TransformationProbabilities probabilities, String suffix, File originalShaderJobFile,
       ShadingLanguageVersion shadingLanguageVersion,
       File referenceImage,
-      boolean skipRender) throws IOException, ParseTimeoutException, InterruptedException {
+      boolean skipRender)
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShaderJobFile);
     assertEquals(1, shaderJob.getShaders().size());
     assertEquals(ShaderKind.FRAGMENT, shaderJob.getShaders().get(0).getShaderKind());

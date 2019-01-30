@@ -16,18 +16,21 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.mutator.MutateExpressions;
 import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -70,14 +73,94 @@ public class GlslGenerateTest {
             DonateDeadCode.NAME + "," + MutateExpressions.NAME));
   }
 
-  public void checkShaderFamilyGeneration(String references,
+  @Test
+  public void testDoNotGenerateFamilyForBadReference() throws Exception {
+    final String badFragmentSource = "this is not a fragment shader";
+    final String goodFragmentSource = "#version 100\nprecision mediump float;\nvoid main() { }";
+    final File references = temporaryFolder.newFolder();
+    final File badReferenceFrag = new File(references, "bad.frag");
+    final File badReferenceJson = new File(references, "bad.json");
+    FileUtils.writeStringToFile(badReferenceFrag, badFragmentSource, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(badReferenceJson, "{}", StandardCharsets.UTF_8);
+    final File goodReferenceFrag = new File(references, "good.frag");
+    final File goodReferenceJson = new File(references, "good.json");
+    FileUtils.writeStringToFile(goodReferenceFrag, goodFragmentSource, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(goodReferenceJson, "{}", StandardCharsets.UTF_8);
+
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
+        "donors").toString();
+
+    final File outputDir = temporaryFolder.newFolder();
+
+    final int numVariants = 2;
+    final String prefix = "family";
+    generateShaderFamily(references.getAbsolutePath(), donors, numVariants, prefix,
+        outputDir.getAbsolutePath(),
+        0, new ArrayList<>());
+
+    final File unexpectedOutputDirectory = new File(outputDir, prefix + "_bad");
+    // We should not get a directory for the bad reference.
+    assertFalse(unexpectedOutputDirectory.exists());
+
+    final File expectedOutputDirectory = new File(outputDir, prefix + "_good");
+    assertTrue(expectedOutputDirectory.isDirectory());
+
+    assertTrue(new File(expectedOutputDirectory, "infolog.json").isFile());
+    assertTrue(new File(expectedOutputDirectory, "reference.frag").isFile());
+    assertTrue(new File(expectedOutputDirectory, "reference.json").isFile());
+    for (int i = 0; i < numVariants; i++) {
+      assertTrue(new File(expectedOutputDirectory,
+          "variant_" + String.format("%03d", i) + ".frag").isFile());
+      assertTrue(new File(expectedOutputDirectory,
+          "variant_" + String.format("%03d", i) + ".json").isFile());
+    }
+
+  }
+
+  private void checkShaderFamilyGeneration(String references,
                                           String donors,
                                           int numVariants,
                                           String prefix,
                                           String outputDir,
                                           int seed,
                                           List<String> extraArgs)
-      throws ArgumentParserException, InterruptedException, IOException, ParseTimeoutException {
+      throws ArgumentParserException,
+      InterruptedException,
+      IOException,
+      ParseTimeoutException,
+      GlslParserException {
+
+    generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs);
+
+    for (String reference : Arrays.asList("bubblesort_flag", "colorgrid_modulo",
+        "mandelbrot_blurry", "prefix_sum", "squares")) {
+      final File expectedOutputDirectory = new File(temporaryFolder.getRoot(), prefix
+          + "_" + reference);
+      assertTrue(expectedOutputDirectory.isDirectory());
+      assertTrue(new File(expectedOutputDirectory, "infolog.json").isFile());
+      assertTrue(new File(expectedOutputDirectory, "reference.frag").isFile());
+      assertTrue(new File(expectedOutputDirectory, "reference.json").isFile());
+      for (int i = 0; i < numVariants; i++) {
+        assertTrue(new File(expectedOutputDirectory,
+            "variant_" + String.format("%03d", i) + ".frag").isFile());
+        assertTrue(new File(expectedOutputDirectory,
+            "variant_" + String.format("%03d", i) + ".json").isFile());
+      }
+    }
+  }
+
+  private void generateShaderFamily(String references,
+                                   String donors,
+                                   int numVariants,
+                                   String prefix,
+                                   String outputDir,
+                                   int seed,
+                                   List<String> extraArgs)
+      throws ArgumentParserException,
+      InterruptedException,
+      IOException,
+      ParseTimeoutException,
+      GlslParserException {
     final List<String> options = new ArrayList<>();
 
     options.addAll(Arrays.asList(
@@ -96,22 +179,6 @@ public class GlslGenerateTest {
     GlslGenerate.mainHelper(
         options.toArray(new String[0])
     );
-
-    for (String reference : Arrays.asList("bubblesort_flag", "colorgrid_modulo",
-        "mandelbrot_blurry", "prefix_sum", "squares")) {
-      final File expectedOutputDirectory = new File(temporaryFolder.getRoot(), prefix
-          + "_" + reference);
-      assertTrue(expectedOutputDirectory.isDirectory());
-      assertTrue(new File(expectedOutputDirectory, "infolog.json").isFile());
-      assertTrue(new File(expectedOutputDirectory, "reference.frag").isFile());
-      assertTrue(new File(expectedOutputDirectory, "reference.json").isFile());
-      for (int i = 0; i < numVariants; i++) {
-        assertTrue(new File(expectedOutputDirectory,
-            "variant_" + String.format("%03d", i) + ".frag").isFile());
-        assertTrue(new File(expectedOutputDirectory,
-            "variant_" + String.format("%03d", i) + ".json").isFile());
-      }
-    }
   }
 
 }
