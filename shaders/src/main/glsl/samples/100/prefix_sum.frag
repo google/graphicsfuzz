@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+precision mediump float;
+
 uniform vec2 resolution;
 
 void main(void) {

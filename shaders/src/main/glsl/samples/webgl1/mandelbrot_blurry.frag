@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+precision mediump float;
+
 uniform vec2 resolution;
 
 vec3 pickColor(int i) {
