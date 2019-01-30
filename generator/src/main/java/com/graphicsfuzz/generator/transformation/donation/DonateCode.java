@@ -61,6 +61,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -94,7 +95,7 @@ public abstract class DonateCode implements ITransformation {
     assert donorsDirectory.exists();
     donorFiles.addAll(Arrays.asList(donorsDirectory.listFiles(
         pathname -> pathname.getName().endsWith(".frag"))));
-    donorFiles.sort((first, second) -> first.compareTo(second));
+    donorFiles.sort(Comparator.naturalOrder());
   }
 
   /**
