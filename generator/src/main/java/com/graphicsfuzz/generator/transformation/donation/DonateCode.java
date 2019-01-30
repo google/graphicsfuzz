@@ -23,6 +23,7 @@ import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
+import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -61,6 +62,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -94,7 +96,7 @@ public abstract class DonateCode implements ITransformation {
     assert donorsDirectory.exists();
     donorFiles.addAll(Arrays.asList(donorsDirectory.listFiles(
         pathname -> pathname.getName().endsWith(".frag"))));
-    donorFiles.sort((first, second) -> first.compareTo(second));
+    donorFiles.sort(Comparator.naturalOrder());
   }
 
   /**
@@ -363,6 +365,13 @@ public abstract class DonateCode implements ITransformation {
 
   private void donateFunctionsAndGlobals(TranslationUnit recipient) {
 
+    // We record the number of precision qualifiers in the recipient so that we can check that it
+    // is not changed by donation.
+    final long numPrecisionDeclarationsBeforeDonation = recipient.getTopLevelDeclarations()
+          .stream()
+          .filter(item -> item instanceof PrecisionDeclaration)
+          .count();
+
     List<Declaration> newRecipientTopLevelDeclarations = recipient.getTopLevelDeclarations()
           .stream()
           .filter(d -> !(d instanceof FunctionDefinition)).collect(Collectors.toList());
@@ -371,17 +380,15 @@ public abstract class DonateCode implements ITransformation {
           .getFunctionPrototypesFromShader(recipient);
     Set<String> recipientGlobalNames = getVariableNames(recipient.getTopLevelDeclarations());
 
-    for (File file : donorFiles) {
-      if (!donorsToTranslationUnits.containsKey(file)) {
-        continue;
-      }
-      final TranslationUnit donor = donorsToTranslationUnits.get(file);
-      List<Declaration> newDeclarations = getNecessaryFunctionsAndGlobalsFromDonor(donor,
+    for (TranslationUnit donor : donorFiles
+        .stream()
+        .filter(item -> donorsToTranslationUnits.containsKey(item))
+        .map(item -> donorsToTranslationUnits.get(item))
+        .collect(Collectors.toList())) {
+      final List<Declaration> newDeclarations = getNecessaryFunctionsAndGlobalsFromDonor(donor,
             recipientFunctionPrototypes,
             recipientGlobalNames);
-
       checkNoDuplicateStructNames(newDeclarations, newRecipientTopLevelDeclarations);
-
       newRecipientTopLevelDeclarations.addAll(newDeclarations);
       recipientFunctionPrototypes.addAll(AstUtil.getPrototypesForAllFunctions(newDeclarations));
       recipientGlobalNames.addAll(getVariableNames(newDeclarations));
@@ -394,6 +401,16 @@ public abstract class DonateCode implements ITransformation {
           newRecipientTopLevelDeclarations);
 
     recipient.setTopLevelDeclarations(newRecipientTopLevelDeclarations);
+
+    // Check that the number of precision qualifiers present in the recipient has not changed due
+    // to donation.
+    final long numPrecisionDeclarationsAfterDonation =
+        recipient.getTopLevelDeclarations()
+            .stream()
+            .filter(item -> item instanceof PrecisionDeclaration)
+            .count();
+    assert numPrecisionDeclarationsBeforeDonation == numPrecisionDeclarationsAfterDonation
+        : "Donation should not affect top-level precision qualifiers.";
 
   }
 
