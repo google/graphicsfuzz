@@ -70,13 +70,16 @@ public class VariableIdentifierExprTemplate extends AbstractExprTemplate {
 
   @Override
   public boolean isLValue() {
+    if (qualifiers.contains(TypeQualifier.ATTRIBUTE)) {
+      return false;
+    }
     if (qualifiers.contains(TypeQualifier.CONST)) {
       return false;
     }
-    if (qualifiers.contains(TypeQualifier.UNIFORM)) {
+    if (qualifiers.contains(TypeQualifier.SHADER_INPUT)) {
       return false;
     }
-    if (qualifiers.contains(TypeQualifier.SHADER_INPUT)) {
+    if (qualifiers.contains(TypeQualifier.UNIFORM)) {
       return false;
     }
     return true;
