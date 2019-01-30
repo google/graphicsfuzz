@@ -19,7 +19,6 @@ package com.graphicsfuzz.generator.tool;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -80,8 +79,12 @@ public class GenerateShaderFamily {
   }
 
   static void addFamilyGenerationArguments(ArgumentParser parser) {
-    parser.addArgument("--disable-validator")
-        .help("Disable calling validation tools on generated variants.")
+    parser.addArgument("--disable-glslangValidator")
+        .help("Do not use glslangValidator for validation during generation.")
+        .action(Arguments.storeTrue());
+
+    parser.addArgument("--disable-shader-translator")
+        .help("Do not use shader_translator for validation during generation.")
         .action(Arguments.storeTrue());
 
     parser.addArgument("--keep-bad-variants")
@@ -120,7 +123,8 @@ public class GenerateShaderFamily {
     final File donorsDir = ns.get("donors");
     final File outputDir = ns.get("output_dir") == null ? new File(".") : ns.get("output_dir");
     final boolean verbose = ns.getBoolean("verbose");
-    final boolean disableValidator = ns.getBoolean("disable_validator");
+    final boolean disableGlslangValidator = ns.getBoolean("disable_glslangValidator");
+    final boolean disableShaderTranslator = ns.getBoolean("disable_shader_translator");
     final boolean writeProbabilities = ns.getBoolean("write_probabilities");
     final boolean keepBadVariants = ns.getBoolean("keep_bad_variants");
     final boolean stopOnFail = ns.getBoolean("stop_on_fail");
@@ -172,11 +176,19 @@ public class GenerateShaderFamily {
     }
 
     // Validate reference shaders.
-    if (!disableValidator) {
-      if (!(fileOps.areShadersValid(preparedReferenceShaderJob, false)
-          && fileOps.areShadersValidShaderTranslator(preparedReferenceShaderJob, false))) {
+    if (!disableGlslangValidator) {
+      if (!fileOps.areShadersValid(preparedReferenceShaderJob, false)) {
         throw new RuntimeException("One or more of the prepared shaders of shader job "
-            + preparedReferenceShaderJob.getAbsolutePath() + " is not valid.");
+            + preparedReferenceShaderJob.getAbsolutePath() + " is not valid according to "
+            + "glslangValidator.");
+      }
+    }
+
+    if (!disableShaderTranslator) {
+      if (!fileOps.areShadersValidShaderTranslator(preparedReferenceShaderJob, false)) {
+        throw new RuntimeException("One or more of the prepared shaders of shader job "
+            + preparedReferenceShaderJob.getAbsolutePath() + " is not valid according to "
+            + "shader_translator.");
       }
     }
 
@@ -232,8 +244,12 @@ public class GenerateShaderFamily {
       }
 
       // Check the shader is valid
-      if (skipDueToInvalidShader(fileOps, variantShaderJobFile, disableValidator,
-          keepBadVariants, stopOnFail)) {
+      if (skipDueToInvalidShader(fileOps,
+          variantShaderJobFile,
+          disableGlslangValidator,
+          disableShaderTranslator,
+          keepBadVariants,
+          stopOnFail)) {
         continue;
       }
 
@@ -324,18 +340,19 @@ public class GenerateShaderFamily {
 
   private static boolean skipDueToInvalidShader(ShaderJobFileOperations fileOps,
                                                 File variantShaderJobFile,
-                                                boolean disableValidator,
+                                                boolean disableGlslangValidator,
+                                                boolean disableShaderTranslator,
                                                 boolean keepBadVariants,
                                                 boolean stopOnFail)
       throws IOException, InterruptedException {
 
-    if (disableValidator) {
-      // Validation has been disabled, so don't do any skipping.
-      return false;
-    }
+    final boolean shaderJobIsValid =
+      (disableGlslangValidator || fileOps.areShadersValid(variantShaderJobFile, false))
+          &&
+      (disableShaderTranslator || fileOps.areShadersValidShaderTranslator(variantShaderJobFile,
+          false));
 
-    if (!(fileOps.areShadersValid(variantShaderJobFile, false)
-        && fileOps.areShadersValidShaderTranslator(variantShaderJobFile, false))) {
+    if (!shaderJobIsValid) {
       if (keepBadVariants) {
         fileOps.moveShaderJobFileTo(variantShaderJobFile,
             new File(variantShaderJobFile.getParentFile(),

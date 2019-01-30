@@ -19,11 +19,13 @@ package com.graphicsfuzz.generator.tool;
 import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.apache.commons.io.FileUtils;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -142,6 +144,29 @@ public class GenerateShaderFamilyTest {
             "--generate-uniform-bindings"));
   }
 
+  @Test
+  public void testIgnoreShaderTranslator() throws Exception {
+    // shader_translator would reject this due to the non-constant array access; glslangValidator
+    // accepts it.
+    final String reference = "#version 100\n"
+        + "//WebGL\n"
+        + "\n"
+        + "precision mediump float;\n"
+        + "void main() {\n"
+        + "  int x;\n"
+        + "  int A[5];\n"
+        + "  A[x] = 2;\n"
+        + "}\n";
+    final File referenceFragFile = temporaryFolder.newFile("reference.frag");
+    final File referenceJsonFile = temporaryFolder.newFile("reference.json");
+    FileUtils.writeStringToFile(referenceFragFile, reference, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(referenceJsonFile, "{}", StandardCharsets.UTF_8);
+
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
+        "donors").toString();
+    checkShaderFamilyGeneration(2, 0, new ArrayList<>(), referenceJsonFile.getAbsolutePath(), donors);
+  }
+
   private void checkShaderFamilyGeneration(String samplesSubdir, String referenceShaderName,
                                           int numVariants, int seed,
                                           List<String> extraOptions) throws ArgumentParserException,
@@ -152,6 +177,11 @@ public class GenerateShaderFamilyTest {
     final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
         "donors").toString();
 
+    checkShaderFamilyGeneration(numVariants, seed, extraOptions, reference, donors);
+  }
+
+  private void checkShaderFamilyGeneration(int numVariants, int seed, List<String> extraOptions, String reference,
+                                           String donors) throws ArgumentParserException, InterruptedException, IOException, ReferencePreparationException {
     final List<String> options = new ArrayList<>();
 
     options.addAll(Arrays.asList(
