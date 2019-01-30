@@ -221,6 +221,11 @@ def create_traces(params: Params):
             if params.specific_handle is not None and params.specific_handle != shader_handle:
                 continue
             variant_shaders = list(family.glob("variant_*.frag"))
+            if len(variant_shaders) == 0:
+                variant_shaders = list(family.glob("variant_*.vert"))
+            if len(variant_shaders) == 0:
+                variant_shaders = list(family.glob("variant_*.comp"))
+            assert(len(variant_shaders) > 0)
             # to string
             variant_shaders = [str(v) for v in variant_shaders]
             handle_to_variant_list[shader_handle] = variant_shaders
@@ -276,7 +281,7 @@ def fuzz_trace(p: Params):
 
     # We should find a better way to load the capture;
     # getting a screenshot is unnecessarily heavy.
-    if p.orig_capture_id is None:
+    if len(p.orig_capture_id) == 0:
         run_gapit_screenshot_file(p)
 
     dump_shaders_trace_id(p)
@@ -306,7 +311,7 @@ Ensure you have:
 - a 'capture.gfxtrace' OpenGL trace file (in current directory)
 
 This script works from within the source tree or from the release zip.
-        
+
 However, more fine-grained use is available via ipython3.
 You must be in drivers/ or use PYTHONPATH=/path/to/python/drivers
 
