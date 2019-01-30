@@ -18,6 +18,7 @@ package com.graphicsfuzz.reducer.tool;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -215,7 +216,8 @@ public class GlslReduce {
   public static void mainHelper(
         String[] args,
         FuzzerServiceManager.Iface managerOverride)
-      throws ArgumentParserException, IOException, ParseTimeoutException, InterruptedException {
+      throws ArgumentParserException, IOException, ParseTimeoutException, InterruptedException,
+      GlslParserException {
 
     ArgumentParser parser = getParser();
 
@@ -436,17 +438,17 @@ public class GlslReduce {
           verbose,
           fileOps);
 
-    } catch (Throwable ex) {
+    } catch (Throwable throwable) {
 
       final File exceptionFile =
           ReductionProgressHelper.getReductionExceptionFile(workDir, shaderJobShortName);
 
       fileOps.writeStringToFile(
           exceptionFile,
-          ExceptionUtils.getStackTrace(ex)
+          ExceptionUtils.getStackTrace(throwable)
       );
 
-      throw ex;
+      throw throwable;
     }
   }
 
@@ -461,7 +463,7 @@ public class GlslReduce {
       boolean continuePreviousReduction,
       boolean verbose,
       ShaderJobFileOperations fileOps)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final ShadingLanguageVersion shadingLanguageVersion =
         getGlslVersionForShaderJob(initialShaderJobFile, fileOps);
     final IRandom random = new RandomWrapper(seed);

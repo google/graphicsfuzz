@@ -17,6 +17,7 @@
 package com.graphicsfuzz.reducer.tool;
 
 import com.graphicsfuzz.common.util.CompareAsts;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
@@ -155,7 +156,8 @@ public class GlslReduceTest {
         ParseHelper.parse(reducedFinal[0]));
   }
 
-  private File getShaderJobReady() throws IOException, ParseTimeoutException, InterruptedException {
+  private File getShaderJobReady() throws IOException, ParseTimeoutException, InterruptedException,
+      GlslParserException {
     final String fragmentShader = "#version 100\n" +
         "int a;" +
         "int b;" +

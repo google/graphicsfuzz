@@ -27,6 +27,7 @@ import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -174,7 +175,7 @@ public class ReductionDriverTest {
 
   private String reduce(IFileJudge judge, String program, String jsonString,
                         boolean reduceEverywhere)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     return reduce(judge, program, jsonString, reduceEverywhere,
           -1, 0);
   }
@@ -183,7 +184,7 @@ public class ReductionDriverTest {
                         boolean reduceEverywhere,
                         int stepLimit,
                         int seed)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     return reduce(judge, fragmentShader, Optional.empty(), jsonString,
         reduceEverywhere,
         stepLimit,
@@ -197,7 +198,7 @@ public class ReductionDriverTest {
                         boolean reduceEverywhere,
                         int stepLimit,
                         int seed)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     assertFalse(new File(testFolder.getRoot(), "temp.frag").exists());
     File tempFragmentShaderFile = testFolder.newFile("temp.frag");
     Optional<File> tempVertexShaderFile = vertexShader.isPresent() ?

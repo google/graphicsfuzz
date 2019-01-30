@@ -56,20 +56,20 @@ public class ParseHelper {
   public static final String END_OF_GRAPHICSFUZZ_DEFINES = "// END OF GENERATED HEADER";
 
   public static Optional<TranslationUnit> maybeParseShader(File shader)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     return shader.isFile()
         ? Optional.of(parse(shader))
         : Optional.empty();
   }
 
   public static synchronized TranslationUnit parse(File file)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     return parseInputStream(new ByteArrayInputStream(FileUtils.readFileToByteArray(file)),
         ShaderKind.fromExtension(FilenameUtils.getExtension(file.getName())));
   }
 
   public static synchronized TranslationUnit parse(String string, ShaderKind shaderKind)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     return parseInputStream(new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8)),
         shaderKind);
   }
@@ -83,13 +83,13 @@ public class ParseHelper {
    * @throws ParseTimeoutException Thrown if parsing takes to long.
    */
   public static synchronized TranslationUnit parse(String string)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     return parse(string, ShaderKind.FRAGMENT);
   }
 
   private static synchronized TranslationUnit parseInputStream(InputStream input,
                                                                ShaderKind shaderKind)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
 
     // Strip special GraphicsFuzz defines and run preprocessor
     final InputStream preprocessedInput = preprocess(stripGraphicsFuzzDefines(input), shaderKind);
@@ -145,13 +145,13 @@ public class ParseHelper {
 
   private static Translation_unitContext slowParse(
         InputStream inputStream,
-        ParseTreeListener listener) throws IOException {
+        ParseTreeListener listener) throws IOException, GlslParserException {
 
     GLSLParser parser = getParser(inputStream, listener);
     try {
       Translation_unitContext tu = parser.translation_unit();
       if (parser.getNumberOfSyntaxErrors() > 0) {
-        throw new RuntimeException("Syntax errors occurred during parsing");
+        throw new GlslParserException(parser);
       }
       return tu;
     } finally {

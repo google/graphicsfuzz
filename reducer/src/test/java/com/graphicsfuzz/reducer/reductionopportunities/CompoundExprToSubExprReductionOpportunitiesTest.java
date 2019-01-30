@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -82,7 +83,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
   }
 
   private void check(boolean reduceEverywhere, String original, String... expected)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<SimplifyExprReductionOpportunity> ops =
           getOps(tu, reduceEverywhere);

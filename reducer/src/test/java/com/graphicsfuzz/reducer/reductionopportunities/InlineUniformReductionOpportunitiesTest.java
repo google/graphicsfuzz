@@ -22,6 +22,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -195,7 +196,7 @@ public class InlineUniformReductionOpportunitiesTest {
   }
 
   private ShaderJob checkCanReduceToTarget(ShaderJob shaderJob, int expectedSize, String target)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     boolean found = false;
     for (int i = 0; i < expectedSize; i++) {
       final ShaderJob temp = shaderJob.clone();

@@ -18,6 +18,7 @@ package com.graphicsfuzz.reducer;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -52,7 +53,8 @@ public class CheckAstFeaturesFileJudge implements IFileJudge {
       assert shaderJob.getShaders().size() == 1;
       final TranslationUnit tu = shaderJob.getShaders().get(0);
       return visitorSuppliers.stream().allMatch(item -> item.get().check(tu));
-    } catch (IOException | ParseTimeoutException | InterruptedException exception) {
+    } catch (IOException | ParseTimeoutException | InterruptedException
+        | GlslParserException exception) {
       throw new RuntimeException(exception);
     }
   }

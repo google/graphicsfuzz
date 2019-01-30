@@ -16,6 +16,7 @@
 
 package com.graphicsfuzz.server;
 
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.reducer.tool.GlslReduce;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager.Iface;
@@ -29,8 +30,8 @@ public class GraphicsFuzzServerCommandDispatcher implements ICommandDispatcher {
 
   @Override
   public void dispatchCommand(List<String> command, Iface fuzzerServiceManager)
-        throws ShaderDispatchException, ArgumentParserException, InterruptedException,
-        IOException, ParseTimeoutException {
+      throws ShaderDispatchException, ArgumentParserException, InterruptedException,
+      IOException, ParseTimeoutException, GlslParserException {
     switch (command.get(0)) {
       case "run_shader_family":
         RunShaderFamily.mainHelper(

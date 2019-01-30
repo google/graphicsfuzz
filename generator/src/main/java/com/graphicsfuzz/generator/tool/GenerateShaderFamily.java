@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -111,7 +112,7 @@ public class GenerateShaderFamily {
   }
 
   public static void mainHelper(String[] args) throws ArgumentParserException,
-      InterruptedException, IOException, ParseTimeoutException {
+      InterruptedException, IOException, ReferencePreparationException {
 
     Namespace ns = parse(args);
 
@@ -148,15 +149,27 @@ public class GenerateShaderFamily {
 
     fileOps.forceMkdir(outputDir);
 
-    // Prepare reference shaders.
     final File preparedReferenceShaderJob = new File(outputDir, "reference.json");
-    PrepareReference.prepareReference(referenceShaderJob,
-        preparedReferenceShaderJob,
-        generatorArguments.getReplaceFloatLiterals(),
-        // We subtract 1 because we need to be able to add injectionSwitch
-        generatorArguments.getMaxUniforms() - 1,
-        generatorArguments.getGenerateUniformBindings(),
-        fileOps);
+
+    try {
+      // Prepare reference shaders.
+      PrepareReference.prepareReference(referenceShaderJob,
+          preparedReferenceShaderJob,
+          generatorArguments.getReplaceFloatLiterals(),
+          // We subtract 1 because we need to be able to add injectionSwitch
+          generatorArguments.getMaxUniforms() - 1,
+          generatorArguments.getGenerateUniformBindings(),
+          fileOps);
+    } catch (ParseTimeoutException | GlslParserException exception) {
+      // Remove the created output directory and all of its contents, so that we don't get a
+      // defunct shader family, then re-throw the exception.
+      LOGGER.info("Shader family generation aborting due to "
+          + (exception instanceof ParseTimeoutException
+          ? "parsing timing out"
+          : "a shader failing to parse") + ".");
+      fileOps.deleteDirectory(outputDir);
+      throw new ReferencePreparationException(exception);
+    }
 
     // Validate reference shaders.
     if (!disableValidator) {

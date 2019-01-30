@@ -181,7 +181,7 @@ public class PruneUniformsTest {
 
   private void doPruneTest(String program, String uniforms, String expectedProgram,
         String expectedUniforms, List<String> prefixList, int limit)
-        throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
 
     final File uniformsFile = temporaryFolder.newFile("uniforms.json");
     FileUtils.writeStringToFile(uniformsFile, uniforms, StandardCharsets.UTF_8);

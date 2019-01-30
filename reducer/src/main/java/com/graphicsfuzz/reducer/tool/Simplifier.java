@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -36,7 +37,7 @@ public class Simplifier {
   private static final Logger LOGGER = LoggerFactory.getLogger(Simplifier.class);
 
   public static void main(String[] args) throws IOException, ParseTimeoutException,
-      InterruptedException {
+      InterruptedException, GlslParserException {
     if (args.length != 1) {
       System.err.println("Usage: Simplifier <file>.json");
       System.exit(1);

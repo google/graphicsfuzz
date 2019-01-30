@@ -46,6 +46,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.common.util.OpenGlConstants;
@@ -469,7 +470,8 @@ public class TyperTest {
   }
 
   private void checkComputeShaderBuiltin(String builtin, String builtinConstant, BasicType baseType,
-      TypeQualifier qualifier) throws IOException, ParseTimeoutException, InterruptedException {
+      TypeQualifier qualifier) throws IOException, ParseTimeoutException, InterruptedException,
+      GlslParserException {
     TranslationUnit tu = ParseHelper.parse("void main() { " + builtin + "; }");
     Typer typer = new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_310);
     new StandardVisitor() {

@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.FileHelper;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ImageUtil;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
@@ -54,7 +55,7 @@ public final class Util {
   static File renderShader(ShadingLanguageVersion shadingLanguageVersion,
                            File originalShader,
                            TemporaryFolder temporaryFolder, ShaderJobFileOperations fileOps)
-      throws IOException, InterruptedException, ParseTimeoutException {
+      throws IOException, InterruptedException, ParseTimeoutException, GlslParserException {
     final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShader);
 
     // TODO: having to plug in the version here feels like a hack.  But this is due to the

@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -254,7 +255,7 @@ public class GenerateTest {
     testValidityOfVertexShaderTransformations(Arrays.asList("--enable-only", "jump"), 5);
   }
 
-  private void testValidityOfVertexShaderTransformations(List<String> extraArgs, int repeatCount) throws IOException, InterruptedException, ParseTimeoutException, ArgumentParserException {
+  private void testValidityOfVertexShaderTransformations(List<String> extraArgs, int repeatCount) throws IOException, InterruptedException, ParseTimeoutException, ArgumentParserException, GlslParserException {
 
     ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     // TODO: Use fileOps more.

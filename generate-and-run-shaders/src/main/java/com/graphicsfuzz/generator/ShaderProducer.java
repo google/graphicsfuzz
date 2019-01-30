@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator;
 
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -126,8 +127,8 @@ public class ShaderProducer implements Runnable {
         }
         LOGGER.info("Sent shader job " + sent + ".");
         sent++;
-      } catch (ParseTimeoutException | IOException | AssertionError
-          | InterruptedException exception) {
+      } catch (ParseTimeoutException | IOException | AssertionError | InterruptedException
+          | GlslParserException exception) {
         // Something went wrong - log the details and move on.
         LOGGER.error("Error during generation.", exception);
       }

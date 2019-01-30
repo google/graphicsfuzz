@@ -16,6 +16,7 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -72,7 +73,7 @@ public class GlslGenerate {
   }
 
   public static void mainHelper(String[] args) throws ArgumentParserException,
-      InterruptedException, IOException, ParseTimeoutException {
+      InterruptedException, IOException, ParseTimeoutException, GlslParserException {
     final Namespace ns = parse(args);
 
     final File referencesDir = ns.get("references");
@@ -111,7 +112,12 @@ public class GlslGenerate {
         LOGGER.info("Generating a shader family: " + generateShaderFamilyArgs.stream()
             .reduce((String item1, String item2) -> item1 + " " + item2).orElse(""));
       }
-      GenerateShaderFamily.mainHelper(generateShaderFamilyArgs.toArray(new String[0]));
+      try {
+        GenerateShaderFamily.mainHelper(generateShaderFamilyArgs.toArray(new String[0]));
+      } catch (ReferencePreparationException referencePreparationException) {
+        LOGGER.info("Generation of shader family was aborted due to problems preparing the "
+            + "reference.");
+      }
     }
     LOGGER.info("Generation complete.");
   }

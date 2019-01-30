@@ -26,6 +26,7 @@ import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.reducer.tool.GlslReduce;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
@@ -146,7 +147,7 @@ public class ReducerUnitTest {
   private TranslationUnit generateSizeLimitedShader(File fragmentShader,
       List<ITransformationSupplier> transformations, IRandom generator,
       ShadingLanguageVersion shadingLanguageVersion) throws IOException, ParseTimeoutException,
-      InterruptedException {
+      InterruptedException, GlslParserException {
     while (true) {
       List<ITransformationSupplier> transformationsCopy = new ArrayList<>();
       transformationsCopy.addAll(transformations);
@@ -374,7 +375,7 @@ public class ReducerUnitTest {
   }
 
   private String runReductionOnShader(File shaderJobFile, IFileJudge fileJudge)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final String shaderJobShortName = FilenameUtils.removeExtension(shaderJobFile.getName());
     final ShadingLanguageVersion version =
         ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(

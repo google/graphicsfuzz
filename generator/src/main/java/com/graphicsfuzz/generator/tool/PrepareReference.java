@@ -18,6 +18,7 @@ package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.UniformsInfo;
@@ -76,14 +77,15 @@ public final class PrepareReference {
     } catch (ArgumentParserException exception) {
       exception.getParser().handleError(exception);
       System.exit(1);
-    } catch (IOException | ParseTimeoutException | InterruptedException exception) {
+    } catch (IOException | ParseTimeoutException | InterruptedException
+        | GlslParserException exception) {
       exception.printStackTrace();
       System.exit(1);
     }
   }
 
   public static void mainHelper(String[] args) throws ArgumentParserException, IOException,
-      ParseTimeoutException, InterruptedException {
+      ParseTimeoutException, InterruptedException, GlslParserException {
 
     Namespace ns = parse(args);
 
@@ -107,7 +109,7 @@ public final class PrepareReference {
       int maxUniforms,
       boolean generateUniformBindings,
       ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException,
-      InterruptedException {
+      InterruptedException, GlslParserException {
 
     final ShaderJob shaderJob = fileOps.readShaderJobFile(referenceShaderJobFile);
 
