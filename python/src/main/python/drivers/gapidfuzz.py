@@ -155,15 +155,6 @@ def dump_shaders_trace_id(params: Params):
         nz(params.orig_capture_id)
     ], cwd=nz(params.shaders_dir))
 
-    # To avoid subsequent pain in filenames, get rid of the '<' and '>'
-    # characters from the dumped shader filenames.
-    #
-    # Shader<12><3456>.frag becomes Shader_12__3456_.frag
-    for f in Path(params.shaders_dir).iterdir():  # type: Path
-        name = f.name
-        newname = name.replace('<', '_').replace('>', '_')
-        newpath = Path(f.parent.name + '/' + newname)
-        f.rename(newpath)
 
 def run_gapis_async(params: Params):
     if params.gapis is None:
