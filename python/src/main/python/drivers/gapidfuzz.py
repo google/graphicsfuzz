@@ -221,6 +221,11 @@ def create_traces(params: Params):
             if params.specific_handle is not None and params.specific_handle != shader_handle:
                 continue
             variant_shaders = list(family.glob("variant_*.frag"))
+            if len(variant_shaders) == 0:
+                variant_shaders = list(family.glob("variant_*.vert"))
+            if len(variant_shaders) == 0:
+                variant_shaders = list(family.glob("variant_*.comp"))
+            assert(len(variant_shaders) > 0)
             # to string
             variant_shaders = [str(v) for v in variant_shaders]
             handle_to_variant_list[shader_handle] = variant_shaders
