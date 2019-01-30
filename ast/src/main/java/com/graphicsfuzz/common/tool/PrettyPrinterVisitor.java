@@ -682,16 +682,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   public static void emitGraphicsFuzzDefines(PrintStream out) {
     out.append("\n");
-    out.append("#ifdef GL_ES\n");
-    out.append("#ifdef GL_FRAGMENT_PRECISION_HIGH\n");
-    out.append("precision highp float;\n");
-    out.append("precision highp int;\n");
-    out.append("#else\n");
-    out.append("precision mediump float;\n");
-    out.append("precision mediump int;\n");
-    out.append("#endif\n");
-    out.append("#endif\n");
-    out.append("\n");
     out.append("#ifndef REDUCER\n");
     out.append("#define " + Constants.GLF_ZERO + "(X, Y)          (Y)\n");
     out.append("#define " + Constants.GLF_ONE + "(X, Y)           (Y)\n");

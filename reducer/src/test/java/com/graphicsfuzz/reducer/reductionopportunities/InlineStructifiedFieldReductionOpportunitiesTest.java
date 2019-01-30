@@ -81,7 +81,8 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
 
   @Test
   public void inlineRegressionTest() throws Exception {
-    String program = "struct _GLF_struct_D {\n"
+    String program = "precision mediump float;\n"
+        + "struct _GLF_struct_D {\n"
         + "    bool _f0;\n"
         + "    mat4 _f1;\n"
         + "};\n"

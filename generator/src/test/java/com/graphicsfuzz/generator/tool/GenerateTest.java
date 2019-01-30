@@ -81,6 +81,7 @@ public class GenerateTest {
     // TODO: Use fileOps more.
 
     final String program = "#version 300 es\n"
+        + "precision highp float;\n"
         + "layout(location=0) out highp vec4 _GLF_color;"
         + "uniform vec2 injectionSwitch;\n"
         + "\n"
@@ -187,7 +188,8 @@ public class GenerateTest {
     ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     // TODO: Use fileOps more.
 
-    final String dummyFragment = "void main()\n"
+    final String dummyFragment = "precision mediump float;\n"
+        + "void main()\n"
         + "{\n"
         + "  float iAmAFragmentShader;"
         + "}\n";
@@ -296,6 +298,7 @@ public class GenerateTest {
   public void testInjectionSwitchAddedByDefault() throws Exception {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     final String program = "#version 100\n" +
+        "precision mediump float;" +
         "void main() {" +
         " int x = 0;" +
         " for (int i = 0; i < 100; i++) {" +
