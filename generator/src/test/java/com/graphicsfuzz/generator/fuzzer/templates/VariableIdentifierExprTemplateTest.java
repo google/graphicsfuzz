@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.fuzzer.templates;
 
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import java.io.IOException;
@@ -71,7 +72,8 @@ public class VariableIdentifierExprTemplateTest {
     assertTrue(getTemplateFromSingleDeclarationProgram(program).isLValue());
   }
 
-  public VariableIdentifierExprTemplate getTemplateFromSingleDeclarationProgram(String program) throws IOException, ParseTimeoutException, InterruptedException {
+  public VariableIdentifierExprTemplate getTemplateFromSingleDeclarationProgram(String program)
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final VariablesDeclaration variablesDeclaration =
         (VariablesDeclaration) ParseHelper.parse(program).getTopLevelDeclarations().get(0);
     return new VariableIdentifierExprTemplate(variablesDeclaration.getDeclInfo(0).getName(),

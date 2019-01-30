@@ -286,7 +286,7 @@ public class Obfuscator {
   }
 
   public static void main(String[] args)
-        throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final File shader = new File(args[0]);
     final String licenseFilename = args[1];
     ExecResult execResult = new ExecHelper().exec(

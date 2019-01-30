@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
@@ -409,7 +410,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
   }
 
   private void check(boolean reduceEverywhere, String original, String... expected)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<CompoundToBlockReductionOpportunity> ops =
           getOps(tu, reduceEverywhere);

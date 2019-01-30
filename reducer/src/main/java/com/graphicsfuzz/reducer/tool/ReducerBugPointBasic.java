@@ -18,6 +18,7 @@ package com.graphicsfuzz.reducer.tool;
 
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -80,7 +81,8 @@ public class ReducerBugPointBasic {
 
 
   public static void main(String[] args)
-      throws IOException, ParseTimeoutException, InterruptedException, ArgumentParserException {
+      throws IOException, ParseTimeoutException, InterruptedException, ArgumentParserException,
+      GlslParserException {
 
     final Namespace ns = parse(args);
 
@@ -247,7 +249,7 @@ public class ReducerBugPointBasic {
       ShaderJob shaderJob,
       Exception exception,
       ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException,
-      InterruptedException {
+      InterruptedException, GlslParserException {
     File tempShaderJobFile = new File("temp.json");
 
     fileOps.writeShaderJobFile(

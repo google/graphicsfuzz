@@ -43,6 +43,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.typing.Typer;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.OpenGlConstants;
@@ -109,7 +110,7 @@ public abstract class DonateCode implements ITransformation {
   abstract void adaptTranslationUnitForSpecificDonation(TranslationUnit tu, IRandom generator);
 
   private TranslationUnit prepareTranslationUnit(File donorFile, IRandom generator)
-      throws IOException, ParseTimeoutException, InterruptedException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     TranslationUnit tu = ParseHelper.parse(donorFile);
     addPrefixes(tu, getDeclaredFunctionNames(tu));
     // Add prefixed versions of these builtins, in case they are used
@@ -595,7 +596,8 @@ public abstract class DonateCode implements ITransformation {
         globalVariables.putAll(getGlobalVariablesFromShader(donor));
         structNames.addAll(getStructNamesFromShader(donor));
         donorsToTranslationUnits.put(donorFile, donor);
-      } catch (IOException | ParseTimeoutException | InterruptedException exception) {
+      } catch (IOException | ParseTimeoutException | InterruptedException
+          | GlslParserException exception) {
         throw new RuntimeException("An exception occurred during donor parsing.", exception);
       }
     }

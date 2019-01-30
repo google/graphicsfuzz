@@ -467,26 +467,16 @@ public class ParseHelperTest {
         }.test(ParseHelper.parse(program)));
   }
 
-  @Test
+  @Test(expected = GlslParserException.class)
   public void testDoNotParseBadSignedConstant() throws Exception {
     // Check that lexing of hex constants is working OK.
-    try {
-      ParseHelper.parse("int foo() { return 0x120x12; }");
-      fail("Should not manage to parse.");
-    } catch (RuntimeException runtimeException) {
-      assertTrue(runtimeException.getMessage().startsWith("Syntax errors occurred during parsing"));
-    }
+    ParseHelper.parse("int foo() { return 0x120x12; }");
   }
 
-  @Test
+  @Test(expected = GlslParserException.class)
   public void testDoNotParseBadUnsignedConstant() throws Exception {
     // Check that lexing of hex constants is working OK.
-    try {
-      ParseHelper.parse("uint foo() { return 0x120x12u; }");
-      fail("Should not manage to parse.");
-    } catch (RuntimeException runtimeException) {
-      assertTrue(runtimeException.getMessage().startsWith("Syntax errors occurred during parsing"));
-    }
+    ParseHelper.parse("uint foo() { return 0x120x12u; }");
   }
 
   @Test
