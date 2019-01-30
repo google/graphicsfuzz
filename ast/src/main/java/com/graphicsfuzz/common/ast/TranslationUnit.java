@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.ast;
 
 import com.graphicsfuzz.common.ast.decl.Declaration;
+import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
@@ -105,8 +106,19 @@ public class TranslationUnit implements IAstNode {
     visitor.visitTranslationUnit(this);
   }
 
+  /**
+   * Inserts the given declaration into the translation unit, but after any precision qualifiers
+   * that appear contiguously at the start of the translation unit.
+   * @param decl A declaration to be added.
+   */
   public void addDeclaration(Declaration decl) {
-    topLevelDeclarations.add(0, decl);
+    int index;
+    for (index = 0; index < topLevelDeclarations.size(); index++) {
+      if (!(topLevelDeclarations.get(index) instanceof PrecisionDeclaration)) {
+        break;
+      }
+    }
+    topLevelDeclarations.add(index, decl);
   }
 
   public void addDeclarationBefore(Declaration newDecl, Declaration existingDecl) {

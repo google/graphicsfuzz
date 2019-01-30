@@ -46,6 +46,7 @@ public class PruneUniformsTest {
   @Test
   public void testPruneOne() throws Exception {
     final String program = "#version 310 es\n"
+          + "precision highp float;"
           + "uniform float a;"
           + "uniform float prune_b;"
           + "uniform int c;"
@@ -73,6 +74,7 @@ public class PruneUniformsTest {
           + "}\n";
 
     final String expectedProgram = "#version 310 es\n"
+          + "precision highp float;"
           + "uniform float a;"
           + "float prune_b = 23.0;"
           + "uniform int c;"
@@ -103,6 +105,7 @@ public class PruneUniformsTest {
   @Test
   public void testPruneAll() throws Exception {
     final String program = "#version 310 es\n"
+          + "precision highp float;"
           + "uniform int liveI[10];"
           + "uniform vec3 deadF[3];"
           + "uniform vec2 liveG, deadH;"
@@ -156,6 +159,7 @@ public class PruneUniformsTest {
           + "}\n";
 
     final String expectedProgram = "#version 310 es\n"
+          + "precision highp float;"
           + "int liveI[10] = int[10](1, 2, 3, 4, 5, 6, 7, 8, 9, 10);"
           + "vec3 deadF[3] = vec3[3](vec3(1.0, 2.0, 3.0), vec3(4.0, 5.0, 6.0), vec3(7.0, 8.0, 9.0));"
           + "vec2 deadH = vec2(258.0, 259.0);"
