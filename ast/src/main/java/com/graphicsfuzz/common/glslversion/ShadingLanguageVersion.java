@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.common.glslversion;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -114,6 +113,19 @@ public interface ShadingLanguageVersion {
       }
     }
     throw new RuntimeException("Unknown version string " + versionString);
+  }
+
+  static ShadingLanguageVersion fromVersionString(String versionString, boolean webGlHint) {
+    final ShadingLanguageVersion regularVersion = fromVersionString(versionString);
+    if (webGlHint) {
+      if (regularVersion == ESSL_100) {
+        return WEBGL_SL;
+      }
+      if (regularVersion == ESSL_300) {
+        return WEBGL2_SL;
+      }
+    }
+    return regularVersion;
   }
 
   static boolean isWebGlCompatible(String versionString) {
