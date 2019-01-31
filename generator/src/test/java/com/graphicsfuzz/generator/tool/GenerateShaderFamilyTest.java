@@ -165,7 +165,33 @@ public class GenerateShaderFamilyTest {
 
     final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
         "donors").toString();
+    // Disable shader_translator, so we should still get family generated
     checkShaderFamilyGeneration(2, 0, Collections.singletonList("--disable-shader-translator"),
+        referenceJsonFile.getAbsolutePath(),
+        donors);
+  }
+
+  @Test
+  public void testIgnoreGlslangValidator() throws Exception {
+    // shader_translator will not be invoked on this shader, and glslangValidator would reject it
+    // due to it using a made up extension.
+    final String reference = "#version 440\n"
+        + "#extension does_not_exist : nothing\n"
+        + "\n"
+        + "precision mediump float;\n"
+        + "void main() {\n"
+        + "}\n";
+    final File referenceFragFile = temporaryFolder.newFile("reference.frag");
+    final File referenceJsonFile = temporaryFolder.newFile("reference.json");
+    FileUtils.writeStringToFile(referenceFragFile, reference, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(referenceJsonFile, "{}", StandardCharsets.UTF_8);
+
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
+        "donors").toString();
+    // Disabling glslangValidator should lead to a family being generated, as the rest of the tool
+    // chain will just ignore the imaginary extension.
+    checkShaderFamilyGeneration(2, 0,
+        Collections.singletonList("--disable-glslangValidator"),
         referenceJsonFile.getAbsolutePath(),
         donors);
   }
