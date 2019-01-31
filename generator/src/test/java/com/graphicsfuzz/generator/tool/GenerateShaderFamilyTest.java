@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.apache.commons.io.FileUtils;
@@ -164,7 +165,9 @@ public class GenerateShaderFamilyTest {
 
     final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
         "donors").toString();
-    checkShaderFamilyGeneration(2, 0, new ArrayList<>(), referenceJsonFile.getAbsolutePath(), donors);
+    checkShaderFamilyGeneration(2, 0, Collections.singletonList("--disable-shader-translator"),
+        referenceJsonFile.getAbsolutePath(),
+        donors);
   }
 
   private void checkShaderFamilyGeneration(String samplesSubdir, String referenceShaderName,
