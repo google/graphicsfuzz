@@ -347,9 +347,9 @@ public class GenerateShaderFamily {
       throws IOException, InterruptedException {
 
     final boolean shaderJobIsValid =
-      (disableGlslangValidator || fileOps.areShadersValid(variantShaderJobFile, false))
+        (disableGlslangValidator || fileOps.areShadersValid(variantShaderJobFile, false))
           &&
-      (disableShaderTranslator || fileOps.areShadersValidShaderTranslator(variantShaderJobFile,
+        (disableShaderTranslator || fileOps.areShadersValidShaderTranslator(variantShaderJobFile,
           false));
 
     if (!shaderJobIsValid) {
