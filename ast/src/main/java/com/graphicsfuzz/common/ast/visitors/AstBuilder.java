@@ -172,11 +172,13 @@ import org.antlr.v4.runtime.misc.Pair;
 public class AstBuilder extends GLSLBaseVisitor<Object> {
 
   private final ShaderKind shaderKind;
+  private final boolean hasWebGlHint;
   private final List<Declaration> topLevelDeclarations;
   private final Set<StructNameType> structs;
 
-  private AstBuilder(ShaderKind shaderKind) {
+  private AstBuilder(ShaderKind shaderKind, boolean hasWebGlHint) {
     this.shaderKind = shaderKind;
+    this.hasWebGlHint = hasWebGlHint;
     this.topLevelDeclarations = new ArrayList<>();
     this.structs = new HashSet<>();
   }
@@ -186,8 +188,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   public static TranslationUnit getTranslationUnit(Translation_unitContext ctx,
-                                                   ShaderKind shaderKind) {
-    return new AstBuilder(shaderKind).visitTranslation_unit(ctx);
+                                                   ShaderKind shaderKind, boolean hasWebGlHint) {
+    return new AstBuilder(shaderKind, hasWebGlHint).visitTranslation_unit(ctx);
   }
 
   @Override
@@ -205,7 +207,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     return new TranslationUnit(shaderKind,
             versionString == null
             ? Optional.empty()
-            : Optional.of(ShadingLanguageVersion.fromVersionString(versionString)),
+            : Optional.of(ShadingLanguageVersion.fromVersionString(versionString, hasWebGlHint)),
         topLevelDeclarations);
   }
 

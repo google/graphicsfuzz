@@ -487,6 +487,22 @@ public class ParseHelperTest {
   }
 
   @Test
+  public void testParseWebGl1() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 100\n"
+        + "//WebGL\n"
+        + "void main() { }");
+    assertSame(ShadingLanguageVersion.WEBGL_SL, tu.getShadingLanguageVersion());
+  }
+
+  @Test
+  public void testParseWebGl2() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "//WebGL\n"
+        + "void main() { }");
+    assertSame(ShadingLanguageVersion.WEBGL2_SL, tu.getShadingLanguageVersion());
+  }
+
+  @Test
   public void testParseInPlacePrecisionAndFloatSuffix() throws Exception {
     final String shader = "#version 310 es\n"
         + "\n"
