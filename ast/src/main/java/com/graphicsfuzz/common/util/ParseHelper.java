@@ -91,6 +91,8 @@ public class ParseHelper {
                                                                ShaderKind shaderKind)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
 
+    final boolean hasWebGlHint = checkForWebGlHint(input);
+
     // Strip special GraphicsFuzz defines and run preprocessor
     final InputStream preprocessedInput = preprocess(stripGraphicsFuzzDefines(input), shaderKind);
 
@@ -111,7 +113,22 @@ public class ParseHelper {
       throw new ParseTimeoutException(exception);
     }
 
-    return AstBuilder.getTranslationUnit(ctx, shaderKind);
+    return AstBuilder.getTranslationUnit(ctx, shaderKind, hasWebGlHint);
+  }
+
+  private static boolean checkForWebGlHint(InputStream input) throws IOException {
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(input))) {
+      if (br.readLine() == null) {
+        return false;
+      }
+      final String maybeHint = br.readLine();
+      if (maybeHint == null) {
+        return false;
+      }
+      return ShadingLanguageVersion.isWebGlHint(maybeHint);
+    } finally {
+      input.reset();
+    }
   }
 
   private static InputStream preprocess(InputStream inputStream, ShaderKind shaderKind)
