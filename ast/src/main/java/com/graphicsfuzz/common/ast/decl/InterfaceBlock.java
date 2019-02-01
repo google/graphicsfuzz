@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.common.ast.decl;
 
-import com.graphicsfuzz.common.ast.type.LayoutQualifier;
+import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 public class InterfaceBlock extends Declaration {
 
-  private final Optional<LayoutQualifier> layoutQualifier;
+  private final Optional<LayoutQualifierSequence> layoutQualifier;
   private final TypeQualifier interfaceQualifier;
   private final String structName;
   private final List<String> memberNames;
@@ -37,7 +37,7 @@ public class InterfaceBlock extends Declaration {
   private final Optional<String> instanceName;
 
   public InterfaceBlock(
-      Optional<LayoutQualifier> layoutQualifier,
+      Optional<LayoutQualifierSequence> layoutQualifier,
       TypeQualifier interfaceQualifier,
       String structName,
       List<String> memberNames,
@@ -58,12 +58,12 @@ public class InterfaceBlock extends Declaration {
     this.instanceName = instanceName;
   }
 
-  public InterfaceBlock(LayoutQualifier layoutQualifier,
-      TypeQualifier interfaceQualifier, String name,
-      String memberName,
-      Type memberType,
-      String instanceName) {
-    this(Optional.of(layoutQualifier), interfaceQualifier,
+  public InterfaceBlock(LayoutQualifierSequence layoutQualifierSequence,
+                        TypeQualifier interfaceQualifier, String name,
+                        String memberName,
+                        Type memberType,
+                        String instanceName) {
+    this(Optional.of(layoutQualifierSequence), interfaceQualifier,
         name, Arrays.asList(memberName), Arrays.asList(memberType), Optional.of(instanceName));
   }
 
@@ -79,7 +79,7 @@ public class InterfaceBlock extends Declaration {
     return layoutQualifier.isPresent();
   }
 
-  public LayoutQualifier getLayoutQualifier() {
+  public LayoutQualifierSequence getLayoutQualifier() {
     assert hasLayoutQualifier();
     return layoutQualifier.get();
   }

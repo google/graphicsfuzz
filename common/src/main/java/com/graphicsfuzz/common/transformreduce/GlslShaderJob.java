@@ -21,9 +21,13 @@ import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.LayoutQualifier;
+import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import java.util.ArrayList;
@@ -87,14 +91,18 @@ public class GlslShaderJob implements ShaderJob {
     for (String uniformName : getUniformsInfo().getUniformNames()) {
       assert !getUniformsInfo().hasBinding(uniformName);
     }
+
+    final Set<Integer> usedBindings = findUsedBindings();
+
+    // Find the first free binding.
     int nextBinding = 0;
+    while (usedBindings.contains(nextBinding)) {
+      nextBinding++;
+    }
 
     for (TranslationUnit tu : shaders) {
       final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
       for (Declaration decl : tu.getTopLevelDeclarations()) {
-        // For now we conservatively assume that there are no interface blocks, covering our
-        // assumption that there are no existing bindings.
-        assert !(decl instanceof InterfaceBlock);
         if (decl instanceof VariablesDeclaration
             && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
           final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
@@ -114,12 +122,15 @@ public class GlslShaderJob implements ShaderJob {
           assert uniformsInfo.containsKey(uniformName);
           if (!uniformsInfo.hasBinding(uniformName)) {
             uniformsInfo.addBinding(uniformName, nextBinding);
-            nextBinding++;
+            do {
+              nextBinding++;
+            } while (usedBindings.contains(nextBinding));
           }
           final int binding = uniformsInfo.getBinding(uniformName);
           newTopLevelDeclarations.add(
               new InterfaceBlock(
-                  Optional.of(new LayoutQualifier("set = 0, binding = " + binding)),
+                  Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
+                      new BindingLayoutQualifier(binding))),
                   TypeQualifier.UNIFORM,
                   "buf" + binding,
                   Arrays.asList(uniformName),
@@ -221,6 +232,41 @@ public class GlslShaderJob implements ShaderJob {
         getLicense(),
         new UniformsInfo(getUniformsInfo().toString()),
         shaders.stream().map(TranslationUnit::clone).collect(Collectors.toList()));
+  }
+
+  /**
+   * If "binding=x" occurs in any of the shaders, then "x" counts as a used binding.  The point of
+   * this method is that it can be queried to ensure that we do not give out bindings that are
+   * already used.
+   * @return Set of all bindings used by at least one of the shaders.
+   */
+  private Set<Integer> findUsedBindings() {
+    final Set<Integer> result = new HashSet<>();
+    for (TranslationUnit shader : shaders) {
+      new StandardVisitor() {
+
+        @Override
+        public void visitQualifiedType(QualifiedType qualifiedType) {
+          for (LayoutQualifierSequence layoutQualifierSequence : qualifiedType.getQualifiers()
+              .stream()
+              .filter(item -> item instanceof LayoutQualifierSequence)
+              .map(item -> (LayoutQualifierSequence) item)
+              .collect(Collectors.toList())) {
+            for (BindingLayoutQualifier bindingLayoutQualifier : layoutQualifierSequence
+                .getLayoutQualifiers()
+                .stream()
+                .filter(item -> item instanceof BindingLayoutQualifier)
+                .map(item -> (BindingLayoutQualifier) item)
+                .collect(Collectors.toList())) {
+              result.add(bindingLayoutQualifier.getIndex());
+            }
+          }
+          super.visitQualifiedType(qualifiedType);
+        }
+
+      }.visit(shader);
+    }
+    return result;
   }
 
 }
