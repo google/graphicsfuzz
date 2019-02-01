@@ -209,13 +209,26 @@ public class GlslGenerateTest {
   }
 
   private void checkComputeJsonWellFormed(File json) throws FileNotFoundException {
+    final String binding = "binding";
+
     final JsonObject content = new Gson().fromJson(new FileReader(json),
         JsonObject.class);
     assertTrue(content.has(Constants.COMPUTE_DATA_KEY));
-    JsonObject computeData = content.get(Constants.COMPUTE_DATA_KEY).getAsJsonObject();
+    final JsonObject computeData = content.get(Constants.COMPUTE_DATA_KEY).getAsJsonObject();
     assertEquals(2, computeData.entrySet().size());
     assertTrue(computeData.has(Constants.COMPUTE_NUM_GROUPS));
     assertTrue(computeData.has(Constants.COMPUTE_BUFFER));
+    final JsonObject buffer = computeData.get(Constants.COMPUTE_BUFFER).getAsJsonObject();
+    assertTrue(buffer.has(binding));
+    final int ssboBinding = buffer.get(binding).getAsInt();
+    content.entrySet().forEach(entry -> {
+      if (!entry.getKey().equals(Constants.COMPUTE_DATA_KEY)) {
+        final JsonObject uniformInfo = content.get(entry.getKey()).getAsJsonObject();
+        if (uniformInfo.has(binding)) {
+          assertNotEquals(ssboBinding, uniformInfo.get(binding).getAsInt());
+        }
+      }
+    });
   }
 
   private void generateShaderFamily(String references,

@@ -75,12 +75,12 @@ public class InterfaceBlock extends Declaration {
     return Collections.unmodifiableList(memberNames);
   }
 
-  public boolean hasLayoutQualifier() {
+  public boolean hasLayoutQualifierSequence() {
     return layoutQualifier.isPresent();
   }
 
-  public LayoutQualifierSequence getLayoutQualifier() {
-    assert hasLayoutQualifier();
+  public LayoutQualifierSequence getLayoutQualifierSequence() {
+    assert hasLayoutQualifierSequence();
     return layoutQualifier.get();
   }
 

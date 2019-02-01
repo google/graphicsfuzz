@@ -245,22 +245,32 @@ public class GlslShaderJob implements ShaderJob {
       new StandardVisitor() {
 
         @Override
+        public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
+          super.visitInterfaceBlock(interfaceBlock);
+          if (interfaceBlock.hasLayoutQualifierSequence()) {
+            gatherBindings(interfaceBlock.getLayoutQualifierSequence());
+          }
+        }
+
+        @Override
         public void visitQualifiedType(QualifiedType qualifiedType) {
-          for (LayoutQualifierSequence layoutQualifierSequence : qualifiedType.getQualifiers()
+          super.visitQualifiedType(qualifiedType);
+          qualifiedType.getQualifiers()
               .stream()
               .filter(item -> item instanceof LayoutQualifierSequence)
               .map(item -> (LayoutQualifierSequence) item)
+              .forEach(this::gatherBindings);
+        }
+
+        private void gatherBindings(LayoutQualifierSequence layoutQualifierSequence) {
+          for (BindingLayoutQualifier bindingLayoutQualifier : layoutQualifierSequence
+              .getLayoutQualifiers()
+              .stream()
+              .filter(item -> item instanceof BindingLayoutQualifier)
+              .map(item -> (BindingLayoutQualifier) item)
               .collect(Collectors.toList())) {
-            for (BindingLayoutQualifier bindingLayoutQualifier : layoutQualifierSequence
-                .getLayoutQualifiers()
-                .stream()
-                .filter(item -> item instanceof BindingLayoutQualifier)
-                .map(item -> (BindingLayoutQualifier) item)
-                .collect(Collectors.toList())) {
-              result.add(bindingLayoutQualifier.getIndex());
-            }
+            result.add(bindingLayoutQualifier.getIndex());
           }
-          super.visitQualifiedType(qualifiedType);
         }
 
       }.visit(shader);

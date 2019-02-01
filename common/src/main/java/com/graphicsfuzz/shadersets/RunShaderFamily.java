@@ -157,9 +157,11 @@ public class RunShaderFamily {
       ++numShadersRun;
     }
 
-    if (!fileOps.doesShaderJobResultFileHaveImage(referenceResult)) {
-      LOGGER.info("Reference failed to render, so skipping variants.");
-      return numShadersRun;
+    if (!fileOps.isComputeShaderJob(referenceJob)) {
+      if (!fileOps.doesShaderJobResultFileHaveImage(referenceResult)) {
+        LOGGER.info("Reference failed to render, so skipping variants.");
+        return numShadersRun;
+      }
     }
 
     final File[] variants =

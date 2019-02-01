@@ -48,7 +48,7 @@ public final class PrepareReference {
         .type(File.class);
 
     // Optional arguments
-    parser.addArgument("--replace_float_literals")
+    parser.addArgument("--replace-float-literals")
         .help("Replace float literals with uniforms.")
         .action(Arguments.storeTrue());
 
@@ -56,12 +56,12 @@ public final class PrepareReference {
         .help("Use WebGL spec.")
         .action(Arguments.storeTrue());
 
-    parser.addArgument("--generate_uniform_bindings")
+    parser.addArgument("--generate-uniform-bindings")
         .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
             + "compatibility.")
         .action(Arguments.storeTrue());
 
-    parser.addArgument("--max_uniforms")
+    parser.addArgument("--max-uniforms")
         .help("Check that reference doesn't have too many uniforms; required for Vulkan "
             + "compatibility.")
         .setDefault(0)

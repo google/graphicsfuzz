@@ -574,8 +574,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
     out.append(indent());
-    if (interfaceBlock.hasLayoutQualifier()) {
-      out.append(interfaceBlock.getLayoutQualifier().toString() + " ");
+    if (interfaceBlock.hasLayoutQualifierSequence()) {
+      out.append(interfaceBlock.getLayoutQualifierSequence().toString() + " ");
     }
     out.append(interfaceBlock.getInterfaceQualifier() + " "
         + interfaceBlock.getStructName() + " {" + newLine());
