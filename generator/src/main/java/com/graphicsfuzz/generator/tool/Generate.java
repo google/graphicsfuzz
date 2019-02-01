@@ -39,6 +39,7 @@ import com.graphicsfuzz.common.util.StripUnusedFunctions;
 import com.graphicsfuzz.common.util.StripUnusedGlobals;
 import com.graphicsfuzz.generator.FloatLiteralReplacer;
 import com.graphicsfuzz.generator.transformation.ITransformation;
+import com.graphicsfuzz.generator.transformation.controlflow.AddDeadBarriers;
 import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
 import com.graphicsfuzz.generator.transformation.controlflow.AddJumpStmts;
 import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
@@ -382,7 +383,8 @@ public class Generate {
         TranslationUnit reference, IRandom generator,
         GenerationParams generationParams, TransformationProbabilities probabilities) {
     List<ITransformation> transformations = populateTransformations(args,
-          generationParams, probabilities, reference.getShadingLanguageVersion());
+          generationParams, probabilities, reference.getShadingLanguageVersion(),
+          reference.getShaderKind());
     {
       // Keep roughly half of them
       final List<ITransformation> toKeep = new ArrayList<>();
@@ -467,7 +469,8 @@ public class Generate {
     String result = "";
 
     final List<ITransformation> transformations = populateTransformations(args,
-          generationParams, probabilities, reference.getShadingLanguageVersion());
+          generationParams, probabilities, reference.getShadingLanguageVersion(),
+          reference.getShaderKind());
 
     int numTransformationsApplied = 0;
     while (!transformations.isEmpty()) {
@@ -492,7 +495,8 @@ public class Generate {
           GeneratorArguments args,
           GenerationParams generationParams,
           TransformationProbabilities probabilities,
-          ShadingLanguageVersion shadingLanguageVersion) {
+          ShadingLanguageVersion shadingLanguageVersion,
+          ShaderKind shaderKind) {
     List<ITransformation> result = new ArrayList<>();
     final EnabledTransformations flags = args.getEnabledTransformations();
     if (flags.isEnabledDead()) {
@@ -534,6 +538,9 @@ public class Generate {
     }
     if (flags.isEnabledLiveFragColorWrites()) {
       result.add(new AddLiveOutputVariableWrites());
+    }
+    if (shaderKind == ShaderKind.COMPUTE && flags.isEnabledDeadBarriers()) {
+      result.add(new AddDeadBarriers());
     }
     if (result.isEmpty()) {
       throw new RuntimeException("At least one transformation must be enabled");
