@@ -18,8 +18,8 @@ package com.graphicsfuzz.generator.semanticschanging;
 
 import java.util.List;
 
-public interface TransformationMiner<TransformationT extends Transformation> {
+public interface MutationFinder<MutationT extends Mutation> {
 
-  List<TransformationT> mineTransformations();
+  List<MutationT> findMutations();
 
 }

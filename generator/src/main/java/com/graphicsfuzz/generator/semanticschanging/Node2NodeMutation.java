@@ -16,20 +16,24 @@
 
 package com.graphicsfuzz.generator.semanticschanging;
 
-import com.graphicsfuzz.common.ast.IParentMap;
-import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.typing.Typer;
+import com.graphicsfuzz.common.ast.IAstNode;
 
-abstract class Expr2ExprMiner extends TransformationMinerBase<Expr2Expr> {
+public abstract class Node2NodeMutation<NodeT extends IAstNode>
+      implements Mutation {
 
-  protected final Typer typer;
-  protected final IParentMap parentMap;
+  private final IAstNode parent;
+  private final NodeT original;
+  private final NodeT replacement;
 
-  public Expr2ExprMiner(TranslationUnit tu, ShadingLanguageVersion shadingLanguageVersion) {
-    super(tu);
-    this.typer = new Typer(tu, shadingLanguageVersion);
-    this.parentMap = IParentMap.createParentMap(tu);
+  protected Node2NodeMutation(IAstNode parent, NodeT original, NodeT replacement) {
+    this.parent = parent;
+    this.original = original;
+    this.replacement = replacement;
+  }
+
+  @Override
+  public final void apply() {
+    parent.replaceChild(original, replacement);
   }
 
 }

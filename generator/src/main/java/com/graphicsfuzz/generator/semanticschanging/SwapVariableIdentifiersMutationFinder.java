@@ -18,22 +18,20 @@ package com.graphicsfuzz.generator.semanticschanging;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Mines for possible transformations such as: v = x + y -> v = a + b.
+ * Finds mutations such as: v = x + y -> v = a + b.
  */
-public class SwapVariableIdentifiers extends Expr2ExprMiner {
+public class SwapVariableIdentifiersMutationFinder extends Expr2ExprMutationFinder {
 
   private final IRandom generator;
 
-  public SwapVariableIdentifiers(TranslationUnit tu,
-      ShadingLanguageVersion shadingLanguageVersion,
-      IRandom generator) {
-    super(tu, shadingLanguageVersion);
+  public SwapVariableIdentifiersMutationFinder(TranslationUnit tu,
+                                               IRandom generator) {
+    super(tu);
     this.generator = generator;
   }
 
@@ -56,7 +54,7 @@ public class SwapVariableIdentifiers extends Expr2ExprMiner {
       return;
     }
 
-    addTransformation(new Expr2Expr(
+    addMutation(new Expr2ExprMutation(
         parentMap.getParent(variableIdentifierExpr),
         variableIdentifierExpr,
         new VariableIdentifierExpr(

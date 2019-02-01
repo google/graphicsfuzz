@@ -22,12 +22,12 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 /**
  * Captures an opportunity to remove a statement, and allows the opportunity to be applied.
  */
-public class RemoveStmt implements Transformation {
+public class RemoveStmtMutation implements Mutation {
 
   private final BlockStmt parent;
   private final Stmt child;
 
-  RemoveStmt(BlockStmt parent, Stmt child) {
+  RemoveStmtMutation(BlockStmt parent, Stmt child) {
     assert parent.hasChild(child);
     this.parent = parent;
     this.child = child;

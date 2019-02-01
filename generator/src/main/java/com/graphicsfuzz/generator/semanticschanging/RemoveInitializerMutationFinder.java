@@ -16,23 +16,17 @@
 
 package com.graphicsfuzz.generator.semanticschanging;
 
-import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
-import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
-import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
-import java.util.ArrayList;
-import java.util.List;
-import org.antlr.v4.codegen.model.decl.Decl;
 
 /**
- * Mines for possible transformations such as: int v = w -> int v.
+ * Finds mutations such as: int v = w -> int v.
  */
-public class RemoveInitializerMiner extends TransformationMinerBase<ReplaceDeclInfo> {
+public class RemoveInitializerMutationFinder extends MutationFinderBase<ReplaceDeclInfoMutation> {
 
-  public RemoveInitializerMiner(TranslationUnit tu) {
+  public RemoveInitializerMutationFinder(TranslationUnit tu) {
     super(tu);
   }
 
@@ -52,7 +46,7 @@ public class RemoveInitializerMiner extends TransformationMinerBase<ReplaceDeclI
       if (variablesDeclaration.getDeclInfo(i).hasInitializer()) {
         final VariableDeclInfo newDeclInfo = variablesDeclaration.getDeclInfo(i).clone();
         newDeclInfo.setInitializer(null);
-        addTransformation(new ReplaceDeclInfo(variablesDeclaration, i, newDeclInfo));
+        addMutation(new ReplaceDeclInfoMutation(variablesDeclaration, i, newDeclInfo));
       }
     }
   }

@@ -23,23 +23,21 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Mines for possible transformations such as: e -> (e) * (e).
+ * Finds mutations such as: e -> (e) * (e).
  */
-public class Expr2BinaryMiner extends Expr2ExprMiner {
+public class Expr2BinaryMutationFinder extends Expr2ExprMutationFinder {
 
   private final IRandom generator;
 
-  public Expr2BinaryMiner(TranslationUnit tu,
-        ShadingLanguageVersion shadingLanguageVersion,
-        IRandom generator) {
-    super(tu, shadingLanguageVersion);
+  public Expr2BinaryMutationFinder(TranslationUnit tu,
+                                   IRandom generator) {
+    super(tu);
     this.generator = generator;
   }
 
@@ -62,7 +60,7 @@ public class Expr2BinaryMiner extends Expr2ExprMiner {
       return;
     }
 
-    addTransformation(new Expr2Expr(parentMap.getParent(expr),
+    addMutation(new Expr2ExprMutation(parentMap.getParent(expr),
         expr, new BinaryExpr(new ParenExpr(expr), new ParenExpr(expr.clone()), operator.get())));
   }
 

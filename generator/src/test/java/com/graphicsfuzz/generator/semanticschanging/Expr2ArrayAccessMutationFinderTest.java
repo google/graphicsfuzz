@@ -16,13 +16,26 @@
 
 package com.graphicsfuzz.generator.semanticschanging;
 
-import com.graphicsfuzz.common.ast.IAstNode;
-import com.graphicsfuzz.common.ast.stmt.Stmt;
+import static org.junit.Assert.assertEquals;
 
-public class Stmt2Stmt extends Node2Node<Stmt> {
+import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.common.util.RandomWrapper;
+import org.junit.Test;
 
-  public Stmt2Stmt(IAstNode parent, Stmt original, Stmt replacement) {
-    super(parent, original, replacement);
+public class Expr2ArrayAccessMutationFinderTest {
+
+  @Test
+  public void checkArraysFound() throws Exception {
+    final String program = "#version 300 es\n"
+          + "float input[10];"
+          + "void main() {"
+          + "  float f;"
+          + "  f;"
+          + "}";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    assertEquals(1, new Expr2ArrayAccessMutationFinder(tu,
+          new RandomWrapper(0)).findMutations().size());
   }
 
 }

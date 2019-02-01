@@ -17,23 +17,12 @@
 package com.graphicsfuzz.generator.semanticschanging;
 
 import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.stmt.Stmt;
 
-public abstract class Node2Node<NodeT extends IAstNode>
-      implements Transformation {
+public class Stmt2StmtMutation extends Node2NodeMutation<Stmt> {
 
-  private final IAstNode parent;
-  private final NodeT original;
-  private final NodeT replacement;
-
-  protected Node2Node(IAstNode parent, NodeT original, NodeT replacement) {
-    this.parent = parent;
-    this.original = original;
-    this.replacement = replacement;
-  }
-
-  @Override
-  public final void apply() {
-    parent.replaceChild(original, replacement);
+  public Stmt2StmtMutation(IAstNode parent, Stmt original, Stmt replacement) {
+    super(parent, original, replacement);
   }
 
 }

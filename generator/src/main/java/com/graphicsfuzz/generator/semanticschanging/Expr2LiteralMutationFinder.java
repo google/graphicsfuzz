@@ -18,16 +18,15 @@ package com.graphicsfuzz.generator.semanticschanging;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.Expr;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 
-public class Expr2LiteralMiner extends Expr2ExprMiner {
+public class Expr2LiteralMutationFinder extends Expr2ExprMutationFinder {
 
   private final IRandom generator;
 
-  public Expr2LiteralMiner(TranslationUnit tu, ShadingLanguageVersion shadingLanguageVersion,
-      IRandom generator) {
-    super(tu, shadingLanguageVersion);
+  public Expr2LiteralMutationFinder(TranslationUnit tu,
+                                    IRandom generator) {
+    super(tu);
     this.generator = generator;
   }
 
@@ -39,8 +38,8 @@ public class Expr2LiteralMiner extends Expr2ExprMiner {
     super.visitExpr(expr);
     if (typer.lookupType(expr) != null) {
       new LiteralFuzzer(generator).fuzz(typer.lookupType(expr).getWithoutQualifiers())
-            .ifPresent(item -> addTransformation(
-                  new Expr2Expr(parentMap.getParent(expr), expr, item)));
+            .ifPresent(item -> addMutation(
+                  new Expr2ExprMutation(parentMap.getParent(expr), expr, item)));
     }
   }
 

@@ -38,27 +38,27 @@ import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class TransformationMinerBase<TransformationT extends Transformation>
-      extends ScopeTreeBuilder implements TransformationMiner<TransformationT> {
+public abstract class MutationFinderBase<MutationT extends Mutation>
+      extends ScopeTreeBuilder implements MutationFinder<MutationT> {
 
   private final TranslationUnit tu;
-  private final List<TransformationT> transformations;
+  private final List<MutationT> mutations;
   protected boolean underForLoopHeader;
 
-  TransformationMinerBase(TranslationUnit tu) {
+  MutationFinderBase(TranslationUnit tu) {
     this.tu = tu;
-    this.transformations = new ArrayList<>();
+    this.mutations = new ArrayList<>();
     this.underForLoopHeader = false;
   }
 
   @Override
-  public final List<TransformationT> mineTransformations() {
+  public final List<MutationT> findMutations() {
     visit(tu);
-    return transformations;
+    return mutations;
   }
 
-  protected final void addTransformation(TransformationT transformation) {
-    transformations.add(transformation);
+  protected final void addMutation(MutationT mutation) {
+    mutations.add(mutation);
   }
 
   /**

@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.generator.semanticschanging;
 
-public interface Transformation {
+public interface Mutation {
 
   void apply();
 

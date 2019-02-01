@@ -22,9 +22,9 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 /**
  * Captures an opportunity to replace an expression with an expression.
  */
-public class Expr2Expr extends Node2Node<Expr> {
+public class Expr2ExprMutation extends Node2NodeMutation<Expr> {
 
-  Expr2Expr(IAstNode parent, Expr original, Expr replacement) {
+  Expr2ExprMutation(IAstNode parent, Expr original, Expr replacement) {
     super(parent, original, replacement);
   }
 

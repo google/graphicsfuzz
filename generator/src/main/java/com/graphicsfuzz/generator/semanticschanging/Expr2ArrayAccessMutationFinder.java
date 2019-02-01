@@ -26,7 +26,6 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.Arrays;
@@ -35,14 +34,13 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-public class Expr2ArrayAccessMiner extends Expr2ExprMiner {
+public class Expr2ArrayAccessMutationFinder extends Expr2ExprMutationFinder {
 
   private final SortedMap<String, Type> globalArrays;
   private final IRandom generator;
 
-  public Expr2ArrayAccessMiner(TranslationUnit tu,
-        ShadingLanguageVersion shadingLanguageVersion, IRandom generator) {
-    super(tu, shadingLanguageVersion);
+  public Expr2ArrayAccessMutationFinder(TranslationUnit tu, IRandom generator) {
+    super(tu);
     this.generator = generator;
     this.globalArrays = new TreeMap<>(String::compareTo);
   }
@@ -90,7 +88,7 @@ public class Expr2ArrayAccessMiner extends Expr2ExprMiner {
     }
     ArrayIndexExpr arrayIndexExpr = new ArrayIndexExpr(new VariableIdentifierExpr(arrayName),
           index);
-    addTransformation(new Expr2Expr(parentMap.getParent(expr), expr,
+    addMutation(new Expr2ExprMutation(parentMap.getParent(expr), expr,
           arrayIndexExpr));
   }
 

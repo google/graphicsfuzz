@@ -19,14 +19,12 @@ package com.graphicsfuzz.generator.semanticschanging;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 
-public class Expr2ArgMiner extends Expr2ExprMiner {
+public class Expr2ArgMutationFinder extends Expr2ExprMutationFinder {
 
 
-  public Expr2ArgMiner(TranslationUnit tu,
-        ShadingLanguageVersion shadingLanguageVersion) {
-    super(tu, shadingLanguageVersion);
+  public Expr2ArgMutationFinder(TranslationUnit tu) {
+    super(tu);
   }
 
   @Override
@@ -44,7 +42,7 @@ public class Expr2ArgMiner extends Expr2ExprMiner {
     }
     childType = childType.getWithoutQualifiers();
     if (parentType.equals(childType)) {
-      addTransformation(new Expr2Expr(
+      addMutation(new Expr2ExprMutation(
             parentMap.getParent(parent),
             parent,
             parent.getChild(childIndex)));

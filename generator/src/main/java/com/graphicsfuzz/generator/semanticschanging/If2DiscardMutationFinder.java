@@ -21,11 +21,11 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 
-public class If2DiscardMiner extends TransformationMinerBase<Stmt2Stmt> {
+public class If2DiscardMutationFinder extends MutationFinderBase<Stmt2StmtMutation> {
 
   private final IParentMap parentMap;
 
-  public If2DiscardMiner(TranslationUnit tu) {
+  public If2DiscardMutationFinder(TranslationUnit tu) {
     super(tu);
     parentMap = IParentMap.createParentMap(tu);
   }
@@ -33,11 +33,11 @@ public class If2DiscardMiner extends TransformationMinerBase<Stmt2Stmt> {
   @Override
   public void visitIfStmt(IfStmt ifStmt) {
     super.visitIfStmt(ifStmt);
-    addTransformation(new Stmt2Stmt(ifStmt, ifStmt.getThenStmt(), new DiscardStmt()));
+    addMutation(new Stmt2StmtMutation(ifStmt, ifStmt.getThenStmt(), new DiscardStmt()));
     if (ifStmt.hasElseStmt()) {
-      addTransformation(new Stmt2Stmt(ifStmt, ifStmt.getElseStmt(), new DiscardStmt()));
+      addMutation(new Stmt2StmtMutation(ifStmt, ifStmt.getElseStmt(), new DiscardStmt()));
     } else {
-      addTransformation(new Stmt2Stmt(parentMap.getParent(ifStmt), ifStmt,
+      addMutation(new Stmt2StmtMutation(parentMap.getParent(ifStmt), ifStmt,
           new IfStmt(ifStmt.getCondition(), ifStmt.getThenStmt(), new DiscardStmt())));
     }
   }

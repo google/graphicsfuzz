@@ -25,16 +25,16 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
  * Finds opportunities to remove a statement.
  */
 
-public class RemoveStmtMiner extends TransformationMinerBase<RemoveStmt> {
+public class RemoveStmtMutationFinder extends MutationFinderBase<RemoveStmtMutation> {
 
-  public RemoveStmtMiner(TranslationUnit tu) {
+  public RemoveStmtMutationFinder(TranslationUnit tu) {
     super(tu);
   }
 
   @Override
   protected void visitChildOfBlock(BlockStmt parent, Stmt child) {
     if (!(child instanceof DeclarationStmt)) {
-      addTransformation(new RemoveStmt(parent, child));
+      addMutation(new RemoveStmtMutation(parent, child));
     }
   }
 

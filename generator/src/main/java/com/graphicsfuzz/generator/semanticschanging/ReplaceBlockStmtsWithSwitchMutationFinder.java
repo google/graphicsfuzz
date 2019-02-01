@@ -30,7 +30,6 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.ArrayList;
@@ -41,9 +40,10 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Mines for possible transformations such as: e -> switch(e){case x: e}.
+ * Finds mutations such as: e -> switch(e){case x: e}.
  */
-public class ReplaceBlockStmtsWithSwitchMiner extends TransformationMinerBase<ReplaceBlockStmts> {
+public class ReplaceBlockStmtsWithSwitchMutationFinder
+    extends MutationFinderBase<ReplaceBlockStmtsMutation> {
 
   private static final int MAX_NUM_SWITCH_CASES = 50;
   private static final int MAX_SWITCH_CASE_LABEL_VALUE = 100;
@@ -51,11 +51,10 @@ public class ReplaceBlockStmtsWithSwitchMiner extends TransformationMinerBase<Re
   protected final Typer typer;
   private final IRandom generator;
 
-  public ReplaceBlockStmtsWithSwitchMiner(TranslationUnit tu,
-      ShadingLanguageVersion shadingLanguageVersion,
-      IRandom generator) {
+  public ReplaceBlockStmtsWithSwitchMutationFinder(TranslationUnit tu,
+                                                   IRandom generator) {
     super(tu);
-    this.typer = new Typer(tu, shadingLanguageVersion);
+    this.typer = new Typer(tu);
     this.generator = generator;
   }
 
@@ -107,7 +106,7 @@ public class ReplaceBlockStmtsWithSwitchMiner extends TransformationMinerBase<Re
       }
 
       if (caseBlockStmts.stream()
-          .noneMatch(ReplaceBlockStmtsWithSwitchMiner::containsDeclarations)) {
+          .noneMatch(ReplaceBlockStmtsWithSwitchMutationFinder::containsDeclarations)) {
         switchBodyStmts.add(new BlockStmt(caseBlockStmts, false));
       } else {
         switchBodyStmts.addAll(caseBlockStmts);
@@ -120,7 +119,7 @@ public class ReplaceBlockStmtsWithSwitchMiner extends TransformationMinerBase<Re
     final SwitchStmt replacement = new SwitchStmt(getSwitchCondition(),
         new BlockStmt(switchBodyStmts, false));
 
-    addTransformation(new ReplaceBlockStmts(block, new ArrayList<>(Arrays.asList(replacement))));
+    addMutation(new ReplaceBlockStmtsMutation(block, new ArrayList<>(Arrays.asList(replacement))));
 
     super.visitBlockStmt(block);
 

@@ -16,25 +16,30 @@
 
 package com.graphicsfuzz.generator.semanticschanging;
 
+import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.type.BasicType;
 
-public class ReplaceDeclInfo implements Transformation {
+public class AddArrayMutation implements Mutation {
 
-  private final VariablesDeclaration variablesDeclaration;
-  private final int declIndex;
-  private final VariableDeclInfo variableDeclInfo;
+  private final TranslationUnit tu;
+  private final String name;
+  private final BasicType baseType;
+  private final int numElements;
 
-  protected ReplaceDeclInfo(VariablesDeclaration variablesDeclaration, int declIndex,
-      VariableDeclInfo variableDeclInfo) {
-    this.variablesDeclaration = variablesDeclaration;
-    this.declIndex = declIndex;
-    this.variableDeclInfo = variableDeclInfo;
+  public AddArrayMutation(TranslationUnit tu, String name, BasicType baseType, int numElements) {
+    this.tu = tu;
+    this.name = name;
+    this.baseType = baseType;
+    this.numElements = numElements;
   }
 
   @Override
   public void apply() {
-    variablesDeclaration.setDeclInfo(declIndex, variableDeclInfo);
+    tu.addDeclaration(new VariablesDeclaration(
+        baseType, new VariableDeclInfo(name, new ArrayInfo(numElements), null)));
   }
 
 }

@@ -20,12 +20,12 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import java.util.List;
 
-public class ReplaceBlockStmts implements Transformation {
+public class ReplaceBlockStmtsMutation implements Mutation {
 
   private final BlockStmt block;
   private final List<Stmt> newStms;
 
-  public ReplaceBlockStmts(BlockStmt block, List<Stmt> newStms) {
+  public ReplaceBlockStmtsMutation(BlockStmt block, List<Stmt> newStms) {
     this.block = block;
     this.newStms = newStms;
   }
