@@ -475,7 +475,7 @@ public class ShaderJobFileOperations {
         licenseFile.exists()
             ? Optional.of(FileUtils.readFileToString(licenseFile, Charset.defaultCharset()))
             : Optional.empty(),
-        new UniformsInfo(shaderJobFile),
+        new PipelineInfo(shaderJobFile),
         translationUnits);
   }
 
@@ -681,7 +681,7 @@ public class ShaderJobFileOperations {
     writeAdditionalInfo(
         outputShaderJobFile,
         ".json",
-        shaderJob.getUniformsInfo().toString());
+        shaderJob.getPipelineInfo().toString());
   }
 
   public void writeShaderJobFile(

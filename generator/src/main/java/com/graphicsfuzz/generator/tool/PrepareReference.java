@@ -20,8 +20,8 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.FloatLiteralReplacer;
 import java.io.File;
 import java.io.IOException;
@@ -131,10 +131,10 @@ public final class PrepareReference {
       prepareReferenceShader(
           tu,
           replaceFloatLiterals,
-          shaderJob.getUniformsInfo());
+          shaderJob.getPipelineInfo());
     }
 
-    if (maxUniforms > 0 && shaderJob.getUniformsInfo().getNumUniforms() > maxUniforms) {
+    if (maxUniforms > 0 && shaderJob.getPipelineInfo().getNumUniforms() > maxUniforms) {
       throw new RuntimeException("Too many uniforms in reference shader job.");
     }
 
@@ -145,10 +145,10 @@ public final class PrepareReference {
 
   private static void prepareReferenceShader(TranslationUnit tu,
                                              boolean replaceFloatLiterals,
-                                             UniformsInfo uniformsInfo) {
-    uniformsInfo.zeroUnsetUniforms(tu);
+                                             PipelineInfo pipelineInfo) {
+    pipelineInfo.zeroUnsetUniforms(tu);
     if (replaceFloatLiterals) {
-      FloatLiteralReplacer.replace(tu, uniformsInfo);
+      FloatLiteralReplacer.replace(tu, pipelineInfo);
     }
   }
 

@@ -17,13 +17,13 @@
 package com.graphicsfuzz.common.transformreduce;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.util.UniformsInfo;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import java.util.List;
 import java.util.Optional;
 
 public interface ShaderJob {
 
-  UniformsInfo getUniformsInfo();
+  PipelineInfo getPipelineInfo();
 
   Optional<String> getLicense();
 

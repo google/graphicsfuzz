@@ -36,32 +36,40 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public final class UniformsInfo {
+public final class PipelineInfo {
 
-  private final JsonObject uniformsInfo;
+  private final JsonObject dictionary;
 
-  private UniformsInfo(JsonObject uniformsInfo) {
-    this.uniformsInfo = uniformsInfo;
+  private PipelineInfo(JsonObject dictionary) {
+    this.dictionary = dictionary;
   }
 
-  public UniformsInfo() {
+  public PipelineInfo() {
     this(new JsonObject());
   }
 
-  public UniformsInfo(File file) throws FileNotFoundException {
-    uniformsInfo = new Gson().fromJson(new FileReader(file),
+  public PipelineInfo(File file) throws FileNotFoundException {
+    dictionary = new Gson().fromJson(new FileReader(file),
           JsonObject.class);
   }
 
-  public UniformsInfo(String string) {
-    uniformsInfo = new Gson().fromJson(string,
+  public PipelineInfo(String string) {
+    dictionary = new Gson().fromJson(string,
         JsonObject.class);
   }
 
+  /**
+   * Records the type and values for a uniform.
+   * @param name Name of the uniform.
+   * @param basicType The base type of the uniform; e.g. float for a vec3, int for an ivec4.
+   * @param arrayCount The number of array elements if this is a uniform array.
+   * @param values A series of value of the base type with which the uniform should be populated.
+   */
   public void addUniform(String name, BasicType basicType,
       Optional<Integer> arrayCount, List<? extends Number> values) {
+    assert isLegalUniformName(name);
     JsonObject info = new JsonObject();
-    info.addProperty("func", UniformsInfo.get(basicType, arrayCount.isPresent()));
+    info.addProperty("func", PipelineInfo.get(basicType, arrayCount.isPresent()));
     JsonArray jsonValues = new JsonArray();
     for (Number n : values) {
       jsonValues.add(n);
@@ -70,17 +78,33 @@ public final class UniformsInfo {
     if (arrayCount.isPresent()) {
       info.addProperty("count", arrayCount.get());
     }
-    uniformsInfo.add(name, info);
+    dictionary.add(name, info);
   }
 
-  public boolean containsKey(String key) {
-    return uniformsInfo.has(key);
+  private static boolean isLegalUniformName(String name) {
+    if (name.length() == 0) {
+      return false;
+    }
+    if (!(Character.isAlphabetic(name.charAt(0)) || name.charAt(0) == '_')) {
+      return false;
+    }
+    for (char c : name.toCharArray()) {
+      if (!(Character.isAlphabetic(c) || Character.isDigit(c) || c == '_')) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public boolean hasUniform(String uniformName) {
+    assert isLegalUniformName(uniformName);
+    return dictionary.has(uniformName);
   }
 
   @Override
   public String toString() {
     return new GsonBuilder().setPrettyPrinting().create()
-        .toJson(uniformsInfo);
+        .toJson(dictionary);
   }
 
   public void setUniforms(TranslationUnit tu,
@@ -100,9 +124,8 @@ public final class UniformsInfo {
             + withoutQualifiers);
       }
       final BasicType basicType = (BasicType) withoutQualifiers;
-      final String typeName = basicType.toString();
       for (VariableDeclInfo vdi : vd.getDeclInfos()) {
-        if (containsKey(vdi.getName())) {
+        if (hasUniform(vdi.getName())) {
           continue;
         }
         int arrayLength;
@@ -191,44 +214,45 @@ public final class UniformsInfo {
     return result;
   }
 
-  public void addBinding(String uniformName, int number) {
-    assert containsKey(uniformName);
-    uniformsInfo.getAsJsonObject(uniformName).addProperty("binding", number);
+  public void addUniformBinding(String uniformName, int number) {
+    assert hasUniform(uniformName);
+    dictionary.getAsJsonObject(uniformName).addProperty("binding", number);
   }
 
-  public void removeBinding(String uniformName) {
+  public void removeUniformBinding(String uniformName) {
     assert hasBinding(uniformName);
-    uniformsInfo.getAsJsonObject(uniformName).remove("binding");
+    dictionary.getAsJsonObject(uniformName).remove("binding");
   }
 
   public List<String> getUniformNames() {
-    return uniformsInfo.entrySet()
-        .stream().map(item -> item.getKey()).collect(Collectors.toList());
+    return dictionary.entrySet()
+        .stream()
+        .map(item -> item.getKey())
+        .filter(PipelineInfo::isLegalUniformName)
+        .sorted()
+        .collect(Collectors.toList());
   }
 
   public int getNumUniforms() {
-    return uniformsInfo.entrySet().size();
+    return getUniformNames().size();
   }
 
-  public void removeUniform(String name) {
-    uniformsInfo.remove(name);
+  public void removeUniform(String uniformName) {
+    assert isLegalUniformName(uniformName);
+    dictionary.remove(uniformName);
   }
 
-  public UniformsInfo renameUniforms(Map<String, String> uniformMapping) {
+  public PipelineInfo renameUniforms(Map<String, String> uniformMapping) {
     final JsonObject newUniformsInfo = new JsonObject();
     for (String name : getUniformNames()) {
-      if (uniformMapping.containsKey(name)) {
-        newUniformsInfo.add(uniformMapping.get(name), uniformsInfo.get(name));
-      } else {
-        newUniformsInfo.add(name, uniformsInfo.get(name));
-      }
+      newUniformsInfo.add(uniformMapping.getOrDefault(name, name), dictionary.get(name));
     }
-    return new UniformsInfo(newUniformsInfo);
+    return new PipelineInfo(newUniformsInfo);
   }
 
-  public List<Number> getArgs(String name) {
+  public List<Number> getArgs(String uniformName) {
     final List<Number> result = new ArrayList<>();
-    final JsonArray args = lookupUniform(name).get("args")
+    final JsonArray args = lookupUniform(uniformName).get("args")
           .getAsJsonArray();
     for (int i = 0; i < args.size(); i++) {
       result.add(args.get(i).getAsNumber());
@@ -246,7 +270,8 @@ public final class UniformsInfo {
   }
 
   private JsonObject lookupUniform(String uniformName) {
-    return (JsonObject) uniformsInfo.get(uniformName);
+    assert isLegalUniformName(uniformName);
+    return (JsonObject) dictionary.get(uniformName);
   }
 
 }

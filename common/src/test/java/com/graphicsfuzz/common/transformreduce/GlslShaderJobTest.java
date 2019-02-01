@@ -18,7 +18,7 @@ package com.graphicsfuzz.common.transformreduce;
 
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
-import com.graphicsfuzz.common.util.UniformsInfo;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -168,7 +168,7 @@ public class GlslShaderJobTest {
 
     final GlslShaderJob job = new GlslShaderJob(
         Optional.empty(),
-        new UniformsInfo(JSON_NO_BINDINGS),
+        new PipelineInfo(JSON_NO_BINDINGS),
         ParseHelper.parse(getShaderFile("vert", VERT_SHADER_NO_BINDINGS)),
         ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_NO_BINDINGS)));
 
@@ -176,7 +176,7 @@ public class GlslShaderJobTest {
 
     CompareAsts.assertEqualAsts(VERT_SHADER_WITH_BINDINGS, job.getShaders().get(0));
     CompareAsts.assertEqualAsts(FRAG_SHADER_WITH_BINDINGS, job.getShaders().get(1));
-    assertEquals(new UniformsInfo(JSON_WITH_BINDINGS).toString(), job.getUniformsInfo().toString());
+    assertEquals(new PipelineInfo(JSON_WITH_BINDINGS).toString(), job.getPipelineInfo().toString());
   }
 
   @Test
@@ -184,7 +184,7 @@ public class GlslShaderJobTest {
 
     final GlslShaderJob job = new GlslShaderJob(
         Optional.empty(),
-        new UniformsInfo(JSON_WITH_BINDINGS),
+        new PipelineInfo(JSON_WITH_BINDINGS),
         ParseHelper.parse(getShaderFile("vert", VERT_SHADER_WITH_BINDINGS)),
         ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_WITH_BINDINGS)));
 
@@ -192,7 +192,7 @@ public class GlslShaderJobTest {
 
     CompareAsts.assertEqualAsts(VERT_SHADER_NO_BINDINGS, job.getShaders().get(0));
     CompareAsts.assertEqualAsts(FRAG_SHADER_NO_BINDINGS, job.getShaders().get(1));
-    assertEquals(new UniformsInfo(JSON_NO_BINDINGS).toString(), job.getUniformsInfo().toString());
+    assertEquals(new PipelineInfo(JSON_NO_BINDINGS).toString(), job.getPipelineInfo().toString());
 
   }
 

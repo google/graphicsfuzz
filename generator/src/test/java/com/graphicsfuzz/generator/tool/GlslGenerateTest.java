@@ -16,12 +16,17 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.mutator.MutateExpressions;
+import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
@@ -189,14 +194,28 @@ public class GlslGenerateTest {
       assertTrue(expectedOutputDirectory.isDirectory());
       assertTrue(new File(expectedOutputDirectory, "infolog.json").isFile());
       assertTrue(new File(expectedOutputDirectory, "reference.comp").isFile());
-      assertTrue(new File(expectedOutputDirectory, "reference.json").isFile());
+      final File referenceJson = new File(expectedOutputDirectory, "reference.json");
+      assertTrue(referenceJson.isFile());
+      checkComputeJsonWellFormed(referenceJson);
       for (int i = 0; i < numVariants; i++) {
         assertTrue(new File(expectedOutputDirectory,
             "variant_" + String.format("%03d", i) + ".comp").isFile());
-        assertTrue(new File(expectedOutputDirectory,
-            "variant_" + String.format("%03d", i) + ".json").isFile());
+        final File variantJson = new File(expectedOutputDirectory,
+            "variant_" + String.format("%03d", i) + ".json");
+        assertTrue(variantJson.isFile());
+        checkComputeJsonWellFormed(variantJson);
       }
     }
+  }
+
+  private void checkComputeJsonWellFormed(File json) throws FileNotFoundException {
+    final JsonObject content = new Gson().fromJson(new FileReader(json),
+        JsonObject.class);
+    assertTrue(content.has(Constants.COMPUTE_DATA_KEY));
+    JsonObject computeData = content.get(Constants.COMPUTE_DATA_KEY).getAsJsonObject();
+    assertEquals(2, computeData.entrySet().size());
+    assertTrue(computeData.has(Constants.COMPUTE_NUM_GROUPS));
+    assertTrue(computeData.has(Constants.COMPUTE_BUFFER));
   }
 
   private void generateShaderFamily(String references,

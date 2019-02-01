@@ -29,6 +29,7 @@ import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.PruneUniforms;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
@@ -36,7 +37,6 @@ import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.StatsVisitor;
 import com.graphicsfuzz.common.util.StripUnusedFunctions;
 import com.graphicsfuzz.common.util.StripUnusedGlobals;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.FloatLiteralReplacer;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
@@ -175,7 +175,7 @@ public class Generate {
       for (TranslationUnit shader : shaderJob.getShaders()) {
         addInjectionSwitchIfNotPresent(shader);
       }
-      setInjectionSwitch(shaderJob.getUniformsInfo());
+      setInjectionSwitch(shaderJob.getPipelineInfo());
     }
 
     for (TranslationUnit tu : shaderJob.getShaders()) {
@@ -255,9 +255,9 @@ public class Generate {
     if (args.getReplaceFloatLiterals()) {
       FloatLiteralReplacer.replace(
           shaderToTransform,
-          parentShaderJob.getUniformsInfo());
+          parentShaderJob.getPipelineInfo());
     }
-    parentShaderJob.getUniformsInfo().zeroUnsetUniforms(shaderToTransform);
+    parentShaderJob.getPipelineInfo().zeroUnsetUniforms(shaderToTransform);
 
     final GenerationParams generationParams =
             args.getSmall()
@@ -297,7 +297,7 @@ public class Generate {
       StripUnusedGlobals.strip(shaderToTransform);
     }
 
-    randomiseUnsetUniforms(shaderToTransform, parentShaderJob.getUniformsInfo(),
+    randomiseUnsetUniforms(shaderToTransform, parentShaderJob.getPipelineInfo(),
         random.spawnChild());
 
     return result;
@@ -571,13 +571,13 @@ public class Generate {
     return result;
   }
 
-  public static void randomiseUnsetUniforms(TranslationUnit tu, UniformsInfo uniformsInfo,
+  public static void randomiseUnsetUniforms(TranslationUnit tu, PipelineInfo pipelineInfo,
         IRandom generator) {
     final Supplier<Float> floatSupplier = () -> generator.nextFloat();
     final Supplier<Integer> intSupplier = () -> generator.nextInt(1 << 15);
     final Supplier<Integer> uintSupplier = () -> generator.nextInt(1 << 15);
     final Supplier<Integer> boolSupplier = () -> generator.nextInt(2);
-    uniformsInfo.setUniforms(tu, floatSupplier, intSupplier, uintSupplier, boolSupplier);
+    pipelineInfo.setUniforms(tu, floatSupplier, intSupplier, uintSupplier, boolSupplier);
   }
 
   public static void addInjectionSwitchIfNotPresent(TranslationUnit tu) {
@@ -597,8 +597,8 @@ public class Generate {
           .contains(Constants.INJECTION_SWITCH);
   }
 
-  public static void setInjectionSwitch(UniformsInfo uniformsInfo) {
-    uniformsInfo.addUniform(Constants.INJECTION_SWITCH, BasicType.VEC2, Optional.empty(),
+  public static void setInjectionSwitch(PipelineInfo pipelineInfo) {
+    pipelineInfo.addUniform(Constants.INJECTION_SWITCH, BasicType.VEC2, Optional.empty(),
           Arrays.asList(new Float(0.0), new Float(1.0)));
   }
 
