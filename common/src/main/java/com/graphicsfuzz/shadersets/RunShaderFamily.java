@@ -158,7 +158,7 @@ public class RunShaderFamily {
     }
 
     if (!fileOps.doesShaderJobResultFileHaveImage(referenceResult)) {
-      LOGGER.info("Recipient failed to render, so skipping variants.");
+      LOGGER.info("Reference failed to render, so skipping variants.");
       return numShadersRun;
     }
 
