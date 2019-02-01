@@ -412,13 +412,15 @@ def spv_get_bin_as_uint(shader_filename):
 def uniform_json_to_vkscript(uniform_json):
     '''
     Returns the string representing VkScript version of uniform declarations.
+    Skips the special '$compute' key, if present.
 
     {
       "myuniform": {
         "func": "glUniform1f",
         "args": [ 42.0 ],
         "binding": 3
-      }
+      },
+      "$compute": { ... will be ignored ... }
     }
 
     becomes:
@@ -446,6 +448,9 @@ def uniform_json_to_vkscript(uniform_json):
     with open(uniform_json, 'r') as f:
         j = json.load(f)
     for name, entry in j.items():
+
+        if name == '$compute':
+            continue
 
         func = entry['func']
         if func not in UNIFORM_TYPE.keys():
