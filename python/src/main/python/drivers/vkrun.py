@@ -613,6 +613,8 @@ def vkscriptify_comp(comp, comp_json):
     script += '\n\n'
 
     script += '[test]\n'
+    script += '## Uniforms\n'
+    script += uniform_json_to_vkscript(comp_json)
     script += '## SSBO\n'
     script += comp_json_to_vkscript(comp_json)
     script += '\n'
