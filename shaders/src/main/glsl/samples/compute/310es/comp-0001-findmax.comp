@@ -41,7 +41,7 @@ void main() {
   // workgroup width (1D shader)
   int max_width = int(gl_WorkGroupSize.x);
   // max value seen by this thread so far
-  int max = data[tid];
+  int max_value = data[tid];
 
   // Illustration of the algorithm on an array of 8 ints:
   //
@@ -76,10 +76,10 @@ void main() {
   for (int compare_width = 2; compare_width <= max_width; compare_width *= 2) {
     if (filter_thread_id(tid, compare_width)) {
       int val = data[tid + compare_width / 2];
-      if (max < val) {
-        max = val;
+      if (max_value < val) {
+        max_value = val;
       }
-      data[tid] = max;
+      data[tid] = max_value;
     }
     groupMemoryBarrier();
   }
