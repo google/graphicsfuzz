@@ -644,6 +644,12 @@ def ssbo_bin_to_json(ssbo_bin_file, ssbo_json_file):
     with open(ssbo_json_file, 'w') as f:
         f.write(json.dumps(ssbo_json_obj))
 
+def get_ssbo_binding(comp_json):
+    with open(comp_json, 'r') as f:
+        j = json.load(f)
+    binding = j['$compute']['buffer']['binding']
+    return binding
+
 def run_compute(comp, comp_json):
     assert(os.path.isfile(comp))
     assert(os.path.isfile(comp_json))
@@ -665,7 +671,8 @@ def run_compute(comp, comp_json):
 
     # call vkrunner
     # FIXME: in case of multiple ssbo, we should pass the binding of the one to dump
-    cmd = 'shell "cd ' + device_dir + '; ./vkrunner -b ssbo ' + tmpfile + '"'
+    ssbo_binding = get_ssbo_binding(comp_json)
+    cmd = 'shell "cd ' + device_dir + '; ./vkrunner -b ssbo -B ' + str(ssbo_binding) + ' ' + tmpfile + '"'
 
     adb_check('logcat -c')
 
