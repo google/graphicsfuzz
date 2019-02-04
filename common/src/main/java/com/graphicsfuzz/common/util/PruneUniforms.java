@@ -35,7 +35,6 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class PruneUniforms {
@@ -46,13 +45,13 @@ public final class PruneUniforms {
 
   public static boolean prune(ShaderJob shaderJob,
                               int limit, List<String> prunablePrefixes) {
-    final int numToPrune = shaderJob.getUniformsInfo().getNumUniforms() - limit;
+    final int numToPrune = shaderJob.getPipelineInfo().getNumUniforms() - limit;
     if (numToPrune < 0) {
       return true;
     }
     final List<String> candidatesForPruning = new ArrayList<>();
     candidatesForPruning.addAll(shaderJob
-        .getUniformsInfo()
+        .getPipelineInfo()
         .getUniformNames()
         .stream()
         .filter(item -> isPrunable(prunablePrefixes, item))
@@ -68,15 +67,15 @@ public final class PruneUniforms {
 
     for (String uniformName : candidatesForPruning.subList(0, numToPrune)) {
       for (TranslationUnit tu : shaderJob.getShaders()) {
-        inlineUniform(tu, shaderJob.getUniformsInfo(), uniformName);
+        inlineUniform(tu, shaderJob.getPipelineInfo(), uniformName);
       }
-      shaderJob.getUniformsInfo().removeUniform(uniformName);
+      shaderJob.getPipelineInfo().removeUniform(uniformName);
     }
 
     return true;
   }
 
-  private static void inlineUniform(TranslationUnit tu, UniformsInfo uniformsInfo,
+  private static void inlineUniform(TranslationUnit tu, PipelineInfo pipelineInfo,
                                     String uniformName) {
     boolean found = false; // For sanity-checking
 
@@ -97,7 +96,7 @@ public final class PruneUniforms {
               .getWithoutQualifiers();
           declInfo.setInitializer(makeInitializer(
               withoutQualifiers,
-              declInfo.getArrayInfo(), uniformsInfo.getArgs(uniformName)));
+              declInfo.getArrayInfo(), pipelineInfo.getArgs(uniformName)));
           final VariablesDeclaration newVariablesDeclaration = new VariablesDeclaration(
               withoutQualifiers, declInfo);
           variablesDeclaration.removeDeclInfo(i);

@@ -16,5 +16,21 @@
 
 package com.graphicsfuzz.common.ast.type;
 
-public interface LayoutQualifier {
+/**
+ * We use this class to represent layout qualifiers that the tool chain does not yet understand;
+ * we just represent them as strings.
+ */
+public class UnknownLayoutQualifier implements LayoutQualifier {
+
+  private final String contents;
+
+  public UnknownLayoutQualifier(String contents) {
+    this.contents = contents;
+  }
+
+  @Override
+  public String toString() {
+    return contents;
+  }
+
 }

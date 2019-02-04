@@ -110,8 +110,8 @@ public class PrettyPrinterVisitorTest {
     // qualifiers.  When we do, we will ditch this test and replace it with some tests that
     // check we are handling the internals properly.
     final String program = ""
-        + "layout(location=0) out vec4 color;\n\n"
-        + "layout(anything=3,we,like=4,aswearenotyethandlingtheinternals) out vec2 blah;\n\n"
+        + "layout(location = 0) out vec4 color;\n\n"
+        + "layout(anything=3, we, like=4, aswearenotyethandlingtheinternals) out vec2 blah;\n\n"
         + "void main()\n"
         + "{\n"
         + "}\n";
@@ -122,10 +122,10 @@ public class PrettyPrinterVisitorTest {
   @Test
   public void testParseAndPrintComputeShader() throws Exception {
     final String program = ""
-        + "layout(std430,binding=2) buffer abuf {\n"
+        + "layout(std430, binding = 2) buffer abuf {\n"
         + " int data[];\n"
         + "} ;\n"
-        + "layout(local_size_x=128,local_size_y=1) in;\n"
+        + "layout(local_size_x = 128, local_size_y = 1) in;\n"
         + "void main()\n"
         + "{\n"
         + " for(\n"

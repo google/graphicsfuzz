@@ -16,9 +16,11 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,5 +63,101 @@ public class PrepareReferenceTest {
     assertTrue(fileOps.areShadersValid(output, false));
 
   }
+
+  @Test
+  public void testPreparedComputeShaderNoBindingClash() throws Exception {
+
+    final String json = "{\n"
+        + "  \"f\": {\n"
+        + "    \"func\": \"glUniform1f\",\n"
+        + "    \"args\": [\n"
+        + "      1.0\n"
+        + "    ]\n"
+        + "  }\n"
+        + "}\n";
+    final String comp = "#version 310 es\n"
+        + "layout(std430, binding = 0) buffer doesNotMatter {\n"
+        + " int result;\n"
+        + " int data[];\n"
+        + "} ;\n"
+        + "layout(local_size_x = 16, local_size_y = 1) in;\n"
+        + "uniform float f;\n"
+        + "void main() { }";
+
+    final File jsonFile = temporaryFolder.newFile("shader.json");
+    final File compFile = temporaryFolder.newFile("shader.comp");
+    final File output = temporaryFolder.newFile("output.json");
+
+    FileUtils.writeStringToFile(jsonFile, json, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(compFile, comp, StandardCharsets.UTF_8);
+
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+    PrepareReference.mainHelper(new String[] { jsonFile.getAbsolutePath(),
+        output.getAbsolutePath(), "--generate-uniform-bindings" });
+
+    assertTrue(fileOps.areShadersValid(output, false));
+
+    final PipelineInfo pipelineInfo = new PipelineInfo(output);
+    assertTrue(pipelineInfo.hasUniform("f"));
+
+    // Cannot be 0, since that was already taken by the ssbo.
+    assertEquals(1, pipelineInfo.getBinding("f"));
+
+  }
+
+  @Test
+  public void testPreparedComputeShaderNoBindingClash2() throws Exception {
+
+    final String json = "{\n"
+        + "  \"f\": {\n"
+        + "    \"func\": \"glUniform1f\",\n"
+        + "    \"args\": [\n"
+        + "      1.0\n"
+        + "    ]\n"
+        + "  },\n"
+        + "  \"g\": {\n"
+        + "    \"func\": \"glUniform1f\",\n"
+        + "    \"args\": [\n"
+        + "      1.0\n"
+        + "    ]\n"
+        + "  }\n"
+        + "}\n";
+    final String comp = "#version 310 es\n"
+        + "layout(std430, binding = 1) buffer doesNotMatter {\n"
+        + " int result;\n"
+        + " int data[];\n"
+        + "} ;\n"
+        + "layout(local_size_x = 16, local_size_y = 1) in;\n"
+        + "uniform float f;\n"
+        + "uniform float g;\n"
+        + "void main() { }";
+
+    final File jsonFile = temporaryFolder.newFile("shader.json");
+    final File compFile = temporaryFolder.newFile("shader.comp");
+    final File output = temporaryFolder.newFile("output.json");
+
+    FileUtils.writeStringToFile(jsonFile, json, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(compFile, comp, StandardCharsets.UTF_8);
+
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+    PrepareReference.mainHelper(new String[] { jsonFile.getAbsolutePath(),
+        output.getAbsolutePath(), "--generate-uniform-bindings" });
+
+    assertTrue(fileOps.areShadersValid(output, false));
+
+    final PipelineInfo pipelineInfo = new PipelineInfo(output);
+
+    // Check that f and g get given distinct bindings, and that neither get binding 1 (taken by
+    // the ssbo).
+    assertTrue(pipelineInfo.hasUniform("f"));
+    assertTrue(pipelineInfo.hasUniform("g"));
+    assertNotEquals(pipelineInfo.getBinding("f"), pipelineInfo.getBinding("g"));
+    assertTrue(Arrays.asList(0, 2).contains(pipelineInfo.getBinding("f")));
+    assertTrue(Arrays.asList(0, 2).contains(pipelineInfo.getBinding("g")));
+
+  }
+
 
 }

@@ -36,7 +36,8 @@ public class TransformationProbabilitiesTest {
         + "probOutline: 5\n"
         + "probAddLiveFragColorWrites: 5\n"
         + "probAddDeadFragColorWrites: 5\n"
-        + "probSwitchify: 5\n", TransformationProbabilities.SMALL_PROBABILITIES.toString());
+        + "probSwitchify: 5\n"
+        + "probInjectDeadBarrierAtStmt: 5\n", TransformationProbabilities.SMALL_PROBABILITIES.toString());
   }
 
 }

@@ -25,8 +25,8 @@ import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -56,14 +56,14 @@ public class InlineUniformReductionOpportunitiesTest {
             "  }" +
             "}";
     final TranslationUnit tu = ParseHelper.parse(prog);
-    final UniformsInfo uniformsInfo = new UniformsInfo();
-    uniformsInfo.addUniform("f", BasicType.FLOAT, Optional.empty(), Arrays.asList(3.2));
-    uniformsInfo.addUniform("i", BasicType.INT, Optional.empty(), Arrays.asList(10));
-    uniformsInfo.addUniform("j", BasicType.INT, Optional.empty(), Arrays.asList(20));
-    uniformsInfo.addUniform("v", BasicType.VEC2, Optional.empty(), Arrays.asList(2.2, 2.3));
-    uniformsInfo.addUniform("u", BasicType.UINT, Optional.empty(), Arrays.asList(17));
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("f", BasicType.FLOAT, Optional.empty(), Arrays.asList(3.2));
+    pipelineInfo.addUniform("i", BasicType.INT, Optional.empty(), Arrays.asList(10));
+    pipelineInfo.addUniform("j", BasicType.INT, Optional.empty(), Arrays.asList(20));
+    pipelineInfo.addUniform("v", BasicType.VEC2, Optional.empty(), Arrays.asList(2.2, 2.3));
+    pipelineInfo.addUniform("u", BasicType.UINT, Optional.empty(), Arrays.asList(17));
 
-    ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), uniformsInfo, tu);
+    ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), pipelineInfo, tu);
 
     shaderJob = checkCanReduceToTarget(shaderJob, 8,
         "uniform float f;" +

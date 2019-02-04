@@ -23,8 +23,8 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.PruneUniforms;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,25 +35,25 @@ public class InlineUniformReductionOpportunities extends SimplifyExprReductionOp
       ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
-        .map(item -> findOpportunitiesForShader(item, context, shaderJob.getUniformsInfo()))
+        .map(item -> findOpportunitiesForShader(item, context, shaderJob.getPipelineInfo()))
         .reduce(Arrays.asList(), ListConcat::concatenate);
   }
 
   private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu, ReducerContext context, UniformsInfo uniformsInfo) {
+      TranslationUnit tu, ReducerContext context, PipelineInfo pipelineInfo) {
     final InlineUniformReductionOpportunities finder = new InlineUniformReductionOpportunities(
-        tu, context, uniformsInfo);
+        tu, context, pipelineInfo);
     finder.visit(tu);
     return finder.getOpportunities();
   }
 
-  private final UniformsInfo uniformsInfo;
+  private final PipelineInfo pipelineInfo;
 
   private InlineUniformReductionOpportunities(TranslationUnit tu,
                                               ReducerContext context,
-                                              UniformsInfo uniformsInfo) {
+                                              PipelineInfo pipelineInfo) {
     super(tu, context);
-    this.uniformsInfo = uniformsInfo;
+    this.pipelineInfo = pipelineInfo;
   }
 
   @Override
@@ -71,12 +71,12 @@ public class InlineUniformReductionOpportunities extends SimplifyExprReductionOp
       return;
     }
     if (se.getType().getWithoutQualifiers() instanceof BasicType
-        && uniformsInfo.containsKey(name)) {
+        && pipelineInfo.hasUniform(name)) {
       final BasicType basicType = (BasicType) se.getType().getWithoutQualifiers();
       addOpportunity(new SimplifyExprReductionOpportunity(
           parentMap.getParent(variableIdentifierExpr),
           PruneUniforms.getBasicTypeLiteralExpr(basicType,
-              uniformsInfo.getArgs(name)),
+              pipelineInfo.getArgs(name)),
           variableIdentifierExpr,
           getVistitationDepth()));
     }

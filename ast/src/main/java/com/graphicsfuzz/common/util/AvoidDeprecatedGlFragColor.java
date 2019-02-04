@@ -21,7 +21,8 @@ import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.LayoutQualifier;
+import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
+import com.graphicsfuzz.common.ast.type.LocationLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
@@ -45,7 +46,8 @@ public class AvoidDeprecatedGlFragColor extends StandardVisitor {
     new AvoidDeprecatedGlFragColor(colorName).visit(tu);
     tu.addDeclaration(new VariablesDeclaration(
         new QualifiedType(BasicType.VEC4, Arrays.asList(
-            new LayoutQualifier("location = 0"), TypeQualifier.SHADER_OUTPUT)),
+            new LayoutQualifierSequence(new LocationLayoutQualifier(0)),
+            TypeQualifier.SHADER_OUTPUT)),
         new VariableDeclInfo(colorName, null, null)
     ));
   }

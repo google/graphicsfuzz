@@ -53,4 +53,15 @@ public final class Constants {
 
   public static final String REDUCTION_INCOMPLETE = "REDUCTION_INCOMPLETE";
 
+  // A key we use in .json files to identify the sub-dictionary containing compute shader input/
+  // output information.
+  public static final String COMPUTE_DATA_KEY = "$compute";
+
+  // The entry within the compute shader input/output information that records the number of groups.
+  public static final String COMPUTE_NUM_GROUPS = "num_groups";
+
+  // The entry within the compute shader input/output information that records details of the
+  // buffer used for input/output.
+  public static final String COMPUTE_BUFFER = "buffer";
+
 }

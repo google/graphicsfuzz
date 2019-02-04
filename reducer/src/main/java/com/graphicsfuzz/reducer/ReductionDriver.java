@@ -323,7 +323,7 @@ public class ReductionDriver {
     // Do final cleanup pass to get rid of macros
     return new GlslShaderJob(
         state.getLicense(),
-        state.getUniformsInfo(),
+        state.getPipelineInfo(),
         state.getShaders().stream().map(Simplify::simplify).collect(Collectors.toList()));
   }
 

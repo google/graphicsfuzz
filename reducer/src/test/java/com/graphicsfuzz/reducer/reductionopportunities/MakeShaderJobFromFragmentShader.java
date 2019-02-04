@@ -19,7 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.UniformsInfo;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import java.util.Optional;
 
 /**
@@ -33,7 +33,7 @@ public class MakeShaderJobFromFragmentShader {
   }
 
   public static ShaderJob make(TranslationUnit tu) {
-    return new GlslShaderJob(Optional.empty(), new UniformsInfo(), tu);
+    return new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu);
   }
 
 }
