@@ -52,6 +52,9 @@ class Params(object):
     def __str__(self):
         return pprint.pformat(self.__dict__)
 
+    def __repr__(self):
+        return pprint.pformat(self.__dict__)
+
 
 p = Params()
 
@@ -196,6 +199,8 @@ def process_shaders(params: Params):
 def fuzz_shaders(params: Params):
     # Generate shader families from the set of references (extracted shaders).
 
+    assert Path(params.donors).is_dir(), "Missing donors directory: "+params.donors
+
     # for reference: glsl-generate --seed 0 references donors 10 prefix out --no-injection-switch
     res = glsl_generate.go([
         "--seed", nz(str(params.seed)),
@@ -232,18 +237,27 @@ def create_traces(params: Params):
             handle_to_variant_list[shader_handle] = variant_shaders
 
     # For each variant index i, create capture_i.gfxtrace with all shaders replaced with variant i.
-    for i in range(0, params.num_variants):
-        if params.specific_variant_index is not None and params.specific_variant_index != i:
+    for variant_index in range(0, params.num_variants):
+        if params.specific_variant_index is not None and \
+                params.specific_variant_index != variant_index:
             continue
-        output_prefix = params.output_capture_prefix + '{:03d}'.format(i)
+        output_prefix = params.output_capture_prefix + '{:03d}'.format(variant_index)
         output_file = output_prefix + ".gfxtrace"
         output_screenshot = output_prefix + ".png"
         # For each shader handle, replace the shader with variant i.
         # After each replacement, we get a new trace, so we overwrite the capture id.
         capture_id = nz(params.orig_capture_id)
-        for handle, variants in handle_to_variant_list.items():
-            # TODO: could optimize by only outputting file on final replacement.
-            capture_id = run_replace_shader(params, capture_id, handle, variants[i], output_file)
+
+        items = list(handle_to_variant_list.items())
+        for shader_handle_index in range(len(items)):
+            handle, variants = items[shader_handle_index]
+            is_last_shader_handle = shader_handle_index == len(items) - 1
+            capture_id = run_replace_shader(
+                params,
+                capture_id,
+                handle,
+                variants[variant_index],
+                output_file if is_last_shader_handle else None)
 
         # While we have the capture id, get a screenshot;
         # it might be difficult otherwise due to file caching.
