@@ -185,7 +185,7 @@ def process_shaders(params: Params):
     for f in Path(params.shaders_dir).iterdir():  # type: Path
         if not is_shader_extension(f.name):
             continue
-        if f.name.endswith(".frag") and params.just_frag:
+        if params.just_frag and not f.name.endswith(".frag"):
             continue
         json_file = f.with_name(f.stem + ".json")
         with io.open(str(json_file), "w", encoding='utf-8') as json:
@@ -199,6 +199,7 @@ def fuzz_shaders(params: Params):
     # for reference: glsl-generate --seed 0 references donors 10 prefix out --no-injection-switch
     res = glsl_generate.go([
         "--seed", nz(str(params.seed)),
+        "--disable-shader-translator",
         nz(params.shaders_dir),
         nz(params.donors),
         nz(str(params.num_variants)),
