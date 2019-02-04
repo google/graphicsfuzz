@@ -82,6 +82,7 @@ void main() {
       data[tid] = max_value;
     }
     groupMemoryBarrier();
+    barrier();
   }
 
   // Finally, one thread per workgroup place its max in the result.
