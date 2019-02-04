@@ -125,6 +125,7 @@ public class GlslShaderJob implements ShaderJob {
           }
 
           final int binding = pipelineInfo.getBinding(uniformName);
+
           // Keep any qualifiers apart from "uniform".
           final QualifiedType memberType = new QualifiedType(qualifiedType.getWithoutQualifiers(),
               qualifiedType.getQualifiers()
