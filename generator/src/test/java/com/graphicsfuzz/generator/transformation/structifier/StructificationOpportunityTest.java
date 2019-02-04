@@ -132,7 +132,8 @@ public class StructificationOpportunityTest {
     assertTrue(generator.isExhausted());
 
     // Check that the right structs have been added
-    assertEquals(4, tu.getTopLevelDeclarations().size()); // The dummy decl, plus 3 more structs
+    assertEquals(5, tu.getTopLevelDeclarations().size()); // A precision qualifier, the
+    // dummy decl, plus 3 more structs
 
     // Check there are the same number of statements in the block
     assertEquals(3, block.getNumStmts());

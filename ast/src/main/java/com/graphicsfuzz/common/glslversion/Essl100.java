@@ -105,6 +105,11 @@ final class Essl100 implements ShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedHighpInFragmentShader() {
+    return false;
+  }
+
+  @Override
   public boolean supportedIntBitsToFloat() {
     return false;
   }

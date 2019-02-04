@@ -18,6 +18,7 @@ package com.graphicsfuzz.generator.transformation.structifier;
 
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -37,6 +38,7 @@ import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.typing.SupportedTypes;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
@@ -140,6 +142,10 @@ public class StructificationOpportunity {
         shadingLanguageVersion, generationParams);
 
     generatedStructs.stream().map(VariablesDeclaration::new).forEach(tu::addDeclaration);
+
+    tu.addDeclaration(new PrecisionDeclaration(
+        tu.getShaderKind() == ShaderKind.FRAGMENT && !tu.getShadingLanguageVersion()
+        .supportedHighpInFragmentShader() ? "precision mediump float;" : "precision highp float;"));
 
     final String enclosingStructVariableName = Constants.GLF_STRUCT_REPLACEMENT
           + idGenerator.freshId();

@@ -105,6 +105,11 @@ final class Glsl110 implements ShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedHighpInFragmentShader() {
+    return true;
+  }
+
+  @Override
   public boolean supportedIntBitsToFloat() {
     return false;
   }

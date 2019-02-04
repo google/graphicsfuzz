@@ -104,6 +104,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   }
 
   @Override
+  public boolean supportedHighpInFragmentShader() {
+    return prototype.supportedHighpInFragmentShader();
+  }
+
+  @Override
   public boolean supportedIntBitsToFloat() {
     return prototype.supportedIntBitsToFloat();
   }

@@ -250,6 +250,9 @@ public class GenerateShaderFamily {
           disableShaderTranslator,
           keepBadVariants,
           stopOnFail)) {
+        if (keepBadVariants) {
+          generatedVariants++;
+        }
         continue;
       }
 

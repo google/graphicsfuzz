@@ -81,6 +81,11 @@ final class Essl300 extends CompositeShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedHighpInFragmentShader() {
+    return true;
+  }
+
+  @Override
   public boolean supportedIntBitsToFloat() {
     return true;
   }

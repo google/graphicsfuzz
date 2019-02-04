@@ -23,6 +23,7 @@ import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.LayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
@@ -103,8 +104,6 @@ public class GlslShaderJob implements ShaderJob {
             continue;
           }
           final QualifiedType qualifiedType = (QualifiedType) variablesDeclaration.getBaseType();
-          // Conservatively assume that uniform is the only qualifier.
-          assert qualifiedType.getQualifiers().size() == 1;
           // For now we are conservative and do not handle multiple declarations per uniform; this
           // should be trivial to handle in due course but we need to write proper tests for it.
           assert variablesDeclaration.getNumDecls() == 1;
@@ -117,13 +116,20 @@ public class GlslShaderJob implements ShaderJob {
             nextBinding++;
           }
           final int binding = uniformsInfo.getBinding(uniformName);
+
+          // Keep any qualifiers apart from "uniform".
+          final QualifiedType memberType = new QualifiedType(qualifiedType.getWithoutQualifiers(),
+              qualifiedType.getQualifiers()
+                  .stream()
+                  .filter(item -> item != TypeQualifier.UNIFORM)
+                  .collect(Collectors.toList()));
           newTopLevelDeclarations.add(
               new InterfaceBlock(
                   Optional.of(new LayoutQualifier("set = 0, binding = " + binding)),
                   TypeQualifier.UNIFORM,
                   "buf" + binding,
                   Arrays.asList(uniformName),
-                  Arrays.asList(qualifiedType.getWithoutQualifiers()),
+                  Arrays.asList(memberType),
                   Optional.empty())
           );
         } else {

@@ -175,6 +175,8 @@ public interface ShadingLanguageVersion {
 
   boolean supportedGlFragColor();
 
+  boolean supportedHighpInFragmentShader();
+
   boolean supportedIntBitsToFloat();
 
   boolean supportedInverse();

@@ -353,4 +353,21 @@ public class PrettyPrinterVisitorTest {
     )));
   }
 
+  @Test
+  public void testParseAndPrintEmptyLoop() throws Exception {
+    final String program = "#version 310 es\n"
+        + "void main()\n"
+        + "{\n"
+        + " for(\n"
+        + "     ;\n"
+        + "     ;\n"
+        + "     \n"
+        + " )\n"
+        + "  {\n"
+        + "   break;\n"
+        + "  }\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program)));
+  }
+
 }

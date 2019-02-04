@@ -584,8 +584,12 @@ public class Generate {
     if (alreadyDeclaresInjectionSwitch(tu)) {
       return;
     }
+    TypeQualifier precisionQualifier = (tu.getShaderKind() != ShaderKind.FRAGMENT
+        || tu.getShadingLanguageVersion().supportedHighpInFragmentShader()
+        ?  TypeQualifier.HIGHP : TypeQualifier.MEDIUMP);
+
     tu.addDeclaration(new VariablesDeclaration(new QualifiedType(BasicType.VEC2,
-        Arrays.asList(TypeQualifier.UNIFORM)),
+        Arrays.asList(TypeQualifier.UNIFORM, precisionQualifier)),
           new VariableDeclInfo(Constants.INJECTION_SWITCH, null, null)));
   }
 
