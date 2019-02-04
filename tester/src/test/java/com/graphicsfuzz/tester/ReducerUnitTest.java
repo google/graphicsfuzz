@@ -27,6 +27,7 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.GlslParserException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.reducer.tool.GlslReduce;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
@@ -41,7 +42,6 @@ import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.ToolHelper;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
@@ -108,21 +108,21 @@ public class ReducerUnitTest {
             originalShaderJobFile,
             temporaryFolder,
             fileOps);
-    final UniformsInfo uniformsInfo = new UniformsInfo(originalShaderJobFile);
+    final PipelineInfo pipelineInfo = new PipelineInfo(originalShaderJobFile);
     final TranslationUnit tu = generateSizeLimitedShader(
         fileOps.getUnderlyingShaderFile(originalShaderJobFile, ShaderKind.FRAGMENT),
         transformations, generator,
         shadingLanguageVersion);
     Generate.addInjectionSwitchIfNotPresent(tu);
-    Generate.setInjectionSwitch(uniformsInfo);
-    Generate.randomiseUnsetUniforms(tu, uniformsInfo, generator);
+    Generate.setInjectionSwitch(pipelineInfo);
+    Generate.randomiseUnsetUniforms(tu, pipelineInfo, generator);
     tu.setShadingLanguageVersion(shadingLanguageVersion);
 
     final IdGenerator idGenerator = new IdGenerator();
 
     for (int step = 0; step < 10; step++) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
-          new GlslShaderJob(Optional.empty(), new UniformsInfo(), tu),
+          new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu),
           new ReducerContext(false, shadingLanguageVersion, generator, idGenerator, true),
           fileOps);
       if (ops.isEmpty()) {
@@ -131,7 +131,7 @@ public class ReducerUnitTest {
       System.err.println("Step: " + step + "; ops: " + ops.size());
       ops.get(generator.nextInt(ops.size())).applyReduction();
 
-      final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), uniformsInfo, tu);
+      final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), pipelineInfo, tu);
 
       final File variantImage =
           Util.validateAndGetImage(

@@ -320,7 +320,7 @@ public class GenerateTest {
 
     final ShaderJob shaderJob = fileOps.readShaderJobFile(output);
 
-    assertTrue(shaderJob.getUniformsInfo().containsKey("injectionSwitch"));
+    assertTrue(shaderJob.getPipelineInfo().hasUniform("injectionSwitch"));
 
     assertTrue(fileOps.areShadersValid(output, false));
 
@@ -360,7 +360,7 @@ public class GenerateTest {
 
     final ShaderJob shaderJob = fileOps.readShaderJobFile(output);
 
-    assertFalse(shaderJob.getUniformsInfo().containsKey("injectionSwitch"));
+    assertFalse(shaderJob.getPipelineInfo().hasUniform("injectionSwitch"));
 
     assertTrue(fileOps.areShadersValid(output, false));
 

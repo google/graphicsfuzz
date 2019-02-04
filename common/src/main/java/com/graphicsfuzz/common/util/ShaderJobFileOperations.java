@@ -319,6 +319,15 @@ public class ShaderJobFileOperations {
     return imageFile.isFile();
   }
 
+  /**
+   * This the given shaderJob a compute shader job?
+   * @param shaderJobFile A shader job to check.
+   * @return true if and only if this is a compute shader job.
+   */
+  public boolean isComputeShaderJob(File shaderJobFile) {
+    return new File(FilenameUtils.removeExtension(shaderJobFile.toString()) + ".comp").isFile();
+  }
+
   public long getFileLength(File file) {
     return file.length();
   }
@@ -475,7 +484,7 @@ public class ShaderJobFileOperations {
         licenseFile.exists()
             ? Optional.of(FileUtils.readFileToString(licenseFile, Charset.defaultCharset()))
             : Optional.empty(),
-        new UniformsInfo(shaderJobFile),
+        new PipelineInfo(shaderJobFile),
         translationUnits);
   }
 
@@ -681,7 +690,7 @@ public class ShaderJobFileOperations {
     writeAdditionalInfo(
         outputShaderJobFile,
         ".json",
-        shaderJob.getUniformsInfo().toString());
+        shaderJob.getPipelineInfo().toString());
   }
 
   public void writeShaderJobFile(

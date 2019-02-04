@@ -21,12 +21,14 @@ import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
-import com.graphicsfuzz.common.ast.type.LayoutQualifier;
+import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
+import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
-import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,14 +41,14 @@ import java.util.stream.Collectors;
 public class GlslShaderJob implements ShaderJob {
 
   private final Optional<String> license;
-  private final UniformsInfo uniformsInfo;
+  private final PipelineInfo pipelineInfo;
   private final List<TranslationUnit> shaders;
 
   public GlslShaderJob(Optional<String> license,
-                       UniformsInfo uniformsInfo,
+                       PipelineInfo pipelineInfo,
                        List<TranslationUnit> shaders) {
     this.license = license;
-    this.uniformsInfo = uniformsInfo;
+    this.pipelineInfo = pipelineInfo;
     this.shaders = new ArrayList<>();
     final Set<ShaderKind> stagesSoFar = new HashSet<>();
     for (TranslationUnit tu : shaders) {
@@ -60,14 +62,14 @@ public class GlslShaderJob implements ShaderJob {
   }
 
   public GlslShaderJob(Optional<String> license,
-                       UniformsInfo uniformsInfo,
+                       PipelineInfo pipelineInfo,
                        TranslationUnit... shaders) {
-    this(license, uniformsInfo, Arrays.asList(shaders));
+    this(license, pipelineInfo, Arrays.asList(shaders));
   }
 
   @Override
-  public UniformsInfo getUniformsInfo() {
-    return uniformsInfo;
+  public PipelineInfo getPipelineInfo() {
+    return pipelineInfo;
   }
 
   @Override
@@ -85,17 +87,21 @@ public class GlslShaderJob implements ShaderJob {
    */
   @Override
   public void makeUniformBindings() {
-    for (String uniformName : getUniformsInfo().getUniformNames()) {
-      assert !getUniformsInfo().hasBinding(uniformName);
+    for (String uniformName : getPipelineInfo().getUniformNames()) {
+      assert !getPipelineInfo().hasBinding(uniformName);
     }
+
+    final Set<Integer> usedBindings = findUsedBindings();
+
+    // Find the first free binding.
     int nextBinding = 0;
+    while (usedBindings.contains(nextBinding)) {
+      nextBinding++;
+    }
 
     for (TranslationUnit tu : shaders) {
       final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
       for (Declaration decl : tu.getTopLevelDeclarations()) {
-        // For now we conservatively assume that there are no interface blocks, covering our
-        // assumption that there are no existing bindings.
-        assert !(decl instanceof InterfaceBlock);
         if (decl instanceof VariablesDeclaration
             && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
           final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
@@ -110,13 +116,15 @@ public class GlslShaderJob implements ShaderJob {
           // We cannot yet deal with adding bindings for uniform arrays.
           assert !variablesDeclaration.getDeclInfo(0).hasArrayInfo();
           final String uniformName = variablesDeclaration.getDeclInfo(0).getName();
-          assert uniformsInfo.containsKey(uniformName);
-          if (!uniformsInfo.hasBinding(uniformName)) {
-            uniformsInfo.addBinding(uniformName, nextBinding);
-            nextBinding++;
+          assert pipelineInfo.hasUniform(uniformName);
+          if (!pipelineInfo.hasBinding(uniformName)) {
+            pipelineInfo.addUniformBinding(uniformName, nextBinding);
+            do {
+              nextBinding++;
+            } while (usedBindings.contains(nextBinding));
           }
-          final int binding = uniformsInfo.getBinding(uniformName);
 
+          final int binding = pipelineInfo.getBinding(uniformName);
           // Keep any qualifiers apart from "uniform".
           final QualifiedType memberType = new QualifiedType(qualifiedType.getWithoutQualifiers(),
               qualifiedType.getQualifiers()
@@ -125,7 +133,8 @@ public class GlslShaderJob implements ShaderJob {
                   .collect(Collectors.toList()));
           newTopLevelDeclarations.add(
               new InterfaceBlock(
-                  Optional.of(new LayoutQualifier("set = 0, binding = " + binding)),
+                  Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
+                      new BindingLayoutQualifier(binding))),
                   TypeQualifier.UNIFORM,
                   "buf" + binding,
                   Arrays.asList(uniformName),
@@ -141,9 +150,9 @@ public class GlslShaderJob implements ShaderJob {
 
     // Add bindings to any uniforms not referenced in the shaders, so that we don't end up in
     // a situation where some uniforms are unbound.
-    for (String uniformName : getUniformsInfo().getUniformNames()) {
-      if (!getUniformsInfo().hasBinding(uniformName)) {
-        getUniformsInfo().addBinding(uniformName, nextBinding++);
+    for (String uniformName : getPipelineInfo().getUniformNames()) {
+      if (!getPipelineInfo().hasBinding(uniformName)) {
+        getPipelineInfo().addUniformBinding(uniformName, nextBinding++);
       }
     }
   }
@@ -157,9 +166,9 @@ public class GlslShaderJob implements ShaderJob {
    */
   @Override
   public void removeUniformBindings() {
-    for (String uniformName : getUniformsInfo().getUniformNames()) {
-      assert getUniformsInfo().hasBinding(uniformName);
-      getUniformsInfo().removeBinding(uniformName);
+    for (String uniformName : getPipelineInfo().getUniformNames()) {
+      assert getPipelineInfo().hasBinding(uniformName);
+      getPipelineInfo().removeUniformBinding(uniformName);
     }
     for (TranslationUnit tu : shaders) {
       final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
@@ -189,10 +198,10 @@ public class GlslShaderJob implements ShaderJob {
 
   @Override
   public boolean hasUniformBindings() {
-    for (String uniformName : getUniformsInfo().getUniformNames()) {
+    for (String uniformName : getPipelineInfo().getUniformNames()) {
       // We maintain the invariant that either all or no uniforms have bindings, so it suffices
       // to check the first one we come across.
-      return getUniformsInfo().hasBinding(uniformName);
+      return getPipelineInfo().hasBinding(uniformName);
     }
     return false;
   }
@@ -225,8 +234,53 @@ public class GlslShaderJob implements ShaderJob {
   public GlslShaderJob clone() {
     return new GlslShaderJob(
         getLicense(),
-        new UniformsInfo(getUniformsInfo().toString()),
+        new PipelineInfo(getPipelineInfo().toString()),
         shaders.stream().map(TranslationUnit::clone).collect(Collectors.toList()));
+  }
+
+  /**
+   * If "binding=x" occurs in any of the shaders, then "x" counts as a used binding.  The point of
+   * this method is that it can be queried to ensure that we do not give out bindings that are
+   * already used.
+   * @return Set of all bindings used by at least one of the shaders.
+   */
+  private Set<Integer> findUsedBindings() {
+    final Set<Integer> result = new HashSet<>();
+    for (TranslationUnit shader : shaders) {
+      new StandardVisitor() {
+
+        @Override
+        public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
+          super.visitInterfaceBlock(interfaceBlock);
+          if (interfaceBlock.hasLayoutQualifierSequence()) {
+            gatherBindings(interfaceBlock.getLayoutQualifierSequence());
+          }
+        }
+
+        @Override
+        public void visitQualifiedType(QualifiedType qualifiedType) {
+          super.visitQualifiedType(qualifiedType);
+          qualifiedType.getQualifiers()
+              .stream()
+              .filter(item -> item instanceof LayoutQualifierSequence)
+              .map(item -> (LayoutQualifierSequence) item)
+              .forEach(this::gatherBindings);
+        }
+
+        private void gatherBindings(LayoutQualifierSequence layoutQualifierSequence) {
+          for (BindingLayoutQualifier bindingLayoutQualifier : layoutQualifierSequence
+              .getLayoutQualifiers()
+              .stream()
+              .filter(item -> item instanceof BindingLayoutQualifier)
+              .map(item -> (BindingLayoutQualifier) item)
+              .collect(Collectors.toList())) {
+            result.add(bindingLayoutQualifier.getIndex());
+          }
+        }
+
+      }.visit(shader);
+    }
+    return result;
   }
 
 }

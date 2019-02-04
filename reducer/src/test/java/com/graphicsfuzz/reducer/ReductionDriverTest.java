@@ -40,7 +40,7 @@ import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.UniformsInfo;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.MakeShaderJobFromFragmentShader;
 import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
@@ -83,7 +83,7 @@ public class ReductionDriverTest {
 
     ShaderJob state = new GlslShaderJob(
         Optional.empty(),
-        new UniformsInfo(tempJsonFile),
+        new PipelineInfo(tempJsonFile),
         tu);
 
     IFileJudge pessimist = new IFileJudge() {
@@ -226,7 +226,7 @@ public class ReductionDriverTest {
     tuVert.ifPresent(translationUnits::add);
     translationUnits.add(tuFrag);
     ShaderJob state = new GlslShaderJob(
-        Optional.empty(), new UniformsInfo(tempJsonFile),
+        Optional.empty(), new PipelineInfo(tempJsonFile),
         translationUnits);
 
     return new ReductionDriver(new ReducerContext(reduceEverywhere, version, generator, new IdGenerator(), true), false, fileOps, state)
@@ -259,7 +259,7 @@ public class ReductionDriverTest {
     final TranslationUnit tu = ParseHelper.parse(tempFile);
 
     ShaderJob state = new GlslShaderJob(
-        Optional.empty(), new UniformsInfo(tempJsonFile), tu);
+        Optional.empty(), new PipelineInfo(tempJsonFile), tu);
 
     IFileJudge referencesSinCosAnd3 = (shaderJobFile, shaderResultFileOutput) -> {
         try {
@@ -534,11 +534,11 @@ public class ReductionDriverTest {
         "  }" +
         "}");
     final String expected = "void main() { }";
-    UniformsInfo uniformsInfo = new UniformsInfo();
-    uniformsInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Arrays.asList(1.0));
-    uniformsInfo.addUniform("b", BasicType.FLOAT, Optional.empty(), Arrays.asList(2.0));
+    PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Arrays.asList(1.0));
+    pipelineInfo.addUniform("b", BasicType.FLOAT, Optional.empty(), Arrays.asList(2.0));
     ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
-        uniformsInfo,
+        pipelineInfo,
         fragShader);
     shaderJob.makeUniformBindings();
 

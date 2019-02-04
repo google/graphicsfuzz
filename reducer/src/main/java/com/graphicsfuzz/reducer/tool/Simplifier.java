@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.reducer.tool;
 
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -51,7 +50,7 @@ public class Simplifier {
 
     shaderJob = new GlslShaderJob(
         shaderJob.getLicense(),
-        shaderJob.getUniformsInfo(),
+        shaderJob.getPipelineInfo(),
         Simplify.simplify(shaderJob.getShaders().get(0)));
 
     String[] firstTwoLines =

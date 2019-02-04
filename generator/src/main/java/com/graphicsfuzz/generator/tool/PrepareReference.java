@@ -20,8 +20,8 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.FloatLiteralReplacer;
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +48,7 @@ public final class PrepareReference {
         .type(File.class);
 
     // Optional arguments
-    parser.addArgument("--replace_float_literals")
+    parser.addArgument("--replace-float-literals")
         .help("Replace float literals with uniforms.")
         .action(Arguments.storeTrue());
 
@@ -56,12 +56,12 @@ public final class PrepareReference {
         .help("Use WebGL spec.")
         .action(Arguments.storeTrue());
 
-    parser.addArgument("--generate_uniform_bindings")
+    parser.addArgument("--generate-uniform-bindings")
         .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
             + "compatibility.")
         .action(Arguments.storeTrue());
 
-    parser.addArgument("--max_uniforms")
+    parser.addArgument("--max-uniforms")
         .help("Check that reference doesn't have too many uniforms; required for Vulkan "
             + "compatibility.")
         .setDefault(0)
@@ -131,10 +131,10 @@ public final class PrepareReference {
       prepareReferenceShader(
           tu,
           replaceFloatLiterals,
-          shaderJob.getUniformsInfo());
+          shaderJob.getPipelineInfo());
     }
 
-    if (maxUniforms > 0 && shaderJob.getUniformsInfo().getNumUniforms() > maxUniforms) {
+    if (maxUniforms > 0 && shaderJob.getPipelineInfo().getNumUniforms() > maxUniforms) {
       throw new RuntimeException("Too many uniforms in reference shader job.");
     }
 
@@ -145,10 +145,10 @@ public final class PrepareReference {
 
   private static void prepareReferenceShader(TranslationUnit tu,
                                              boolean replaceFloatLiterals,
-                                             UniformsInfo uniformsInfo) {
-    uniformsInfo.zeroUnsetUniforms(tu);
+                                             PipelineInfo pipelineInfo) {
+    pipelineInfo.zeroUnsetUniforms(tu);
     if (replaceFloatLiterals) {
-      FloatLiteralReplacer.replace(tu, uniformsInfo);
+      FloatLiteralReplacer.replace(tu, pipelineInfo);
     }
   }
 

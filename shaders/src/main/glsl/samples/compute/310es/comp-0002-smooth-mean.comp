@@ -51,6 +51,7 @@ void main() {
 
   // We would actually like a GPU-wide barrier, but this is just a toy example.
   groupMemoryBarrier();
+  barrier();
 
   data[tid] = mean;
 }
