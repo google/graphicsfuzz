@@ -16,28 +16,29 @@
 
 package com.graphicsfuzz.common.ast.decl;
 
-import com.graphicsfuzz.common.ast.type.LayoutQualifier;
+import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import java.util.Arrays;
 
 public class DefaultLayout extends Declaration {
 
-  private LayoutQualifier layoutQualifier;
+  private LayoutQualifierSequence layoutQualifierSequence;
   private TypeQualifier typeQualifier;
 
-  public DefaultLayout(LayoutQualifier layoutQualifier, TypeQualifier typeQualifier) {
+  public DefaultLayout(LayoutQualifierSequence layoutQualifierSequence,
+                       TypeQualifier typeQualifier) {
     assert Arrays.asList(
         TypeQualifier.UNIFORM,
         TypeQualifier.BUFFER,
         TypeQualifier.SHADER_INPUT,
         TypeQualifier.SHADER_OUTPUT).contains(typeQualifier);
-    this.layoutQualifier = layoutQualifier;
+    this.layoutQualifierSequence = layoutQualifierSequence;
     this.typeQualifier = typeQualifier;
   }
 
-  public LayoutQualifier getLayoutQualifier() {
-    return layoutQualifier;
+  public LayoutQualifierSequence getLayoutQualifierSequence() {
+    return layoutQualifierSequence;
   }
 
   public TypeQualifier getTypeQualifier() {
@@ -51,7 +52,7 @@ public class DefaultLayout extends Declaration {
 
   @Override
   public DefaultLayout clone() {
-    return new DefaultLayout(layoutQualifier, typeQualifier);
+    return new DefaultLayout(layoutQualifierSequence, typeQualifier);
   }
 
 }

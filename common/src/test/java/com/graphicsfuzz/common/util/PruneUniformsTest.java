@@ -185,11 +185,11 @@ public class PruneUniformsTest {
 
     final File uniformsFile = temporaryFolder.newFile("uniforms.json");
     FileUtils.writeStringToFile(uniformsFile, uniforms, StandardCharsets.UTF_8);
-    final UniformsInfo uniformsInfo = new UniformsInfo(uniformsFile);
+    final PipelineInfo pipelineInfo = new PipelineInfo(uniformsFile);
     final TranslationUnit tu = ParseHelper.parse(program);
 
     assertTrue(PruneUniforms.prune(
-        new GlslShaderJob(Optional.empty(), uniformsInfo, tu),
+        new GlslShaderJob(Optional.empty(), pipelineInfo, tu),
         limit,
         prefixList));
 
@@ -214,8 +214,8 @@ public class PruneUniformsTest {
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
           ParseHelper.parse(expectedProgram)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
-    assertEquals(new UniformsInfo(expectedUniformsFile).toString(),
-          uniformsInfo.toString());
+    assertEquals(new PipelineInfo(expectedUniformsFile).toString(),
+          pipelineInfo.toString());
   }
 
 }

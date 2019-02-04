@@ -27,22 +27,22 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.Test;
 
-public class UniformsInfoTest {
+public class PipelineInfoTest {
 
   @Test
   public void testRename() {
-    final UniformsInfo uniformsInfo = new UniformsInfo();
-    uniformsInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Arrays.asList(1.0));
-    uniformsInfo.addUniform("b", BasicType.FLOAT, Optional.empty(), Arrays.asList(2.0));
-    uniformsInfo.addUniform("c", BasicType.FLOAT, Optional.empty(), Arrays.asList(3.0));
-    uniformsInfo.addUniform("d", BasicType.FLOAT, Optional.empty(), Arrays.asList(4.0));
-    uniformsInfo.addUniform("e", BasicType.FLOAT, Optional.empty(), Arrays.asList(5.0));
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Arrays.asList(1.0));
+    pipelineInfo.addUniform("b", BasicType.FLOAT, Optional.empty(), Arrays.asList(2.0));
+    pipelineInfo.addUniform("c", BasicType.FLOAT, Optional.empty(), Arrays.asList(3.0));
+    pipelineInfo.addUniform("d", BasicType.FLOAT, Optional.empty(), Arrays.asList(4.0));
+    pipelineInfo.addUniform("e", BasicType.FLOAT, Optional.empty(), Arrays.asList(5.0));
     Map<String, String> renaming = new HashMap<>();
     renaming.put("a", "z");
     renaming.put("b", "a");
     renaming.put("c", "d");
     renaming.put("d", "b");
-    final UniformsInfo newUniformsInfo = uniformsInfo.renameUniforms(renaming);
+    final PipelineInfo newPipelineInfo = pipelineInfo.renameUniforms(renaming);
     final String wasA = "\"z\": {\n"
           + "    \"func\": \"glUniform1f\",\n"
           + "    \"args\": [\n"
@@ -74,11 +74,11 @@ public class UniformsInfoTest {
           + "      5.0\n"
           + "    ]\n"
           + "  }";
-    assertTrue(newUniformsInfo.toString().contains(wasA));
-    assertTrue(newUniformsInfo.toString().contains(wasB));
-    assertTrue(newUniformsInfo.toString().contains(wasC));
-    assertTrue(newUniformsInfo.toString().contains(wasD));
-    assertTrue(newUniformsInfo.toString().contains(wasE));
+    assertTrue(newPipelineInfo.toString().contains(wasA));
+    assertTrue(newPipelineInfo.toString().contains(wasB));
+    assertTrue(newPipelineInfo.toString().contains(wasC));
+    assertTrue(newPipelineInfo.toString().contains(wasD));
+    assertTrue(newPipelineInfo.toString().contains(wasE));
   }
 
   @Test
@@ -98,10 +98,10 @@ public class UniformsInfoTest {
         "    \"func\": \"glUniform1f\"" +
         "  }" +
         "}";
-    final UniformsInfo uniformsInfo = new UniformsInfo(uniforms);
-    assertTrue(uniformsInfo.hasBinding("a"));
-    assertFalse(uniformsInfo.hasBinding("b"));
-    assertEquals(0, uniformsInfo.getBinding("a"));
+    final PipelineInfo pipelineInfo = new PipelineInfo(uniforms);
+    assertTrue(pipelineInfo.hasBinding("a"));
+    assertFalse(pipelineInfo.hasBinding("b"));
+    assertEquals(0, pipelineInfo.getBinding("a"));
   }
 
   @Test
@@ -173,9 +173,9 @@ public class UniformsInfoTest {
         + "uniform mat4x3 m8;"
         + "uniform mat4x4 m9;"
         + "void main() { }";
-    final UniformsInfo uniforms = new UniformsInfo("{}");
+    final PipelineInfo uniforms = new PipelineInfo("{}");
     uniforms.zeroUnsetUniforms(ParseHelper.parse(shader));
-    assertEquals(new UniformsInfo(expectedUniforms).toString(), uniforms.toString());
+    assertEquals(new PipelineInfo(expectedUniforms).toString(), uniforms.toString());
   }
 
   private String zeros(int num) {
@@ -267,9 +267,9 @@ public class UniformsInfoTest {
         + "uniform mat4x3 m8[8];"
         + "uniform mat4x4 m9[9];"
         + "void main() { }";
-    final UniformsInfo uniforms = new UniformsInfo("{}");
+    final PipelineInfo uniforms = new PipelineInfo("{}");
     uniforms.zeroUnsetUniforms(ParseHelper.parse(shader));
-    assertEquals(new UniformsInfo(expectedUniforms).toString(), uniforms.toString());
+    assertEquals(new PipelineInfo(expectedUniforms).toString(), uniforms.toString());
   }
 
 

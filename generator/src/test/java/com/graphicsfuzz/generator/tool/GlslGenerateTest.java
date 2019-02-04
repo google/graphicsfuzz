@@ -16,12 +16,17 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.mutator.MutateExpressions;
+import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
@@ -31,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.apache.commons.io.FileUtils;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -52,7 +58,7 @@ public class GlslGenerateTest {
     final String prefix = "someprefix";
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
     final int seed = 0;
-    checkShaderFamilyGeneration(references, donors, numVariants, prefix,
+    checkFragmentShaderFamilyGeneration(references, donors, numVariants, prefix,
         outputDir, seed, Collections.singletonList("--stop-on-fail"));
   }
 
@@ -66,7 +72,7 @@ public class GlslGenerateTest {
     final String prefix = "someprefix";
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
     final int seed = 1;
-    checkShaderFamilyGeneration(references, donors, numVariants, prefix,
+    checkFragmentShaderFamilyGeneration(references, donors, numVariants, prefix,
         outputDir, seed, Arrays.asList("--generate-uniform-bindings", "--max-uniforms",
             String.valueOf(10), "--stop-on-fail", "--max-factor", String.valueOf(100f),
             "--max-bytes", String.valueOf(500000), "--disable",
@@ -117,13 +123,30 @@ public class GlslGenerateTest {
 
   }
 
-  private void checkShaderFamilyGeneration(String references,
-                                          String donors,
-                                          int numVariants,
-                                          String prefix,
-                                          String outputDir,
-                                          int seed,
-                                          List<String> extraArgs)
+  @Test
+  public void testGenerateComputeShaderFamily() throws Exception {
+    final String references = Paths.get(ToolPaths.getShadersDirectory(),
+        "samples", "compute", "310es").toString();
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
+        "donors").toString();
+    final int numVariants = 3;
+    final String prefix = "someprefix";
+    final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
+    final int seed = 10;
+    checkComputeShaderFamilyGeneration(references, donors, numVariants, prefix,
+        outputDir, seed, Arrays.asList("--generate-uniform-bindings", "--max-uniforms",
+            String.valueOf(10), "--stop-on-fail"));
+
+  }
+
+
+  private void checkFragmentShaderFamilyGeneration(String references,
+                                                   String donors,
+                                                   int numVariants,
+                                                   String prefix,
+                                                   String outputDir,
+                                                   int seed,
+                                                   List<String> extraArgs)
       throws ArgumentParserException,
       InterruptedException,
       IOException,
@@ -147,6 +170,65 @@ public class GlslGenerateTest {
             "variant_" + String.format("%03d", i) + ".json").isFile());
       }
     }
+  }
+
+  private void checkComputeShaderFamilyGeneration(String references,
+                                                   String donors,
+                                                   int numVariants,
+                                                   String prefix,
+                                                   String outputDir,
+                                                   int seed,
+                                                   List<String> extraArgs)
+      throws ArgumentParserException,
+      InterruptedException,
+      IOException,
+      ParseTimeoutException,
+      GlslParserException {
+
+    generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs);
+
+    for (String reference : Arrays.asList("comp-0001-findmax", "comp-0002-smooth-mean",
+        "comp-0003-random-middle-square")) {
+      final File expectedOutputDirectory = new File(temporaryFolder.getRoot(), prefix
+          + "_" + reference);
+      assertTrue(expectedOutputDirectory.isDirectory());
+      assertTrue(new File(expectedOutputDirectory, "infolog.json").isFile());
+      assertTrue(new File(expectedOutputDirectory, "reference.comp").isFile());
+      final File referenceJson = new File(expectedOutputDirectory, "reference.json");
+      assertTrue(referenceJson.isFile());
+      checkComputeJsonWellFormed(referenceJson);
+      for (int i = 0; i < numVariants; i++) {
+        assertTrue(new File(expectedOutputDirectory,
+            "variant_" + String.format("%03d", i) + ".comp").isFile());
+        final File variantJson = new File(expectedOutputDirectory,
+            "variant_" + String.format("%03d", i) + ".json");
+        assertTrue(variantJson.isFile());
+        checkComputeJsonWellFormed(variantJson);
+      }
+    }
+  }
+
+  private void checkComputeJsonWellFormed(File json) throws FileNotFoundException {
+    final String binding = "binding";
+
+    final JsonObject content = new Gson().fromJson(new FileReader(json),
+        JsonObject.class);
+    assertTrue(content.has(Constants.COMPUTE_DATA_KEY));
+    final JsonObject computeData = content.get(Constants.COMPUTE_DATA_KEY).getAsJsonObject();
+    assertEquals(2, computeData.entrySet().size());
+    assertTrue(computeData.has(Constants.COMPUTE_NUM_GROUPS));
+    assertTrue(computeData.has(Constants.COMPUTE_BUFFER));
+    final JsonObject buffer = computeData.get(Constants.COMPUTE_BUFFER).getAsJsonObject();
+    assertTrue(buffer.has(binding));
+    final int ssboBinding = buffer.get(binding).getAsInt();
+    content.entrySet().forEach(entry -> {
+      if (!entry.getKey().equals(Constants.COMPUTE_DATA_KEY)) {
+        final JsonObject uniformInfo = content.get(entry.getKey()).getAsJsonObject();
+        if (uniformInfo.has(binding)) {
+          assertNotEquals(ssboBinding, uniformInfo.get(binding).getAsInt());
+        }
+      }
+    });
   }
 
   private void generateShaderFamily(String references,

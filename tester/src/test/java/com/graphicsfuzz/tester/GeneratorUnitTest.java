@@ -297,8 +297,8 @@ public class GeneratorUnitTest {
           GenerationParams.normal(ShaderKind.FRAGMENT, true));
     }
     Generate.addInjectionSwitchIfNotPresent(tu);
-    Generate.setInjectionSwitch(shaderJob.getUniformsInfo());
-    Generate.randomiseUnsetUniforms(tu, shaderJob.getUniformsInfo(), generator);
+    Generate.setInjectionSwitch(shaderJob.getPipelineInfo());
+    Generate.randomiseUnsetUniforms(tu, shaderJob.getPipelineInfo(), generator);
     tu.setShadingLanguageVersion(shadingLanguageVersion);
 
     // Using fileOps, even though the rest of the code here does not use it yet.

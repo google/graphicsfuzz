@@ -68,19 +68,26 @@ import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.AtomicIntType;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.BuiltinType;
 import com.graphicsfuzz.common.ast.type.ImageType;
 import com.graphicsfuzz.common.ast.type.LayoutQualifier;
+import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
+import com.graphicsfuzz.common.ast.type.LocalSizeLayoutQualifier;
+import com.graphicsfuzz.common.ast.type.LocationLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
+import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.type.UnknownLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.parser.GLSLBaseVisitor;
+import com.graphicsfuzz.parser.GLSLParser;
 import com.graphicsfuzz.parser.GLSLParser.Additive_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.And_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Array_specifierContext;
@@ -128,6 +135,7 @@ import com.graphicsfuzz.parser.GLSLParser.Iteration_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Jump_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Layout_defaultsContext;
 import com.graphicsfuzz.parser.GLSLParser.Layout_qualifierContext;
+import com.graphicsfuzz.parser.GLSLParser.Layout_qualifier_id_listContext;
 import com.graphicsfuzz.parser.GLSLParser.Logical_and_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Logical_or_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Logical_xor_expressionContext;
@@ -275,7 +283,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
 
   @Override
   public Declaration visitInterface_block(Interface_blockContext ctx) {
-    final Optional<LayoutQualifier> maybeLayoutQualifier = ctx.layout_qualifier() == null
+    final Optional<LayoutQualifierSequence> maybeLayoutQualifier = ctx.layout_qualifier() == null
         ? Optional.empty()
         : Optional.of(visitLayout_qualifier(ctx.layout_qualifier()));
     final Basic_interface_blockContext basicCtx = ctx.basic_interface_block();
@@ -1031,7 +1039,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
 
   @Override
   public DefaultLayout visitLayout_defaults(Layout_defaultsContext ctx) {
-    final LayoutQualifier layoutQualifier = visitLayout_qualifier(ctx.layout_qualifier());
+    final LayoutQualifierSequence layoutQualifierSequence =
+        visitLayout_qualifier(ctx.layout_qualifier());
     TypeQualifier typeQualifier;
     if (ctx.IN_TOK() != null) {
       typeQualifier = TypeQualifier.SHADER_INPUT;
@@ -1043,7 +1052,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       assert ctx.BUFFER() != null;
       typeQualifier = TypeQualifier.BUFFER;
     }
-    return new DefaultLayout(layoutQualifier, typeQualifier);
+    return new DefaultLayout(layoutQualifierSequence, typeQualifier);
   }
 
   @Override
@@ -1315,9 +1324,40 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   @Override
-  public LayoutQualifier visitLayout_qualifier(Layout_qualifierContext ctx) {
-    return new LayoutQualifier(ctx
-        .layout_qualifier_id_list().getText());
+  public LayoutQualifierSequence visitLayout_qualifier(Layout_qualifierContext ctx) {
+    final LinkedList<LayoutQualifier> layoutQualifiers = new LinkedList<>();
+    for (Layout_qualifier_id_listContext iterator = ctx.layout_qualifier_id_list();
+         iterator != null;
+         iterator = iterator.layout_qualifier_id_list()) {
+      layoutQualifiers.addFirst(processLayoutQualifierId(iterator.layout_qualifier_id()));
+    }
+    return new LayoutQualifierSequence(layoutQualifiers);
+  }
+
+  private LayoutQualifier processLayoutQualifierId(
+      GLSLParser.Layout_qualifier_idContext layoutQualifierId) {
+    if (layoutQualifierId.integer_constant() != null) {
+      assert layoutQualifierId.IDENTIFIER() != null;
+      final int associatedValue =
+          Integer.parseInt(layoutQualifierId.integer_constant().getText());
+      switch (layoutQualifierId.IDENTIFIER().getText()) {
+        case "binding":
+          return new BindingLayoutQualifier(associatedValue);
+        case "local_size_x":
+          return new LocalSizeLayoutQualifier("x", associatedValue);
+        case "local_size_y":
+          return new LocalSizeLayoutQualifier("y", associatedValue);
+        case "local_size_z":
+          return new LocalSizeLayoutQualifier("z", associatedValue);
+        case "location":
+          return new LocationLayoutQualifier(associatedValue);
+        case "set":
+          return new SetLayoutQualifier(associatedValue);
+        default:
+          return new UnknownLayoutQualifier(layoutQualifierId.getText());
+      }
+    }
+    return new UnknownLayoutQualifier(layoutQualifierId.getText());
   }
 
   private BinOp processAssignmentOperator(Assignment_operatorContext op) {

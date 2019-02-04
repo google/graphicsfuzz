@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.generator.transformation.ITransformation;
+import com.graphicsfuzz.generator.transformation.controlflow.AddDeadBarriers;
 import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
 import com.graphicsfuzz.generator.transformation.controlflow.AddJumpStmts;
 import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
@@ -56,7 +57,8 @@ public class EnabledTransformations {
         VectorizeStatements.class,
         AddWrappingConditionalStmts.class,
         AddLiveOutputVariableWrites.class,
-        AddDeadOutputVariableWrites.class
+        AddDeadOutputVariableWrites.class,
+        AddDeadBarriers.class
     );
   }
 
@@ -93,6 +95,8 @@ public class EnabledTransformations {
         return AddLiveOutputVariableWrites.class;
       case AddDeadOutputVariableWrites.NAME:
         return AddDeadOutputVariableWrites.class;
+      case AddDeadBarriers.NAME:
+        return AddDeadBarriers.class;
       default:
         throw new RuntimeException("Unknown transformation '" + name + "'");
     }
@@ -151,6 +155,10 @@ public class EnabledTransformations {
     return isEnabled(AddLiveOutputVariableWrites.class);
   }
 
+  public boolean isEnabledDeadBarriers() {
+    return isEnabled(AddDeadBarriers.class);
+  }
+
   private boolean isEnabled(Class<? extends ITransformation> transformationClass) {
     return enabledTransformations.contains(transformationClass);
   }
@@ -170,6 +178,7 @@ public class EnabledTransformations {
     sb.append("enabledWrap: " + isEnabledWrap() + "\n");
     sb.append("enabledDeadFragColorWrites: " + isEnabledDeadFragColorWrites() + "\n");
     sb.append("enabledLiveFragColorWrites: " + isEnabledLiveFragColorWrites() + "\n");
+    sb.append("enabledDeadBarriers: " + isEnabledDeadBarriers() + "\n");
     return sb.toString();
   }
 

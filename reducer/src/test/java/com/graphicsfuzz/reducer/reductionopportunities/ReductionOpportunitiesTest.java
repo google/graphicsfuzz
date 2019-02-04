@@ -34,7 +34,7 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.common.util.UniformsInfo;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.ZeroCannedRandom;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -1071,7 +1071,7 @@ public class ReductionOpportunitiesTest {
     final String json = "{ \"injectionSwitch\": { \"args\": [ 1.0, 2.0 ], " +
         "    \"func\": \"glUniform2f\", \"binding\": 0 } }";
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
-        new UniformsInfo(json), tu);
+        new PipelineInfo(json), tu);
     shaderJob.removeUniformBindings();
 
     List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(

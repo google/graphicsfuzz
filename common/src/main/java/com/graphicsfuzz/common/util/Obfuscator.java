@@ -30,7 +30,6 @@ import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
@@ -46,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public class Obfuscator {
 
@@ -76,13 +74,13 @@ public class Obfuscator {
       new TranslationUnitObfuscator().obfuscateTranslationUnit(clonedTu);
       clonedTus.add(clonedTu);
     }
-    for (String name : shaderJob.getUniformsInfo().getUniformNames()) {
+    for (String name : shaderJob.getPipelineInfo().getUniformNames()) {
       if (!uniformMapping.containsKey(name)) {
         uniformMapping.put(name, renameVariable(name));
       }
     }
     return new GlslShaderJob(Optional.empty(),
-        shaderJob.getUniformsInfo().renameUniforms(uniformMapping),
+        shaderJob.getPipelineInfo().renameUniforms(uniformMapping),
         clonedTus);
   }
 
