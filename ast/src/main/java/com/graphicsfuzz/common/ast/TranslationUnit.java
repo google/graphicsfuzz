@@ -17,10 +17,8 @@
 package com.graphicsfuzz.common.ast;
 
 import com.graphicsfuzz.common.ast.decl.Declaration;
-import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
-import com.graphicsfuzz.common.ast.stmt.ExtensionStatement;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
