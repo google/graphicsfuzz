@@ -16,5 +16,17 @@
 
 package com.graphicsfuzz.common.ast.type;
 
-public interface LayoutQualifier {
+public class SetLayoutQualifier implements LayoutQualifier {
+
+  private final int setValue;
+
+  public SetLayoutQualifier(int setValue) {
+    this.setValue = setValue;
+  }
+
+  @Override
+  public String toString() {
+    return "set = " + setValue;
+  }
+
 }
