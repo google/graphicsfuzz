@@ -152,7 +152,18 @@ def do_image_job(args, image_job):
 
     write_to_file(image_job.fragmentSource, frag_file)
     write_to_file(image_job.uniformsInfo, json_file)
-    prepare_shaders(frag_file, frag_spv_file, vert_spv_file)
+
+    # Shader preparation may fail for invalid shaders
+    try:
+        prepare_shaders(frag_file, frag_spv_file, vert_spv_file)
+    except subprocess.CalledProcessError as err:
+        res.log += 'ERROR\n'
+        res.log += 'COMMAND: {}\n'.format(err.cmd)
+        res.log += 'RETURNCODE: {}\n'.format(err.returncode)
+        res.log += 'STDOUT: {}\n'.format(err.stdout)
+        res.log += 'STDERR: {}\n'.format(err.stderr)
+        res.status = tt.JobStatus.UNEXPECTED_ERROR
+        return res
 
     # Optimize
     if args.spirvopt:
