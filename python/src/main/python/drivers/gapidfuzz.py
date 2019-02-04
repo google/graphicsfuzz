@@ -39,15 +39,15 @@ class Params(object):
         self.shaders_dir = 'shaders'
         self.donors = 'donors'
         self.families_dir = 'families'
-        self.num_variants = 10
+        self.num_variants = 2
         self.seed = 0
         # Only replace a specific shader handle in the trace.
         self.specific_handle = None  # type: str
         # Only use a specific variant index.
         self.specific_variant_index = None  # type: int
         self.gapis_process = None  # type: subprocess.Popen
-        self.get_screenshots = False
-        self.just_frag = False
+        self.get_screenshots = True
+        self.just_frag = True
 
     def __str__(self):
         return pprint.pformat(self.__dict__)

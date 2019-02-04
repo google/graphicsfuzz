@@ -1,0 +1,7 @@
+{
+  "myuniform": {
+    "func": "glUniform1f",
+    "args": [ 0.6 ],
+    "binding": 0
+  }
+}
