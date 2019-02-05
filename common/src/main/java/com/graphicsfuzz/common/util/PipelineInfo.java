@@ -274,4 +274,9 @@ public final class PipelineInfo {
     return (JsonObject) dictionary.get(uniformName);
   }
 
+  @Override
+  public PipelineInfo clone() {
+    return new PipelineInfo(toString());
+  }
+
 }

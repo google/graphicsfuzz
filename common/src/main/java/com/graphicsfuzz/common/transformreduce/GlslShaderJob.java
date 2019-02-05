@@ -236,7 +236,7 @@ public class GlslShaderJob implements ShaderJob {
   public GlslShaderJob clone() {
     return new GlslShaderJob(
         getLicense(),
-        new PipelineInfo(getPipelineInfo().toString()),
+        getPipelineInfo().clone(),
         shaders.stream().map(TranslationUnit::clone).collect(Collectors.toList()));
   }
 
