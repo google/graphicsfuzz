@@ -20,15 +20,17 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutation;
 import java.util.List;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class OutlineStatementOpportunitiesTest {
+public class OutlineStatementMutationFinderTest {
 
   @Test
-  public void outlineStatementOpportunities() throws Exception {
+  public void outlineStatementMutations() throws Exception {
     String program = "struct S { int a; };"
         + "void main() {"
         + "  int x;"
@@ -51,19 +53,20 @@ public class OutlineStatementOpportunitiesTest {
         + "  gl_FragColor = vec4(0.0);" // Counts
         + "}";
     TranslationUnit tu = ParseHelper.parse(program);
-    List<OutlineStatementOpportunity> opportunities = new OutlineStatementOpportunities(tu).getAllOpportunities();
+    IdGenerator idGenerator = new IdGenerator();
+    List<OutlineStatementMutation> opportunities =
+        new OutlineStatementMutationFinder(tu, idGenerator).findMutations();
     assertEquals(5, opportunities.size());
 
     // Check that we can apply them without throwing and exception.
-    IdGenerator idGenerator = new IdGenerator();
-    for (OutlineStatementOpportunity op : opportunities) {
-      op.apply(idGenerator);
+    for (OutlineStatementMutation op : opportunities) {
+      op.apply();
     }
 
   }
 
   @Test
-  public void outlineStatementOpportunities2() throws Exception {
+  public void outlineStatementMutations2() throws Exception {
     String program = "void main() {"
         + "  gl_FragColor = gl_FragColor + vec4(0.0);"
         + "}";
@@ -77,9 +80,10 @@ public class OutlineStatementOpportunitiesTest {
         + "}";
 
     TranslationUnit tu = ParseHelper.parse(program);
-    List<OutlineStatementOpportunity> ops = new OutlineStatementOpportunities(tu).getAllOpportunities();
+    List<OutlineStatementMutation> ops =
+        new OutlineStatementMutationFinder(tu, new IdGenerator()).findMutations();
     assertEquals(1, ops.size());
-    ops.get(0).apply(new IdGenerator());
+    ops.get(0).apply();
 
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));

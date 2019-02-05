@@ -32,6 +32,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.OpenGlConstants;
+import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutation;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -41,7 +42,7 @@ import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
-public class OutlineStatementOpportunityTest {
+public class OutlineStatementMutationTest {
 
   private FunctionDefinition fakeFunction;
   private TranslationUnit tu;
@@ -68,7 +69,7 @@ public class OutlineStatementOpportunityTest {
     fakeScope.add("y", BasicType.FLOAT, Optional.empty());
     fakeScope.add("z", BasicType.VEC2, Optional.empty());
 
-    new OutlineStatementOpportunity(toOutline, fakeScope, tu, fakeFunction).apply(new IdGenerator());
+    new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
     final String expectedDecl = "vec2 " + Constants.OUTLINED_FUNCTION_PREFIX + "0(vec2 x, float y, vec2 z)\n"
         + "{\n"
         + PrettyPrinterVisitor.defaultIndent(1) + "return x * y + z;\n"
@@ -92,7 +93,7 @@ public class OutlineStatementOpportunityTest {
     fakeScope.add("x", BasicType.VEC2, Optional.empty());
     fakeScope.add("y", new QualifiedType(BasicType.VEC2, Arrays.asList(TypeQualifier.UNIFORM)), Optional.empty());
 
-    new OutlineStatementOpportunity(toOutline, fakeScope, tu, fakeFunction).apply(new IdGenerator());
+    new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
 
     // "uniform" is not expected in the declaration
     final String expectedDecl = "vec2 " + Constants.OUTLINED_FUNCTION_PREFIX + "0(vec2 y)\n"
@@ -118,7 +119,7 @@ public class OutlineStatementOpportunityTest {
     Scope fakeScope = new Scope(null);
     fakeScope.add("x", BasicType.VEC2, Optional.empty());
 
-    new OutlineStatementOpportunity(toOutline, fakeScope, tu, fakeFunction).apply(new IdGenerator());
+    new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
 
     // "uniform" is not expected in the declaration
     final String expectedDecl = "vec2 " + Constants.OUTLINED_FUNCTION_PREFIX + "0(vec2 x)\n"
@@ -144,7 +145,7 @@ public class OutlineStatementOpportunityTest {
     Scope fakeScope = new Scope(null);
     fakeScope.add("x", new QualifiedType(BasicType.VEC2, Arrays.asList(TypeQualifier.OUT_PARAM)), Optional.empty());
 
-    new OutlineStatementOpportunity(toOutline, fakeScope, tu, fakeFunction).apply(new IdGenerator());
+    new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
 
     // "uniform" is not expected in the declaration
     final String expectedDecl = "vec2 " + Constants.OUTLINED_FUNCTION_PREFIX + "0(vec2 x)\n"
@@ -170,7 +171,7 @@ public class OutlineStatementOpportunityTest {
     Scope fakeScope = new Scope(null);
     fakeScope.add("x", BasicType.FLOAT, Optional.empty());
 
-    new OutlineStatementOpportunity(toOutline, fakeScope, tu, fakeFunction).apply(new IdGenerator());
+    new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
 
     final String expectedDecl = "float " + Constants.OUTLINED_FUNCTION_PREFIX + "0(float x)\n"
         + "{\n"

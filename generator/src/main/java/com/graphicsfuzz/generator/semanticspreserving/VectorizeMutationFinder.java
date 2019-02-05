@@ -14,50 +14,45 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.vectorizer;
+package com.graphicsfuzz.generator.semanticspreserving;
 
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.IParentMap;
+import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.MergeSet;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import com.graphicsfuzz.generator.mutateapi.MutationFinder;
+import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class VectorizationOpportunities extends ScopeTreeBuilder {
+public class VectorizeMutationFinder extends MutationFinderBase<VectorizeMutation> {
 
   private final IParentMap parentMap;
-  private final ShadingLanguageVersion shadingLanguageVersion;
   private final IRandom generator;
-  private final List<VectorizationOpportunity> opportunities;
   private BlockStmt lastExitedBlock;
 
   /**
-   * Constructs an instance and gathers vectorization opportunities for the given node.
+   * Constructs an instance and gathers vectorization opportunities for the given translation unit.
    *
-   * @param node The node to be analysed for vectorization opportunities
-   * @param shadingLanguageVersion The GLSL version of interest
+   * @param tu The translation unit to be analysed for vectorization mutation opportunities
    * @param generator For random number generation
    */
-  public VectorizationOpportunities(IAstNode node, ShadingLanguageVersion shadingLanguageVersion,
-      IRandom generator) {
-    this.parentMap = IParentMap.createParentMap(node);
-    this.shadingLanguageVersion = shadingLanguageVersion;
+  public VectorizeMutationFinder(TranslationUnit tu,
+                                 IRandom generator) {
+    super(tu);
+    this.parentMap = IParentMap.createParentMap(tu);
     this.generator = generator;
-    this.opportunities = new ArrayList<>();
     this.lastExitedBlock = null;
-    visit(node);
   }
 
   @Override
@@ -81,11 +76,11 @@ public class VectorizationOpportunities extends ScopeTreeBuilder {
           mergeSetsWithSpace.get(index).add(entry);
         }
       }
-      opportunities.addAll(
-            mergeSetsForThisScope.stream().filter(mergeSet -> mergeSet.getNumVars() > 1)
-                  .map(mergeSet -> new VectorizationOpportunity(lastExitedBlock, mergeSet,
-                        parentMap))
-                  .collect(Collectors.toList()));
+      mergeSetsForThisScope
+          .stream()
+          .filter(mergeSet -> mergeSet.getNumVars() > 1)
+          .map(mergeSet -> new VectorizeMutation(lastExitedBlock, mergeSet, parentMap))
+          .forEach(this::addMutation);
     }
     super.popScope();
   }
@@ -94,7 +89,7 @@ public class VectorizationOpportunities extends ScopeTreeBuilder {
     if (!entry.hasVariableDeclInfo()) {
       return false;
     }
-    if (shadingLanguageVersion.initializersOfConstMustBeConst()) {
+    if (getTranslationUnit().getShadingLanguageVersion().initializersOfConstMustBeConst()) {
       if (entry.getType() instanceof QualifiedType
             && ((QualifiedType) entry.getType()).hasQualifier(TypeQualifier.CONST)) {
         // Do not merge const variables if the shading language requires the initializers of
@@ -118,16 +113,6 @@ public class VectorizationOpportunities extends ScopeTreeBuilder {
       return false;
     }
     return true;
-  }
-
-  public List<VectorizationOpportunity> getOpportunities(
-        TransformationProbabilities probabilities) {
-    return opportunities.stream().filter(opportunity -> probabilities.vectorizeStmts(generator))
-          .collect(Collectors.toList());
-  }
-
-  public List<VectorizationOpportunity> getAllOpportunities() {
-    return Collections.unmodifiableList(opportunities);
   }
 
   @Override

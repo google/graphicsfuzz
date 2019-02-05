@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.semanticschanging;
 
 import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
 
 public abstract class Node2NodeMutation<NodeT extends IAstNode>
       implements Mutation {

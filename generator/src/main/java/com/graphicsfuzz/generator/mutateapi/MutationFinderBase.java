@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.semanticschanging;
+package com.graphicsfuzz.generator.mutateapi;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
@@ -35,6 +35,8 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
+import com.graphicsfuzz.generator.mutateapi.MutationFinder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +47,7 @@ public abstract class MutationFinderBase<MutationT extends Mutation>
   private final List<MutationT> mutations;
   protected boolean underForLoopHeader;
 
-  MutationFinderBase(TranslationUnit tu) {
+  public MutationFinderBase(TranslationUnit tu) {
     this.tu = tu;
     this.mutations = new ArrayList<>();
     this.underForLoopHeader = false;
@@ -55,6 +57,14 @@ public abstract class MutationFinderBase<MutationT extends Mutation>
   public final List<MutationT> findMutations() {
     visit(tu);
     return mutations;
+  }
+
+  /**
+   * Yields the translation unit for which mutation opportunities are being sought.
+   * @return The translation unit under analysis.
+   */
+  protected TranslationUnit getTranslationUnit() {
+    return tu;
   }
 
   protected final void addMutation(MutationT mutation) {

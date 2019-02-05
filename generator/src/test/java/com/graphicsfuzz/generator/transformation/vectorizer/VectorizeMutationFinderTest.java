@@ -21,12 +21,14 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CannedRandom;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutation;
 import java.util.List;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class VectorizationOpportunitiesTest {
+public class VectorizeMutationFinderTest {
 
   @Test
   public void testVectorizationOpportunities() throws Exception {
@@ -53,9 +55,9 @@ public class VectorizationOpportunitiesTest {
             + "}";
 
     TranslationUnit tu = ParseHelper.parse(program);
-    List<VectorizationOpportunity> ops =
-        new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
-            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
+    List<VectorizeMutation> ops =
+        new VectorizeMutationFinder(tu,
+            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
     assertEquals(1, ops.size());
     ops.get(0).apply();
     CompareAsts.assertEqualAsts(expected, tu);
@@ -83,9 +85,9 @@ public class VectorizationOpportunitiesTest {
             + "}";
 
     TranslationUnit tu = ParseHelper.parse(program);
-    List<VectorizationOpportunity> ops =
-        new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
-            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
+    List<VectorizeMutation> ops =
+        new VectorizeMutationFinder(tu,
+            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
     assertEquals(1, ops.size());
     ops.get(0).apply();
     CompareAsts.assertEqualAsts(expected, tu);
@@ -108,9 +110,9 @@ public class VectorizationOpportunitiesTest {
             + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program);
-    List<VectorizationOpportunity> ops =
-        new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
-            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
+    List<VectorizeMutation> ops =
+        new VectorizeMutationFinder(tu,
+            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
     assertEquals(0, ops.size());
   }
 
@@ -130,9 +132,9 @@ public class VectorizationOpportunitiesTest {
             + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program);
-    List<VectorizationOpportunity> ops =
-        new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
-            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
+    List<VectorizeMutation> ops =
+        new VectorizeMutationFinder(tu,
+            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
     assertEquals(1, ops.size());
   }
 
@@ -140,9 +142,9 @@ public class VectorizationOpportunitiesTest {
   public void testLoops() throws Exception {
     final String program = "void main() { for(int i = 0; i < 10; i++) { } for (int j = 0; j < 10; j++) { } }";
     TranslationUnit tu = ParseHelper.parse(program);
-    List<VectorizationOpportunity> ops =
-          new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
-                new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
+    List<VectorizeMutation> ops =
+          new VectorizeMutationFinder(tu,
+                new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
     assertEquals(0, ops.size());
 
   }
@@ -207,17 +209,17 @@ public class VectorizationOpportunitiesTest {
                 + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program);
-    List<VectorizationOpportunity> ops =
-          new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
-                new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
+    List<VectorizeMutation> ops =
+          new VectorizeMutationFinder(tu,
+                new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
     assertEquals(1, ops.size());
     ops.get(0).apply();
     CompareAsts.assertEqualAsts(expectedFirst, tu);
 
     // Now do a nested application
     ops =
-          new VectorizationOpportunities(tu, ShadingLanguageVersion.GLSL_440,
-                new CannedRandom(0, 0, 0, 0, 0, 0, 0)).getAllOpportunities();
+          new VectorizeMutationFinder(tu,
+                new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
     assertEquals(2, ops.size());
     ops.get(0).apply();
     CompareAsts.assertEqualAsts(expectedSecond, tu);

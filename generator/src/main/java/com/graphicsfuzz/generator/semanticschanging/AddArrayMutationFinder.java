@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.outliner;
+package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
@@ -38,6 +38,7 @@ import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.OpenGlConstants;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,19 +46,22 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class OutlineStatementOpportunity {
+public class OutlineStatementMutation implements Mutation {
   
   private final ExprStmt toOutline;
   private final Scope scopeOfStmt;
   private final TranslationUnit tu; // Insert new stuff into the tu...
   private final FunctionDefinition enclosingFunction; // ...right before the enclosing function
+  private final IdGenerator idGenerator;
 
-  public OutlineStatementOpportunity(ExprStmt toOutline, Scope scopeOfStmt, TranslationUnit tu,
-      FunctionDefinition enclosingFunction) {
+  public OutlineStatementMutation(ExprStmt toOutline, Scope scopeOfStmt, TranslationUnit tu,
+                                  FunctionDefinition enclosingFunction,
+                                  IdGenerator idGenerator) {
     this.scopeOfStmt = scopeOfStmt;
     this.toOutline = toOutline;
     this.tu = tu;
     this.enclosingFunction = enclosingFunction;
+    this.idGenerator = idGenerator;
 
     if (!isAssignment(toOutline)) {
       throw new IllegalArgumentException("Can only outline an assignment statement");
@@ -93,7 +97,8 @@ public class OutlineStatementOpportunity {
     return ((BinaryExpr)((ExprStmt)stmt).getExpr()).getOp() == BinOp.ASSIGN;
   }
 
-  public void apply(IdGenerator idGenerator) {
+  @Override
+  public void apply() {
     BinaryExpr binaryExpr = (BinaryExpr) toOutline.getExpr();
     assert binaryExpr.getOp() == BinOp.ASSIGN;
 

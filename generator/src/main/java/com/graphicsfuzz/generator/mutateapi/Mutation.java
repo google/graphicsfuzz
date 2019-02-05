@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.semanticschanging;
+package com.graphicsfuzz.generator.mutateapi;
 
-import java.util.List;
+public interface Mutation {
 
-public interface MutationFinder<MutationT extends Mutation> {
-
-  List<MutationT> findMutations();
+  void apply();
 
 }

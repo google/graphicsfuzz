@@ -20,9 +20,12 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
+import com.graphicsfuzz.generator.mutateapi.MutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.AddArrayMutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.Compound2BodyMutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.Expr2ArgMutationFinder;
@@ -30,12 +33,12 @@ import com.graphicsfuzz.generator.semanticschanging.Expr2ArrayAccessMutationFind
 import com.graphicsfuzz.generator.semanticschanging.Expr2BinaryMutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.Expr2LiteralMutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.If2DiscardMutationFinder;
-import com.graphicsfuzz.generator.semanticschanging.Mutation;
-import com.graphicsfuzz.generator.semanticschanging.MutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.RemoveInitializerMutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.RemoveStmtMutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.ReplaceBlockStmtsWithSwitchMutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.SwapVariableIdentifiersMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutationFinder;
 import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -43,7 +46,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -76,6 +78,10 @@ public class Mutate {
     return parser.parseArgs(args);
   }
 
+  /**
+   * Entry point to Mutate, guarded so that it cannot throw exceptions.
+   * @param args Command-line arguments for the tool.
+   */
   public static void main(String[] args) {
     try {
       mainHelper(args);
@@ -89,6 +95,15 @@ public class Mutate {
     }
   }
 
+  /**
+   * Entry point to Mutate, except that it can throw exceptions.
+   * @param args Command-line arguments.
+   * @throws ArgumentParserException if there is a problem with the command-line arguments.
+   * @throws IOException if something I/O-related goes wrong.
+   * @throws ParseTimeoutException if a shader takes too long to parse.
+   * @throws InterruptedException if something goes wrong with an external tool.
+   * @throws GlslParserException if a shader fails to parse.
+   */
   public static void mainHelper(String[] args) throws ArgumentParserException, IOException,
       ParseTimeoutException, InterruptedException, GlslParserException {
 
@@ -118,7 +133,7 @@ public class Mutate {
   }
 
   private static void mutate(TranslationUnit tu, IRandom random) {
-    final int numMutationTypes = 11;
+    final int numMutationTypes = 13;
     final int maxTries = 10;
 
     List<? extends Mutation> mutations;
@@ -161,6 +176,15 @@ public class Mutate {
           break;
         case 10:
           mutationFinder = new SwapVariableIdentifiersMutationFinder(tu, random);
+          break;
+        case 11:
+          mutationFinder = new VectorizeMutationFinder(tu, random);
+          break;
+        case 12:
+          // TODO(243): if Mutate is called successively on a shader, we may end up with clashes
+          // due to outlined functions having the same name.  Consider having available ids
+          // computed based on what the shader already contains.
+          mutationFinder = new OutlineStatementMutationFinder(tu, new IdGenerator());
           break;
         default:
           throw new RuntimeException("numMutationTypes needs to be kept in sync with number of "

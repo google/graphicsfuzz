@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.vectorizer;
+package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
@@ -30,22 +30,24 @@ import com.graphicsfuzz.common.transformreduce.MergeSet;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class VectorizationOpportunity {
+public class VectorizeMutation implements Mutation {
 
   private final BlockStmt block;
   private final MergeSet mergeSet;
   private final IParentMap parentMap;
 
-  public VectorizationOpportunity(BlockStmt block, MergeSet mergeSet, IParentMap parentMap) {
+  public VectorizeMutation(BlockStmt block, MergeSet mergeSet, IParentMap parentMap) {
     this.block = block;
     this.mergeSet = mergeSet;
     this.parentMap = parentMap;
   }
 
+  @Override
   public void apply() {
 
     if (blockAlreadyDeclaresVector()) {

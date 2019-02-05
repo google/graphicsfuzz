@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
+import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 
 public class If2DiscardMutationFinder extends MutationFinderBase<Stmt2StmtMutation> {
 

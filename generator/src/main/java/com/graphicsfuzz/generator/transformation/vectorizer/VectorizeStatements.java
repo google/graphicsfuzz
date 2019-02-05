@@ -19,6 +19,8 @@ package com.graphicsfuzz.generator.transformation.vectorizer;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutation;
+import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutationFinder;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
@@ -32,10 +34,10 @@ public class VectorizeStatements implements ITransformation {
   public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
       ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
-    List<VectorizationOpportunity> vectorizationOpportunities =
-          new VectorizationOpportunities(tu, shadingLanguageVersion, generator)
-                .getOpportunities(probabilities);
-    vectorizationOpportunities.forEach(VectorizationOpportunity::apply);
+    List<VectorizeMutation> vectorizationOpportunities =
+          new VectorizeMutationFinder(tu, generator)
+                .findMutations(probabilities::vectorizeStmts, generator);
+    vectorizationOpportunities.forEach(VectorizeMutation::apply);
     return !vectorizationOpportunities.isEmpty();
   }
 

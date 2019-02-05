@@ -32,6 +32,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

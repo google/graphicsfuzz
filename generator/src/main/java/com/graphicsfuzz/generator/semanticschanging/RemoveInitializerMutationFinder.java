@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 
 /**
  * Finds mutations such as: int v = w -> int v.

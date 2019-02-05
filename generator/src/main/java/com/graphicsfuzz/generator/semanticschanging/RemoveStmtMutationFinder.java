@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 
 /**
  * Finds opportunities to remove a statement.

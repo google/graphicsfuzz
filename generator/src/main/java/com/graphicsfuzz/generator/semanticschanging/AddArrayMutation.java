@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
 
 public class AddArrayMutation implements Mutation {
 

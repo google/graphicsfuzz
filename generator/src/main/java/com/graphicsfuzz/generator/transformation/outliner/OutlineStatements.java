@@ -20,6 +20,8 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutation;
+import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutationFinder;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
@@ -38,11 +40,11 @@ public class OutlineStatements implements ITransformation {
   public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
         ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
-    List<OutlineStatementOpportunity> outlineStatementOpportunities =
-          new OutlineStatementOpportunities(tu)
-                .getOutliningOpportunities(probabilities, generator);
-    for (OutlineStatementOpportunity op : outlineStatementOpportunities) {
-      op.apply(idGenerator);
+    List<OutlineStatementMutation> outlineStatementOpportunities =
+          new OutlineStatementMutationFinder(tu, idGenerator)
+              .findMutations(probabilities::outlineStatements, generator);
+    for (OutlineStatementMutation op : outlineStatementOpportunities) {
+      op.apply();
     }
     return !outlineStatementOpportunities.isEmpty();
   }

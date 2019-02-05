@@ -18,6 +18,7 @@ package com.graphicsfuzz.generator.semanticschanging;
 
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
 
 public class ReplaceDeclInfoMutation implements Mutation {
 

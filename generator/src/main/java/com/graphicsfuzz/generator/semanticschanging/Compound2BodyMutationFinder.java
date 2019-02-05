@@ -24,6 +24,7 @@ import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
+import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import java.util.Arrays;
 
 public class Compound2BodyMutationFinder extends MutationFinderBase<Stmt2StmtMutation> {

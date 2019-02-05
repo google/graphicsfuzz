@@ -18,6 +18,7 @@ package com.graphicsfuzz.generator.semanticschanging;
 
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
 
 /**
  * Captures an opportunity to remove a statement, and allows the opportunity to be applied.

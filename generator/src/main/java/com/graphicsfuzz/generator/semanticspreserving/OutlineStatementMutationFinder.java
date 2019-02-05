@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.outliner;
+package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -27,38 +27,39 @@ import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.generator.mutateapi.MutationFinder;
+import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class OutlineStatementOpportunities extends ScopeTreeBuilder {
+public class OutlineStatementMutationFinder extends MutationFinderBase<OutlineStatementMutation> {
 
-  private final List<OutlineStatementOpportunity> opportunities;
-  private final TranslationUnit tu;
+  private final IdGenerator idGenerator;
 
-  public OutlineStatementOpportunities(TranslationUnit tu) {
-    this.opportunities = new ArrayList<>();
-    this.tu = tu;
-    visit(tu);
+  public OutlineStatementMutationFinder(TranslationUnit tu, IdGenerator idGenerator) {
+    super(tu);
+    this.idGenerator = idGenerator;
   }
 
   @Override
   public void visitExprStmt(ExprStmt exprStmt) {
     super.visitExprStmt(exprStmt);
-    if (!OutlineStatementOpportunity.isAssignment(exprStmt)) {
+    if (!OutlineStatementMutation.isAssignment(exprStmt)) {
       return;
     }
     BinaryExpr be = (BinaryExpr) exprStmt.getExpr();
-    if (!OutlineStatementOpportunity.assignsDirectlyToVariable(be)) {
+    if (!OutlineStatementMutation.assignsDirectlyToVariable(be)) {
       return;
     }
     if (referencesArray(be.getRhs(), currentScope)) {
       return;
     }
-    opportunities.add(new OutlineStatementOpportunity(exprStmt, currentScope, tu,
-          enclosingFunction));
+    addMutation(new OutlineStatementMutation(exprStmt, currentScope, getTranslationUnit(),
+          enclosingFunction, idGenerator));
   }
 
   private boolean referencesArray(Expr expr, Scope enclosingScope) {
@@ -79,16 +80,6 @@ public class OutlineStatementOpportunities extends ScopeTreeBuilder {
         return test(expr);
       }
     }.referencesArray(expr, enclosingScope);
-  }
-
-  List<OutlineStatementOpportunity> getAllOpportunities() {
-    return Collections.unmodifiableList(opportunities);
-  }
-
-  public List<OutlineStatementOpportunity> getOutliningOpportunities(
-        TransformationProbabilities probabilities, IRandom generator) {
-    return opportunities.stream().filter(opportunity -> probabilities.outlineStatements(generator))
-          .collect(Collectors.toList());
   }
 
 }
