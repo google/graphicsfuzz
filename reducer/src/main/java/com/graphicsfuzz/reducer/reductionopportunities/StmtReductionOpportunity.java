@@ -16,30 +16,34 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
+import com.graphicsfuzz.common.ast.stmt.CaseLabel;
+import com.graphicsfuzz.common.ast.stmt.DefaultCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public final class StmtReductionOpportunity extends AbstractReductionOpportunity {
 
-  private BlockStmt blockStmt;
-  private Stmt child;
+  private final IAstNode parentOfBlockStmt;
+  private final BlockStmt blockStmt;
+  private final Stmt childOfBlockStmt;
 
-  public StmtReductionOpportunity(BlockStmt blockStmt, Stmt child,
-      VisitationDepth depth) {
+  public StmtReductionOpportunity(IAstNode parentOfBlockStmt,
+                                  BlockStmt blockStmt,
+                                  Stmt childOfBlockStmt,
+                                  VisitationDepth depth) {
     super(depth);
+    this.parentOfBlockStmt = parentOfBlockStmt;
     this.blockStmt = blockStmt;
-    this.child = child;
-  }
-
-  public Stmt getChild() {
-    return child;
+    this.childOfBlockStmt = childOfBlockStmt;
   }
 
   @Override
   public void applyReductionImpl() {
     for (int i = 0; i < blockStmt.getNumStmts(); i++) {
-      if (child == blockStmt.getStmt(i)) {
+      if (childOfBlockStmt == blockStmt.getStmt(i)) {
         blockStmt.removeStmt(i);
         return;
       }
@@ -49,10 +53,26 @@ public final class StmtReductionOpportunity extends AbstractReductionOpportunity
 
   @Override
   public boolean preconditionHolds() {
-    if (!blockStmt.getStmts().contains(child)) {
+    if (!blockStmt.getStmts().contains(childOfBlockStmt)) {
       // Some other reduction opportunity must have removed the statement already
       return false;
     }
+    if (blockStmt.getStmt(blockStmt.getNumStmts() - 1) == childOfBlockStmt
+        && blockStmt.getNumStmts() > 1
+        && blockStmt.getStmt(blockStmt.getNumStmts() - 2) instanceof CaseLabel) {
+      // Removing this statement would leave an empty final switch case, which we don't want to do.
+      return false;
+    }
+    if (parentOfBlockStmt instanceof SwitchStmt
+        && childOfBlockStmt instanceof CaseLabel
+        && blockStmt.getStmt(0) == childOfBlockStmt
+        && blockStmt.getNumStmts() > 1
+        && !(blockStmt.getStmt(1) instanceof CaseLabel)) {
+      // Removing this statement would lead to a switch statement with a non-label as its first
+      // inner statement, which we don't want to do.
+      return false;
+    }
+
     return true;
   }
 }
