@@ -52,7 +52,7 @@ public final class OpaqueExpressionGenerator {
   private final GenerationParams generationParams;
 
   // The available identity transformations, and the associated types to which they may
-  // be applied.  We store both a list and a map for reasons of determinism.
+  // be applied.
   private final List<IdentityTransformation> identityTransformations;
 
   private final ShadingLanguageVersion shadingLanguageVersion;
