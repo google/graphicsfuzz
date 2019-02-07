@@ -20,6 +20,8 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.generator.semanticspreserving.StructificationMutation;
+import com.graphicsfuzz.generator.semanticspreserving.StructificationMutationFinder;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
@@ -35,11 +37,14 @@ public class Structification implements ITransformation {
       ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
 
-    List<StructificationOpportunity> structificationOpportunities =
-          new StructificationOpportunities(tu, shadingLanguageVersion)
-                .getOpportunities(probabilities, generator);
-    for (StructificationOpportunity so : structificationOpportunities) {
-      so.apply(idGenerator, generator, generationParams);
+    final List<StructificationMutation> structificationOpportunities =
+          new StructificationMutationFinder(tu,
+              idGenerator,
+              generator,
+              generationParams)
+                .findMutations(probabilities::structify, generator);
+    for (StructificationMutation so : structificationOpportunities) {
+      so.apply();
     }
     return !structificationOpportunities.isEmpty();
   }

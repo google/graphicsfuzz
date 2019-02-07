@@ -37,6 +37,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.generator.semanticspreserving.StructificationMutation;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.CannedRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -51,7 +52,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.Test;
 
-public class StructificationOpportunityTest {
+public class StructificationMutationTest {
 
   @Test
   public void applyStructification() {
@@ -123,11 +124,14 @@ public class StructificationOpportunityTest {
         2 /* choose to insert at the end of this struct */
     );
 
-    new StructificationOpportunity((DeclarationStmt) block.getStmt(0), block, tu,
-        ShadingLanguageVersion.GLSL_440).apply(
+    new StructificationMutation(
+        (DeclarationStmt) block.getStmt(0),
+        block,
+        tu,
         new IdGenerator(),
         generator,
-        GenerationParams.normal(ShaderKind.FRAGMENT, true));
+        GenerationParams.normal(ShaderKind.FRAGMENT, true))
+        .apply();
     // The generator should have used up all its values by now.
     assertTrue(generator.isExhausted());
 
@@ -186,7 +190,7 @@ public class StructificationOpportunityTest {
         0 /* with (0 + 1) field */,
         false /* that is not a struct */,
         0 /* instead it is FLOAT */);
-    List<StructDefinitionType> structs = StructificationOpportunity.randomStruct(0, generator,
+    List<StructDefinitionType> structs = StructificationMutation.randomStruct(0, generator,
         new IdGenerator(), ShadingLanguageVersion.GLSL_440, GenerationParams.normal(ShaderKind.FRAGMENT, true));
     assertEquals(3, structs.size());
     StructDefinitionType enclosingStruct = structs.get(0);
@@ -213,7 +217,7 @@ public class StructificationOpportunityTest {
   public void randomStruct() {
     for (int i = 0; i < 10; i++) {
       List<StructDefinitionType> structs =
-          StructificationOpportunity.randomStruct(0, new RandomWrapper(0),
+          StructificationMutation.randomStruct(0, new RandomWrapper(0),
               new IdGenerator(), ShadingLanguageVersion.ESSL_100,
               GenerationParams.normal(ShaderKind.FRAGMENT, true));
       checkDisjointSubStructs(structs.get(0), structs);

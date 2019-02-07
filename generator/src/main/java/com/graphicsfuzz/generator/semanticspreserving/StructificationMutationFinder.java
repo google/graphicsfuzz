@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.structifier;
+package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
@@ -22,26 +22,28 @@ import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
+import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class StructificationOpportunities extends ScopeTreeBuilder {
+public class StructificationMutationFinder extends MutationFinderBase<StructificationMutation> {
 
-  private final List<StructificationOpportunity> opportunities;
-  private final ShadingLanguageVersion shadingLanguageVersion;
-  private final TranslationUnit tu;
+  private final IdGenerator idGenerator;
+  private final IRandom random;
+  private final GenerationParams generationParams;
 
-  public StructificationOpportunities(TranslationUnit tu,
-      ShadingLanguageVersion shadingLanguageVersion) {
-    this.opportunities = new ArrayList<>();
-    this.shadingLanguageVersion = shadingLanguageVersion;
-    this.tu = tu;
-    visit(tu);
+  public StructificationMutationFinder(TranslationUnit tu,
+                                       IdGenerator idGenerator,
+                                       IRandom random,
+                                       GenerationParams generationParams) {
+    super(tu);
+    this.idGenerator = idGenerator;
+    this.random = random;
+    this.generationParams = generationParams;
   }
 
   @Override
@@ -66,8 +68,8 @@ public class StructificationOpportunities extends ScopeTreeBuilder {
     if (!(baseType.getWithoutQualifiers() instanceof BasicType)) {
       return;
     }
-    opportunities.add(new StructificationOpportunity(declarationStmt, currentBlock(), tu,
-        shadingLanguageVersion));
+    addMutation(new StructificationMutation(declarationStmt, currentBlock(),
+        getTranslationUnit(), idGenerator, random, generationParams));
   }
 
   private boolean hasQualifiers(Type type) {
@@ -77,20 +79,14 @@ public class StructificationOpportunities extends ScopeTreeBuilder {
 
   @Override
   public void visitForStmt(ForStmt forStmt) {
-    if (!shadingLanguageVersion.restrictedForLoops() || !shadingLanguageVersion.isWebGl()) {
+    if (!getTranslationUnit().getShadingLanguageVersion().restrictedForLoops()
+        || !getTranslationUnit().getShadingLanguageVersion().isWebGl()) {
       super.visitForStmt(forStmt);
     } else {
       // GLSL 1.00 + WebGL does not allow us to structify for loop guards, so we skip the for loop
       // header.
       visitForStmtBodyOnly(forStmt);
     }
-  }
-
-  public List<StructificationOpportunity> getOpportunities(
-        TransformationProbabilities probabilities,
-        IRandom generator) {
-    return opportunities.stream().filter(opportunity -> probabilities.structify(generator)).collect(
-          Collectors.toList());
   }
 
 }

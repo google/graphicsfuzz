@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.structifier;
+package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
@@ -37,6 +37,7 @@ import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.typing.SupportedTypes;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class StructificationOpportunity {
+public class StructificationMutation implements Mutation {
 
   private final DeclarationStmt declToTransform; // The declaration to be put into a struct,
   // which must be a single declaration.
@@ -54,10 +55,17 @@ public class StructificationOpportunity {
   private final TranslationUnit tu; // The enclosing translation unit, into which new struct
   // declarations will be inserted.
 
-  private final ShadingLanguageVersion shadingLanguageVersion;
+  private final IdGenerator idGenerator;
 
-  public StructificationOpportunity(DeclarationStmt declToTransform, BlockStmt block,
-        TranslationUnit tu, ShadingLanguageVersion shadingLanguageVersion) {
+  private final IRandom generator;
+
+  private final GenerationParams generationParams;
+
+  public StructificationMutation(DeclarationStmt declToTransform, BlockStmt block,
+                                 TranslationUnit tu,
+                                 IdGenerator idGenerator,
+                                 IRandom generator,
+                                 GenerationParams generationParams) {
     assert declToTransform.getVariablesDeclaration().getNumDecls() == 1 :
           "Only solo declarations can be structified";
     assert !declToTransform.getVariablesDeclaration().getDeclInfo(0).hasArrayInfo() :
@@ -65,7 +73,9 @@ public class StructificationOpportunity {
     this.declToTransform = declToTransform;
     this.block = block;
     this.tu = tu;
-    this.shadingLanguageVersion = shadingLanguageVersion;
+    this.idGenerator = idGenerator;
+    this.generator = generator;
+    this.generationParams = generationParams;
   }
 
   /**
@@ -82,7 +92,7 @@ public class StructificationOpportunity {
    * @return List of struct declarations, with the first declaration being the final generated
    *         struct, and the following declarations all required sub-structs.
    */
-  static List<StructDefinitionType> randomStruct(int currentDepth, IRandom generator,
+  public static List<StructDefinitionType> randomStruct(int currentDepth, IRandom generator,
                                                  IdGenerator idGenerator,
                                                  ShadingLanguageVersion shadingLanguageVersion,
                                                  GenerationParams generationParams) {
@@ -134,10 +144,10 @@ public class StructificationOpportunity {
     return result;
   }
 
-  public void apply(IdGenerator idGenerator, IRandom generator,
-        GenerationParams generationParams) {
+  @Override
+  public void apply() {
     List<StructDefinitionType> generatedStructs = randomStruct(0, generator, idGenerator,
-        shadingLanguageVersion, generationParams);
+        tu.getShadingLanguageVersion(), generationParams);
 
     generatedStructs.stream().map(VariablesDeclaration::new).forEach(tu::addDeclaration);
 
