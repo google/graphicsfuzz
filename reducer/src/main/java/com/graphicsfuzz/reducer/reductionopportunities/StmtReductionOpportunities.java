@@ -74,8 +74,7 @@ public class StmtReductionOpportunities
   protected void visitChildOfBlock(BlockStmt block, Stmt child) {
     if (isEmptyBlockStmt(child) || isDeadCodeInjection(child)
           || allowedToReduceStmt(child)) {
-      addOpportunity(new StmtReductionOpportunity(parentMap.getParent(block), block, child,
-          getVistitationDepth()));
+      addOpportunity(new StmtReductionOpportunity(block, child, getVistitationDepth()));
     }
   }
 

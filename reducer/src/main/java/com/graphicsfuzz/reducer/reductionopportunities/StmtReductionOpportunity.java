@@ -16,26 +16,21 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.CaseLabel;
-import com.graphicsfuzz.common.ast.stmt.DefaultCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public final class StmtReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final IAstNode parentOfBlockStmt;
   private final BlockStmt blockStmt;
   private final Stmt childOfBlockStmt;
 
-  public StmtReductionOpportunity(IAstNode parentOfBlockStmt,
-                                  BlockStmt blockStmt,
+  public StmtReductionOpportunity(BlockStmt blockStmt,
                                   Stmt childOfBlockStmt,
                                   VisitationDepth depth) {
     super(depth);
-    this.parentOfBlockStmt = parentOfBlockStmt;
     this.blockStmt = blockStmt;
     this.childOfBlockStmt = childOfBlockStmt;
   }
@@ -57,19 +52,34 @@ public final class StmtReductionOpportunity extends AbstractReductionOpportunity
       // Some other reduction opportunity must have removed the statement already
       return false;
     }
-    if (blockStmt.getStmt(blockStmt.getNumStmts() - 1) == childOfBlockStmt
-        && blockStmt.getNumStmts() > 1
+
+    if (blockStmt.getNumStmts() > 1
+        && blockStmt.getStmt(blockStmt.getNumStmts() - 1) == childOfBlockStmt
         && blockStmt.getStmt(blockStmt.getNumStmts() - 2) instanceof CaseLabel) {
-      // Removing this statement would leave an empty final switch case, which we don't want to do.
+      // We do not want to remove childOfBlockStmt in the following scenario, as it would lead to an
+      // empty final switch case, which we want to avoid:
+      //
+      // switch(...)
+      // { <-------------- blockStmt
+      //   ...
+      //   case ...:
+      //   stmt; <-------- childOfBlockStmt
+      // }
       return false;
     }
-    if (parentOfBlockStmt instanceof SwitchStmt
+    if (blockStmt.getNumStmts() > 1
         && childOfBlockStmt instanceof CaseLabel
         && blockStmt.getStmt(0) == childOfBlockStmt
-        && blockStmt.getNumStmts() > 1
         && !(blockStmt.getStmt(1) instanceof CaseLabel)) {
-      // Removing this statement would lead to a switch statement with a non-label as its first
-      // inner statement, which we don't want to do.
+      // We do not want to remove childOfBlockStmt in the following scenario, as it would lead to a
+      // switch body that does not start with a case label:
+      //
+      // switch(...)
+      // { <-------------- blockStmt
+      //   case ...: <-------- childOfBlockStmt
+      //   notCaseLabel;
+      //   ...
+      // }
       return false;
     }
 
