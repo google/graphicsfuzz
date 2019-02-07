@@ -259,7 +259,7 @@ public class SplitForLoopMutation implements Mutation {
     }
 
     return Optional.of(new LoopSplitInfo(loopCounterName, startValue, endValue,
-        loopCounterIncreasing, comparison, variableBeforeLiteral));
+        loopCounterIncreasing));
 
   }
 

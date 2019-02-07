@@ -24,17 +24,13 @@ public class LoopSplitInfo {
   private final int startValue;
   private final int endValue;
   private final boolean increasing;
-  private final BinOp comparison;
-  private final boolean variableBeforeLiteral;
 
   public LoopSplitInfo(String loopCounter, int startValue, int endValue,
-      boolean increasing, BinOp comparison, boolean variableBeforeLiteral) {
+      boolean increasing) {
     this.loopCounter = loopCounter;
     this.startValue = startValue;
     this.endValue = endValue;
     this.increasing = increasing;
-    this.comparison = comparison;
-    this.variableBeforeLiteral = variableBeforeLiteral;
   }
 
   public String getLoopCounter() {
