@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
@@ -55,13 +56,16 @@ public class StmtReductionOpportunitiesTest {
     final String expectedProg = "void main() {"
         + "  int y = 2;"
         + "  switch(_GLF_SWITCH(0)) {"
-        + "    case 5:" // TODO: get rid of this
+        + "    case 5:"
         + "    case 0:"
-        + "    case 1:" // TODO: get rid of this
+        + "    case 1:" // TODO: get rid of this; doesn't affect semantics.
         + "    y += 3;"
-        + "    case 42:" // TODO: get rid of this
+        + "    case 42:" // TODO: get rid of this; doesn't affect semantics.
         + "    y += 4;"
         + "    break;"
+        + "    1;" // This gets left over because it used to be the only statement immediately
+        // following a case label; the reducer conservatively decides not to remove it.  Now that
+        // it does not follow a case label it could be culled by the reducer in the future.
         + "  }"
         + "}";
 
@@ -74,8 +78,32 @@ public class StmtReductionOpportunitiesTest {
       op.applyReduction();
     }
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),
-        PrettyPrinterVisitor.prettyPrintAsString(tu));
+    CompareAsts.assertEqualAsts(expectedProg, tu);
+
+  }
+
+  @Test
+  public void testDoNotLeaveDefaultEmpty() throws Exception {
+    final String prog = "void main() {"
+        + "  switch(0) {"
+        + "    default:"
+        + "    1;"
+        + "  }"
+        + "}";
+
+    final String expected = "void main() {"
+        + "}";
+
+    final TranslationUnit tu = ParseHelper.parse(prog);
+    List<StmtReductionOpportunity> ops = StmtReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
+            ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(), null, false));
+
+    assertEquals(1, ops.size());
+    ops.get(0).applyReduction();
+
+    CompareAsts.assertEqualAsts(expected, tu);
 
   }
 
