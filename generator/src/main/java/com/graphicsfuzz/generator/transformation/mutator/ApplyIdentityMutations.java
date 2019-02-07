@@ -18,24 +18,25 @@ package com.graphicsfuzz.generator.transformation.mutator;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.semanticspreserving.IdentityMutation;
+import com.graphicsfuzz.generator.semanticspreserving.IdentityMutationFinder;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.util.List;
 
-public class MutateExpressions implements ITransformation {
+public class ApplyIdentityMutations implements ITransformation {
 
-  public static final String NAME = "mutate_expressions";
+  public static final String NAME = "apply_identity_mutations";
 
   @Override
   public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
         ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
         GenerationParams generationParams) {
-    List<IMutationPoint> mutationPoints = new MutationPoints(new Typer(tu, shadingLanguageVersion),
-        tu, shadingLanguageVersion, generator, generationParams).getMutationPoints(probabilities);
-    mutationPoints.forEach(IMutationPoint::applyMutation);
+    List<IdentityMutation> mutationPoints = new IdentityMutationFinder(
+        tu, generator, generationParams).findMutations(probabilities::mutatePoint, generator);
+    mutationPoints.forEach(IdentityMutation::apply);
     return !mutationPoints.isEmpty();
   }
 

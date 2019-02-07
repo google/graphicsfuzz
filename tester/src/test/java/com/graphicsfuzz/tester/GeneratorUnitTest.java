@@ -39,7 +39,7 @@ import com.graphicsfuzz.generator.transformation.controlflow.AddWrappingConditio
 import com.graphicsfuzz.generator.transformation.controlflow.SplitForLoops;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
-import com.graphicsfuzz.generator.transformation.mutator.MutateExpressions;
+import com.graphicsfuzz.generator.transformation.mutator.ApplyIdentityMutations;
 import com.graphicsfuzz.generator.transformation.outliner.OutlineStatements;
 import com.graphicsfuzz.generator.transformation.structifier.Structification;
 import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
@@ -119,7 +119,7 @@ public class GeneratorUnitTest {
 
   @Test
   public void testMutateExpressions() throws Exception {
-    testTransformationMultiVersions(() -> new MutateExpressions(), TransformationProbabilities
+    testTransformationMultiVersions(() -> new ApplyIdentityMutations(), TransformationProbabilities
         .onlyMutateExpressions(), "mutate.frag");
   }
 
@@ -177,7 +177,7 @@ public class GeneratorUnitTest {
 
   @Test
   public void mutateAndVectorize() throws Exception {
-    testTransformationMultiVersions(Arrays.asList(() -> new MutateExpressions(), () -> new VectorizeStatements()),
+    testTransformationMultiVersions(Arrays.asList(() -> new ApplyIdentityMutations(), () -> new VectorizeStatements()),
         TransformationProbabilities.onlyVectorizeAndMutate(),
         "mutate_and_vectorize.frag",
         Arrays.asList(), Arrays.asList());

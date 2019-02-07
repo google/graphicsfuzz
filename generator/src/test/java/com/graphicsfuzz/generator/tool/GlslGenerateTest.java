@@ -19,7 +19,7 @@ package com.graphicsfuzz.generator.tool;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
-import com.graphicsfuzz.generator.transformation.mutator.MutateExpressions;
+import com.graphicsfuzz.generator.transformation.mutator.ApplyIdentityMutations;
 import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.io.IOException;
@@ -70,7 +70,7 @@ public class GlslGenerateTest {
         outputDir, seed, Arrays.asList("--generate-uniform-bindings", "--max-uniforms",
             String.valueOf(10), "--stop-on-fail", "--max-factor", String.valueOf(100f),
             "--max-bytes", String.valueOf(500000), "--disable",
-            DonateDeadCode.NAME + "," + MutateExpressions.NAME));
+            DonateDeadCode.NAME + "," + ApplyIdentityMutations.NAME));
   }
 
   @Test

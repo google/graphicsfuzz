@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.mutator;
+package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.type.BasicType;
@@ -25,10 +25,11 @@ import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.util.GenerationParams;
 
-public final class MutationPoint implements IMutationPoint {
+public final class IdentityMutation implements Mutation {
 
   private final Expr parent;
   private final int indexOfChildToMutate;
@@ -42,10 +43,14 @@ public final class MutationPoint implements IMutationPoint {
   private final IRandom generator;
   private final GenerationParams generationParams;
 
-  public MutationPoint(Expr parent, int indexOfChildToMutate, Type type,
-        Scope scope, boolean constContext, ShadingLanguageVersion shadingLanguageVersion,
-        IRandom generator,
-        GenerationParams generationParams) {
+  public IdentityMutation(Expr parent,
+                          int indexOfChildToMutate,
+                          Type type,
+                          Scope scope,
+                          boolean constContext,
+                          ShadingLanguageVersion shadingLanguageVersion,
+                          IRandom generator,
+                          GenerationParams generationParams) {
     this.parent = parent;
     this.indexOfChildToMutate = indexOfChildToMutate;
     this.type = type;
@@ -57,7 +62,7 @@ public final class MutationPoint implements IMutationPoint {
   }
 
   @Override
-  public final void applyMutation() {
+  public final void apply() {
     Type typeToMutate =
           (type instanceof QualifiedType) ? ((QualifiedType) type).getTargetType() : type;
     if (BasicType.allScalarTypes().contains(typeToMutate) || BasicType.allVectorTypes()

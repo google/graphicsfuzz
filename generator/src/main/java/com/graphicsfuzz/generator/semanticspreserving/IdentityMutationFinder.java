@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.mutator;
+package com.graphicsfuzz.generator.semanticspreserving;
 
-import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInitializer;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -39,55 +39,46 @@ import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import com.graphicsfuzz.generator.util.GenerationParams;
-import com.graphicsfuzz.generator.util.TransformationProbabilities;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 
-public class MutationPoints extends ScopeTreeBuilder {
+public class IdentityMutationFinder extends MutationFinderBase<IdentityMutation> {
 
-  private Typer typer;
-  private List<IMutationPoint> mutationPoints;
+  private final Typer typer;
   private boolean inInitializer;
   private boolean atGlobalScope;
   private int insideLValueCount;
   private Type enclosingVariablesDeclarationType;
-  private final ShadingLanguageVersion shadingLanguageVersion;
   private final IRandom generator;
   private final GenerationParams generationParams;
   private final Deque<Set<String>> forLoopIterators;
 
 
-  public MutationPoints(Typer typer, IAstNode node, ShadingLanguageVersion shadingLanguageVersion,
-      IRandom generator,
-        GenerationParams generationParams) {
-    this.typer = typer;
-    this.mutationPoints = new ArrayList<>();
+  public IdentityMutationFinder(TranslationUnit tu,
+                                IRandom generator,
+                                GenerationParams generationParams) {
+    super(tu);
+    this.typer = new Typer(tu);
     this.inInitializer = false;
     this.atGlobalScope = true;
     this.insideLValueCount = 0;
     this.enclosingVariablesDeclarationType = null;
-    this.shadingLanguageVersion = shadingLanguageVersion;
     this.generator = generator;
     this.generationParams = generationParams;
     this.forLoopIterators = new LinkedList<>();
-    visit(node);
   }
 
   @Override
   public void visitForStmt(ForStmt forStmt) {
-    if (!shadingLanguageVersion.restrictedForLoops()) {
+    if (!getTranslationUnit().getShadingLanguageVersion().restrictedForLoops()) {
       super.visitForStmt(forStmt);
     } else {
       // GLSL 1.00 has very strict rules about the structure of a for loop.
@@ -128,11 +119,11 @@ public class MutationPoints extends ScopeTreeBuilder {
 
   @Override
   public void visitBinaryExpr(BinaryExpr binaryExpr) {
-    if (isSideEffectingBinOp(binaryExpr.getOp())) {
+    if (binaryExpr.getOp().isSideEffecting()) {
       insideLValueCount++;
     }
     visit(binaryExpr.getLhs());
-    if (isSideEffectingBinOp(binaryExpr.getOp())) {
+    if (binaryExpr.getOp().isSideEffecting()) {
       assert insideLValueCount > 0;
       insideLValueCount--;
     }
@@ -140,21 +131,21 @@ public class MutationPoints extends ScopeTreeBuilder {
 
     // Skip the LHS if it is side-effecting
     identifyMutationPoints(binaryExpr,
-          isSideEffectingBinOp(binaryExpr.getOp()) ? new HashSet<>(Arrays.asList(0))
+          binaryExpr.getOp().isSideEffecting() ? new HashSet<>(Arrays.asList(0))
                 : new HashSet<>());
   }
 
   @Override
   public void visitUnaryExpr(UnaryExpr unaryExpr) {
-    if (isSideEffectingUnOp(unaryExpr.getOp())) {
+    if (unaryExpr.getOp().isSideEffecting()) {
       insideLValueCount++;
     }
     super.visitUnaryExpr(unaryExpr);
-    if (isSideEffectingUnOp(unaryExpr.getOp())) {
+    if (unaryExpr.getOp().isSideEffecting()) {
       assert insideLValueCount > 0;
       insideLValueCount--;
     }
-    if (!isSideEffectingUnOp(unaryExpr.getOp())) {
+    if (!unaryExpr.getOp().isSideEffecting()) {
       identifyMutationPoints(unaryExpr);
     }
   }
@@ -237,7 +228,7 @@ public class MutationPoints extends ScopeTreeBuilder {
     // to mutate x.  However, the strictness of WebGL indexing
     // rules means that A[f(x)] is likely not legal in the first
     // place.
-    if (!shadingLanguageVersion.isWebGl()) {
+    if (!getTranslationUnit().getShadingLanguageVersion().isWebGl()) {
       super.visitArrayIndexExpr(arrayIndexExpr);
       identifyMutationPoints(arrayIndexExpr);
     }
@@ -279,37 +270,6 @@ public class MutationPoints extends ScopeTreeBuilder {
     inInitializer = false;
   }
 
-  private boolean isSideEffectingUnOp(UnOp op) {
-    switch (op) {
-      case POST_DEC:
-      case POST_INC:
-      case PRE_DEC:
-      case PRE_INC:
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  private boolean isSideEffectingBinOp(BinOp op) {
-    switch (op) {
-      case ADD_ASSIGN:
-      case ASSIGN:
-      case BAND_ASSIGN:
-      case BOR_ASSIGN:
-      case BXOR_ASSIGN:
-      case DIV_ASSIGN:
-      case MOD_ASSIGN:
-      case MUL_ASSIGN:
-      case SHL_ASSIGN:
-      case SHR_ASSIGN:
-      case SUB_ASSIGN:
-        return true;
-      default:
-        return false;
-    }
-  }
-
   private void identifyMutationPoints(Expr expr, Set<Integer> indicesToSkip) {
     if (insideLValueCount == 0) {
       for (int i = 0; i < expr.getNumChildren(); i++) {
@@ -318,14 +278,20 @@ public class MutationPoints extends ScopeTreeBuilder {
         }
         if (typer.hasType(expr.getChild(i))) {
           Scope clonedScope = currentScope.shallowClone();
-          if (shadingLanguageVersion.restrictedForLoops()) {
+          if (getTranslationUnit().getShadingLanguageVersion().restrictedForLoops()) {
             for (Set<String> iterators : forLoopIterators) {
               iterators.forEach(clonedScope::remove);
             }
           }
-          mutationPoints.add(new MutationPoint(expr, i, typer.lookupType(expr.getChild(i)),
-                clonedScope, isConstContext(), shadingLanguageVersion, generator,
-                generationParams));
+          addMutation(new IdentityMutation(
+              expr,
+              i,
+              typer.lookupType(expr.getChild(i)),
+              clonedScope,
+              isConstContext(),
+              getTranslationUnit().getShadingLanguageVersion(),
+              generator,
+              generationParams));
         }
       }
     }
@@ -333,16 +299,6 @@ public class MutationPoints extends ScopeTreeBuilder {
 
   private void identifyMutationPoints(Expr expr) {
     identifyMutationPoints(expr, new HashSet<>());
-  }
-
-  public List<IMutationPoint> getMutationPoints(TransformationProbabilities probabilities) {
-    List<IMutationPoint> result = new ArrayList<>();
-    for (IMutationPoint mutationPoint : mutationPoints) {
-      if (probabilities.mutatePoint(generator)) {
-        result.add(mutationPoint);
-      }
-    }
-    return result;
   }
 
   private boolean isConstContext() {
@@ -360,7 +316,4 @@ public class MutationPoints extends ScopeTreeBuilder {
     return false;
   }
 
-  List<IMutationPoint> getAllMutationPoints() {
-    return Collections.unmodifiableList(mutationPoints);
-  }
 }

@@ -38,6 +38,7 @@ import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.mutateapi.MutationFinder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public abstract class MutationFinderBase<MutationT extends Mutation>
@@ -56,7 +57,7 @@ public abstract class MutationFinderBase<MutationT extends Mutation>
   @Override
   public final List<MutationT> findMutations() {
     visit(tu);
-    return mutations;
+    return Collections.unmodifiableList(mutations);
   }
 
   /**

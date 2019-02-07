@@ -18,22 +18,24 @@ package com.graphicsfuzz.generator.transformation.mutator;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.CannedRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.generator.semanticspreserving.IdentityMutation;
+import com.graphicsfuzz.generator.semanticspreserving.IdentityMutationFinder;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import java.util.List;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class MutationPointsTest {
+public class IdentityMutationFinderTest {
 
   @Test
   public void testNumMutationPoints() throws Exception {
     final String program =
-        "void main() {\n"
+        "#version 450\n"
+            + "void main() {\n"
             + "  int x = 0;\n"
             + "  int j = 0;\n"
             + "  for (int x = 0; x < 100; x++) {\n"
@@ -41,14 +43,11 @@ public class MutationPointsTest {
             + "  }\n"
             + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
-    final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
-    final MutationPoints mutationPoints = new MutationPoints(
-        new Typer(tu, shadingLanguageVersion),
+    final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
-        shadingLanguageVersion,
         new CannedRandom(new Object[] { }),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
-    final List<IMutationPoint> points = mutationPoints.getAllMutationPoints();
+    final List<IdentityMutation> points = identityMutationFinder.findMutations();
     // The mutation points are:
     // - LHS and RHS of "x < 100"
     // - RHS of "j += x"
@@ -70,13 +69,11 @@ public class MutationPointsTest {
             + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.WEBGL_SL;
-    final MutationPoints mutationPoints = new MutationPoints(
-        new Typer(tu, shadingLanguageVersion),
+    final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
-        shadingLanguageVersion,
         new CannedRandom(new Object[] { }),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
-    final List<IMutationPoint> points = mutationPoints.getAllMutationPoints();
+    final List<IdentityMutation> points = identityMutationFinder.findMutations();
     // Only a single mutation point: the loop guard is untouchable as this is GLSL 100.
     assertEquals(1, points.size());
   }
@@ -92,13 +89,11 @@ public class MutationPointsTest {
             + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.WEBGL_SL;
-    final MutationPoints mutationPoints = new MutationPoints(
-        new Typer(tu, shadingLanguageVersion),
+    final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
-        shadingLanguageVersion,
         new CannedRandom(new Object[] { }),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
-    final List<IMutationPoint> points = mutationPoints.getAllMutationPoints();
+    final List<IdentityMutation> points = identityMutationFinder.findMutations();
     // Two mutation points: LHS and RHS of "j + 1", and RHS of "j = j + 1".
     // Loop guard is untouchable as this is GLSL 100.
     assertEquals(3, points.size());

@@ -25,7 +25,7 @@ import com.graphicsfuzz.generator.transformation.controlflow.AddWrappingConditio
 import com.graphicsfuzz.generator.transformation.controlflow.SplitForLoops;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
-import com.graphicsfuzz.generator.transformation.mutator.MutateExpressions;
+import com.graphicsfuzz.generator.transformation.mutator.ApplyIdentityMutations;
 import com.graphicsfuzz.generator.transformation.outliner.OutlineStatements;
 import com.graphicsfuzz.generator.transformation.structifier.Structification;
 import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
@@ -48,7 +48,7 @@ public class EnabledTransformations {
         DonateDeadCode.class,
         AddJumpStmts.class,
         DonateLiveCode.class,
-        MutateExpressions.class,
+        ApplyIdentityMutations.class,
         OutlineStatements.class,
         SplitForLoops.class,
         Structification.class,
@@ -75,8 +75,8 @@ public class EnabledTransformations {
         return AddJumpStmts.class;
       case DonateLiveCode.NAME:
         return DonateLiveCode.class;
-      case MutateExpressions.NAME:
-        return MutateExpressions.class;
+      case ApplyIdentityMutations.NAME:
+        return ApplyIdentityMutations.class;
       case OutlineStatements.NAME:
         return OutlineStatements.class;
       case SplitForLoops.NAME:
@@ -116,7 +116,7 @@ public class EnabledTransformations {
   }
 
   public boolean isEnabledMutate() {
-    return isEnabled(MutateExpressions.class);
+    return isEnabled(ApplyIdentityMutations.class);
   }
 
   public boolean isEnabledOutline() {

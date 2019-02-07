@@ -47,7 +47,7 @@ import com.graphicsfuzz.generator.transformation.controlflow.AddWrappingConditio
 import com.graphicsfuzz.generator.transformation.controlflow.SplitForLoops;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
-import com.graphicsfuzz.generator.transformation.mutator.MutateExpressions;
+import com.graphicsfuzz.generator.transformation.mutator.ApplyIdentityMutations;
 import com.graphicsfuzz.generator.transformation.outliner.OutlineStatements;
 import com.graphicsfuzz.generator.transformation.structifier.Structification;
 import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
@@ -507,7 +507,7 @@ public class Generate {
               generationParams, args.getAllowLongLoops()));
     }
     if (flags.isEnabledMutate()) {
-      result.add(new MutateExpressions());
+      result.add(new ApplyIdentityMutations());
     }
     if (flags.isEnabledOutline()) {
       result.add(new OutlineStatements(new IdGenerator()));
