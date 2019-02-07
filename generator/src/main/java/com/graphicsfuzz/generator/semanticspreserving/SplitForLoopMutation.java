@@ -36,7 +36,6 @@ import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
-import com.graphicsfuzz.generator.transformation.controlflow.LoopSplitInfo;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;

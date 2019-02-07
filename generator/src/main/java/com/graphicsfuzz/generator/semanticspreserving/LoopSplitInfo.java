@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.controlflow;
+package com.graphicsfuzz.generator.semanticspreserving;
 
-import com.graphicsfuzz.common.ast.expr.BinOp;
-
-public class LoopSplitInfo {
+class LoopSplitInfo {
 
   private final String loopCounter;
   private final int startValue;
   private final int endValue;
   private final boolean increasing;
 
-  public LoopSplitInfo(String loopCounter, int startValue, int endValue,
+  LoopSplitInfo(String loopCounter, int startValue, int endValue,
       boolean increasing) {
     this.loopCounter = loopCounter;
     this.startValue = startValue;
@@ -33,19 +31,19 @@ public class LoopSplitInfo {
     this.increasing = increasing;
   }
 
-  public String getLoopCounter() {
+  String getLoopCounter() {
     return loopCounter;
   }
 
-  public int getStartValue() {
+  int getStartValue() {
     return startValue;
   }
 
-  public int getEndValue() {
+  int getEndValue() {
     return endValue;
   }
 
-  public boolean getIncreasing() {
+  boolean getIncreasing() {
     return increasing;
   }
 }
