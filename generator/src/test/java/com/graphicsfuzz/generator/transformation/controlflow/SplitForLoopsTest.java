@@ -43,6 +43,7 @@ import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.generator.semanticspreserving.SplitForLoopMutation;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -63,7 +64,8 @@ public class SplitForLoopsTest {
   @Test
   public void suitableForSplittingNoNext()
       throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    Method suitableForSplitting = SplitForLoops.class.getDeclaredMethod("suitableForSplitting", IInjectionPoint.class);
+    Method suitableForSplitting = SplitForLoopMutation.class.getDeclaredMethod("suitableForSplitting",
+        IInjectionPoint.class);
     suitableForSplitting.setAccessible(true);
     Boolean result = (Boolean) suitableForSplitting.invoke(null,
         new IInjectionPoint() {
@@ -115,7 +117,7 @@ public class SplitForLoopsTest {
     TranslationUnit tu = makeExampleTranslationUnit();
 
     List<IInjectionPoint> ips = new InjectionPoints(tu, new RandomWrapper(),
-        SplitForLoops::suitableForSplitting).getInjectionPoints(
+        SplitForLoopMutation::suitableForSplitting).getInjectionPoints(
         TransformationProbabilities.onlySplitLoops()::splitLoops);
 
     assertEquals(1, ips.size());

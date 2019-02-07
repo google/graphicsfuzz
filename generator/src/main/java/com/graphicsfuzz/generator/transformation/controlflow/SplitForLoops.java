@@ -36,6 +36,9 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ReplaceLoopCounter;
 import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.generator.semanticspreserving.SplitForLoopMutation;
+import com.graphicsfuzz.generator.semanticspreserving.SplitForLoopMutationFinder;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
@@ -49,308 +52,24 @@ import java.util.Optional;
 public class SplitForLoops implements ITransformation {
 
   public static final String NAME = "split_for_loops";
-  private int loopVariableRenameCounter = 0;
+  private final IdGenerator idGenerator = new IdGenerator();
 
   @Override
   public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
       ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
-    List<IInjectionPoint> injectionPoints = new InjectionPoints(tu, generator,
-          SplitForLoops::suitableForSplitting).getInjectionPoints(
-          probabilities::splitLoops);
-
-    for (IInjectionPoint injectionPoint : injectionPoints) {
-      assert suitableForSplitting(injectionPoint);
-      injectionPoint.replaceNext(splitForLoop(injectionPoint, generator));
+    List<SplitForLoopMutation> splitForLoopMutations =
+        new SplitForLoopMutationFinder(tu, generator, idGenerator)
+            .findMutations(probabilities::splitLoops, generator);
+    for (SplitForLoopMutation mutation : splitForLoopMutations) {
+      mutation.apply();
     }
-    return !injectionPoints.isEmpty();
-  }
-
-  private Stmt splitForLoop(IInjectionPoint injectionPoint, IRandom generator) {
-    assert injectionPoint.getNextStmt() instanceof ForStmt;
-
-    ForStmt original = (ForStmt) injectionPoint.getNextStmt();
-    LoopSplitInfo loopSplitInfo = maybeGetLoopSplitInfo(original).get();
-
-    final int renamedCounterId = loopVariableRenameCounter++;
-
-    String newLoopCounter = Constants.SPLIT_LOOP_COUNTER_PREFIX + renamedCounterId
-          + loopSplitInfo.getLoopCounter();
-
-    ForStmt firstLoop = cloneWithReplacedLoopCounter(original,
-          loopSplitInfo.getLoopCounter(), newLoopCounter);
-
-    ForStmt secondLoop = cloneWithReplacedLoopCounter(original,
-          loopSplitInfo.getLoopCounter(), newLoopCounter);
-
-    int numIterationsToSplitAfter = generator.nextInt(
-          Math.abs(loopSplitInfo.getStartValue() - loopSplitInfo.getEndValue()) + 1);
-
-    adjustBound(firstLoop, numIterationsToSplitAfter, loopSplitInfo, newLoopCounter);
-
-    adjustInitializer(secondLoop, numIterationsToSplitAfter, loopSplitInfo);
-
-    return new BlockStmt(
-          Arrays.asList(firstLoop, secondLoop), true);
-  }
-
-  private void adjustInitializer(ForStmt loop, int numIterationsToSplitAfter,
-        LoopSplitInfo loopSplitInfo) {
-    final Integer newStart = new Integer(loopSplitInfo.getStartValue()
-          + (loopSplitInfo.getIncreasing() ? 1 : -1) * numIterationsToSplitAfter);
-
-    VariablesDeclaration varDecl = ((DeclarationStmt) loop.getInit()).getVariablesDeclaration();
-    varDecl.getDeclInfo(0).setInitializer(new ScalarInitializer(new IntConstantExpr(
-          newStart.toString())));
-  }
-
-  private void adjustBound(ForStmt loop, int numIterationsToSplitAfter,
-        LoopSplitInfo loopSplitInfo,
-        String newLoopCounter) {
-    final Integer newBound = new Integer(loopSplitInfo.getStartValue()
-          + (loopSplitInfo.getIncreasing() ? 1 : -1) * numIterationsToSplitAfter);
-    final BinOp newOp = loopSplitInfo.getIncreasing() ? BinOp.LT : BinOp.GT;
-    loop.setCondition(
-          new BinaryExpr(
-                new VariableIdentifierExpr(newLoopCounter),
-                new IntConstantExpr(newBound.toString()),
-                newOp));
-  }
-
-
-  private static ForStmt cloneWithReplacedLoopCounter(ForStmt original,
-        String oldLoopCounter,
-        String newLoopCounter) {
-    return ReplaceLoopCounter.replaceLoopCounter(original.clone(), oldLoopCounter, newLoopCounter);
-  }
-
-  private static Optional<LoopSplitInfo> maybeGetLoopSplitInfo(ForStmt forStmt) {
-
-    // We cannot (easily) split a loop that contains a top-level break statement, as we'd have
-    // to record that a break from the first loop should prevent execution of the second loop
-    if (ContainsTopLevelBreak.check(forStmt.getBody())) {
-      return Optional.empty();
-    }
-
-    // We need the loop increment to be ++ or --.  First, check that it is a unary expression
-    Expr increment = forStmt.getIncrement();
-    if (!(increment instanceof UnaryExpr)) {
-      return Optional.empty();
-    }
-
-    // Next, work out whether it is ++ or --; pre vs. post increment does not matter
-    boolean loopCounterIncreasing;
-    switch (((UnaryExpr) increment).getOp()) {
-      case PRE_INC:
-      case POST_INC:
-        loopCounterIncreasing = true;
-        break;
-      case PRE_DEC:
-      case POST_DEC:
-        loopCounterIncreasing = false;
-        break;
-      default:
-        return Optional.empty();
-    }
-
-    // Now we need to check whether we're incrementing a variable, and grab its name if so.
-    Expr incrementTarget = ((UnaryExpr) increment).getExpr();
-    if (!maybeGetName(incrementTarget).isPresent()) {
-      return Optional.empty();
-    }
-    final String loopCounterName = maybeGetName(incrementTarget).get();
-
-    // Next we check that the loop initialiser declares this, and only this, variable.
-    if (!(forStmt.getInit() instanceof DeclarationStmt)) {
-      return Optional.empty();
-    }
-    DeclarationStmt initDeclaration = (DeclarationStmt) forStmt.getInit();
-    if (initDeclaration.getVariablesDeclaration().getNumDecls() != 1) {
-      return Optional.empty();
-    }
-
-    // We check that the declared variable is an integer.
-    if (!(initDeclaration.getVariablesDeclaration().getBaseType().getWithoutQualifiers()
-          == BasicType.INT
-          || initDeclaration.getVariablesDeclaration().getBaseType().getWithoutQualifiers()
-          == BasicType.UINT)) {
-      return Optional.empty();
-    }
-    VariableDeclInfo declInfo = initDeclaration.getVariablesDeclaration().getDeclInfo(0);
-
-    // It cannot be an array.
-    if (declInfo.hasArrayInfo()) {
-      return Optional.empty();
-    }
-
-    // It must have the expected name.
-    if (!declInfo.getName().equals(loopCounterName)) {
-      return Optional.empty();
-    }
-
-    // Now we grab the initial value, which needs to be an integer.
-    if (!(declInfo.getInitializer() instanceof ScalarInitializer)) {
-      return Optional.empty();
-    }
-
-    // Now we get its integer value, if it has one
-    final Optional<Integer> maybeStartValue = maybeGetIntegerValue(((ScalarInitializer) declInfo
-          .getInitializer()).getExpr());
-    if (!maybeStartValue.isPresent()) {
-      return Optional.empty();
-    }
-    final Integer startValue = maybeStartValue.get();
-
-    // At this point, we have a name, an initial value, and a direction.  We move on to analyse
-    // the condition.
-
-    // It needs to be one of <, <=, >, >= or !=.
-    if (!(forStmt.getCondition() instanceof BinaryExpr)) {
-      return Optional.empty();
-    }
-    BinaryExpr test = (BinaryExpr) forStmt.getCondition();
-    BinOp comparison = ((BinaryExpr) forStmt.getCondition()).getOp();
-    if (!Arrays.asList(BinOp.LT, BinOp.LE, BinOp.GT, BinOp.GE, BinOp.NE).contains(comparison)) {
-      return Optional.empty();
-    }
-
-    // We now work out the end value, and whether the test has the form
-    // VARIABLE OP LITERAL or LITERAL OP VARIABLE
-    Integer endValue;
-    boolean variableBeforeLiteral;
-    Optional<String> lhsAsString = maybeGetName(test.getLhs());
-    if (lhsAsString.isPresent()) {
-      if (!lhsAsString.get().equals(loopCounterName)) {
-        return Optional.empty();
-      }
-      Optional<Integer> rhsAsInt = maybeGetIntegerValue(test.getRhs());
-      if (rhsAsInt.isPresent()) {
-        endValue = rhsAsInt.get();
-        variableBeforeLiteral = true;
-      } else {
-        return Optional.empty();
-      }
-    } else {
-      Optional<String> rhsAsString = maybeGetName(test.getRhs());
-      if (rhsAsString.isPresent()) {
-        if (!rhsAsString.get().equals(loopCounterName)) {
-          return Optional.empty();
-        }
-        Optional<Integer> lhsAsInt = maybeGetIntegerValue(test.getLhs());
-        if (lhsAsInt.isPresent()) {
-          endValue = lhsAsInt.get();
-          variableBeforeLiteral = false;
-        } else {
-          return Optional.empty();
-        }
-      } else {
-        return Optional.empty();
-      }
-    }
-
-    // Now do some sanity checking: if we're going up, endValue should be larger than
-    // startValue, reverse should be true otherwise.
-    // If we're going up, test should be <, <= or !=.
-    // If we're going down, test should be >, >= or !=.
-    if (!areDirectionBoundsAndTestConsistent(loopCounterIncreasing, startValue, endValue,
-          comparison, variableBeforeLiteral)) {
-      return Optional.empty();
-    }
-
-    // Finally, check that the loop counter is not modified in the loop body.
-    if (bodyModifiesLoopCounter(forStmt, loopCounterName)) {
-      return Optional.empty();
-    }
-
-    return Optional.of(new LoopSplitInfo(loopCounterName, startValue, endValue,
-          loopCounterIncreasing, comparison, variableBeforeLiteral));
-
-  }
-
-  private static boolean bodyModifiesLoopCounter(final ForStmt forStmt,
-        final String loopCounterName) {
-    return new StandardVisitor() {
-
-      private boolean foundModification = false;
-
-      @Override
-      public void visitBinaryExpr(BinaryExpr binaryExpr) {
-        super.visitBinaryExpr(binaryExpr);
-        if (binaryExpr.getOp().isSideEffecting()) {
-          if (binaryExpr.getLhs() instanceof VariableIdentifierExpr
-                && ((VariableIdentifierExpr) binaryExpr.getLhs()).getName()
-                .equals(loopCounterName)) {
-            foundModification = true;
-          }
-        }
-      }
-
-      public boolean modifiesLoopCounter() {
-        visit(forStmt.getBody());
-        return foundModification;
-      }
-
-    }.modifiesLoopCounter();
-  }
-
-  private static boolean areDirectionBoundsAndTestConsistent(boolean loopCounterIncreasing,
-        Integer startValue, Integer endValue, BinOp comparison, boolean variableBeforeLiteral) {
-    List<BinOp> operatorsIfVariableBeforeLiteral =
-          loopCounterIncreasing ? Arrays.asList(BinOp.LT, BinOp.LE, BinOp.NE)
-                : Arrays.asList(BinOp.GT, BinOp.GT, BinOp.NE);
-
-    List<BinOp> operatorsIfVariableAfterLiteral =
-          loopCounterIncreasing ? Arrays.asList(BinOp.GT, BinOp.GT, BinOp.NE)
-                : Arrays.asList(BinOp.LT, BinOp.LE, BinOp.NE);
-
-    Integer shouldBeLower = loopCounterIncreasing ? startValue : endValue;
-    Integer shouldBeUpper = loopCounterIncreasing ? endValue : startValue;
-
-    if (shouldBeUpper <= shouldBeLower) {
-      return false;
-    }
-    if (variableBeforeLiteral) {
-      if (!operatorsIfVariableBeforeLiteral.contains(comparison)) {
-        return false;
-      }
-    } else {
-      if (!operatorsIfVariableAfterLiteral.contains(comparison)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private static Optional<String> maybeGetName(Expr expr) {
-    if (!(expr instanceof VariableIdentifierExpr)) {
-      return Optional.empty();
-    }
-    return Optional.of(((VariableIdentifierExpr) expr).getName());
-  }
-
-  private static Optional<Integer> maybeGetIntegerValue(Expr expr) {
-    if (!(expr instanceof IntConstantExpr)) {
-      return Optional.empty();
-    }
-    return Optional.of(Integer.parseInt(((IntConstantExpr) expr).getValue()));
+    return !splitForLoopMutations.isEmpty();
   }
 
   @Override
   public String getName() {
     return NAME;
-  }
-
-  static boolean suitableForSplitting(IInjectionPoint injectionPoint) {
-
-    if (!injectionPoint.hasNextStmt()) {
-      return false;
-    }
-
-    // We cannot split unless the next statement is a for loop
-    if (!(injectionPoint.getNextStmt() instanceof ForStmt)) {
-      return false;
-    }
-    return maybeGetLoopSplitInfo((ForStmt) injectionPoint.getNextStmt()).isPresent();
   }
 
 }
