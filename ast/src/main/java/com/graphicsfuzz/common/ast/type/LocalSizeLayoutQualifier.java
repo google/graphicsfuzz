@@ -16,5 +16,23 @@
 
 package com.graphicsfuzz.common.ast.type;
 
-public interface LayoutQualifier {
+import java.util.Arrays;
+
+public class LocalSizeLayoutQualifier implements LayoutQualifier {
+
+  private final String dimension;
+  private final int value;
+
+
+  public LocalSizeLayoutQualifier(String dimension, int value) {
+    assert Arrays.asList("x", "y", "z").contains(dimension);
+    this.dimension = dimension;
+    this.value = value;
+  }
+
+  @Override
+  public String toString() {
+    return "local_size_" + dimension + " = " + value;
+  }
+
 }

@@ -58,7 +58,9 @@ void main() {
     val = middle_square(val);
 
     groupMemoryBarrier();
+    barrier();
     data[gid] = val;
     groupMemoryBarrier();
+    barrier();
   }
 }

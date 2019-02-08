@@ -221,6 +221,7 @@ public class GeneratorUnitTest {
           fileOps);
       generateAndCheckVariant(transformationsList,
           probabilities,
+          shadingLanguageVersion,
           suffix,
           originalShaderJobFile,
           referenceImage,
@@ -276,7 +277,10 @@ public class GeneratorUnitTest {
   }
 
   private void generateAndCheckVariant(List<ITransformation> transformations,
-      TransformationProbabilities probabilities, String suffix, File originalShaderJobFile,
+                                       TransformationProbabilities probabilities,
+                                       ShadingLanguageVersion shadingLanguageVersion,
+                                       String suffix,
+                                       File originalShaderJobFile,
       File referenceImage,
       boolean skipRender)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
@@ -296,9 +300,9 @@ public class GeneratorUnitTest {
           GenerationParams.normal(ShaderKind.FRAGMENT, true));
     }
     Generate.addInjectionSwitchIfNotPresent(tu);
-    Generate.setInjectionSwitch(shaderJob.getUniformsInfo());
-    Generate.randomiseUnsetUniforms(tu, shaderJob.getUniformsInfo(), generator);
-    tu.setShadingLanguageVersion(tu.getShadingLanguageVersion());
+    Generate.setInjectionSwitch(shaderJob.getPipelineInfo());
+    Generate.randomiseUnsetUniforms(tu, shaderJob.getPipelineInfo(), generator);
+    tu.setShadingLanguageVersion(shadingLanguageVersion);
 
     // Using fileOps, even though the rest of the code here does not use it yet.
     // Write shaders to shader job file and validate.

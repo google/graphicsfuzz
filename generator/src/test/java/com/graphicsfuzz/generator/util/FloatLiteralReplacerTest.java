@@ -19,8 +19,7 @@ package com.graphicsfuzz.generator.util;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
-import com.graphicsfuzz.common.util.UniformsInfo;
-import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import org.junit.Test;
 
 public class FloatLiteralReplacerTest {
@@ -36,8 +35,8 @@ public class FloatLiteralReplacerTest {
 
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    final UniformsInfo uniformsInfo = new UniformsInfo();
-    FloatLiteralReplacer.replace(tu, uniformsInfo);
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    FloatLiteralReplacer.replace(tu, pipelineInfo);
 
     final String expectedProgram = ""
         + "uniform float _FLOAT_CONST[1];"
@@ -62,8 +61,8 @@ public class FloatLiteralReplacerTest {
 
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    final UniformsInfo uniformsInfo = new UniformsInfo();
-    FloatLiteralReplacer.replace(tu, uniformsInfo);
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    FloatLiteralReplacer.replace(tu, pipelineInfo);
 
     final String expectedProgram = "#version 130\n"
         + "int foo(vec3 p, vec2 t) {"

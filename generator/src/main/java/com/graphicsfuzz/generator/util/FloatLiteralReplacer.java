@@ -29,7 +29,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.common.util.UniformsInfo;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,13 +47,13 @@ public class FloatLiteralReplacer extends StandardVisitor {
   /**
    * Replaces every occurrence of a floating-point literal in the translation unit with an access
    * to an array of uniforms, and notes the value expected at this uniform position in the
-   * uniformsInfo structure.  The method may also adjust the shader to ensure that const
+   * pipelineInfo structure.  The method may also adjust the shader to ensure that const
    * initializers are valid (by removing const and moving initializers), as the replacement of
    * floating-point literals changes whether intializers are compile-time constants.
    * @param tu Translation unit to be mutated
-   * @param uniformsInfo Structure in which to place info about uniforms
+   * @param pipelineInfo Structure that holds pipeline state, including info about uniforms
    */
-  public static void replace(TranslationUnit tu, UniformsInfo uniformsInfo) {
+  public static void replace(TranslationUnit tu, PipelineInfo pipelineInfo) {
     FloatLiteralReplacer floatLiteralReplacer = new FloatLiteralReplacer(tu);
     ConstCleaner.clean(tu);
     List<Float> literals = new ArrayList<>();
@@ -65,7 +65,7 @@ public class FloatLiteralReplacer extends StandardVisitor {
       literals.set(floatLiteralReplacer.literalToUniformIndex.get(s), new Float(s));
     }
     if (literals.size() > 0) {
-      uniformsInfo.addUniform(Constants.FLOAT_CONST, BasicType.FLOAT,
+      pipelineInfo.addUniform(Constants.FLOAT_CONST, BasicType.FLOAT,
           Optional.of(literals.size()), literals);
     }
   }

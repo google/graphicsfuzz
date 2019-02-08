@@ -52,6 +52,9 @@ class Params(object):
     def __str__(self):
         return pprint.pformat(self.__dict__)
 
+    def __repr__(self):
+        return pprint.pformat(self.__dict__)
+
 
 p = Params()
 
@@ -185,7 +188,7 @@ def process_shaders(params: Params):
     for f in Path(params.shaders_dir).iterdir():  # type: Path
         if not is_shader_extension(f.name):
             continue
-        if f.name.endswith(".frag") and params.just_frag:
+        if params.just_frag and not f.name.endswith(".frag"):
             continue
         json_file = f.with_name(f.stem + ".json")
         with io.open(str(json_file), "w", encoding='utf-8') as json:
@@ -196,9 +199,12 @@ def process_shaders(params: Params):
 def fuzz_shaders(params: Params):
     # Generate shader families from the set of references (extracted shaders).
 
+    assert Path(params.donors).is_dir(), "Missing donors directory: "+params.donors
+
     # for reference: glsl-generate --seed 0 references donors 10 prefix out --no-injection-switch
     res = glsl_generate.go([
         "--seed", nz(str(params.seed)),
+        "--disable-shader-translator",
         nz(params.shaders_dir),
         nz(params.donors),
         nz(str(params.num_variants)),
@@ -220,29 +226,38 @@ def create_traces(params: Params):
             shader_handle = remove_start(family.name, "family_")
             if params.specific_handle is not None and params.specific_handle != shader_handle:
                 continue
-            variant_shaders = list(family.glob("variant_*.frag"))
+            variant_shaders = sorted(list(family.glob("variant_*.frag")))
             if len(variant_shaders) == 0:
-                variant_shaders = list(family.glob("variant_*.vert"))
+                variant_shaders = sorted(list(family.glob("variant_*.vert")))
             if len(variant_shaders) == 0:
-                variant_shaders = list(family.glob("variant_*.comp"))
+                variant_shaders = sorted(list(family.glob("variant_*.comp")))
             assert(len(variant_shaders) > 0)
             # to string
             variant_shaders = [str(v) for v in variant_shaders]
             handle_to_variant_list[shader_handle] = variant_shaders
 
     # For each variant index i, create capture_i.gfxtrace with all shaders replaced with variant i.
-    for i in range(0, params.num_variants):
-        if params.specific_variant_index is not None and params.specific_variant_index != i:
+    for variant_index in range(0, params.num_variants):
+        if params.specific_variant_index is not None and \
+                params.specific_variant_index != variant_index:
             continue
-        output_prefix = params.output_capture_prefix + '{:03d}'.format(i)
+        output_prefix = params.output_capture_prefix + '{:03d}'.format(variant_index)
         output_file = output_prefix + ".gfxtrace"
         output_screenshot = output_prefix + ".png"
         # For each shader handle, replace the shader with variant i.
         # After each replacement, we get a new trace, so we overwrite the capture id.
         capture_id = nz(params.orig_capture_id)
-        for handle, variants in handle_to_variant_list.items():
-            # TODO: could optimize by only outputting file on final replacement.
-            capture_id = run_replace_shader(params, capture_id, handle, variants[i], output_file)
+
+        items = list(handle_to_variant_list.items())
+        for shader_handle_index in range(len(items)):
+            handle, variants = items[shader_handle_index]
+            is_last_shader_handle = shader_handle_index == len(items) - 1
+            capture_id = run_replace_shader(
+                params,
+                capture_id,
+                handle,
+                variants[variant_index],
+                output_file if is_last_shader_handle else None)
 
         # While we have the capture id, get a screenshot;
         # it might be difficult otherwise due to file caching.
@@ -277,7 +292,7 @@ def run_replace_shader(params: Params, capture_id: str, shader_handle: str, shad
 def fuzz_trace(p: Params):
     # Shadowing p here so that you can copy and paste these into an ipython 3 shell.
 
-    run_gapis_async(p)
+    # run_gapis_async(p)
 
     # We should find a better way to load the capture;
     # getting a screenshot is unnecessarily heavy.
@@ -305,15 +320,18 @@ $ gapidfuzz ' p.just_frag=False; p.donors="shaders/corpus"; p.gapis=None; '
 
 Ensure you have:
 - a recent version of gapid master
-- gapis and gapit on PATH (add gapid/bazel-bin/pkg to PATH)
-- killed any previous gapis instance using port 40000 (gapis will not be killed for you)
+- gapit on PATH (add gapid/bazel-bin/pkg to PATH)
+- gapis running on port 40000 and with local file access enabled. You can start it with this command:
+    gapis -enable-local-files -persist -rpc localhost:40000
+  and kill it later with:
+    killall -6 gapis
 - a 'donors/' directory (in current directory)
 - a 'capture.gfxtrace' OpenGL trace file (in current directory)
 
-This script works from within the source tree or from the release zip.
+This script can be run from the source tree or from the release zip.
 
 However, more fine-grained use is available via ipython3.
-You must be in drivers/ or use PYTHONPATH=/path/to/python/drivers
+You must be in drivers/ or use export PYTHONPATH=/path/to/python/drivers
 
 $ ipython3
 from gapidfuzz import *

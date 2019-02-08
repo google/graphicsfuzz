@@ -412,13 +412,15 @@ def spv_get_bin_as_uint(shader_filename):
 def uniform_json_to_vkscript(uniform_json):
     '''
     Returns the string representing VkScript version of uniform declarations.
+    Skips the special '$compute' key, if present.
 
     {
       "myuniform": {
         "func": "glUniform1f",
         "args": [ 42.0 ],
         "binding": 3
-      }
+      },
+      "$compute": { ... will be ignored ... }
     }
 
     becomes:
@@ -446,6 +448,9 @@ def uniform_json_to_vkscript(uniform_json):
     with open(uniform_json, 'r') as f:
         j = json.load(f)
     for name, entry in j.items():
+
+        if name == '$compute':
+            continue
 
         func = entry['func']
         if func not in UNIFORM_TYPE.keys():
@@ -547,14 +552,20 @@ def run_vkrunner(vert, frag, uniform_json):
 
 def comp_json_to_vkscript(comp_json):
     '''
-    Returns the string representing VkScript version of compute shader setup.
+    Returns the string representing VkScript version of compute shader setup,
+    found under the special "$compute" key in JSON
 
       {
-        "num_groups": [12, 13, 14];
-        "buffer": {
-          "binding": 123,
-          "input": [42, 43, 44, 45]
+        "my_uniform_name": { ... ignored by this function ... },
+
+        "$compute": {
+          "num_groups": [12, 13, 14];
+          "buffer": {
+            "binding": 123,
+            "input": [42, 43, 44, 45]
+          }
         }
+
       }
 
     becomes:
@@ -569,6 +580,9 @@ def comp_json_to_vkscript(comp_json):
 
     with open(comp_json, 'r') as f:
         j = json.load(f)
+
+    assert '$compute' in j.keys(), 'Cannot find "$compute" key in JSON file'
+    j = j['$compute']
 
     binding = j['buffer']['binding']
     data = j['buffer']['input']
@@ -599,6 +613,8 @@ def vkscriptify_comp(comp, comp_json):
     script += '\n\n'
 
     script += '[test]\n'
+    script += '## Uniforms\n'
+    script += uniform_json_to_vkscript(comp_json)
     script += '## SSBO\n'
     script += comp_json_to_vkscript(comp_json)
     script += '\n'
@@ -628,6 +644,12 @@ def ssbo_bin_to_json(ssbo_bin_file, ssbo_json_file):
     with open(ssbo_json_file, 'w') as f:
         f.write(json.dumps(ssbo_json_obj))
 
+def get_ssbo_binding(comp_json):
+    with open(comp_json, 'r') as f:
+        j = json.load(f)
+    binding = j['$compute']['buffer']['binding']
+    return binding
+
 def run_compute(comp, comp_json):
     assert(os.path.isfile(comp))
     assert(os.path.isfile(comp_json))
@@ -649,7 +671,8 @@ def run_compute(comp, comp_json):
 
     # call vkrunner
     # FIXME: in case of multiple ssbo, we should pass the binding of the one to dump
-    cmd = 'shell "cd ' + device_dir + '; ./vkrunner -b ssbo ' + tmpfile + '"'
+    ssbo_binding = get_ssbo_binding(comp_json)
+    cmd = 'shell "cd ' + device_dir + '; ./vkrunner -b ssbo -B ' + str(ssbo_binding) + ' ' + tmpfile + '"'
 
     adb_check('logcat -c')
 

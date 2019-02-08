@@ -34,6 +34,8 @@ public class TransformationProbabilities {
   private int probAddLiveFragColorWrites; // Probability of adding a live write to gl_FragColor
   private int probAddDeadFragColorWrites; // Probability of outlining a dead write to gl_FragColor
   private int probSwitchify; // Probability of applying switchification
+  private int probInjectDeadBarrierAtStmt; // Probability of adding a dead barrier at a statement
+  // in a compute shader
 
   private TransformationProbabilities(int probSubstituteFreeVariable, int probDonateDeadCodeAtStmt,
       int probDonateLiveCodeAtStmt, int probInjectJumpAtStmt, int probWrapStmtInConditional,
@@ -41,7 +43,8 @@ public class TransformationProbabilities {
       int probOutline,
       int probAddLiveFragColorWrites,
       int probAddDeadFragColorWrites,
-      int probSwitchify) {
+      int probSwitchify,
+      int probInjectDeadBarrierAtStmt) {
     this.probSubstituteFreeVariable = probSubstituteFreeVariable;
     this.probDonateDeadCodeAtStmt = probDonateDeadCodeAtStmt;
     this.probDonateLiveCodeAtStmt = probDonateLiveCodeAtStmt;
@@ -55,15 +58,43 @@ public class TransformationProbabilities {
     this.probAddLiveFragColorWrites = probAddLiveFragColorWrites;
     this.probAddDeadFragColorWrites = probAddDeadFragColorWrites;
     this.probSwitchify = probSwitchify;
+    this.probInjectDeadBarrierAtStmt = probInjectDeadBarrierAtStmt;
   }
 
   public static final TransformationProbabilities DEFAULT_PROBABILITIES =
-      new TransformationProbabilities(80, 20, 20, 20, 20, 20, 20, 20, 20,
-          20, 20, 20, 20);
+      new TransformationProbabilities(
+          80,
+          20,
+          20,
+          20,
+          20,
+          20,
+          20,
+          20,
+          20,
+          20,
+          20,
+          20,
+          20,
+          20
+          );
 
   public static final TransformationProbabilities SMALL_PROBABILITIES =
-      new TransformationProbabilities(80, 5, 5, 5, 5, 3, 3, 5, 3,
-          5, 5, 5, 5);
+      new TransformationProbabilities(
+          80,
+          5,
+          5,
+          5,
+          5,
+          3,
+          3,
+          5,
+          3,
+          5,
+          5,
+          5,
+          5,
+          5);
 
   public static final TransformationProbabilities AGGRESSIVE_CONTROL_FLOW =
       new TransformationProbabilities(DEFAULT_PROBABILITIES.probSubstituteFreeVariable,
@@ -78,11 +109,13 @@ public class TransformationProbabilities {
           70,
           70,
           70,
+          70,
           70);
 
   // Useful for testing; add similar for others when needed
   public static final TransformationProbabilities ZERO =
       new TransformationProbabilities(
+          0,
           0,
           0,
           0,
@@ -197,6 +230,7 @@ public class TransformationProbabilities {
         randomProbability(generator, 5, 40),
         randomProbability(generator, 5, 30),
         randomProbability(generator, 5, 30),
+        randomProbability(generator, 5, 30),
         randomProbability(generator, 5, 30)
     );
   }
@@ -215,7 +249,8 @@ public class TransformationProbabilities {
           randomProbability(generator, 2, 15),
           randomProbability(generator, 2, 10),
           randomProbability(generator, 2, 10),
-          randomProbability(generator, 2, 10)
+          randomProbability(generator, 2, 10),
+          randomProbability(generator, 2, 20)
     );
   }
 
@@ -243,7 +278,8 @@ public class TransformationProbabilities {
         closeTo(probabilities.probOutline, generator),
         closeTo(probabilities.probAddLiveFragColorWrites, generator),
         closeTo(probabilities.probAddDeadFragColorWrites, generator),
-        closeTo(probabilities.probSwitchify, generator));
+        closeTo(probabilities.probSwitchify, generator),
+        closeTo(probabilities.probInjectDeadBarrierAtStmt, generator));
   }
 
   private static int closeTo(int probability, IRandom generator) {
@@ -307,6 +343,10 @@ public class TransformationProbabilities {
 
   public boolean switchify(IRandom generator) {
     return choose(probSwitchify, generator);
+  }
+
+  public boolean injectDeadBarrierAtStmt(IRandom generator) {
+    return choose(probInjectDeadBarrierAtStmt, generator);
   }
 
   private boolean choose(int threshold, IRandom generator) {

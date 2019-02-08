@@ -24,10 +24,10 @@ import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.SameValueRandom;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
@@ -76,7 +76,7 @@ public class MiscellaneousGenerateThenReduceTest {
     while(true) {
       List<IReductionOpportunity> ops = ReductionOpportunities
           .getReductionOpportunities(new GlslShaderJob(Optional.empty(),
-                  new UniformsInfo(), tu),
+                  new PipelineInfo(), tu),
                 new ReducerContext(false, shadingLanguageVersion,
               new SameValueRandom(false, 0), new IdGenerator(), true), fileOps);
       if (ops.isEmpty()) {

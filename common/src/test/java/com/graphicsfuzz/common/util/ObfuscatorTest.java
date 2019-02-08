@@ -18,15 +18,11 @@ package com.graphicsfuzz.common.util;
 
 import static org.junit.Assert.assertEquals;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.Test;
 
 public class ObfuscatorTest {
@@ -130,7 +126,7 @@ public class ObfuscatorTest {
 
   private void check(String original, String expected) throws IOException, ParseTimeoutException,
       InterruptedException, GlslParserException {
-    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), new UniformsInfo(),
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), new PipelineInfo(),
         ParseHelper.parse(original));
     final IRandom generator = new ZeroCannedRandom();
     final ShaderJob obfuscated =
@@ -242,7 +238,7 @@ public class ObfuscatorTest {
         "}";
 
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
-        new UniformsInfo(originalUniforms),
+        new PipelineInfo(originalUniforms),
         ParseHelper.parse(originalVert, ShaderKind.VERTEX),
         ParseHelper.parse(originalFrag, ShaderKind.FRAGMENT));
     final IRandom generator = new ZeroCannedRandom();
@@ -250,7 +246,7 @@ public class ObfuscatorTest {
         Obfuscator.obfuscate(shaderJob, generator);
     CompareAsts.assertEqualAsts(expectedVert, obfuscated.getShaders().get(0));
     CompareAsts.assertEqualAsts(expectedFrag, obfuscated.getShaders().get(1));
-    assertEquals(new UniformsInfo(expectedUniforms).toString(), obfuscated.getUniformsInfo().toString());
+    assertEquals(new PipelineInfo(expectedUniforms).toString(), obfuscated.getPipelineInfo().toString());
   }
 
 }
