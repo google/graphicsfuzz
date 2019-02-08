@@ -14,43 +14,35 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.outliner;
+package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.common.util.IdGenerator;
-import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutation;
-import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutationFinder;
-import com.graphicsfuzz.generator.transformation.ITransformation;
+import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutation;
+import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutationFinder;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.util.List;
 
-public class OutlineStatements implements ITransformation {
+public class VectorizeTransformation implements ITransformation {
 
-  public static final String NAME = "outline_statements";
-  private final IdGenerator idGenerator;
-
-  public OutlineStatements(IdGenerator idGenerator) {
-    this.idGenerator = idGenerator;
-  }
+  public static final String NAME = "vectorize";
 
   @Override
   public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-        ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
+      ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
-    List<OutlineStatementMutation> outlineStatementOpportunities =
-          new OutlineStatementMutationFinder(tu, idGenerator)
-              .findMutations(probabilities::outlineStatements, generator);
-    for (OutlineStatementMutation op : outlineStatementOpportunities) {
-      op.apply();
-    }
-    return !outlineStatementOpportunities.isEmpty();
+    List<VectorizeMutation> vectorizationOpportunities =
+          new VectorizeMutationFinder(tu, generator)
+                .findMutations(probabilities::vectorizeStmts, generator);
+    vectorizationOpportunities.forEach(VectorizeMutation::apply);
+    return !vectorizationOpportunities.isEmpty();
   }
 
   @Override
   public String getName() {
     return NAME;
   }
+
 }

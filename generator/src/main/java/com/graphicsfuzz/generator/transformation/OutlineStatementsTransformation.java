@@ -14,43 +14,42 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.controlflow;
+package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
-import com.graphicsfuzz.generator.mutateapi.Mutation;
-import com.graphicsfuzz.generator.semanticspreserving.AddSwitchMutation;
-import com.graphicsfuzz.generator.semanticspreserving.AddSwitchMutationFinder;
-import com.graphicsfuzz.generator.transformation.ITransformation;
+import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutation;
+import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutationFinder;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.util.List;
 
-public class AddSwitchStmts implements ITransformation {
+public class OutlineStatementsTransformation implements ITransformation {
 
-  public static final String NAME = "add_switch_stmts";
+  public static final String NAME = "outline_statements";
   private final IdGenerator idGenerator;
 
-  public AddSwitchStmts() {
-    idGenerator = new IdGenerator();
+  public OutlineStatementsTransformation(IdGenerator idGenerator) {
+    this.idGenerator = idGenerator;
   }
 
   @Override
   public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-      ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
+        ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
-    final List<AddSwitchMutation> mutations =
-        new AddSwitchMutationFinder(tu, generator, generationParams, idGenerator.freshId())
-            .findMutations(probabilities::switchify, generator);
-    mutations.forEach(Mutation::apply);
-    return !mutations.isEmpty();
+    List<OutlineStatementMutation> outlineStatementOpportunities =
+          new OutlineStatementMutationFinder(tu, idGenerator)
+              .findMutations(probabilities::outlineStatements, generator);
+    for (OutlineStatementMutation op : outlineStatementOpportunities) {
+      op.apply();
+    }
+    return !outlineStatementOpportunities.isEmpty();
   }
 
   @Override
   public String getName() {
     return NAME;
   }
-
 }

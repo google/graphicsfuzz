@@ -28,7 +28,7 @@ import com.graphicsfuzz.common.util.SameValueRandom;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.UniformsInfo;
-import com.graphicsfuzz.generator.transformation.controlflow.AddWrappingConditionalStmts;
+import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
@@ -66,7 +66,7 @@ public class MiscellaneousGenerateThenReduceTest {
     TranslationUnit tu = ParseHelper.parse(program);
 
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
-    new AddWrappingConditionalStmts().apply(tu,
+    new AddWrappingConditionalTransformation().apply(tu,
         TransformationProbabilities.onlyWrap(),
         shadingLanguageVersion,
         new SameValueRandom(false, 0),

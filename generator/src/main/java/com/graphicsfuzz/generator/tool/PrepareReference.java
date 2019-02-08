@@ -22,7 +22,7 @@ import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.UniformsInfo;
-import com.graphicsfuzz.generator.FloatLiteralReplacer;
+import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import java.io.File;
 import java.io.IOException;
 import net.sourceforge.argparse4j.ArgumentParsers;

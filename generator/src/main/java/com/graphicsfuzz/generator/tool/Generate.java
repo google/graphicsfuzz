@@ -37,20 +37,20 @@ import com.graphicsfuzz.common.util.StatsVisitor;
 import com.graphicsfuzz.common.util.StripUnusedFunctions;
 import com.graphicsfuzz.common.util.StripUnusedGlobals;
 import com.graphicsfuzz.common.util.UniformsInfo;
-import com.graphicsfuzz.generator.FloatLiteralReplacer;
+import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
+import com.graphicsfuzz.generator.transformation.AddSwitchTransformation;
+import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
 import com.graphicsfuzz.generator.transformation.ITransformation;
+import com.graphicsfuzz.generator.transformation.IdentityTransformation;
+import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
+import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
+import com.graphicsfuzz.generator.transformation.StructificationTransformation;
+import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
 import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddJumpStmts;
 import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddSwitchStmts;
-import com.graphicsfuzz.generator.transformation.controlflow.AddWrappingConditionalStmts;
-import com.graphicsfuzz.generator.transformation.controlflow.SplitForLoops;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
-import com.graphicsfuzz.generator.transformation.mutator.ApplyIdentityMutations;
-import com.graphicsfuzz.generator.transformation.outliner.OutlineStatements;
-import com.graphicsfuzz.generator.transformation.structifier.Structification;
-import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
+import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.util.Constants;
@@ -77,8 +77,8 @@ public class Generate {
 
   private static Namespace parse(String[] args) throws ArgumentParserException {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("Generate")
-          .defaultHelp(true)
-          .description("Generate a shader.");
+        .defaultHelp(true)
+        .description("Generate a shader.");
 
     // Required arguments
     parser.addArgument("reference-json")
@@ -86,16 +86,16 @@ public class Generate {
         .type(File.class);
 
     parser.addArgument("donors")
-          .help("Path of folder of donor shaders.")
-          .type(File.class);
+        .help("Path of folder of donor shaders.")
+        .type(File.class);
 
     parser.addArgument("glsl-version")
-          .help("Version of GLSL to target.")
-          .type(String.class);
+        .help("Version of GLSL to target.")
+        .type(String.class);
 
     parser.addArgument("output")
-          .help("Output shader job file file (.json.")
-          .type(File.class);
+        .help("Output shader job file file (.json.")
+        .type(File.class);
 
     addGeneratorCommonArguments(parser);
 
@@ -105,64 +105,65 @@ public class Generate {
 
   public static void addGeneratorCommonArguments(ArgumentParser parser) {
     parser.addArgument("--seed")
-          .help("Seed to initialize random number generator with.")
-          .type(Integer.class);
+        .help("Seed to initialize random number generator with.")
+        .type(Integer.class);
 
     parser.addArgument("--small")
-          .help("Try to generate small shaders.")
-          .action(Arguments.storeTrue());
+        .help("Try to generate small shaders.")
+        .action(Arguments.storeTrue());
 
     parser.addArgument("--allow-long-loops")
-          .help("During live code injection, care is taken by default to avoid loops with "
-              + "very long or infinite iteration counts.  This option disables this care so that "
-              + "loops may end up being very long running.")
-          .action(Arguments.storeTrue());
+        .help("During live code injection, care is taken by default to avoid loops with "
+            + "very long or infinite iteration counts.  This option disables this care so that "
+            + "loops may end up being very long running.")
+        .action(Arguments.storeTrue());
 
     parser.addArgument("--disable")
-          .help("Disable a given series of transformations.")
-          .type(String.class);
+        .help("Disable a given series of transformations.")
+        .type(String.class);
 
     parser.addArgument("--enable-only")
-          .help("Disable all but the given series of transformations.")
-          .type(String.class);
+        .help("Disable all but the given series of transformations.")
+        .type(String.class);
 
     parser.addArgument("--aggressively-complicate-control-flow")
-          .help("Make control flow very complicated.")
-          .action(Arguments.storeTrue());
+        .help("Make control flow very complicated.")
+        .action(Arguments.storeTrue());
 
     parser.addArgument("--single-pass")
-          .help("Do not apply any individual transformation pass more than once.")
-          .action(Arguments.storeTrue());
+        .help("Do not apply any individual transformation pass more than once.")
+        .action(Arguments.storeTrue());
 
     parser.addArgument("--replace-float-literals")
-          .help("Replace float literals with uniforms.")
-          .action(Arguments.storeTrue());
+        .help("Replace float literals with uniforms.")
+        .action(Arguments.storeTrue());
 
     parser.addArgument("--generate-uniform-bindings")
-          .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
-              + "compatibility.")
-          .action(Arguments.storeTrue());
+        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
+            + "compatibility.")
+        .action(Arguments.storeTrue());
 
     parser.addArgument("--max-uniforms")
-          .help("Ensure that generated shaders have no more than the given number of uniforms; "
-              + "required for Vulkan compatibility.")
-          .setDefault(0)
-          .type(Integer.class);
+        .help("Ensure that generated shaders have no more than the given number of uniforms; "
+            + "required for Vulkan compatibility.")
+        .setDefault(0)
+        .type(Integer.class);
 
     parser.addArgument("--no-injection-switch")
-          .help("Do not generate the injectionSwitch uniform.")
-          .action(Arguments.storeTrue());
+        .help("Do not generate the injectionSwitch uniform.")
+        .action(Arguments.storeTrue());
 
     // Hidden option; for developer debugging.
     parser.addArgument("--write-probabilities")
-          .help(Arguments.SUPPRESS)
-          .action(Arguments.storeTrue());
+        .help(Arguments.SUPPRESS)
+        .action(Arguments.storeTrue());
   }
 
   /**
    * Mutates the given shader job into a variant.
+   *
    * @param shaderJob The shader job to be mutated.
-   * @param args Arguments to control generation.
+   * @param args      Arguments to control generation.
    * @return Details of the transformations that were applied.
    */
   public static StringBuilder generateVariant(ShaderJob shaderJob,
@@ -204,17 +205,18 @@ public class Generate {
 
   /**
    * Transforms the given shader job to produce a variant.
-   * @param fileOps Handle for performing file operations.
+   *
+   * @param fileOps                Handle for performing file operations.
    * @param referenceShaderJobFile The shader job to be transformed.
-   * @param outputShaderJobFile Output file for the variant.
-   * @param generatorArguments Arguments to control generation.
-   * @param seed Seed for random number generation.
-   * @param writeProbabilities Records whether details about probabilities should be written.
-   * @throws IOException if file reading or writing goes wrong.
+   * @param outputShaderJobFile    Output file for the variant.
+   * @param generatorArguments     Arguments to control generation.
+   * @param seed                   Seed for random number generation.
+   * @param writeProbabilities     Records whether details about probabilities should be written.
+   * @throws IOException           if file reading or writing goes wrong.
    * @throws ParseTimeoutException if parsing takes too long.
-   * @throws InterruptedException if something goes wrong invoking an external tool such as the
-   *      preprocessor or validator.
-   * @throws GlslParserException if a shader in the job fails to parse.
+   * @throws InterruptedException  if something goes wrong invoking an external tool such as the
+   *                               preprocessor or validator.
+   * @throws GlslParserException   if a shader in the job fails to parse.
    */
   public static void generateVariant(ShaderJobFileOperations fileOps,
                                      File referenceShaderJobFile,
@@ -260,12 +262,12 @@ public class Generate {
     parentShaderJob.getUniformsInfo().zeroUnsetUniforms(shaderToTransform);
 
     final GenerationParams generationParams =
-            args.getSmall()
-                    ? GenerationParams.small(shaderKind, args.getAddInjectionSwitch())
-                    : GenerationParams.normal(shaderKind, args.getAddInjectionSwitch());
+        args.getSmall()
+            ? GenerationParams.small(shaderKind, args.getAddInjectionSwitch())
+            : GenerationParams.normal(shaderKind, args.getAddInjectionSwitch());
 
     final TransformationProbabilities probabilities =
-            createProbabilities(args, random);
+        createProbabilities(args, random);
 
     result.append(probabilities);
 
@@ -366,11 +368,11 @@ public class Generate {
   }
 
   private static TransformationProbabilities createProbabilities(
-        GeneratorArguments args,
-        IRandom generator) {
+      GeneratorArguments args,
+      IRandom generator) {
     if (args.getAggressivelyComplicateControlFlow()) {
       return TransformationProbabilities.closeTo(generator,
-            TransformationProbabilities.AGGRESSIVE_CONTROL_FLOW);
+          TransformationProbabilities.AGGRESSIVE_CONTROL_FLOW);
     }
     if (args.getSinglePass()) {
       return TransformationProbabilities.randomProbabilitiesSinglePass(generator);
@@ -379,10 +381,11 @@ public class Generate {
   }
 
   private static String applyTransformationsMultiPass(GeneratorArguments args,
-        TranslationUnit reference, IRandom generator,
-        GenerationParams generationParams, TransformationProbabilities probabilities) {
+                                                      TranslationUnit reference, IRandom generator,
+                                                      GenerationParams generationParams,
+                                                      TransformationProbabilities probabilities) {
     List<ITransformation> transformations = populateTransformations(args,
-          generationParams, probabilities, reference.getShadingLanguageVersion());
+        generationParams, probabilities, reference.getShadingLanguageVersion());
     {
       // Keep roughly half of them
       final List<ITransformation> toKeep = new ArrayList<>();
@@ -392,7 +395,7 @@ public class Generate {
           toKeep.add(transformations.remove(index));
         } else {
           ITransformation candidate = transformations.remove(index);
-          if (candidate instanceof AddSwitchStmts) {
+          if (candidate instanceof AddSwitchTransformation) {
             // Compilers are so variable in whether they accept switch statements that
             // we generate, so we make this an unusual transformation to apply to avoid
             // tons of compile fail results.
@@ -413,11 +416,11 @@ public class Generate {
     // we get a large enough shader.
     while (!transformations.isEmpty() && !shaderLargeEnough(reference, generator)) {
       ITransformation transformation = transformations.remove(generator.nextInt(
-            transformations.size()));
+          transformations.size()));
       result += transformation.getName() + "\n";
       if (transformation.apply(reference, probabilities, reference.getShadingLanguageVersion(),
-            generator.spawnChild(),
-            generationParams)) {
+          generator.spawnChild(),
+          generationParams)) {
         // Keep the size down by stripping unused stuff.
         StripUnusedFunctions.strip(reference);
         StripUnusedGlobals.strip(reference);
@@ -459,15 +462,15 @@ public class Generate {
   }
 
   private static String applyTransformationsSinglePass(
-        GeneratorArguments args,
-        TranslationUnit reference,
-        IRandom generator,
-        GenerationParams generationParams,
-        TransformationProbabilities probabilities) {
+      GeneratorArguments args,
+      TranslationUnit reference,
+      IRandom generator,
+      GenerationParams generationParams,
+      TransformationProbabilities probabilities) {
     String result = "";
 
     final List<ITransformation> transformations = populateTransformations(args,
-          generationParams, probabilities, reference.getShadingLanguageVersion());
+        generationParams, probabilities, reference.getShadingLanguageVersion());
 
     int numTransformationsApplied = 0;
     while (!transformations.isEmpty()) {
@@ -477,11 +480,11 @@ public class Generate {
       // We randomly choose whether to apply a transformation, unless this is the last
       // opportunity and we have not applied any transformation yet.
       if ((transformations.isEmpty() && numTransformationsApplied == 0)
-            || decideToApplyTransformation(generator, numTransformationsApplied)) {
+          || decideToApplyTransformation(generator, numTransformationsApplied)) {
         result += transformation.getName() + "\n";
         transformation.apply(reference, probabilities, reference.getShadingLanguageVersion(),
-              generator.spawnChild(),
-              generationParams);
+            generator.spawnChild(),
+            generationParams);
         numTransformationsApplied++;
       }
     }
@@ -489,47 +492,47 @@ public class Generate {
   }
 
   private static List<ITransformation> populateTransformations(
-          GeneratorArguments args,
-          GenerationParams generationParams,
-          TransformationProbabilities probabilities,
-          ShadingLanguageVersion shadingLanguageVersion) {
+      GeneratorArguments args,
+      GenerationParams generationParams,
+      TransformationProbabilities probabilities,
+      ShadingLanguageVersion shadingLanguageVersion) {
     List<ITransformation> result = new ArrayList<>();
     final EnabledTransformations flags = args.getEnabledTransformations();
     if (flags.isEnabledDead()) {
       result.add(new DonateDeadCode(probabilities::donateDeadCodeAtStmt, args.getDonorsFolder(),
-              generationParams));
+          generationParams));
     }
     if (flags.isEnabledJump()) {
-      result.add(new AddJumpStmts());
+      result.add(new AddJumpTransformation());
     }
     if (flags.isEnabledLive()) {
       result.add(new DonateLiveCode(probabilities::donateLiveCodeAtStmt, args.getDonorsFolder(),
-              generationParams, args.getAllowLongLoops()));
+          generationParams, args.getAllowLongLoops()));
     }
     if (flags.isEnabledMutate()) {
-      result.add(new ApplyIdentityMutations());
+      result.add(new IdentityTransformation());
     }
     if (flags.isEnabledOutline()) {
-      result.add(new OutlineStatements(new IdGenerator()));
+      result.add(new OutlineStatementsTransformation(new IdGenerator()));
     }
     if (flags.isEnabledSplit()) {
-      result.add(new SplitForLoops());
+      result.add(new SplitForLoopTransformation());
     }
     if (flags.isEnabledStruct()) {
-      result.add(new Structification());
+      result.add(new StructificationTransformation());
     }
     if (flags.isEnabledSwitch()
-            && shadingLanguageVersion.supportedSwitchStmt()) {
-      result.add(new AddSwitchStmts());
+        && shadingLanguageVersion.supportedSwitchStmt()) {
+      result.add(new AddSwitchTransformation());
     }
     if (flags.isEnabledVec()) {
-      result.add(new VectorizeStatements());
+      result.add(new VectorizeTransformation());
     }
     if (flags.isEnabledWrap()) {
-      result.add(new AddWrappingConditionalStmts());
+      result.add(new AddWrappingConditionalTransformation());
     }
     if (generationParams.getShaderKind() == ShaderKind.FRAGMENT
-            && flags.isEnabledDeadFragColorWrites()) {
+        && flags.isEnabledDeadFragColorWrites()) {
       result.add(new AddDeadOutputVariableWrites());
     }
     if (flags.isEnabledLiveFragColorWrites()) {
@@ -542,19 +545,20 @@ public class Generate {
   }
 
   private static boolean decideToApplyTransformation(IRandom generator,
-        int numTransformationsAppliedSoFar) {
+                                                     int numTransformationsAppliedSoFar) {
     return generator.nextFloat() < 0.5 * Math.pow(0.9, numTransformationsAppliedSoFar);
   }
 
   private static String applyControlFlowComplication(GeneratorArguments args,
-        TranslationUnit reference, IRandom generator, GenerationParams generationParams,
-        TransformationProbabilities probabilities) {
+                                                     TranslationUnit reference, IRandom generator,
+                                                     GenerationParams generationParams,
+                                                     TransformationProbabilities probabilities) {
     String result = "";
     List<ITransformation> transformations = new ArrayList<>();
-    transformations.add(new AddJumpStmts());
-    transformations.add(new OutlineStatements(new IdGenerator()));
-    transformations.add(new AddWrappingConditionalStmts());
-    transformations.add(new AddSwitchStmts());
+    transformations.add(new AddJumpTransformation());
+    transformations.add(new OutlineStatementsTransformation(new IdGenerator()));
+    transformations.add(new AddWrappingConditionalTransformation());
+    transformations.add(new AddSwitchTransformation());
     transformations.add(new AddDeadOutputVariableWrites());
     transformations.add(new AddLiveOutputVariableWrites());
 
@@ -562,17 +566,17 @@ public class Generate {
     final int numIterations = minIterations + generator.nextInt(5);
     for (int i = 0; i < numIterations; i++) {
       ITransformation transformation = transformations
-            .get(generator.nextInt(transformations.size()));
+          .get(generator.nextInt(transformations.size()));
       transformation
-            .apply(reference, probabilities, reference.getShadingLanguageVersion(),
-                generator, generationParams);
+          .apply(reference, probabilities, reference.getShadingLanguageVersion(),
+              generator, generationParams);
       result += transformation.getName() + "\n";
     }
     return result;
   }
 
   public static void randomiseUnsetUniforms(TranslationUnit tu, UniformsInfo uniformsInfo,
-        IRandom generator) {
+                                            IRandom generator) {
     final Supplier<Float> floatSupplier = () -> generator.nextFloat();
     final Supplier<Integer> intSupplier = () -> generator.nextInt(1 << 15);
     final Supplier<Integer> uintSupplier = () -> generator.nextInt(1 << 15);
@@ -586,20 +590,20 @@ public class Generate {
     }
     tu.addDeclaration(new VariablesDeclaration(new QualifiedType(BasicType.VEC2,
         Arrays.asList(TypeQualifier.UNIFORM)),
-          new VariableDeclInfo(Constants.INJECTION_SWITCH, null, null)));
+        new VariableDeclInfo(Constants.INJECTION_SWITCH, null, null)));
   }
 
   private static boolean alreadyDeclaresInjectionSwitch(TranslationUnit tu) {
     return tu.getGlobalVarDeclInfos()
-          .stream()
-          .map(item -> item.getName())
-          .collect(Collectors.toList())
-          .contains(Constants.INJECTION_SWITCH);
+        .stream()
+        .map(item -> item.getName())
+        .collect(Collectors.toList())
+        .contains(Constants.INJECTION_SWITCH);
   }
 
   public static void setInjectionSwitch(UniformsInfo uniformsInfo) {
     uniformsInfo.addUniform(Constants.INJECTION_SWITCH, BasicType.VEC2, Optional.empty(),
-          Arrays.asList(new Float(0.0), new Float(1.0)));
+        Arrays.asList(new Float(0.0), new Float(1.0)));
   }
 
 }

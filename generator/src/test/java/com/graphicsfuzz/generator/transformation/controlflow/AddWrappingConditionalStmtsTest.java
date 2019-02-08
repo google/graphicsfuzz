@@ -25,6 +25,7 @@ import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.CannedRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import org.junit.Test;
@@ -40,7 +41,7 @@ public class AddWrappingConditionalStmtsTest {
     final String prog = "int x; void main() { if(true) x++; }";
     TranslationUnit tu = ParseHelper.parse(prog);
 
-    new AddWrappingConditionalStmts().apply(tu, TransformationProbabilities.onlyWrap(),
+    new AddWrappingConditionalTransformation().apply(tu, TransformationProbabilities.onlyWrap(),
         ShadingLanguageVersion.GLSL_130, new CannedRandom(0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));

@@ -36,10 +36,10 @@ import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
-import com.graphicsfuzz.generator.transformation.injection.RemoveDiscardStatements;
-import com.graphicsfuzz.generator.transformation.injection.RemoveImmediateBreakAndContinueStatements;
-import com.graphicsfuzz.generator.transformation.injection.RemoveReturnStatements;
 import com.graphicsfuzz.generator.util.GenerationParams;
+import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
+import com.graphicsfuzz.generator.util.RemoveImmediateBreakAndContinueStatements;
+import com.graphicsfuzz.generator.util.RemoveReturnStatements;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
@@ -56,14 +56,14 @@ public class DonateDeadCode extends DonateCode {
   public static final String NAME = "donate_dead_code";
 
   public DonateDeadCode(Function<IRandom, Boolean> probabilityOfDonation, File donorsDirectory,
-        GenerationParams generationParams) {
+                        GenerationParams generationParams) {
     super(probabilityOfDonation, donorsDirectory, generationParams);
   }
 
   @Override
   Stmt prepareStatementToDonate(IInjectionPoint injectionPoint, DonationContext donationContext,
-        TransformationProbabilities probabilities, IRandom generator,
-      ShadingLanguageVersion shadingLanguageVersion) {
+                                TransformationProbabilities probabilities, IRandom generator,
+                                ShadingLanguageVersion shadingLanguageVersion) {
     Map<String, String> substitution = new HashMap<>();
     List<Stmt> donatedStmts = new ArrayList<>();
     for (String name : asSortedList(donationContext.getFreeVariables().keySet())) {
@@ -71,16 +71,16 @@ public class DonateDeadCode extends DonateCode {
       Type type = donationContext.getFreeVariables().get(name);
       if (probabilities.substituteFreeVariable(generator)) {
         List<String> options =
-              injectionPoint.scopeAtInjectionPoint().namesOfAllVariablesInScope()
-                    .stream()
-                    .filter(x -> injectionPoint.scopeAtInjectionPoint().lookupType(x).equals(type))
-                    .collect(Collectors.toList());
+            injectionPoint.scopeAtInjectionPoint().namesOfAllVariablesInScope()
+                .stream()
+                .filter(x -> injectionPoint.scopeAtInjectionPoint().lookupType(x).equals(type))
+                .collect(Collectors.toList());
 
         // Now filter out all candidate variables for which a variable with the same name is
         // defined in the com.graphicsfuzz.generator.transformation.donation
         // context
         options = options.stream().filter(x ->
-              !donationContext.getDeclaredVariableNames().contains(x)).collect(Collectors.toList());
+            !donationContext.getDeclaredVariableNames().contains(x)).collect(Collectors.toList());
 
         if (options.size() > 0) {
           substitution.put(name, options.get(generator.nextInt(options.size())));
@@ -100,14 +100,14 @@ public class DonateDeadCode extends DonateCode {
             donationContext,
             type,
             type instanceof QualifiedType && ((QualifiedType) type)
-                    .hasQualifier(TypeQualifier.CONST),
+                .hasQualifier(TypeQualifier.CONST),
             generator,
             shadingLanguageVersion);
 
         donatedStmts.add(new DeclarationStmt(
-              new VariablesDeclaration(dropQualifiersThatCannotBeUsedForLocalVariable(type),
-                    new VariableDeclInfo(newName, null,
-                          initializer))));
+            new VariablesDeclaration(dropQualifiersThatCannotBeUsedForLocalVariable(type),
+                new VariableDeclInfo(newName, null,
+                    initializer))));
       }
     }
 
@@ -117,11 +117,11 @@ public class DonateDeadCode extends DonateCode {
     donatedStmts.add(substitutedDonorFragment);
 
     IfStmt donatedStmt = new IfStmt(
-          new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
-                .makeDeadCondition(
-                      new Fuzzer(new FuzzingContext(injectionPoint.scopeAtInjectionPoint()),
-                          shadingLanguageVersion, generator,
-                            generationParams)), new BlockStmt(donatedStmts, true), null);
+        new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
+            .makeDeadCondition(
+                new Fuzzer(new FuzzingContext(injectionPoint.scopeAtInjectionPoint()),
+                    shadingLanguageVersion, generator,
+                    generationParams)), new BlockStmt(donatedStmts, true), null);
 
     if (!injectionPoint.inLoop()) {
       new RemoveImmediateBreakAndContinueStatements(donatedStmt);
@@ -132,7 +132,7 @@ public class DonateDeadCode extends DonateCode {
     }
 
     if (incompatibleReturnTypes(injectionPoint.getEnclosingFunction(),
-          donationContext.getEnclosingFunction())) {
+        donationContext.getEnclosingFunction())) {
       new RemoveReturnStatements(donatedStmt);
     }
 

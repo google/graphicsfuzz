@@ -30,10 +30,10 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.TruncateLoops;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
-import com.graphicsfuzz.generator.transformation.injection.RemoveDiscardStatements;
-import com.graphicsfuzz.generator.transformation.injection.RemoveImmediateBreakAndContinueStatements;
-import com.graphicsfuzz.generator.transformation.injection.RemoveReturnStatements;
 import com.graphicsfuzz.generator.util.GenerationParams;
+import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
+import com.graphicsfuzz.generator.util.RemoveImmediateBreakAndContinueStatements;
+import com.graphicsfuzz.generator.util.RemoveReturnStatements;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
@@ -49,15 +49,16 @@ public class DonateLiveCode extends DonateCode {
   private final boolean allowLongLoops;
 
   public DonateLiveCode(Function<IRandom, Boolean> probabilityOfDonation, File donorsDirectory,
-        GenerationParams generationParams, boolean allowLongLoops) {
+                        GenerationParams generationParams, boolean allowLongLoops) {
     super(probabilityOfDonation, donorsDirectory, generationParams);
     this.allowLongLoops = allowLongLoops;
   }
 
   @Override
   Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
-        DonationContext donationContext, TransformationProbabilities probabilities,
-        IRandom generator, ShadingLanguageVersion shadingLanguageVersion) {
+                                DonationContext donationContext,
+                                TransformationProbabilities probabilities,
+                                IRandom generator, ShadingLanguageVersion shadingLanguageVersion) {
     List<Stmt> donatedStmts = new ArrayList<>();
     for (Map.Entry<String, Type> vars : donationContext.getFreeVariables().entrySet()) {
       Type type = vars.getValue();
@@ -75,11 +76,11 @@ public class DonateLiveCode extends DonateCode {
         initializer = new ScalarInitializer(new IntConstantExpr("0"));
       } else {
         initializer = getScalarInitializer(injectionPoint, donationContext, type, true,
-              generator, shadingLanguageVersion);
+            generator, shadingLanguageVersion);
       }
       donatedStmts.add(new DeclarationStmt(
-            new VariablesDeclaration(type,
-                  new VariableDeclInfo(vars.getKey(), null, initializer))));
+          new VariablesDeclaration(type,
+              new VariableDeclInfo(vars.getKey(), null, initializer))));
     }
     donatedStmts.add(donationContext.getDonorFragment());
     BlockStmt donatedStmt = new BlockStmt(donatedStmts, true);
@@ -103,7 +104,7 @@ public class DonateLiveCode extends DonateCode {
 
   private boolean isLoopLimiter(String name, Type type) {
     return name.contains("looplimiter")
-          && type == BasicType.INT;
+        && type == BasicType.INT;
   }
 
   @Override

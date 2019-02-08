@@ -252,7 +252,7 @@ public class GenerateTest {
 
   @Test
   public void testValidityOfVertexShaderJumpTransformations() throws Exception {
-    testValidityOfVertexShaderTransformations(Arrays.asList("--enable-only", "jump"), 5);
+    testValidityOfVertexShaderTransformations(Arrays.asList("--enable-only", "add_jump"), 5);
   }
 
   private void testValidityOfVertexShaderTransformations(List<String> extraArgs, int repeatCount) throws IOException, InterruptedException, ParseTimeoutException, ArgumentParserException, GlslParserException {

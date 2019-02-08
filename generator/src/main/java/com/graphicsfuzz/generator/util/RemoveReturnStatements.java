@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation;
+package com.graphicsfuzz.generator.util;
 
-public enum TransformationKind {
+import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
+import java.util.Optional;
 
-    DONATE_DEAD_CODE,
-    DONATE_LIVE_CODE,
-    MUTATE_EXPRESSIONS,
-    VECTORIZE_STMTS,
-    ADD_JUMP_STMTS,
-    ADD_WRAPPING_CONDITIONAL_STMTS
+public class RemoveReturnStatements extends RemoveStatements {
+
+  public RemoveReturnStatements(IAstNode node) {
+    super(item -> item instanceof ReturnStmt,
+        item -> ((ReturnStmt) item).hasExpr()
+            ? Optional.of(new ExprStmt(((ReturnStmt) item).getExpr()))
+            : Optional.empty(),
+        node);
+  }
 
 }

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator;
+package com.graphicsfuzz.generator.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.generator.util.ConstCleaner;
 import org.junit.Test;
 
 public class ConstCleanerTest {

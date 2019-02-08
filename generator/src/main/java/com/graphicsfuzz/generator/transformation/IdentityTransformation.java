@@ -16,14 +16,32 @@
 
 package com.graphicsfuzz.generator.transformation;
 
-import com.graphicsfuzz.common.ast.expr.Expr;
-import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.generator.fuzzer.Fuzzer;
+import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.semanticspreserving.IdentityMutation;
+import com.graphicsfuzz.generator.semanticspreserving.IdentityMutationFinder;
+import com.graphicsfuzz.generator.util.GenerationParams;
+import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import java.util.List;
 
-public interface IdentityTransformation {
+public class IdentityTransformation implements ITransformation {
 
-  Expr apply(Expr expr, BasicType type, boolean constContext, final int depth, Fuzzer fuzzer);
+  public static final String NAME = "identity";
 
-  boolean preconditionHolds(Expr expr, BasicType basicType);
+  @Override
+  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
+        ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
+        GenerationParams generationParams) {
+    List<IdentityMutation> mutationPoints = new IdentityMutationFinder(
+        tu, generator, generationParams).findMutations(probabilities::mutatePoint, generator);
+    mutationPoints.forEach(IdentityMutation::apply);
+    return !mutationPoints.isEmpty();
+  }
+
+  @Override
+  public String getName() {
+    return NAME;
+  }
 
 }

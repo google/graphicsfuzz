@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.GlslParserException;
+import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.AvoidDeprecatedGlFragColor;
@@ -33,16 +34,15 @@ import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddJumpStmts;
+import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
 import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddWrappingConditionalStmts;
-import com.graphicsfuzz.generator.transformation.controlflow.SplitForLoops;
+import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
+import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
-import com.graphicsfuzz.generator.transformation.mutator.ApplyIdentityMutations;
-import com.graphicsfuzz.generator.transformation.outliner.OutlineStatements;
-import com.graphicsfuzz.generator.transformation.structifier.Structification;
-import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
+import com.graphicsfuzz.generator.transformation.IdentityTransformation;
+import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
+import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.io.BufferedWriter;
@@ -107,32 +107,32 @@ public class GeneratorUnitTest {
 
   @Test
   public void testStructify() throws Exception {
-    testTransformationMultiVersions(() -> new Structification(), TransformationProbabilities.DEFAULT_PROBABILITIES,
+    testTransformationMultiVersions(() -> new StructificationTransformation(), TransformationProbabilities.DEFAULT_PROBABILITIES,
         "structs.frag");
   }
 
   @Test
   public void testDeadJumps() throws Exception {
-    testTransformationMultiVersions(() -> new AddJumpStmts(), TransformationProbabilities.onlyAddJumps(),
+    testTransformationMultiVersions(() -> new AddJumpTransformation(), TransformationProbabilities.onlyAddJumps(),
         "jumps.frag");
   }
 
   @Test
   public void testMutateExpressions() throws Exception {
-    testTransformationMultiVersions(() -> new ApplyIdentityMutations(), TransformationProbabilities
+    testTransformationMultiVersions(() -> new IdentityTransformation(), TransformationProbabilities
         .onlyMutateExpressions(), "mutate.frag");
   }
 
   @Test
   public void testOutlineStatements() throws Exception {
-    testTransformationMultiVersions(() -> new OutlineStatements(new IdGenerator()),
+    testTransformationMultiVersions(() -> new OutlineStatementsTransformation(new IdGenerator()),
         TransformationProbabilities.onlyOutlineStatements(),
         "outline.frag");
   }
 
   @Test
   public void testSplitForLoops() throws Exception {
-    testTransformationMultiVersions(() -> new SplitForLoops(), TransformationProbabilities
+    testTransformationMultiVersions(() -> new SplitForLoopTransformation(), TransformationProbabilities
         .onlySplitLoops(), "split.frag");
   }
 
@@ -170,14 +170,14 @@ public class GeneratorUnitTest {
 
   @Test
   public void testVectorize() throws Exception {
-    testTransformationMultiVersions(() -> new VectorizeStatements(),
+    testTransformationMultiVersions(() -> new VectorizeTransformation(),
         TransformationProbabilities.onlyVectorize(),
         "vectorize.frag", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void mutateAndVectorize() throws Exception {
-    testTransformationMultiVersions(Arrays.asList(() -> new ApplyIdentityMutations(), () -> new VectorizeStatements()),
+    testTransformationMultiVersions(Arrays.asList(() -> new IdentityTransformation(), () -> new VectorizeTransformation()),
         TransformationProbabilities.onlyVectorizeAndMutate(),
         "mutate_and_vectorize.frag",
         Arrays.asList(), Arrays.asList());
@@ -185,14 +185,14 @@ public class GeneratorUnitTest {
 
   @Test
   public void testStructification() throws Exception {
-    testTransformationMultiVersions(() -> new Structification(),
+    testTransformationMultiVersions(() -> new StructificationTransformation(),
         TransformationProbabilities.onlyStructify(),
         "structify.frag", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void testWrap() throws Exception {
-    testTransformationMultiVersions(() -> new AddWrappingConditionalStmts(),
+    testTransformationMultiVersions(() -> new AddWrappingConditionalTransformation(),
         TransformationProbabilities.onlyWrap(),
         "wrap.frag",
         Arrays.asList("colorgrid_modulo.json", "prefix_sum.json"),

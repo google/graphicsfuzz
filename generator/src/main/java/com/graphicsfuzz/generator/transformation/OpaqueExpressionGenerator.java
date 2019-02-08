@@ -53,7 +53,7 @@ public final class OpaqueExpressionGenerator {
 
   // The available identity transformations, and the associated types to which they may
   // be applied.
-  private final List<IdentityTransformation> identityTransformations;
+  private final List<ExpressionIdentity> expressionIdentities;
 
   private final ShadingLanguageVersion shadingLanguageVersion;
 
@@ -63,21 +63,21 @@ public final class OpaqueExpressionGenerator {
     this.generationParams = generationParams;
     // TODO: there are many more identities that we can easily play with here, e.g. bitwise and 1
     // for integer types
-    this.identityTransformations = new ArrayList<>();
+    this.expressionIdentities = new ArrayList<>();
     this.shadingLanguageVersion = shadingLanguageVersion;
 
-    identityTransformations.add(new IdentityAddSubZero());
-    identityTransformations.add(new IdentityMulDivOne());
-    identityTransformations.add(new IdentityAndTrue());
-    identityTransformations.add(new IdentityOrFalse());
-    identityTransformations.add(new IdentityTernary());
+    expressionIdentities.add(new IdentityAddSubZero());
+    expressionIdentities.add(new IdentityMulDivOne());
+    expressionIdentities.add(new IdentityAndTrue());
+    expressionIdentities.add(new IdentityOrFalse());
+    expressionIdentities.add(new IdentityTernary());
 
-    identityTransformations.add(new IdentityMin());
-    identityTransformations.add(new IdentityMax());
-    identityTransformations.add(new IdentityClamp());
+    expressionIdentities.add(new IdentityMin());
+    expressionIdentities.add(new IdentityMax());
+    expressionIdentities.add(new IdentityClamp());
 
     if (shadingLanguageVersion.supportedMixNonfloatBool()) {
-      identityTransformations.add(new IdentityMixBvec());
+      expressionIdentities.add(new IdentityMixBvec());
     }
 
   }
@@ -96,8 +96,8 @@ public final class OpaqueExpressionGenerator {
     if (isTooDeep(depth)) {
       return expr;
     }
-    final List<IdentityTransformation> availableTransformations =
-          identityTransformations.stream()
+    final List<ExpressionIdentity> availableTransformations =
+          expressionIdentities.stream()
                 .filter(item -> item.preconditionHolds(expr, type))
                 .collect(Collectors.toList());
     return availableTransformations.isEmpty() ? expr :
@@ -336,7 +336,7 @@ public final class OpaqueExpressionGenerator {
     return new ParenExpr(new TernaryExpr(condition, thenExpr, elseExpr));
   }
 
-  private abstract class AbstractIdentityTransformation implements IdentityTransformation {
+  private abstract class AbstractIdentityTransformation implements ExpressionIdentity {
 
     private final Collection<BasicType> acceptableTypes;
     private final boolean exprMustBeSideEffectFree;

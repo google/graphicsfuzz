@@ -45,13 +45,13 @@ import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddJumpStmts;
+import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
 import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.SplitForLoops;
+import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
-import com.graphicsfuzz.generator.transformation.mutator.ApplyIdentityMutations;
-import com.graphicsfuzz.generator.transformation.outliner.OutlineStatements;
+import com.graphicsfuzz.generator.transformation.IdentityTransformation;
+import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.reducer.CheckAstFeatureVisitor;
@@ -182,10 +182,10 @@ public class ReducerUnitTest {
 
   private List<ITransformationSupplier> getTransformations() {
     List<ITransformationSupplier> result = new ArrayList<>();
-    result.add(() -> new AddJumpStmts());
-    result.add(() -> new ApplyIdentityMutations());
-    result.add(() -> new OutlineStatements(new IdGenerator()));
-    result.add(() -> new SplitForLoops());
+    result.add(() -> new AddJumpTransformation());
+    result.add(() -> new IdentityTransformation());
+    result.add(() -> new OutlineStatementsTransformation(new IdGenerator()));
+    result.add(() -> new SplitForLoopTransformation());
     result.add(() -> new DonateDeadCode(
             TransformationProbabilities.DEFAULT_PROBABILITIES::donateDeadCodeAtStmt,
             Util.createDonorsFolder(temporaryFolder),

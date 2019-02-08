@@ -44,6 +44,7 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.semanticspreserving.SplitForLoopMutation;
+import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -149,7 +150,7 @@ public class SplitForLoopsTest {
     final String program = "void main() { for(int i = 0; i < 10; i++) { } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, countForLoops(tu));
-    new SplitForLoops().apply(tu, TransformationProbabilities.onlySplitLoops(), ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
+    new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(), ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
     assertEquals(2, countForLoops(tu));
   }
 
@@ -158,7 +159,7 @@ public class SplitForLoopsTest {
     final String program = "void main() { for(int i = 0; i < 10; i++) { if(true) break; } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, countForLoops(tu));
-    new SplitForLoops().apply(tu, TransformationProbabilities.onlySplitLoops(), ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
+    new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(), ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
     assertEquals(1, countForLoops(tu));
   }
 

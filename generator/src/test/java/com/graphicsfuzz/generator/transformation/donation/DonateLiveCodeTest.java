@@ -41,7 +41,7 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.transformation.injection.BlockInjectionPoint;
-import com.graphicsfuzz.generator.transformation.mutator.ApplyIdentityMutations;
+import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.util.ArrayList;
@@ -168,10 +168,10 @@ public class DonateLiveCodeTest {
 
       blockInjectionPoint.inject(toDonate);
 
-      final ApplyIdentityMutations applyIdentityMutations =
-            new ApplyIdentityMutations();
+      final IdentityTransformation identityTransformation =
+            new IdentityTransformation();
 
-      applyIdentityMutations.apply(referenceTu, TransformationProbabilities.onlyMutateExpressions(),
+      identityTransformation.apply(referenceTu, TransformationProbabilities.onlyMutateExpressions(),
             ShadingLanguageVersion.ESSL_300,
             generator,
             GenerationParams.large(ShaderKind.FRAGMENT, true)

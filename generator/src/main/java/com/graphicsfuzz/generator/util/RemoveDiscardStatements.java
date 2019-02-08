@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.injection;
+package com.graphicsfuzz.generator.util;
 
 import com.graphicsfuzz.common.ast.IAstNode;
-import com.graphicsfuzz.common.ast.stmt.ExprStmt;
-import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
+import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
+import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import java.util.Optional;
 
-public class RemoveReturnStatements extends RemoveStatements {
+public class RemoveDiscardStatements extends RemoveStatements {
 
-  public RemoveReturnStatements(IAstNode node) {
-    super(item -> item instanceof ReturnStmt,
-        item -> ((ReturnStmt) item).hasExpr()
-            ? Optional.of(new ExprStmt(((ReturnStmt) item).getExpr()))
-            : Optional.empty(),
-        node);
+  public RemoveDiscardStatements(IAstNode node) {
+    super(item -> item instanceof DiscardStmt,
+        item -> Optional.of(new NullStmt()), node);
   }
 
 }

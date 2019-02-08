@@ -14,38 +14,21 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.controlflow;
+package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.stmt.BlockStmt;
-import com.graphicsfuzz.common.ast.stmt.BreakStmt;
-import com.graphicsfuzz.common.ast.stmt.ContinueStmt;
-import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
-import com.graphicsfuzz.common.ast.stmt.IfStmt;
-import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
-import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.generator.fuzzer.Fuzzer;
-import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.semanticspreserving.AddJumpMutation;
 import com.graphicsfuzz.generator.semanticspreserving.AddJumpMutationFinder;
-import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
-import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
-import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
-import java.util.ArrayList;
 import java.util.List;
 
-public class AddJumpStmts implements ITransformation {
+public class AddJumpTransformation implements ITransformation {
 
-  public static final String NAME = "jump";
+  public static final String NAME = "add_jump";
 
   @Override
   public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
