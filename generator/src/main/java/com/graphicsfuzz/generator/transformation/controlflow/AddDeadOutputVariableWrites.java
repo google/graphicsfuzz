@@ -28,6 +28,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
+import com.graphicsfuzz.generator.semanticspreserving.AddJumpMutation;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -68,7 +69,7 @@ public class AddDeadOutputVariableWrites extends AddOutputVariableWrites {
     final String outputVariableName = outputVariableInfo.getLeft();
     final Type outputVariableType = outputVariableInfo.getRight();
 
-    return AddJumpStmts.makeDeadConditional(injectionPoint,
+    return AddJumpMutation.makeDeadConditional(injectionPoint,
           new BlockStmt(Arrays.asList(
                 new ExprStmt(new BinaryExpr(
                       new VariableIdentifierExpr(outputVariableName),

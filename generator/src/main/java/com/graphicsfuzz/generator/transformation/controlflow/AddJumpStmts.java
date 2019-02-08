@@ -31,6 +31,9 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
+import com.graphicsfuzz.generator.semanticspreserving.AddJumpMutation;
+import com.graphicsfuzz.generator.semanticspreserving.AddJumpMutationFinder;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
@@ -48,97 +51,17 @@ public class AddJumpStmts implements ITransformation {
   public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
         ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
-    List<IInjectionPoint> injectionPoints = new InjectionPoints(tu, generator, x -> true)
-          .getInjectionPoints(
-                probabilities::injectJumpAtStmt);
-    for (IInjectionPoint injectionPoint : injectionPoints) {
-      injectionPoint.inject(prepareJumpStmt(injectionPoint, generator, shadingLanguageVersion,
-            generationParams));
-    }
-    return !injectionPoints.isEmpty();
+
+    final List<AddJumpMutation> mutations =
+        new AddJumpMutationFinder(tu, generator, generationParams)
+            .findMutations(probabilities::injectJumpAtStmt, generator);
+    mutations.forEach(Mutation::apply);
+    return !mutations.isEmpty();
   }
 
   @Override
   public String getName() {
     return NAME;
-  }
-
-  private IfStmt prepareJumpStmt(IInjectionPoint injectionPoint, IRandom generator,
-        ShadingLanguageVersion shadingLanguageVersion, GenerationParams generationParams) {
-    if (!injectionPoint.inLoop()) {
-      return prepareReturnStmt(injectionPoint, generator, shadingLanguageVersion, generationParams);
-    }
-    // "discard" is only available in fragment shaders.
-    final int numJumpStatementTypes =
-        generationParams.getShaderKind() == ShaderKind.FRAGMENT ? 4 : 3;
-    switch (generator.nextInt(numJumpStatementTypes)) {
-      case 0:
-        return prepareBreakStmt(injectionPoint, generator, shadingLanguageVersion,
-            generationParams);
-      case 1:
-        return prepareContinueStmt(injectionPoint, generator, shadingLanguageVersion,
-            generationParams);
-      case 2:
-        return prepareReturnStmt(injectionPoint, generator, shadingLanguageVersion,
-            generationParams);
-      case 3:
-        return prepareDiscardStmt(injectionPoint, generator, shadingLanguageVersion,
-            generationParams);
-      default:
-        throw new RuntimeException("Unreachable");
-    }
-  }
-
-  private IfStmt prepareBreakStmt(IInjectionPoint injectionPoint,
-        IRandom generator, ShadingLanguageVersion shadingLanguageVersion,
-      GenerationParams generationParams) {
-    return makeDeadConditional(injectionPoint, new BreakStmt(), generator,
-        shadingLanguageVersion,
-          generationParams);
-  }
-
-  private IfStmt prepareContinueStmt(IInjectionPoint injectionPoint,
-        IRandom generator, ShadingLanguageVersion shadingLanguageVersion,
-      GenerationParams generationParams) {
-    return makeDeadConditional(injectionPoint, new ContinueStmt(), generator,
-        shadingLanguageVersion,
-          generationParams);
-  }
-
-  private IfStmt prepareReturnStmt(IInjectionPoint injectionPoint,
-        IRandom generator, ShadingLanguageVersion shadingLanguageVersion,
-      GenerationParams generationParams) {
-    Type returnType = injectionPoint.getEnclosingFunction().getPrototype().getReturnType();
-    Stmt stmtToInject;
-    if (returnType.hasCanonicalConstant()) {
-      stmtToInject = new ReturnStmt(returnType.getCanonicalConstant());
-    } else if (returnType.getWithoutQualifiers() == VoidType.VOID) {
-      stmtToInject = new ReturnStmt();
-    } else {
-      stmtToInject = new BlockStmt(new ArrayList<>(), true);
-    }
-    return makeDeadConditional(injectionPoint, stmtToInject, generator, shadingLanguageVersion,
-          generationParams);
-  }
-
-  private IfStmt prepareDiscardStmt(IInjectionPoint injectionPoint,
-        IRandom generator, ShadingLanguageVersion shadingLanguageVersion,
-      GenerationParams generationParams) {
-    return makeDeadConditional(injectionPoint, new DiscardStmt(), generator,
-        shadingLanguageVersion,
-          generationParams);
-  }
-
-  static IfStmt makeDeadConditional(IInjectionPoint injectionPoint, Stmt thenStmt,
-        IRandom generator, ShadingLanguageVersion shadingLanguageVersion,
-      GenerationParams generationParams) {
-    return new IfStmt(
-          new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
-                .makeDeadCondition(
-                      new Fuzzer(new FuzzingContext(injectionPoint.scopeAtInjectionPoint()),
-                          shadingLanguageVersion, generator,
-                            generationParams)),
-          thenStmt, null);
   }
 
 }
