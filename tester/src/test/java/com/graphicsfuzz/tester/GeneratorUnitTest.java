@@ -45,6 +45,7 @@ import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import com.graphicsfuzz.util.ToolPaths;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -140,8 +141,8 @@ public class GeneratorUnitTest {
   public void testDonateDeadCode() throws Exception {
     testTransformationMultiVersions(() -> new DonateDeadCodeTransformation(
         TransformationProbabilities.likelyDonateDeadCode()::donateDeadCodeAtStmt,
-        Util.createDonorsFolder(temporaryFolder),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
+            Util.getDonorsFolder(),
+            GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
         "donatedead.frag", Arrays.asList(), Arrays.asList());
   }
 
@@ -149,8 +150,8 @@ public class GeneratorUnitTest {
   public void testDonateLiveCode() throws Exception {
     testTransformationMultiVersions(() -> new DonateLiveCodeTransformation(
         TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
-        Util.createDonorsFolder(temporaryFolder),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true),
+            Util.getDonorsFolder(),
+            GenerationParams.normal(ShaderKind.FRAGMENT, true),
         true), TransformationProbabilities.likelyDonateLiveCode(),
         "donatelive.frag",
         Arrays.asList(), Arrays.asList());
@@ -201,9 +202,9 @@ public class GeneratorUnitTest {
 
   private void testTransformation(List<ITransformationSupplier> transformations,
         TransformationProbabilities probabilities, String suffix, List<String> blacklist,
-        ShadingLanguageVersion shadingLanguageVersion)
+        File[] referenceFiles)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles()) {
+    for (File originalShaderJobFile : referenceFiles) {
       final List<ITransformation> transformationsList = new ArrayList<>();
       for (ITransformationSupplier supplier : transformations) {
         transformationsList.add(supplier.get());
@@ -215,13 +216,11 @@ public class GeneratorUnitTest {
         skipRender = (reverseBlacklist != blacklist.contains(originalShaderJobFile.getName()));
       }
       final File referenceImage = Util.renderShader(
-          ShadingLanguageVersion.ESSL_100,
           originalShaderJobFile,
           temporaryFolder,
           fileOps);
       generateAndCheckVariant(transformationsList,
           probabilities,
-          shadingLanguageVersion,
           suffix,
           originalShaderJobFile,
           referenceImage,
@@ -233,14 +232,14 @@ public class GeneratorUnitTest {
         TransformationProbabilities probabilities, String suffix, List<String> blacklist)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformation(transformations, probabilities, suffix, blacklist,
-          ShadingLanguageVersion.ESSL_100);
+          Util.getReferenceShaderJobFiles100es());
   }
 
   private void testTransformation300es(List<ITransformationSupplier> transformations,
         TransformationProbabilities probabilities, String suffix, List<String> blacklist)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformation(transformations, probabilities, suffix, blacklist,
-          ShadingLanguageVersion.ESSL_300);
+        Util.getReferenceShaderJobFiles300es());
   }
 
   private void testTransformationMultiVersions(List<ITransformationSupplier> transformations,
@@ -278,7 +277,6 @@ public class GeneratorUnitTest {
 
   private void generateAndCheckVariant(List<ITransformation> transformations,
                                        TransformationProbabilities probabilities,
-                                       ShadingLanguageVersion shadingLanguageVersion,
                                        String suffix,
                                        File originalShaderJobFile,
       File referenceImage,
@@ -289,10 +287,6 @@ public class GeneratorUnitTest {
     assertEquals(ShaderKind.FRAGMENT, shaderJob.getShaders().get(0).getShaderKind());
     final TranslationUnit tu = shaderJob.getShaders().get(0);
 
-    if (!tu.getShadingLanguageVersion().supportedGlFragColor()) {
-      AvoidDeprecatedGlFragColor.avoidDeprecatedGlFragColor(shaderJob.getShaders().get(0),
-          Constants.GLF_COLOR);
-    }
     final RandomWrapper generator = new RandomWrapper(originalShaderJobFile.getName().hashCode());
     for (ITransformation transformation : transformations) {
       transformation.apply(tu, probabilities,
@@ -302,7 +296,6 @@ public class GeneratorUnitTest {
     Generate.addInjectionSwitchIfNotPresent(tu);
     Generate.setInjectionSwitch(shaderJob.getPipelineInfo());
     Generate.randomiseUnsetUniforms(tu, shaderJob.getPipelineInfo(), generator);
-    tu.setShadingLanguageVersion(shadingLanguageVersion);
 
     // Using fileOps, even though the rest of the code here does not use it yet.
     // Write shaders to shader job file and validate.

@@ -92,7 +92,7 @@ public class ReducerUnitTest {
   public void testReductionSteps() throws Exception {
     List<ITransformationSupplier> transformations = new ArrayList<>();
     int seed = 0;
-    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles()) {
+    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es()) {
       testGenerateAndReduce(originalShaderJobFile, transformations, new RandomWrapper(seed));
       seed++;
     }
@@ -101,29 +101,25 @@ public class ReducerUnitTest {
   private void testGenerateAndReduce(File originalShaderJobFile,
                                      List<ITransformationSupplier> transformations,
                                      RandomWrapper generator) throws Exception {
-    final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_100;
     final File referenceImage =
         Util.renderShader(
-            shadingLanguageVersion,
             originalShaderJobFile,
             temporaryFolder,
             fileOps);
     final PipelineInfo pipelineInfo = new PipelineInfo(originalShaderJobFile);
     final TranslationUnit tu = generateSizeLimitedShader(
         fileOps.getUnderlyingShaderFile(originalShaderJobFile, ShaderKind.FRAGMENT),
-        transformations, generator,
-        shadingLanguageVersion);
+        transformations, generator);
     Generate.addInjectionSwitchIfNotPresent(tu);
     Generate.setInjectionSwitch(pipelineInfo);
     Generate.randomiseUnsetUniforms(tu, pipelineInfo, generator);
-    tu.setShadingLanguageVersion(shadingLanguageVersion);
 
     final IdGenerator idGenerator = new IdGenerator();
 
     for (int step = 0; step < 10; step++) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
           new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu),
-          new ReducerContext(false, shadingLanguageVersion, generator, idGenerator, true),
+          new ReducerContext(false, tu.getShadingLanguageVersion(), generator, idGenerator, true),
           fileOps);
       if (ops.isEmpty()) {
         break;
@@ -145,8 +141,8 @@ public class ReducerUnitTest {
   }
 
   private TranslationUnit generateSizeLimitedShader(File fragmentShader,
-      List<ITransformationSupplier> transformations, IRandom generator,
-      ShadingLanguageVersion shadingLanguageVersion) throws IOException, ParseTimeoutException,
+      List<ITransformationSupplier> transformations, IRandom generator)
+      throws IOException, ParseTimeoutException,
       InterruptedException, GlslParserException {
     while (true) {
       List<ITransformationSupplier> transformationsCopy = new ArrayList<>();
@@ -188,11 +184,11 @@ public class ReducerUnitTest {
     result.add(() -> new SplitForLoopTransformation());
     result.add(() -> new DonateDeadCodeTransformation(
             TransformationProbabilities.DEFAULT_PROBABILITIES::donateDeadCodeAtStmt,
-            Util.createDonorsFolder(temporaryFolder),
+            Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true)));
     result.add(() -> new DonateLiveCodeTransformation(
             TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
-            Util.createDonorsFolder(temporaryFolder),
+            Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true),
             true));
     result.add(() -> new AddDeadOutputWriteTransformation());
