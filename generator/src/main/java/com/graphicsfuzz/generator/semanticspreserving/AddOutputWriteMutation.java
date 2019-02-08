@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.controlflow;
+package com.graphicsfuzz.generator.semanticspreserving;
 
+import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
@@ -25,7 +26,7 @@ import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.generator.transformation.ITransformation;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import java.util.HashMap;
@@ -35,32 +36,43 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-public abstract class AddOutputVariableWrites implements ITransformation {
+abstract class AddOutputWriteMutation implements Mutation {
 
-  Pair<String, Type> chooseOutputVariable(IInjectionPoint injectionPoint, IRandom generator,
-      ShadingLanguageVersion shadingLanguageVersion, GenerationParams generationParams) {
-    final Map<String, Type> availableOutVars =
-        getAvailableOutVars(injectionPoint.scopeAtInjectionPoint(),
-            shadingLanguageVersion, generationParams);
-    assert !availableOutVars.isEmpty();
+  final IInjectionPoint injectionPoint;
+  final IRandom random;
+  final ShadingLanguageVersion shadingLanguageVersion;
+  final GenerationParams generationParams;
 
-    final List<String> keys = availableOutVars.keySet().stream().collect(Collectors.toList());
-    keys.sort(String::compareTo);
-    final int index = generator.nextInt(keys.size());
-
-    final String name = keys.get(index);
-    final Type type = availableOutVars.get(name);
-    return new ImmutablePair<>(name, type);
+  AddOutputWriteMutation(IInjectionPoint injectionPoint,
+                                    IRandom random,
+                                    ShadingLanguageVersion shadingLanguageVersion,
+                                    GenerationParams generationParams) {
+    this.injectionPoint = injectionPoint;
+    this.random = random;
+    this.shadingLanguageVersion = shadingLanguageVersion;
+    this.generationParams = generationParams;
   }
 
-  boolean hasAvailableOutVars(IInjectionPoint injectionPoint,
-      ShadingLanguageVersion shadingLanguageVersion, GenerationParams generationParams) {
+  @Override
+  public final void apply() {
+    assert hasAvailableOutVars(injectionPoint, shadingLanguageVersion, generationParams);
+    injectionPoint.inject(prepareOutputVariableWrite());
+
+  }
+
+  abstract Stmt prepareOutputVariableWrite();
+
+  static boolean hasAvailableOutVars(IInjectionPoint injectionPoint,
+                                     ShadingLanguageVersion shadingLanguageVersion,
+                                     GenerationParams generationParams) {
     return !getAvailableOutVars(injectionPoint.scopeAtInjectionPoint(),
         shadingLanguageVersion, generationParams).isEmpty();
   }
 
-  private Map<String,Type> getAvailableOutVars(Scope scope,
-      ShadingLanguageVersion shadingLanguageVersion, GenerationParams generationParams) {
+  private static Map<String, Type> getAvailableOutVars(
+      Scope scope,
+      ShadingLanguageVersion shadingLanguageVersion,
+      GenerationParams generationParams) {
     final Map<String, Type> result = new HashMap<>();
     if (generationParams.getShaderKind() == ShaderKind.FRAGMENT) {
       if (shadingLanguageVersion.supportedGlFragColor()) {
@@ -79,6 +91,21 @@ public abstract class AddOutputVariableWrites implements ITransformation {
       }
     }
     return result;
+  }
+
+  Pair<String, Type> chooseOutputVariable() {
+    final Map<String, Type> availableOutVars =
+        getAvailableOutVars(injectionPoint.scopeAtInjectionPoint(),
+            shadingLanguageVersion, generationParams);
+    assert !availableOutVars.isEmpty();
+
+    final List<String> keys = availableOutVars.keySet().stream().collect(Collectors.toList());
+    keys.sort(String::compareTo);
+    final int index = random.nextInt(keys.size());
+
+    final String name = keys.get(index);
+    final Type type = availableOutVars.get(name);
+    return new ImmutablePair<>(name, type);
   }
 
 }

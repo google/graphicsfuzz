@@ -44,9 +44,9 @@ import com.graphicsfuzz.util.ToolHelper;
 import com.graphicsfuzz.common.util.UniformsInfo;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
+import com.graphicsfuzz.generator.transformation.AddDeadOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
-import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
+import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
@@ -195,8 +195,8 @@ public class ReducerUnitTest {
             Util.createDonorsFolder(temporaryFolder),
             GenerationParams.normal(ShaderKind.FRAGMENT, true),
             true));
-    result.add(() -> new AddDeadOutputVariableWrites());
-    result.add(() -> new AddLiveOutputVariableWrites());
+    result.add(() -> new AddDeadOutputWriteTransformation());
+    result.add(() -> new AddLiveOutputWriteTransformation());
     return result;
   }
 

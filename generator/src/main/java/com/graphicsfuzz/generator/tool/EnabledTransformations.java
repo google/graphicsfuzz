@@ -16,7 +16,9 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.graphicsfuzz.generator.transformation.AddDeadOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
+import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddSwitchTransformation;
 import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
 import com.graphicsfuzz.generator.transformation.ITransformation;
@@ -25,8 +27,6 @@ import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
-import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
 import java.util.Arrays;
@@ -55,8 +55,8 @@ public class EnabledTransformations {
         AddSwitchTransformation.class,
         VectorizeTransformation.class,
         AddWrappingConditionalTransformation.class,
-        AddLiveOutputVariableWrites.class,
-        AddDeadOutputVariableWrites.class
+        AddLiveOutputWriteTransformation.class,
+        AddDeadOutputWriteTransformation.class
     );
   }
 
@@ -89,10 +89,10 @@ public class EnabledTransformations {
         return VectorizeTransformation.class;
       case AddWrappingConditionalTransformation.NAME:
         return AddWrappingConditionalTransformation.class;
-      case AddLiveOutputVariableWrites.NAME:
-        return AddLiveOutputVariableWrites.class;
-      case AddDeadOutputVariableWrites.NAME:
-        return AddDeadOutputVariableWrites.class;
+      case AddLiveOutputWriteTransformation.NAME:
+        return AddLiveOutputWriteTransformation.class;
+      case AddDeadOutputWriteTransformation.NAME:
+        return AddDeadOutputWriteTransformation.class;
       default:
         throw new RuntimeException("Unknown transformation '" + name + "'");
     }
@@ -144,11 +144,11 @@ public class EnabledTransformations {
   }
 
   public boolean isEnabledDeadFragColorWrites() {
-    return isEnabled(AddDeadOutputVariableWrites.class);
+    return isEnabled(AddDeadOutputWriteTransformation.class);
   }
 
   public boolean isEnabledLiveFragColorWrites() {
-    return isEnabled(AddLiveOutputVariableWrites.class);
+    return isEnabled(AddLiveOutputWriteTransformation.class);
   }
 
   private boolean isEnabled(Class<? extends ITransformation> transformationClass) {

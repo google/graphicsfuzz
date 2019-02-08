@@ -33,7 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DonationContexts extends StandardVisitor {
+public class DonationContextFinder extends StandardVisitor {
 
   private final TranslationUnit donor;
   private final List<Stmt> donorFragments;
@@ -41,7 +41,7 @@ public class DonationContexts extends StandardVisitor {
   private FunctionDefinition currentFunction;
   private final IRandom generator;
 
-  public DonationContexts(TranslationUnit donor, IRandom generator) {
+  public DonationContextFinder(TranslationUnit donor, IRandom generator) {
     this.donor = donor;
     this.donorFragments = new ArrayList<>();
     this.enclosingFunction = new HashMap<>();

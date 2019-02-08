@@ -195,7 +195,7 @@ public abstract class DonateCode implements ITransformation {
     final int maxTries = 10;
     int tries = 0;
     while (true) {
-      DonationContext donationContext = new DonationContexts(chooseDonor(generator), generator)
+      DonationContext donationContext = new DonationContextFinder(chooseDonor(generator), generator)
             .getDonationContext();
       if (incompatible(injectionPoint, donationContext, shadingLanguageVersion)) {
         tries++;

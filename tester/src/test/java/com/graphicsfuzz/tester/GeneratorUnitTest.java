@@ -33,9 +33,9 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
+import com.graphicsfuzz.generator.transformation.AddDeadOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
-import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
+import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
@@ -158,13 +158,13 @@ public class GeneratorUnitTest {
 
   @Test
   public void testAddDeadFragColorWrites() throws Exception {
-    testTransformationMultiVersions(() -> new AddDeadOutputVariableWrites(), TransformationProbabilities
+    testTransformationMultiVersions(() -> new AddDeadOutputWriteTransformation(), TransformationProbabilities
         .onlyAddDeadFragColorWrites(), "deadfragcolor.frag", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void testAddLiveOutputVariableWrites() throws Exception {
-    testTransformationMultiVersions(() -> new AddLiveOutputVariableWrites(), TransformationProbabilities
+    testTransformationMultiVersions(() -> new AddLiveOutputWriteTransformation(), TransformationProbabilities
         .onlyAddLiveFragColorWrites(), "liveoutvar.frag", Arrays.asList(), Arrays.asList());
   }
 

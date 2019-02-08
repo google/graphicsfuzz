@@ -37,7 +37,9 @@ import com.graphicsfuzz.common.util.StatsVisitor;
 import com.graphicsfuzz.common.util.StripUnusedFunctions;
 import com.graphicsfuzz.common.util.StripUnusedGlobals;
 import com.graphicsfuzz.common.util.UniformsInfo;
+import com.graphicsfuzz.generator.transformation.AddDeadOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
+import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddSwitchTransformation;
 import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
 import com.graphicsfuzz.generator.transformation.ITransformation;
@@ -46,8 +48,6 @@ import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
-import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
 import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
 import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
 import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
@@ -533,10 +533,10 @@ public class Generate {
     }
     if (generationParams.getShaderKind() == ShaderKind.FRAGMENT
         && flags.isEnabledDeadFragColorWrites()) {
-      result.add(new AddDeadOutputVariableWrites());
+      result.add(new AddDeadOutputWriteTransformation());
     }
     if (flags.isEnabledLiveFragColorWrites()) {
-      result.add(new AddLiveOutputVariableWrites());
+      result.add(new AddLiveOutputWriteTransformation());
     }
     if (result.isEmpty()) {
       throw new RuntimeException("At least one transformation must be enabled");
@@ -559,8 +559,8 @@ public class Generate {
     transformations.add(new OutlineStatementsTransformation(new IdGenerator()));
     transformations.add(new AddWrappingConditionalTransformation());
     transformations.add(new AddSwitchTransformation());
-    transformations.add(new AddDeadOutputVariableWrites());
-    transformations.add(new AddLiveOutputVariableWrites());
+    transformations.add(new AddDeadOutputWriteTransformation());
+    transformations.add(new AddLiveOutputWriteTransformation());
 
     final int minIterations = 3;
     final int numIterations = minIterations + generator.nextInt(5);
