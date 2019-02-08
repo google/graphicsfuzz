@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.controlflow;
+package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class AddLiveOutputVariableWritesTest {
+public class AddLiveOutputWriteTransformationTest {
 
   private static final String trivialProgramEssl100 = "#version 100\nvoid main() { }";
   private static final String trivialProgramEssl300 = "#version 300 es\nvoid main() { }";

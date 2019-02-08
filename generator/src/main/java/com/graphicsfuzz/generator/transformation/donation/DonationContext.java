@@ -39,7 +39,7 @@ public class DonationContext {
   private final List<StructDefinitionType> availableStructs;
   private final FunctionDefinition enclosingFunction;
 
-  DonationContext(Stmt donorFragment, Map<String, Type> freeVariables,
+  public DonationContext(Stmt donorFragment, Map<String, Type> freeVariables,
       List<StructDefinitionType> availableStructs,
       FunctionDefinition enclosingFunction) {
     this.donorFragment = donorFragment;

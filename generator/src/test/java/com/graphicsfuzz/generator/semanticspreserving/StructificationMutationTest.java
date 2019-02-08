@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.structifier;
+package com.graphicsfuzz.generator.semanticspreserving;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

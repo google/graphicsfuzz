@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.mutator;
+package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CannedRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -45,7 +44,7 @@ public class IdentityMutationFinderTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
-        new CannedRandom(new Object[] { }),
+        new CannedRandom(),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
     final List<IdentityMutation> points = identityMutationFinder.findMutations();
     // The mutation points are:
@@ -68,7 +67,6 @@ public class IdentityMutationFinderTest {
             + "  }\n"
             + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
-    final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.WEBGL_SL;
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
         new CannedRandom(new Object[] { }),
@@ -88,10 +86,9 @@ public class IdentityMutationFinderTest {
             + "  }\n"
             + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
-    final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.WEBGL_SL;
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
-        new CannedRandom(new Object[] { }),
+        new CannedRandom(),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
     final List<IdentityMutation> points = identityMutationFinder.findMutations();
     // Two mutation points: LHS and RHS of "j + 1", and RHS of "j = j + 1".

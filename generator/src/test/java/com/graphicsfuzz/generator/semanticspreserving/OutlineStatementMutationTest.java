@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.outliner;
+package com.graphicsfuzz.generator.semanticspreserving;
 
 import static org.junit.Assert.assertEquals;
 

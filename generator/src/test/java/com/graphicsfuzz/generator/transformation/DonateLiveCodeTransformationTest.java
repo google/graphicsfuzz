@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.donation;
+package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
@@ -41,6 +41,7 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
+import com.graphicsfuzz.generator.transformation.donation.DonationContext;
 import com.graphicsfuzz.generator.transformation.injection.BlockInjectionPoint;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -54,7 +55,7 @@ import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertFalse;
 
-public class DonateLiveCodeTest {
+public class DonateLiveCodeTransformationTest {
 
   @Rule
   public TemporaryFolder testFolder = new TemporaryFolder();
