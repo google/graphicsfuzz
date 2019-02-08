@@ -30,8 +30,8 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
+import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
-import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import java.util.ArrayList;
@@ -129,7 +129,7 @@ public class AddJumpMutation implements Mutation {
                                            Stmt thenStmt,
                                            IRandom generator,
                                            ShadingLanguageVersion shadingLanguageVersion,
-                                    GenerationParams generationParams) {
+                                           GenerationParams generationParams) {
     return new IfStmt(
         new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
             .makeDeadCondition(

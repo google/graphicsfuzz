@@ -42,7 +42,7 @@ import com.graphicsfuzz.common.typing.TyperHelper;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
-import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
+import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.util.Constants;

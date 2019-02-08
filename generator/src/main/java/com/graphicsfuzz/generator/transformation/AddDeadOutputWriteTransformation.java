@@ -17,7 +17,6 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.semanticspreserving.AddDeadOutputWriteMutation;
@@ -31,9 +30,10 @@ public class AddDeadOutputWriteTransformation implements ITransformation {
   public static final String NAME = "add_dead_output_write";
 
   @Override
-  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-        ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
-      GenerationParams generationParams) {
+  public boolean apply(TranslationUnit tu,
+                       TransformationProbabilities probabilities,
+                       IRandom generator,
+                       GenerationParams generationParams) {
 
     List<AddDeadOutputWriteMutation> mutations = new AddDeadOutputWriteMutationFinder(tu,
         generator, generationParams)

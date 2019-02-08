@@ -58,9 +58,6 @@ public final class Util {
       throws IOException, InterruptedException, ParseTimeoutException, GlslParserException {
     final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShader);
 
-    // TODO: having to plug in the version here feels like a hack.  But this is due to the
-    // version not being present in the shaders in the repo, which means that the can be
-    // used for testing with multiple future versions.  There is a trade-off here to be revisited.
     for (TranslationUnit tu : shaderJob.getShaders()) {
       assert !tu.hasShadingLanguageVersion();
       tu.setShadingLanguageVersion(shadingLanguageVersion);

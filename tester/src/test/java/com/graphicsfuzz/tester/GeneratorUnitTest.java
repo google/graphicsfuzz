@@ -38,8 +38,8 @@ import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
 import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
-import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
-import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
+import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
+import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
@@ -138,7 +138,7 @@ public class GeneratorUnitTest {
 
   @Test
   public void testDonateDeadCode() throws Exception {
-    testTransformationMultiVersions(() -> new DonateDeadCode(
+    testTransformationMultiVersions(() -> new DonateDeadCodeTransformation(
         TransformationProbabilities.likelyDonateDeadCode()::donateDeadCodeAtStmt,
         Util.createDonorsFolder(temporaryFolder),
         GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
@@ -147,7 +147,7 @@ public class GeneratorUnitTest {
 
   @Test
   public void testDonateLiveCode() throws Exception {
-    testTransformationMultiVersions(() -> new DonateLiveCode(
+    testTransformationMultiVersions(() -> new DonateLiveCodeTransformation(
         TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
         Util.createDonorsFolder(temporaryFolder),
         GenerationParams.normal(ShaderKind.FRAGMENT, true),
@@ -215,14 +215,14 @@ public class GeneratorUnitTest {
         skipRender = (reverseBlacklist != blacklist.contains(originalShaderJobFile.getName()));
       }
       final File referenceImage = Util.renderShader(
-          ShadingLanguageVersion.ESSL_100, // The references are all in ESSL 1.00 format
+          ShadingLanguageVersion.ESSL_100,
           originalShaderJobFile,
           temporaryFolder,
           fileOps);
       generateAndCheckVariant(transformationsList,
           probabilities,
           suffix,
-          originalShaderJobFile, shadingLanguageVersion,
+          originalShaderJobFile,
           referenceImage,
           skipRender);
     }
@@ -277,7 +277,6 @@ public class GeneratorUnitTest {
 
   private void generateAndCheckVariant(List<ITransformation> transformations,
       TransformationProbabilities probabilities, String suffix, File originalShaderJobFile,
-      ShadingLanguageVersion shadingLanguageVersion,
       File referenceImage,
       boolean skipRender)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
@@ -286,20 +285,20 @@ public class GeneratorUnitTest {
     assertEquals(ShaderKind.FRAGMENT, shaderJob.getShaders().get(0).getShaderKind());
     final TranslationUnit tu = shaderJob.getShaders().get(0);
 
-    if (!shadingLanguageVersion.supportedGlFragColor()) {
+    if (!tu.getShadingLanguageVersion().supportedGlFragColor()) {
       AvoidDeprecatedGlFragColor.avoidDeprecatedGlFragColor(shaderJob.getShaders().get(0),
           Constants.GLF_COLOR);
     }
     final RandomWrapper generator = new RandomWrapper(originalShaderJobFile.getName().hashCode());
     for (ITransformation transformation : transformations) {
-      transformation.apply(tu, probabilities, shadingLanguageVersion,
+      transformation.apply(tu, probabilities,
           generator,
           GenerationParams.normal(ShaderKind.FRAGMENT, true));
     }
     Generate.addInjectionSwitchIfNotPresent(tu);
     Generate.setInjectionSwitch(shaderJob.getUniformsInfo());
     Generate.randomiseUnsetUniforms(tu, shaderJob.getUniformsInfo(), generator);
-    tu.setShadingLanguageVersion(shadingLanguageVersion);
+    tu.setShadingLanguageVersion(tu.getShadingLanguageVersion());
 
     // Using fileOps, even though the rest of the code here does not use it yet.
     // Write shaders to shader job file and validate.

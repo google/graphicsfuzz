@@ -92,7 +92,7 @@ public class DonationContextFinder extends StandardVisitor {
     super.visitForStmt(forStmt);
   }
 
-  DonationContext getDonationContext() {
+  public DonationContext getDonationContext() {
     final Stmt donorFragment = donorFragments.get(generator.nextInt(donorFragments.size()));
     final FreeVariablesCollector fvCollector = new FreeVariablesCollector(donor, donorFragment);
     final AvailableStructsCollector asCollector =

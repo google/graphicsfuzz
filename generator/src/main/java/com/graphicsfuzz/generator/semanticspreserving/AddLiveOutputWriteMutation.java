@@ -32,7 +32,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
-import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
+import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;

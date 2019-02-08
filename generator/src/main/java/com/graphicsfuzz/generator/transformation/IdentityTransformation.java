@@ -17,7 +17,6 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.semanticspreserving.IdentityMutation;
 import com.graphicsfuzz.generator.semanticspreserving.IdentityMutationFinder;
@@ -30,9 +29,10 @@ public class IdentityTransformation implements ITransformation {
   public static final String NAME = "identity";
 
   @Override
-  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-        ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
-        GenerationParams generationParams) {
+  public boolean apply(TranslationUnit tu,
+                       TransformationProbabilities probabilities,
+                       IRandom generator,
+                       GenerationParams generationParams) {
     List<IdentityMutation> mutationPoints = new IdentityMutationFinder(
         tu, generator, generationParams).findMutations(probabilities::mutatePoint, generator);
     mutationPoints.forEach(IdentityMutation::apply);

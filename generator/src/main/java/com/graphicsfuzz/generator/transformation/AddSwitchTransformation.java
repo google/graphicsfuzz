@@ -17,7 +17,6 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
@@ -37,9 +36,10 @@ public class AddSwitchTransformation implements ITransformation {
   }
 
   @Override
-  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-      ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
-      GenerationParams generationParams) {
+  public boolean apply(TranslationUnit tu,
+                       TransformationProbabilities probabilities,
+                       IRandom generator,
+                       GenerationParams generationParams) {
     final List<AddSwitchMutation> mutations =
         new AddSwitchMutationFinder(tu, generator, generationParams, idGenerator.freshId())
             .findMutations(probabilities::switchify, generator);

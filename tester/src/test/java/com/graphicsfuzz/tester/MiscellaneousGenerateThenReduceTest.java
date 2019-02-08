@@ -68,7 +68,6 @@ public class MiscellaneousGenerateThenReduceTest {
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
     new AddWrappingConditionalTransformation().apply(tu,
         TransformationProbabilities.onlyWrap(),
-        shadingLanguageVersion,
         new SameValueRandom(false, 0),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
 

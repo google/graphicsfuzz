@@ -40,6 +40,7 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.injection.BlockInjectionPoint;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -61,8 +62,8 @@ public class DonateLiveCodeTest {
   @Test
   public void prepareStatementToDonate() throws Exception {
 
-    final DonateLiveCode dlc =
-        new DonateLiveCode(IRandom::nextBoolean, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT, true),
+    final DonateLiveCodeTransformation dlc =
+        new DonateLiveCodeTransformation(IRandom::nextBoolean, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT, true),
             false);
 
     DonationContext dc = new DonationContext(new DiscardStmt(), new HashMap<>(),
@@ -98,8 +99,8 @@ public class DonateLiveCodeTest {
 
     for (int i = 0; i < 10; i++) {
 
-      final DonateLiveCode donateLiveCode =
-            new DonateLiveCode(item -> true, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT, true),
+      final DonateLiveCodeTransformation donateLiveCode =
+            new DonateLiveCodeTransformation(item -> true, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT, true),
                   false);
 
       final TranslationUnit referenceTu = ParseHelper.parse(reference);
@@ -172,7 +173,6 @@ public class DonateLiveCodeTest {
             new IdentityTransformation();
 
       identityTransformation.apply(referenceTu, TransformationProbabilities.onlyMutateExpressions(),
-            ShadingLanguageVersion.ESSL_300,
             generator,
             GenerationParams.large(ShaderKind.FRAGMENT, true)
       );

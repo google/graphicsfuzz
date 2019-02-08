@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation;
+package com.graphicsfuzz.generator.fuzzer;
 
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -37,6 +37,7 @@ import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.SideEffectChecker;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
+import com.graphicsfuzz.generator.transformation.ExpressionIdentity;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;

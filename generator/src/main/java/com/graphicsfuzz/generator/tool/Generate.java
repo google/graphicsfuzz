@@ -42,14 +42,14 @@ import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
 import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddSwitchTransformation;
 import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
+import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
+import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
-import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
-import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
 import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
@@ -418,7 +418,7 @@ public class Generate {
       ITransformation transformation = transformations.remove(generator.nextInt(
           transformations.size()));
       result += transformation.getName() + "\n";
-      if (transformation.apply(reference, probabilities, reference.getShadingLanguageVersion(),
+      if (transformation.apply(reference, probabilities,
           generator.spawnChild(),
           generationParams)) {
         // Keep the size down by stripping unused stuff.
@@ -482,7 +482,7 @@ public class Generate {
       if ((transformations.isEmpty() && numTransformationsApplied == 0)
           || decideToApplyTransformation(generator, numTransformationsApplied)) {
         result += transformation.getName() + "\n";
-        transformation.apply(reference, probabilities, reference.getShadingLanguageVersion(),
+        transformation.apply(reference, probabilities,
             generator.spawnChild(),
             generationParams);
         numTransformationsApplied++;
@@ -499,14 +499,16 @@ public class Generate {
     List<ITransformation> result = new ArrayList<>();
     final EnabledTransformations flags = args.getEnabledTransformations();
     if (flags.isEnabledDead()) {
-      result.add(new DonateDeadCode(probabilities::donateDeadCodeAtStmt, args.getDonorsFolder(),
+      result.add(new DonateDeadCodeTransformation(probabilities::donateDeadCodeAtStmt,
+          args.getDonorsFolder(),
           generationParams));
     }
     if (flags.isEnabledJump()) {
       result.add(new AddJumpTransformation());
     }
     if (flags.isEnabledLive()) {
-      result.add(new DonateLiveCode(probabilities::donateLiveCodeAtStmt, args.getDonorsFolder(),
+      result.add(new DonateLiveCodeTransformation(probabilities::donateLiveCodeAtStmt,
+          args.getDonorsFolder(),
           generationParams, args.getAllowLongLoops()));
     }
     if (flags.isEnabledMutate()) {
@@ -568,7 +570,7 @@ public class Generate {
       ITransformation transformation = transformations
           .get(generator.nextInt(transformations.size()));
       transformation
-          .apply(reference, probabilities, reference.getShadingLanguageVersion(),
+          .apply(reference, probabilities,
               generator, generationParams);
       result += transformation.getName() + "\n";
     }

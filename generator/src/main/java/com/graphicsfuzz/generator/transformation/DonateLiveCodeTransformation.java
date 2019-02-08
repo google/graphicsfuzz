@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.donation;
+package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
@@ -29,6 +29,7 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.TruncateLoops;
+import com.graphicsfuzz.generator.transformation.donation.DonationContext;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
@@ -42,20 +43,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-public class DonateLiveCode extends DonateCode {
+public class DonateLiveCodeTransformation extends DonateCodeTransformation {
 
   public static final String NAME = "donate_live_code";
 
   private final boolean allowLongLoops;
 
-  public DonateLiveCode(Function<IRandom, Boolean> probabilityOfDonation, File donorsDirectory,
-                        GenerationParams generationParams, boolean allowLongLoops) {
+  public DonateLiveCodeTransformation(Function<IRandom, Boolean> probabilityOfDonation,
+                                      File donorsDirectory,
+                                      GenerationParams generationParams,
+                                      boolean allowLongLoops) {
     super(probabilityOfDonation, donorsDirectory, generationParams);
     this.allowLongLoops = allowLongLoops;
   }
 
   @Override
-  Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
+  public Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
                                 DonationContext donationContext,
                                 TransformationProbabilities probabilities,
                                 IRandom generator, ShadingLanguageVersion shadingLanguageVersion) {

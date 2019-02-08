@@ -21,14 +21,14 @@ import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
 import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddSwitchTransformation;
 import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
+import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
+import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
-import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
-import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -45,9 +45,9 @@ public class EnabledTransformations {
 
   public static List<Class<? extends ITransformation>> allTransformations() {
     return Arrays.asList(
-        DonateDeadCode.class,
+        DonateDeadCodeTransformation.class,
         AddJumpTransformation.class,
-        DonateLiveCode.class,
+        DonateLiveCodeTransformation.class,
         IdentityTransformation.class,
         OutlineStatementsTransformation.class,
         SplitForLoopTransformation.class,
@@ -69,12 +69,12 @@ public class EnabledTransformations {
 
   private static Class<? extends ITransformation> nameToClass(String name) {
     switch (name) {
-      case DonateDeadCode.NAME:
-        return DonateDeadCode.class;
+      case DonateDeadCodeTransformation.NAME:
+        return DonateDeadCodeTransformation.class;
       case AddJumpTransformation.NAME:
         return AddJumpTransformation.class;
-      case DonateLiveCode.NAME:
-        return DonateLiveCode.class;
+      case DonateLiveCodeTransformation.NAME:
+        return DonateLiveCodeTransformation.class;
       case IdentityTransformation.NAME:
         return IdentityTransformation.class;
       case OutlineStatementsTransformation.NAME:
@@ -104,7 +104,7 @@ public class EnabledTransformations {
   }
 
   public boolean isEnabledDead() {
-    return isEnabled(DonateDeadCode.class);
+    return isEnabled(DonateDeadCodeTransformation.class);
   }
 
   public boolean isEnabledJump() {
@@ -112,7 +112,7 @@ public class EnabledTransformations {
   }
 
   public boolean isEnabledLive() {
-    return isEnabled(DonateLiveCode.class);
+    return isEnabled(DonateLiveCodeTransformation.class);
   }
 
   public boolean isEnabledMutate() {

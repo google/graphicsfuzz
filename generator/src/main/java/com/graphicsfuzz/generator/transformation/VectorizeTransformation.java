@@ -17,7 +17,6 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutation;
 import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutationFinder;
@@ -30,9 +29,10 @@ public class VectorizeTransformation implements ITransformation {
   public static final String NAME = "vectorize";
 
   @Override
-  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-      ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
-      GenerationParams generationParams) {
+  public boolean apply(TranslationUnit tu,
+                       TransformationProbabilities probabilities,
+                       IRandom generator,
+                       GenerationParams generationParams) {
     List<VectorizeMutation> vectorizationOpportunities =
           new VectorizeMutationFinder(tu, generator)
                 .findMutations(probabilities::vectorizeStmts, generator);

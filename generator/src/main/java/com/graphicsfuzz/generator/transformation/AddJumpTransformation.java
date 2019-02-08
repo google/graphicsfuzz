@@ -31,9 +31,10 @@ public class AddJumpTransformation implements ITransformation {
   public static final String NAME = "add_jump";
 
   @Override
-  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-        ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
-      GenerationParams generationParams) {
+  public boolean apply(TranslationUnit tu,
+                       TransformationProbabilities probabilities,
+                       IRandom generator,
+                       GenerationParams generationParams) {
 
     final List<AddJumpMutation> mutations =
         new AddJumpMutationFinder(tu, generator, generationParams)

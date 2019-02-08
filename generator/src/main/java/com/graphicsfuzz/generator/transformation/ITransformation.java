@@ -17,7 +17,6 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
@@ -28,14 +27,14 @@ public interface ITransformation {
    * Transforms the given translation unit.
    * @param tu Translation unit to be transformed
    * @param probabilities Probabilities to guide transformation
-   * @param shadingLanguageVersion GLSL version
    * @param generator Random number generator
    * @param generationParams Parameters to guide transformation
    * @return true if and only if some transformation was made
    */
-  boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-        ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
-        GenerationParams generationParams);
+  boolean apply(TranslationUnit tu,
+                TransformationProbabilities probabilities,
+                IRandom generator,
+                GenerationParams generationParams);
 
   String getName();
 

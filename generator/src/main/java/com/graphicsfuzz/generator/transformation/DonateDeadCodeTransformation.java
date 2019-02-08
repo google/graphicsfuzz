@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.donation;
+package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
@@ -34,7 +34,8 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
-import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
+import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
+import com.graphicsfuzz.generator.transformation.donation.DonationContext;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
@@ -51,12 +52,13 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class DonateDeadCode extends DonateCode {
+public class DonateDeadCodeTransformation extends DonateCodeTransformation {
 
   public static final String NAME = "donate_dead_code";
 
-  public DonateDeadCode(Function<IRandom, Boolean> probabilityOfDonation, File donorsDirectory,
-                        GenerationParams generationParams) {
+  public DonateDeadCodeTransformation(Function<IRandom, Boolean> probabilityOfDonation,
+                                      File donorsDirectory,
+                                      GenerationParams generationParams) {
     super(probabilityOfDonation, donorsDirectory, generationParams);
   }
 

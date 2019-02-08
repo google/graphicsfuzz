@@ -147,19 +147,20 @@ public class SplitForLoopsTest {
 
   @Test
   public void testSplitShouldBePossible() throws Exception {
-    final String program = "void main() { for(int i = 0; i < 10; i++) { } }";
+    final String program = "#version 100\nvoid main() { for(int i = 0; i < 10; i++) { } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, countForLoops(tu));
-    new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(), ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
+    new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(), new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
     assertEquals(2, countForLoops(tu));
   }
 
   @Test
   public void testSplitShouldNotBePossible() throws Exception {
-    final String program = "void main() { for(int i = 0; i < 10; i++) { if(true) break; } }";
+    final String program = "#version 100\nvoid main() { for(int i = 0; i < 10; i++) { if(true) "
+        + "break; } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, countForLoops(tu));
-    new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(), ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
+    new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(), new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
     assertEquals(1, countForLoops(tu));
   }
 

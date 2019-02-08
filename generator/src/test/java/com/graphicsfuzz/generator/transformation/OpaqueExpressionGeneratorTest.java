@@ -40,6 +40,7 @@ import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
+import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;

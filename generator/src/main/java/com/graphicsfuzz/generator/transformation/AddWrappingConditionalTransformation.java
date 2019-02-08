@@ -17,44 +17,13 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
-import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
-import com.graphicsfuzz.common.ast.expr.BinOp;
-import com.graphicsfuzz.common.ast.expr.BinaryExpr;
-import com.graphicsfuzz.common.ast.expr.Expr;
-import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
-import com.graphicsfuzz.common.ast.expr.UnOp;
-import com.graphicsfuzz.common.ast.expr.UnaryExpr;
-import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
-import com.graphicsfuzz.common.ast.stmt.BlockStmt;
-import com.graphicsfuzz.common.ast.stmt.CaseLabel;
-import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
-import com.graphicsfuzz.common.ast.stmt.DoStmt;
-import com.graphicsfuzz.common.ast.stmt.ForStmt;
-import com.graphicsfuzz.common.ast.stmt.IfStmt;
-import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
-import com.graphicsfuzz.common.util.ContainsTopLevelContinue;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
-import com.graphicsfuzz.generator.fuzzer.Fuzzer;
-import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.semanticspreserving.AddWrappingConditionalMutation;
 import com.graphicsfuzz.generator.semanticspreserving.AddWrappingConditionalMutationFinder;
-import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
-import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
-import com.graphicsfuzz.generator.transformation.injection.IfInjectionPoint;
-import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
-import com.graphicsfuzz.util.Constants;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class AddWrappingConditionalTransformation implements ITransformation {
@@ -64,9 +33,10 @@ public class AddWrappingConditionalTransformation implements ITransformation {
   private final IdGenerator idGenerator = new IdGenerator();
 
   @Override
-  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-        ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
-      GenerationParams generationParams) {
+  public boolean apply(TranslationUnit tu,
+                       TransformationProbabilities probabilities,
+                       IRandom generator,
+                       GenerationParams generationParams) {
 
     final List<AddWrappingConditionalMutation> mutations =
         new AddWrappingConditionalMutationFinder(tu, generator, generationParams, idGenerator)

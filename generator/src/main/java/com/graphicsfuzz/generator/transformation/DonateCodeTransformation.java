@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.donation;
+package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.AstUtil;
 import com.graphicsfuzz.common.ast.IAstNode;
@@ -53,8 +53,11 @@ import com.graphicsfuzz.common.util.StructUtils;
 import com.graphicsfuzz.generator.fuzzer.FuzzedIntoACornerException;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
-import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
+import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
+import com.graphicsfuzz.generator.transformation.donation.DonationContext;
+import com.graphicsfuzz.generator.transformation.donation.DonationContextFinder;
+import com.graphicsfuzz.generator.transformation.donation.IncompatibleDonorException;
+import com.graphicsfuzz.generator.transformation.donation.MakeArrayAccessesInBounds;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -72,7 +75,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public abstract class DonateCode implements ITransformation {
+public abstract class DonateCodeTransformation implements ITransformation {
 
   final Function<IRandom, Boolean> probabilityOfDonation;
 
@@ -84,8 +87,8 @@ public abstract class DonateCode implements ITransformation {
   final GenerationParams generationParams;
   private int translationUnitCount;
 
-  public DonateCode(Function<IRandom, Boolean> probabilityOfDonation,
-        File donorsDirectory, GenerationParams generationParams) {
+  public DonateCodeTransformation(Function<IRandom, Boolean> probabilityOfDonation,
+                                  File donorsDirectory, GenerationParams generationParams) {
     this.probabilityOfDonation = probabilityOfDonation;
     this.donorsToTranslationUnits = new HashMap<>();
     this.functionPrototypes = new ArrayList<>();
@@ -115,11 +118,11 @@ public abstract class DonateCode implements ITransformation {
     addPrefixes(tu, getDeclaredFunctionNames(tu));
     // Add prefixed versions of these builtins, in case they are used
     tu.addDeclaration(new VariablesDeclaration(
-          BasicType.VEC4,
-          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
+        BasicType.VEC4,
+        new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
     tu.addDeclaration(new VariablesDeclaration(
-          BasicType.VEC4,
-          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
+        BasicType.VEC4,
+        new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
     adaptTranslationUnitForSpecificDonation(tu, generator);
     translationUnitCount++;
     return tu;
@@ -186,17 +189,20 @@ public abstract class DonateCode implements ITransformation {
 
 
   abstract Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
-        DonationContext donationContext, TransformationProbabilities probabilities,
-        IRandom generator, ShadingLanguageVersion shadingLanguageVersion);
+                                         DonationContext donationContext,
+                                         TransformationProbabilities probabilities,
+                                         IRandom generator,
+                                         ShadingLanguageVersion shadingLanguageVersion);
 
   private Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
-        TransformationProbabilities probabilities, IRandom generator,
-        ShadingLanguageVersion shadingLanguageVersion) {
+                                        TransformationProbabilities probabilities,
+                                        IRandom generator,
+                                        ShadingLanguageVersion shadingLanguageVersion) {
     final int maxTries = 10;
     int tries = 0;
     while (true) {
       DonationContext donationContext = new DonationContextFinder(chooseDonor(generator), generator)
-            .getDonationContext();
+          .getDonationContext();
       if (incompatible(injectionPoint, donationContext, shadingLanguageVersion)) {
         tries++;
         if (tries == maxTries) {
@@ -204,16 +210,17 @@ public abstract class DonateCode implements ITransformation {
         }
       } else {
         return prepareStatementToDonate(injectionPoint, donationContext, probabilities,
-              generator,
+            generator,
             shadingLanguageVersion);
       }
     }
   }
 
   @Override
-  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-        ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
-      GenerationParams generationParams) {
+  public boolean apply(TranslationUnit tu,
+                       TransformationProbabilities probabilities,
+                       IRandom generator,
+                       GenerationParams generationParams) {
 
     if (donorFiles.isEmpty()) {
       return false;
@@ -224,19 +231,19 @@ public abstract class DonateCode implements ITransformation {
     structNames.addAll(getStructNamesFromShader(tu));
 
     List<IInjectionPoint> injectionPoints = new InjectionPoints(tu, generator, x -> true)
-          .getInjectionPoints(probabilityOfDonation);
+        .getInjectionPoints(probabilityOfDonation);
 
     final List<Stmt> injectedStmts = new ArrayList<>();
 
     for (IInjectionPoint injectionPoint : injectionPoints) {
       final Stmt injectedStmt = prepareStatementToDonate(injectionPoint, probabilities,
-            generator, shadingLanguageVersion);
+          generator, tu.getShadingLanguageVersion());
       injectionPoint.inject(injectedStmt);
       injectedStmts.add(injectedStmt);
     }
     donateFunctionsAndGlobals(tu);
     eliminateUsedDonors();
-    makeInjectedArrayAccessesInBounds(tu, injectedStmts, shadingLanguageVersion);
+    makeInjectedArrayAccessesInBounds(tu, injectedStmts, tu.getShadingLanguageVersion());
 
     return !injectionPoints.isEmpty();
 
@@ -252,8 +259,8 @@ public abstract class DonateCode implements ITransformation {
   }
 
   private void makeInjectedArrayAccessesInBounds(TranslationUnit tu,
-        List<Stmt> injectedStmts,
-        ShadingLanguageVersion shadingLanguageVersion) {
+                                                 List<Stmt> injectedStmts,
+                                                 ShadingLanguageVersion shadingLanguageVersion) {
     Typer typer = new Typer(tu, shadingLanguageVersion);
     for (Stmt stmt : injectedStmts) {
       MakeArrayAccessesInBounds.makeInBounds(stmt, typer);
@@ -261,7 +268,7 @@ public abstract class DonateCode implements ITransformation {
   }
 
   private boolean incompatible(IInjectionPoint injectionPoint, DonationContext donationContext,
-        ShadingLanguageVersion shadingLanguageVersion) {
+                               ShadingLanguageVersion shadingLanguageVersion) {
     // It is a problem if the injection point has an available variable that has the same name
     // as a function called from the donation context
     if (injectionPoint.scopeAtInjectionPoint().namesOfAllVariablesInScope().stream().anyMatch(
@@ -309,13 +316,13 @@ public abstract class DonateCode implements ITransformation {
       }
 
       return new ScalarInitializer(
-            new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
-                  .fuzzedConstructor(
-                        new Fuzzer(new FuzzingContext(scopeForFuzzing),
-                            shadingLanguageVersion,
-                              generator,
-                              generationParams)
-                              .fuzzExpr(type, false, restrictToConst, 0)));
+          new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
+              .fuzzedConstructor(
+                  new Fuzzer(new FuzzingContext(scopeForFuzzing),
+                      shadingLanguageVersion,
+                      generator,
+                      generationParams)
+                      .fuzzExpr(type, false, restrictToConst, 0)));
     } catch (FuzzedIntoACornerException exception) {
       if (isConst) {
         // We need to give up, since we have to initialize const variables.
@@ -351,13 +358,13 @@ public abstract class DonateCode implements ITransformation {
       }
       if (d instanceof VariablesDeclaration) {
         List<VariableDeclInfo> declInfo = ((VariablesDeclaration) d).getDeclInfos().stream()
-              .filter(vd -> !recipientGlobalNames.contains(vd.getName()))
-              .collect(Collectors.toList());
+            .filter(vd -> !recipientGlobalNames.contains(vd.getName()))
+            .collect(Collectors.toList());
         // It either contains a name not already used in the reference, or declares structs
         // which the donated code may need.
         if (declInfo.size() > 0 || !StructUtils.getStructDefinitions(d).isEmpty()) {
           declarationsToAdd
-                .add(new VariablesDeclaration(((VariablesDeclaration) d).getBaseType(), declInfo));
+              .add(new VariablesDeclaration(((VariablesDeclaration) d).getBaseType(), declInfo));
         }
       }
     }
@@ -369,16 +376,16 @@ public abstract class DonateCode implements ITransformation {
     // We record the number of precision qualifiers in the recipient so that we can check that it
     // is not changed by donation.
     final long numPrecisionDeclarationsBeforeDonation = recipient.getTopLevelDeclarations()
-          .stream()
-          .filter(item -> item instanceof PrecisionDeclaration)
-          .count();
+        .stream()
+        .filter(item -> item instanceof PrecisionDeclaration)
+        .count();
 
     List<Declaration> newRecipientTopLevelDeclarations = recipient.getTopLevelDeclarations()
-          .stream()
-          .filter(d -> !(d instanceof FunctionDefinition)).collect(Collectors.toList());
+        .stream()
+        .filter(d -> !(d instanceof FunctionDefinition)).collect(Collectors.toList());
 
     List<FunctionPrototype> recipientFunctionPrototypes = AstUtil
-          .getFunctionPrototypesFromShader(recipient);
+        .getFunctionPrototypesFromShader(recipient);
     Set<String> recipientGlobalNames = getVariableNames(recipient.getTopLevelDeclarations());
 
     for (TranslationUnit donor : donorFiles
@@ -387,8 +394,8 @@ public abstract class DonateCode implements ITransformation {
         .map(item -> donorsToTranslationUnits.get(item))
         .collect(Collectors.toList())) {
       final List<Declaration> newDeclarations = getNecessaryFunctionsAndGlobalsFromDonor(donor,
-            recipientFunctionPrototypes,
-            recipientGlobalNames);
+          recipientFunctionPrototypes,
+          recipientGlobalNames);
       checkNoDuplicateStructNames(newDeclarations, newRecipientTopLevelDeclarations);
       newRecipientTopLevelDeclarations.addAll(newDeclarations);
       recipientFunctionPrototypes.addAll(AstUtil.getPrototypesForAllFunctions(newDeclarations));
@@ -396,10 +403,10 @@ public abstract class DonateCode implements ITransformation {
     }
 
     newRecipientTopLevelDeclarations.addAll(recipient.getTopLevelDeclarations().stream()
-          .filter(d -> d instanceof FunctionDefinition).collect(Collectors.toList()));
+        .filter(d -> d instanceof FunctionDefinition).collect(Collectors.toList()));
 
     newRecipientTopLevelDeclarations = addNecessaryForwardDeclarations(
-          newRecipientTopLevelDeclarations);
+        newRecipientTopLevelDeclarations);
 
     recipient.setTopLevelDeclarations(newRecipientTopLevelDeclarations);
 
@@ -416,7 +423,7 @@ public abstract class DonateCode implements ITransformation {
   }
 
   private void checkNoDuplicateStructNames(List<Declaration> toBeAdded,
-        List<Declaration> existing) {
+                                           List<Declaration> existing) {
     List<String> existingStructNames = getStructNames(existing);
     for (String name : getStructNames(toBeAdded)) {
       assert !existingStructNames.contains(name);
@@ -449,7 +456,7 @@ public abstract class DonateCode implements ITransformation {
       functionsDefinedAfterDecl.get(i).addAll(functionsDefinedAfterDecl.get(i + 1));
       if (decls.get(i + 1) instanceof FunctionDefinition) {
         functionsDefinedAfterDecl.get(i)
-              .add(((FunctionDefinition) decls.get(i + 1)).getPrototype());
+            .add(((FunctionDefinition) decls.get(i + 1)).getPrototype());
       }
     }
 
@@ -457,13 +464,13 @@ public abstract class DonateCode implements ITransformation {
       if (decls.get(i) instanceof FunctionDefinition) {
 
         Set<String> calledFunctionNames =
-              getCalledFunctions(decls.get(i));
+            getCalledFunctions(decls.get(i));
 
         Set<FunctionPrototype> toDeclare =
-              functionsDefinedAfterDecl.get(i).stream().filter(item ->
-                    calledFunctionNames.contains(item.getName())).filter(item ->
-                    !declared.stream().anyMatch(alreadyDeclared -> alreadyDeclared.matches(item)))
-                    .collect(Collectors.toSet());
+            functionsDefinedAfterDecl.get(i).stream().filter(item ->
+                calledFunctionNames.contains(item.getName())).filter(item ->
+                !declared.stream().anyMatch(alreadyDeclared -> alreadyDeclared.matches(item)))
+                .collect(Collectors.toSet());
         result.addAll(toDeclare);
         declared.addAll(toDeclare);
       }
@@ -532,8 +539,8 @@ public abstract class DonateCode implements ITransformation {
    */
   private Set<String> getVariableNames(List<Declaration> declarations) {
     Set<VariablesDeclaration> variablesDeclarations = declarations.stream()
-          .filter(x -> x instanceof VariablesDeclaration)
-          .map(x -> (VariablesDeclaration) x).collect(Collectors.toSet());
+        .filter(x -> x instanceof VariablesDeclaration)
+        .map(x -> (VariablesDeclaration) x).collect(Collectors.toSet());
     Set<String> names = new HashSet<>();
     for (VariablesDeclaration decls : variablesDeclarations) {
       names.addAll(decls.getDeclInfos().stream().map(x -> x.getName()).collect(Collectors.toSet()));
@@ -542,9 +549,9 @@ public abstract class DonateCode implements ITransformation {
   }
 
   private boolean needToAddDonorFunction(FunctionPrototype fromDonor,
-        List<FunctionPrototype> recipientFunctionPrototypes) {
+                                         List<FunctionPrototype> recipientFunctionPrototypes) {
     if (fromDonor.getName().equals("main") || prototypeMatches(fromDonor,
-          recipientFunctionPrototypes)) {
+        recipientFunctionPrototypes)) {
       return false;
     }
     if (prototypeClashes(fromDonor, recipientFunctionPrototypes)) {
@@ -569,7 +576,7 @@ public abstract class DonateCode implements ITransformation {
       File donorFile = donorFiles.get(index);
       try {
         if (donorsToTranslationUnits.keySet().size() >= generationParams.getMaxDonors()
-              && !donorsToTranslationUnits.containsKey(donorFile)) {
+            && !donorsToTranslationUnits.containsKey(donorFile)) {
           // We have reached the donor limit; try again until we find a donor that we've
           // already used
           throw new IncompatibleDonorException();
@@ -585,7 +592,7 @@ public abstract class DonateCode implements ITransformation {
   }
 
   private TranslationUnit getDonorTranslationUnit(File donorFile, IRandom generator)
-        throws IncompatibleDonorException {
+      throws IncompatibleDonorException {
     if (!donorsToTranslationUnits.containsKey(donorFile)) {
       try {
         TranslationUnit donor = prepareTranslationUnit(donorFile, generator);
@@ -606,13 +613,13 @@ public abstract class DonateCode implements ITransformation {
 
   private boolean compatibleDonor(TranslationUnit donor) {
     List<String> usedFunctionNames = functionPrototypes.stream().map(item -> item.getName())
-          .collect(Collectors.toList());
+        .collect(Collectors.toList());
     Set<String> usedGlobalVariableNames = globalVariables.keySet();
     Set<String> usedStructNames = structNames;
 
     for (FunctionPrototype donorPrototype : AstUtil.getFunctionPrototypesFromShader(donor)) {
       if (usedGlobalVariableNames.contains(donorPrototype.getName())
-            || usedStructNames.contains(donorPrototype.getName())) {
+          || usedStructNames.contains(donorPrototype.getName())) {
         return false;
       }
       if (functionPrototypes.stream().anyMatch(item -> item.clashes(donorPrototype))) {
@@ -633,7 +640,7 @@ public abstract class DonateCode implements ITransformation {
     }
     for (String name : getStructNamesFromShader(donor)) {
       if (usedFunctionNames.contains(name) || usedGlobalVariableNames.contains(name)
-            || usedStructNames.contains(name)) {
+          || usedStructNames.contains(name)) {
         return false;
       }
     }
@@ -643,8 +650,8 @@ public abstract class DonateCode implements ITransformation {
   Type dropQualifiersThatCannotBeUsedForLocalVariable(Type type) {
     if (type instanceof ArrayType) {
       return new ArrayType(
-            dropQualifiersThatCannotBeUsedForLocalVariable(((ArrayType) type).getBaseType()),
-            ((ArrayType) type).getArrayInfo());
+          dropQualifiersThatCannotBeUsedForLocalVariable(((ArrayType) type).getBaseType()),
+          ((ArrayType) type).getArrayInfo());
     }
 
     if (!(type instanceof QualifiedType)) {

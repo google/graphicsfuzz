@@ -38,11 +38,11 @@ public class AddWrappingConditionalStmtsTest {
 
   @Test
   public void testIfProblems() throws Exception {
-    final String prog = "int x; void main() { if(true) x++; }";
+    final String prog = "#version 130\nint x; void main() { if(true) x++; }";
     TranslationUnit tu = ParseHelper.parse(prog);
 
     new AddWrappingConditionalTransformation().apply(tu, TransformationProbabilities.onlyWrap(),
-        ShadingLanguageVersion.GLSL_130, new CannedRandom(0, 0, 0, 0, 0,
+        new CannedRandom(0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
     checkStructuralProperties(tu);

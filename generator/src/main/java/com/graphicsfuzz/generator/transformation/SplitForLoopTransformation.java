@@ -17,37 +17,13 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
-import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
-import com.graphicsfuzz.common.ast.expr.BinOp;
-import com.graphicsfuzz.common.ast.expr.BinaryExpr;
-import com.graphicsfuzz.common.ast.expr.Expr;
-import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
-import com.graphicsfuzz.common.ast.expr.UnaryExpr;
-import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
-import com.graphicsfuzz.common.ast.stmt.BlockStmt;
-import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
-import com.graphicsfuzz.common.ast.stmt.ForStmt;
-import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.transformreduce.ReplaceLoopCounter;
-import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.semanticspreserving.SplitForLoopMutation;
 import com.graphicsfuzz.generator.semanticspreserving.SplitForLoopMutationFinder;
-import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
-import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
-import com.graphicsfuzz.util.Constants;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 public class SplitForLoopTransformation implements ITransformation {
 
@@ -55,9 +31,10 @@ public class SplitForLoopTransformation implements ITransformation {
   private final IdGenerator idGenerator = new IdGenerator();
 
   @Override
-  public boolean apply(TranslationUnit tu, TransformationProbabilities probabilities,
-      ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
-      GenerationParams generationParams) {
+  public boolean apply(TranslationUnit tu,
+                       TransformationProbabilities probabilities,
+                       IRandom generator,
+                       GenerationParams generationParams) {
     List<SplitForLoopMutation> splitForLoopMutations =
         new SplitForLoopMutationFinder(tu, generator, idGenerator)
             .findMutations(probabilities::splitLoops, generator);

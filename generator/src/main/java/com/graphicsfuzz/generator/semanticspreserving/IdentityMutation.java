@@ -25,8 +25,8 @@ import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
+import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
-import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.util.GenerationParams;
 
 public final class IdentityMutation implements Mutation {
@@ -64,14 +64,14 @@ public final class IdentityMutation implements Mutation {
   @Override
   public final void apply() {
     Type typeToMutate =
-          (type instanceof QualifiedType) ? ((QualifiedType) type).getTargetType() : type;
+        (type instanceof QualifiedType) ? ((QualifiedType) type).getTargetType() : type;
     if (BasicType.allScalarTypes().contains(typeToMutate) || BasicType.allVectorTypes()
-          .contains(typeToMutate)) {
+        .contains(typeToMutate)) {
       // For now, restrict mutation to scalar and vector types.
       // TODO: add support for mutation of matrix types
       parent.setChild(indexOfChildToMutate,
-            new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
-                  .applyIdentityFunction(
+          new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
+              .applyIdentityFunction(
                   parent.getChild(indexOfChildToMutate), (BasicType) typeToMutate, constContext,
                   0,
                   new Fuzzer(new FuzzingContext(scope), shadingLanguageVersion, generator,

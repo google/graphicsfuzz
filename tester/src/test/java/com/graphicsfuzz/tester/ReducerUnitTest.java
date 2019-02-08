@@ -48,8 +48,8 @@ import com.graphicsfuzz.generator.transformation.AddDeadOutputWriteTransformatio
 import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
 import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
-import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
-import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
+import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
+import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -154,7 +154,7 @@ public class ReducerUnitTest {
       final TranslationUnit tu = ParseHelper.parse(fragmentShader);
       for (int i = 0; i < 4; i++) {
         getTransformation(transformationsCopy, generator).apply(
-            tu, TransformationProbabilities.DEFAULT_PROBABILITIES, shadingLanguageVersion,
+            tu, TransformationProbabilities.DEFAULT_PROBABILITIES,
             generator, GenerationParams.normal(ShaderKind.FRAGMENT, true));
       }
       File tempFile = temporaryFolder.newFile();
@@ -186,11 +186,11 @@ public class ReducerUnitTest {
     result.add(() -> new IdentityTransformation());
     result.add(() -> new OutlineStatementsTransformation(new IdGenerator()));
     result.add(() -> new SplitForLoopTransformation());
-    result.add(() -> new DonateDeadCode(
+    result.add(() -> new DonateDeadCodeTransformation(
             TransformationProbabilities.DEFAULT_PROBABILITIES::donateDeadCodeAtStmt,
             Util.createDonorsFolder(temporaryFolder),
             GenerationParams.normal(ShaderKind.FRAGMENT, true)));
-    result.add(() -> new DonateLiveCode(
+    result.add(() -> new DonateLiveCodeTransformation(
             TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
             Util.createDonorsFolder(temporaryFolder),
             GenerationParams.normal(ShaderKind.FRAGMENT, true),
