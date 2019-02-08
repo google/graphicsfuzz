@@ -16,16 +16,6 @@
  * limitations under the License.
  */
 
-#ifdef GL_ES
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float;
-precision highp int;
-#else
-precision mediump float;
-precision mediump int;
-#endif
-#endif
-
 #ifndef REDUCER
 #define _GLF_ZERO(X, Y)          (Y)
 #define _GLF_ONE(X, Y)           (Y)
@@ -41,6 +31,9 @@ precision mediump int;
 #endif
 
 // END OF GENERATED HEADER
+
+precision highp float;
+precision highp int;
 
 float f(float a) {
   return 0.0;

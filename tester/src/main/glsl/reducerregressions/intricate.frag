@@ -17,10 +17,6 @@
  * limitations under the License.
  */
 
-#ifdef GL_ES
-precision mediump float;
-#endif
-
 #ifndef REDUCER
 #define _GLF_ZERO(X, Y)          (Y)
 #define _GLF_ONE(X, Y)           (Y)
@@ -35,6 +31,8 @@ precision mediump float;
 #endif
 
 // END OF GENERATED HEADER
+
+precision mediump float;
 
 const vec2 injectionSwitch = vec2(0.0, 1.0);
 
