@@ -19,12 +19,11 @@ package com.graphicsfuzz.generator.transformation.controlflow;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.semanticspreserving.AddSwitchMutation;
 import com.graphicsfuzz.generator.semanticspreserving.AddSwitchMutationFinder;
 import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
-import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.util.List;
@@ -32,10 +31,10 @@ import java.util.List;
 public class AddSwitchStmts implements ITransformation {
 
   public static final String NAME = "add_switch_stmts";
-  private int applicationId;
+  private final IdGenerator idGenerator;
 
   public AddSwitchStmts() {
-    applicationId = 0;
+    idGenerator = new IdGenerator();
   }
 
   @Override
@@ -43,10 +42,9 @@ public class AddSwitchStmts implements ITransformation {
       ShadingLanguageVersion shadingLanguageVersion, IRandom generator,
       GenerationParams generationParams) {
     final List<AddSwitchMutation> mutations =
-        new AddSwitchMutationFinder(tu, generator, generationParams, applicationId)
+        new AddSwitchMutationFinder(tu, generator, generationParams, idGenerator.freshId())
             .findMutations(probabilities::switchify, generator);
     mutations.forEach(Mutation::apply);
-    applicationId++;
     return !mutations.isEmpty();
   }
 

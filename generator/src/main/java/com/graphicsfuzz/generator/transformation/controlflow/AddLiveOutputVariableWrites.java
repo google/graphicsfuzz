@@ -33,6 +33,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
+import com.graphicsfuzz.generator.semanticspreserving.AddWrappingConditionalMutation;
 import com.graphicsfuzz.generator.transformation.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
@@ -94,7 +95,7 @@ public class AddLiveOutputVariableWrites extends AddOutputVariableWrites {
     OpaqueExpressionGenerator opaqueExpressionGenerator = new OpaqueExpressionGenerator(generator,
           generationParams, shadingLanguageVersion);
 
-    stmts.add(new IfStmt(AddWrappingConditionalStmts.makeWrappedIfCondition(
+    stmts.add(new IfStmt(AddWrappingConditionalMutation.makeWrappedIfCondition(
           opaqueExpressionGenerator.makeOpaqueBoolean(true,
                 BasicType.BOOL, false, 0, fuzzer), true),
           new BlockStmt(
