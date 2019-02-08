@@ -292,7 +292,7 @@ def run_replace_shader(params: Params, capture_id: str, shader_handle: str, shad
 def fuzz_trace(p: Params):
     # Shadowing p here so that you can copy and paste these into an ipython 3 shell.
 
-    run_gapis_async(p)
+    # run_gapis_async(p)
 
     # We should find a better way to load the capture;
     # getting a screenshot is unnecessarily heavy.
@@ -320,15 +320,15 @@ $ gapidfuzz ' p.just_frag=False; p.donors="shaders/corpus"; p.gapis=None; '
 
 Ensure you have:
 - a recent version of gapid master
-- gapis and gapit on PATH (add gapid/bazel-bin/pkg to PATH)
-- killed any previous gapis instance using port 40000 (gapis will not be killed for you)
+- gapit on PATH (add gapid/bazel-bin/pkg to PATH)
+- gapis running on port 40000
 - a 'donors/' directory (in current directory)
 - a 'capture.gfxtrace' OpenGL trace file (in current directory)
 
-This script works from within the source tree or from the release zip.
+This script can be run from the source tree or from the release zip.
 
 However, more fine-grained use is available via ipython3.
-You must be in drivers/ or use PYTHONPATH=/path/to/python/drivers
+You must be in drivers/ or use export PYTHONPATH=/path/to/python/drivers
 
 $ ipython3
 from gapidfuzz import *
