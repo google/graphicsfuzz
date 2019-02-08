@@ -321,7 +321,10 @@ $ gapidfuzz ' p.just_frag=False; p.donors="shaders/corpus"; p.gapis=None; '
 Ensure you have:
 - a recent version of gapid master
 - gapit on PATH (add gapid/bazel-bin/pkg to PATH)
-- gapis running on port 40000
+- gapis running on port 40000 and with local file access enabled. You can start it with this command:
+    gapis -enable-local-files -persist -rpc localhost:40000
+  and kill it later with:
+    killall -6 gapis
 - a 'donors/' directory (in current directory)
 - a 'capture.gfxtrace' OpenGL trace file (in current directory)
 
