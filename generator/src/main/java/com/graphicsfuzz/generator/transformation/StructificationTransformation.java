@@ -28,7 +28,6 @@ import java.util.List;
 public class StructificationTransformation implements ITransformation {
 
   public static final String NAME = "structification";
-  private IdGenerator idGenerator = new IdGenerator();
 
   @Override
   public boolean apply(TranslationUnit tu,
