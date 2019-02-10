@@ -180,7 +180,7 @@ public class Mutate {
         // TODO(243): if Mutate is called successively on a shader, we may end up with clashes
         // due to outlined functions having the same name.  Consider having available ids
         // computed based on what the shader already contains.
-        () -> new OutlineStatementMutationFinder(tu, idGenerator),
+        () -> new OutlineStatementMutationFinder(tu),
         () -> new SplitForLoopMutationFinder(tu, random, idGenerator),
         () -> new StructificationMutationFinder(tu, random, generationParams),
         () -> new VectorizeMutationFinder(tu, random)

@@ -520,7 +520,7 @@ public class Generate {
       result.add(new IdentityTransformation());
     }
     if (flags.isEnabledOutline()) {
-      result.add(new OutlineStatementTransformation(new IdGenerator()));
+      result.add(new OutlineStatementTransformation());
     }
     if (flags.isEnabledSplit()) {
       result.add(new SplitForLoopTransformation());
@@ -566,7 +566,7 @@ public class Generate {
     String result = "";
     List<ITransformation> transformations = new ArrayList<>();
     transformations.add(new AddJumpTransformation());
-    transformations.add(new OutlineStatementTransformation(new IdGenerator()));
+    transformations.add(new OutlineStatementTransformation());
     transformations.add(new AddWrappingConditionalTransformation());
     transformations.add(new AddSwitchTransformation());
     transformations.add(new AddDeadOutputWriteTransformation());

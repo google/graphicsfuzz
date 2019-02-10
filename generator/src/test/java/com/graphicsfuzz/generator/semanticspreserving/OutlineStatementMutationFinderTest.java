@@ -53,9 +53,8 @@ public class OutlineStatementMutationFinderTest {
         + "  gl_FragColor = vec4(0.0);" // Counts
         + "}";
     TranslationUnit tu = ParseHelper.parse(program);
-    IdGenerator idGenerator = new IdGenerator();
     List<OutlineStatementMutation> opportunities =
-        new OutlineStatementMutationFinder(tu, idGenerator).findMutations();
+        new OutlineStatementMutationFinder(tu).findMutations();
     assertEquals(5, opportunities.size());
 
     // Check that we can apply them without throwing and exception.
@@ -81,7 +80,7 @@ public class OutlineStatementMutationFinderTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
     List<OutlineStatementMutation> ops =
-        new OutlineStatementMutationFinder(tu, new IdGenerator()).findMutations();
+        new OutlineStatementMutationFinder(tu).findMutations();
     assertEquals(1, ops.size());
     ops.get(0).apply();
 

@@ -180,7 +180,7 @@ public class ReducerUnitTest {
     List<ITransformationSupplier> result = new ArrayList<>();
     result.add(() -> new AddJumpTransformation());
     result.add(() -> new IdentityTransformation());
-    result.add(() -> new OutlineStatementTransformation(new IdGenerator()));
+    result.add(() -> new OutlineStatementTransformation());
     result.add(() -> new SplitForLoopTransformation());
     result.add(() -> new DonateDeadCodeTransformation(
             TransformationProbabilities.DEFAULT_PROBABILITIES::donateDeadCodeAtStmt,

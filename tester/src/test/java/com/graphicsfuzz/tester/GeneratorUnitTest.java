@@ -122,7 +122,7 @@ public class GeneratorUnitTest {
 
   @Test
   public void testOutlineStatements() throws Exception {
-    testTransformationMultiVersions(() -> new OutlineStatementTransformation(new IdGenerator()),
+    testTransformationMultiVersions(() -> new OutlineStatementTransformation(),
         TransformationProbabilities.onlyOutlineStatements(),
         "outline.frag");
   }

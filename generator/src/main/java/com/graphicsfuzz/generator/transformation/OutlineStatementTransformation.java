@@ -28,11 +28,6 @@ import java.util.List;
 public class OutlineStatementTransformation implements ITransformation {
 
   public static final String NAME = "outline_statement";
-  private final IdGenerator idGenerator;
-
-  public OutlineStatementTransformation(IdGenerator idGenerator) {
-    this.idGenerator = idGenerator;
-  }
 
   @Override
   public boolean apply(TranslationUnit tu,
@@ -40,7 +35,7 @@ public class OutlineStatementTransformation implements ITransformation {
                        IRandom generator,
                        GenerationParams generationParams) {
     List<OutlineStatementMutation> outlineStatementOpportunities =
-          new OutlineStatementMutationFinder(tu, idGenerator)
+          new OutlineStatementMutationFinder(tu)
               .findMutations(probabilities::outlineStatements, generator);
     for (OutlineStatementMutation op : outlineStatementOpportunities) {
       op.apply();
