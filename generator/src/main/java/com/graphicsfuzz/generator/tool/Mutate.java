@@ -152,6 +152,9 @@ public class Mutate {
     int tries = 0;
     final GenerationParams generationParams = GenerationParams.normal(tu.getShaderKind(),
         true);
+    // TODO(243): if Mutate is called successively on a shader, we may end up with clashes
+    // due to each invocation of Mutate using a new IdGenerator.
+    // We should guard against this problem.
     final IdGenerator idGenerator = new IdGenerator();
     final List<Supplier<MutationFinder<?>>> mutationFinders = Arrays.asList(
 
@@ -177,11 +180,8 @@ public class Mutate {
         () -> new AddWrappingConditionalMutationFinder(tu, random, generationParams,
             idGenerator),
         () -> new IdentityMutationFinder(tu, random, generationParams),
-        // TODO(243): if Mutate is called successively on a shader, we may end up with clashes
-        // due to outlined functions having the same name.  Consider having available ids
-        // computed based on what the shader already contains.
         () -> new OutlineStatementMutationFinder(tu),
-        () -> new SplitForLoopMutationFinder(tu, random, idGenerator),
+        () -> new SplitForLoopMutationFinder(tu, random),
         () -> new StructificationMutationFinder(tu, random, generationParams),
         () -> new VectorizeMutationFinder(tu, random)
     );

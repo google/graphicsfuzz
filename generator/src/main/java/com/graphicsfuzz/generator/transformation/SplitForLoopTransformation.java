@@ -18,7 +18,6 @@ package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.semanticspreserving.SplitForLoopMutation;
 import com.graphicsfuzz.generator.semanticspreserving.SplitForLoopMutationFinder;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -28,7 +27,6 @@ import java.util.List;
 public class SplitForLoopTransformation implements ITransformation {
 
   public static final String NAME = "split_for_loop";
-  private final IdGenerator idGenerator = new IdGenerator();
 
   @Override
   public boolean apply(TranslationUnit tu,
@@ -36,7 +34,7 @@ public class SplitForLoopTransformation implements ITransformation {
                        IRandom generator,
                        GenerationParams generationParams) {
     List<SplitForLoopMutation> splitForLoopMutations =
-        new SplitForLoopMutationFinder(tu, generator, idGenerator)
+        new SplitForLoopMutationFinder(tu, generator)
             .findMutations(probabilities::splitLoops, generator);
     for (SplitForLoopMutation mutation : splitForLoopMutations) {
       mutation.apply();
