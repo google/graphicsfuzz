@@ -18,17 +18,13 @@ package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
-import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import java.io.File;
 import java.util.Optional;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -40,26 +36,27 @@ public class StructificationMutationFinderTest {
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  @Ignore // TODO(243)
   @Test
   public void testApplyRepeatedly() throws Exception {
     // Checks that applying structification a few times does not lead to an invalid shader.
+    final int limit = 4;
     final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
-    final TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
-        + "precision highp float;"
-        + "void main() {"
-        + "  int x;"
-        + "  int y;"
-        + "  int z;"
-        + "  x = 2;"
-        + "  y = 3;"
-        + "  z = 4;"
-        + "}");
+    StringBuilder program = new StringBuilder("#version 300 es\n"
+        + "precision highp float;\n"
+        + "void main() {\n");
+    for (int i = 0; i < limit; i++) {
+      program.append("  int x" + i + ";\n");
+    }
+    for (int i = 0; i < limit; i++) {
+      program.append("  x" + i + " = 0;\n");
+    }
+    program.append("}\n");
+    final TranslationUnit tu = ParseHelper.parse(program.toString());
 
-    // Check that structifying twice, with no memory in-between (other than the AST itself),
+    // Check that structifying many times, with no memory in-between (other than the AST itself),
     // leads to valid shaders.
-    for (int i = 0; i < 2; i++) {
-      new StructificationMutationFinder(tu, new IdGenerator(), new RandomWrapper(0),
+    for (int i = 0; i < limit; i++) {
+      new StructificationMutationFinder(tu, new RandomWrapper(i),
           GenerationParams.normal(tu.getShaderKind(), true))
           .findMutations()
           .get(0).apply();

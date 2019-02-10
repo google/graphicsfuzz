@@ -38,7 +38,6 @@ public class StructificationTransformation implements ITransformation {
 
     final List<StructificationMutation> structificationOpportunities =
           new StructificationMutationFinder(tu,
-              idGenerator,
               generator,
               generationParams)
                 .findMutations(probabilities::structify, generator);

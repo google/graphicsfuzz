@@ -151,9 +151,9 @@ public class StructificationMutation implements Mutation {
 
     generatedStructs.stream().map(VariablesDeclaration::new).forEach(tu::addDeclaration);
 
-    final String enclosingStructVariableName = Constants.GLF_STRUCT_REPLACEMENT
-          + idGenerator.freshId();
     final StructDefinitionType enclosingStruct = generatedStructs.get(0);
+    final String enclosingStructVariableName = Constants.GLF_STRUCT_REPLACEMENT
+          + getIdFromGeneratedStructName(enclosingStruct.getStructNameType());
 
     Expr structifiedExpr = insertFieldIntoStruct(
           enclosingStructVariableName, enclosingStruct, generator);
@@ -163,6 +163,10 @@ public class StructificationMutation implements Mutation {
     // Then rename the variable at its declaration site.
     structifyDeclaration(enclosingStructVariableName, enclosingStruct);
 
+  }
+
+  static String getIdFromGeneratedStructName(StructNameType structNameType) {
+    return structNameType.getName().substring(Constants.STRUCTIFICATION_STRUCT_PREFIX.length());
   }
 
   private void structifyDeclaration(String enclosingStructVariableName,

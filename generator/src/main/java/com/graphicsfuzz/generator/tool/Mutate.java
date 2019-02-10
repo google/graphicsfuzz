@@ -182,7 +182,7 @@ public class Mutate {
         // computed based on what the shader already contains.
         () -> new OutlineStatementMutationFinder(tu, idGenerator),
         () -> new SplitForLoopMutationFinder(tu, random, idGenerator),
-        () -> new StructificationMutationFinder(tu, idGenerator, random, generationParams),
+        () -> new StructificationMutationFinder(tu, random, generationParams),
         () -> new VectorizeMutationFinder(tu, random)
     );
 
