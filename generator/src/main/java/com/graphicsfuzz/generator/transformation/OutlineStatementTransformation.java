@@ -25,12 +25,12 @@ import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.util.List;
 
-public class OutlineStatementsTransformation implements ITransformation {
+public class OutlineStatementTransformation implements ITransformation {
 
-  public static final String NAME = "outline_statements";
+  public static final String NAME = "outline_statement";
   private final IdGenerator idGenerator;
 
-  public OutlineStatementsTransformation(IdGenerator idGenerator) {
+  public OutlineStatementTransformation(IdGenerator idGenerator) {
     this.idGenerator = idGenerator;
   }
 

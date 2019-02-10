@@ -47,7 +47,7 @@ import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
 import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
-import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
+import com.graphicsfuzz.generator.transformation.OutlineStatementTransformation;
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
@@ -520,7 +520,7 @@ public class Generate {
       result.add(new IdentityTransformation());
     }
     if (flags.isEnabledOutline()) {
-      result.add(new OutlineStatementsTransformation(new IdGenerator()));
+      result.add(new OutlineStatementTransformation(new IdGenerator()));
     }
     if (flags.isEnabledSplit()) {
       result.add(new SplitForLoopTransformation());
@@ -566,7 +566,7 @@ public class Generate {
     String result = "";
     List<ITransformation> transformations = new ArrayList<>();
     transformations.add(new AddJumpTransformation());
-    transformations.add(new OutlineStatementsTransformation(new IdGenerator()));
+    transformations.add(new OutlineStatementTransformation(new IdGenerator()));
     transformations.add(new AddWrappingConditionalTransformation());
     transformations.add(new AddSwitchTransformation());
     transformations.add(new AddDeadOutputWriteTransformation());
