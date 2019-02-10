@@ -30,8 +30,6 @@ public class AddWrappingConditionalTransformation implements ITransformation {
 
   public static final String NAME = "add_wrapping_conditional";
 
-  private final IdGenerator idGenerator = new IdGenerator();
-
   @Override
   public boolean apply(TranslationUnit tu,
                        TransformationProbabilities probabilities,
@@ -39,7 +37,7 @@ public class AddWrappingConditionalTransformation implements ITransformation {
                        GenerationParams generationParams) {
 
     final List<AddWrappingConditionalMutation> mutations =
-        new AddWrappingConditionalMutationFinder(tu, generator, generationParams, idGenerator)
+        new AddWrappingConditionalMutationFinder(tu, generator, generationParams)
             .findMutations(probabilities::wrapStmtInConditional, generator);
     mutations.forEach(Mutation::apply);
     return !mutations.isEmpty();

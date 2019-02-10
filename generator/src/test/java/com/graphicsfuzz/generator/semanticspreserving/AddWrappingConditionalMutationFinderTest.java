@@ -22,6 +22,7 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.generator.util.GenerationParams;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
@@ -31,22 +32,22 @@ import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.*;
 
-public class SplitForLoopMutationFinderTest {
+public class AddWrappingConditionalMutationFinderTest {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Test
   public void testApplyRepeatedly() throws Exception {
-    // Checks that splitting for loops a few times does not lead to an invalid shader.
-    final int limit = 4;
+    // Checks that applying conditional wrapping several times does not lead to an invalid shader.
+    final int limit = 8;
     final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
     StringBuilder program = new StringBuilder("#version 300 es\n"
         + "precision highp float;\n"
         + "void main() {\n"
         + "  int g = 0;\n");
     for (int i = 0; i < limit; i++) {
-      program.append("  for (int x = 0; x < 100; x++) { g += 1; }\n");
+      program.append("  g++;\n");
     }
     program.append("}\n");
     final TranslationUnit tu = ParseHelper.parse(program.toString());
@@ -54,8 +55,10 @@ public class SplitForLoopMutationFinderTest {
     // Check that splitting loops many times, with no memory in-between (other than
     // the AST itself), leads to valid shaders.
     for (int i = 0; i < limit; i++) {
-      final List<SplitForLoopMutation> mutations = new SplitForLoopMutationFinder(tu,
-          new RandomWrapper(i))
+      final List<AddWrappingConditionalMutation> mutations =
+          new AddWrappingConditionalMutationFinder(tu,
+              new RandomWrapper(i),
+              GenerationParams.normal(tu.getShaderKind(), false))
           .findMutations();
       mutations.get(0).apply();
       if (mutations.size() > 1) {
