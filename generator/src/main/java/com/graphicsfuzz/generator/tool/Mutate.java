@@ -151,10 +151,6 @@ public class Mutate {
     int tries = 0;
     final GenerationParams generationParams = GenerationParams.normal(tu.getShaderKind(),
         true);
-    // TODO(243): if Mutate is called successively on a shader, we may end up with clashes
-    // due to each invocation of Mutate using a new IdGenerator.
-    // We should guard against this problem.
-    final IdGenerator idGenerator = new IdGenerator();
     final List<Supplier<MutationFinder<?>>> mutationFinders = Arrays.asList(
 
         // Semantics-changing mutations, in alphabetical order:
@@ -175,7 +171,7 @@ public class Mutate {
         () -> new AddDeadOutputWriteMutationFinder(tu, random, generationParams),
         () -> new AddJumpMutationFinder(tu, random, generationParams),
         () -> new AddLiveOutputWriteMutationFinder(tu, random, generationParams),
-        () -> new AddSwitchMutationFinder(tu, random, generationParams, idGenerator.freshId()),
+        () -> new AddSwitchMutationFinder(tu, random, generationParams),
         () -> new AddWrappingConditionalMutationFinder(tu, random, generationParams),
         () -> new IdentityMutationFinder(tu, random, generationParams),
         () -> new OutlineStatementMutationFinder(tu),

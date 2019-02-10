@@ -32,6 +32,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
@@ -50,18 +51,18 @@ public class AddSwitchMutation implements Mutation {
   private final IRandom random;
   private final GenerationParams generationParams;
   private final ShadingLanguageVersion shadingLanguageVersion;
-  private final int applicationId;
+  private final IdGenerator idGenerator;
 
   public AddSwitchMutation(IInjectionPoint injectionPoint,
                            IRandom random,
                            GenerationParams generationParams,
                            ShadingLanguageVersion shadingLanguageVersion,
-                           int applicationId) {
+                           IdGenerator idGenerator) {
     this.injectionPoint = injectionPoint;
     this.random = random;
     this.generationParams = generationParams;
     this.shadingLanguageVersion = shadingLanguageVersion;
-    this.applicationId = applicationId;
+    this.idGenerator = idGenerator;
   }
 
   @Override
@@ -135,7 +136,7 @@ public class AddSwitchMutation implements Mutation {
         shadingLanguageVersion,
         generator,
         generationParams,
-        "GLFswitch" + applicationId);
+        Constants.GLF_SWITCH + "_" + idGenerator.freshId());
 
     List<Integer> usedLabels = new ArrayList<>();
     List<Stmt> switchBodyStmts = generateUnreachableSwitchContent(casesBefore,

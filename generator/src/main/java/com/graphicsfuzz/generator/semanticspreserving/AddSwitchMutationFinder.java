@@ -17,17 +17,49 @@
 package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.util.GenerationParams;
+import com.graphicsfuzz.util.Constants;
+import java.util.HashSet;
+import java.util.Set;
 
 public class AddSwitchMutationFinder extends InjectionPointMutationFinder<AddSwitchMutation> {
 
   public AddSwitchMutationFinder(TranslationUnit tu, IRandom random,
-                                 GenerationParams generationParams, int applicationId) {
+                                 GenerationParams generationParams) {
     super(tu, random, AddSwitchMutation::suitableForSwitchInjection,
         item -> new AddSwitchMutation(item, random, generationParams,
             tu.getShadingLanguageVersion(),
-            applicationId));
+            new IdGenerator(getIdsAlreadyUsedForAddingSwitches(tu))));
+  }
+
+  private static Set<Integer> getIdsAlreadyUsedForAddingSwitches(TranslationUnit tu) {
+    final Set<Integer> result = new HashSet<>();
+    new StandardVisitor() {
+
+      @Override
+      public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
+        super.visitVariableDeclInfo(variableDeclInfo);
+        final String prefix = Constants.GLF_SWITCH + "_";
+        if (variableDeclInfo.getName().startsWith(prefix)) {
+          // Name has the form 'prefix|digits' - grab the digits.
+          StringBuilder intId = new StringBuilder();
+          int index = prefix.length();
+          while (Character.isDigit(variableDeclInfo.getName().charAt(index))) {
+            intId.append(variableDeclInfo.getName().charAt(index));
+            index++;
+          }
+          result.add(new Integer(intId.toString()));
+        }
+      }
+
+    }.visit(tu);
+    return result;
   }
 
 }

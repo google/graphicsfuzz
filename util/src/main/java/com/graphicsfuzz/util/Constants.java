@@ -44,6 +44,7 @@ public final class Constants {
   public static final String GLF_WRAPPED_IF_FALSE = "_GLF_WRAPPED_IF_FALSE";
   public static final String GLF_IDENTITY = "_GLF_IDENTITY";
   public static final String GLF_SWITCH = "_GLF_SWITCH";
+
   public static final String INJECTED_LOOP_COUNTER = "_injected_loop_counter";
 
   public static final String INJECTION_SWITCH = "injectionSwitch";
