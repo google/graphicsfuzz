@@ -18,10 +18,11 @@ package com.graphicsfuzz.generator.semanticschanging;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import java.util.function.Supplier;
 
 public class Stmt2StmtMutation extends Node2NodeMutation<Stmt> {
 
-  public Stmt2StmtMutation(IAstNode parent, Stmt original, Stmt replacement) {
+  public Stmt2StmtMutation(IAstNode parent, Stmt original, Supplier<Stmt> replacement) {
     super(parent, original, replacement);
   }
 

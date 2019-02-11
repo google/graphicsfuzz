@@ -18,15 +18,24 @@ package com.graphicsfuzz.generator.semanticschanging;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
+import java.util.function.Supplier;
 
 public abstract class Node2NodeMutation<NodeT extends IAstNode>
       implements Mutation {
 
   private final IAstNode parent;
   private final NodeT original;
-  private final NodeT replacement;
+  private final Supplier<NodeT> replacement;
 
-  protected Node2NodeMutation(IAstNode parent, NodeT original, NodeT replacement) {
+  /**
+   * Represents the opportunity to replace the original child of a node with a new child.  The new
+   * child is produced lazily via a Supplier, so that it need not be computed unless the mutation
+   * is actually applied.
+   * @param parent Parent of the node to be changed.
+   * @param original The node to be changed.
+   * @param replacement A supplier for the replacement node.
+   */
+  protected Node2NodeMutation(IAstNode parent, NodeT original, Supplier<NodeT> replacement) {
     this.parent = parent;
     this.original = original;
     this.replacement = replacement;
@@ -34,7 +43,7 @@ public abstract class Node2NodeMutation<NodeT extends IAstNode>
 
   @Override
   public final void apply() {
-    parent.replaceChild(original, replacement);
+    parent.replaceChild(original, replacement.get());
   }
 
 }

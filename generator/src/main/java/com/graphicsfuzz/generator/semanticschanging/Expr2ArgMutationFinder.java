@@ -45,7 +45,7 @@ public class Expr2ArgMutationFinder extends Expr2ExprMutationFinder {
       addMutation(new Expr2ExprMutation(
             parentMap.getParent(parent),
             parent,
-            parent.getChild(childIndex)));
+          () -> parent.getChild(childIndex)));
     }
   }
 

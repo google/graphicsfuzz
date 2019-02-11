@@ -57,6 +57,7 @@ public class SwapVariableIdentifiersMutationFinder extends Expr2ExprMutationFind
     addMutation(new Expr2ExprMutation(
         parentMap.getParent(variableIdentifierExpr),
         variableIdentifierExpr,
+        () ->
         new VariableIdentifierExpr(
             candidateVariables.get(generator.nextInt(candidateVariables.size())))));
   }

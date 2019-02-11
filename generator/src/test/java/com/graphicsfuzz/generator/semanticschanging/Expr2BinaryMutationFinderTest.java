@@ -16,12 +16,20 @@
 
 package com.graphicsfuzz.generator.semanticschanging;
 
+import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
 
 public class Expr2BinaryMutationFinderTest {
 
@@ -53,7 +61,7 @@ public class Expr2BinaryMutationFinderTest {
         + "  int cnt = 0, z;"
         + "  for(int i = 0; i < 100; i++) {"
         + "    cnt++;"
-        + "    (z += (2 + foo(5)) * (2 + foo(5))) * (z += 2 + foo(5));"
+        + "    (z += (2 + foo(5)) * (2 + foo(5))) * (z += (2 + foo(5)) * (2 + foo(5)));"
         + "  }"
         + "}";
 

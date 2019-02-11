@@ -39,7 +39,7 @@ public class Expr2LiteralMutationFinder extends Expr2ExprMutationFinder {
     if (typer.lookupType(expr) != null) {
       new LiteralFuzzer(generator).fuzz(typer.lookupType(expr).getWithoutQualifiers())
             .ifPresent(item -> addMutation(
-                  new Expr2ExprMutation(parentMap.getParent(expr), expr, item)));
+                  new Expr2ExprMutation(parentMap.getParent(expr), expr, () -> item)));
     }
   }
 

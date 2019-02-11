@@ -89,7 +89,7 @@ public class Expr2ArrayAccessMutationFinder extends Expr2ExprMutationFinder {
     ArrayIndexExpr arrayIndexExpr = new ArrayIndexExpr(new VariableIdentifierExpr(arrayName),
           index);
     addMutation(new Expr2ExprMutation(parentMap.getParent(expr), expr,
-          arrayIndexExpr));
+        () -> arrayIndexExpr));
   }
 
 }

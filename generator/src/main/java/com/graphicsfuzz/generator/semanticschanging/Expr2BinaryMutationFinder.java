@@ -61,7 +61,8 @@ public class Expr2BinaryMutationFinder extends Expr2ExprMutationFinder {
     }
 
     addMutation(new Expr2ExprMutation(parentMap.getParent(expr),
-        expr, new BinaryExpr(new ParenExpr(expr), new ParenExpr(expr.clone()), operator.get())));
+        expr, () -> new BinaryExpr(new ParenExpr(expr), new ParenExpr(expr.clone()),
+        operator.get())));
   }
 
   private Optional<BinOp> chooseBinOp(Type type) {

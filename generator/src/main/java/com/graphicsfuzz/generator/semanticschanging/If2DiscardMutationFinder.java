@@ -34,12 +34,12 @@ public class If2DiscardMutationFinder extends MutationFinderBase<Stmt2StmtMutati
   @Override
   public void visitIfStmt(IfStmt ifStmt) {
     super.visitIfStmt(ifStmt);
-    addMutation(new Stmt2StmtMutation(ifStmt, ifStmt.getThenStmt(), new DiscardStmt()));
+    addMutation(new Stmt2StmtMutation(ifStmt, ifStmt.getThenStmt(), () -> new DiscardStmt()));
     if (ifStmt.hasElseStmt()) {
-      addMutation(new Stmt2StmtMutation(ifStmt, ifStmt.getElseStmt(), new DiscardStmt()));
+      addMutation(new Stmt2StmtMutation(ifStmt, ifStmt.getElseStmt(), () -> new DiscardStmt()));
     } else {
       addMutation(new Stmt2StmtMutation(parentMap.getParent(ifStmt), ifStmt,
-          new IfStmt(ifStmt.getCondition(), ifStmt.getThenStmt(), new DiscardStmt())));
+          () -> new IfStmt(ifStmt.getCondition(), ifStmt.getThenStmt(), new DiscardStmt())));
     }
   }
 
