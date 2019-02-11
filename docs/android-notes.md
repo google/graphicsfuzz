@@ -6,6 +6,8 @@ The Android SDK is needed for building and developing the OpenGL worker
 The Android SDK and NDK are needed for building and developing the Vulkan worker
 (vulkan-worker).
 
+See the [developer documentation](glsl-fuzz-develop.md) on how to build the workers.
+
 ## Installing the Android SDK and NDK
 
 You can download and install the Android SDK
