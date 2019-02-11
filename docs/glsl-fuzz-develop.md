@@ -1,7 +1,7 @@
 # GraphicsFuzz: developer documentation
 
 The developer documentation describes how to build the projects
-from the command line, as well as 
+from the command line, as well as
 [opening and building from IntelliJ IDEA](#opening-and-building-from-intellij-idea).
 
 ## Build from command line
@@ -122,7 +122,7 @@ The resulting binary is here: `vulkan-worker/build/install/vkworker`.
 
 The last step (install) is optional, in which case the binary can be found here: `vulkan-worker/build/vkworker`.
 
-## Build the OpenGL worker (gles-worker)
+### Build the OpenGL worker (gles-worker)
 
 First, you must build the gles-worker-dependencies project using Maven:
 
@@ -185,6 +185,38 @@ cd gles-worker/
 # run on simulator
 ./gradlew ios:launchIPhoneSimulator
 ```
+
+## Vulkan worker developer documentation
+
+The Vulkan worker enables to run spirv shaders on Linux and Android. Its source
+code can be found under `vulkan-worker`.
+
+### Source code layout
+
+All platform-agnostic code is under: `vulkan-worker/src/common/`
+
+The few platform-specifics are defined in:
+ - Linux: `vulkan-worker/src/linux/platform.{h,cc}`
+ - Android: `vulkan-worker/src/android/src/main/cpp/platform.{h,cc}`
+
+The actual entry points can be found in:
+ - Linux: `vulkan-worker/src/linux/main.cc`
+ - Android: `vulkan-worker/src/android/src/main/cpp/main.cc`
+
+### Code style
+
+The [Google style for C++](https://google.github.io/styleguide/cppguide.html) is used.
+
+We try to avoid `#ifdef` for platform-specific code. All platform-specifics are
+isolated in separate directories, and the relevant platform directory is used by
+the build system at build time.
+
+### Third party sources
+
+We are relying on, and grateful to, the following open-source projects:
+ - cJSON: https://github.com/DaveGamble/cJSON
+ - lodepng: https://github.com/lvandeve/lodepng
+ - gflags: https://github.com/gflags/gflags
 
 ## Opening and building from IntelliJ IDEA
 
@@ -368,4 +400,3 @@ the command is actually a Python script that will queue additional commands,
 then it should typically be set to `localhost:internal_port` (usually
 `localhost:8080`) so that the Python script can queue commands to the server
 that launched the Python script.
-
