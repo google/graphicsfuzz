@@ -46,10 +46,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacpp.opencv_core.Mat;
@@ -115,7 +118,7 @@ public class GeneratorUnitTest {
   }
 
   @Test
-  public void testMutateExpressions() throws Exception {
+  public void testIdentity() throws Exception {
     testTransformationMultiVersions(() -> new IdentityTransformation(), TransformationProbabilities
         .onlyMutateExpressions(), "mutate.frag");
   }
@@ -194,6 +197,27 @@ public class GeneratorUnitTest {
         "wrap.frag",
         Arrays.asList("colorgrid_modulo.json", "prefix_sum.json"),
         Arrays.asList("colorgrid_modulo.json", "prefix_sum.json"));
+  }
+
+  @Test
+  public void testIdentityNotNot() throws Exception {
+    // Designed to give the expr -> !!expr many chances to apply.
+
+    String shader = "#version 300 es\n"
+        + "precision highp float;\n"
+        + "layout(location = 0) out vec4 _GLF_color;\n"
+        + "void main() {"
+        + "_GLF_color = vec4(0.0, 0.0, 0.0, 1.0);";
+    for (int i = 0; i < 10; i++) {
+      shader += "if ((true)) ";
+    }
+    shader += "_GLF_color = vec4(1.0, 0.0, 1.0, 1.0);";
+    shader += "}\n";
+    testTransformationForSpecificShader(
+        Collections.singletonList(() -> new IdentityTransformation()),
+        TransformationProbabilities.onlyMutateExpressions(),
+        "mutate.frag",
+        shader);
   }
 
   private void testTransformation(List<ITransformationSupplier> transformations,
@@ -320,5 +344,18 @@ public class GeneratorUnitTest {
     }
 
   }
+
+  private void testTransformationForSpecificShader(List<ITransformationSupplier> transformations,
+                                                   TransformationProbabilities probabilities,
+                                                   String suffix, String shader)
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
+    final File referenceFrag = new File(temporaryFolder.getRoot(), "shader.frag");
+    final File referenceJson = new File(temporaryFolder.getRoot(), "shader.json");
+    FileUtils.writeStringToFile(referenceFrag, shader, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(referenceJson, "{}", StandardCharsets.UTF_8);
+    testTransformation(transformations, probabilities, suffix, Collections.emptyList(),
+        new File[] { referenceJson });
+  }
+
 
 }
