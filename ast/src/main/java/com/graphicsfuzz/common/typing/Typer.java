@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.typing;
 
 import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
@@ -71,6 +72,10 @@ public class Typer extends ScopeTreeBuilder {
     this.structDeclarationMap = new HashMap<>();
     this.shadingLanguageVersion = shadingLanguageVersion;
     visit(node);
+  }
+
+  public Typer(TranslationUnit tu) {
+    this(tu, tu.getShadingLanguageVersion());
   }
 
   @Override

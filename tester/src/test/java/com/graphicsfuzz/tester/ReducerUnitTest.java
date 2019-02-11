@@ -44,14 +44,14 @@ import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.ToolHelper;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddJumpStmts;
-import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.SplitForLoops;
-import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
-import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
-import com.graphicsfuzz.generator.transformation.mutator.MutateExpressions;
-import com.graphicsfuzz.generator.transformation.outliner.OutlineStatements;
+import com.graphicsfuzz.generator.transformation.AddDeadOutputWriteTransformation;
+import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
+import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
+import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
+import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
+import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
+import com.graphicsfuzz.generator.transformation.IdentityTransformation;
+import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.reducer.CheckAstFeatureVisitor;
@@ -92,7 +92,7 @@ public class ReducerUnitTest {
   public void testReductionSteps() throws Exception {
     List<ITransformationSupplier> transformations = new ArrayList<>();
     int seed = 0;
-    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles()) {
+    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es()) {
       testGenerateAndReduce(originalShaderJobFile, transformations, new RandomWrapper(seed));
       seed++;
     }
@@ -101,29 +101,25 @@ public class ReducerUnitTest {
   private void testGenerateAndReduce(File originalShaderJobFile,
                                      List<ITransformationSupplier> transformations,
                                      RandomWrapper generator) throws Exception {
-    final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_100;
     final File referenceImage =
         Util.renderShader(
-            shadingLanguageVersion,
             originalShaderJobFile,
             temporaryFolder,
             fileOps);
     final PipelineInfo pipelineInfo = new PipelineInfo(originalShaderJobFile);
     final TranslationUnit tu = generateSizeLimitedShader(
         fileOps.getUnderlyingShaderFile(originalShaderJobFile, ShaderKind.FRAGMENT),
-        transformations, generator,
-        shadingLanguageVersion);
+        transformations, generator);
     Generate.addInjectionSwitchIfNotPresent(tu);
     Generate.setInjectionSwitch(pipelineInfo);
     Generate.randomiseUnsetUniforms(tu, pipelineInfo, generator);
-    tu.setShadingLanguageVersion(shadingLanguageVersion);
 
     final IdGenerator idGenerator = new IdGenerator();
 
     for (int step = 0; step < 10; step++) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
           new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu),
-          new ReducerContext(false, shadingLanguageVersion, generator, idGenerator, true),
+          new ReducerContext(false, tu.getShadingLanguageVersion(), generator, idGenerator, true),
           fileOps);
       if (ops.isEmpty()) {
         break;
@@ -145,8 +141,8 @@ public class ReducerUnitTest {
   }
 
   private TranslationUnit generateSizeLimitedShader(File fragmentShader,
-      List<ITransformationSupplier> transformations, IRandom generator,
-      ShadingLanguageVersion shadingLanguageVersion) throws IOException, ParseTimeoutException,
+      List<ITransformationSupplier> transformations, IRandom generator)
+      throws IOException, ParseTimeoutException,
       InterruptedException, GlslParserException {
     while (true) {
       List<ITransformationSupplier> transformationsCopy = new ArrayList<>();
@@ -154,7 +150,7 @@ public class ReducerUnitTest {
       final TranslationUnit tu = ParseHelper.parse(fragmentShader);
       for (int i = 0; i < 4; i++) {
         getTransformation(transformationsCopy, generator).apply(
-            tu, TransformationProbabilities.DEFAULT_PROBABILITIES, shadingLanguageVersion,
+            tu, TransformationProbabilities.DEFAULT_PROBABILITIES,
             generator, GenerationParams.normal(ShaderKind.FRAGMENT, true));
       }
       File tempFile = temporaryFolder.newFile();
@@ -182,21 +178,21 @@ public class ReducerUnitTest {
 
   private List<ITransformationSupplier> getTransformations() {
     List<ITransformationSupplier> result = new ArrayList<>();
-    result.add(() -> new AddJumpStmts());
-    result.add(() -> new MutateExpressions());
-    result.add(() -> new OutlineStatements(new IdGenerator()));
-    result.add(() -> new SplitForLoops());
-    result.add(() -> new DonateDeadCode(
+    result.add(() -> new AddJumpTransformation());
+    result.add(() -> new IdentityTransformation());
+    result.add(() -> new OutlineStatementsTransformation(new IdGenerator()));
+    result.add(() -> new SplitForLoopTransformation());
+    result.add(() -> new DonateDeadCodeTransformation(
             TransformationProbabilities.DEFAULT_PROBABILITIES::donateDeadCodeAtStmt,
-            Util.createDonorsFolder(temporaryFolder),
+            Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true)));
-    result.add(() -> new DonateLiveCode(
+    result.add(() -> new DonateLiveCodeTransformation(
             TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
-            Util.createDonorsFolder(temporaryFolder),
+            Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true),
             true));
-    result.add(() -> new AddDeadOutputVariableWrites());
-    result.add(() -> new AddLiveOutputVariableWrites());
+    result.add(() -> new AddDeadOutputWriteTransformation());
+    result.add(() -> new AddLiveOutputWriteTransformation());
     return result;
   }
 

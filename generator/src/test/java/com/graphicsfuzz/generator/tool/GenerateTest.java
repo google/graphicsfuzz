@@ -18,7 +18,6 @@ package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ListConcat;
@@ -27,7 +26,7 @@ import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
+import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.io.BufferedWriter;
@@ -174,11 +173,10 @@ public class GenerateTest {
     }
     String reference = "void main() { ; { ; ; ; }; ; { ; ; ; }; ; ; ; ; ; ; }";
     TranslationUnit tu = ParseHelper.parse(reference);
-    new DonateLiveCode(TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
+    new DonateLiveCodeTransformation(TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
         donorsFolder, GenerationParams.normal(ShaderKind.FRAGMENT, true), false)
         .apply(tu,
             TransformationProbabilities.likelyDonateLiveCode(),
-            ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0),
             GenerationParams.normal(ShaderKind.FRAGMENT, true));
   }
@@ -252,7 +250,7 @@ public class GenerateTest {
 
   @Test
   public void testValidityOfVertexShaderJumpTransformations() throws Exception {
-    testValidityOfVertexShaderTransformations(Arrays.asList("--enable-only", "jump"), 5);
+    testValidityOfVertexShaderTransformations(Arrays.asList("--enable-only", "add_jump"), 5);
   }
 
   private void testValidityOfVertexShaderTransformations(List<String> extraArgs, int repeatCount) throws IOException, InterruptedException, ParseTimeoutException, ArgumentParserException, GlslParserException {
