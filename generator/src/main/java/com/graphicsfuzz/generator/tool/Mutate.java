@@ -37,15 +37,27 @@ import com.graphicsfuzz.generator.semanticschanging.RemoveInitializerMutationFin
 import com.graphicsfuzz.generator.semanticschanging.RemoveStmtMutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.ReplaceBlockStmtsWithSwitchMutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.SwapVariableIdentifiersMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.AddDeadBarrierMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.AddDeadOutputWriteMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.AddJumpMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.AddLiveOutputWriteMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.AddSwitchMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.AddWrappingConditionalMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.IdentityMutationFinder;
 import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.SplitForLoopMutationFinder;
+import com.graphicsfuzz.generator.semanticspreserving.StructificationMutationFinder;
 import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutationFinder;
+import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -133,68 +145,45 @@ public class Mutate {
   }
 
   private static void mutate(TranslationUnit tu, IRandom random) {
-    final int numMutationTypes = 13;
     final int maxTries = 10;
 
     List<? extends Mutation> mutations;
     int tries = 0;
+    final GenerationParams generationParams = GenerationParams.normal(tu.getShaderKind(),
+        true);
+    final List<Supplier<MutationFinder<?>>> mutationFinders = Arrays.asList(
+
+        // Semantics-changing mutations, in alphabetical order:
+        () -> new AddArrayMutationFinder(tu, random),
+        () -> new Compound2BodyMutationFinder(tu),
+        () -> new Expr2ArgMutationFinder(tu),
+        () -> new Expr2ArrayAccessMutationFinder(tu, random),
+        () -> new Expr2BinaryMutationFinder(tu, random),
+        () -> new Expr2LiteralMutationFinder(tu, random),
+        () -> new If2DiscardMutationFinder(tu),
+        () -> new RemoveInitializerMutationFinder(tu),
+        () -> new RemoveStmtMutationFinder(tu),
+        () -> new ReplaceBlockStmtsWithSwitchMutationFinder(tu, random),
+        () -> new SwapVariableIdentifiersMutationFinder(tu, random),
+
+        // Semantics-preserving mutations, in alphabetical order
+        () -> new AddDeadBarrierMutationFinder(tu, random, generationParams),
+        () -> new AddDeadOutputWriteMutationFinder(tu, random, generationParams),
+        () -> new AddJumpMutationFinder(tu, random, generationParams),
+        () -> new AddLiveOutputWriteMutationFinder(tu, random, generationParams),
+        () -> new AddSwitchMutationFinder(tu, random, generationParams),
+        () -> new AddWrappingConditionalMutationFinder(tu, random, generationParams),
+        () -> new IdentityMutationFinder(tu, random, generationParams),
+        () -> new OutlineStatementMutationFinder(tu),
+        () -> new SplitForLoopMutationFinder(tu, random),
+        () -> new StructificationMutationFinder(tu, random, generationParams),
+        () -> new VectorizeMutationFinder(tu, random)
+    );
 
     do {
-
-      MutationFinder<?> mutationFinder;
-
-      switch (random.nextInt(numMutationTypes)) {
-        case 0:
-          mutationFinder = new AddArrayMutationFinder(tu, random);
-          break;
-        case 1:
-          mutationFinder = new Compound2BodyMutationFinder(tu);
-          break;
-        case 2:
-          mutationFinder = new Expr2ArgMutationFinder(tu);
-          break;
-        case 3:
-          mutationFinder = new Expr2ArrayAccessMutationFinder(tu, random);
-          break;
-        case 4:
-          mutationFinder = new Expr2BinaryMutationFinder(tu, random);
-          break;
-        case 5:
-          mutationFinder = new Expr2LiteralMutationFinder(tu, random);
-          break;
-        case 6:
-          mutationFinder = new If2DiscardMutationFinder(tu);
-          break;
-        case 7:
-          mutationFinder = new RemoveInitializerMutationFinder(tu);
-          break;
-        case 8:
-          mutationFinder = new RemoveStmtMutationFinder(tu);
-          break;
-        case 9:
-          mutationFinder = new ReplaceBlockStmtsWithSwitchMutationFinder(tu, random);
-          break;
-        case 10:
-          mutationFinder = new SwapVariableIdentifiersMutationFinder(tu, random);
-          break;
-        case 11:
-          mutationFinder = new VectorizeMutationFinder(tu, random);
-          break;
-        case 12:
-          // TODO(243): if Mutate is called successively on a shader, we may end up with clashes
-          // due to outlined functions having the same name.  Consider having available ids
-          // computed based on what the shader already contains.
-          mutationFinder = new OutlineStatementMutationFinder(tu, new IdGenerator());
-          break;
-        default:
-          throw new RuntimeException("numMutationTypes needs to be kept in sync with number of "
-              + "mutation types actually available.");
-
-      }
-
-      mutations = mutationFinder.findMutations();
+      mutations = mutationFinders.get(
+          random.nextInt(mutationFinders.size())).get().findMutations();
       tries++;
-
     } while (mutations.isEmpty() && tries < maxTries);
 
     if (mutations.isEmpty()) {

@@ -21,13 +21,19 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import com.graphicsfuzz.util.Constants;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class StructificationMutationFinder extends MutationFinderBase<StructificationMutation> {
@@ -37,13 +43,32 @@ public class StructificationMutationFinder extends MutationFinderBase<Structific
   private final GenerationParams generationParams;
 
   public StructificationMutationFinder(TranslationUnit tu,
-                                       IdGenerator idGenerator,
                                        IRandom random,
                                        GenerationParams generationParams) {
     super(tu);
-    this.idGenerator = idGenerator;
+    this.idGenerator = new IdGenerator(getIdsAlreadyUsedForStructification());
     this.random = random;
     this.generationParams = generationParams;
+  }
+
+  /**
+   * Looks through the translation unit for all ids that have already been used for naming in
+   * structification, and yields the set of all such ids.
+   * @return The set of all ids that have been used in structification.
+   */
+  private Set<Integer> getIdsAlreadyUsedForStructification() {
+    final Set<Integer> result = new HashSet<>();
+    new StandardVisitor() {
+      @Override
+      public void visitStructNameType(StructNameType structNameType) {
+        super.visitStructNameType(structNameType);
+        if (structNameType.getName().startsWith(Constants.STRUCTIFICATION_STRUCT_PREFIX)) {
+          result.add(new Integer(
+              StructificationMutation.getIdFromGeneratedStructName(structNameType)));
+        }
+      }
+    }.visit(getTranslationUnit());
+    return result;
   }
 
   @Override

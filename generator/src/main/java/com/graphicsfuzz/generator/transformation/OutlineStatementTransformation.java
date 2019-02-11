@@ -25,14 +25,9 @@ import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.util.List;
 
-public class OutlineStatementsTransformation implements ITransformation {
+public class OutlineStatementTransformation implements ITransformation {
 
-  public static final String NAME = "outline_statements";
-  private final IdGenerator idGenerator;
-
-  public OutlineStatementsTransformation(IdGenerator idGenerator) {
-    this.idGenerator = idGenerator;
-  }
+  public static final String NAME = "outline_statement";
 
   @Override
   public boolean apply(TranslationUnit tu,
@@ -40,7 +35,7 @@ public class OutlineStatementsTransformation implements ITransformation {
                        IRandom generator,
                        GenerationParams generationParams) {
     List<OutlineStatementMutation> outlineStatementOpportunities =
-          new OutlineStatementMutationFinder(tu, idGenerator)
+          new OutlineStatementMutationFinder(tu)
               .findMutations(probabilities::outlineStatements, generator);
     for (OutlineStatementMutation op : outlineStatementOpportunities) {
       op.apply();

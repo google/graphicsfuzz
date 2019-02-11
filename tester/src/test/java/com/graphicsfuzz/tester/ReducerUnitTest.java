@@ -51,7 +51,7 @@ import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
 import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
-import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
+import com.graphicsfuzz.generator.transformation.OutlineStatementTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.reducer.CheckAstFeatureVisitor;
@@ -180,7 +180,7 @@ public class ReducerUnitTest {
     List<ITransformationSupplier> result = new ArrayList<>();
     result.add(() -> new AddJumpTransformation());
     result.add(() -> new IdentityTransformation());
-    result.add(() -> new OutlineStatementsTransformation(new IdGenerator()));
+    result.add(() -> new OutlineStatementTransformation());
     result.add(() -> new SplitForLoopTransformation());
     result.add(() -> new DonateDeadCodeTransformation(
             TransformationProbabilities.DEFAULT_PROBABILITIES::donateDeadCodeAtStmt,
