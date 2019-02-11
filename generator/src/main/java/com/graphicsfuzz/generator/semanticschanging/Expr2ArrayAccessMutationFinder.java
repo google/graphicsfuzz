@@ -28,6 +28,8 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutationFinder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.SortedMap;

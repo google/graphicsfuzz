@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
+import com.graphicsfuzz.generator.mutateapi.Stmt2StmtMutation;
 
 public class If2DiscardMutationFinder extends MutationFinderBase<Stmt2StmtMutation> {
 

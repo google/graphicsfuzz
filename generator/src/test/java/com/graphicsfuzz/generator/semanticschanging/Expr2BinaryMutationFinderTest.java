@@ -16,17 +16,12 @@
 
 package com.graphicsfuzz.generator.semanticschanging;
 
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
-import java.util.HashSet;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
 import java.util.List;
-import java.util.Set;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;

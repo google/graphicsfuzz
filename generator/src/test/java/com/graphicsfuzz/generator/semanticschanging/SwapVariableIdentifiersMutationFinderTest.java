@@ -22,6 +22,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
 import java.util.List;
 import org.junit.Test;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.semanticschanging;
+package com.graphicsfuzz.generator.mutateapi;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.generator.mutateapi.Mutation;

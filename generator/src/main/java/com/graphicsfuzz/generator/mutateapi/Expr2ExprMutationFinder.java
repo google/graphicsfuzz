@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.semanticschanging;
+package com.graphicsfuzz.generator.mutateapi;
 
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.typing.Typer;
-import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 
-abstract class Expr2ExprMutationFinder extends MutationFinderBase<Expr2ExprMutation> {
+public abstract class Expr2ExprMutationFinder extends MutationFinderBase<Expr2ExprMutation> {
 
   protected final Typer typer;
   protected final IParentMap parentMap;

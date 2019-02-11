@@ -19,6 +19,8 @@ package com.graphicsfuzz.generator.semanticschanging;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutationFinder;
 import java.util.List;
 import java.util.stream.Collectors;
 

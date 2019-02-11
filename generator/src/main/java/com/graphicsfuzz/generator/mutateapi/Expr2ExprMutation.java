@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.semanticschanging;
+package com.graphicsfuzz.generator.mutateapi;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.expr.Expr;
@@ -25,7 +25,7 @@ import java.util.function.Supplier;
  */
 public class Expr2ExprMutation extends Node2NodeMutation<Expr> {
 
-  Expr2ExprMutation(IAstNode parent, Expr original, Supplier<Expr> replacement) {
+  public Expr2ExprMutation(IAstNode parent, Expr original, Supplier<Expr> replacement) {
     super(parent, original, replacement);
   }
 
