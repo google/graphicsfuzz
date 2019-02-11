@@ -32,14 +32,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-class DonationContext {
+public class DonationContext {
 
   private final Stmt donorFragment;
   private final Map<String, Type> freeVariables;
   private final List<StructDefinitionType> availableStructs;
   private final FunctionDefinition enclosingFunction;
 
-  DonationContext(Stmt donorFragment, Map<String, Type> freeVariables,
+  public DonationContext(Stmt donorFragment, Map<String, Type> freeVariables,
       List<StructDefinitionType> availableStructs,
       FunctionDefinition enclosingFunction) {
     this.donorFragment = donorFragment;
@@ -48,23 +48,23 @@ class DonationContext {
     this.enclosingFunction = enclosingFunction;
   }
 
-  Stmt getDonorFragment() {
+  public Stmt getDonorFragment() {
     return donorFragment;
   }
 
-  Map<String, Type> getFreeVariables() {
+  public Map<String, Type> getFreeVariables() {
     return Collections.unmodifiableMap(freeVariables);
   }
 
-  List<StructDefinitionType> getAvailableStructs() {
+  public List<StructDefinitionType> getAvailableStructs() {
     return Collections.unmodifiableList(availableStructs);
   }
 
-  FunctionDefinition getEnclosingFunction() {
+  public FunctionDefinition getEnclosingFunction() {
     return enclosingFunction;
   }
 
-  Set<String> getDeclaredVariableNames() {
+  public Set<String> getDeclaredVariableNames() {
     return new StandardVisitor() {
 
       private Set<String> names = new HashSet<>();
@@ -83,7 +83,7 @@ class DonationContext {
 
   }
 
-  boolean indexesArrayUsingFreeVariable() {
+  public boolean indexesArrayUsingFreeVariable() {
 
     // Note: we don't use the freeVariables member here, because we want to account for
     // name shadowing.

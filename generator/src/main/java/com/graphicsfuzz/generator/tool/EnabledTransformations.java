@@ -16,20 +16,20 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.graphicsfuzz.generator.transformation.AddDeadBarrierTransformation;
+import com.graphicsfuzz.generator.transformation.AddDeadOutputWriteTransformation;
+import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
+import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
+import com.graphicsfuzz.generator.transformation.AddSwitchTransformation;
+import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
+import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
+import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.controlflow.AddDeadBarriers;
-import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddJumpStmts;
-import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddSwitchStmts;
-import com.graphicsfuzz.generator.transformation.controlflow.AddWrappingConditionalStmts;
-import com.graphicsfuzz.generator.transformation.controlflow.SplitForLoops;
-import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
-import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
-import com.graphicsfuzz.generator.transformation.mutator.MutateExpressions;
-import com.graphicsfuzz.generator.transformation.outliner.OutlineStatements;
-import com.graphicsfuzz.generator.transformation.structifier.Structification;
-import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
+import com.graphicsfuzz.generator.transformation.IdentityTransformation;
+import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
+import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
+import com.graphicsfuzz.generator.transformation.StructificationTransformation;
+import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -46,19 +46,19 @@ public class EnabledTransformations {
 
   public static List<Class<? extends ITransformation>> allTransformations() {
     return Arrays.asList(
-        DonateDeadCode.class,
-        AddJumpStmts.class,
-        DonateLiveCode.class,
-        MutateExpressions.class,
-        OutlineStatements.class,
-        SplitForLoops.class,
-        Structification.class,
-        AddSwitchStmts.class,
-        VectorizeStatements.class,
-        AddWrappingConditionalStmts.class,
-        AddLiveOutputVariableWrites.class,
-        AddDeadOutputVariableWrites.class,
-        AddDeadBarriers.class
+        DonateDeadCodeTransformation.class,
+        AddJumpTransformation.class,
+        DonateLiveCodeTransformation.class,
+        IdentityTransformation.class,
+        OutlineStatementsTransformation.class,
+        SplitForLoopTransformation.class,
+        StructificationTransformation.class,
+        AddSwitchTransformation.class,
+        VectorizeTransformation.class,
+        AddWrappingConditionalTransformation.class,
+        AddLiveOutputWriteTransformation.class,
+        AddDeadOutputWriteTransformation.class,
+        AddDeadBarrierTransformation.class
     );
   }
 
@@ -71,32 +71,32 @@ public class EnabledTransformations {
 
   private static Class<? extends ITransformation> nameToClass(String name) {
     switch (name) {
-      case DonateDeadCode.NAME:
-        return DonateDeadCode.class;
-      case AddJumpStmts.NAME:
-        return AddJumpStmts.class;
-      case DonateLiveCode.NAME:
-        return DonateLiveCode.class;
-      case MutateExpressions.NAME:
-        return MutateExpressions.class;
-      case OutlineStatements.NAME:
-        return OutlineStatements.class;
-      case SplitForLoops.NAME:
-        return SplitForLoops.class;
-      case Structification.NAME:
-        return Structification.class;
-      case AddSwitchStmts.NAME:
-        return AddSwitchStmts.class;
-      case VectorizeStatements.NAME:
-        return VectorizeStatements.class;
-      case AddWrappingConditionalStmts.NAME:
-        return AddWrappingConditionalStmts.class;
-      case AddLiveOutputVariableWrites.NAME:
-        return AddLiveOutputVariableWrites.class;
-      case AddDeadOutputVariableWrites.NAME:
-        return AddDeadOutputVariableWrites.class;
-      case AddDeadBarriers.NAME:
-        return AddDeadBarriers.class;
+      case DonateDeadCodeTransformation.NAME:
+        return DonateDeadCodeTransformation.class;
+      case AddJumpTransformation.NAME:
+        return AddJumpTransformation.class;
+      case DonateLiveCodeTransformation.NAME:
+        return DonateLiveCodeTransformation.class;
+      case IdentityTransformation.NAME:
+        return IdentityTransformation.class;
+      case OutlineStatementsTransformation.NAME:
+        return OutlineStatementsTransformation.class;
+      case SplitForLoopTransformation.NAME:
+        return SplitForLoopTransformation.class;
+      case StructificationTransformation.NAME:
+        return StructificationTransformation.class;
+      case AddSwitchTransformation.NAME:
+        return AddSwitchTransformation.class;
+      case VectorizeTransformation.NAME:
+        return VectorizeTransformation.class;
+      case AddWrappingConditionalTransformation.NAME:
+        return AddWrappingConditionalTransformation.class;
+      case AddLiveOutputWriteTransformation.NAME:
+        return AddLiveOutputWriteTransformation.class;
+      case AddDeadOutputWriteTransformation.NAME:
+        return AddDeadOutputWriteTransformation.class;
+      case AddDeadBarrierTransformation.NAME:
+        return AddDeadBarrierTransformation.class;
       default:
         throw new RuntimeException("Unknown transformation '" + name + "'");
     }
@@ -108,55 +108,55 @@ public class EnabledTransformations {
   }
 
   public boolean isEnabledDead() {
-    return isEnabled(DonateDeadCode.class);
+    return isEnabled(DonateDeadCodeTransformation.class);
   }
 
   public boolean isEnabledJump() {
-    return isEnabled(AddJumpStmts.class);
+    return isEnabled(AddJumpTransformation.class);
   }
 
   public boolean isEnabledLive() {
-    return isEnabled(DonateLiveCode.class);
+    return isEnabled(DonateLiveCodeTransformation.class);
   }
 
   public boolean isEnabledMutate() {
-    return isEnabled(MutateExpressions.class);
+    return isEnabled(IdentityTransformation.class);
   }
 
   public boolean isEnabledOutline() {
-    return isEnabled(OutlineStatements.class);
+    return isEnabled(OutlineStatementsTransformation.class);
   }
 
   public boolean isEnabledSplit() {
-    return isEnabled(SplitForLoops.class);
+    return isEnabled(SplitForLoopTransformation.class);
   }
 
   public boolean isEnabledStruct() {
-    return isEnabled(Structification.class);
+    return isEnabled(StructificationTransformation.class);
   }
 
   public boolean isEnabledSwitch() {
-    return isEnabled(AddSwitchStmts.class);
+    return isEnabled(AddSwitchTransformation.class);
   }
 
   public boolean isEnabledVec() {
-    return isEnabled(VectorizeStatements.class);
+    return isEnabled(VectorizeTransformation.class);
   }
 
   public boolean isEnabledWrap() {
-    return isEnabled(AddWrappingConditionalStmts.class);
+    return isEnabled(AddWrappingConditionalTransformation.class);
   }
 
   public boolean isEnabledDeadFragColorWrites() {
-    return isEnabled(AddDeadOutputVariableWrites.class);
+    return isEnabled(AddDeadOutputWriteTransformation.class);
   }
 
   public boolean isEnabledLiveFragColorWrites() {
-    return isEnabled(AddLiveOutputVariableWrites.class);
+    return isEnabled(AddLiveOutputWriteTransformation.class);
   }
 
   public boolean isEnabledDeadBarriers() {
-    return isEnabled(AddDeadBarriers.class);
+    return isEnabled(AddDeadBarrierTransformation.class);
   }
 
   private boolean isEnabled(Class<? extends ITransformation> transformationClass) {

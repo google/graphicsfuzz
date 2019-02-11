@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.GlslParserException;
+import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.AvoidDeprecatedGlFragColor;
@@ -32,19 +33,19 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.controlflow.AddDeadOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddJumpStmts;
-import com.graphicsfuzz.generator.transformation.controlflow.AddLiveOutputVariableWrites;
-import com.graphicsfuzz.generator.transformation.controlflow.AddWrappingConditionalStmts;
-import com.graphicsfuzz.generator.transformation.controlflow.SplitForLoops;
-import com.graphicsfuzz.generator.transformation.donation.DonateDeadCode;
-import com.graphicsfuzz.generator.transformation.donation.DonateLiveCode;
-import com.graphicsfuzz.generator.transformation.mutator.MutateExpressions;
-import com.graphicsfuzz.generator.transformation.outliner.OutlineStatements;
-import com.graphicsfuzz.generator.transformation.structifier.Structification;
-import com.graphicsfuzz.generator.transformation.vectorizer.VectorizeStatements;
+import com.graphicsfuzz.generator.transformation.AddDeadOutputWriteTransformation;
+import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
+import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
+import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
+import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
+import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
+import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
+import com.graphicsfuzz.generator.transformation.IdentityTransformation;
+import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
+import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import com.graphicsfuzz.util.ToolPaths;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -107,50 +108,50 @@ public class GeneratorUnitTest {
 
   @Test
   public void testStructify() throws Exception {
-    testTransformationMultiVersions(() -> new Structification(), TransformationProbabilities.DEFAULT_PROBABILITIES,
+    testTransformationMultiVersions(() -> new StructificationTransformation(), TransformationProbabilities.DEFAULT_PROBABILITIES,
         "structs.frag");
   }
 
   @Test
   public void testDeadJumps() throws Exception {
-    testTransformationMultiVersions(() -> new AddJumpStmts(), TransformationProbabilities.onlyAddJumps(),
+    testTransformationMultiVersions(() -> new AddJumpTransformation(), TransformationProbabilities.onlyAddJumps(),
         "jumps.frag");
   }
 
   @Test
   public void testMutateExpressions() throws Exception {
-    testTransformationMultiVersions(() -> new MutateExpressions(), TransformationProbabilities
+    testTransformationMultiVersions(() -> new IdentityTransformation(), TransformationProbabilities
         .onlyMutateExpressions(), "mutate.frag");
   }
 
   @Test
   public void testOutlineStatements() throws Exception {
-    testTransformationMultiVersions(() -> new OutlineStatements(new IdGenerator()),
+    testTransformationMultiVersions(() -> new OutlineStatementsTransformation(new IdGenerator()),
         TransformationProbabilities.onlyOutlineStatements(),
         "outline.frag");
   }
 
   @Test
   public void testSplitForLoops() throws Exception {
-    testTransformationMultiVersions(() -> new SplitForLoops(), TransformationProbabilities
+    testTransformationMultiVersions(() -> new SplitForLoopTransformation(), TransformationProbabilities
         .onlySplitLoops(), "split.frag");
   }
 
   @Test
   public void testDonateDeadCode() throws Exception {
-    testTransformationMultiVersions(() -> new DonateDeadCode(
+    testTransformationMultiVersions(() -> new DonateDeadCodeTransformation(
         TransformationProbabilities.likelyDonateDeadCode()::donateDeadCodeAtStmt,
-        Util.createDonorsFolder(temporaryFolder),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
+            Util.getDonorsFolder(),
+            GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
         "donatedead.frag", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void testDonateLiveCode() throws Exception {
-    testTransformationMultiVersions(() -> new DonateLiveCode(
+    testTransformationMultiVersions(() -> new DonateLiveCodeTransformation(
         TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
-        Util.createDonorsFolder(temporaryFolder),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true),
+            Util.getDonorsFolder(),
+            GenerationParams.normal(ShaderKind.FRAGMENT, true),
         true), TransformationProbabilities.likelyDonateLiveCode(),
         "donatelive.frag",
         Arrays.asList(), Arrays.asList());
@@ -158,26 +159,26 @@ public class GeneratorUnitTest {
 
   @Test
   public void testAddDeadFragColorWrites() throws Exception {
-    testTransformationMultiVersions(() -> new AddDeadOutputVariableWrites(), TransformationProbabilities
+    testTransformationMultiVersions(() -> new AddDeadOutputWriteTransformation(), TransformationProbabilities
         .onlyAddDeadFragColorWrites(), "deadfragcolor.frag", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void testAddLiveOutputVariableWrites() throws Exception {
-    testTransformationMultiVersions(() -> new AddLiveOutputVariableWrites(), TransformationProbabilities
+    testTransformationMultiVersions(() -> new AddLiveOutputWriteTransformation(), TransformationProbabilities
         .onlyAddLiveFragColorWrites(), "liveoutvar.frag", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void testVectorize() throws Exception {
-    testTransformationMultiVersions(() -> new VectorizeStatements(),
+    testTransformationMultiVersions(() -> new VectorizeTransformation(),
         TransformationProbabilities.onlyVectorize(),
         "vectorize.frag", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void mutateAndVectorize() throws Exception {
-    testTransformationMultiVersions(Arrays.asList(() -> new MutateExpressions(), () -> new VectorizeStatements()),
+    testTransformationMultiVersions(Arrays.asList(() -> new IdentityTransformation(), () -> new VectorizeTransformation()),
         TransformationProbabilities.onlyVectorizeAndMutate(),
         "mutate_and_vectorize.frag",
         Arrays.asList(), Arrays.asList());
@@ -185,14 +186,14 @@ public class GeneratorUnitTest {
 
   @Test
   public void testStructification() throws Exception {
-    testTransformationMultiVersions(() -> new Structification(),
+    testTransformationMultiVersions(() -> new StructificationTransformation(),
         TransformationProbabilities.onlyStructify(),
         "structify.frag", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void testWrap() throws Exception {
-    testTransformationMultiVersions(() -> new AddWrappingConditionalStmts(),
+    testTransformationMultiVersions(() -> new AddWrappingConditionalTransformation(),
         TransformationProbabilities.onlyWrap(),
         "wrap.frag",
         Arrays.asList("colorgrid_modulo.json", "prefix_sum.json"),
@@ -201,9 +202,9 @@ public class GeneratorUnitTest {
 
   private void testTransformation(List<ITransformationSupplier> transformations,
         TransformationProbabilities probabilities, String suffix, List<String> blacklist,
-        ShadingLanguageVersion shadingLanguageVersion)
+        File[] referenceFiles)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles()) {
+    for (File originalShaderJobFile : referenceFiles) {
       final List<ITransformation> transformationsList = new ArrayList<>();
       for (ITransformationSupplier supplier : transformations) {
         transformationsList.add(supplier.get());
@@ -215,14 +216,13 @@ public class GeneratorUnitTest {
         skipRender = (reverseBlacklist != blacklist.contains(originalShaderJobFile.getName()));
       }
       final File referenceImage = Util.renderShader(
-          ShadingLanguageVersion.ESSL_100, // The references are all in ESSL 1.00 format
           originalShaderJobFile,
           temporaryFolder,
           fileOps);
       generateAndCheckVariant(transformationsList,
           probabilities,
           suffix,
-          originalShaderJobFile, shadingLanguageVersion,
+          originalShaderJobFile,
           referenceImage,
           skipRender);
     }
@@ -232,14 +232,14 @@ public class GeneratorUnitTest {
         TransformationProbabilities probabilities, String suffix, List<String> blacklist)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformation(transformations, probabilities, suffix, blacklist,
-          ShadingLanguageVersion.ESSL_100);
+          Util.getReferenceShaderJobFiles100es());
   }
 
   private void testTransformation300es(List<ITransformationSupplier> transformations,
         TransformationProbabilities probabilities, String suffix, List<String> blacklist)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformation(transformations, probabilities, suffix, blacklist,
-          ShadingLanguageVersion.ESSL_300);
+        Util.getReferenceShaderJobFiles300es());
   }
 
   private void testTransformationMultiVersions(List<ITransformationSupplier> transformations,
@@ -276,8 +276,9 @@ public class GeneratorUnitTest {
   }
 
   private void generateAndCheckVariant(List<ITransformation> transformations,
-      TransformationProbabilities probabilities, String suffix, File originalShaderJobFile,
-      ShadingLanguageVersion shadingLanguageVersion,
+                                       TransformationProbabilities probabilities,
+                                       String suffix,
+                                       File originalShaderJobFile,
       File referenceImage,
       boolean skipRender)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
@@ -286,20 +287,15 @@ public class GeneratorUnitTest {
     assertEquals(ShaderKind.FRAGMENT, shaderJob.getShaders().get(0).getShaderKind());
     final TranslationUnit tu = shaderJob.getShaders().get(0);
 
-    if (!shadingLanguageVersion.supportedGlFragColor()) {
-      AvoidDeprecatedGlFragColor.avoidDeprecatedGlFragColor(shaderJob.getShaders().get(0),
-          Constants.GLF_COLOR);
-    }
     final RandomWrapper generator = new RandomWrapper(originalShaderJobFile.getName().hashCode());
     for (ITransformation transformation : transformations) {
-      transformation.apply(tu, probabilities, shadingLanguageVersion,
+      transformation.apply(tu, probabilities,
           generator,
           GenerationParams.normal(ShaderKind.FRAGMENT, true));
     }
     Generate.addInjectionSwitchIfNotPresent(tu);
     Generate.setInjectionSwitch(shaderJob.getPipelineInfo());
     Generate.randomiseUnsetUniforms(tu, shaderJob.getPipelineInfo(), generator);
-    tu.setShadingLanguageVersion(shadingLanguageVersion);
 
     // Using fileOps, even though the rest of the code here does not use it yet.
     // Write shaders to shader job file and validate.

@@ -19,6 +19,7 @@ package com.graphicsfuzz.generator.transformation.injection;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.generator.util.RemoveReturnStatements;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
