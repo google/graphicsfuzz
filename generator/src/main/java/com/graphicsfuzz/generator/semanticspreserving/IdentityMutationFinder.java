@@ -35,13 +35,19 @@ import com.graphicsfuzz.common.ast.expr.UnOp;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
+import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.fuzzer.Fuzzer;
+import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
+import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
 import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import java.util.Arrays;
@@ -50,7 +56,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
-public class IdentityMutationFinder extends MutationFinderBase<IdentityMutation> {
+public class IdentityMutationFinder extends MutationFinderBase<Expr2ExprMutation> {
 
   private final Typer typer;
   private boolean inInitializer;
@@ -283,15 +289,19 @@ public class IdentityMutationFinder extends MutationFinderBase<IdentityMutation>
               iterators.forEach(clonedScope::remove);
             }
           }
-          addMutation(new IdentityMutation(
-              expr,
-              i,
-              typer.lookupType(expr.getChild(i)),
-              clonedScope,
-              isConstContext(),
-              getTranslationUnit().getShadingLanguageVersion(),
-              generator,
-              generationParams));
+
+          Type typeToMutate = typer.lookupType(expr.getChild(i)).getWithoutQualifiers();
+          if (BasicType.allScalarTypes().contains(typeToMutate)
+              || BasicType.allVectorTypes().contains(typeToMutate)
+              || BasicType.allSquareMatrixTypes().contains(typeToMutate)) {
+            // TODO: add support for non-square matrices.
+
+            maybeAddMutation(expr,
+                i,
+                (BasicType) typeToMutate,
+                clonedScope,
+                isConstContext());
+          }
         }
       }
     }
@@ -314,6 +324,28 @@ public class IdentityMutationFinder extends MutationFinderBase<IdentityMutation>
       }
     }
     return false;
+  }
+
+  void maybeAddMutation(Expr parent,
+                          int indexOfChildToMutate,
+                          BasicType typeToMutate,
+                          Scope scope,
+                          boolean constContext) {
+    addMutation(new Expr2ExprMutation(parent, parent.getChild(indexOfChildToMutate),
+        () -> new OpaqueExpressionGenerator(
+            generator,
+            generationParams,
+            getTranslationUnit().getShadingLanguageVersion())
+            .applyIdentityFunction(
+                parent.getChild(indexOfChildToMutate),
+                typeToMutate,
+                constContext,
+                0,
+                new Fuzzer(
+                    new FuzzingContext(scope),
+                    getTranslationUnit().getShadingLanguageVersion(),
+                    generator,
+                    generationParams))));
   }
 
 }

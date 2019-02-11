@@ -20,8 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.CannedRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.generator.semanticspreserving.IdentityMutation;
-import com.graphicsfuzz.generator.semanticspreserving.IdentityMutationFinder;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import java.util.List;
 import org.junit.Test;
@@ -46,14 +45,14 @@ public class IdentityMutationFinderTest {
         tu,
         new CannedRandom(),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
-    final List<IdentityMutation> points = identityMutationFinder.findMutations();
-    // The mutation points are:
+    final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
+    // The mutations are:
     // - LHS and RHS of "x < 100"
     // - RHS of "j += x"
     // All others are currently disabled, either due to having a const context, being l-values,
     // or not being the children of expressions.
     // In due course it would be good to me more general.
-    assertEquals(3, points.size());
+    assertEquals(3, mutations.size());
   }
 
   @Test
@@ -69,11 +68,11 @@ public class IdentityMutationFinderTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
-        new CannedRandom(new Object[] { }),
+        new CannedRandom(),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
-    final List<IdentityMutation> points = identityMutationFinder.findMutations();
-    // Only a single mutation point: the loop guard is untouchable as this is GLSL 100.
-    assertEquals(1, points.size());
+    final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
+    // Only a single mutation: the loop guard is untouchable as this is GLSL 100.
+    assertEquals(1, mutations.size());
   }
 
   @Test
@@ -90,10 +89,10 @@ public class IdentityMutationFinderTest {
         tu,
         new CannedRandom(),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
-    final List<IdentityMutation> points = identityMutationFinder.findMutations();
-    // Two mutation points: LHS and RHS of "j + 1", and RHS of "j = j + 1".
+    final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
+    // Two mutations: LHS and RHS of "j + 1", and RHS of "j = j + 1".
     // Loop guard is untouchable as this is GLSL 100.
-    assertEquals(3, points.size());
+    assertEquals(3, mutations.size());
   }
 
 }

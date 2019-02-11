@@ -18,7 +18,8 @@ package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.generator.semanticspreserving.IdentityMutation;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
+import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.semanticspreserving.IdentityMutationFinder;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
@@ -33,9 +34,9 @@ public class IdentityTransformation implements ITransformation {
                        TransformationProbabilities probabilities,
                        IRandom generator,
                        GenerationParams generationParams) {
-    List<IdentityMutation> mutationPoints = new IdentityMutationFinder(
+    List<Expr2ExprMutation> mutationPoints = new IdentityMutationFinder(
         tu, generator, generationParams).findMutations(probabilities::mutatePoint, generator);
-    mutationPoints.forEach(IdentityMutation::apply);
+    mutationPoints.forEach(Mutation::apply);
     return !mutationPoints.isEmpty();
   }
 
