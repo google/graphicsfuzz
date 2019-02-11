@@ -59,18 +59,15 @@ public class AddWrappingConditionalMutation implements Mutation {
   private final IRandom random;
   private final ShadingLanguageVersion shadingLanguageVersion;
   private final GenerationParams generationParams;
-  private final IdGenerator idGenerator;
 
   public AddWrappingConditionalMutation(IInjectionPoint injectionPoint,
                                         IRandom random,
                                         ShadingLanguageVersion shadingLanguageVersion,
-                                        GenerationParams generationParams,
-                                        IdGenerator idGenerator) {
+                                        GenerationParams generationParams) {
     this.injectionPoint = injectionPoint;
     this.random = random;
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.generationParams = generationParams;
-    this.idGenerator = idGenerator;
   }
 
   @Override
@@ -161,7 +158,7 @@ public class AddWrappingConditionalMutation implements Mutation {
                                           Fuzzer fuzzer, IRandom generator,
                                           ShadingLanguageVersion shadingLanguageVersion) {
     boolean up = generator.nextBoolean();
-    String loopVariableName = "_injected_loop_counter_" + idGenerator.freshId();
+    String loopVariableName = Constants.INJECTED_LOOP_COUNTER;
 
     boolean loopBoundsMustBeConst = shadingLanguageVersion.restrictedForLoops();
 

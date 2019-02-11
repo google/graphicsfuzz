@@ -28,7 +28,7 @@ public final class Constants {
 
   public static final String LIVE_PREFIX = "GLF_live";
   public static final String DEAD_PREFIX = "GLF_dead";
-  public static final String SPLIT_LOOP_COUNTER_PREFIX = "_GLF_SPLIT_LOOP_COUNTER_";
+  public static final String SPLIT_LOOP_COUNTER_PREFIX = "_GLF_SPLIT_LOOP_COUNTER";
   public static final String STRUCTIFICATION_FIELD_PREFIX = "_f";
   public static final String STRUCTIFICATION_STRUCT_PREFIX = "_GLF_struct_";
   public static final String GLF_STRUCT_REPLACEMENT = "_GLF_struct_replacement_";
@@ -44,6 +44,8 @@ public final class Constants {
   public static final String GLF_WRAPPED_IF_FALSE = "_GLF_WRAPPED_IF_FALSE";
   public static final String GLF_IDENTITY = "_GLF_IDENTITY";
   public static final String GLF_SWITCH = "_GLF_SWITCH";
+
+  public static final String INJECTED_LOOP_COUNTER = "_injected_loop_counter";
 
   public static final String INJECTION_SWITCH = "injectionSwitch";
 

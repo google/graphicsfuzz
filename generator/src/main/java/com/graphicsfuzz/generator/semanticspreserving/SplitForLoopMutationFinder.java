@@ -18,13 +18,12 @@ package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.common.util.IdGenerator;
 
 public class SplitForLoopMutationFinder extends InjectionPointMutationFinder<SplitForLoopMutation> {
 
-  public SplitForLoopMutationFinder(TranslationUnit tu, IRandom random, IdGenerator idGenerator) {
+  public SplitForLoopMutationFinder(TranslationUnit tu, IRandom random) {
     super(tu, random, SplitForLoopMutation::suitableForSplitting,
-        item -> new SplitForLoopMutation(item, random, idGenerator));
+        item -> new SplitForLoopMutation(item, random));
   }
 
 }

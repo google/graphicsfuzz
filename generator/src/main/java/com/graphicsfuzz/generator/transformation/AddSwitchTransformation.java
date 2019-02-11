@@ -29,11 +29,6 @@ import java.util.List;
 public class AddSwitchTransformation implements ITransformation {
 
   public static final String NAME = "add_switch";
-  private final IdGenerator idGenerator;
-
-  public AddSwitchTransformation() {
-    idGenerator = new IdGenerator();
-  }
 
   @Override
   public boolean apply(TranslationUnit tu,
@@ -41,7 +36,7 @@ public class AddSwitchTransformation implements ITransformation {
                        IRandom generator,
                        GenerationParams generationParams) {
     final List<AddSwitchMutation> mutations =
-        new AddSwitchMutationFinder(tu, generator, generationParams, idGenerator.freshId())
+        new AddSwitchMutationFinder(tu, generator, generationParams)
             .findMutations(probabilities::switchify, generator);
     mutations.forEach(Mutation::apply);
     return !mutations.isEmpty();

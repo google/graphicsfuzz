@@ -26,7 +26,7 @@ import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
 import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
-import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
+import com.graphicsfuzz.generator.transformation.OutlineStatementTransformation;
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
@@ -50,7 +50,7 @@ public class EnabledTransformations {
         AddJumpTransformation.class,
         DonateLiveCodeTransformation.class,
         IdentityTransformation.class,
-        OutlineStatementsTransformation.class,
+        OutlineStatementTransformation.class,
         SplitForLoopTransformation.class,
         StructificationTransformation.class,
         AddSwitchTransformation.class,
@@ -79,8 +79,8 @@ public class EnabledTransformations {
         return DonateLiveCodeTransformation.class;
       case IdentityTransformation.NAME:
         return IdentityTransformation.class;
-      case OutlineStatementsTransformation.NAME:
-        return OutlineStatementsTransformation.class;
+      case OutlineStatementTransformation.NAME:
+        return OutlineStatementTransformation.class;
       case SplitForLoopTransformation.NAME:
         return SplitForLoopTransformation.class;
       case StructificationTransformation.NAME:
@@ -124,7 +124,7 @@ public class EnabledTransformations {
   }
 
   public boolean isEnabledOutline() {
-    return isEnabled(OutlineStatementsTransformation.class);
+    return isEnabled(OutlineStatementTransformation.class);
   }
 
   public boolean isEnabledSplit() {
