@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.net.URISyntaxException;
 import java.util.List;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -104,7 +103,7 @@ public class MainFuzzer {
       File workDir,
       Integer numberOfVariants,
       String outputPrefix, Boolean keepBadShader)
-      throws IOException, ParseTimeoutException, InterruptedException, URISyntaxException, GlslParserException {
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
 
     File outputFolder = new File(workDir, "output");
 
