@@ -16,5 +16,5 @@
 
 package com.graphicsfuzz.generator.transformation.donation;
 
-class IncompatibleDonorException extends Exception {
+public class IncompatibleDonorException extends Exception {
 }

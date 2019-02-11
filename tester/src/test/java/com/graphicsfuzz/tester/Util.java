@@ -28,6 +28,7 @@ import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
+import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -47,24 +48,10 @@ public final class Util {
     // Utility class
   }
 
-  static File[] getReferenceShaderJobFiles() {
-    return new File(TestShadersDirectory.getTestShadersDirectory(), "references")
-        .listFiles((dir, name) -> name.endsWith(".json"));
-  }
-
-  static File renderShader(ShadingLanguageVersion shadingLanguageVersion,
-                           File originalShader,
+  static File renderShader(File originalShader,
                            TemporaryFolder temporaryFolder, ShaderJobFileOperations fileOps)
       throws IOException, InterruptedException, ParseTimeoutException, GlslParserException {
     final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShader);
-
-    // TODO: having to plug in the version here feels like a hack.  But this is due to the
-    // version not being present in the shaders in the repo, which means that the can be
-    // used for testing with multiple future versions.  There is a trade-off here to be revisited.
-    for (TranslationUnit tu : shaderJob.getShaders()) {
-      assert !tu.hasShadingLanguageVersion();
-      tu.setShadingLanguageVersion(shadingLanguageVersion);
-    }
 
     return validateAndGetImage(
             shaderJob,
@@ -163,21 +150,26 @@ public final class Util {
     return imageFile;
   }
 
-  static File createDonorsFolder(TemporaryFolder temporaryFolder) throws IOException {
-    final File[] originalShaderFiles = Util.getReferenceShaderJobFiles();
-    final File donorsFolder = temporaryFolder.newFolder();
-    for (File originalShader : originalShaderFiles) {
-      FileUtils.copyFile(originalShader,
-          Paths.get(donorsFolder.getAbsolutePath(), originalShader.getName()).toFile());
-    }
-    return donorsFolder;
-  }
-
   static void assertImagesSimilar(File first, File second) throws FileNotFoundException {
     // TODO: This has been made very generous, based on Swiftshader producing visually identical
     // images with fairly high associated histogram distances.  If we find that bugs are slipping
     // through we should revise this.
     assertTrue(ImageUtil.compareHistograms(first, second) < 2000.0);
+  }
+
+  static File[] getReferenceShaderJobFiles100es() {
+    return Paths.get(ToolPaths.getShadersDirectory(),
+        "samples", "100").toFile().listFiles((dir, name) -> name.endsWith(".json"));
+  }
+
+  static File[] getReferenceShaderJobFiles300es() {
+    return Paths.get(ToolPaths.getShadersDirectory(),
+        "samples", "300es").toFile().listFiles((dir, name) -> name.endsWith(".json"));
+  }
+
+  static File getDonorsFolder() {
+    return Paths.get(ToolPaths.getShadersDirectory(),
+        "samples", "donors").toFile();
   }
 
 }

@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.tester;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.Obfuscator;
@@ -41,17 +39,12 @@ public class ObfuscatorUnitTest {
 
   @Test
   public void testObfuscate() throws Exception {
-    final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_100;
     final IRandom generator = new RandomWrapper(0);
-    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles()) {
+    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es()) {
       final File originalImage =
           Util.renderShader(
-              shadingLanguageVersion, originalShaderJobFile, temporaryFolder, fileOps);
+              originalShaderJobFile, temporaryFolder, fileOps);
       final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShaderJobFile);
-      for (TranslationUnit tu : shaderJob.getShaders()) {
-        assert !tu.hasShadingLanguageVersion();
-        tu.setShadingLanguageVersion(ShadingLanguageVersion.ESSL_100);
-      }
       final ShaderJob obfuscated = Obfuscator.obfuscate(shaderJob, generator);
       final File obfuscatedImage =
           Util.validateAndGetImage(
