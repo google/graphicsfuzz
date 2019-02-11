@@ -37,6 +37,8 @@ const char *getVkResultString (VkResult result) {
     case VK_ERROR_TOO_MANY_OBJECTS: return "VK_ERROR_TOO_MANY_OBJECTS";
     case VK_ERROR_FORMAT_NOT_SUPPORTED: return "VK_ERROR_FORMAT_NOT_SUPPORTED";
     case VK_ERROR_FRAGMENTED_POOL: return "VK_ERROR_FRAGMENTED_POOL";
+
+#ifdef VK_VERSION_1_1
     case VK_ERROR_OUT_OF_POOL_MEMORY: return "VK_ERROR_OUT_OF_POOL_MEMORY";
     case VK_ERROR_INVALID_EXTERNAL_HANDLE: return "VK_ERROR_INVALID_EXTERNAL_HANDLE";
     case VK_ERROR_SURFACE_LOST_KHR: return "VK_ERROR_SURFACE_LOST_KHR";
@@ -50,6 +52,8 @@ const char *getVkResultString (VkResult result) {
     case VK_ERROR_NOT_PERMITTED_EXT: return "VK_ERROR_NOT_PERMITTED_EXT";
     case VK_RESULT_RANGE_SIZE: return "VK_RESULT_RANGE_SIZE";
     case VK_RESULT_MAX_ENUM: return "VK_RESULT_MAX_ENUM";
+#endif // VK_VERSION_1_1
+
     default: return "ERROR_INVALID_VK_RESULT_VALUE";
   }
 }
