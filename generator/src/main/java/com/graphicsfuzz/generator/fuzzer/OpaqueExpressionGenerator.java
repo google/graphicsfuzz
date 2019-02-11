@@ -29,6 +29,8 @@ import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TernaryExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.UnOp;
+import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -52,8 +54,7 @@ public final class OpaqueExpressionGenerator {
   private final IRandom generator;
   private final GenerationParams generationParams;
 
-  // The available identity transformations, and the associated types to which they may
-  // be applied.
+  // The available identities that can be applied to expressions.
   private final List<ExpressionIdentity> expressionIdentities;
 
   private final ShadingLanguageVersion shadingLanguageVersion;
@@ -71,6 +72,7 @@ public final class OpaqueExpressionGenerator {
     expressionIdentities.add(new IdentityMulDivOne());
     expressionIdentities.add(new IdentityAndTrue());
     expressionIdentities.add(new IdentityOrFalse());
+    expressionIdentities.add(new IdentityNotNot());
     expressionIdentities.add(new IdentityTernary());
 
     expressionIdentities.add(new IdentityMin());
@@ -448,6 +450,30 @@ public final class OpaqueExpressionGenerator {
             makeOpaqueBoolean(false, type, constContext, depth, fuzzer), BinOp.LOR,
             true, type, constContext,
             depth, fuzzer);
+    }
+
+  }
+
+  private class IdentityNotNot extends AbstractIdentityTransformation {
+
+    private IdentityNotNot() {
+      super(Arrays.asList(BasicType.BOOL), false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      // !!expr
+      assert type == BasicType.BOOL;
+
+      // Negate once
+      Expr result = new UnaryExpr(new ParenExpr(applyIdentityFunction(expr, type,
+          constContext,
+          depth, fuzzer)), UnOp.LNOT);
+      // Negate again
+      result = new UnaryExpr(new ParenExpr(applyIdentityFunction(result, type, constContext,
+          depth, fuzzer)), UnOp.LNOT);
+      return identityConstructor(expr, result);
     }
 
   }
