@@ -48,6 +48,7 @@ import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutationFinder;
 import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import java.util.Arrays;
@@ -56,12 +57,11 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
-public class IdentityMutationFinder extends MutationFinderBase<Expr2ExprMutation> {
+public class IdentityMutationFinder extends Expr2ExprMutationFinder {
 
   private final Typer typer;
   private boolean inInitializer;
   private boolean atGlobalScope;
-  private int insideLValueCount;
   private Type enclosingVariablesDeclarationType;
   private final IRandom generator;
   private final GenerationParams generationParams;
@@ -75,11 +75,50 @@ public class IdentityMutationFinder extends MutationFinderBase<Expr2ExprMutation
     this.typer = new Typer(tu);
     this.inInitializer = false;
     this.atGlobalScope = true;
-    this.insideLValueCount = 0;
     this.enclosingVariablesDeclarationType = null;
     this.generator = generator;
     this.generationParams = generationParams;
     this.forLoopIterators = new LinkedList<>();
+  }
+
+  @Override
+  protected void visitExpr(Expr expr) {
+    if (!typer.hasType(expr)) {
+      return;
+    }
+    final Type type = typer.lookupType(expr).getWithoutQualifiers();
+    if (!(type instanceof BasicType)) {
+      return;
+    }
+    final BasicType basicType = (BasicType) type;
+
+    final Scope clonedScope = currentScope.shallowClone();
+    if (getTranslationUnit().getShadingLanguageVersion().restrictedForLoops()) {
+      for (Set<String> iterators : forLoopIterators) {
+        iterators.forEach(clonedScope::remove);
+      }
+    }
+    if (BasicType.allScalarTypes().contains(basicType)
+        || BasicType.allVectorTypes().contains(basicType)
+        || BasicType.allSquareMatrixTypes().contains(basicType)) {
+      // TODO: add support for non-square matrices.
+      addMutation(new Expr2ExprMutation(parentMap.getParent(expr),
+          expr,
+          () -> new OpaqueExpressionGenerator(
+              generator,
+              generationParams,
+              getTranslationUnit().getShadingLanguageVersion())
+              .applyIdentityFunction(
+                  expr,
+                  basicType,
+                  isConstContext(),
+                  0,
+                  new Fuzzer(
+                      new FuzzingContext(clonedScope),
+                      getTranslationUnit().getShadingLanguageVersion(),
+                      generator,
+                      generationParams))));
+    }
   }
 
   @Override
@@ -125,45 +164,24 @@ public class IdentityMutationFinder extends MutationFinderBase<Expr2ExprMutation
 
   @Override
   public void visitBinaryExpr(BinaryExpr binaryExpr) {
-    if (binaryExpr.getOp().isSideEffecting()) {
-      insideLValueCount++;
-    }
-    visit(binaryExpr.getLhs());
-    if (binaryExpr.getOp().isSideEffecting()) {
-      assert insideLValueCount > 0;
-      insideLValueCount--;
+    visitExpr(binaryExpr);
+    if (!binaryExpr.getOp().isSideEffecting()) {
+      visit(binaryExpr.getLhs());
     }
     visit(binaryExpr.getRhs());
-
-    // Skip the LHS if it is side-effecting
-    identifyMutationPoints(binaryExpr,
-          binaryExpr.getOp().isSideEffecting() ? new HashSet<>(Arrays.asList(0))
-                : new HashSet<>());
   }
 
   @Override
   public void visitUnaryExpr(UnaryExpr unaryExpr) {
-    if (unaryExpr.getOp().isSideEffecting()) {
-      insideLValueCount++;
-    }
-    super.visitUnaryExpr(unaryExpr);
-    if (unaryExpr.getOp().isSideEffecting()) {
-      assert insideLValueCount > 0;
-      insideLValueCount--;
-    }
+    visitExpr(unaryExpr);
     if (!unaryExpr.getOp().isSideEffecting()) {
-      identifyMutationPoints(unaryExpr);
+      visit(unaryExpr.getExpr());
     }
-  }
-
-  @Override
-  public void visitParenExpr(ParenExpr parenExpr) {
-    super.visitParenExpr(parenExpr);
-    identifyMutationPoints(parenExpr);
   }
 
   @Override
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+    visitExpr(functionCallExpr);
     FunctionPrototype bestMatch = null;
     for (FunctionPrototype candidate : typer.getPrototypes(functionCallExpr.getCallee())) {
       if (candidate.getNumParameters() == functionCallExpr.getNumArgs()) {
@@ -174,7 +192,6 @@ public class IdentityMutationFinder extends MutationFinderBase<Expr2ExprMutation
         }
       }
     }
-    Set<Integer> indicesOfLValueArguments = new HashSet<>();
     for (int i = 0; i < functionCallExpr.getNumArgs(); i++) {
       boolean isLValue = false;
       if (bestMatch != null) {
@@ -184,20 +201,13 @@ public class IdentityMutationFinder extends MutationFinderBase<Expr2ExprMutation
           if (qt.hasQualifier(TypeQualifier.INOUT_PARAM)
                 || qt.hasQualifier(TypeQualifier.OUT_PARAM)) {
             isLValue = true;
-            indicesOfLValueArguments.add(i);
           }
         }
       }
-      if (isLValue) {
-        insideLValueCount++;
-      }
-      visit(functionCallExpr.getArg(i));
-      if (isLValue) {
-        insideLValueCount--;
+      if (!isLValue) {
+        visit(functionCallExpr.getArg(i));
       }
     }
-
-    identifyMutationPoints(functionCallExpr, indicesOfLValueArguments);
   }
 
   private boolean callMatchesPrototype(FunctionCallExpr call, FunctionPrototype prototype) {
@@ -220,12 +230,6 @@ public class IdentityMutationFinder extends MutationFinderBase<Expr2ExprMutation
   }
 
   @Override
-  public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
-    super.visitTypeConstructorExpr(typeConstructorExpr);
-    identifyMutationPoints(typeConstructorExpr);
-  }
-
-  @Override
   public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
     // WebGL has restrictions on the form of array indices, so
     // we shall not mutate anything that lies under them.
@@ -236,20 +240,7 @@ public class IdentityMutationFinder extends MutationFinderBase<Expr2ExprMutation
     // place.
     if (!getTranslationUnit().getShadingLanguageVersion().isWebGl()) {
       super.visitArrayIndexExpr(arrayIndexExpr);
-      identifyMutationPoints(arrayIndexExpr);
     }
-  }
-
-  @Override
-  public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
-    super.visitMemberLookupExpr(memberLookupExpr);
-    identifyMutationPoints(memberLookupExpr);
-  }
-
-  @Override
-  public void visitTernaryExpr(TernaryExpr ternaryExpr) {
-    super.visitTernaryExpr(ternaryExpr);
-    identifyMutationPoints(ternaryExpr);
   }
 
   @Override
@@ -276,41 +267,6 @@ public class IdentityMutationFinder extends MutationFinderBase<Expr2ExprMutation
     inInitializer = false;
   }
 
-  private void identifyMutationPoints(Expr expr, Set<Integer> indicesToSkip) {
-    if (insideLValueCount == 0) {
-      for (int i = 0; i < expr.getNumChildren(); i++) {
-        if (indicesToSkip.contains(i)) {
-          continue;
-        }
-        if (typer.hasType(expr.getChild(i))) {
-          Scope clonedScope = currentScope.shallowClone();
-          if (getTranslationUnit().getShadingLanguageVersion().restrictedForLoops()) {
-            for (Set<String> iterators : forLoopIterators) {
-              iterators.forEach(clonedScope::remove);
-            }
-          }
-
-          Type typeToMutate = typer.lookupType(expr.getChild(i)).getWithoutQualifiers();
-          if (BasicType.allScalarTypes().contains(typeToMutate)
-              || BasicType.allVectorTypes().contains(typeToMutate)
-              || BasicType.allSquareMatrixTypes().contains(typeToMutate)) {
-            // TODO: add support for non-square matrices.
-
-            maybeAddMutation(expr,
-                i,
-                (BasicType) typeToMutate,
-                clonedScope,
-                isConstContext());
-          }
-        }
-      }
-    }
-  }
-
-  private void identifyMutationPoints(Expr expr) {
-    identifyMutationPoints(expr, new HashSet<>());
-  }
-
   private boolean isConstContext() {
     if (inInitializer) {
       assert enclosingVariablesDeclarationType != null;
@@ -324,28 +280,6 @@ public class IdentityMutationFinder extends MutationFinderBase<Expr2ExprMutation
       }
     }
     return false;
-  }
-
-  void maybeAddMutation(Expr parent,
-                          int indexOfChildToMutate,
-                          BasicType typeToMutate,
-                          Scope scope,
-                          boolean constContext) {
-    addMutation(new Expr2ExprMutation(parent, parent.getChild(indexOfChildToMutate),
-        () -> new OpaqueExpressionGenerator(
-            generator,
-            generationParams,
-            getTranslationUnit().getShadingLanguageVersion())
-            .applyIdentityFunction(
-                parent.getChild(indexOfChildToMutate),
-                typeToMutate,
-                constContext,
-                0,
-                new Fuzzer(
-                    new FuzzingContext(scope),
-                    getTranslationUnit().getShadingLanguageVersion(),
-                    generator,
-                    generationParams))));
   }
 
 }

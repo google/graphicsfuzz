@@ -60,33 +60,31 @@ public class IdentityMutationFinderTest {
         new CannedRandom(),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
     final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
-    // The mutations are:
-    // - LHS and RHS of "x < 100"
-    // - RHS of "j += x"
-    // All others are currently disabled, either due to having a const context, being l-values,
-    // or not being the children of expressions.
-    // In due course it would be good to me more general.
-    assertEquals(3, mutations.size());
+    assertEquals(9, mutations.size());
   }
 
   @Test
   public void testNumMutationPoints100WebGL() throws Exception {
     final String program =
-        "void main() {\n"
-            + "  int x = 0;\n"
-            + "  int j = 0;\n"
-            + "  for (int x = 0; x < 100; x++) {\n"
-            + "    j += x;\n"
+        "#version 100\n"
+            + "precision mediump float;\n"
+            + "void main() {\n"
+            + "  int x = 0 /*can be mutated*/;\n"
+            + "  int j = 0 /*can be mutated*/;\n"
+            + "  for (/*none of this can be mutated*/ int x = 0; x < 100; x++) {\n"
+            + "    j /*j cannot be mutated*/ += x /*x can be mutated*/ /*the whole of j += x can "
+            + "be mutated */"
+            + ";\n"
             + "  }\n"
             + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
         new CannedRandom(),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true));
+        GenerationParams.normal(ShaderKind.FRAGMENT, false));
     final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
-    // Only a single mutation: the loop guard is untouchable as this is GLSL 100.
-    assertEquals(1, mutations.size());
+    // The loop guard is untouchable as this is GLSL 100.
+    assertEquals(4, mutations.size());
   }
 
   @Test
@@ -104,9 +102,31 @@ public class IdentityMutationFinderTest {
         new CannedRandom(),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
     final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
-    // Two mutations: LHS and RHS of "j + 1", and RHS of "j = j + 1".
     // Loop guard is untouchable as this is GLSL 100.
-    assertEquals(3, mutations.size());
+    // LHS of "j = j + 1" is also untouchable.
+    assertEquals(5, mutations.size());
+  }
+
+  @Test
+  public void testNumMutationPointsSwitch() throws Exception {
+    final String program =
+        "#version 310 es\n"
+            + "precision mediump float;\n"
+            + "void main() {\n"
+            + "  switch(0 /*can be mutated*/) {"
+            + "    case 1 /*cannot be mutated*/:"
+            + "    case 2 /*cannot be mutated*/:"
+            + "    default:"
+            + "      1 /*can be mutated*/;"
+            + "  }"
+            + "}";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
+        tu,
+        new CannedRandom(),
+        GenerationParams.normal(ShaderKind.FRAGMENT, false));
+    final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
+    assertEquals(2, mutations.size());
   }
 
   @Test

@@ -18,6 +18,7 @@ package com.graphicsfuzz.generator.mutateapi;
 
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.stmt.ExprCaseLabel;
 import com.graphicsfuzz.common.typing.Typer;
 
 public abstract class Expr2ExprMutationFinder extends MutationFinderBase<Expr2ExprMutation> {
@@ -29,6 +30,11 @@ public abstract class Expr2ExprMutationFinder extends MutationFinderBase<Expr2Ex
     super(tu);
     this.typer = new Typer(tu);
     this.parentMap = IParentMap.createParentMap(tu);
+  }
+
+  @Override
+  public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
+    // No nothing: we don't want to mutate the expressions associated with case labels.
   }
 
 }

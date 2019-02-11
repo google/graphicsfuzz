@@ -36,6 +36,7 @@ public abstract class Node2NodeMutation<NodeT extends IAstNode>
    * @param replacement A supplier for the replacement node.
    */
   protected Node2NodeMutation(IAstNode parent, NodeT original, Supplier<NodeT> replacement) {
+    assert parent.hasChild(original);
     this.parent = parent;
     this.original = original;
     this.replacement = replacement;
@@ -43,7 +44,10 @@ public abstract class Node2NodeMutation<NodeT extends IAstNode>
 
   @Override
   public final void apply() {
-    parent.replaceChild(original, replacement.get());
+    // It is possible that another mutation may have invalidated this mutation.
+    if (parent.hasChild(original)) {
+      parent.replaceChild(original, replacement.get());
+    }
   }
 
 }
