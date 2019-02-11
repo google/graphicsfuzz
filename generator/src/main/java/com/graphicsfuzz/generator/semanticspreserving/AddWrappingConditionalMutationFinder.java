@@ -26,11 +26,10 @@ public class AddWrappingConditionalMutationFinder
 
   public AddWrappingConditionalMutationFinder(TranslationUnit tu,
                                               IRandom random,
-                                              GenerationParams generationParams,
-                                              IdGenerator idGenerator) {
+                                              GenerationParams generationParams) {
     super(tu, random, AddWrappingConditionalMutation::suitableForWrapping,
         item -> new AddWrappingConditionalMutation(item, random, tu.getShadingLanguageVersion(),
-            generationParams, idGenerator));
+            generationParams));
   }
 
 }

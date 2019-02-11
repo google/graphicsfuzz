@@ -47,7 +47,12 @@ public class LoopMergeReductionOpportunity extends AbstractReductionOpportunity 
     final String splitLoopCounter = ((DeclarationStmt) firstLoop.getInit())
         .getVariablesDeclaration().getDeclInfo(0).getName();
     int originalNameBeginIndex = Constants.SPLIT_LOOP_COUNTER_PREFIX.length();
-    assert Character.isDigit(splitLoopCounter.charAt(originalNameBeginIndex));
+
+    // It used to be the case that each split for loop counter had an associated integer id.
+    // This turned out to be unnecessary and such ids are no longer generated.
+    // So that the reducer can be run on existing generated shaders, logic to skip such an id
+    // remains here.  It could be removed if it is not necessary to support existing generated
+    // shaders.
     while (Character.isDigit(splitLoopCounter.charAt(originalNameBeginIndex))) {
       originalNameBeginIndex++;
     }

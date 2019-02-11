@@ -545,7 +545,7 @@ public class Fuzzer {
       throw new RuntimeException("A fuzzer must be initialized with a fuzzed declaration prefix "
             + "in order to generate declarations.");
     }
-    return temp + "_" + fuzzedDeclarationPrefix + "_" + freshId();
+    return fuzzedDeclarationPrefix + "_" + freshId() + temp;
   }
 
   private Type stripQualifiers(Type type) {

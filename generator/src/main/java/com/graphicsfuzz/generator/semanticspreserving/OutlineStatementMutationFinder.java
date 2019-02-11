@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
@@ -24,6 +25,7 @@ import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.IRandom;
@@ -31,18 +33,35 @@ import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.mutateapi.MutationFinder;
 import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class OutlineStatementMutationFinder extends MutationFinderBase<OutlineStatementMutation> {
 
   private final IdGenerator idGenerator;
 
-  public OutlineStatementMutationFinder(TranslationUnit tu, IdGenerator idGenerator) {
+  public OutlineStatementMutationFinder(TranslationUnit tu) {
     super(tu);
-    this.idGenerator = idGenerator;
+    this.idGenerator = new IdGenerator(getIdsAlreadyUsedForOutlining());
+  }
+
+  private Set<Integer> getIdsAlreadyUsedForOutlining() {
+    final Set<Integer> result = new HashSet<>();
+    new StandardVisitor() {
+      @Override
+      public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
+        if (functionPrototype.getName().startsWith(Constants.OUTLINED_FUNCTION_PREFIX)) {
+          result.add(new Integer(
+              functionPrototype.getName().substring(Constants.OUTLINED_FUNCTION_PREFIX.length())));
+        }
+      }
+    }.visit(getTranslationUnit());
+    return result;
   }
 
   @Override

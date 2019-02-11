@@ -20,12 +20,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.generator.transformation.StructificationTransformation;
-import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.AvoidDeprecatedGlFragColor;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -41,11 +38,10 @@ import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
 import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
-import com.graphicsfuzz.generator.transformation.OutlineStatementsTransformation;
+import com.graphicsfuzz.generator.transformation.OutlineStatementTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
-import com.graphicsfuzz.util.ToolPaths;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -126,7 +122,7 @@ public class GeneratorUnitTest {
 
   @Test
   public void testOutlineStatements() throws Exception {
-    testTransformationMultiVersions(() -> new OutlineStatementsTransformation(new IdGenerator()),
+    testTransformationMultiVersions(() -> new OutlineStatementTransformation(),
         TransformationProbabilities.onlyOutlineStatements(),
         "outline.frag");
   }

@@ -16,12 +16,44 @@
 
 package com.graphicsfuzz.common.util;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 public class IdGenerator {
 
-  private int nextFreeId = 0;
+  private int nextFreeId;
+  private final Set<Integer> initiallyUsedIds;
 
+  /**
+   * Creates an IdGenerator with no initially used ids.
+   */
+  public IdGenerator() {
+    this(Collections.emptySet());
+  }
+
+  /**
+   * Creates an IdGenerator, recording that a given set of ids has already been used.
+   * @param initiallyUsedIds A set of ids that have already been used and are thus unavailable.
+   */
+  public IdGenerator(Set<Integer> initiallyUsedIds) {
+    this.initiallyUsedIds = new HashSet<>();
+    this.initiallyUsedIds.addAll(initiallyUsedIds);
+    this.nextFreeId = 0;
+  }
+
+  /**
+   * Find the next id that (a) has not been returned by this IdGenerator, and (b) is not one of
+   * the initially used ids that was specified when the IdGenerator was created.
+   * @return A fresh id.
+   */
   public int freshId() {
-    return nextFreeId++;
+    int result;
+    do {
+      result = nextFreeId;
+      nextFreeId++;
+    } while (initiallyUsedIds.contains(result));
+    return result;
   }
 
 }

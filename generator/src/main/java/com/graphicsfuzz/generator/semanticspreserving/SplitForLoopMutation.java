@@ -34,7 +34,6 @@ import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.ReplaceLoopCounter;
 import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.util.Constants;
@@ -46,13 +45,10 @@ public class SplitForLoopMutation implements Mutation {
 
   private final IInjectionPoint injectionPoint;
   private final IRandom random;
-  private final IdGenerator idGenerator;
 
-  public SplitForLoopMutation(IInjectionPoint injectionPoint, IRandom random,
-                              IdGenerator idGenerator) {
+  public SplitForLoopMutation(IInjectionPoint injectionPoint, IRandom random) {
     this.injectionPoint = injectionPoint;
     this.random = random;
-    this.idGenerator = idGenerator;
   }
 
   @Override
@@ -67,9 +63,7 @@ public class SplitForLoopMutation implements Mutation {
     ForStmt original = (ForStmt) injectionPoint.getNextStmt();
     LoopSplitInfo loopSplitInfo = maybeGetLoopSplitInfo(original).get();
 
-    final int renamedCounterId = idGenerator.freshId();
-
-    String newLoopCounter = Constants.SPLIT_LOOP_COUNTER_PREFIX + renamedCounterId
+    String newLoopCounter = Constants.SPLIT_LOOP_COUNTER_PREFIX
         + loopSplitInfo.getLoopCounter();
 
     ForStmt firstLoop = cloneWithReplacedLoopCounter(original,
