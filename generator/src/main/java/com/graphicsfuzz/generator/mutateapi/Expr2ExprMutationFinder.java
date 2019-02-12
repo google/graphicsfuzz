@@ -34,7 +34,7 @@ public abstract class Expr2ExprMutationFinder extends MutationFinderBase<Expr2Ex
 
   @Override
   public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
-    // No nothing: we don't want to mutate the expressions associated with case labels.
+    // Do nothing: we don't want to mutate the expressions associated with case labels.
   }
 
 }
