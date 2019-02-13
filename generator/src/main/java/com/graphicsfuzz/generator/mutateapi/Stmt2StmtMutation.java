@@ -14,22 +14,16 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.semanticschanging;
+package com.graphicsfuzz.generator.mutateapi;
 
-import com.graphicsfuzz.common.ast.IParentMap;
-import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.typing.Typer;
-import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
+import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.stmt.Stmt;
+import java.util.function.Supplier;
 
-abstract class Expr2ExprMutationFinder extends MutationFinderBase<Expr2ExprMutation> {
+public class Stmt2StmtMutation extends Node2NodeMutation<Stmt> {
 
-  protected final Typer typer;
-  protected final IParentMap parentMap;
-
-  public Expr2ExprMutationFinder(TranslationUnit tu) {
-    super(tu);
-    this.typer = new Typer(tu);
-    this.parentMap = IParentMap.createParentMap(tu);
+  public Stmt2StmtMutation(IAstNode parent, Stmt original, Supplier<Stmt> replacement) {
+    super(parent, original, replacement);
   }
 
 }

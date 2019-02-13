@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
+import com.graphicsfuzz.generator.mutateapi.Stmt2StmtMutation;
 
 public class If2DiscardMutationFinder extends MutationFinderBase<Stmt2StmtMutation> {
 
@@ -34,12 +35,12 @@ public class If2DiscardMutationFinder extends MutationFinderBase<Stmt2StmtMutati
   @Override
   public void visitIfStmt(IfStmt ifStmt) {
     super.visitIfStmt(ifStmt);
-    addMutation(new Stmt2StmtMutation(ifStmt, ifStmt.getThenStmt(), new DiscardStmt()));
+    addMutation(new Stmt2StmtMutation(ifStmt, ifStmt.getThenStmt(), () -> new DiscardStmt()));
     if (ifStmt.hasElseStmt()) {
-      addMutation(new Stmt2StmtMutation(ifStmt, ifStmt.getElseStmt(), new DiscardStmt()));
+      addMutation(new Stmt2StmtMutation(ifStmt, ifStmt.getElseStmt(), () -> new DiscardStmt()));
     } else {
       addMutation(new Stmt2StmtMutation(parentMap.getParent(ifStmt), ifStmt,
-          new IfStmt(ifStmt.getCondition(), ifStmt.getThenStmt(), new DiscardStmt())));
+          () -> new IfStmt(ifStmt.getCondition(), ifStmt.getThenStmt(), new DiscardStmt())));
     }
   }
 

@@ -25,6 +25,7 @@ import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
+import com.graphicsfuzz.generator.mutateapi.Stmt2StmtMutation;
 import java.util.Arrays;
 
 public class Compound2BodyMutationFinder extends MutationFinderBase<Stmt2StmtMutation> {
@@ -39,9 +40,11 @@ public class Compound2BodyMutationFinder extends MutationFinderBase<Stmt2StmtMut
   @Override
   public void visitIfStmt(IfStmt ifStmt) {
     super.visitIfStmt(ifStmt);
-    addMutation(new Stmt2StmtMutation(parentMap.getParent(ifStmt), ifStmt, ifStmt.getThenStmt()));
+    addMutation(new Stmt2StmtMutation(parentMap.getParent(ifStmt), ifStmt,
+        () -> ifStmt.getThenStmt()));
     if (ifStmt.hasElseStmt()) {
-      addMutation(new Stmt2StmtMutation(parentMap.getParent(ifStmt), ifStmt, ifStmt.getElseStmt()));
+      addMutation(new Stmt2StmtMutation(parentMap.getParent(ifStmt), ifStmt,
+          () -> ifStmt.getElseStmt()));
     }
   }
 
@@ -56,21 +59,22 @@ public class Compound2BodyMutationFinder extends MutationFinderBase<Stmt2StmtMut
                 : Arrays.asList(forStmt.getBody())) {
       replacement.addStmt(stmt);
     }
-    addMutation(new Stmt2StmtMutation(parentMap.getParent(forStmt), forStmt, replacement));
+    addMutation(new Stmt2StmtMutation(parentMap.getParent(forStmt), forStmt, () -> replacement));
   }
 
   @Override
   public void visitWhileStmt(WhileStmt whileStmt) {
     super.visitWhileStmt(whileStmt);
     addMutation(
-          new Stmt2StmtMutation(parentMap.getParent(whileStmt), whileStmt, whileStmt.getBody()));
+          new Stmt2StmtMutation(parentMap.getParent(whileStmt), whileStmt,
+              () -> whileStmt.getBody()));
   }
 
   @Override
   public void visitDoStmt(DoStmt doStmt) {
     super.visitDoStmt(doStmt);
     addMutation(
-          new Stmt2StmtMutation(parentMap.getParent(doStmt), doStmt, doStmt.getBody()));
+          new Stmt2StmtMutation(parentMap.getParent(doStmt), doStmt, () -> doStmt.getBody()));
   }
 
 }
