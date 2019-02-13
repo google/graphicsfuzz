@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.generator.mutateapi.Stmt2StmtMutation;
 import java.util.List;
 import org.junit.Test;
 

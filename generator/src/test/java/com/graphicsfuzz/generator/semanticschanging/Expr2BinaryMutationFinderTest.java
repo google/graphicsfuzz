@@ -20,8 +20,11 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
 import java.util.List;
 import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
 
 public class Expr2BinaryMutationFinderTest {
 
@@ -53,7 +56,7 @@ public class Expr2BinaryMutationFinderTest {
         + "  int cnt = 0, z;"
         + "  for(int i = 0; i < 100; i++) {"
         + "    cnt++;"
-        + "    (z += (2 + foo(5)) * (2 + foo(5))) * (z += 2 + foo(5));"
+        + "    (z += (2 + foo(5)) * (2 + foo(5))) * (z += (2 + foo(5)) * (2 + foo(5)));"
         + "  }"
         + "}";
 

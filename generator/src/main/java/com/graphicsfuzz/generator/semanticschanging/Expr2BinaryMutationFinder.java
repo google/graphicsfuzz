@@ -24,6 +24,8 @@ import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutationFinder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -61,7 +63,8 @@ public class Expr2BinaryMutationFinder extends Expr2ExprMutationFinder {
     }
 
     addMutation(new Expr2ExprMutation(parentMap.getParent(expr),
-        expr, new BinaryExpr(new ParenExpr(expr), new ParenExpr(expr.clone()), operator.get())));
+        expr, () -> new BinaryExpr(new ParenExpr(expr), new ParenExpr(expr.clone()),
+        operator.get())));
   }
 
   private Optional<BinOp> chooseBinOp(Type type) {

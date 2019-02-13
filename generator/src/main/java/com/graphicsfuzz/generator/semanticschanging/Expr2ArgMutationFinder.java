@@ -19,6 +19,8 @@ package com.graphicsfuzz.generator.semanticschanging;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
+import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutationFinder;
 
 public class Expr2ArgMutationFinder extends Expr2ExprMutationFinder {
 
@@ -45,7 +47,7 @@ public class Expr2ArgMutationFinder extends Expr2ExprMutationFinder {
       addMutation(new Expr2ExprMutation(
             parentMap.getParent(parent),
             parent,
-            parent.getChild(childIndex)));
+          () -> parent.getChild(childIndex)));
     }
   }
 
