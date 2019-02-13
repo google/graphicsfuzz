@@ -51,6 +51,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.fuzzer.templates.FunctionCallExprTemplate;
@@ -84,8 +85,6 @@ public class Fuzzer {
   private int nextId;
   private FuzzingContext fuzzingContext;
 
-  private Collection<IExprTemplate> builtinTemplates;
-
   private final GenerationParams generationParams;
 
   // This field is used to give each fuzzed declaration a prefix, to distinguish it from
@@ -102,7 +101,6 @@ public class Fuzzer {
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.generator = generator;
     this.generationParams = generationParams;
-    this.builtinTemplates = Templates.get(shadingLanguageVersion);
     this.nextId = 0;
     this.fuzzedDeclarationPrefix = fuzzedDeclarationPrefix;
   }
@@ -139,7 +137,7 @@ public class Fuzzer {
     }
     if (targetType instanceof BasicType) {
 
-      List<IExprTemplate> applicableTemplates = availableTemplates()
+      List<IExprTemplate> applicableTemplates = availableTemplatesFromContext()
             .filter(item -> item.getResultType().equals(targetType)).collect(Collectors.toList());
       if (isLValue) {
         applicableTemplates = applicableTemplates.stream().filter(item -> item.isLValue())
@@ -219,21 +217,19 @@ public class Fuzzer {
     return false;
   }
 
-  private Stream<IExprTemplate> availableTemplates() {
-    return Stream.concat(builtinTemplates.stream(),
-          availableTemplatesFromContext());
+  private Stream<IExprTemplate> availableTemplatesFromContext() {
+    return Stream.concat(availableTemplatesFromScope(shadingLanguageVersion,
+        fuzzingContext.getCurrentScope()),
+      fuzzingContext.getFunctionPrototypes().stream().map(FunctionCallExprTemplate::new));
   }
 
-  private Stream<IExprTemplate> availableTemplatesFromContext() {
-    List<IExprTemplate> available = new LinkedList<>();
-    for (String name : fuzzingContext.getCurrentScope().namesOfAllVariablesInScope()) {
-      available.add(new VariableIdentifierExprTemplate(name,
-            fuzzingContext.getCurrentScope().lookupType(name)));
-    }
-    for (FunctionPrototype proto : fuzzingContext.getFunctionPrototypes()) {
-      available.add(new FunctionCallExprTemplate(proto));
-    }
-    return available.stream();
+  public static Stream<IExprTemplate> availableTemplatesFromScope(
+      ShadingLanguageVersion shadingLanguageVersion,
+      Scope scope) {
+    return Stream.concat(Templates.get(shadingLanguageVersion).stream(),
+        scope.namesOfAllVariablesInScope()
+            .stream()
+            .map(item -> new VariableIdentifierExprTemplate(item, scope.lookupType(item))));
   }
 
   public static void main(String[] args) {
