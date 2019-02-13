@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacpp.opencv_imgcodecs;
 import org.bytedeco.javacpp.opencv_imgproc;
@@ -46,16 +48,60 @@ public class ImageUtil {
 
     System.gc();
 
-    opencv_core.Mat mat = opencv_imgcodecs.imread(file);
+    // Load PNG image.
+    // IMREAD_UNCHANGED causes the alpha channel to be included, if present.
+    opencv_core.Mat matWithAlpha = opencv_imgcodecs.imread(
+        file,
+        opencv_imgcodecs.IMREAD_UNCHANGED);
+
+    // The image might not have four channels (i.e. no alpha channel).
+    if (matWithAlpha.type() != opencv_core.CV_8UC4) {
+      // The file could be in several different formats, including greyscale.
+      // Reload the image, converting to BGR.
+      matWithAlpha = opencv_imgcodecs.imread(file, opencv_imgcodecs.IMREAD_COLOR);
+      assert matWithAlpha.type() == opencv_core.CV_8UC3;
+      // Add (opaque) alpha channel.
+      opencv_imgproc.cvtColor(matWithAlpha, matWithAlpha, opencv_imgproc.COLOR_BGR2BGRA);
+    }
+
+    // matWithAlpha has four channels.
+    assert matWithAlpha.type() == opencv_core.CV_8UC4;
+
+    opencv_core.Mat mat = new opencv_core.Mat();
+    // Remove alpha so we can convert colors to HSV.
+    opencv_imgproc.cvtColor(matWithAlpha, mat, opencv_imgproc.COLOR_BGRA2BGR);
+    // Convert to HSV.
     opencv_imgproc.cvtColor(mat, mat, opencv_imgproc.COLOR_BGR2HSV);
+
+    // Re-add alpha for histogram function.
+    opencv_core.MatVector bgraChannels = new opencv_core.MatVector();
+    opencv_core.split(matWithAlpha, bgraChannels);
+    opencv_core.MatVector hsvChannels = new opencv_core.MatVector();
+    opencv_core.split(mat, hsvChannels);
+
+    hsvChannels.push_back(bgraChannels.get(3));
+
+    opencv_core.merge(hsvChannels, mat);
+
+    // mat now contains:
+    // HSVA
+    // 0123
+
     opencv_core.Mat hist = new opencv_core.Mat();
+
     opencv_imgproc.calcHist(
+        // source array
         new opencv_core.MatVector(new opencv_core.Mat[]{mat}),
-        new int[]{0, 1},
+        // channels: hue, saturation, alpha
+        new IntPointer(0, 1, 3),
+        // mask (none)
         new opencv_core.Mat(),
+        // output
         hist,
-        new int[]{50, 60},
-        new float[]{0, 256, 0, 256}
+        // histogram size: number of levels for hue, saturation, alpha
+        new IntPointer(50, 60, 60),
+        // input ranges for: hue, saturation, alpha
+        new FloatPointer(0, 256, 0, 256, 0, 256)
     );
     return hist;
   }

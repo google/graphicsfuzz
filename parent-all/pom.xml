@@ -191,29 +191,29 @@ limitations under the License.
       <dependency>
         <groupId>org.bytedeco</groupId>
         <artifactId>javacpp</artifactId>
-        <version>1.3</version>
+        <version>1.4.4</version>
       </dependency>
       <dependency>
         <groupId>org.bytedeco.javacpp-presets</groupId>
         <artifactId>opencv</artifactId>
-        <version>3.2.0-1.3</version>
+        <version>4.0.1-1.4.4</version>
       </dependency>
       <dependency>
         <groupId>org.bytedeco.javacpp-presets</groupId>
         <artifactId>opencv</artifactId>
-        <version>3.2.0-1.3</version>
+        <version>4.0.1-1.4.4</version>
         <classifier>linux-x86_64</classifier>
       </dependency>
       <dependency>
         <groupId>org.bytedeco.javacpp-presets</groupId>
         <artifactId>opencv</artifactId>
-        <version>3.2.0-1.3</version>
+        <version>4.0.1-1.4.4</version>
         <classifier>macosx-x86_64</classifier>
       </dependency>
       <dependency>
         <groupId>org.bytedeco.javacpp-presets</groupId>
         <artifactId>opencv</artifactId>
-        <version>3.2.0-1.3</version>
+        <version>4.0.1-1.4.4</version>
         <classifier>windows-x86_64</classifier>
       </dependency>
       <dependency>
