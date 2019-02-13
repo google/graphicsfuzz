@@ -70,6 +70,10 @@ limitations under the License.
   <dependencies>
     <dependency>
       <groupId>com.graphicsfuzz</groupId>
+      <artifactId>common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz</groupId>
       <artifactId>generator</artifactId>
     </dependency>
     <dependency>
