@@ -65,7 +65,7 @@ public class ImageUtil {
     }
 
     // matWithAlpha has four channels.
-    assert matWithAlpha.type() != opencv_core.CV_8UC4;
+    assert matWithAlpha.type() == opencv_core.CV_8UC4;
 
     opencv_core.Mat mat = new opencv_core.Mat();
     // Remove alpha so we can convert colors to HSV.
