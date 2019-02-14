@@ -54,15 +54,19 @@ import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.common.util.SsboFieldData;
 import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -98,6 +102,11 @@ public class Fragment2Compute {
         .help("Seed for random number generator.")
         .type(Integer.class);
 
+    parser.addArgument("--generate-uniform-bindings")
+        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
+            + "compatibility.")
+        .action(Arguments.storeTrue());
+
     return parser.parseArgs(args);
 
   }
@@ -113,6 +122,7 @@ public class Fragment2Compute {
     int numGroupsX;
     int numGroupsY;
     int numGroupsZ;
+    int totalSize;
 
     do {
       localSizeX = generator.nextInt(40) + 1;
@@ -121,7 +131,8 @@ public class Fragment2Compute {
       numGroupsX = generator.nextInt(7) + 1;
       numGroupsY = generator.nextInt(7) + 1;
       numGroupsZ = generator.nextInt(7) + 1;
-    } while (localSizeX * localSizeY * localSizeZ * numGroupsX * numGroupsY * numGroupsZ >= 20000);
+      totalSize = localSizeX * localSizeY * localSizeZ * numGroupsX * numGroupsY * numGroupsZ;
+    } while (totalSize >= 20000);
 
     final TranslationUnit computeTu = fragmentShaderJob.getFragmentShader().get().clone();
     final PipelineInfo computePipelineInfo = fragmentShaderJob.getPipelineInfo().clone();
@@ -132,6 +143,12 @@ public class Fragment2Compute {
     addWritesToOutputBuffer(computeTu, outputVariableName);
     new RemoveDiscardStatements(computeTu); // Remove all discard statements.
     addComputeShaderStructures(computeTu, localSizeX, localSizeY, localSizeZ);
+    final List<Number> zeros = new LinkedList<>();
+    for (int i = 0; i < totalSize * 4; i++) {
+      zeros.add(0.0);
+    }
+    computePipelineInfo.addComputeInfo(numGroupsX, numGroupsY, numGroupsZ,
+        0, Collections.singletonList(new SsboFieldData(BasicType.VEC4, zeros)));
     return new GlslShaderJob(fragmentShaderJob.getLicense(), computePipelineInfo, computeTu);
   }
 
@@ -297,8 +314,12 @@ new MemberLookupExpr(new VariableIdentifierExpr(OpenGlConstants.GL_NUM_WORK_GROU
     final IRandom generator = new RandomWrapper(ns.getInt("seed") == null
         ? new Random().nextInt() : ns.getInt("seed"));
 
-    fileOps.writeShaderJobFile(transform(fileOps.readShaderJobFile(ns.get("fragment_json")),
-        generator),
+    final ShaderJob transformedShaderJob = transform(
+        fileOps.readShaderJobFile(ns.get("fragment_json")), generator);
+    if (ns.getBoolean("generate_uniform_bindings")) {
+      transformedShaderJob.makeUniformBindings();
+    }
+    fileOps.writeShaderJobFile(transformedShaderJob,
         ns.get("compute_json"));
   }
 

@@ -20,12 +20,14 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -267,6 +269,34 @@ public final class PipelineInfo {
   public int getBinding(String uniformName) {
     assert hasBinding(uniformName);
     return lookupUniform(uniformName).get("binding").getAsInt();
+  }
+
+  public void addComputeInfo(int numGroupsX, int numGroupsY, int numGroupsZ,
+                             int ssboBinding,
+                             List<SsboFieldData> ssboFields) {
+    assert !dictionary.has(Constants.COMPUTE_DATA_KEY);
+    final JsonObject buffer = new JsonObject();
+    buffer.addProperty(Constants.COMPUTE_BINDING, ssboBinding);
+    final JsonArray fields = new JsonArray();
+    for (SsboFieldData fieldData : ssboFields) {
+      final JsonObject fieldInfo = new JsonObject();
+      fieldInfo.addProperty("type", fieldData.getBaseType().toString());
+      final JsonArray data = new JsonArray();
+      for (Number number : fieldData.getData()) {
+        data.add(new JsonPrimitive(number));
+      }
+      fieldInfo.add("data", data);
+      fields.add(fieldInfo);
+    }
+    buffer.add(Constants.COMPUTE_FIELDS, fields);
+    final JsonObject computeData = new JsonObject();
+    final JsonArray numGroups = new JsonArray();
+    numGroups.add(numGroupsX);
+    numGroups.add(numGroupsY);
+    numGroups.add(numGroupsZ);
+    computeData.add("num_groups", numGroups);
+    computeData.add("buffer", buffer);
+    dictionary.add(Constants.COMPUTE_DATA_KEY, computeData);
   }
 
   private JsonObject lookupUniform(String uniformName) {
