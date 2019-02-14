@@ -54,7 +54,7 @@ import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.generator.transformation.injection.RemoveDiscardStatements;
+import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
