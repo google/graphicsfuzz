@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.ast;
 
 import com.graphicsfuzz.common.ast.decl.Declaration;
+import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -33,10 +34,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TranslationUnit implements IAstNode {
 
-  private final ShaderKind shaderKind;
+  private ShaderKind shaderKind;
   private Optional<ShadingLanguageVersion> shadingLanguageVersion;
   private List<Declaration> topLevelDeclarations;
 
@@ -65,8 +67,23 @@ public class TranslationUnit implements IAstNode {
     this(ShaderKind.FRAGMENT, shadingLanguageVersion, topLevelDeclarations);
   }
 
+  public boolean hasMainFunction() {
+    return getFunctionDefinitions().anyMatch(TranslationUnit::isMain);
+  }
+
+  public FunctionDefinition getMainFunction() {
+    assert hasMainFunction();
+    return getFunctionDefinitions().filter(TranslationUnit::isMain)
+        .findAny()
+        .get();
+  }
+
   public ShaderKind getShaderKind() {
     return shaderKind;
+  }
+
+  public void setShaderKind(ShaderKind shaderKind) {
+    this.shaderKind = shaderKind;
   }
 
   public List<Declaration> getTopLevelDeclarations() {
@@ -177,6 +194,16 @@ public class TranslationUnit implements IAstNode {
         .filter(item -> item.hasStructNameType() && item.getStructNameType().equals(type))
         .findAny()
         .get();
+  }
+
+  private Stream<FunctionDefinition> getFunctionDefinitions() {
+    return topLevelDeclarations.stream()
+        .filter(item -> item instanceof FunctionDefinition)
+        .map(item -> (FunctionDefinition) item);
+  }
+
+  private static boolean isMain(FunctionDefinition functionDefinition) {
+    return functionDefinition.getPrototype().getName().equals("main");
   }
 
 }

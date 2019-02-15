@@ -97,15 +97,8 @@ public class AddLiveOutputWriteTransformationTest {
   }
 
   private String getBackedUpVariableName(TranslationUnit tu) {
-    final FunctionDefinition main = tu.getTopLevelDeclarations()
-        .stream()
-        .filter(item -> item instanceof FunctionDefinition)
-        .map(item -> (FunctionDefinition) item)
-        .filter(item -> item.getPrototype().getName().equals("main"))
-        .findAny()
-        .get();
     return ((VariableIdentifierExpr) ((BinaryExpr) ((ExprStmt)
-        ((BlockStmt) main.getBody().getStmt(0))
+        ((BlockStmt) tu.getMainFunction().getBody().getStmt(0))
             .getStmt(1)).getExpr()).getRhs()).getName();
   }
 

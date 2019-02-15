@@ -66,4 +66,12 @@ public final class Constants {
   // buffer used for input/output.
   public static final String COMPUTE_BUFFER = "buffer";
 
+  // The entry within the compute shader input/output information that records the binding for
+  // the buffer.
+  public static final String COMPUTE_BINDING = "binding";
+
+  // The entry within the compute shader input/output information that records the fields of
+  // the buffer.
+  public static final String COMPUTE_FIELDS = "fields";
+
 }

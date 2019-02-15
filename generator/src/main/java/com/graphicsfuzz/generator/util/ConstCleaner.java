@@ -52,14 +52,7 @@ class ConstCleaner extends ScopeTreeBuilder {
     this.globalsToBeReInitialized = new ArrayList<>();
     this.shadingLanguageVersion = tu.getShadingLanguageVersion();
     visit(tu);
-    addGlobalInitializers(tu
-        .getTopLevelDeclarations()
-        .stream()
-        .filter(item -> item instanceof FunctionDefinition)
-        .map(item -> (FunctionDefinition) item)
-        .filter(item -> item.getPrototype().getName().equals("main"))
-        .collect(Collectors.toList())
-        .get(0));
+    addGlobalInitializers(tu.getMainFunction());
   }
 
   public static void clean(TranslationUnit tu) {
