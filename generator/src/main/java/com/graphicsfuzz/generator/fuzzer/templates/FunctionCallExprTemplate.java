@@ -55,7 +55,7 @@ public class FunctionCallExprTemplate extends AbstractExprTemplate {
 
   @Override
   public List<List<? extends Type>> getArgumentTypes() {
-    return argTypes.stream().map(item -> new ArrayList<Type>(Arrays.asList(item)))
+    return argTypes.stream().map(item -> new ArrayList<>(Arrays.asList(item)))
         .collect(Collectors.toList());
   }
 
