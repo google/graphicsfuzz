@@ -39,8 +39,9 @@ public class InterchangeExprMutationFinderTest {
   public void testValidInterchanges() throws Exception {
     final IRandom generator = new RandomWrapper(0);
     final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
-    for (File shaderJobFile : Paths.get(ToolPaths.getShadersDirectory(), "samples",
-        "100").toFile().listFiles((dir, name) -> name.endsWith(".json"))) {
+    for (File shaderJobFile : fileOperations.listShaderJobFiles(
+        Paths.get(ToolPaths.getShadersDirectory(), "samples", "100").toFile(),
+        ((dir, name) -> true))) {
       final ShaderJob shaderJob = fileOperations.readShaderJobFile(shaderJobFile);
       new InterchangeExprMutationFinder(shaderJob.getFragmentShader().get(), generator)
           .findMutations().forEach(Mutation::apply);
