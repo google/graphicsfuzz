@@ -221,11 +221,7 @@ public class Fragment2Compute {
   private static void addWritesToOutputBuffer(TranslationUnit computeTu,
                                               String outputVariableName) {
     // Get the main function, which is assumed to exist.
-    final FunctionDefinition mainFunction = computeTu.getTopLevelDeclarations().stream()
-        .filter(item -> item instanceof FunctionDefinition)
-        .map(item -> (FunctionDefinition) item)
-        .filter(item -> item.getPrototype().getName().equals("main"))
-        .findAny().get();
+    final FunctionDefinition mainFunction = computeTu.getMainFunction();
 
     // Make sure there is an explicit return at the end of main.
     if (mainFunction.getBody().getNumStmts() == 0
@@ -268,7 +264,7 @@ public class Fragment2Compute {
             new BlockStmt(Arrays.asList(assignment, returnStmt), true));
       }
 
-    }.visit(computeTu);
+    }.visit(mainFunction);
 
   }
 
