@@ -10,7 +10,7 @@ public class SsboFieldData {
   private final BasicType baseType;
   private final List<Number> data;
 
-  public SsboFieldData(BasicType baseType, List<Number> data) {
+  public SsboFieldData(BasicType baseType, List<? extends Number> data) {
     assert !data.isEmpty();
     assert (baseType.getElementType() == baseType.FLOAT && data.get(0) instanceof Float)
         || (baseType.getElementType() == baseType.INT && data.get(0) instanceof Integer);

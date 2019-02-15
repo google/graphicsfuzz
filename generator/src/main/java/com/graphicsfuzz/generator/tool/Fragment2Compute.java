@@ -143,9 +143,9 @@ public class Fragment2Compute {
     addWritesToOutputBuffer(computeTu, outputVariableName);
     new RemoveDiscardStatements(computeTu); // Remove all discard statements.
     addComputeShaderStructures(computeTu, localSizeX, localSizeY, localSizeZ);
-    final List<Number> zeros = new LinkedList<>();
+    final List<Float> zeros = new LinkedList<>();
     for (int i = 0; i < totalSize * 4; i++) {
-      zeros.add(0.0);
+      zeros.add(0.0f);
     }
     computePipelineInfo.addComputeInfo(numGroupsX, numGroupsY, numGroupsZ,
         0, Collections.singletonList(new SsboFieldData(BasicType.VEC4, zeros)));
@@ -254,7 +254,7 @@ public class Fragment2Compute {
                     getWorkGroupSizeTimesNumWorkGroups("x"),
                     BinOp.MUL),
                 BinOp.ADD),
-              getGlobalInvocationId("y"),
+              getGlobalInvocationId("x"),
               BinOp.ADD);
 
         final Stmt assignment = new ExprStmt(
