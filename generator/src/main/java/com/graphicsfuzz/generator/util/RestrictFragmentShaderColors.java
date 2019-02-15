@@ -127,18 +127,13 @@ public class RestrictFragmentShaderColors {
   }
 
   private void addInitialWrite() {
-    final Optional<FunctionDefinition> maybeMain = shaderJob.getFragmentShader().get()
-        .getTopLevelDeclarations()
-        .stream()
-        .filter(item -> item instanceof FunctionDefinition)
-        .map(item -> (FunctionDefinition) item)
-        .filter(item -> item.getPrototype().getName().equals("main"))
-        .findAny();
-    if (!maybeMain.isPresent()) {
+    if (!shaderJob.getFragmentShader().get().hasMainFunction()) {
       throw new RuntimeException("Fragment shader must have a main function.");
     }
+    final FunctionDefinition mainFunction = shaderJob.getFragmentShader().get()
+        .getMainFunction();
     final Scope emptyScope = new Scope(null);
-    maybeMain.get().getBody().insertStmt(0,
+    mainFunction.getBody().insertStmt(0,
         makeOutputVariableWrite(makeColorVector(BasicType.VEC4, emptyScope)));
   }
 
