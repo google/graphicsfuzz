@@ -59,9 +59,7 @@ import java.util.Set;
 
 public class IdentityMutationFinder extends Expr2ExprMutationFinder {
 
-  private final Typer typer;
   private boolean inInitializer;
-  private boolean atGlobalScope;
   private Type enclosingVariablesDeclarationType;
   private final IRandom generator;
   private final GenerationParams generationParams;
@@ -72,9 +70,7 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
                                 IRandom generator,
                                 GenerationParams generationParams) {
     super(tu);
-    this.typer = new Typer(tu);
     this.inInitializer = false;
-    this.atGlobalScope = true;
     this.enclosingVariablesDeclarationType = null;
     this.generator = generator;
     this.generationParams = generationParams;
@@ -152,14 +148,6 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
       visitForStmtBodyOnly(forStmt);
       forLoopIterators.removeLast();
     }
-  }
-
-  @Override
-  public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
-    assert atGlobalScope;
-    atGlobalScope = false;
-    super.visitFunctionDefinition(functionDefinition);
-    atGlobalScope = true;
   }
 
   @Override
@@ -275,7 +263,7 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
             TypeQualifier.CONST)) {
         return true;
       }
-      if (atGlobalScope) {
+      if (atGlobalScope()) {
         return true;
       }
     }
