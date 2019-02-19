@@ -15,6 +15,7 @@
 # limitations under the License.
 
 
+import json
 import os
 import pathlib2
 import pytest
@@ -175,8 +176,19 @@ def simple_compute(tmp_path: pathlib2.Path, is_android: bool):
     runspv.main_helper(['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
                         + 'simple.json',
                         str(out_dir)])
-    assert (out_dir / 'ssbo').exists()
+    status_file = out_dir / 'STATUS'
+    assert status_file.exists()
+    assert open(str(status_file), 'r').read().startswith('SUCCESS')
+    ssbo_json = out_dir / 'ssbo.json'
+    assert ssbo_json.exists()
+    with open(str(ssbo_json), 'r') as f:
+        j = json.load(f)
+    assert j['ssbo'][0][0] == 42
 
 
 def test_simple_compute_host(tmp_path: pathlib2.Path):
     simple_compute(tmp_path, False)
+
+
+def test_simple_compute_android(tmp_path: pathlib2.Path):
+    simple_compute(tmp_path, True)

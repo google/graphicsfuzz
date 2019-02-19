@@ -31,7 +31,7 @@ from typing import Any, IO, Optional, Union
 
 HERE = os.path.abspath(__file__)
 
-LOGFILE = 'vklog.txt'
+LOGFILE_NAME = 'vklog.txt'
 TIMEOUT_RUN = 30
 NUM_RENDER = 3
 BUSY_WAIT_SLEEP_SLOW = 1.0
@@ -83,6 +83,13 @@ def spirvas_path():
     if os.path.isfile(spirvas):
         return spirvas
     return 'spirv-as'
+
+
+def spirvdis_path():
+    spirvas = os.path.join(BIN_DIR, 'spirv-dis')
+    if os.path.isfile(spirvas):
+        return spirvas
+    return 'spirv-dis'
 
 
 def remove_end(str_in: str, str_end: str):
@@ -145,7 +152,7 @@ def run_linux(vert, frag, uniform_json, skip_render):
     elif os.path.isfile('SKIP_RENDER'):
         os.remove('SKIP_RENDER')
 
-    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + uniform_json + ' > ' + LOGFILE
+    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + uniform_json + ' > ' + LOGFILE_NAME
     status = 'SUCCESS'
     try:
         subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
@@ -154,7 +161,7 @@ def run_linux(vert, frag, uniform_json, skip_render):
     except subprocess.CalledProcessError:
         status = 'CRASH'
 
-    with open(LOGFILE, 'a') as f:
+    with open(LOGFILE_NAME, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
 
     with open('STATUS', 'w') as f:
@@ -387,36 +394,15 @@ def dump_info_android(wait_for_screen):
     adb_can_fail('shell am force-stop ' + ANDROID_APP)
 
 ################################################################################
-# VkRunner
+# VkRunner / Amber
 
 
-def spv_get_bin_as_uint(shader_filename):
-    with open(shader_filename, 'rb') as f:
-        data = f.read()
-    assert(len(data) >= 4)
-    assert(len(data) % 4 == 0)
-
-    # Check SPIRV magic header to guess endianness
-    header = struct.unpack('>I', data[0:4])[0]
-
-    if header == 0x07230203:
-        endianness = '>'
-    elif header == 0x03022307:
-        endianness = '<'
-    else:
-        raise Exception('Invalid magic header for SPIRV file')
-
-    fmt = endianness + 'I'
-
-    result = ''
-    for i in range(0, len(data), 4):
-        word = struct.unpack(fmt, data[i:i+4])[0]
-        result += ' {:x}'.format(word)
-
-    return result
+def spv_get_disassembly(shader_filename):
+    cmd = spirvdis_path() + ' ' + shader_filename
+    return subprocess.check_output(cmd, shell=True).decode('utf-8')
 
 
-def uniform_json_to_vkscript(uniform_json):
+def uniform_json_to_amberscript(uniform_json):
     """
     Returns the string representing VkScript version of uniform declarations.
     Skips the special '$compute' key, if present.
@@ -476,24 +462,24 @@ def uniform_json_to_vkscript(uniform_json):
     return result
 
 
-def vkscriptify_img(vert, frag, uniform_json):
+def amberscriptify_img(vert, frag, uniform_json):
     """
     Generates a VkScript representation of an image test
     """
 
     script = '# Generated\n'
 
-    script += '[vertex shader binary]\n'
-    script += spv_get_bin_as_uint(vert)
+    script += '[vertex shader spirv]\n'
+    script += spv_get_disassembly(vert)
     script += '\n\n'
 
-    script += '[fragment shader binary]\n'
-    script += spv_get_bin_as_uint(frag)
+    script += '[fragment shader spirv]\n'
+    script += spv_get_disassembly(frag)
     script += '\n\n'
 
     script += '[test]\n'
     script += '## Uniforms\n'
-    script += uniform_json_to_vkscript(uniform_json)
+    script += uniform_json_to_amberscript(uniform_json)
     script += '\n'
     script += 'draw rect -1 -1 2 2\n'
 
@@ -506,7 +492,7 @@ def run_vkrunner(vert, frag, uniform_json):
     assert(os.path.isfile(uniform_json))
 
     # Produce VkScript
-    script = vkscriptify_img(vert, frag, uniform_json)
+    script = amberscriptify_img(vert, frag, uniform_json)
 
     tmpfile = 'tmpscript.shader_test'
 
@@ -584,20 +570,22 @@ def comp_json_to_vkscript(comp_json):
 
     """
 
-    offset = 0
-
     with open(comp_json, 'r') as f:
         j = json.load(f)
 
     assert '$compute' in j.keys(), 'Cannot find "$compute" key in JSON file'
     j = j['$compute']
 
-    binding = j['buffer']['binding']
-    data = j['buffer']['input']
+    result = ""
 
-    result = 'ssbo ' + str(binding) + ' subdata int ' + str(offset)
-    for d in data:
-        result += ' ' + str(d)
+    binding = j['buffer']['binding']
+    offset = 0
+    for field_info in j['buffer']['fields']:
+        result += 'ssbo ' + str(binding) + ' subdata ' + field_info['type'] + ' ' + str(offset)
+        for datum in field_info['data']:
+            result += ' ' + str(datum)
+            offset += 4
+        result += '\n'
     result += '\n\n'
 
     result += 'compute'
@@ -609,46 +597,57 @@ def comp_json_to_vkscript(comp_json):
     return result
 
 
-def vkscriptify_comp(comp, comp_json):
+def amberscriptify_comp(comp_spv: str, comp_json: str):
     """
-    Generates a VkScript representation of a compute test
-    """
-
-    script = '# Generated\n'
-
-    script += '[compute shader binary]\n'
-    script += spv_get_bin_as_uint(comp)
-    script += '\n\n'
-
-    script += '[test]\n'
-    script += '## Uniforms\n'
-    script += uniform_json_to_vkscript(comp_json)
-    script += '## SSBO\n'
-    script += comp_json_to_vkscript(comp_json)
-    script += '\n'
-
-    return script
-
-
-def ssbo_bin_to_json(ssbo_bin_file, ssbo_json_file):
-    """
-    Read the ssbo_bin_file and extract its contents to a json file as a single array of ints.
-
-    Assumes: binary in little endian (which is almost ubiquitous on ARM CPUs) storing 32 bit ints.
+    Generates an AmberScript representation of a compute test
     """
 
-    with open(ssbo_bin_file, 'rb') as f:
-        data = f.read()
+    result = '# Generated\n'
 
-    int_width = 4  # 4 bytes for each 32 bits int
-    assert(len(data) % int_width == 0)
+    result += '[compute shader spirv]\n'
+    result += spv_get_disassembly(comp_spv)
+    result += '\n\n'
 
-    ssbo = []
-    for i in range(0, len(data), int_width):
-        int_val = struct.unpack('<I', data[i:i + int_width])[0]
-        ssbo.append(int_val)
+    result += '[test]\n'
+    result += '## Uniforms\n'
+    result += uniform_json_to_amberscript(comp_json)
+    result += '## SSBO\n'
+    result += comp_json_to_vkscript(comp_json)
+    result += '\n'
 
-    ssbo_json_obj = {'ssbo': ssbo}
+    return result
+
+
+def ssbo_text_to_json(ssbo_text_file, ssbo_json_file, comp_json):
+    '''
+    Read the ssbo_text_file and extract its contents to a json file.
+    '''
+
+    values = open(ssbo_text_file, 'r').read().split()
+    j = json.load(open(comp_json, 'r'))['$compute']
+
+    assert values[0] == str(j['buffer']['binding'])
+
+    byte_pointer = 1
+
+    result = []
+
+    for field_info in j['buffer']['fields']:
+        result_for_field = []
+        for counter in range(0, len(field_info['data'])):
+            hex = ""
+            for byte in range(0, 4):
+                hex += values[byte_pointer]
+                byte_pointer += 1
+            if field_info['type'] == 'int':
+                result_for_field.append(int.from_bytes(bytearray.fromhex(hex), byteorder='little'))
+            elif field_info['type'] in ['float', 'vec2', 'vec3', 'vec4']:
+                result_for_field.append(struct.unpack('f', bytearray.fromhex(hex))[0])
+            else:
+                raise Exception('Do not know how to handle type "' + field_info['type'] + '"')
+        result.append(result_for_field)
+
+    ssbo_json_obj = { 'ssbo': result }
 
     with open(ssbo_json_file, 'w') as f:
         f.write(json.dumps(ssbo_json_obj))
@@ -665,53 +664,76 @@ def run_compute(comp, args):
     assert(os.path.isfile(comp))
     assert(os.path.isfile(args.json))
 
-    script = vkscriptify_comp(comp, args.json)
+    amberscript_file = args.output_dir + os.sep + 'tmpscript.shader_test'
+    ssbo_output = args.output_dir + os.sep + 'ssbo'
+    ssbo_json = args.output_dir + os.sep + 'ssbo.json'
+    logfile = args.output_dir + os.sep + LOGFILE_NAME
+    statusfile = args.output_dir + os.sep + 'STATUS'
 
-    tmpfile = 'tmpscript.shader_test'
+    with open(amberscript_file, 'w') as f:
+        f.write(amberscriptify_comp(comp, args.json))
 
-    with open(tmpfile, 'w') as f:
-        f.write(script)
-
-    # Prepare files on device. vkrunner cannot be made executable under
-    # /sdcard/, hence we work under /data/local/tmp
-    device_dir = '/data/local/tmp'
-    adb_check('push ' + tmpfile + ' ' + device_dir)
-
-    device_ssbo = device_dir + '/ssbo'
-    adb_check('shell rm -f ' + device_ssbo)
-
-    # call vkrunner
     # FIXME: in case of multiple ssbo, we should pass the binding of the one to dump
-    ssbo_binding = get_ssbo_binding(comp_json)
-    cmd = 'shell "cd ' + device_dir + '; ./vkrunner -b ssbo -B ' + str(ssbo_binding) + ' ' + tmpfile + '"'
+    ssbo_binding = str(get_ssbo_binding(args.json))
 
-    adb_check('logcat -c')
+    if (args.target == 'android'):
+        # Prepare files on device. Amber cannot be made executable under
+        # /sdcard/, hence we work under /data/local/tmp
+        device_dir = '/data/local/tmp'
+        adb_check('push ' + amberscript_file + ' ' + device_dir)
 
-    status = 'UNEXPECTED_ERROR'
+        device_ssbo = device_dir + '/ssbo'
+        adb_check('shell rm -f ' + device_ssbo)
 
-    try:
-        result = adb_can_fail(cmd)
-    except subprocess.TimeoutExpired:
-        result = None
-        status = 'TIMEOUT'
+        # call amber
+        cmd = 'shell "cd ' + device_dir + '; ./amber_ndk -b ssbo -B ' + ssbo_binding + ' -d '\
+              + os.path.basename(amberscript_file) + '"'
 
-    if status != 'TIMEOUT':
-        if result.returncode != 0:
+        adb_check('logcat -c')
+
+        status = 'UNEXPECTED_ERROR'
+
+        try:
+            result = adb_can_fail(cmd)
+        except subprocess.TimeoutExpired:
+            result = None
+            status = 'TIMEOUT'
+
+        if status != 'TIMEOUT':
+            if result.returncode != 0:
+                status = 'CRASH'
+            else:
+                if adb_can_fail('shell test -f' + device_ssbo).returncode == 0:
+                    status = 'SUCCESS'
+                    adb_check('pull ' + device_ssbo + ' ' + ssbo_output)
+
+        # Grab log:
+        with open(logfile, 'w', encoding='utf-8', errors='ignore') as f:
+            adb_check('logcat -d', stdout=f)
+    else:
+        assert args.target == 'host'
+        cmd = 'amber -b ' + ssbo_output + ' -B ' + ssbo_binding + ' ' + amberscript_file + ' > ' + logfile
+        status = 'SUCCESS'
+        try:
+            subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+        except subprocess.TimeoutExpired:
+            status = 'TIMEOUT'
+        except subprocess.CalledProcessError:
             status = 'CRASH'
-        else:
-            if adb_can_fail('shell test -f' + device_ssbo).returncode == 0:
-                status = 'SUCCESS'
-                adb_check('pull ' + device_ssbo)
-                ssbo_bin_to_json('ssbo', 'ssbo.json')
 
-    # Grab log:
-    with open(LOGFILE, 'w', encoding='utf-8', errors='ignore') as f:
-        adb_check('logcat -d', stdout=f)
+        if status == 'SUCCESS':
+            assert(os.path.isfile(ssbo_output))
 
-    with open(LOGFILE, 'a') as f:
+        with open(logfile, 'a') as f:
+            f.write('\nSTATUS ' + status + '\n')
+
+    if os.path.isfile(ssbo_output):
+        ssbo_text_to_json(ssbo_output, ssbo_json, args.json)
+
+    with open(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
 
-    with open('STATUS', 'w') as f:
+    with open(statusfile, 'w') as f:
         f.write(status)
 
 
@@ -772,7 +794,7 @@ def run_image():
 
 def main_helper(args):
     # TODO: update description to reflect final output.
-    description = 'Run SPIR-V shaders.  Output: ' + LOGFILE + ', image.png'
+    description = 'Run SPIR-V shaders.  Output: ' + LOGFILE_NAME + ', image.png'
     parser = argparse.ArgumentParser(description=description)
 
     # Required arguments
