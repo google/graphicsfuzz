@@ -24,16 +24,16 @@ import javax.imageio.ImageIO;
 /**
  * A fuzzy image comparison algorithm.
  *
- * Inputs: two images (image A and image B) of the same size, a distance threshold "d", a component
- * threshold "c".
+ * <p>Inputs: two images (image A and image B) of the same size, a distance threshold "d", a
+ * component threshold "c".
  * Output: the number of "bad" pixels that "differ" according to the description below.
  * Roughly: the number of "bad" pixels is the number of pixel coordinates (x,y) where for (x,y)
  * in image A, there is not a nearby similar pixel in image B *or* vice-versa (i.e. even if only
  * one direction is bad, the pixel coordinate is bad).
  *
- * Example values: d=4, c=60. Color component values (RGBA) are 0-255.
+ * <p>Example values: d=4, c=60. Color component values (RGBA) are 0-255.
  *
- * For each pixel at (x,y) in image A that is not within distance "d" from the edge of the image,
+ * <p>For each pixel at (x,y) in image A that is not within distance "d" from the edge of the image,
  * we try to find a similar pixel within the square of pixels (of size 2"d") centered at (x,y) in
  * image B. We also try the reverse (consider (x,y) in image B and search for a pixel in image A);
  * if *either* search fails, this pixel coordinate is considered "bad". The result is the number
@@ -42,10 +42,13 @@ import javax.imageio.ImageIO;
  * and q are similar iff for *all* color components m in [R,B,G,A]:
  * abs(p[m]-q[m]) <= "c"
  *
- * There are two reasons why we consider a pixel as bad if *either* direction fails (searching in
+ * <p>There are two reasons why we consider a pixel as bad if *either* direction fails (searching in
  * image A or in image B):
- * Reason 1: we probably want the comparison to be independent of image input order (commutative).
- * Reason 2: given a reference image that is black, and a variant image that has gained
+ *
+ * <p>Reason 1: we probably want the comparison to be independent of image input order
+ * (commutative).
+ *
+ * <p>Reason 2: given a reference image that is black, and a variant image that has gained
  * a small patch of white pixels; the black pixels in the original image could all be
  * matched to black pixels in the variant image, so we would not detect any difference.
  * However, the white pixels in the variant image would not be matched to any pixels in
@@ -197,18 +200,18 @@ public class FuzzyImageComparison {
    * configurations. Two default configurations are set by default, the first with a larger
    * component threshold, and the second with a smaller component threshold.
    *
-   * Typically, the first configuration has found a bad image if there were 10+ different pixels,
+   * <p>Typically, the first configuration has found a bad image if there were 10+ different pixels,
    * and the second configuration has found a bad image if there were 10000+ different pixels.
    * Thus, if either of the above is true, the image is bad.
    *
-   * The justification is that the second configuration is too sensitive in most cases, but it
+   * <p>The justification is that the second configuration is too sensitive in most cases, but it
    * can catch cases where an image has a *lot* of slightly different pixels, such as where the
    * images are mostly different shades of grey.
    *
    * @param left first image file
    * @param right second image file
    * @return an array of configurations
-   * @throws IOException
+   * @throws IOException on file operation errors
    */
   public static ThresholdConfiguration[] compareImagesDefault(
       File left,
@@ -235,7 +238,7 @@ public class FuzzyImageComparison {
 
     // See FuzzyImageComparisonTool for main.
 
-    FuzzyImageComparison.ThresholdConfiguration[] configs = compareImagesDefault(new File(args[0]), new File(args[1]));
+    ThresholdConfiguration[] configs = compareImagesDefault(new File(args[0]), new File(args[1]));
     boolean different =
         configs[0].numDifferentResult > 10 || configs[1].numDifferentResult > 10000;
     System.out.println(configs[0].numDifferentResult + " " + configs[1].numDifferentResult + " "
