@@ -18,6 +18,9 @@ venv/
 *~
 *.bak
 
+# Debug files.
+.attach_pid*
+
 /envbuild.py
 
 /OPEN_SOURCE_LICENSES.TXT

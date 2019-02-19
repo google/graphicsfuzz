@@ -396,8 +396,7 @@ def spv_get_bin_as_uint(shader_filename):
     elif header == 0x03022307:
         endianness = '<'
     else:
-        print('Invalid magic header for SPIRV file')
-        exit(1)
+        raise Exception('Invalid magic header for SPIRV file')
 
     fmt = endianness + 'I'
 
@@ -410,7 +409,7 @@ def spv_get_bin_as_uint(shader_filename):
 
 
 def uniform_json_to_vkscript(uniform_json):
-    '''
+    """
     Returns the string representing VkScript version of uniform declarations.
     Skips the special '$compute' key, if present.
 
@@ -428,9 +427,9 @@ def uniform_json_to_vkscript(uniform_json):
     # myuniform
     uniform ubo 0:3 float 0 42.0
 
-    '''
+    """
 
-    UNIFORM_TYPE = {
+    uniform_type = {
         'glUniform1i': 'int',
         'glUniform2i': 'ivec2',
         'glUniform3i': 'ivec3',
@@ -453,10 +452,10 @@ def uniform_json_to_vkscript(uniform_json):
             continue
 
         func = entry['func']
-        if func not in UNIFORM_TYPE.keys():
+        if func not in uniform_type.keys():
             print('Error: unknown uniform type for function: ' + func)
             exit(1)
-        uniform_type = UNIFORM_TYPE[func]
+        uniform_type = uniform_type[func]
 
         result += '# ' + name + '\n'
         result += 'uniform ubo {}:{}'.format(descriptor_set, entry['binding'])
@@ -470,9 +469,9 @@ def uniform_json_to_vkscript(uniform_json):
 
 
 def vkscriptify_img(vert, frag, uniform_json):
-    '''
+    """
     Generates a VkScript representation of an image test
-    '''
+    """
 
     script = '# Generated\n'
 
@@ -523,7 +522,8 @@ def run_vkrunner(vert, frag, uniform_json):
 
     try:
         result = adb_can_fail(cmd)
-    except subprocess.TimeoutExpired as err:
+    except subprocess.TimeoutExpired:
+        result = None
         status = 'TIMEOUT'
 
     if status != 'TIMEOUT':
@@ -551,7 +551,7 @@ def run_vkrunner(vert, frag, uniform_json):
 
 
 def comp_json_to_vkscript(comp_json):
-    '''
+    """
     Returns the string representing VkScript version of compute shader setup,
     found under the special "$compute" key in JSON
 
@@ -574,7 +574,7 @@ def comp_json_to_vkscript(comp_json):
 
       compute 12 13 14
 
-    '''
+    """
 
     offset = 0
 
@@ -593,18 +593,18 @@ def comp_json_to_vkscript(comp_json):
     result += '\n\n'
 
     result += 'compute'
-    result += ' '  + str(j['num_groups'][0])
-    result += ' '  + str(j['num_groups'][1])
-    result += ' '  + str(j['num_groups'][2])
+    result += ' ' + str(j['num_groups'][0])
+    result += ' ' + str(j['num_groups'][1])
+    result += ' ' + str(j['num_groups'][2])
     result += '\n'
 
     return result
 
 
 def vkscriptify_comp(comp, comp_json):
-    '''
+    """
     Generates a VkScript representation of a compute test
-    '''
+    """
 
     script = '# Generated\n'
 
@@ -621,17 +621,18 @@ def vkscriptify_comp(comp, comp_json):
 
     return script
 
+
 def ssbo_bin_to_json(ssbo_bin_file, ssbo_json_file):
-    '''
+    """
     Read the ssbo_bin_file and extract its contents to a json file as a single array of ints.
 
     Assumes: binary in little endian (which is almost ubiquitous on ARM CPUs) storing 32 bit ints.
-    '''
+    """
 
     with open(ssbo_bin_file, 'rb') as f:
         data = f.read()
 
-    int_width = 4 # 4 bytes for each 32 bits int
+    int_width = 4  # 4 bytes for each 32 bits int
     assert(len(data) % int_width == 0)
 
     ssbo = []
@@ -639,16 +640,18 @@ def ssbo_bin_to_json(ssbo_bin_file, ssbo_json_file):
         int_val = struct.unpack('<I', data[i:i + int_width])[0]
         ssbo.append(int_val)
 
-    ssbo_json_obj = { 'ssbo': ssbo }
+    ssbo_json_obj = {'ssbo': ssbo}
 
     with open(ssbo_json_file, 'w') as f:
         f.write(json.dumps(ssbo_json_obj))
+
 
 def get_ssbo_binding(comp_json):
     with open(comp_json, 'r') as f:
         j = json.load(f)
     binding = j['$compute']['buffer']['binding']
     return binding
+
 
 def run_compute(comp, comp_json):
     assert(os.path.isfile(comp))
@@ -680,7 +683,8 @@ def run_compute(comp, comp_json):
 
     try:
         result = adb_can_fail(cmd)
-    except subprocess.TimeoutExpired as err:
+    except subprocess.TimeoutExpired:
+        result = None
         status = 'TIMEOUT'
 
     if status != 'TIMEOUT':
@@ -717,7 +721,8 @@ def main():
     group.add_argument('-i', '--serial', help='Android device serial number. Implies --android')
     group.add_argument('-l', '--linux', action='store_true', help='Render on Linux')
     group.add_argument('--vkrunner', action='store_true', help='Render using vkrunner')
-    group.add_argument('--compute', help='Run compute shader using vkrunner. Temp: Values for vert and frag arguments must be provided, but will be ignored.')
+    group.add_argument('--compute', help='Run compute shader using vkrunner. Temp: Values for vert and frag arguments '
+                                         'must be provided, but will be ignored.')
 
     parser.add_argument('-s', '--skip-render', action='store_true', help='Skip render')
 
@@ -762,6 +767,7 @@ def main():
     if args.vkrunner:
         run_vkrunner(vert, frag, args.json)
         return
+
 
 if __name__ == '__main__':
     main()
