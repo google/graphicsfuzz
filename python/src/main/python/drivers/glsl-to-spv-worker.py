@@ -22,7 +22,7 @@ import subprocess
 import sys
 import time
 
-import vkrun
+import runspv
 
 HERE = os.path.abspath(__file__)
 
@@ -216,18 +216,18 @@ def do_image_job(args, image_job):
             return res
 
     remove(png)
-    remove(vkrun.LOGFILE)
+    remove(run_spv.LOGFILE)
 
     if args.linux:
-        vkrun.run_linux(vert_spv_file, frag_spv_file, json_file, skip_render)
+        runspv.run_linux(vert_spv_file, frag_spv_file, json_file, skip_render)
     elif args.vkrunner:
-        vkrun.run_vkrunner(vert_spv_file, frag_spv_file, json_file)
+        runspv.run_vkrunner(vert_spv_file, frag_spv_file, json_file)
     else:
         wait_for_screen = not args.force
-        vkrun.run_android(vert_spv_file, frag_spv_file, json_file, skip_render, wait_for_screen)
+        runspv.run_android(vert_spv_file, frag_spv_file, json_file, skip_render, wait_for_screen)
 
-    if os.path.isfile(vkrun.LOGFILE):
-        with open(vkrun.LOGFILE, 'r', encoding='utf-8', errors='ignore') as f:
+    if os.path.isfile(runspv.LOGFILE):
+        with open(runspv.LOGFILE, 'r', encoding='utf-8', errors='ignore') as f:
             res.log += f.read()
 
     if os.path.isfile(png):
@@ -288,10 +288,10 @@ def do_compute_job(args, comp_job):
             res.status = tt.JobStatus.UNEXPECTED_ERROR
             return res
 
-    vkrun.run_compute(tmpcompspv, tmpjson)
+    runspv.run_compute(tmpcompspv, tmpjson)
 
-    if os.path.isfile(vkrun.LOGFILE):
-        with open(vkrun.LOGFILE, 'r', encoding='utf-8', errors='ignore') as f:
+    if os.path.isfile(runspv.LOGFILE):
+        with open(runspv.LOGFILE, 'r', encoding='utf-8', errors='ignore') as f:
             res.log += f.read()
 
     if os.path.isfile('STATUS'):
@@ -362,7 +362,7 @@ def get_service(server, args, worker_info_json_string):
 def is_device_available(serial):
     cmd = 'adb devices'
     devices = subprocess.run(cmd, shell=True, universal_newlines=True, stdout=subprocess.PIPE,
-                             timeout=vkrun.TIMEOUT_RUN).stdout.splitlines()
+                             timeout=runspv.TIMEOUT_RUN).stdout.splitlines()
     for line in devices:
         if serial in line:
             parts = line.split()
@@ -452,9 +452,9 @@ def main():
     remove(worker_info_file)
 
     if args.linux:
-        vkrun.dump_info_linux()
+        runspv.dump_info_linux()
     else:
-        vkrun.dump_info_android(wait_for_screen=not args.force)
+        runspv.dump_info_android(wait_for_screen=not args.force)
 
     if not os.path.isfile(worker_info_file):
         print('Failed to retrieve worker information. '
