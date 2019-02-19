@@ -56,7 +56,10 @@ import javax.imageio.ImageIO;
  * taking the worst case is typically more useful.
  *
  */
+@SuppressWarnings("Duplicates")
 public class FuzzyImageComparison {
+
+  private static final int GOOD_PIXEL_VALUE = 0;
 
   /**
    * See {@link FuzzyImageComparison}. Set of parameters used by the {@link FuzzyImageComparison}
@@ -71,10 +74,17 @@ public class FuzzyImageComparison {
      */
     public int numDifferentResult;
 
+    /**
+     * The output from running the fuzzy image comparison with this configuration, excluding
+     * sparse bad pixels (i.e. those that are not near other bad pixels).
+     */
+    public int numDifferentExcludingSparse;
+
     public ThresholdConfiguration(int componentThreshold, int distanceThreshold) {
       this.componentThreshold = componentThreshold;
       this.distanceThreshold = distanceThreshold;
       this.numDifferentResult = -1;
+      this.numDifferentExcludingSparse = -1;
     }
   }
 
@@ -96,17 +106,24 @@ public class FuzzyImageComparison {
   }
 
   private static boolean doesSimilarNearPixelExist(
-      int[] colorsLeft,
-      int[] colorsRight,
-      int height,
-      int componentThreshold,
-      int distanceThreshold,
-      int middleX,
-      int middleY) {
+      final int[] colorsLeft,
+      final int[] colorsRight,
+      final int width,
+      final int height,
+      final int componentThreshold,
+      final int distanceThreshold,
+      final int middleX,
+      final int middleY) {
 
-    int middlePos = middleY * height + middleX;
-    for (int y = middleY - distanceThreshold; y < middleY + distanceThreshold; ++y) {
-      for (int x = middleX - distanceThreshold; x < middleX + distanceThreshold; ++x) {
+    final int middlePos = middleY * height + middleX;
+
+    final int ystart = Math.max(0, middleY - distanceThreshold);
+    final int xstart = Math.max(0, middleX - distanceThreshold);
+    final int yend = Math.min(height, middleY + distanceThreshold);
+    final int xend = Math.min(width, middleX + distanceThreshold);
+
+    for (int y = ystart; y < yend; ++y) {
+      for (int x = xstart; x < xend; ++x) {
         int pos = y * height + x;
         if (arePixelsSimilarComponentThreshold(
             colorsLeft[middlePos],
@@ -125,16 +142,15 @@ public class FuzzyImageComparison {
       int width,
       int height,
       int componentThreshold,
-      int distanceThreshold) {
+      int distanceThreshold,
+      int[] badPixels) {
 
     assert colorsLeft.length == colorsRight.length;
 
     int numBad = 0;
 
-    // Skip pixels around the edge (distanceThreshold).
-
-    for (int y = distanceThreshold; y < height - distanceThreshold; ++y) {
-      for (int x = distanceThreshold; x < width - distanceThreshold; ++x) {
+    for (int y = 0; y < height; ++y) {
+      for (int x = 0; x < width; ++x) {
 
         // Given pixel in image A, find similar, nearby pixel in image B, and vice-versa.
         // If either fails (hence || below), then the pixel coordinate is bad.
@@ -142,6 +158,7 @@ public class FuzzyImageComparison {
         if (!doesSimilarNearPixelExist(
             colorsLeft,
             colorsRight,
+            width,
             height,
             componentThreshold,
             distanceThreshold,
@@ -151,6 +168,7 @@ public class FuzzyImageComparison {
             !doesSimilarNearPixelExist(
             colorsRight,
             colorsLeft,
+            width,
             height,
             componentThreshold,
             distanceThreshold,
@@ -158,10 +176,116 @@ public class FuzzyImageComparison {
             y)
         ) {
           ++numBad;
+          badPixels[y * height + x] = 0x88888888;
         }
       }
     }
     return numBad;
+  }
+
+  private static int clusterBadPixelCount(
+      final int[] badPixels,
+      final int goodPixelValue,
+      final int width,
+      final int height,
+      final int clusterBoxSize,
+      final int middleX,
+      final int middleY) {
+
+    final int ystart = Math.max(0, middleY - clusterBoxSize);
+    final int xstart = Math.max(0, middleX - clusterBoxSize);
+    final int yend = Math.min(height, middleY + clusterBoxSize);
+    final int xend = Math.min(width, middleX + clusterBoxSize);
+
+    int badPixelCount = 0;
+
+    for (int y = ystart; y < yend; ++y) {
+      for (int x = xstart; x < xend; ++x) {
+        int pos = y * height + x;
+        if (badPixels[pos] != goodPixelValue) {
+          ++badPixelCount;
+        }
+      }
+    }
+    return badPixelCount;
+  }
+
+  private static int removeSparseBadPixelsInCluster(
+      final int[] badPixels,
+      final int goodPixelValue,
+      final int width,
+      final int height,
+      final int clusterBoxSize,
+      final int numBadPixelsDense) {
+
+    int removedCount = 0;
+
+    for (int y = 0; y < height; ++y) {
+      for (int x = 0; x < width; ++x) {
+        final int pos = y * height + x;
+        if (badPixels[pos] == goodPixelValue) {
+          continue;
+        }
+        final int badPixelCount =
+            clusterBadPixelCount(
+                badPixels,
+                goodPixelValue,
+                width,
+                height,
+                clusterBoxSize,
+                x,
+                y
+            );
+        if (badPixelCount < numBadPixelsDense) {
+          // Mark to be removed.
+          assert badPixels[pos] != Integer.MAX_VALUE;
+          badPixels[pos] = Integer.MAX_VALUE;
+        }
+      }
+    }
+
+    for (int i = 0; i < badPixels.length; ++i) {
+      if (badPixels[i] == Integer.MAX_VALUE) {
+        badPixels[i] = goodPixelValue;
+        ++removedCount;
+      }
+    }
+
+    return removedCount;
+  }
+
+  private static int countBad(
+      final int[] badPixels,
+      final int goodPixelValue) {
+    int res = 0;
+    for (int badPixel : badPixels) {
+      if (badPixel != goodPixelValue) {
+        ++res;
+      }
+    }
+    return res;
+  }
+
+  /**
+   * For debugging.
+   */
+  @SuppressWarnings("unused")
+  private static void writeBadPixels(
+      final int[] badPixels,
+      final int width,
+      final int height) throws IOException {
+
+    BufferedImage out = new BufferedImage(
+        width,
+        height,
+        BufferedImage.TYPE_INT_ARGB);
+
+    for (int y = 0; y < height; ++y) {
+      for (int x = 0; x < height; ++x) {
+        out.setRGB(x, y, badPixels[y * height + x]);
+      }
+    }
+    ImageIO.write(out, "png", new File("out.png"));
   }
 
   public static void compareImages(
@@ -181,16 +305,36 @@ public class FuzzyImageComparison {
 
     for (ThresholdConfiguration thresholdConfiguration : thresholdConfigurations) {
 
+      int[] badPixels = new int[colorsLeft.length];
+
+      // int[] values are 0 by default.
+      assert badPixels[0] == GOOD_PIXEL_VALUE;
+
       thresholdConfiguration.numDifferentResult = compareImageColors(
           colorsLeft,
           colorsRight,
           leftImage.getWidth(),
           leftImage.getHeight(),
           thresholdConfiguration.componentThreshold,
-          thresholdConfiguration.distanceThreshold);
+          thresholdConfiguration.distanceThreshold,
+          badPixels);
 
-      // TODO: Could post-process here (using a badPixels array) to remove sparse bad pixels; i.e.
-      //  only clusters of bad pixels are considered bad.
+      // Remove sparse bad pixels from the count.
+
+      int removedCount = removeSparseBadPixelsInCluster(
+          badPixels,
+          GOOD_PIXEL_VALUE,
+          leftImage.getWidth(),
+          leftImage.getHeight(),
+          thresholdConfiguration.distanceThreshold,
+          thresholdConfiguration.distanceThreshold
+              * thresholdConfiguration.distanceThreshold / 4);
+
+      thresholdConfiguration.numDifferentExcludingSparse =
+          thresholdConfiguration.numDifferentResult - removedCount;
+
+      assert countBad(badPixels, GOOD_PIXEL_VALUE)
+          == thresholdConfiguration.numDifferentExcludingSparse;
     }
 
   }
@@ -227,8 +371,7 @@ public class FuzzyImageComparison {
     //     of grey.
 
     ThresholdConfiguration[] configs = new ThresholdConfiguration[] {
-        new ThresholdConfiguration(60, 4),
-        new ThresholdConfiguration(10, 4)
+        new ThresholdConfiguration(25, 4)
     };
     compareImages(left, right, configs);
     return configs;
@@ -240,8 +383,9 @@ public class FuzzyImageComparison {
 
     ThresholdConfiguration[] configs = compareImagesDefault(new File(args[0]), new File(args[1]));
     boolean different =
-        configs[0].numDifferentResult > 10 || configs[1].numDifferentResult > 10000;
-    System.out.println(configs[0].numDifferentResult + " " + configs[1].numDifferentResult + " "
+        configs[0].numDifferentResult > 100 || configs[0].numDifferentExcludingSparse > 10;
+    System.out.println(configs[0].numDifferentResult + " "
+        + configs[0].numDifferentExcludingSparse + " "
         + (different ? "different" : "similar"));
   }
 
