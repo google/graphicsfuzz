@@ -23,7 +23,8 @@ import subprocess
 import time
 import platform
 import json
-from typing import Union, IO, Any
+import sys
+from typing import Any, IO, Optional, Union
 
 ################################################################################
 # Constants
@@ -89,10 +90,11 @@ def remove_end(str_in: str, str_end: str):
     return str_in[:-len(str_end)]
 
 
-def prepare_shader(shader: str):
+def prepare_shader(output_dir: str, shader: Optional[str]):
     """
     Translates a shader to binary SPIR-V.
 
+    None -> None
     shader.frag -> shader.frag.spv
     shader.vert -> shader.vert.spv
     shader.comp -> shader.comp.spv
@@ -101,26 +103,32 @@ def prepare_shader(shader: str):
     shader.comp.asm -> shader.comp.spv
 
     :param shader: e.g. shader.frag, shader.vert, shader.frag.asm
-    :return: the output .spv file
+    :return: the resulting .spv file
     """
+
+    if shader is None:
+        return None
+
     assert(os.path.isfile(shader))
 
-    # noinspection PyUnusedLocal
-    output = ''
-    if shader.endswith('.frag') or shader.endswith('.vert') or shader.endswith('.comp'):
-        output = shader + '.spv'
-        cmd = glslang_path() + ' -V ' + shader + ' -o ' + output
+    shader_basename = os.path.basename(shader)
+
+    result = output_dir + os.sep
+    if shader_basename.endswith('.frag') or shader_basename.endswith('.vert') or shader_basename.endswith('.comp'):
+        result += shader_basename + '.spv'
+        cmd = glslang_path() + ' -V ' + shader + ' -o ' + result
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
-    elif shader.endswith('.frag.asm') or shader.endswith('.vert.asm') or shader.endswith('.comp.asm'):
-        output = remove_end(shader, '.asm') + '.spv'
-        cmd = spirvas_path() + ' ' + shader + ' -o ' + output
+    elif shader_basename.endswith('.asm'):
+        result += remove_end(shader_basename, '.asm') + '.spv'
+        cmd = spirvas_path() + ' ' + shader + ' -o ' + result
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
-    elif shader.endswith('.spv'):
-        output = shader
+    elif shader_basename.endswith('.spv'):
+        result += shader_basename
+        shutil.copy(shader, result)
     else:
         assert False, 'unexpected shader extension: {}'.format(shader)
 
-    return output
+    return result
 
 ################################################################################
 # Linux
@@ -653,11 +661,11 @@ def get_ssbo_binding(comp_json):
     return binding
 
 
-def run_compute(comp, comp_json):
+def run_compute(comp, args):
     assert(os.path.isfile(comp))
-    assert(os.path.isfile(comp_json))
+    assert(os.path.isfile(args.json))
 
-    script = vkscriptify_comp(comp, comp_json)
+    script = vkscriptify_comp(comp, args.json)
 
     tmpfile = 'tmpscript.shader_test'
 
@@ -707,52 +715,40 @@ def run_compute(comp, comp_json):
         f.write(status)
 
 
-################################################################################
-# Main
+def some_shader_format_exists(prefix: str, kind: str) -> bool:
+    return os.path.isfile(prefix + '.' + kind)\
+           or os.path.isfile(prefix + '.' + kind + '.asm')\
+           or os.path.isfile(prefix + '.' + kind + '.spv')
 
 
-def main():
-    desc = 'Run shaders on vulkan worker. Output: ' + LOGFILE + ', image.png'
+def multiple_shader_formats_exist(prefix: str, kind: str) -> bool:
+    count = 0
+    if os.path.isfile(prefix + '.' + kind):
+        count += 1
+    if os.path.isfile(prefix + '.' + kind + '.asm'):
+        count += 1
+    if os.path.isfile(prefix + '.' + kind + '.spv'):
+        count += 1
+    return count > 1
 
-    parser = argparse.ArgumentParser(description=desc)
 
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-a', '--android', action='store_true', help='Render on Android')
-    group.add_argument('-i', '--serial', help='Android device serial number. Implies --android')
-    group.add_argument('-l', '--linux', action='store_true', help='Render on Linux')
-    group.add_argument('--vkrunner', action='store_true', help='Render using vkrunner')
-    group.add_argument('--compute', help='Run compute shader using vkrunner. Temp: Values for vert and frag arguments '
-                                         'must be provided, but will be ignored.')
+def pick_shader_format(prefix: str, kind: str) -> str:
+    if multiple_shader_formats_exist(prefix, kind):
+        raise ValueError('More than one of .' + kind + ', .' + kind + '.asm and .' + kind + '.spv are present')
+    if os.path.isfile(prefix + '.' + kind):
+        return prefix + '.' + kind
+    if os.path.isfile(prefix + '.' + kind + '.asm'):
+        return prefix + '.' + kind + '.asm'
+    assert os.path.isfile(prefix + '.' + kind + '.spv')
+    return prefix + '.' + kind + '.spv'
 
-    parser.add_argument('-s', '--skip-render', action='store_true', help='Skip render')
 
-    parser.add_argument('-f', '--force', action='store_true',
-                        help='Do not wait for the device\'s screen to be on; just continue.')
-
-    parser.add_argument('vert', help='Vertex shader: shader.vert[.asm|.spv]')
-    parser.add_argument('frag', help='Fragment shader: shader.frag[.asm|.spv]')
-    parser.add_argument('json', help='Uniforms values')
-
-    args = parser.parse_args()
-
-    if not args.android and not args.serial and not args.linux and not args.vkrunner and not args.compute:
-        print('You must set either --android, --serial, --linux, --vkrunner or --compute option.')
-        exit(1)
-
-    if args.compute:
-        comp = prepare_shader(args.compute)
-        run_compute(comp, args.json)
-        return
-
-    vert = prepare_shader(args.vert)
-    frag = prepare_shader(args.frag)
-
+def run_image():
     wait_for_screen = not args.force
 
     # These are mutually exclusive, but we return after each for clarity:
 
     if args.serial:
-        os.environ['ANDROID_SERIAL'] = args.serial
         run_android(vert, frag, args.json, args.skip_render, wait_for_screen)
         return
 
@@ -769,5 +765,97 @@ def main():
         return
 
 
+
+################################################################################
+# Main
+
+
+def main_helper(args):
+    # TODO: update description to reflect final output.
+    description = 'Run SPIR-V shaders.  Output: ' + LOGFILE + ', image.png'
+    parser = argparse.ArgumentParser(description=description)
+
+    # Required arguments
+    parser.add_argument('target', help='Target: one of "host" (run on Linux/Windows machine) or "android" (run on '
+                                       'Android device).')
+    parser.add_argument('json', help='JSON file identifying shader files of interest: given foo.json, there should '
+                                     'either be foo.comp[.asm/.spv], or both of foo.vert[.asm/.spv] and foo.frag[.'
+                                     'asm/.spv].  In each case, only one of a GLSL shader or .asm or .spv file is '
+                                     'allowed.')
+
+    parser.add_argument('output_dir', help='Output directory in which to place temporary and result files')
+
+    # Optional arguments
+    parser.add_argument('--serial', help='Android device serial number. Only allowed if target is android.')
+    parser.add_argument('--legacy-worker', action='store_true', help='Render using legacy Vulkan worker.')
+    parser.add_argument('--skip-render', action='store_true', help='Compile shaders but do not actually run them.')
+    parser.add_argument('--force', action='store_true',
+                        help='Do not wait for the device\'s screen to be on; just continue.  Only allowed if target '
+                             'is android.')
+
+    args = parser.parse_args(args)
+
+    # Check the target is known.
+    if not (args.target == 'android' or args.target == 'host'):
+        raise ValueError('Target must be "android" or "host"')
+
+    # Record whether or not we are targeting Android.
+    is_android = (args.target == 'android')
+
+    # Check the optional arguments are consistent with the target.
+    if not is_android and args.force:
+        raise ValueError('"force" option not compatible with "host" target')
+
+    if not is_android and args.serial:
+        raise ValueError('"serial" option not compatible with "host" target')
+
+    # Check the JSON file used to identify other shaders is present.
+    if not os.path.isfile(args.json):
+        raise ValueError('The given JSON file does not exist: ' + args.json)
+
+    # If the JSON argument is foo.json the prefix will be foo.
+    shader_prefix = os.path.splitext(args.json)[0]
+
+    # If a compute shader is present...
+    if some_shader_format_exists(shader_prefix, 'comp'):
+        if some_shader_format_exists(shader_prefix, 'vert')\
+                or some_shader_format_exists(shader_prefix, 'frag'):
+            raise ValueError('Compute shader cannot coexist with vertex/fragment shaders')
+        compute_shader_file = pick_shader_format(shader_prefix, 'comp')
+        vertex_shader_file = None
+        fragment_shader_file = None
+    elif some_shader_format_exists(shader_prefix, 'vert'):
+        if not some_shader_format_exists(shader_prefix, 'frag'):
+            raise ValueError('Vertex shader but no fragment shader found')
+        compute_shader_file = None
+        vertex_shader_file = pick_shader_format(shader_prefix, 'vert')
+        fragment_shader_file = pick_shader_format(shader_prefix, 'frag')
+    else:
+        raise ValueError('No compute nor vertex shader files found')
+
+    # Make the output directory if it does not yet exist.
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+
+    # Copy the shaders into the output directory, turning them into SPIR-V binary format first if needed.
+    compute_shader_file = prepare_shader(args.output_dir, compute_shader_file)
+    vertex_shader_file = prepare_shader(args.output_dir, vertex_shader_file)
+    fragment_shader_file = prepare_shader(args.output_dir, fragment_shader_file)
+
+    if args.serial:
+        os.environ['ANDROID_SERIAL'] = args.serial
+
+
+    if compute_shader_file:
+        assert not vertex_shader_file
+        assert not fragment_shader_file
+        run_compute(compute_shader_file, args)
+        return
+
+    assert vertex_shader_file
+    assert fragment_shader_file
+    run_image(vertex_shader_file, fragment_shader_file, args)
+
+
 if __name__ == '__main__':
-    main()
+    main_helper(sys.argv[1:])
