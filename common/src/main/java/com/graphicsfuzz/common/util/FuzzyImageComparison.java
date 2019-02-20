@@ -30,7 +30,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 /**
  * A fuzzy image comparison algorithm.
  *
- * The algorithm is run N times for the N threshold configurations provided, but here we only
+ * <p>The algorithm is run N times for the N threshold configurations provided, but here we only
  * discuss the inputs and outputs for one configuration.
  *
  * <p>Inputs: two images (image A and image B) of the same size, a distance threshold "d", a
@@ -52,7 +52,8 @@ import net.sourceforge.argparse4j.inf.Namespace;
  * considered "bad". The result is the number of bad pixels.
  *
  * <p>Two pixels p and q are similar iff they have similar color values; specifically, p
- * and q are similar iff for *all* color components m in [R,B,G,A]: abs(p[m]-q[m]) <= "c"
+ * and q are similar iff for *all* color components m in [R,B,G,A]: abs(p[m]-q[m]) <= "c". In
+ * other words, if *any* component differs by more than "c", the pixels are different.
  *
  * <p>Why do we consider a pixel to be "bad" if *either* search direction fails (searching in
  * image A or in image B):
@@ -467,9 +468,9 @@ public class FuzzyImageComparison {
 
     Namespace ns = parser.parseArgs(args);
 
-    File imageA = ns.get("imageA");
-    File imageB = ns.get("imageB");
-    List<String> stringConfigurations = new ArrayList<>(ns.get("configurations"));
+    final File imageA = ns.get("imageA");
+    final File imageB = ns.get("imageB");
+    final List<String> stringConfigurations = new ArrayList<>(ns.get("configurations"));
 
     if ((stringConfigurations.size() % CONFIG_NUM_ARGS) != 0) {
       throw new ArgumentParserException(
