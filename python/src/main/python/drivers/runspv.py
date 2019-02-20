@@ -381,7 +381,11 @@ def run_image_linux_legacy(vert: str, frag: str, args):
     elif os.path.isfile('SKIP_RENDER'):
         os.remove('SKIP_RENDER')
 
-    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + args.json + ' > ' + logfile
+    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + args.json\
+          + ' --png_template=\"' + args.output_dir + os.sep + 'image\"'\
+          + ' --sanity_before=\"' + args.output_dir + os.sep + 'sanity_before.png\"'\
+          + ' --sanity_after=\"' + args.output_dir + os.sep + 'sanity_after.png\"'\
+                                                              ' > ' + logfile
     status = 'SUCCESS'
     try:
         subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()

@@ -232,7 +232,6 @@ def test_red_image_android(tmp_path: pathlib2.Path):
     red_image(tmp_path, True, False)
 
 
-@pytest.mark.skip(reason="Blocked by issue 270")
 def test_red_image_legacy_host(tmp_path: pathlib2.Path):
     red_image(tmp_path, False, True)
 
