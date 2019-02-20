@@ -26,7 +26,6 @@ import json
 import sys
 from typing import Any, IO, Optional, Union
 
-
 ################################################################################
 # Help messages for options that are duplicated elsewhere
 
@@ -134,7 +133,7 @@ def prepare_shader(output_dir: str, shader: Optional[str]):
     if shader is None:
         return None
 
-    assert(os.path.isfile(shader))
+    assert (os.path.isfile(shader))
 
     shader_basename = os.path.basename(shader)
 
@@ -170,7 +169,6 @@ TIMEOUT_APP = 30
 
 
 def adb_helper(adb_args, check, stdout: Union[None, int, IO[Any]]):
-
     adb_cmd = 'adb ' + adb_args
 
     try:
@@ -252,9 +250,9 @@ def prepare_device(wait_for_screen: bool, using_legacy_worker: bool):
 
 
 def run_image_android_legacy(vert: str, frag: str, json: str, output_dir: str, force: bool, skip_render: bool):
-    assert(os.path.isfile(vert))
-    assert(os.path.isfile(frag))
-    assert(os.path.isfile(json))
+    assert (os.path.isfile(vert))
+    assert (os.path.isfile(frag))
+    assert (os.path.isfile(json))
 
     logfile = output_dir + os.sep + LOGFILE_NAME
     statusfile = output_dir + os.sep + 'STATUS'
@@ -385,25 +383,25 @@ def dump_info_android_legacy(wait_for_screen):
     adb_can_fail('shell am force-stop ' + ANDROID_LEGACY_APP)
 
 
-def run_image_host_legacy(vert: str, frag: str, args):
-    assert(os.path.isfile(vert))
-    assert(os.path.isfile(frag))
-    assert(os.path.isfile(args.json))
+def run_image_host_legacy(vert: str, frag: str, json: str, output_dir: str, skip_render: bool):
+    assert (os.path.isfile(vert))
+    assert (os.path.isfile(frag))
+    assert (os.path.isfile(json))
 
-    logfile = args.output_dir + os.sep + LOGFILE_NAME
-    statusfile = args.output_dir + os.sep + 'STATUS'
+    logfile = output_dir + os.sep + LOGFILE_NAME
+    statusfile = output_dir + os.sep + 'STATUS'
 
-    if args.skip_render:
+    if skip_render:
         with open('SKIP_RENDER', 'w') as f:
             f.write('SKIP_RENDER')
     elif os.path.isfile('SKIP_RENDER'):
         os.remove('SKIP_RENDER')
 
-    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + args.json\
-          + ' --png_template=\"' + args.output_dir + os.sep + 'image\"'\
-          + ' --sanity_before=\"' + args.output_dir + os.sep + 'sanity_before.png\"'\
-          + ' --sanity_after=\"' + args.output_dir + os.sep + 'sanity_after.png\"'\
-                                                              ' > ' + logfile
+    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + json \
+          + ' --png_template=\"' + output_dir + os.sep + 'image\"' \
+          + ' --sanity_before=\"' + output_dir + os.sep + 'sanity_before.png\"' \
+          + ' --sanity_after=\"' + output_dir + os.sep + 'sanity_after.png\"' \
+                                                         ' > ' + logfile
     status = 'SUCCESS'
     try:
         subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
@@ -439,7 +437,7 @@ def run_image_legacy(vert_spv, frag_spv, args):
                                  force=args.force, skip_render=args.skip_render)
         return
     assert args.target == 'host'
-    run_image_host_legacy(vert=vert_spv, frag=frag_spv, json=args.json, output_dir=args.output_dir, force=args.force,
+    run_image_host_legacy(vert=vert_spv, frag=frag_spv, json=args.json, output_dir=args.output_dir,
                           skip_render=args.skip_render)
 
 
@@ -485,7 +483,7 @@ def uniform_json_to_amberscript(uniform_json):
     }
 
     descriptor_set = 0  # always 0 in our tests
-    offset = 0          # We never have uniform offset in our tests
+    offset = 0  # We never have uniform offset in our tests
 
     result = ''
     with open(uniform_json, 'r') as f:
@@ -537,9 +535,9 @@ def amberscriptify_image(vert, frag, uniform_json):
 
 
 def run_image_amber(vert: str, frag: str, json: str, output_dir: str, force: bool, skip_render: bool, is_android: bool):
-    assert(os.path.isfile(vert))
-    assert(os.path.isfile(frag))
-    assert(os.path.isfile(json))
+    assert (os.path.isfile(vert))
+    assert (os.path.isfile(frag))
+    assert (os.path.isfile(json))
 
     amberscript_file = output_dir + os.sep + 'tmpscript.shader_test'
     logfile = output_dir + os.sep + LOGFILE_NAME
@@ -558,7 +556,7 @@ def run_image_amber(vert: str, frag: str, json: str, output_dir: str, force: boo
         adb_check('shell rm -f ' + device_image)
 
         # call amber
-        cmd = 'shell "cd ' + ANDROID_DEVICE_DIR + '; ./amber_ndk -i ' + device_image + ' -d '\
+        cmd = 'shell "cd ' + ANDROID_DEVICE_DIR + '; ./amber_ndk -i ' + device_image + ' -d ' \
               + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + os.sep + os.path.basename(amberscript_file) + '"'
 
         adb_check('logcat -c')
@@ -594,7 +592,7 @@ def run_image_amber(vert: str, frag: str, json: str, output_dir: str, force: boo
             status = 'CRASH'
 
         if status == 'SUCCESS':
-            assert(os.path.isfile(ppm_image))
+            assert (os.path.isfile(ppm_image))
 
         with open(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
@@ -716,7 +714,7 @@ def ssbo_text_to_json(ssbo_text_file, ssbo_json_file, comp_json):
                 raise Exception('Do not know how to handle type "' + field_info['type'] + '"')
         result.append(result_for_field)
 
-    ssbo_json_obj = { 'ssbo': result }
+    ssbo_json_obj = {'ssbo': result}
 
     with open(ssbo_json_file, 'w') as f:
         f.write(json.dumps(ssbo_json_obj))
@@ -730,8 +728,8 @@ def get_ssbo_binding(comp_json):
 
 
 def run_compute_amber(comp_spv: str, args):
-    assert(os.path.isfile(comp_spv))
-    assert(os.path.isfile(args.json))
+    assert (os.path.isfile(comp_spv))
+    assert (os.path.isfile(args.json))
 
     amberscript_file = args.output_dir + os.sep + 'tmpscript.shader_test'
     ssbo_output = args.output_dir + os.sep + 'ssbo'
@@ -756,7 +754,7 @@ def run_compute_amber(comp_spv: str, args):
         adb_check('shell rm -f ' + device_ssbo)
 
         # call amber
-        cmd = 'shell "cd ' + ANDROID_DEVICE_DIR + '; ./amber_ndk -b ' + device_ssbo + ' -B ' + ssbo_binding + ' -d '\
+        cmd = 'shell "cd ' + ANDROID_DEVICE_DIR + '; ./amber_ndk -b ' + device_ssbo + ' -B ' + ssbo_binding + ' -d ' \
               + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + os.sep + os.path.basename(amberscript_file) + '"'
 
         adb_check('logcat -c')
@@ -792,7 +790,7 @@ def run_compute_amber(comp_spv: str, args):
             status = 'CRASH'
 
         if status == 'SUCCESS':
-            assert(os.path.isfile(ssbo_output))
+            assert (os.path.isfile(ssbo_output))
 
         with open(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
@@ -812,8 +810,8 @@ def run_compute_amber(comp_spv: str, args):
 
 
 def some_shader_format_exists(prefix: str, kind: str) -> bool:
-    return os.path.isfile(prefix + '.' + kind)\
-           or os.path.isfile(prefix + '.' + kind + '.asm')\
+    return os.path.isfile(prefix + '.' + kind) \
+           or os.path.isfile(prefix + '.' + kind + '.asm') \
            or os.path.isfile(prefix + '.' + kind + '.spv')
 
 
@@ -885,7 +883,7 @@ def main_helper(args):
 
     # If a compute shader is present...
     if some_shader_format_exists(shader_prefix, 'comp'):
-        if some_shader_format_exists(shader_prefix, 'vert')\
+        if some_shader_format_exists(shader_prefix, 'vert') \
                 or some_shader_format_exists(shader_prefix, 'frag'):
             raise ValueError('Compute shader cannot coexist with vertex/fragment shaders')
         compute_shader_file = pick_shader_format(shader_prefix, 'comp')
