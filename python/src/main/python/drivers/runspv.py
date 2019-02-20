@@ -26,6 +26,24 @@ import json
 import sys
 from typing import Any, IO, Optional, Union
 
+
+################################################################################
+# Help messages for options that are duplicated elsewhere
+
+FORCE_OPTION_HELP = 'Do not wait for the device\'s screen to be on; just continue.  Only allowed if \'target\' is ' \
+                    '\'android\'. '
+
+LEGACY_OPTION_HELP = 'Render using legacy Vulkan worker.'
+
+SERIAL_OPTION_HELP = 'Android device serial number. Only allowed if \'target\' is \'android\'.  Run "adb devices -l" ' \
+                     'to list available serial numbers.  A serial number need not be provided if only one device is ' \
+                     'connected.  The serial number will have the form "IP:port" if using adb over TCP.  See: ' \
+                     'https://developer.android.com/studio/command-line/adb '
+
+SKIP_RENDER_OPTION_HELP = 'Compile shaders but do not actually run them.'
+
+TARGET_HELP = 'One of \'host\' (run on host machine) or \'android\' (run on Android device).'
+
 ################################################################################
 # Constants
 
@@ -233,23 +251,23 @@ def prepare_device(wait_for_screen: bool, using_legacy_worker: bool):
 # Legacy worker: image test
 
 
-def run_image_android_legacy(vert: str, frag: str, args):
+def run_image_android_legacy(vert: str, frag: str, json: str, output_dir: str, force: bool, skip_render: bool):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
-    assert(os.path.isfile(args.json))
+    assert(os.path.isfile(json))
 
-    logfile = args.output_dir + os.sep + LOGFILE_NAME
-    statusfile = args.output_dir + os.sep + 'STATUS'
+    logfile = output_dir + os.sep + LOGFILE_NAME
+    statusfile = output_dir + os.sep + 'STATUS'
 
-    prepare_device(not args.force, True)
+    prepare_device(not force, True)
 
     adb_check('push ' + vert + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.vert.spv')
     adb_check('push ' + frag + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.frag.spv')
-    adb_check('push ' + args.json + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.json')
+    adb_check('push ' + json + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.json')
 
     cmd = 'shell am start -n ' + ANDROID_LEGACY_APP + '/android.app.NativeActivity'
     flags = '--num-render {}'.format(NUM_RENDER)
-    if args.skip_render:
+    if skip_render:
         flags += ' --skip-render'
 
     # Pass command line args as Intent extra. Need to nest-quote, hence the "\'flags\'"
@@ -300,23 +318,23 @@ def run_image_android_legacy(vert: str, frag: str, args):
         adb_check('logcat -d', stdout=f)
 
     # retrieve all files
-    adb_check('pull ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + ' ' + args.output_dir)
+    adb_check('pull ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + ' ' + output_dir)
 
     # Check sanity:
     if status == 'SUCCESS':
-        sanity_before = args.output_dir + '/sanity_before.png'
-        sanity_after = args.output_dir + '/sanity_after.png'
+        sanity_before = output_dir + '/sanity_before.png'
+        sanity_after = output_dir + '/sanity_after.png'
         if os.path.isfile(sanity_before) and os.path.isfile(sanity_after):
             if not filecmp.cmp(sanity_before, sanity_after, shallow=False):
                 status = 'SANITY_ERROR'
 
     # Check nondet:
     if status == 'SUCCESS':
-        ref_image = args.output_dir + '/image_0.png'
+        ref_image = output_dir + '/image_0.png'
         if os.path.isfile(ref_image):
             # If reference image is here then report nondet if any image is different or missing.
             for i in range(1, NUM_RENDER):
-                next_image = args.output_dir + '/image_{}.png'.format(i)
+                next_image = output_dir + '/image_{}.png'.format(i)
                 if not os.path.isfile(next_image):
                     status = 'UNEXPECTED_ERROR'
                     with open(LOGFILE_NAME, 'a') as f:
@@ -342,7 +360,7 @@ def run_image_android_legacy(vert: str, frag: str, args):
     image_path = ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/image_0.png'
     return_code = adb_can_fail('shell test -f ' + image_path).returncode
     if return_code == 0:
-        adb_check('pull ' + image_path + ' ' + args.output_dir)
+        adb_check('pull ' + image_path + ' ' + output_dir)
 
 
 def dump_info_android_legacy(wait_for_screen):
@@ -367,7 +385,7 @@ def dump_info_android_legacy(wait_for_screen):
     adb_can_fail('shell am force-stop ' + ANDROID_LEGACY_APP)
 
 
-def run_image_linux_legacy(vert: str, frag: str, args):
+def run_image_host_legacy(vert: str, frag: str, args):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
     assert(os.path.isfile(args.json))
@@ -401,7 +419,7 @@ def run_image_linux_legacy(vert: str, frag: str, args):
         f.write(status)
 
 
-def dump_info_linux_legacy():
+def dump_info_host_legacy():
     cmd = 'vkworker --info'
     status = 'SUCCESS'
     try:
@@ -417,10 +435,12 @@ def dump_info_linux_legacy():
 
 def run_image_legacy(vert_spv, frag_spv, args):
     if args.target == 'android':
-        run_image_android_legacy(vert_spv, frag_spv, args)
+        run_image_android_legacy(vert=vert_spv, frag=frag_spv, json=args.json, output_dir=args.output_dir,
+                                 force=args.force, skip_render=args.skip_render)
         return
     assert args.target == 'host'
-    run_image_linux_legacy(vert_spv, frag_spv, args)
+    run_image_host_legacy(vert=vert_spv, frag=frag_spv, json=args.json, output_dir=args.output_dir, force=args.force,
+                          skip_render=args.skip_render)
 
 
 ################################################################################
@@ -516,40 +536,22 @@ def amberscriptify_image(vert, frag, uniform_json):
     return script
 
 
-def run_image(args):
-    wait_for_screen = not args.force
+def run_image_amber(vert: str, frag: str, json: str, output_dir: str, force: bool, skip_render: bool, is_android: bool):
+    assert(os.path.isfile(vert))
+    assert(os.path.isfile(frag))
+    assert(os.path.isfile(json))
 
-    # These are mutually exclusive, but we return after each for clarity:
-
-    if args.serial:
-        run_android(vert, frag, args.json, args.skip_render, wait_for_screen)
-        return
-
-    if args.android:
-        run_android(vert, frag, args.json, args.skip_render, wait_for_screen)
-        return
-
-    if args.linux:
-        run_linux(vert, frag, args.json, args.skip_render)
-        return
-
-
-def run_image_amber(vert_spv: str, frag_spv: str, args):
-    assert(os.path.isfile(vert_spv))
-    assert(os.path.isfile(frag_spv))
-    assert(os.path.isfile(args.json))
-
-    amberscript_file = args.output_dir + os.sep + 'tmpscript.shader_test'
-    logfile = args.output_dir + os.sep + LOGFILE_NAME
-    statusfile = args.output_dir + os.sep + 'STATUS'
-    ppm_image = args.output_dir + os.sep + 'image.ppm'
-    png_image = args.output_dir + os.sep + 'image_0.png'
+    amberscript_file = output_dir + os.sep + 'tmpscript.shader_test'
+    logfile = output_dir + os.sep + LOGFILE_NAME
+    statusfile = output_dir + os.sep + 'STATUS'
+    ppm_image = output_dir + os.sep + 'image.ppm'
+    png_image = output_dir + os.sep + 'image_0.png'
 
     with open(amberscript_file, 'w') as f:
-        f.write(amberscriptify_image(vert_spv, frag_spv, args.json))
+        f.write(amberscriptify_image(vert, frag, json))
 
-    if args.target == 'android':
-        prepare_device(args.force, False)
+    if is_android:
+        prepare_device(force, False)
 
         adb_check('push ' + amberscript_file + ' ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
         device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image.ppm'
@@ -582,7 +584,6 @@ def run_image_amber(vert_spv: str, frag_spv: str, args):
             adb_check('logcat -d', stdout=f)
 
     else:
-        assert args.target == 'host'
         cmd = 'amber -i ' + ppm_image + ' ' + amberscript_file + ' > ' + logfile
         status = 'SUCCESS'
         try:
@@ -844,8 +845,7 @@ def main_helper(args):
     parser = argparse.ArgumentParser(description=description)
 
     # Required arguments
-    parser.add_argument('target', help='Target: one of "host" (run on Linux/Windows machine) or "android" (run on '
-                                       'Android device).')
+    parser.add_argument('target', help=TARGET_HELP)
     parser.add_argument('json', help='JSON file identifying shader files of interest: given foo.json, there should '
                                      'either be foo.comp[.asm/.spv], or both of foo.vert[.asm/.spv] and foo.frag[.'
                                      'asm/.spv].  In each case, only one of a GLSL shader or .asm or .spv file is '
@@ -854,12 +854,11 @@ def main_helper(args):
     parser.add_argument('output_dir', help='Output directory in which to place temporary and result files')
 
     # Optional arguments
-    parser.add_argument('--serial', help='Android device serial number. Only allowed if target is android.')
-    parser.add_argument('--legacy-worker', action='store_true', help='Render using legacy Vulkan worker.')
-    parser.add_argument('--skip-render', action='store_true', help='Compile shaders but do not actually run them.')
+    parser.add_argument('--serial', help=SERIAL_OPTION_HELP)
+    parser.add_argument('--legacy-worker', action='store_true', help=LEGACY_OPTION_HELP)
+    parser.add_argument('--skip-render', action='store_true', help=SKIP_RENDER_OPTION_HELP)
     parser.add_argument('--force', action='store_true',
-                        help='Do not wait for the device\'s screen to be on; just continue.  Only allowed if target '
-                             'is android.')
+                        help=FORCE_OPTION_HELP)
 
     args = parser.parse_args(args)
 
@@ -916,7 +915,6 @@ def main_helper(args):
     if args.serial:
         os.environ['ANDROID_SERIAL'] = args.serial
 
-
     if compute_shader_file:
         assert not vertex_shader_file
         assert not fragment_shader_file
@@ -931,7 +929,8 @@ def main_helper(args):
         run_image_legacy(vertex_shader_file, fragment_shader_file, args)
         return
 
-    run_image_amber(vertex_shader_file, fragment_shader_file, args)
+    run_image_amber(vert=vertex_shader_file, frag=fragment_shader_file, json=args.json, output_dir=args.output_dir,
+                    force=args.force, skip_render=args.skip_render, is_android=(args.target == 'android'))
 
 
 if __name__ == '__main__':

@@ -224,11 +224,11 @@ def red_image(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool)
     assert b == 0
 
 
-def test_red_image_host(tmp_path: pathlib2.Path):
+def test_red_image_amber_host(tmp_path: pathlib2.Path):
     red_image(tmp_path, False, False)
 
 
-def test_red_image_android(tmp_path: pathlib2.Path):
+def test_red_image_amber_android(tmp_path: pathlib2.Path):
     red_image(tmp_path, True, False)
 
 
