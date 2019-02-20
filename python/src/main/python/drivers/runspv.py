@@ -203,7 +203,7 @@ def is_screen_off_or_locked():
     return False
 
 
-def prepare_device(wait_for_screen, using_legacy_worker):
+def prepare_device(wait_for_screen: bool, using_legacy_worker: bool):
     adb_check('logcat -c')
 
     if using_legacy_worker:
@@ -233,20 +233,23 @@ def prepare_device(wait_for_screen, using_legacy_worker):
 # Legacy worker: image test
 
 
-def run_image_android_legacy(vert: str, frag: str, uniform_json: str, skip_render: bool, wait_for_screen: bool):
+def run_image_android_legacy(vert: str, frag: str, args):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
-    assert(os.path.isfile(uniform_json))
+    assert(os.path.isfile(args.json))
 
-    prepare_device(wait_for_screen)
+    logfile = args.output_dir + os.sep + LOGFILE_NAME
+    statusfile = args.output_dir + os.sep + 'STATUS'
+
+    prepare_device(not args.force, True)
 
     adb_check('push ' + vert + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.vert.spv')
     adb_check('push ' + frag + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.frag.spv')
-    adb_check('push ' + uniform_json + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.json')
+    adb_check('push ' + args.json + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.json')
 
     cmd = 'shell am start -n ' + ANDROID_LEGACY_APP + '/android.app.NativeActivity'
     flags = '--num-render {}'.format(NUM_RENDER)
-    if skip_render:
+    if args.skip_render:
         flags += ' --skip-render'
 
     # Pass command line args as Intent extra. Need to nest-quote, hence the "\'flags\'"
@@ -293,30 +296,27 @@ def run_image_android_legacy(vert: str, frag: str, uniform_json: str, skip_rende
         break
 
     # Grab log:
-    with open(LOGFILE_NAME, 'w', encoding='utf-8', errors='ignore') as f:
+    with open(logfile, 'w', encoding='utf-8', errors='ignore') as f:
         adb_check('logcat -d', stdout=f)
 
-    # retrieve all files to results/
-    res_dir = 'results'
-    if os.path.exists(res_dir):
-        shutil.rmtree(res_dir)
-    adb_check('pull ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + ' ' + res_dir)
+    # retrieve all files
+    adb_check('pull ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + ' ' + args.output_dir)
 
     # Check sanity:
     if status == 'SUCCESS':
-        sanity_before = res_dir + '/sanity_before.png'
-        sanity_after = res_dir + '/sanity_after.png'
+        sanity_before = args.output_dir + '/sanity_before.png'
+        sanity_after = args.output_dir + '/sanity_after.png'
         if os.path.isfile(sanity_before) and os.path.isfile(sanity_after):
             if not filecmp.cmp(sanity_before, sanity_after, shallow=False):
                 status = 'SANITY_ERROR'
 
     # Check nondet:
     if status == 'SUCCESS':
-        ref_image = res_dir + '/image_0.png'
+        ref_image = args.output_dir + '/image_0.png'
         if os.path.isfile(ref_image):
             # If reference image is here then report nondet if any image is different or missing.
             for i in range(1, NUM_RENDER):
-                next_image = res_dir + '/image_{}.png'.format(i)
+                next_image = args.output_dir + '/image_{}.png'.format(i)
                 if not os.path.isfile(next_image):
                     status = 'UNEXPECTED_ERROR'
                     with open(LOGFILE_NAME, 'a') as f:
@@ -326,12 +326,12 @@ def run_image_android_legacy(vert: str, frag: str, uniform_json: str, skip_rende
                     shutil.copy(ref_image, 'nondet0.png')
                     shutil.copy(next_image, 'nondet1.png')
 
-    with open(LOGFILE_NAME, 'a') as f:
+    with open(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
         if status == 'UNEXPECTED_ERROR':
             f.write('\n App did not start?\n')
 
-    with open('STATUS', 'w') as f:
+    with open(statusfile, 'w') as f:
         f.write(status)
 
     if status != 'SUCCESS':
@@ -342,11 +342,11 @@ def run_image_android_legacy(vert: str, frag: str, uniform_json: str, skip_rende
     image_path = ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/image_0.png'
     return_code = adb_can_fail('shell test -f ' + image_path).returncode
     if return_code == 0:
-        adb_check('pull ' + image_path)
+        adb_check('pull ' + image_path + ' ' + args.output_dir)
 
 
 def dump_info_android_legacy(wait_for_screen):
-    prepare_device(wait_for_screen)
+    prepare_device(wait_for_screen, True)
 
     info_file = ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/worker_info.json'
 
@@ -367,18 +367,21 @@ def dump_info_android_legacy(wait_for_screen):
     adb_can_fail('shell am force-stop ' + ANDROID_LEGACY_APP)
 
 
-def run_image_linux_legacy(vert: str, frag: str, uniform_json: str, skip_render: bool   ):
+def run_image_linux_legacy(vert: str, frag: str, args):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
-    assert(os.path.isfile(uniform_json))
+    assert(os.path.isfile(args.json))
 
-    if skip_render:
+    logfile = args.output_dir + os.sep + LOGFILE_NAME
+    statusfile = args.output_dir + os.sep + 'STATUS'
+
+    if args.skip_render:
         with open('SKIP_RENDER', 'w') as f:
             f.write('SKIP_RENDER')
     elif os.path.isfile('SKIP_RENDER'):
         os.remove('SKIP_RENDER')
 
-    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + uniform_json + ' > ' + LOGFILE_NAME
+    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + args.json + ' > ' + logfile
     status = 'SUCCESS'
     try:
         subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
@@ -387,10 +390,10 @@ def run_image_linux_legacy(vert: str, frag: str, uniform_json: str, skip_render:
     except subprocess.CalledProcessError:
         status = 'CRASH'
 
-    with open(LOGFILE_NAME, 'a') as f:
+    with open(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
 
-    with open('STATUS', 'w') as f:
+    with open(statusfile, 'w') as f:
         f.write(status)
 
 
@@ -410,10 +413,10 @@ def dump_info_linux_legacy():
 
 def run_image_legacy(vert_spv, frag_spv, args):
     if args.target == 'android':
-        run_image_android_legacy(vert_spv, frag_spv, args.json, args.skip_render, not args.force)
+        run_image_android_legacy(vert_spv, frag_spv, args)
         return
     assert args.target == 'host'
-    run_image_linux_legacy(vert_spv, frag_spv, args.json, args.skip_render)
+    run_image_linux_legacy(vert_spv, frag_spv, args)
 
 
 ################################################################################
@@ -536,7 +539,7 @@ def run_image_amber(vert_spv: str, frag_spv: str, args):
     logfile = args.output_dir + os.sep + LOGFILE_NAME
     statusfile = args.output_dir + os.sep + 'STATUS'
     ppm_image = args.output_dir + os.sep + 'image.ppm'
-    png_image = args.output_dir + os.sep + 'image0.png'
+    png_image = args.output_dir + os.sep + 'image_0.png'
 
     with open(amberscript_file, 'w') as f:
         f.write(amberscriptify_image(vert_spv, frag_spv, args.json))

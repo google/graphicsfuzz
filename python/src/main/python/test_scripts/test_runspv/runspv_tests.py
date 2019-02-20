@@ -18,6 +18,7 @@
 import json
 import os
 import pathlib2
+import PIL.Image
 import pytest
 import sys
 
@@ -203,37 +204,38 @@ def test_simple_compute_android(tmp_path: pathlib2.Path):
     simple_compute(tmp_path, True)
 
 
-def red_image(tmp_path: pathlib2.Path, is_android: bool):
+def red_image(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool):
     out_dir = tmp_path / 'out'
-    runspv.main_helper(['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
+    args = ['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
                         + 'red.json',
-                        str(out_dir)])
+                        str(out_dir)]
+    if is_legacy_worker:
+        args.append('--legacy-worker')
+    runspv.main_helper(args)
     status_file = out_dir / 'STATUS'
     assert status_file.exists()
     assert open(str(status_file), 'r').read().startswith('SUCCESS')
+    image_file = out_dir / 'image_0.png'
+    assert image_file.exists()
+    image = PIL.Image.open(str(image_file)).convert('RGB')
+    r, g, b = image.getpixel((0, 0))
+    assert r == 255
+    assert g == 0
+    assert b == 0
 
 
 def test_red_image_host(tmp_path: pathlib2.Path):
-    red_image(tmp_path, False)
+    red_image(tmp_path, False, False)
 
 
 def test_red_image_android(tmp_path: pathlib2.Path):
-    red_image(tmp_path, True)
+    red_image(tmp_path, True, False)
 
 
-def red_image_legacy(tmp_path: pathlib2.Path, is_android: bool):
-    out_dir = tmp_path / 'out'
-    runspv.main_helper(['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
-                        + 'red.json',
-                        str(out_dir), '--legacy-worker'])
-    status_file = out_dir / 'STATUS'
-    assert status_file.exists()
-    assert open(str(status_file), 'r').read().startswith('SUCCESS')
-
-
+@pytest.mark.skip(reason="Blocked by issue 270")
 def test_red_image_legacy_host(tmp_path: pathlib2.Path):
-    red_image_legacy(tmp_path, False)
+    red_image(tmp_path, False, True)
 
 
 def test_red_image_legacy_android(tmp_path: pathlib2.Path):
-    red_image_legacy(tmp_path, True)
+    red_image(tmp_path, True, True)
