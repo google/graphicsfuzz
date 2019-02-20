@@ -171,6 +171,15 @@ def test_error_vert_no_frag(tmp_path: pathlib2.Path):
     assert 'ValueError: Vertex shader but no fragment shader found' in str(value_error)
 
 
+def test_no_compute_in_legacy(tmp_path: pathlib2.Path):
+    # Check for appropriate error when legacy worker is attempted to be used with compute shader.
+    json = make_empty_json(tmp_path)
+    make_empty_file(tmp_path, "shader.comp")
+    with pytest.raises(ValueError) as value_error:
+        runspv.main_helper(['host', str(json), str(tmp_path / 'out'), '--legacy-worker'])
+    assert 'ValueError: Compute shaders are not supported with the legacy worker' in str(value_error)
+
+
 def simple_compute(tmp_path: pathlib2.Path, is_android: bool):
     out_dir = tmp_path / 'out'
     runspv.main_helper(['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
@@ -192,3 +201,39 @@ def test_simple_compute_host(tmp_path: pathlib2.Path):
 
 def test_simple_compute_android(tmp_path: pathlib2.Path):
     simple_compute(tmp_path, True)
+
+
+def red_image(tmp_path: pathlib2.Path, is_android: bool):
+    out_dir = tmp_path / 'out'
+    runspv.main_helper(['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
+                        + 'red.json',
+                        str(out_dir)])
+    status_file = out_dir / 'STATUS'
+    assert status_file.exists()
+    assert open(str(status_file), 'r').read().startswith('SUCCESS')
+
+
+def test_red_image_host(tmp_path: pathlib2.Path):
+    red_image(tmp_path, False)
+
+
+def test_red_image_android(tmp_path: pathlib2.Path):
+    red_image(tmp_path, True)
+
+
+def red_image_legacy(tmp_path: pathlib2.Path, is_android: bool):
+    out_dir = tmp_path / 'out'
+    runspv.main_helper(['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
+                        + 'red.json',
+                        str(out_dir), '--legacy-worker'])
+    status_file = out_dir / 'STATUS'
+    assert status_file.exists()
+    assert open(str(status_file), 'r').read().startswith('SUCCESS')
+
+
+def test_red_image_legacy_host(tmp_path: pathlib2.Path):
+    red_image_legacy(tmp_path, False)
+
+
+def test_red_image_legacy_android(tmp_path: pathlib2.Path):
+    red_image_legacy(tmp_path, True)

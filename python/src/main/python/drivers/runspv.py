@@ -137,56 +137,17 @@ def prepare_shader(output_dir: str, shader: Optional[str]):
 
     return result
 
-################################################################################
-# Linux
-
-
-def run_linux(vert, frag, uniform_json, skip_render):
-    assert(os.path.isfile(vert))
-    assert(os.path.isfile(frag))
-    assert(os.path.isfile(uniform_json))
-
-    if skip_render:
-        with open('SKIP_RENDER', 'w') as f:
-            f.write('SKIP_RENDER')
-    elif os.path.isfile('SKIP_RENDER'):
-        os.remove('SKIP_RENDER')
-
-    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + uniform_json + ' > ' + LOGFILE_NAME
-    status = 'SUCCESS'
-    try:
-        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
-    except subprocess.TimeoutExpired:
-        status = 'TIMEOUT'
-    except subprocess.CalledProcessError:
-        status = 'CRASH'
-
-    with open(LOGFILE_NAME, 'a') as f:
-        f.write('\nSTATUS ' + status + '\n')
-
-    with open('STATUS', 'w') as f:
-        f.write(status)
-
-
-def dump_info_linux():
-    cmd = 'vkworker --info'
-    status = 'SUCCESS'
-    try:
-        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
-    except subprocess.TimeoutExpired:
-        status = 'TIMEOUT'
-    except subprocess.CalledProcessError:
-        status = 'CRASH'
-
-    with open('STATUS', 'w') as f:
-        f.write(status)
 
 ################################################################################
-# Android
+# Android general
 
 
-ANDROID_SDCARD = '/sdcard/graphicsfuzz'
-ANDROID_APP = 'com.graphicsfuzz.vkworker'
+ANDROID_SDCARD_GRAPHICSFUZZ_DIR = '/sdcard/graphicsfuzz'
+# Amber cannot be made executable under /sdcard/, hence we work under /data/local/tmp
+ANDROID_DEVICE_DIR = '/data/local/tmp'
+ANDROID_DEVICE_GRAPHICSFUZZ_DIR = ANDROID_DEVICE_DIR + '/graphicsfuzz'
+ANDROID_AMBER_NDK = 'amber_ndk'
+ANDROID_LEGACY_APP = 'com.graphicsfuzz.vkworker'
 TIMEOUT_APP = 30
 
 
@@ -242,13 +203,21 @@ def is_screen_off_or_locked():
     return False
 
 
-def prepare_device(wait_for_screen):
+def prepare_device(wait_for_screen, using_legacy_worker):
     adb_check('logcat -c')
-    adb_check('shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
-    adb_check('shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
-    adb_can_fail('shell am force-stop ' + ANDROID_APP)
-    adb_can_fail('shell rm -rf ' + ANDROID_SDCARD)
-    adb_check('shell mkdir -p ' + ANDROID_SDCARD)
+
+    if using_legacy_worker:
+        # If the legacy worker is being used, give it the right permissions, stop it if already running, and get its
+        # working directory ready.
+        adb_check('shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
+        adb_check('shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
+        adb_can_fail('shell am force-stop ' + ANDROID_LEGACY_APP)
+        adb_can_fail('shell rm -rf ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR)
+        adb_check('shell mkdir -p ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR)
+    else:
+        # TODO: check that amber_ndk is under ANDROID_DEVICE_DIR
+        adb_can_fail('shell rm -rf ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
+        adb_check('shell mkdir -p ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
 
     if wait_for_screen:
         stay_awake_warning()
@@ -260,18 +229,22 @@ def prepare_device(wait_for_screen):
             time.sleep(BUSY_WAIT_SLEEP_SLOW)
 
 
-def run_android(vert, frag, uniform_json, skip_render, wait_for_screen):
+################################################################################
+# Legacy worker: image test
+
+
+def run_image_android_legacy(vert: str, frag: str, uniform_json: str, skip_render: bool, wait_for_screen: bool):
     assert(os.path.isfile(vert))
     assert(os.path.isfile(frag))
     assert(os.path.isfile(uniform_json))
 
     prepare_device(wait_for_screen)
 
-    adb_check('push ' + vert + ' ' + ANDROID_SDCARD + '/test.vert.spv')
-    adb_check('push ' + frag + ' ' + ANDROID_SDCARD + '/test.frag.spv')
-    adb_check('push ' + uniform_json + ' ' + ANDROID_SDCARD + '/test.json')
+    adb_check('push ' + vert + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.vert.spv')
+    adb_check('push ' + frag + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.frag.spv')
+    adb_check('push ' + uniform_json + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.json')
 
-    cmd = 'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity'
+    cmd = 'shell am start -n ' + ANDROID_LEGACY_APP + '/android.app.NativeActivity'
     flags = '--num-render {}'.format(NUM_RENDER)
     if skip_render:
         flags += ' --skip-render'
@@ -294,24 +267,24 @@ def run_android(vert, frag, uniform_json, skip_render, wait_for_screen):
 
         # Don't pass here until app has started.
         if status == 'UNEXPECTED_ERROR':
-            if adb_can_fail('shell test -f ' + ANDROID_SDCARD + '/STARTED').returncode != 0:
+            if adb_can_fail('shell test -f ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/STARTED').returncode != 0:
                 continue
             status = 'TIMEOUT'
 
         assert status == 'TIMEOUT'
 
         # DONE file indicates app is done.
-        if adb_can_fail('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode == 0:
+        if adb_can_fail('shell test -f ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/DONE').returncode == 0:
             status = 'SUCCESS'
             break
 
         # Otherwise, keep looping/waiting while the app is still running.
         # Quote >/dev/null otherwise this fails on Windows hosts.
-        if adb_can_fail('shell "pidof ' + ANDROID_APP + ' > /dev/null"').returncode == 0:
+        if adb_can_fail('shell "pidof ' + ANDROID_LEGACY_APP + ' > /dev/null"').returncode == 0:
             continue
 
         # The app has crashed. Check for DONE file one more time.
-        if adb_can_fail('shell test -f ' + ANDROID_SDCARD + '/DONE').returncode == 0:
+        if adb_can_fail('shell test -f ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/DONE').returncode == 0:
             status = 'SUCCESS'
             break
 
@@ -320,14 +293,14 @@ def run_android(vert, frag, uniform_json, skip_render, wait_for_screen):
         break
 
     # Grab log:
-    with open(LOGFILE, 'w', encoding='utf-8', errors='ignore') as f:
+    with open(LOGFILE_NAME, 'w', encoding='utf-8', errors='ignore') as f:
         adb_check('logcat -d', stdout=f)
 
     # retrieve all files to results/
     res_dir = 'results'
     if os.path.exists(res_dir):
         shutil.rmtree(res_dir)
-    adb_check('pull ' + ANDROID_SDCARD + ' ' + res_dir)
+    adb_check('pull ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + ' ' + res_dir)
 
     # Check sanity:
     if status == 'SUCCESS':
@@ -346,14 +319,14 @@ def run_android(vert, frag, uniform_json, skip_render, wait_for_screen):
                 next_image = res_dir + '/image_{}.png'.format(i)
                 if not os.path.isfile(next_image):
                     status = 'UNEXPECTED_ERROR'
-                    with open(LOGFILE, 'a') as f:
+                    with open(LOGFILE_NAME, 'a') as f:
                         f.write('\n Not all images were produced? Missing image: {}\n'.format(i))
                 elif not filecmp.cmp(ref_image, next_image, shallow=False):
                     status = 'NONDET'
                     shutil.copy(ref_image, 'nondet0.png')
                     shutil.copy(next_image, 'nondet1.png')
 
-    with open(LOGFILE, 'a') as f:
+    with open(LOGFILE_NAME, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
         if status == 'UNEXPECTED_ERROR':
             f.write('\n App did not start?\n')
@@ -363,22 +336,22 @@ def run_android(vert, frag, uniform_json, skip_render, wait_for_screen):
 
     if status != 'SUCCESS':
         # Something went wrong. Make sure we stop the app.
-        adb_can_fail('shell am force-stop ' + ANDROID_APP)
+        adb_can_fail('shell am force-stop ' + ANDROID_LEGACY_APP)
 
     # Grab image if present.
-    image_path = ANDROID_SDCARD + '/image_0.png'
+    image_path = ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/image_0.png'
     return_code = adb_can_fail('shell test -f ' + image_path).returncode
     if return_code == 0:
         adb_check('pull ' + image_path)
 
 
-def dump_info_android(wait_for_screen):
+def dump_info_android_legacy(wait_for_screen):
     prepare_device(wait_for_screen)
 
-    info_file = ANDROID_SDCARD + '/worker_info.json'
+    info_file = ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/worker_info.json'
 
     adb_check(
-        'shell am start -n ' + ANDROID_APP + '/android.app.NativeActivity -e gfz "\'--info\'"')
+        'shell am start -n ' + ANDROID_LEGACY_APP + '/android.app.NativeActivity -e gfz "\'--info\'"')
 
     # Busy wait for the app to write the gpu info.
     deadline = time.time() + TIMEOUT_APP
@@ -391,10 +364,60 @@ def dump_info_android(wait_for_screen):
         adb_check('pull ' + info_file)
     else:
         print('Error: failed to obtain worker information')
-    adb_can_fail('shell am force-stop ' + ANDROID_APP)
+    adb_can_fail('shell am force-stop ' + ANDROID_LEGACY_APP)
+
+
+def run_image_linux_legacy(vert: str, frag: str, uniform_json: str, skip_render: bool   ):
+    assert(os.path.isfile(vert))
+    assert(os.path.isfile(frag))
+    assert(os.path.isfile(uniform_json))
+
+    if skip_render:
+        with open('SKIP_RENDER', 'w') as f:
+            f.write('SKIP_RENDER')
+    elif os.path.isfile('SKIP_RENDER'):
+        os.remove('SKIP_RENDER')
+
+    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + uniform_json + ' > ' + LOGFILE_NAME
+    status = 'SUCCESS'
+    try:
+        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+    except subprocess.TimeoutExpired:
+        status = 'TIMEOUT'
+    except subprocess.CalledProcessError:
+        status = 'CRASH'
+
+    with open(LOGFILE_NAME, 'a') as f:
+        f.write('\nSTATUS ' + status + '\n')
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
+
+
+def dump_info_linux_legacy():
+    cmd = 'vkworker --info'
+    status = 'SUCCESS'
+    try:
+        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+    except subprocess.TimeoutExpired:
+        status = 'TIMEOUT'
+    except subprocess.CalledProcessError:
+        status = 'CRASH'
+
+    with open('STATUS', 'w') as f:
+        f.write(status)
+
+
+def run_image_legacy(vert_spv, frag_spv, args):
+    if args.target == 'android':
+        run_image_android_legacy(vert_spv, frag_spv, args.json, args.skip_render, not args.force)
+        return
+    assert args.target == 'host'
+    run_image_linux_legacy(vert_spv, frag_spv, args.json, args.skip_render)
+
 
 ################################################################################
-# VkRunner / Amber
+# Amber worker: image test
 
 
 def spv_get_disassembly(shader_filename):
@@ -462,9 +485,9 @@ def uniform_json_to_amberscript(uniform_json):
     return result
 
 
-def amberscriptify_img(vert, frag, uniform_json):
+def amberscriptify_image(vert, frag, uniform_json):
     """
-    Generates a VkScript representation of an image test
+    Generates Amberscript representation of an image test
     """
 
     script = '# Generated\n'
@@ -486,65 +509,103 @@ def amberscriptify_img(vert, frag, uniform_json):
     return script
 
 
-def run_vkrunner(vert, frag, uniform_json):
-    assert(os.path.isfile(vert))
-    assert(os.path.isfile(frag))
-    assert(os.path.isfile(uniform_json))
+def run_image(args):
+    wait_for_screen = not args.force
 
-    # Produce VkScript
-    script = amberscriptify_img(vert, frag, uniform_json)
+    # These are mutually exclusive, but we return after each for clarity:
 
-    tmpfile = 'tmpscript.shader_test'
+    if args.serial:
+        run_android(vert, frag, args.json, args.skip_render, wait_for_screen)
+        return
 
-    with open(tmpfile, 'w') as f:
-        f.write(script)
+    if args.android:
+        run_android(vert, frag, args.json, args.skip_render, wait_for_screen)
+        return
 
-    # Prepare files on device. vkrunner cannot be made executable under
-    # /sdcard/, hence we work under /data/local/tmp
-    device_dir = '/data/local/tmp'
-    adb_check('push ' + tmpfile + ' ' + device_dir)
+    if args.linux:
+        run_linux(vert, frag, args.json, args.skip_render)
+        return
 
-    device_image = device_dir + '/image.ppm'
-    adb_check('shell rm -f ' + device_image)
 
-    # call vkrunner
-    cmd = 'shell "cd ' + device_dir + '; ./vkrunner -i image.ppm ' + tmpfile + '"'
+def run_image_amber(vert_spv: str, frag_spv: str, args):
+    assert(os.path.isfile(vert_spv))
+    assert(os.path.isfile(frag_spv))
+    assert(os.path.isfile(args.json))
 
-    adb_check('logcat -c')
+    amberscript_file = args.output_dir + os.sep + 'tmpscript.shader_test'
+    logfile = args.output_dir + os.sep + LOGFILE_NAME
+    statusfile = args.output_dir + os.sep + 'STATUS'
+    ppm_image = args.output_dir + os.sep + 'image.ppm'
+    png_image = args.output_dir + os.sep + 'image0.png'
 
-    status = 'UNEXPECTED_ERROR'
+    with open(amberscript_file, 'w') as f:
+        f.write(amberscriptify_image(vert_spv, frag_spv, args.json))
 
-    try:
-        result = adb_can_fail(cmd)
-    except subprocess.TimeoutExpired:
-        result = None
-        status = 'TIMEOUT'
+    if args.target == 'android':
+        prepare_device(args.force, False)
 
-    if status != 'TIMEOUT':
-        if result.returncode != 0:
+        adb_check('push ' + amberscript_file + ' ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
+        device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image.ppm'
+        adb_check('shell rm -f ' + device_image)
+
+        # call amber
+        cmd = 'shell "cd ' + ANDROID_DEVICE_DIR + '; ./amber_ndk -i ' + device_image + ' -d '\
+              + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + os.sep + os.path.basename(amberscript_file) + '"'
+
+        adb_check('logcat -c')
+
+        status = 'UNEXPECTED_ERROR'
+
+        try:
+            result = adb_can_fail(cmd)
+        except subprocess.TimeoutExpired:
+            result = None
+            status = 'TIMEOUT'
+
+        if status != 'TIMEOUT':
+            if result.returncode != 0:
+                status = 'CRASH'
+            else:
+                if adb_can_fail('shell test -f' + device_image).returncode == 0:
+                    status = 'SUCCESS'
+                    adb_check('pull ' + device_image + ' ' + ppm_image)
+
+        # Grab log:
+        with open(logfile, 'w', encoding='utf-8', errors='ignore') as f:
+            adb_check('logcat -d', stdout=f)
+
+    else:
+        assert args.target == 'host'
+        cmd = 'amber -i ' + ppm_image + ' ' + amberscript_file + ' > ' + logfile
+        status = 'SUCCESS'
+        try:
+            subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+        except subprocess.TimeoutExpired:
+            status = 'TIMEOUT'
+        except subprocess.CalledProcessError:
             status = 'CRASH'
-        else:
-            if adb_can_fail('shell test -f' + device_image).returncode == 0:
-                status = 'SUCCESS'
-                adb_check('pull ' + device_image)
-                subprocess.run('convert image.ppm image_0.png', shell=True)
 
-    # Grab log:
-    with open(LOGFILE, 'w', encoding='utf-8', errors='ignore') as f:
-        adb_check('logcat -d', stdout=f)
+        if status == 'SUCCESS':
+            assert(os.path.isfile(ppm_image))
 
-    with open(LOGFILE, 'a') as f:
+        with open(logfile, 'a') as f:
+            f.write('\nSTATUS ' + status + '\n')
+
+    if os.path.isfile(ppm_image):
+        subprocess.run('convert ' + ppm_image + ' ' + png_image, shell=True)
+
+    with open(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
 
-    with open('STATUS', 'w') as f:
+    with open(statusfile, 'w') as f:
         f.write(status)
 
 
 ################################################################################
-# Compute
+# Amber worker: compute test
 
 
-def comp_json_to_vkscript(comp_json):
+def comp_json_to_amberscript(comp_json):
     """
     Returns the string representing VkScript version of compute shader setup,
     found under the special "$compute" key in JSON
@@ -612,7 +673,7 @@ def amberscriptify_comp(comp_spv: str, comp_json: str):
     result += '## Uniforms\n'
     result += uniform_json_to_amberscript(comp_json)
     result += '## SSBO\n'
-    result += comp_json_to_vkscript(comp_json)
+    result += comp_json_to_amberscript(comp_json)
     result += '\n'
 
     return result
@@ -660,8 +721,8 @@ def get_ssbo_binding(comp_json):
     return binding
 
 
-def run_compute(comp, args):
-    assert(os.path.isfile(comp))
+def run_compute_amber(comp_spv: str, args):
+    assert(os.path.isfile(comp_spv))
     assert(os.path.isfile(args.json))
 
     amberscript_file = args.output_dir + os.sep + 'tmpscript.shader_test'
@@ -671,23 +732,24 @@ def run_compute(comp, args):
     statusfile = args.output_dir + os.sep + 'STATUS'
 
     with open(amberscript_file, 'w') as f:
-        f.write(amberscriptify_comp(comp, args.json))
+        f.write(amberscriptify_comp(comp_spv, args.json))
 
-    # FIXME: in case of multiple ssbo, we should pass the binding of the one to dump
+    # FIXME: in case of multiple SSBOs, we should pass the binding of the ones to be dumped
     ssbo_binding = str(get_ssbo_binding(args.json))
 
     if (args.target == 'android'):
-        # Prepare files on device. Amber cannot be made executable under
-        # /sdcard/, hence we work under /data/local/tmp
-        device_dir = '/data/local/tmp'
-        adb_check('push ' + amberscript_file + ' ' + device_dir)
 
-        device_ssbo = device_dir + '/ssbo'
+        prepare_device(args.force, False)
+
+        # Prepare files on device.
+        adb_check('push ' + amberscript_file + ' ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
+
+        device_ssbo = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/ssbo'
         adb_check('shell rm -f ' + device_ssbo)
 
         # call amber
-        cmd = 'shell "cd ' + device_dir + '; ./amber_ndk -b ssbo -B ' + ssbo_binding + ' -d '\
-              + os.path.basename(amberscript_file) + '"'
+        cmd = 'shell "cd ' + ANDROID_DEVICE_DIR + '; ./amber_ndk -b ' + device_ssbo + ' -B ' + ssbo_binding + ' -d '\
+              + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + os.sep + os.path.basename(amberscript_file) + '"'
 
         adb_check('logcat -c')
 
@@ -737,6 +799,10 @@ def run_compute(comp, args):
         f.write(status)
 
 
+################################################################################
+# Main
+
+
 def some_shader_format_exists(prefix: str, kind: str) -> bool:
     return os.path.isfile(prefix + '.' + kind)\
            or os.path.isfile(prefix + '.' + kind + '.asm')\
@@ -763,33 +829,6 @@ def pick_shader_format(prefix: str, kind: str) -> str:
         return prefix + '.' + kind + '.asm'
     assert os.path.isfile(prefix + '.' + kind + '.spv')
     return prefix + '.' + kind + '.spv'
-
-
-def run_image():
-    wait_for_screen = not args.force
-
-    # These are mutually exclusive, but we return after each for clarity:
-
-    if args.serial:
-        run_android(vert, frag, args.json, args.skip_render, wait_for_screen)
-        return
-
-    if args.android:
-        run_android(vert, frag, args.json, args.skip_render, wait_for_screen)
-        return
-
-    if args.linux:
-        run_linux(vert, frag, args.json, args.skip_render)
-        return
-
-    if args.vkrunner:
-        run_vkrunner(vert, frag, args.json)
-        return
-
-
-
-################################################################################
-# Main
 
 
 def main_helper(args):
@@ -855,6 +894,9 @@ def main_helper(args):
     else:
         raise ValueError('No compute nor vertex shader files found')
 
+    if compute_shader_file and args.legacy_worker:
+        raise ValueError('Compute shaders are not supported with the legacy worker')
+
     # Make the output directory if it does not yet exist.
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
@@ -871,12 +913,18 @@ def main_helper(args):
     if compute_shader_file:
         assert not vertex_shader_file
         assert not fragment_shader_file
-        run_compute(compute_shader_file, args)
+        assert not args.legacy_worker
+        run_compute_amber(compute_shader_file, args)
         return
 
     assert vertex_shader_file
     assert fragment_shader_file
-    run_image(vertex_shader_file, fragment_shader_file, args)
+
+    if args.legacy_worker:
+        run_image_legacy(vertex_shader_file, fragment_shader_file, args)
+        return
+
+    run_image_amber(vertex_shader_file, fragment_shader_file, args)
 
 
 if __name__ == '__main__':
