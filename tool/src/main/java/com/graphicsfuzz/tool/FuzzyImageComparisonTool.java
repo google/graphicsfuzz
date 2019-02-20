@@ -18,11 +18,38 @@ package com.graphicsfuzz.tool;
 
 import com.graphicsfuzz.common.util.FuzzyImageComparison;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.stream.Collectors;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
 public class FuzzyImageComparisonTool {
 
   public static void main(String[] args) throws IOException {
-    FuzzyImageComparison.mainHelper(args);
+
+
+    try {
+
+      FuzzyImageComparison.MainResult result = FuzzyImageComparison.mainHelper(args);
+
+      // Print space-separated outputs for each configuration.
+      System.out.println(
+          result
+            .configurations
+            .stream()
+            .map(FuzzyImageComparison.ThresholdConfiguration::outputsString)
+            .collect(Collectors.joining(" "))
+      );
+
+      System.exit(result.areImagesDifferent ? 1 : 0);
+
+    } catch (ArgumentParserException exception) {
+      System.err.println(exception.getMessage());
+      exception.getParser().printHelp(new PrintWriter(System.err, true));
+      System.exit(3);
+    } catch (Throwable throwable) {
+      throwable.printStackTrace();
+      System.exit(2);
+    }
   }
 
 }

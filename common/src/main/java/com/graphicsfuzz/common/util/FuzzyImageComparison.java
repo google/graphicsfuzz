@@ -19,72 +19,143 @@ package com.graphicsfuzz.common.util;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javax.imageio.ImageIO;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
 
 /**
  * A fuzzy image comparison algorithm.
  *
+ * The algorithm is run N times for the N threshold configurations provided, but here we only
+ * discuss the inputs and outputs for one configuration.
+ *
  * <p>Inputs: two images (image A and image B) of the same size, a distance threshold "d", a
  * component threshold "c".
- * Output: the number of "bad" pixels that "differ" according to the description below.
- * Roughly: the number of "bad" pixels is the number of pixel coordinates (x,y) where for (x,y)
- * in image A, there is not a nearby similar pixel in image B *or* vice-versa (i.e. even if only
- * one direction is bad, the pixel coordinate is bad).
+ * Output: the number of "bad" pixels that "differ" according to the description below. Also, the
+ * number of "sparse" bad pixels; that is, the number of bad pixels when we remove those that are
+ * not near to other bad pixels; this allows us to ignore bad pixels that are likely to be less
+ * interesting. e.g. bad pixels that are due to aliasing.
+ *
+ * <p>"Bad pixels" are roughly: pixel coordinates (x,y) where for (x,y) in image A, there is not a
+ * nearby similar pixel in image B *or* vice-versa (i.e. even if only one direction is bad, the
+ * pixel coordinate is bad).
  *
  * <p>Example values: d=4, c=60. Color component values (RGBA) are 0-255.
  *
- * <p>For each pixel at (x,y) in image A that is not within distance "d" from the edge of the image,
- * we try to find a similar pixel within the square of pixels (of size 2"d") centered at (x,y) in
- * image B. We also try the reverse (consider (x,y) in image B and search for a pixel in image A);
- * if *either* search fails, this pixel coordinate is considered "bad". The result is the number
- * of bad pixels.
- * Given two pixels p and q, they are similar if they have similar color values; specifically, p
- * and q are similar iff for *all* color components m in [R,B,G,A]:
- * abs(p[m]-q[m]) <= "c"
+ * <p>For each pixel at (x,y) in image A, we try to find a similar pixel within the square of
+ * pixels (of size 2"d") centered at (x,y) in image B. We also try the reverse (consider (x,y) in
+ * image B and search for a pixel in image A); if *either* search fails, this pixel coordinate is
+ * considered "bad". The result is the number of bad pixels.
  *
- * <p>There are two reasons why we consider a pixel as bad if *either* direction fails (searching in
+ * <p>Two pixels p and q are similar iff they have similar color values; specifically, p
+ * and q are similar iff for *all* color components m in [R,B,G,A]: abs(p[m]-q[m]) <= "c"
+ *
+ * <p>Why do we consider a pixel to be "bad" if *either* search direction fails (searching in
  * image A or in image B):
  *
  * <p>Reason 1: we probably want the comparison to be independent of image input order
  * (commutative).
  *
  * <p>Reason 2: given a reference image that is black, and a variant image that has gained
- * a small patch of white pixels; the black pixels in the original image could all be
- * matched to black pixels in the variant image, so we would not detect any difference.
- * However, the white pixels in the variant image would not be matched to any pixels in
- * the original image, so we would detect a different. Thus, comparing both directions and
- * taking the worst case is typically more useful.
- *
+ * a *small* patch of white pixels; the black pixels in the original image could all be
+ * matched to black pixels in the variant image (by finding pixels *around* the white pixels),
+ * so we would not detect any difference. However, the white pixels in the variant image would
+ * not be matched to any pixels in the original image, so we would detect a different. Thus,
+ * comparing both directions and taking the worst case is typically more useful.
  */
-@SuppressWarnings("Duplicates")
+@SuppressWarnings({"Duplicates", "BooleanMethodIsAlwaysInverted", "WeakerAccess",
+    "SameParameterValue"})
 public class FuzzyImageComparison {
 
   private static final int GOOD_PIXEL_VALUE = 0;
 
+  public static final int CONFIG_NUM_ARGS = 4;
+
   /**
    * See {@link FuzzyImageComparison}. Set of parameters used by the {@link FuzzyImageComparison}
-   * algorithm, plus the result if the algorithm completed (numDifferentResult).
+   * algorithm, plus the outputs (e.g. number of bad pixels) for this configuration.
    */
+  @SuppressWarnings("WeakerAccess")
   public static final class ThresholdConfiguration {
+
+    /**
+     * See {@link FuzzyImageComparison}.
+     */
     public int componentThreshold;
+
+    /**
+     * See {@link FuzzyImageComparison}.
+     */
     public int distanceThreshold;
 
     /**
-     * The output from running the fuzzy image comparison with this configuration.
+     * More than this many bad pixels implies the images are different.
      */
-    public int numDifferentResult;
+    public int numBadPixelsThreshold;
 
     /**
-     * The output from running the fuzzy image comparison with this configuration, excluding
-     * sparse bad pixels (i.e. those that are not near other bad pixels).
+     * More than this many sparse bad pixels implies the images are different.
      */
-    public int numDifferentExcludingSparse;
+    public int numBadSparsePixelsThreshold;
 
-    public ThresholdConfiguration(int componentThreshold, int distanceThreshold) {
+    /**
+     * See {@link FuzzyImageComparison}.
+     */
+    public int outNumBadPixels;
+
+    /**
+     * See {@link FuzzyImageComparison}.
+     */
+    public int outNumBadSparsePixels;
+
+    public ThresholdConfiguration(
+        int componentThreshold,
+        int distanceThreshold,
+        int numBadPixelsThreshold,
+        int numBadSparsePixelsThreshold) {
       this.componentThreshold = componentThreshold;
       this.distanceThreshold = distanceThreshold;
-      this.numDifferentResult = -1;
-      this.numDifferentExcludingSparse = -1;
+      this.numBadPixelsThreshold = numBadPixelsThreshold;
+      this.numBadSparsePixelsThreshold = numBadSparsePixelsThreshold;
+      this.outNumBadPixels = -1;
+      this.outNumBadSparsePixels = -1;
+    }
+
+    public boolean areImagesDifferent() {
+      if (outNumBadPixels < 0 || outNumBadSparsePixels < 0) {
+        throw new IllegalStateException("Checked if images are different under configuration that"
+            + " was not run");
+      }
+
+      return outNumBadPixels > numBadPixelsThreshold
+          || outNumBadSparsePixels > numBadSparsePixelsThreshold;
+    }
+
+    public String outputsString() {
+      return String.join(
+          " ",
+          String.valueOf(outNumBadPixels),
+          String.valueOf(outNumBadSparsePixels));
+    }
+
+  }
+
+  /**
+   * Wrapper for result of {@link FuzzyImageComparison#mainHelper}.
+   */
+  @SuppressWarnings("WeakerAccess")
+  public static final class MainResult {
+    public boolean areImagesDifferent;
+    public List<ThresholdConfiguration> configurations;
+
+    public MainResult(boolean areImagesDifferent,
+                                          List<ThresholdConfiguration> configurations) {
+      this.areImagesDifferent = areImagesDifferent;
+      this.configurations = configurations;
     }
   }
 
@@ -136,7 +207,11 @@ public class FuzzyImageComparison {
     return false;
   }
 
-  public static int compareImageColors(
+  /**
+   * @param badPixels will contain a non-zero value at every bad pixel found
+   * @return the number of bad pixels found according to the thresholds provided
+   */
+  private static int compareImageColors(
       int[] colorsLeft,
       int[] colorsRight,
       int width,
@@ -166,14 +241,14 @@ public class FuzzyImageComparison {
             y)
             ||
             !doesSimilarNearPixelExist(
-            colorsRight,
-            colorsLeft,
-            width,
-            height,
-            componentThreshold,
-            distanceThreshold,
-            x,
-            y)
+                colorsRight,
+                colorsLeft,
+                width,
+                height,
+                componentThreshold,
+                distanceThreshold,
+                x,
+                y)
         ) {
           ++numBad;
           badPixels[y * height + x] = 0x88888888;
@@ -288,10 +363,14 @@ public class FuzzyImageComparison {
     ImageIO.write(out, "png", new File("out.png"));
   }
 
+  /**
+   * @param thresholdConfigurations the input thresholds. The results will also be written to each
+   *                                configuration.
+   */
   public static void compareImages(
       File left,
       File right,
-      ThresholdConfiguration[] thresholdConfigurations) throws IOException {
+      List<ThresholdConfiguration> thresholdConfigurations) throws IOException {
 
     BufferedImage leftImage = ImageIO.read(left);
     BufferedImage rightImage = ImageIO.read(right);
@@ -310,7 +389,7 @@ public class FuzzyImageComparison {
       // int[] values are 0 by default.
       assert badPixels[0] == GOOD_PIXEL_VALUE;
 
-      thresholdConfiguration.numDifferentResult = compareImageColors(
+      thresholdConfiguration.outNumBadPixels = compareImageColors(
           colorsLeft,
           colorsRight,
           leftImage.getWidth(),
@@ -327,66 +406,101 @@ public class FuzzyImageComparison {
           leftImage.getWidth(),
           leftImage.getHeight(),
           thresholdConfiguration.distanceThreshold,
-          thresholdConfiguration.distanceThreshold
-              * thresholdConfiguration.distanceThreshold / 4);
+          thresholdConfiguration.distanceThreshold * 2);
 
-      thresholdConfiguration.numDifferentExcludingSparse =
-          thresholdConfiguration.numDifferentResult - removedCount;
+      thresholdConfiguration.outNumBadSparsePixels =
+          thresholdConfiguration.outNumBadPixels - removedCount;
 
       assert countBad(badPixels, GOOD_PIXEL_VALUE)
-          == thresholdConfiguration.numDifferentExcludingSparse;
+          == thresholdConfiguration.outNumBadSparsePixels;
     }
 
   }
 
   /**
-   * Compares two images using the {@link FuzzyImageComparison} algorithm with some default
-   * configurations. Two default configurations are set by default, the first with a larger
-   * component threshold, and the second with a smaller component threshold.
+   * Adds some default configurations to the provided list.
    *
-   * <p>Typically, the first configuration has found a bad image if there were 10+ different pixels,
-   * and the second configuration has found a bad image if there were 10000+ different pixels.
-   * Thus, if either of the above is true, the image is bad.
-   *
-   * <p>The justification is that the second configuration is too sensitive in most cases, but it
-   * can catch cases where an image has a *lot* of slightly different pixels, such as where the
-   * images are mostly different shades of grey.
-   *
-   * @param left first image file
-   * @param right second image file
-   * @return an array of configurations
-   * @throws IOException on file operation errors
+   * @param configurations some default configurations will be added to this list
    */
-  public static ThresholdConfiguration[] compareImagesDefault(
-      File left,
-      File right) throws IOException {
+  public static void addDefaultConfigurations(List<ThresholdConfiguration> configurations) {
+    configurations.add(
+        new ThresholdConfiguration(
+            25,
+            4,
+            100,
+            10));
 
-    // Default parameters based on some sample images of 256x256:
-    // distance threshold: 4
-    // component threshold: 60
-    //   - diff of 10+ is probably bad
-    // component threshold: 10
-    //   - diff of 10000+ is probably bad.
-    //     E.g. to catch an image that is mostly grey but has a *lot* of small changes in the shades
-    //     of grey.
-
-    ThresholdConfiguration[] configs = new ThresholdConfiguration[] {
-        new ThresholdConfiguration(25, 4)
-    };
-    compareImages(left, right, configs);
-    return configs;
+    configurations.add(
+        new ThresholdConfiguration(
+            60,
+            4,
+            10,
+            10));
   }
 
-  public static void mainHelper(String[] args) throws IOException {
+  public static MainResult mainHelper(String[] args) throws IOException,
+      ArgumentParserException {
 
     // See FuzzyImageComparisonTool for main.
 
-    ThresholdConfiguration[] configs = compareImagesDefault(new File(args[0]), new File(args[1]));
+    ArgumentParser parser = ArgumentParsers.newArgumentParser("FuzzyImageComparison")
+        .description("Compare two images using a fuzzy pixel comparison. Example: "
+            + "FuzzyImageComparison imageA.png imageB.png 25 4 100 10");
+
+    parser.addArgument("imageA")
+        .help("Path to first image file")
+        .type(File.class);
+
+    parser.addArgument("imageB")
+        .help("Path to second image file")
+        .type(File.class);
+
+    parser.addArgument("configurations")
+        .help("zero or more configurations (each configuration is a "
+            + CONFIG_NUM_ARGS
+            + "-tuple of integer arguments): "
+            + "componentThreshold "
+            + "distanceThreshold "
+            + "numBadPixelsThreshold "
+            + "numBadSparsePixelsThreshold")
+        .nargs("*");
+
+    Namespace ns = parser.parseArgs(args);
+
+    File imageA = ns.get("imageA");
+    File imageB = ns.get("imageB");
+    List<String> stringConfigurations = new ArrayList<>(ns.get("configurations"));
+
+    if ((stringConfigurations.size() % CONFIG_NUM_ARGS) != 0) {
+      throw new ArgumentParserException(
+          "Configuration list must be a list of " + CONFIG_NUM_ARGS + "-tuples", parser);
+    }
+
+    List<ThresholdConfiguration> configurations = new ArrayList<>();
+
+    for (int i = 0; i < stringConfigurations.size(); i += CONFIG_NUM_ARGS) {
+      configurations.add(
+          new ThresholdConfiguration(
+              Integer.parseInt(stringConfigurations.get(i)),
+              Integer.parseInt(stringConfigurations.get(i + 1)),
+              Integer.parseInt(stringConfigurations.get(i + 2)),
+              Integer.parseInt(stringConfigurations.get(i + 3))
+          ));
+    }
+
+    if (configurations.isEmpty()) {
+      addDefaultConfigurations(configurations);
+    }
+
+    compareImages(imageA, imageB, configurations);
+
     boolean different =
-        configs[0].numDifferentResult > 100 || configs[0].numDifferentExcludingSparse > 10;
-    System.out.println(configs[0].numDifferentResult + " "
-        + configs[0].numDifferentExcludingSparse + " "
-        + (different ? "different" : "similar"));
+        configurations.stream().anyMatch(ThresholdConfiguration::areImagesDifferent);
+
+    return new MainResult(
+        different,
+        configurations
+    );
   }
 
 }
