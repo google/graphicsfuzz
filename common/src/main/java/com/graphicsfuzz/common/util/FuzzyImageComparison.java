@@ -151,11 +151,18 @@ public class FuzzyImageComparison {
   @SuppressWarnings("WeakerAccess")
   public static final class MainResult {
     public boolean areImagesDifferent;
+    public int exitStatus;
     public List<ThresholdConfiguration> configurations;
 
-    public MainResult(boolean areImagesDifferent,
-                                          List<ThresholdConfiguration> configurations) {
+    public static int EXIT_STATUS_SIMILAR = 0;
+    public static int EXIT_STATUS_DIFFERENT = 1;
+
+    public MainResult(
+        boolean areImagesDifferent,
+        int exitStatus,
+        List<ThresholdConfiguration> configurations) {
       this.areImagesDifferent = areImagesDifferent;
+      this.exitStatus = exitStatus;
       this.configurations = configurations;
     }
   }
@@ -445,8 +452,11 @@ public class FuzzyImageComparison {
     // See FuzzyImageComparisonTool for main.
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("FuzzyImageComparison")
-        .description("Compare two images using a fuzzy pixel comparison. Example: "
-            + "FuzzyImageComparison imageA.png imageB.png 25 4 100 10");
+        .description("Compare two images using a fuzzy pixel comparison. The exit status is "
+            + MainResult.EXIT_STATUS_SIMILAR + " if the images are similar, "
+            + MainResult.EXIT_STATUS_DIFFERENT + " if the images are different, or another value "
+            + "if an error occurs. "
+            + "Example: FuzzyImageComparison imageA.png imageB.png 25 4 100 10");
 
     parser.addArgument("imageA")
         .help("Path to first image file")
@@ -500,6 +510,7 @@ public class FuzzyImageComparison {
 
     return new MainResult(
         different,
+        different ? MainResult.EXIT_STATUS_DIFFERENT : MainResult.EXIT_STATUS_SIMILAR,
         configurations
     );
   }
