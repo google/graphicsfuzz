@@ -239,14 +239,14 @@ public class FuzzyImageComparison {
         // If either fails (hence || below), then the pixel coordinate is bad.
         // See comments at top of file for justification.
         if (!doesSimilarNearPixelExist(
-            colorsLeft,
-            colorsRight,
-            width,
-            height,
-            componentThreshold,
-            distanceThreshold,
-            x,
-            y)
+                colorsLeft,
+                colorsRight,
+                width,
+                height,
+                componentThreshold,
+                distanceThreshold,
+                x,
+                y)
             ||
             !doesSimilarNearPixelExist(
                 colorsRight,
