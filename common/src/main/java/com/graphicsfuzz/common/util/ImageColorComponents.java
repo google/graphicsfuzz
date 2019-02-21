@@ -22,10 +22,10 @@ import java.util.List;
 
 public class ImageColorComponents {
 
-  private static final int R_OFFSET = 16;
-  private static final int G_OFFSET = 8;
-  private static final int B_OFFSET = 0;
-  private static final int A_OFFSET = 24;
+  public static final int R_OFFSET = 16;
+  public static final int G_OFFSET = 8;
+  public static final int B_OFFSET = 0;
+  public static final int A_OFFSET = 24;
 
   /**
    * Determines whether the given buffered image comprises pixels whose components come only from
@@ -100,7 +100,7 @@ public class ImageColorComponents {
         image.getWidth());
   }
 
-  private static int getComponent(int pixel, int componentBitOffset) {
+  public static int getComponent(int pixel, int componentBitOffset) {
     return (pixel >> componentBitOffset) & 0xff;
   }
 
