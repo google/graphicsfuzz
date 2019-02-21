@@ -471,7 +471,7 @@ def uniform_json_to_amberscript(uniform_json):
 
     """
 
-    uniform_type = {
+    uniform_types = {
         'glUniform1i': 'int',
         'glUniform2i': 'ivec2',
         'glUniform3i': 'ivec3',
@@ -494,10 +494,10 @@ def uniform_json_to_amberscript(uniform_json):
             continue
 
         func = entry['func']
-        if func not in uniform_type.keys():
+        if func not in uniform_types.keys():
             print('Error: unknown uniform type for function: ' + func)
             exit(1)
-        uniform_type = uniform_type[func]
+        uniform_type = uniform_types[func]
 
         result += '# ' + name + '\n'
         result += 'uniform ubo {}:{}'.format(descriptor_set, entry['binding'])
@@ -534,7 +534,7 @@ def amberscriptify_image(vert, frag, uniform_json):
     return script
 
 
-def run_image_amber(vert: str, frag: str, json: str, output_dir: str, force: bool, skip_render: bool, is_android: bool):
+def run_image_amber(vert: str, frag: str, json: str, output_dir: str, force: bool, is_android: bool):
     assert (os.path.isfile(vert))
     assert (os.path.isfile(frag))
     assert (os.path.isfile(json))
@@ -727,25 +727,25 @@ def get_ssbo_binding(comp_json):
     return binding
 
 
-def run_compute_amber(comp_spv: str, args):
-    assert (os.path.isfile(comp_spv))
-    assert (os.path.isfile(args.json))
+def run_compute_amber(comp: str, json: str, output_dir: str, force: bool, is_android: bool):
+    assert (os.path.isfile(comp))
+    assert (os.path.isfile(json))
 
-    amberscript_file = args.output_dir + os.sep + 'tmpscript.shader_test'
-    ssbo_output = args.output_dir + os.sep + 'ssbo'
-    ssbo_json = args.output_dir + os.sep + 'ssbo.json'
-    logfile = args.output_dir + os.sep + LOGFILE_NAME
-    statusfile = args.output_dir + os.sep + 'STATUS'
+    amberscript_file = output_dir + os.sep + 'tmpscript.shader_test'
+    ssbo_output = output_dir + os.sep + 'ssbo'
+    ssbo_json = output_dir + os.sep + 'ssbo.json'
+    logfile = output_dir + os.sep + LOGFILE_NAME
+    statusfile = output_dir + os.sep + 'STATUS'
 
     with open(amberscript_file, 'w') as f:
-        f.write(amberscriptify_comp(comp_spv, args.json))
+        f.write(amberscriptify_comp(comp, json))
 
     # FIXME: in case of multiple SSBOs, we should pass the binding of the ones to be dumped
-    ssbo_binding = str(get_ssbo_binding(args.json))
+    ssbo_binding = str(get_ssbo_binding(json))
 
-    if (args.target == 'android'):
+    if is_android:
 
-        prepare_device(args.force, False)
+        prepare_device(force, False)
 
         # Prepare files on device.
         adb_check('push ' + amberscript_file + ' ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
@@ -779,7 +779,6 @@ def run_compute_amber(comp_spv: str, args):
         with open(logfile, 'w', encoding='utf-8', errors='ignore') as f:
             adb_check('logcat -d', stdout=f)
     else:
-        assert args.target == 'host'
         cmd = 'amber -b ' + ssbo_output + ' -B ' + ssbo_binding + ' ' + amberscript_file + ' > ' + logfile
         status = 'SUCCESS'
         try:
@@ -796,7 +795,7 @@ def run_compute_amber(comp_spv: str, args):
             f.write('\nSTATUS ' + status + '\n')
 
     if os.path.isfile(ssbo_output):
-        ssbo_text_to_json(ssbo_output, ssbo_json, args.json)
+        ssbo_text_to_json(ssbo_output, ssbo_json, json)
 
     with open(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
@@ -874,6 +873,10 @@ def main_helper(args):
     if not is_android and args.serial:
         raise ValueError('"serial" option not compatible with "host" target')
 
+    # TODO: remove this check when issue 273 is resolved
+    if args.skip_render and not args.legacy_worker:
+        raise ValueError('--skip-render option is not yet supported with the Amber-based worker')
+
     # Check the JSON file used to identify other shaders is present.
     if not os.path.isfile(args.json):
         raise ValueError('The given JSON file does not exist: ' + args.json)
@@ -917,7 +920,8 @@ def main_helper(args):
         assert not vertex_shader_file
         assert not fragment_shader_file
         assert not args.legacy_worker
-        run_compute_amber(compute_shader_file, args)
+        run_compute_amber(comp=compute_shader_file, json=args.json, output_dir=args.output_dir, force=args.force,
+                          is_android=(args.target == 'android'))
         return
 
     assert vertex_shader_file
@@ -928,7 +932,7 @@ def main_helper(args):
         return
 
     run_image_amber(vert=vertex_shader_file, frag=fragment_shader_file, json=args.json, output_dir=args.output_dir,
-                    force=args.force, skip_render=args.skip_render, is_android=(args.target == 'android'))
+                    force=args.force, is_android=(args.target == 'android'))
 
 
 if __name__ == '__main__':

@@ -232,10 +232,8 @@ def do_image_job(args, image_job):
             runspv.run_image_android_legacy(vert=vert_spv_file, frag=frag_spv_file, json=json_file,
                                             output_dir=os.getcwd(), force=args.force, skip_render=skip_render)
     else:
-        if args.target == 'host':
-            pass
-        else:
-            pass
+        runspv.run_image_amber(vert=vert_spv_file, frag=frag_spv_file, json=json_file, output_dir=os.getcwd(),
+                               force=args.force, is_android=(not args.target == 'host'))
 
     if os.path.isfile(runspv.LOGFILE_NAME):
         with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
@@ -300,7 +298,8 @@ def do_compute_job(args, comp_job):
             res.status = tt.JobStatus.UNEXPECTED_ERROR
             return res
 
-    runspv.run_compute(tmpcompspv, tmpjson)
+    assert not args.legacy_worker
+    runspv.run_compute_amber(comp=tmpcompspv, json=tmpjson, output_dir=os.getcwd(), force=args.force)
 
     if os.path.isfile(runspv.LOGFILE_NAME):
         with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
@@ -466,7 +465,7 @@ def main():
     if is_android:
         runspv.dump_info_android_legacy(wait_for_screen=not args.force)
     else:
-        runspv.dump_info_linux_legacy()
+        runspv.dump_info_host_legacy()
 
     if not os.path.isfile(worker_info_file):
         raise Exception('Failed to retrieve worker information.  If targeting Android, make sure the app permission '
