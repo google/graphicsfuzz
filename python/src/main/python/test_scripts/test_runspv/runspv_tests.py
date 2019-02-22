@@ -20,6 +20,7 @@ import os
 import pathlib2
 import PIL.Image
 import pytest
+import subprocess
 import sys
 from typing import List, Tuple
 
@@ -32,6 +33,14 @@ import runspv
 
 #########################################
 # General helper functions
+
+def get_jar_dir():
+    # graphics-fuzz/python/drivers/
+    jar_dir = os.path.dirname(os.path.abspath(__file__))
+    for i in range(0, 6):
+        jar_dir = os.path.dirname(jar_dir)
+    return os.path.join(jar_dir, 'graphicsfuzz', 'target', 'graphicsfuzz', 'jar')
+
 
 def make_empty_json(path: pathlib2.Path, prefix: str = 'shader') -> pathlib2.Path:
     json = path / (prefix + '.json')
@@ -52,20 +61,27 @@ def is_success(output_dir: pathlib2.Path) -> bool:
     return open(str(status_file), 'r').read().startswith('SUCCESS')
 
 
-def component_neighbourhood(colour_component: int) -> List[int]:
-    result = [colour_component]
-    if colour_component > 0:
-        result.append(colour_component - 1)
-    if colour_component < 255:
-        result.append(colour_component + 1)
-    return result
-
-
-def fuzzy_pixel_match(pixel1: Tuple[int, int, int], pixel2: Tuple[int, int, int]) -> bool:
-    for component in range(0, 3):
-        if pixel1[component] not in component_neighbourhood(pixel2[component]):
-            return False
+def exact_image_match(image_file_1: pathlib2.Path, image_file_2: pathlib2.Path) -> bool:
+    image_1 = PIL.Image.open(str(image_file_1)).convert('RGB')
+    image_2 = PIL.Image.open(str(image_file_2)).convert('RGB')
+    # The dimensions should match
+    if image_1.width != image_2.width:
+        return False
+    if image_1.height != image_2.height:
+        return False
+    # Every pixel should match
+    for x in range(0, image_1.width):
+        for y in range(0, image_1.height):
+            if image_1.getpixel((x, y)) != image_2.getpixel((x, y)):
+                return False
     return True
+
+
+def fuzzy_image_match(image_file_1: PIL.Image, image_file_2: PIL.Image) -> bool:
+    tolerance_parameters = '25 4 300 200 60 4 130 80'
+    cmd = 'java -ea -cp ' + get_jar_dir() + os.sep + 'tool-1.0.jar com.graphicsfuzz.tool.FuzzyImageComparisonTool '\
+          + str(image_file_1) + ' ' + str(image_file_2) + ' ' + tolerance_parameters
+    return subprocess.run(cmd, shell=True).returncode == 0
 
 
 def images_match(out_dir_1: pathlib2.Path, out_dir_2: pathlib2.Path,
@@ -74,24 +90,9 @@ def images_match(out_dir_1: pathlib2.Path, out_dir_2: pathlib2.Path,
     image_file_2 = out_dir_2 / 'image_0.png'
     assert image_file_1.exists()
     assert image_file_2.exists()
-    image_1 = PIL.Image.open(str(image_file_1)).convert('RGB')
-    image_2 = PIL.Image.open(str(image_file_2)).convert('RGB')
-    # The dimensions should match
-    if image_1.width != image_2.width:
-        return False
-    if image_1.height != image_2.height:
-        return False
-    # The contents should match
-    for x in range(0, image_1.width):
-        for y in range(0, image_1.height):
-            pixel1 = image_1.getpixel((x, y))
-            pixel2 = image_2.getpixel((x, y))
-            if fuzzy_image_comparison:
-                if not fuzzy_pixel_match(pixel1, pixel2):
-                    return False
-            elif pixel1 != pixel2:
-                return False
-    return True
+    if fuzzy_image_comparison:
+        return fuzzy_image_match(image_file_1, image_file_2)
+    return exact_image_match(image_file_1, image_file_2)
 
 
 def get_ssbo_json(output_dir: pathlib2.Path) -> {}:
@@ -448,12 +449,11 @@ def test_image_0002_host_vs_android_amber(tmp_path: pathlib2.Path):
     check_images_match_host_vs_android_amber(tmp_path, 'image_test_0002.json')
 
 
-@pytest.mark.skip(reason="Better fuzzy image comparison needs to be incorporated.")
+@pytest.mark.skip(reason="Need to investigate this shader: the images produced are completely different.")
 def test_image_0003_host_vs_android_amber(tmp_path: pathlib2.Path):
     check_images_match_host_vs_android_amber(tmp_path, 'image_test_0003.json')
 
 
-@pytest.mark.skip(reason="Better fuzzy image comparison needs to be incorporated.")
 def test_image_0004_host_vs_android_amber(tmp_path: pathlib2.Path):
     check_images_match_host_vs_android_amber(tmp_path, 'image_test_0004.json')
 
@@ -462,7 +462,6 @@ def test_image_0005_host_vs_android_amber(tmp_path: pathlib2.Path):
     check_images_match_host_vs_android_amber(tmp_path, 'image_test_0005.json')
 
 
-@pytest.mark.skip(reason="Better fuzzy image comparison needs to be incorporated.")
 def test_image_0006_host_vs_android_amber(tmp_path: pathlib2.Path):
     check_images_match_host_vs_android_amber(tmp_path, 'image_test_0006.json')
 
