@@ -558,9 +558,10 @@ def run_image_amber(vert: str, frag: str, json: str, output_dir: str, force: boo
         device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image.ppm'
         adb_check('shell rm -f ' + device_image)
 
-        # call amber
+        # Call amber
+        # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
         cmd = 'shell "cd ' + ANDROID_DEVICE_DIR + '; ./amber_ndk -i ' + device_image + ' -d ' \
-              + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + os.sep + os.path.basename(amberscript_file) + '"'
+              + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file) + '"'
 
         adb_check('logcat -c')
 
@@ -756,9 +757,10 @@ def run_compute_amber(comp: str, json: str, output_dir: str, force: bool, is_and
         device_ssbo = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/ssbo'
         adb_check('shell rm -f ' + device_ssbo)
 
-        # call amber
+        # Call amber
+        # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
         cmd = 'shell "cd ' + ANDROID_DEVICE_DIR + '; ./amber_ndk -b ' + device_ssbo + ' -B ' + ssbo_binding + ' -d ' \
-              + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + os.sep + os.path.basename(amberscript_file) + '"'
+              + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file) + '"'
 
         adb_check('logcat -c')
 

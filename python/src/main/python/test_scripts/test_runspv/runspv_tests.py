@@ -382,10 +382,6 @@ def test_red_image_amber_android(tmp_path: pathlib2.Path):
     red_image(tmp_path, True, False)
 
 
-def test_red_image_legacy_host(tmp_path: pathlib2.Path):
-    red_image(tmp_path, False, True)
-
-
 def test_red_image_legacy_android(tmp_path: pathlib2.Path):
     red_image(tmp_path, True, True)
 
