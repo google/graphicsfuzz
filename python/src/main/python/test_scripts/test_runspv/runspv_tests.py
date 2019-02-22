@@ -21,6 +21,7 @@ import pathlib2
 import PIL.Image
 import pytest
 import sys
+from typing import List, Tuple
 
 HERE = os.path.abspath(__file__)
 
@@ -51,40 +52,97 @@ def is_success(output_dir: pathlib2.Path) -> bool:
     return open(str(status_file), 'r').read().startswith('SUCCESS')
 
 
+def component_neighbourhood(colour_component: int) -> List[int]:
+    result = [colour_component]
+    if colour_component > 0:
+        result.append(colour_component - 1)
+    if colour_component < 255:
+        result.append(colour_component + 1)
+    return result
+
+
+def fuzzy_pixel_match(pixel1: Tuple[int, int, int], pixel2: Tuple[int, int, int]) -> bool:
+    for component in range(0, 3):
+        if pixel1[component] not in component_neighbourhood(pixel2[component]):
+            return False
+    return True
+
+
+def images_match(out_dir_1: pathlib2.Path, out_dir_2: pathlib2.Path,
+                 fuzzy_image_comparison: bool) -> bool:
+    image_file_1 = out_dir_1 / 'image_0.png'
+    image_file_2 = out_dir_2 / 'image_0.png'
+    assert image_file_1.exists()
+    assert image_file_2.exists()
+    image_1 = PIL.Image.open(str(image_file_1)).convert('RGB')
+    image_2 = PIL.Image.open(str(image_file_2)).convert('RGB')
+    # The dimensions should match
+    if image_1.width != image_2.width:
+        return False
+    if image_1.height != image_2.height:
+        return False
+    # The contents should match
+    for x in range(0, image_1.width):
+        for y in range(0, image_1.height):
+            pixel1 = image_1.getpixel((x, y))
+            pixel2 = image_2.getpixel((x, y))
+            if fuzzy_image_comparison:
+                if not fuzzy_pixel_match(pixel1, pixel2):
+                    return False
+            elif pixel1 != pixel2:
+                return False
+    return True
+
+
 def get_ssbo_json(output_dir: pathlib2.Path) -> {}:
     ssbo_json = output_dir / 'ssbo.json'
     assert ssbo_json.exists()
     return json.load(open(str(ssbo_json), 'r'))
 
 
-def check_legacy_and_amber_match_images(tmp_path: pathlib2.Path, is_android: bool, json: str):
-    out_dir_legacy = tmp_path / 'out_legacy'
-    out_dir_amber = tmp_path / 'out_amber'
+def check_images_match(tmp_path: pathlib2.Path, json: str, is_android_1: bool, is_android_2: bool,
+                       is_amber_1: bool, is_amber_2: bool, fuzzy_image_comparison: bool):
+    out_dir_1 = tmp_path / 'out_1'
+    out_dir_2 = tmp_path / 'out_2'
 
-    args_legacy = ['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
-                   + json, str(out_dir_legacy), '--legacy-worker']
-    args_amber = ['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
-                  + json, str(out_dir_amber)]
-    runspv.main_helper(args_amber)
-    runspv.main_helper(args_legacy)
-    assert is_success(out_dir_legacy)
-    assert is_success(out_dir_amber)
-    image_file_legacy = out_dir_legacy / 'image_0.png'
-    image_file_amber = out_dir_amber / 'image_0.png'
-    assert image_file_legacy.exists()
-    assert image_file_amber.exists()
-    image_legacy = PIL.Image.open(str(image_file_legacy)).convert('RGB')
-    image_amber = PIL.Image.open(str(image_file_amber)).convert('RGB')
-    # The dimensions should match
-    assert image_amber.width == image_legacy.width
-    assert image_amber.height == image_legacy.height
-    # The contents should match
-    for x in range(0, image_amber.width):
-        for y in range(0, image_amber.height):
-            assert image_amber.getpixel((x, y)) == image_legacy.getpixel((x, y))
+    args_1 = ['android' if is_android_1 else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
+                   + json, str(out_dir_1)]
+    if not is_amber_1:
+        args_1.append('--legacy-worker')
+
+    args_2 = ['android' if is_android_2 else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
+                   + json, str(out_dir_2)]
+    if not is_amber_2:
+        args_2.append('--legacy-worker')
+
+    runspv.main_helper(args_1)
+    runspv.main_helper(args_2)
+    assert is_success(out_dir_1)
+    assert is_success(out_dir_2)
+    assert images_match(out_dir_1, out_dir_2, fuzzy_image_comparison)
 
 
-def check_host_and_amber_match_compute(tmp_path: pathlib2.Path, json: str):
+def check_images_match_android_amber_vs_legacy(tmp_path: pathlib2.Path, json: str):
+    check_images_match(tmp_path=tmp_path,
+                       json=json,
+                       is_android_1=True,
+                       is_android_2=True,
+                       is_amber_1=True,
+                       is_amber_2=False,
+                       fuzzy_image_comparison=False)
+
+
+def check_images_match_host_vs_android_amber(tmp_path: pathlib2.Path, json: str):
+    check_images_match(tmp_path=tmp_path,
+                       json=json,
+                       is_android_1=False,
+                       is_android_2=True,
+                       is_amber_1=True,
+                       is_amber_2=True,
+                       fuzzy_image_comparison=True)
+
+
+def check_host_and_android_match_compute(tmp_path: pathlib2.Path, json: str):
     out_dir_host = tmp_path / 'out_legacy'
     out_dir_android = tmp_path / 'out_amber'
 
@@ -116,7 +174,7 @@ def simple_compute(tmp_path: pathlib2.Path, is_android: bool):
 def red_image(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool):
     out_dir = tmp_path / 'out'
     args = ['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
-            + 'red.json',
+            + 'image_test_0007.json',
             str(out_dir)]
     if is_legacy_worker:
         args.append('--legacy-worker')
@@ -134,7 +192,7 @@ def red_image(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool)
 def bubblesort_flag(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool):
     out_dir = tmp_path / 'out'
     args = ['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
-            + 'bubblesort_flag.json',
+            + 'image_test_0002.json',
             str(out_dir)]
     if is_legacy_worker:
         args.append('--legacy-worker')
@@ -340,21 +398,78 @@ def test_bubblesort_flag_amber_android(tmp_path: pathlib2.Path):
     bubblesort_flag(tmp_path, True, False)
 
 
-def test_bubblesort_flag_legacy_host(tmp_path: pathlib2.Path):
-    bubblesort_flag(tmp_path, False, True)
-
-
 def test_bubblesort_flag_legacy_android(tmp_path: pathlib2.Path):
     bubblesort_flag(tmp_path, True, True)
 
 
-def test_legacy_and_amber_match_host_red(tmp_path: pathlib2.Path):
-    check_legacy_and_amber_match_images(tmp_path, False, 'red.json')
+#################################
+# Android, amber vs. legacy
+
+def test_image_0000_android_amber_vs_legacy(tmp_path: pathlib2.Path):
+    check_images_match_android_amber_vs_legacy(tmp_path, 'image_test_0000.json')
 
 
-def test_legacy_and_amber_match_android_red(tmp_path: pathlib2.Path):
-    check_legacy_and_amber_match_images(tmp_path, True, 'red.json')
+def test_image_0001_android_amber_vs_legacy(tmp_path: pathlib2.Path):
+    check_images_match_android_amber_vs_legacy(tmp_path, 'image_test_0001.json')
 
 
-def test_android_and_host_match_simple_compute(tmp_path: pathlib2.Path):
-    check_host_and_amber_match_compute(tmp_path, 'simple.json')
+def test_image_0002_android_amber_vs_legacy(tmp_path: pathlib2.Path):
+    check_images_match_android_amber_vs_legacy(tmp_path, 'image_test_0002.json')
+
+
+def test_image_0003_android_amber_vs_legacy(tmp_path: pathlib2.Path):
+    check_images_match_android_amber_vs_legacy(tmp_path, 'image_test_0003.json')
+
+
+def test_image_0004_android_amber_vs_legacy(tmp_path: pathlib2.Path):
+    check_images_match_android_amber_vs_legacy(tmp_path, 'image_test_0004.json')
+
+
+def test_image_0005_android_amber_vs_legacy(tmp_path: pathlib2.Path):
+    check_images_match_android_amber_vs_legacy(tmp_path, 'image_test_0005.json')
+
+
+def test_image_0006_android_amber_vs_legacy(tmp_path: pathlib2.Path):
+    check_images_match_android_amber_vs_legacy(tmp_path, 'image_test_0006.json')
+
+
+def test_image_0007_android_amber_vs_legacy(tmp_path: pathlib2.Path):
+    check_images_match_android_amber_vs_legacy(tmp_path, 'image_test_0007.json')
+
+
+#################################
+# Android vs. host, amber
+
+def test_image_0000_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_images_match_host_vs_android_amber(tmp_path, 'image_test_0000.json')
+
+
+def test_image_0001_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_images_match_host_vs_android_amber(tmp_path, 'image_test_0001.json')
+
+
+def test_image_0002_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_images_match_host_vs_android_amber(tmp_path, 'image_test_0002.json')
+
+
+@pytest.mark.skip(reason="Better fuzzy image comparison needs to be incorporated.")
+def test_image_0003_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_images_match_host_vs_android_amber(tmp_path, 'image_test_0003.json')
+
+
+@pytest.mark.skip(reason="Better fuzzy image comparison needs to be incorporated.")
+def test_image_0004_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_images_match_host_vs_android_amber(tmp_path, 'image_test_0004.json')
+
+
+def test_image_0005_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_images_match_host_vs_android_amber(tmp_path, 'image_test_0005.json')
+
+
+@pytest.mark.skip(reason="Better fuzzy image comparison needs to be incorporated.")
+def test_image_0006_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_images_match_host_vs_android_amber(tmp_path, 'image_test_0006.json')
+
+
+def test_image_0007_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_images_match_host_vs_android_amber(tmp_path, 'image_test_0007.json')

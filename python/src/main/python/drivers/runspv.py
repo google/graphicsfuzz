@@ -517,6 +517,9 @@ def amberscriptify_image(vert, frag, uniform_json):
 
     script = '# Generated\n'
 
+    script += '[require]\n'
+    script += 'fbsize 256 256\n'
+
     script += '[vertex shader spirv]\n'
     script += spv_get_disassembly(vert)
     script += '\n\n'

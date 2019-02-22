@@ -1,9 +1,8 @@
 {
-  "injectionSwitch": {
-    "func": "glUniform2f",
+  "time": {
+    "func": "glUniform1f",
     "args": [
-      0.0,
-      1.0
+      0.0
     ],
     "binding": 0
   },
