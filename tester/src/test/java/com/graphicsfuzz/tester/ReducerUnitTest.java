@@ -92,7 +92,7 @@ public class ReducerUnitTest {
   public void testReductionSteps() throws Exception {
     List<ITransformationSupplier> transformations = new ArrayList<>();
     int seed = 0;
-    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es()) {
+    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es(fileOps)) {
       testGenerateAndReduce(originalShaderJobFile, transformations, new RandomWrapper(seed));
       seed++;
     }

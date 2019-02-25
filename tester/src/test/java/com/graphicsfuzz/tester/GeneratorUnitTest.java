@@ -16,29 +16,25 @@
 
 package com.graphicsfuzz.tester;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.util.GlslParserException;
-import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.tool.Generate;
-import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.AddDeadOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
 import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransformation;
-import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
 import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
+import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.generator.transformation.OutlineStatementTransformation;
+import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
+import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
@@ -61,6 +57,8 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertEquals;
 
 public class GeneratorUnitTest {
 
@@ -142,7 +140,10 @@ public class GeneratorUnitTest {
         TransformationProbabilities.likelyDonateDeadCode()::donateDeadCodeAtStmt,
             Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
-        "donatedead.frag", Arrays.asList(), Arrays.asList());
+        "donatedead.frag",
+        Arrays.asList("bubblesort_flag.json", "squares.json"),
+        Arrays.asList("bubblesort_flag.json", "squares.json"));
+    // Reason for blacklisting^: slow.
   }
 
   @Test
@@ -151,9 +152,11 @@ public class GeneratorUnitTest {
         TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
             Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true),
-        true), TransformationProbabilities.likelyDonateLiveCode(),
+        false), TransformationProbabilities.likelyDonateLiveCode(),
         "donatelive.frag",
-        Arrays.asList(), Arrays.asList());
+        Arrays.asList("squares.json"),
+        Arrays.asList("squares.json"));
+    // Reason for blacklisting^: slow.
   }
 
   @Test
@@ -195,8 +198,9 @@ public class GeneratorUnitTest {
     testTransformationMultiVersions(() -> new AddWrappingConditionalTransformation(),
         TransformationProbabilities.onlyWrap(),
         "wrap.frag",
-        Arrays.asList("colorgrid_modulo.json", "prefix_sum.json"),
-        Arrays.asList("colorgrid_modulo.json", "prefix_sum.json"));
+        Arrays.asList("bubblesort_flag.json"),
+        Arrays.asList("bubblesort_flag.json"));
+    // Reason for blacklisting^: slow.
   }
 
   @Test
@@ -233,13 +237,18 @@ public class GeneratorUnitTest {
       if (ignoreBlacklist) {
         skipRender = false;
       } else {
-        skipRender = (reverseBlacklist != blacklist.contains(originalShaderJobFile.getName()));
+        skipRender =
+            (reverseBlacklist != blacklist.contains(originalShaderJobFile.getName()));
       }
-      final File referenceImage = Util.renderShader(
-          originalShaderJobFile,
-          temporaryFolder,
-          fileOps);
-      generateAndCheckVariant(transformationsList,
+      File referenceImage = null;
+      if (!skipRender) {
+        referenceImage = Util.renderShader(
+            originalShaderJobFile,
+            temporaryFolder,
+            fileOps);
+      }
+      generateAndCheckVariant(
+          transformationsList,
           probabilities,
           suffix,
           originalShaderJobFile,
@@ -252,14 +261,14 @@ public class GeneratorUnitTest {
         TransformationProbabilities probabilities, String suffix, List<String> blacklist)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformation(transformations, probabilities, suffix, blacklist,
-          Util.getReferenceShaderJobFiles100es());
+          Util.getReferenceShaderJobFiles100es(fileOps));
   }
 
   private void testTransformation300es(List<ITransformationSupplier> transformations,
         TransformationProbabilities probabilities, String suffix, List<String> blacklist)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformation(transformations, probabilities, suffix, blacklist,
-        Util.getReferenceShaderJobFiles300es());
+        Util.getReferenceShaderJobFiles300es(fileOps));
   }
 
   private void testTransformationMultiVersions(List<ITransformationSupplier> transformations,
@@ -295,13 +304,18 @@ public class GeneratorUnitTest {
         new ArrayList<>(), new ArrayList<>());
   }
 
-  private void generateAndCheckVariant(List<ITransformation> transformations,
-                                       TransformationProbabilities probabilities,
-                                       String suffix,
-                                       File originalShaderJobFile,
+  private void generateAndCheckVariant(
+      List<ITransformation> transformations,
+      TransformationProbabilities probabilities,
+      String suffix,
+      File originalShaderJobFile,
       File referenceImage,
-      boolean skipRender)
-      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
+      boolean skipRender
+  ) throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
+
+    // skipRender if and only if reference image is null.
+    assert(skipRender == (referenceImage == null));
+
     final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShaderJobFile);
     assertEquals(1, shaderJob.getShaders().size());
     assertEquals(ShaderKind.FRAGMENT, shaderJob.getShaders().get(0).getShaderKind());
@@ -347,7 +361,8 @@ public class GeneratorUnitTest {
 
   private void testTransformationForSpecificShader(List<ITransformationSupplier> transformations,
                                                    TransformationProbabilities probabilities,
-                                                   String suffix, String shader)
+                                                   String suffix,
+                                                   String shader)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final File referenceFrag = new File(temporaryFolder.getRoot(), "shader.frag");
     final File referenceJson = new File(temporaryFolder.getRoot(), "shader.json");

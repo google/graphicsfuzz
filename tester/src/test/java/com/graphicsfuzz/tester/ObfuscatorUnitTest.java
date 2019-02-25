@@ -40,7 +40,7 @@ public class ObfuscatorUnitTest {
   @Test
   public void testObfuscate() throws Exception {
     final IRandom generator = new RandomWrapper(0);
-    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es()) {
+    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es(fileOps)) {
       final File originalImage =
           Util.renderShader(
               originalShaderJobFile, temporaryFolder, fileOps);
