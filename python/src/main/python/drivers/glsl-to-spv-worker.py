@@ -140,7 +140,7 @@ def run_spirv_opt(spv_file, args):
     print("Running optimizer.")
     spv_file_opt = spv_file + '.opt'
     cmd = os.path.dirname(HERE) + '/../../bin/' + get_bin_type() + '/spirv-opt ' + \
-          args.spirvopt + ' ' + spv_file + ' -o ' + spv_file_opt
+        args.spirvopt + ' ' + spv_file + ' -o ' + spv_file_opt
     log = ""
 
     success = True
@@ -226,14 +226,29 @@ def do_image_job(args, image_job):
 
     if args.legacy_worker:
         if args.target == 'host':
-            runspv.run_image_android_legacy(vert=vert_spv_file, frag=frag_spv_file, json=json_file,
-                                            output_dir=os.getcwd(), force=args.force, skip_render=skip_render)
+            runspv.run_image_host_legacy(
+                vert=vert_spv_file,
+                frag=frag_spv_file,
+                json=json_file,
+                output_dir=os.getcwd(),
+                skip_render=skip_render)
         else:
-            runspv.run_image_android_legacy(vert=vert_spv_file, frag=frag_spv_file, json=json_file,
-                                            output_dir=os.getcwd(), force=args.force, skip_render=skip_render)
+            assert args.target == 'android'
+            runspv.run_image_android_legacy(
+                vert=vert_spv_file,
+                frag=frag_spv_file,
+                json=json_file,
+                output_dir=os.getcwd(),
+                force=args.force,
+                skip_render=skip_render)
     else:
-        runspv.run_image_amber(vert=vert_spv_file, frag=frag_spv_file, json=json_file, output_dir=os.getcwd(),
-                               force=args.force, is_android=(not args.target == 'host'))
+        runspv.run_image_amber(
+            vert=vert_spv_file,
+            frag=frag_spv_file,
+            json=json_file,
+            output_dir=os.getcwd(),
+            force=args.force,
+            is_android=(args.target == 'android'))
 
     if os.path.isfile(runspv.LOGFILE_NAME):
         with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
@@ -299,7 +314,13 @@ def do_compute_job(args, comp_job):
             return res
 
     assert not args.legacy_worker
-    runspv.run_compute_amber(comp=tmpcompspv, json=tmpjson, output_dir=os.getcwd(), force=args.force)
+    runspv.run_compute_amber(
+        comp=tmpcompspv,
+        json=tmpjson,
+        output_dir=os.getcwd(),
+        force=args.force,
+        is_android=(args.target == 'android')
+    )
 
     if os.path.isfile(runspv.LOGFILE_NAME):
         with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
@@ -429,7 +450,8 @@ def main():
 
     parser.add_argument(
         '--local-shader-job',
-        help='Execute a single, locally stored shader job (for debugging), instead of using the server.')
+        help='Execute a single, locally stored shader job (for debugging), instead of using the '
+             'server.')
 
     args = parser.parse_args()
 
@@ -442,10 +464,10 @@ def main():
 
     # Check the optional arguments are consistent with the target.
     if not is_android and args.force:
-        raise ValueError('"force" option not compatible with "host" target')
+        raise ValueError('"force" option is only compatible with "android" target')
 
     if not is_android and args.serial:
-        raise ValueError('"serial" option not compatible with "host" target')
+        raise ValueError('"serial" option is only compatible with "android" target')
 
     print('Worker: ' + args.worker)
 
@@ -468,8 +490,8 @@ def main():
         runspv.dump_info_host_legacy()
 
     if not os.path.isfile(worker_info_file):
-        raise Exception('Failed to retrieve worker information.  If targeting Android, make sure the app permission '
-                        'to write to external storage is enabled.')
+        raise Exception('Failed to retrieve worker information.  If targeting Android, make sure '
+                        'the app permission to write to external storage is enabled.')
 
     with open(worker_info_file, 'r') as f:
         worker_info_json_string = f.read()
@@ -477,9 +499,13 @@ def main():
     # Main loop
     while True:
 
-        if is_android and 'ANDROID_SERIAL' in os.environ and not is_device_available(os.environ['ANDROID_SERIAL']):
-            raise Exception('#### ABORT: device {} is not available (either offline or not connected?)'
-                            .format(os.environ['ANDROID_SERIAL']))
+        if is_android \
+            and 'ANDROID_SERIAL' in os.environ and \
+                not is_device_available(os.environ['ANDROID_SERIAL']):
+            raise Exception(
+                '#### ABORT: device {} is not available (either offline or not connected?)'
+                .format(os.environ['ANDROID_SERIAL'])
+            )
 
         # Special case: local shader job for debugging.
         if args.local_shader_job:
