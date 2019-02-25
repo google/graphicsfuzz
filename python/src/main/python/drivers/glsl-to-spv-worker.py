@@ -229,7 +229,7 @@ def do_image_job(args, image_job):
             runspv.run_image_host_legacy(
                 vert=vert_spv_file,
                 frag=frag_spv_file,
-                json=json_file,
+                json_file=json_file,
                 output_dir=os.getcwd(),
                 skip_render=skip_render)
         else:
@@ -237,7 +237,7 @@ def do_image_job(args, image_job):
             runspv.run_image_android_legacy(
                 vert=vert_spv_file,
                 frag=frag_spv_file,
-                json=json_file,
+                json_file=json_file,
                 output_dir=os.getcwd(),
                 force=args.force,
                 skip_render=skip_render)
@@ -245,7 +245,7 @@ def do_image_job(args, image_job):
         runspv.run_image_amber(
             vert=vert_spv_file,
             frag=frag_spv_file,
-            json=json_file,
+            json_file=json_file,
             output_dir=os.getcwd(),
             force=args.force,
             is_android=(args.target == 'android'))
@@ -316,7 +316,7 @@ def do_compute_job(args, comp_job):
     assert not args.legacy_worker
     runspv.run_compute_amber(
         comp=tmpcompspv,
-        json=tmpjson,
+        json_file=tmpjson,
         output_dir=os.getcwd(),
         force=args.force,
         is_android=(args.target == 'android')
