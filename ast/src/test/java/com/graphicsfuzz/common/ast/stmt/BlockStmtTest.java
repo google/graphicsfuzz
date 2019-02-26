@@ -29,15 +29,15 @@ public class BlockStmtTest {
   public void testInsertStmt() {
     BlockStmt b = new BlockStmt(Arrays.asList(new NullStmt()), true);
     assertEquals(1, b.getNumStmts());
-    b.insertStmt(0, new ExprStmt(BoolConstantExpr.TRUE));
+    b.insertStmt(0, new ExprStmt(new BoolConstantExpr(true)));
     assertEquals(2, b.getNumStmts());
-    assertEquals(BoolConstantExpr.TRUE, ((ExprStmt)b.getStmt(0)).getExpr());
+    assertTrue(((BoolConstantExpr) ((ExprStmt)b.getStmt(0)).getExpr()).getIsTrue());
     assertTrue(b.getStmt(1) instanceof NullStmt);
   }
 
   @Test
   public void testInsertBefore() {
-    ExprStmt stmt = new ExprStmt(BoolConstantExpr.TRUE);
+    ExprStmt stmt = new ExprStmt(new BoolConstantExpr(true));
     BlockStmt b = new BlockStmt(Arrays.asList(stmt), true);
     assertEquals(1, b.getNumStmts());
     b.insertBefore(stmt, new NullStmt());
@@ -48,8 +48,8 @@ public class BlockStmtTest {
 
   @Test
   public void testInsertAfter() {
-    ExprStmt stmt1 = new ExprStmt(BoolConstantExpr.TRUE);
-    ExprStmt stmt2 = new ExprStmt(BoolConstantExpr.FALSE);
+    ExprStmt stmt1 = new ExprStmt(new BoolConstantExpr(true));
+    ExprStmt stmt2 = new ExprStmt(new BoolConstantExpr(false));
     BlockStmt b = new BlockStmt(Arrays.asList(stmt1, stmt2), true);
     assertEquals(2, b.getNumStmts());
     b.insertAfter(stmt1, new NullStmt());
