@@ -138,26 +138,35 @@ def prepare_shader(output_dir: str, shader: Optional[str]):
     if shader is None:
         return None
 
-    assert (os.path.isfile(shader))
+    assert os.path.isfile(shader)
 
     shader_basename = os.path.basename(shader)
 
-    result = output_dir + os.sep
     if (shader_basename.endswith('.frag')
             or shader_basename.endswith('.vert')
             or shader_basename.endswith('.comp')):
-        result += shader_basename + '.spv'
-        cmd = glslang_path() + ' -V ' + shader + ' -o ' + result
+        result = os.path.join(output_dir, shader_basename + '.spv')
+        cmd = (
+            glslang_path()
+            + ' -V ' + shader
+            + ' -o ' + result
+        )
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
     elif shader_basename.endswith('.asm'):
-        result += remove_end(shader_basename, '.asm') + '.spv'
-        cmd = spirvas_path() + ' ' + shader + ' -o ' + result
+        result = os.path.join(output_dir, remove_end(shader_basename, '.asm') + '.spv')
+        cmd = (
+            spirvas_path()
+            + ' ' + shader
+            + ' -o ' + result
+        )
         subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
     elif shader_basename.endswith('.spv'):
-        result += shader_basename
+        result = shader_basename
         shutil.copy(shader, result)
     else:
         assert False, 'unexpected shader extension: {}'.format(shader)
+
+    assert len(result) > 0
 
     return result
 
@@ -272,8 +281,8 @@ def run_image_android_legacy(
     assert os.path.isfile(frag)
     assert os.path.isfile(json_file)
 
-    logfile = output_dir + os.sep + LOGFILE_NAME
-    statusfile = output_dir + os.sep + 'STATUS'
+    logfile = os.path.join(output_dir, LOGFILE_NAME)
+    statusfile = os.path.join(output_dir, 'STATUS')
 
     prepare_device(not force, True)
 
@@ -341,19 +350,19 @@ def run_image_android_legacy(
 
     # Check sanity:
     if status == 'SUCCESS':
-        sanity_before = output_dir + '/sanity_before.png'
-        sanity_after = output_dir + '/sanity_after.png'
+        sanity_before = os.path.join(output_dir, 'sanity_before.png')
+        sanity_after = os.path.join(output_dir, 'sanity_after.png')
         if os.path.isfile(sanity_before) and os.path.isfile(sanity_after):
             if not filecmp.cmp(sanity_before, sanity_after, shallow=False):
                 status = 'SANITY_ERROR'
 
     # Check nondet:
     if status == 'SUCCESS':
-        ref_image = output_dir + '/image_0.png'
+        ref_image = os.path.join(output_dir, 'image_0.png')
         if os.path.isfile(ref_image):
             # If reference image is here then report nondet if any image is different or missing.
             for i in range(1, NUM_RENDER):
-                next_image = output_dir + '/image_{}.png'.format(i)
+                next_image = os.path.join(output_dir, 'image_{}.png'.format(i))
                 if not os.path.isfile(next_image):
                     status = 'UNEXPECTED_ERROR'
                     with open(LOGFILE_NAME, 'a') as f:
@@ -406,12 +415,12 @@ def dump_info_android_legacy(wait_for_screen):
 
 
 def run_image_host_legacy(vert: str, frag: str, json_file: str, output_dir: str, skip_render: bool):
-    assert (os.path.isfile(vert))
-    assert (os.path.isfile(frag))
-    assert (os.path.isfile(json_file))
+    assert os.path.isfile(vert)
+    assert os.path.isfile(frag)
+    assert os.path.isfile(json_file)
 
-    logfile = output_dir + os.sep + LOGFILE_NAME
-    statusfile = output_dir + os.sep + 'STATUS'
+    logfile = os.path.join(output_dir, LOGFILE_NAME)
+    statusfile = os.path.join(output_dir, 'STATUS')
 
     if skip_render:
         with open('SKIP_RENDER', 'w') as f:
@@ -419,11 +428,15 @@ def run_image_host_legacy(vert: str, frag: str, json_file: str, output_dir: str,
     elif os.path.isfile('SKIP_RENDER'):
         os.remove('SKIP_RENDER')
 
-    cmd = 'vkworker ' + vert + ' ' + frag + ' ' + json_file \
-          + ' --png_template=\"' + output_dir + os.sep + 'image\"' \
-          + ' --sanity_before=\"' + output_dir + os.sep + 'sanity_before.png\"' \
-          + ' --sanity_after=\"' + output_dir + os.sep + 'sanity_after.png\"' \
-                                                         ' > ' + logfile
+    cmd = (
+        'vkworker'
+        + ' ' + vert
+        + ' ' + frag
+        + ' ' + json_file
+        + ' --png_template="{}"'.format(os.path.join(output_dir, 'image'))
+        + ' --sanity_before="{}"'.format(os.path.join(output_dir, 'sanity_before.png'))
+        + ' --sanity_after="{}"'.format(os.path.join(output_dir, 'sanity_after.png'))
+        + ' > ' + logfile)
     status = 'SUCCESS'
     try:
         subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
@@ -576,15 +589,15 @@ def run_image_amber(
         output_dir: str,
         force: bool,
         is_android: bool):
-    assert (os.path.isfile(vert))
-    assert (os.path.isfile(frag))
-    assert (os.path.isfile(json_file))
+    assert os.path.isfile(vert)
+    assert os.path.isfile(frag)
+    assert os.path.isfile(json_file)
 
-    amberscript_file = output_dir + os.sep + 'tmpscript.shader_test'
-    logfile = output_dir + os.sep + LOGFILE_NAME
-    statusfile = output_dir + os.sep + 'STATUS'
-    ppm_image = output_dir + os.sep + 'image.ppm'
-    png_image = output_dir + os.sep + 'image_0.png'
+    amberscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
+    logfile = os.path.join(output_dir, LOGFILE_NAME)
+    statusfile = os.path.join(output_dir, 'STATUS')
+    ppm_image = os.path.join(output_dir, 'image.ppm')
+    png_image = os.path.join(output_dir, 'image_0.png')
 
     with open(amberscript_file, 'w') as f:
         f.write(amberscriptify_image(vert, frag, json_file))
@@ -639,7 +652,7 @@ def run_image_amber(
             status = 'CRASH'
 
         if status == 'SUCCESS':
-            assert (os.path.isfile(ppm_image))
+            assert os.path.isfile(ppm_image)
 
         with open(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
@@ -776,14 +789,14 @@ def get_ssbo_binding(comp_json):
 
 
 def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, is_android: bool):
-    assert (os.path.isfile(comp))
-    assert (os.path.isfile(json_file))
+    assert os.path.isfile(comp)
+    assert os.path.isfile(json_file)
 
-    amberscript_file = output_dir + os.sep + 'tmpscript.shader_test'
-    ssbo_output = output_dir + os.sep + 'ssbo'
-    ssbo_json = output_dir + os.sep + 'ssbo.json'
-    logfile = output_dir + os.sep + LOGFILE_NAME
-    statusfile = output_dir + os.sep + 'STATUS'
+    amberscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
+    ssbo_output = os.path.join(output_dir, 'ssbo')
+    ssbo_json = os.path.join(output_dir, 'ssbo.json')
+    logfile = os.path.join(output_dir, LOGFILE_NAME)
+    statusfile = os.path.join(output_dir, 'STATUS')
 
     with open(amberscript_file, 'w') as f:
         f.write(amberscriptify_comp(comp, json_file))
@@ -848,7 +861,7 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
             status = 'CRASH'
 
         if status == 'SUCCESS':
-            assert (os.path.isfile(ssbo_output))
+            assert os.path.isfile(ssbo_output)
 
         with open(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
@@ -968,7 +981,7 @@ def main_helper(args):
         raise ValueError('Compute shaders are not supported with the legacy worker')
 
     # Make the output directory if it does not yet exist.
-    if not os.path.exists(args.output_dir):
+    if not os.path.isdir(args.output_dir):
         os.makedirs(args.output_dir)
 
     # Copy the shaders into the output directory, turning them into SPIR-V binary format first if
