@@ -85,8 +85,10 @@ def subprocess_helper(cmd: List[str], check=False, timeout=None, stdout=None):
     )
 
     if stdout == subprocess.PIPE:
-        result.stdout = result.stdout.decode(encoding='utf-8', errors='ignore')
-        result.stderr = result.stderr.decode(encoding='utf-8', errors='ignore')
+        if result.stdout is not None:
+            result.stdout = result.stdout.decode(encoding='utf-8', errors='ignore')
+        if result.stderr is not None:
+            result.stderr = result.stderr.decode(encoding='utf-8', errors='ignore')
 
     return result
 
@@ -118,25 +120,32 @@ def get_bin_dir():
 BIN_DIR = get_bin_dir()
 
 
+def tool_on_path(tool: str) -> str:
+    result = shutil.which(tool)
+    if result is None:
+        raise FileNotFoundError('Could not find {} on PATH. Please add to PATH.'.format(tool))
+    return result
+
+
 def glslang_path():
     glslang = os.path.join(BIN_DIR, 'glslangValidator')
     if os.path.isfile(glslang):
         return glslang
-    return 'glslangValidator'
+    return tool_on_path('glslangValidator')
 
 
 def spirvas_path():
     spirvas = os.path.join(BIN_DIR, 'spirv-as')
     if os.path.isfile(spirvas):
         return spirvas
-    return 'spirv-as'
+    return tool_on_path('spirv-as')
 
 
 def spirvdis_path():
     spirvas = os.path.join(BIN_DIR, 'spirv-dis')
     if os.path.isfile(spirvas):
         return spirvas
-    return 'spirv-dis'
+    return tool_on_path('spirv-dis')
 
 
 def remove_end(str_in: str, str_end: str):
@@ -401,8 +410,9 @@ def run_image_android_legacy(
             stdout=f
         )
 
-    # retrieve all files
-    adb_check(['pull', ANDROID_SDCARD_GRAPHICSFUZZ_DIR, output_dir])
+    # retrieve all files: the "/." is a special syntax to pull all files from the graphicsfuzz
+    # directory without creating "output_dir/graphicsfuzz"
+    adb_check(['pull', ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/.', output_dir])
 
     # Check sanity:
     if status == 'SUCCESS':
@@ -720,7 +730,7 @@ def run_image_amber(
 
     else:
         cmd = [
-            'amber',
+            tool_on_path('amber'),
             '-i',
             png_image,
             amberscript_file
@@ -906,9 +916,9 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
         # Call amber
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
         cmd = [
-            'shell'
+            'shell',
             # The following is a single string:
-            'cd ' + ANDROID_DEVICE_DIR + '&& '
+            'cd ' + ANDROID_DEVICE_DIR + ' && '
             './' + ANDROID_AMBER_NDK
             + ' -b ' + device_ssbo
             + ' -B ' + ssbo_binding
@@ -945,7 +955,7 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
             adb_check(['logcat', '-d'], stdout=f)
     else:
         cmd = [
-            'amber',
+            tool_on_path('amber'),
             '-b',
             ssbo_output,
             '-B',
