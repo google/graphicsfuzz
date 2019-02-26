@@ -307,7 +307,7 @@ public class ShaderJobFileOperations {
     }
     return false;
   }
-  
+
   /**
    * Does this shaderJobResultFile have an associated image result?
    *
@@ -405,14 +405,22 @@ public class ShaderJobFileOperations {
   }
 
   /**
-   * These are currently always sorted.
+   * Files are sorted.
    */
   public File[] listShaderJobFiles(File directory, FilenameFilter filter) throws IOException {
     File[] files =
-        listFiles(directory, (dir, name) -> name.endsWith(".json") && filter.accept(dir, name));
+        listFiles(directory,
+            (dir, name) -> name.endsWith(".json") && (filter == null || filter.accept(dir, name)));
     AlphanumComparator comparator = new AlphanumComparator();
     Arrays.sort(files, (o1, o2) -> comparator.compare(o1.toString(), o2.toString()));
     return files;
+  }
+
+  /**
+   * Files are sorted.
+   */
+  public File[] listShaderJobFiles(File directory) throws IOException {
+    return listShaderJobFiles(directory, null);
   }
 
   public void mkdir(File directory) throws IOException {
