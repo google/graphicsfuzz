@@ -197,7 +197,7 @@ public final class OpaqueExpressionGenerator {
         Fuzzer fuzzer) {
 
     if (isTooDeep(depth)) {
-      return value ? BoolConstantExpr.TRUE : BoolConstantExpr.FALSE;
+      return value ? new BoolConstantExpr(true) : new BoolConstantExpr(false);
     }
     Expr result = null;
     final int newDepth = depth + 1;
@@ -309,11 +309,11 @@ public final class OpaqueExpressionGenerator {
   }
 
   private Expr falseConstructor(Expr expr) {
-    return macroConstructor(Constants.GLF_FALSE, BoolConstantExpr.FALSE, expr);
+    return macroConstructor(Constants.GLF_FALSE, new BoolConstantExpr(false), expr);
   }
 
   private Expr trueConstructor(Expr expr) {
-    return macroConstructor(Constants.GLF_TRUE, BoolConstantExpr.TRUE, expr);
+    return macroConstructor(Constants.GLF_TRUE, new BoolConstantExpr(true), expr);
   }
 
   private Expr makeRegularIntegerValuedLiteral(BasicType type, String integerPart) {

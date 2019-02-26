@@ -162,7 +162,7 @@ public class BasicType extends BuiltinType {
       return new UIntConstantExpr("1u");
     }
     if (this == BOOL) {
-      return BoolConstantExpr.TRUE;
+      return new BoolConstantExpr(true);
     }
     return new TypeConstructorExpr(toString().toString(), getElementType().getCanonicalConstant());
   }

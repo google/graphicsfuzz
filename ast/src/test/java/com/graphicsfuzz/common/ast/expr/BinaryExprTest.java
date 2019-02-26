@@ -29,7 +29,7 @@ public class BinaryExprTest {
     VariableIdentifierExpr vie = new VariableIdentifierExpr("x");
     BinaryExpr be = new BinaryExpr(
         vie,
-        BoolConstantExpr.TRUE,
+        new BoolConstantExpr(true),
         BinOp.LAND);
     assertEquals(vie, be.getLhs());
   }
@@ -117,22 +117,22 @@ public class BinaryExprTest {
 
   @Test
   public void getNumChildren() throws Exception {
-    BinaryExpr be = new BinaryExpr(BoolConstantExpr.TRUE,
-        BoolConstantExpr.FALSE, BinOp.LXOR);
+    BinaryExpr be = new BinaryExpr(new BoolConstantExpr(true),
+        new BoolConstantExpr(false), BinOp.LXOR);
     assertEquals(2, be.getNumChildren());
   }
 
   @Test(expected = IndexOutOfBoundsException.class)
   public void getChildBad() {
-    new BinaryExpr(BoolConstantExpr.TRUE,
-        BoolConstantExpr.FALSE, BinOp.LXOR).getChild(2);
+    new BinaryExpr(new BoolConstantExpr(true),
+        new BoolConstantExpr(false), BinOp.LXOR).getChild(2);
   }
 
   @Test(expected = IndexOutOfBoundsException.class)
   public void setChildBad() {
-    new BinaryExpr(BoolConstantExpr.TRUE,
-        BoolConstantExpr.FALSE, BinOp.LXOR).setChild(2,
-          BoolConstantExpr.FALSE);
+    new BinaryExpr(new BoolConstantExpr(true),
+        new BoolConstantExpr(false), BinOp.LXOR).setChild(2,
+          new BoolConstantExpr(false));
   }
 
 }

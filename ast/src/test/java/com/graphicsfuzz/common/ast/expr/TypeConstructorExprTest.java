@@ -30,7 +30,7 @@ public class TypeConstructorExprTest {
   public void getTypename() throws Exception {
     TypeConstructorExpr e = new TypeConstructorExpr("foo",
         new BinaryExpr(new IntConstantExpr("2"), new IntConstantExpr("1"), BinOp.MOD),
-        BoolConstantExpr.TRUE);
+        new BoolConstantExpr(true));
     assertEquals("foo", e.getTypename());
   }
 
@@ -63,7 +63,7 @@ public class TypeConstructorExprTest {
 
   @Test
   public void removeArg() throws Exception {
-    List<Expr> args = Arrays.asList(BoolConstantExpr.TRUE, BoolConstantExpr.FALSE,
+    List<Expr> args = Arrays.asList(new BoolConstantExpr(true), new BoolConstantExpr(false),
         new IntConstantExpr("3"),
         new IntConstantExpr("4"));
 
@@ -148,7 +148,7 @@ public class TypeConstructorExprTest {
   private static List<Expr> exprsList() {
     return Arrays.asList(new BinaryExpr(new FloatConstantExpr("2.0"),
             new FloatConstantExpr("3.6"), BinOp.MUL),
-        BoolConstantExpr.TRUE,
+        new BoolConstantExpr(true),
         new MemberLookupExpr(new VariableIdentifierExpr("s"), "f"));
   }
 
