@@ -37,6 +37,7 @@ def exclude_dirname(f: str):
         ".mvn",
         "cmake-build-debug",
         "cmake-build-release",
+        ".pytest_cache",
 
     ]
 
@@ -101,6 +102,7 @@ def exclude_filepath(f: str):
 
 def exclude_filename(f: str):
     return \
+        f.startswith(".attach_pid") or \
         f.endswith(".iml") or \
         f.endswith(".png") or \
         f.endswith(".md") or \

@@ -1,0 +1,10 @@
+{
+  "$compute": {
+    "num_groups": [ 1, 1, 1 ],
+    "buffer": {
+      "binding": 0,
+      "fields":
+      [ { "type": "int", "data": [ 0 ] } ]
+    }
+  }
+}
