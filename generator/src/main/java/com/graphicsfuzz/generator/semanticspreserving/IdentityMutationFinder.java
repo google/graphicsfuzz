@@ -258,9 +258,7 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
   private boolean isConstContext() {
     if (inInitializer) {
       assert enclosingVariablesDeclarationType != null;
-      if (enclosingVariablesDeclarationType instanceof QualifiedType
-            && ((QualifiedType) enclosingVariablesDeclarationType).hasQualifier(
-            TypeQualifier.CONST)) {
+      if (enclosingVariablesDeclarationType.hasQualifier(TypeQualifier.CONST)) {
         return true;
       }
       if (atGlobalScope()) {
