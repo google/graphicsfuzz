@@ -79,8 +79,12 @@ import org.apache.commons.io.FilenameUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReducerUnitTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReducerUnitTest.class);
 
   // TODO: Use ShaderJobFileOperations everywhere.
   private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
@@ -92,7 +96,7 @@ public class ReducerUnitTest {
   public void testReductionSteps() throws Exception {
     List<ITransformationSupplier> transformations = new ArrayList<>();
     int seed = 0;
-    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es()) {
+    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es(fileOps)) {
       testGenerateAndReduce(originalShaderJobFile, transformations, new RandomWrapper(seed));
       seed++;
     }
@@ -101,6 +105,11 @@ public class ReducerUnitTest {
   private void testGenerateAndReduce(File originalShaderJobFile,
                                      List<ITransformationSupplier> transformations,
                                      RandomWrapper generator) throws Exception {
+
+    // TODO: We reduced this due to slow shader run time. Consider reverting to 100000 when run
+    //  time is improved.
+    final int maxBytes = 10000;
+
     final File referenceImage =
         Util.renderShader(
             originalShaderJobFile,
@@ -109,7 +118,7 @@ public class ReducerUnitTest {
     final PipelineInfo pipelineInfo = new PipelineInfo(originalShaderJobFile);
     final TranslationUnit tu = generateSizeLimitedShader(
         fileOps.getUnderlyingShaderFile(originalShaderJobFile, ShaderKind.FRAGMENT),
-        transformations, generator);
+        transformations, generator, maxBytes);
     Generate.addInjectionSwitchIfNotPresent(tu);
     Generate.setInjectionSwitch(pipelineInfo);
     Generate.randomiseUnsetUniforms(tu, pipelineInfo, generator);
@@ -124,7 +133,7 @@ public class ReducerUnitTest {
       if (ops.isEmpty()) {
         break;
       }
-      System.err.println("Step: " + step + "; ops: " + ops.size());
+      LOGGER.info("Step: {}; ops: {}", step, ops.size());
       ops.get(generator.nextInt(ops.size())).applyReduction();
 
       final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), pipelineInfo, tu);
@@ -140,10 +149,12 @@ public class ReducerUnitTest {
 
   }
 
-  private TranslationUnit generateSizeLimitedShader(File fragmentShader,
-      List<ITransformationSupplier> transformations, IRandom generator)
-      throws IOException, ParseTimeoutException,
-      InterruptedException, GlslParserException {
+  private TranslationUnit generateSizeLimitedShader(
+      File fragmentShader,
+      List<ITransformationSupplier> transformations,
+      IRandom generator,
+      final int maxBytes
+  ) throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     while (true) {
       List<ITransformationSupplier> transformationsCopy = new ArrayList<>();
       transformationsCopy.addAll(transformations);
@@ -161,7 +172,6 @@ public class ReducerUnitTest {
           PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
           true
       );
-      final int maxBytes = 100000;
       if (tempFile.length() <= maxBytes) {
         return tu;
       }
@@ -190,7 +200,7 @@ public class ReducerUnitTest {
             TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
             Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true),
-            true));
+            false));
     result.add(() -> new AddDeadOutputWriteTransformation());
     result.add(() -> new AddLiveOutputWriteTransformation());
     return result;

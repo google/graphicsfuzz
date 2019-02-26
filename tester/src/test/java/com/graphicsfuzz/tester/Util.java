@@ -154,22 +154,30 @@ public final class Util {
     // TODO: This has been made very generous, based on Swiftshader producing visually identical
     // images with fairly high associated histogram distances.  If we find that bugs are slipping
     // through we should revise this.
-    assertTrue(ImageUtil.compareHistograms(first, second) < 2000.0);
+    assertTrue(ImageUtil.compareHistograms(first, second) < 500.0);
   }
 
-  static File[] getReferenceShaderJobFiles100es() {
-    return Paths.get(ToolPaths.getShadersDirectory(),
-        "samples", "100").toFile().listFiles((dir, name) -> name.endsWith(".json"));
+  static File[] getReferenceShaderJobFiles100es(ShaderJobFileOperations fileOps)
+      throws IOException {
+
+    return fileOps.listShaderJobFiles(
+        Paths
+            .get(ToolPaths.getShadersDirectory(), "samples", "testing", "100")
+            .toFile());
   }
 
-  static File[] getReferenceShaderJobFiles300es() {
-    return Paths.get(ToolPaths.getShadersDirectory(),
-        "samples", "300es").toFile().listFiles((dir, name) -> name.endsWith(".json"));
+  static File[] getReferenceShaderJobFiles300es(ShaderJobFileOperations fileOps)
+      throws IOException {
+
+    return fileOps.listShaderJobFiles(
+        Paths
+            .get(ToolPaths.getShadersDirectory(), "samples", "testing", "300es")
+            .toFile());
   }
 
   static File getDonorsFolder() {
     return Paths.get(ToolPaths.getShadersDirectory(),
-        "samples", "donors").toFile();
+        "samples", "testing", "donors").toFile();
   }
 
 }
