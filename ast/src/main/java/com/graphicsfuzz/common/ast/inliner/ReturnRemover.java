@@ -152,7 +152,8 @@ public class ReturnRemover {
       }
 
       private ExprStmt setHasReturned() {
-        return new ExprStmt(new BinaryExpr(makeHasReturned(), BoolConstantExpr.TRUE, BinOp.ASSIGN));
+        return new ExprStmt(new BinaryExpr(makeHasReturned(), new BoolConstantExpr(true),
+            BinOp.ASSIGN));
       }
     }.visit(fd);
   }
@@ -167,7 +168,7 @@ public class ReturnRemover {
     fd.getBody().insertStmt(0, new DeclarationStmt(
           new VariablesDeclaration(BasicType.BOOL,
                 new VariableDeclInfo(makeHasReturnedName(), null,
-                      new ScalarInitializer(BoolConstantExpr.FALSE)))));
+                      new ScalarInitializer(new BoolConstantExpr(false))))));
   }
 
   private void addReturnInstrumentation() {

@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CannedRandom;
@@ -206,6 +207,28 @@ public class IdentityMutationFinderTest {
     final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
     fileOperations.writeShaderJobFile(shaderJob, shaderJobFile);
     return fileOperations.areShadersValid(shaderJobFile, false);
+  }
+
+  @Test
+  public void testMutateTrue() throws Exception {
+    // Regression test for bug where a mutation to one occurrence of 'true' could affect another.
+    final TranslationUnit tu = ParseHelper.parse("#version 310 es\n"
+        + "precision highp float;\n"
+        + "void foo() {"
+        + "  true;"
+        + "}"
+        + "void main() {"
+        + "  true;"
+        + "}");
+    final List<Expr2ExprMutation> mutations =
+      new IdentityMutationFinder(tu, new RandomWrapper(0),
+          GenerationParams.normal(ShaderKind.FRAGMENT, false))
+          .findMutations();
+    assertEquals(2, mutations.size());
+    mutations.get(0).apply();
+    assertEquals("void main()\n{\n true;\n}\n",
+        PrettyPrinterVisitor.prettyPrintAsString(tu.getMainFunction()));
+
   }
 
 }

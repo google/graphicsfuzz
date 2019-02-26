@@ -21,11 +21,10 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class BoolConstantExpr extends ConstantExpr {
 
-  public static final BoolConstantExpr TRUE = new BoolConstantExpr();
-  public static final BoolConstantExpr FALSE = new BoolConstantExpr();
+  private final boolean isTrue;
 
-  private BoolConstantExpr() {
-
+  public BoolConstantExpr(boolean isTrue) {
+    this.isTrue = isTrue;
   }
 
   @Override
@@ -40,16 +39,16 @@ public class BoolConstantExpr extends ConstantExpr {
 
   @Override
   public BoolConstantExpr clone() {
-    return this;
+    return new BoolConstantExpr(isTrue);
   }
 
   @Override
   public String toString() {
-    if (this == TRUE) {
-      return "true";
-    }
-    assert this == FALSE;
-    return "false";
+    return isTrue ? "true" : "false";
+  }
+
+  public boolean getIsTrue() {
+    return isTrue;
   }
 
 }

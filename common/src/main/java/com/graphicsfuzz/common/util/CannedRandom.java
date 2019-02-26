@@ -67,7 +67,7 @@ public class CannedRandom implements IRandom {
 
   @Override
   public IRandom spawnChild() {
-    throw new UnsupportedOperationException("Child spawning not available");
+    return this;
   }
 
   public boolean isExhausted() {

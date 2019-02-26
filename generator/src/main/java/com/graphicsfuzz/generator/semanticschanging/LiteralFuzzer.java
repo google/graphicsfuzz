@@ -41,7 +41,9 @@ public class LiteralFuzzer {
 
   public Optional<Expr> fuzz(Type type) {
     if (type == BasicType.BOOL) {
-      return Optional.of(generator.nextBoolean() ? BoolConstantExpr.TRUE : BoolConstantExpr.FALSE);
+      return Optional.of(generator.nextBoolean()
+          ? new BoolConstantExpr(true)
+          : new BoolConstantExpr(false));
     }
     if (type == BasicType.INT) {
       return Optional.of(new IntConstantExpr(

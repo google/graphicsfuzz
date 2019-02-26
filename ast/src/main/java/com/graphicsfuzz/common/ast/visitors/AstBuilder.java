@@ -1077,10 +1077,10 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     }
     if (ctx.BOOLCONSTANT() != null) {
       if (ctx.BOOLCONSTANT().getText().equals("true")) {
-        return BoolConstantExpr.TRUE;
+        return new BoolConstantExpr(true);
       }
       assert (ctx.BOOLCONSTANT().getText().equals("false"));
-      return BoolConstantExpr.FALSE;
+      return new BoolConstantExpr(false);
     }
     assert ctx.LPAREN() != null;
     return new ParenExpr(visitExpression(ctx.expression()));
