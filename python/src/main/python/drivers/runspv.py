@@ -24,7 +24,7 @@ import time
 import platform
 import json
 import sys
-from typing import Any, IO, Optional, Union
+from typing import Any, IO, Optional, Union, List
 
 ################################################################################
 # Help messages for options that are duplicated elsewhere
@@ -68,6 +68,31 @@ orig_print = print
 # noinspection PyShadowingBuiltins
 def print(s):
     orig_print(s, flush=True)
+
+
+def subprocess_helper(cmd: List[str], check=False, timeout=None, stdout=None):
+
+    # Note: encoding= errors= are Python 3.6.
+    # We manually decode to utf-8 so we have full control.
+    # text= is Python 3.6.
+    # Do not use shell=True.
+
+    result = subprocess.run(
+        cmd,
+        check=check,
+        timeout=timeout,
+        stdout=stdout,
+    )
+
+    if stdout == subprocess.PIPE:
+        result.stdout = result.stdout.decode(encoding='utf-8', errors='ignore')
+        result.stderr = result.stderr.decode(encoding='utf-8', errors='ignore')
+
+    return result
+
+
+def open_helper(file: str, mode: str):
+    return open(file, mode, encoding='utf-8', errors='ignore')
 
 
 def get_platform():
@@ -147,20 +172,20 @@ def prepare_shader(output_dir: str, shader: Optional[str]):
             or shader_basename.endswith('.vert')
             or shader_basename.endswith('.comp')):
         result = os.path.join(output_dir, shader_basename + '.spv')
-        cmd = (
-            glslang_path()
-            + ' -V ' + shader
-            + ' -o ' + result
-        )
-        subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
+        cmd = [
+            glslang_path(),
+            '-V', shader,
+            '-o', result
+        ]
+        subprocess_helper(cmd, timeout=TIMEOUT_RUN, check=True)
     elif shader_basename.endswith('.asm'):
         result = os.path.join(output_dir, remove_end(shader_basename, '.asm') + '.spv')
-        cmd = (
-            spirvas_path()
-            + ' ' + shader
-            + ' -o ' + result
-        )
-        subprocess.check_call(cmd, shell=True, timeout=TIMEOUT_RUN)
+        cmd = [
+            spirvas_path(),
+            shader,
+            '-o', result
+        ]
+        subprocess_helper(cmd, timeout=TIMEOUT_RUN, check=True)
     elif shader_basename.endswith('.spv'):
         result = shader_basename
         shutil.copy(shader, result)
@@ -186,17 +211,15 @@ ANDROID_LEGACY_APP = 'com.graphicsfuzz.vkworker'
 TIMEOUT_APP = 30
 
 
-def adb_helper(adb_args, check, stdout: Union[None, int, IO[Any]]):
-    adb_cmd = 'adb ' + adb_args
+def adb_helper(adb_args: List[str], check, stdout: Union[None, int, IO[Any]]):
+    adb_cmd = ['adb'] + adb_args
 
     try:
-        p = subprocess.run(
+        p = subprocess_helper(
             adb_cmd,
-            shell=True,
             check=check,
             timeout=TIMEOUT_RUN,
             stdout=stdout,
-            universal_newlines=True,
         )
         return p
 
@@ -205,16 +228,16 @@ def adb_helper(adb_args, check, stdout: Union[None, int, IO[Any]]):
         raise err
 
 
-def adb_check(adb_args, stdout: Union[None, int, IO[Any]] = subprocess.PIPE):
+def adb_check(adb_args: List[str], stdout: Union[None, int, IO[Any]] = subprocess.PIPE):
     return adb_helper(adb_args, True, stdout)
 
 
-def adb_can_fail(adb_args, stdout: Union[None, int, IO[Any]] = subprocess.PIPE):
+def adb_can_fail(adb_args: List[str], stdout: Union[None, int, IO[Any]] = subprocess.PIPE):
     return adb_helper(adb_args, False, stdout)
 
 
 def stay_awake_warning():
-    res = adb_check('shell settings get global stay_on_while_plugged_in')
+    res = adb_check(['shell', 'settings get global stay_on_while_plugged_in'])
     if str(res.stdout).strip() == '0':
         print('\nWARNING: please enable "Stay Awake" from developer settings\n')
 
@@ -223,7 +246,7 @@ def is_screen_off_or_locked():
     """
     :return: True: the screen is off or locked. False: unknown.
     """
-    res = adb_can_fail('shell dumpsys nfc')
+    res = adb_can_fail(['shell', 'dumpsys nfc'])
     if res.returncode != 0:
         return False
 
@@ -238,24 +261,37 @@ def is_screen_off_or_locked():
 
 
 def prepare_device(wait_for_screen: bool, using_legacy_worker: bool):
-    adb_check('logcat -c')
+    adb_check(['logcat', '-c'])
 
     if using_legacy_worker:
         # If the legacy worker is being used, give it the right permissions, stop it if already
         # running, and get its working directory ready.
-        adb_check('shell pm grant '
-                  'com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE')
-        adb_check('shell pm grant '
-                  'com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE')
-        adb_can_fail('shell am force-stop ' + ANDROID_LEGACY_APP)
-        adb_can_fail('shell rm -rf ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR)
-        adb_check('shell mkdir -p ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR)
+        adb_check([
+            'shell',
+            'pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE'
+        ])
+        adb_check([
+            'shell',
+            'pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE'
+        ])
+        adb_can_fail([
+            'shell',
+            'am force-stop ' + ANDROID_LEGACY_APP
+        ])
+        adb_can_fail([
+            'shell',
+            'rm -rf ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR
+        ])
+        adb_check([
+            'shell',
+            'mkdir -p ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR
+        ])
     else:
-        res = adb_can_fail('shell test -e ' + ANDROID_DEVICE_AMBER)
+        res = adb_can_fail(['shell', 'test -e ' + ANDROID_DEVICE_AMBER])
         if res.returncode != 0:
             raise AssertionError('Failed to find amber on device at: ' + ANDROID_DEVICE_AMBER)
-        adb_can_fail('shell rm -rf ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
-        adb_check('shell mkdir -p ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
+        adb_can_fail(['shell', 'rm -rf ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR])
+        adb_check(['shell', 'mkdir -p ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR])
 
     if wait_for_screen:
         stay_awake_warning()
@@ -287,18 +323,24 @@ def run_image_android_legacy(
 
     prepare_device(not force, True)
 
-    adb_check('push ' + vert + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.vert.spv')
-    adb_check('push ' + frag + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.frag.spv')
-    adb_check('push ' + json_file + ' ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.json')
+    adb_check(['push', vert, ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.vert.spv'])
+    adb_check(['push', frag, ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.frag.spv'])
+    adb_check(['push', json_file, ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.json'])
 
-    cmd = 'shell am start -n ' + ANDROID_LEGACY_APP + '/android.app.NativeActivity'
+    # Build app args.
     flags = '--num-render {}'.format(NUM_RENDER)
     if skip_render:
         flags += ' --skip-render'
 
-    # Pass command line args as Intent extra. Need to nest-quote, hence the "\'flags\'"
-    cmd += ' -e gfz "\'' + flags + '\'"'
-    adb_check(cmd)
+    # Pass app args as Intent extra.
+    # Quote app args. No need for double quotes because we are not using shell=True.
+
+    shell_cmd = (
+        'am start'
+        ' -n ' + ANDROID_LEGACY_APP + '/android.app.NativeActivity -e gfz "{}"'.format(flags)
+    )
+
+    adb_check(['shell', shell_cmd])
 
     # Busy wait
     deadline = time.time() + TIMEOUT_APP
@@ -314,27 +356,37 @@ def run_image_android_legacy(
 
         # Don't pass here until app has started.
         if status == 'UNEXPECTED_ERROR':
-            if adb_can_fail('shell test -f '
-                            + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/STARTED').returncode != 0:
+            if adb_can_fail([
+                'shell',
+                'test -f ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/STARTED'
+            ]).returncode != 0:
                 continue
             status = 'TIMEOUT'
 
         assert status == 'TIMEOUT'
 
         # DONE file indicates app is done.
-        if adb_can_fail('shell test -f '
-                        + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/DONE').returncode == 0:
+        if adb_can_fail([
+            'shell',
+            'test -f ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/DONE']
+        ).returncode == 0:
             status = 'SUCCESS'
             break
 
         # Otherwise, keep looping/waiting while the app is still running.
-        # Quote >/dev/null otherwise this fails on Windows hosts.
-        if adb_can_fail('shell "pidof ' + ANDROID_LEGACY_APP + ' > /dev/null"').returncode == 0:
+        # No need to quote >/dev/null. We are passing this all to the Android shell via one
+        # argument; we are not using shell=True.
+        if adb_can_fail([
+            'shell',
+            'pidof ' + ANDROID_LEGACY_APP + ' > /dev/null'
+        ]).returncode == 0:
             continue
 
         # The app has crashed. Check for DONE file one more time.
-        if adb_can_fail('shell test -f '
-                        + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/DONE').returncode == 0:
+        if adb_can_fail([
+            'shell',
+            'test -f ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/DONE'
+        ]).returncode == 0:
             status = 'SUCCESS'
             break
 
@@ -343,11 +395,14 @@ def run_image_android_legacy(
         break
 
     # Grab log:
-    with open(logfile, 'w', encoding='utf-8', errors='ignore') as f:
-        adb_check('logcat -d', stdout=f)
+    with open_helper(logfile, 'w') as f:
+        adb_check(
+            ['logcat', '-d'],
+            stdout=f
+        )
 
     # retrieve all files
-    adb_check('pull ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR + ' ' + output_dir)
+    adb_check(['pull', ANDROID_SDCARD_GRAPHICSFUZZ_DIR, output_dir])
 
     # Check sanity:
     if status == 'SUCCESS':
@@ -366,24 +421,27 @@ def run_image_android_legacy(
                 next_image = os.path.join(output_dir, 'image_{}.png'.format(i))
                 if not os.path.isfile(next_image):
                     status = 'UNEXPECTED_ERROR'
-                    with open(LOGFILE_NAME, 'a') as f:
+                    with open_helper(LOGFILE_NAME, 'a') as f:
                         f.write('\n Not all images were produced? Missing image: {}\n'.format(i))
                 elif not filecmp.cmp(ref_image, next_image, shallow=False):
                     status = 'NONDET'
                     shutil.copy(ref_image, 'nondet0.png')
                     shutil.copy(next_image, 'nondet1.png')
 
-    with open(logfile, 'a') as f:
+    with open_helper(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
         if status == 'UNEXPECTED_ERROR':
             f.write('\n App did not start?\n')
 
-    with open(statusfile, 'w') as f:
+    with open_helper(statusfile, 'w') as f:
         f.write(status)
 
     if status != 'SUCCESS':
         # Something went wrong. Make sure we stop the app.
-        adb_can_fail('shell am force-stop ' + ANDROID_LEGACY_APP)
+        adb_can_fail([
+            'shell',
+            'am force-stop ' + ANDROID_LEGACY_APP
+        ])
 
 
 def dump_info_android_legacy(wait_for_screen):
@@ -391,22 +449,32 @@ def dump_info_android_legacy(wait_for_screen):
 
     info_file = ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/worker_info.json'
 
-    adb_check(
-        'shell am start -n '
-        + ANDROID_LEGACY_APP + '/android.app.NativeActivity -e gfz "\'--info\'"')
+    adb_check([
+        'shell',
+        'am start -n ' + ANDROID_LEGACY_APP + '/android.app.NativeActivity -e gfz --info'
+    ])
 
     # Busy wait for the app to write the gpu info.
     deadline = time.time() + TIMEOUT_APP
     while time.time() < deadline:
-        if adb_can_fail('shell test -f ' + info_file).returncode == 0:
+        if adb_can_fail([
+            'shell',
+            'test -f ' + info_file
+        ]).returncode == 0:
             break
         time.sleep(BUSY_WAIT_SLEEP_FAST)
 
-    if adb_can_fail('shell test -f ' + info_file).returncode == 0:
-        adb_check('pull ' + info_file)
+    if adb_can_fail([
+        'shell',
+        'test -f ' + info_file
+    ]).returncode == 0:
+        adb_check(['pull', info_file])
     else:
         print('Error: failed to obtain worker information')
-    adb_can_fail('shell am force-stop ' + ANDROID_LEGACY_APP)
+    adb_can_fail([
+        'shell',
+        'am force-stop ' + ANDROID_LEGACY_APP
+    ])
 
 
 def run_image_host_legacy(vert: str, frag: str, json_file: str, output_dir: str, skip_render: bool):
@@ -418,46 +486,52 @@ def run_image_host_legacy(vert: str, frag: str, json_file: str, output_dir: str,
     statusfile = os.path.join(output_dir, 'STATUS')
 
     if skip_render:
-        with open('SKIP_RENDER', 'w') as f:
+        with open_helper('SKIP_RENDER', 'w') as f:
             f.write('SKIP_RENDER')
     elif os.path.isfile('SKIP_RENDER'):
         os.remove('SKIP_RENDER')
 
-    cmd = (
-        'vkworker'
-        + ' ' + vert
-        + ' ' + frag
-        + ' ' + json_file
-        + ' --png_template="{}"'.format(os.path.join(output_dir, 'image'))
-        + ' --sanity_before="{}"'.format(os.path.join(output_dir, 'sanity_before.png'))
-        + ' --sanity_after="{}"'.format(os.path.join(output_dir, 'sanity_after.png'))
-        + ' > ' + logfile)
+    cmd = [
+        'vkworker',
+        vert,
+        frag,
+        json_file,
+        '--png_template={}'.format(os.path.join(output_dir, 'image')),
+        '--sanity_before={}'.format(os.path.join(output_dir, 'sanity_before.png')),
+        '--sanity_after={}'.format(os.path.join(output_dir, 'sanity_after.png'))
+    ]
     status = 'SUCCESS'
     try:
-        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+        with open_helper(logfile, 'w') as f:
+            subprocess_helper(
+                cmd,
+                timeout=TIMEOUT_RUN,
+                stdout=f,
+                check=True
+            )
     except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
     except subprocess.CalledProcessError:
         status = 'CRASH'
 
-    with open(logfile, 'a') as f:
+    with open_helper(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
 
-    with open(statusfile, 'w') as f:
+    with open_helper(statusfile, 'w') as f:
         f.write(status)
 
 
 def dump_info_host_legacy():
-    cmd = 'vkworker --info'
+    cmd = ['vkworker', '--info']
     status = 'SUCCESS'
     try:
-        subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+        subprocess_helper(cmd, timeout=TIMEOUT_RUN, check=True)
     except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
     except subprocess.CalledProcessError:
         status = 'CRASH'
 
-    with open('STATUS', 'w') as f:
+    with open_helper('STATUS', 'w') as f:
         f.write(status)
 
 
@@ -486,8 +560,8 @@ def run_image_legacy(vert_spv, frag_spv, args):
 
 
 def spv_get_disassembly(shader_filename):
-    cmd = spirvdis_path() + ' ' + shader_filename
-    return subprocess.check_output(cmd, shell=True).decode('utf-8')
+    cmd = [spirvdis_path(), shader_filename]
+    return subprocess_helper(cmd, check=True, stdout=subprocess.PIPE).stdout
 
 
 def uniform_json_to_amberscript(uniform_json):
@@ -526,7 +600,7 @@ def uniform_json_to_amberscript(uniform_json):
     offset = 0  # We never have uniform offset in our tests
 
     result = ''
-    with open(uniform_json, 'r') as f:
+    with open_helper(uniform_json, 'r') as f:
         j = json.load(f)
     for name, entry in j.items():
 
@@ -594,28 +668,32 @@ def run_image_amber(
     png_image = os.path.join(output_dir, 'image_0.png')
     device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image_0.png'
 
-    with open(amberscript_file, 'w') as f:
+    with open_helper(amberscript_file, 'w') as f:
         f.write(amberscriptify_image(vert, frag, json_file))
 
     if is_android:
         prepare_device(force, False)
 
-        adb_check('push ' + amberscript_file + ' ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
+        adb_check(['push', amberscript_file, ANDROID_DEVICE_GRAPHICSFUZZ_DIR])
 
         # If the file exists at this stage, something has gone very wrong.
-        adb_check('test ! -e ' + device_image)
+        adb_check([
+            'shell',
+            'test ! -e ' + device_image
+        ])
 
         # Call amber
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
-        cmd = (
-            'shell "'
+        cmd = ([
+            'shell',
+            # The following is a single string:
             'cd ' + ANDROID_DEVICE_DIR + ' && '
             './' + ANDROID_AMBER_NDK
             + ' -i ' + device_image
             + ' -d ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
-            + '"')
+        ])
 
-        adb_check('logcat -c')
+        adb_check(['logcat', '-c'])
 
         status = 'UNEXPECTED_ERROR'
 
@@ -629,19 +707,28 @@ def run_image_amber(
             if result.returncode != 0:
                 status = 'CRASH'
             else:
-                if adb_can_fail('shell test -f' + device_image).returncode == 0:
+                if adb_can_fail([
+                    'shell',
+                    'test -f' + device_image
+                ]).returncode == 0:
                     status = 'SUCCESS'
-                    adb_check('pull ' + device_image + ' ' + png_image)
+                    adb_check(['pull', device_image, png_image])
 
         # Grab log:
-        with open(logfile, 'w', encoding='utf-8', errors='ignore') as f:
-            adb_check('logcat -d', stdout=f)
+        with open_helper(logfile, 'w') as f:
+            adb_check(['logcat', '-d'], stdout=f)
 
     else:
-        cmd = 'amber -i ' + png_image + ' ' + amberscript_file + ' > ' + logfile
+        cmd = [
+            'amber',
+            '-i',
+            png_image,
+            amberscript_file
+        ]
         status = 'SUCCESS'
         try:
-            subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+            with open_helper(logfile, 'w') as f:
+                subprocess_helper(cmd, timeout=TIMEOUT_RUN, check=True, stdout=f)
         except subprocess.TimeoutExpired:
             status = 'TIMEOUT'
         except subprocess.CalledProcessError:
@@ -650,13 +737,13 @@ def run_image_amber(
         if status == 'SUCCESS':
             assert os.path.isfile(png_image)
 
-        with open(logfile, 'a') as f:
+        with open_helper(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
 
-    with open(logfile, 'a') as f:
+    with open_helper(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
 
-    with open(statusfile, 'w') as f:
+    with open_helper(statusfile, 'w') as f:
         f.write(status)
 
 
@@ -690,7 +777,7 @@ def comp_json_to_amberscript(comp_json):
 
     """
 
-    with open(comp_json, 'r') as f:
+    with open_helper(comp_json, 'r') as f:
         j = json.load(f)
 
     assert '$compute' in j.keys(), 'Cannot find "$compute" key in JSON file'
@@ -743,8 +830,10 @@ def ssbo_text_to_json(ssbo_text_file, ssbo_json_file, comp_json):
     Reads the ssbo_text_file and extracts its contents to a json file.
     """
 
-    values = open(ssbo_text_file, 'r').read().split()
-    j = json.load(open(comp_json, 'r'))['$compute']
+    with open_helper(ssbo_text_file, 'r') as f:
+        values = f.read().split()
+    with open_helper(comp_json, 'r') as f:
+        j = json.load(f)['$compute']
 
     assert values[0] == str(j['buffer']['binding'])
 
@@ -770,12 +859,12 @@ def ssbo_text_to_json(ssbo_text_file, ssbo_json_file, comp_json):
 
     ssbo_json_obj = {'ssbo': result}
 
-    with open(ssbo_json_file, 'w') as f:
+    with open_helper(ssbo_json_file, 'w') as f:
         f.write(json.dumps(ssbo_json_obj))
 
 
 def get_ssbo_binding(comp_json):
-    with open(comp_json, 'r') as f:
+    with open_helper(comp_json, 'r') as f:
         j = json.load(f)
     binding = j['$compute']['buffer']['binding']
     return binding
@@ -791,7 +880,7 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
     logfile = os.path.join(output_dir, LOGFILE_NAME)
     statusfile = os.path.join(output_dir, 'STATUS')
 
-    with open(amberscript_file, 'w') as f:
+    with open_helper(amberscript_file, 'w') as f:
         f.write(amberscriptify_comp(comp, json_file))
 
     # FIXME: in case of multiple SSBOs, we should pass the binding of the ones to be dumped
@@ -802,23 +891,31 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
         prepare_device(force, False)
 
         # Prepare files on device.
-        adb_check('push ' + amberscript_file + ' ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
+        adb_check([
+            'push',
+            amberscript_file,
+            ANDROID_DEVICE_GRAPHICSFUZZ_DIR
+        ])
 
         device_ssbo = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/ssbo'
-        adb_check('shell rm -f ' + device_ssbo)
+        adb_check([
+            'shell',
+            'rm -f ' + device_ssbo
+        ])
 
         # Call amber
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
-        cmd = (
-            'shell "'
+        cmd = [
+            'shell'
+            # The following is a single string:
             'cd ' + ANDROID_DEVICE_DIR + '&& '
             './' + ANDROID_AMBER_NDK
             + ' -b ' + device_ssbo
             + ' -B ' + ssbo_binding
             + ' -d ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
-            + '"')
+        ]
 
-        adb_check('logcat -c')
+        adb_check(['logcat', '-c'])
 
         status = 'UNEXPECTED_ERROR'
 
@@ -832,25 +929,34 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
             if result.returncode != 0:
                 status = 'CRASH'
             else:
-                if adb_can_fail('shell test -f' + device_ssbo).returncode == 0:
+                if adb_can_fail([
+                    'shell',
+                    'test -f' + device_ssbo
+                ]).returncode == 0:
                     status = 'SUCCESS'
-                    adb_check('pull ' + device_ssbo + ' ' + ssbo_output)
+                    adb_check([
+                        'pull',
+                        device_ssbo,
+                        ssbo_output
+                    ])
 
         # Grab log:
-        with open(logfile, 'w', encoding='utf-8', errors='ignore') as f:
-            adb_check('logcat -d', stdout=f)
+        with open_helper(logfile, 'w') as f:
+            adb_check(['logcat', '-d'], stdout=f)
     else:
-        cmd = (
-            'amber'
-            + ' -b ' + ssbo_output
-            + ' -B ' + ssbo_binding
-            + ' ' + amberscript_file
-            + ' > ' + logfile
-        )
+        cmd = [
+            'amber',
+            '-b',
+            ssbo_output,
+            '-B',
+            ssbo_binding,
+            amberscript_file,
+        ]
 
         status = 'SUCCESS'
         try:
-            subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
+            with open_helper(logfile, 'w') as f:
+                subprocess_helper(cmd, timeout=TIMEOUT_RUN, check=True, stdout=f)
         except subprocess.TimeoutExpired:
             status = 'TIMEOUT'
         except subprocess.CalledProcessError:
@@ -859,16 +965,16 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
         if status == 'SUCCESS':
             assert os.path.isfile(ssbo_output)
 
-        with open(logfile, 'a') as f:
+        with open_helper(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
 
     if os.path.isfile(ssbo_output):
         ssbo_text_to_json(ssbo_output, ssbo_json, json_file)
 
-    with open(logfile, 'a') as f:
+    with open_helper(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
 
-    with open(statusfile, 'w') as f:
+    with open_helper(statusfile, 'w') as f:
         f.write(status)
 
 
