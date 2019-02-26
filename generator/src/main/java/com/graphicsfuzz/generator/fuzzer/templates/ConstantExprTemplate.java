@@ -134,7 +134,7 @@ public class ConstantExprTemplate extends AbstractExprTemplate {
   }
 
   private BoolConstantExpr randomBoolLiteral(IRandom generator) {
-    return generator.nextBoolean() ? BoolConstantExpr.TRUE : BoolConstantExpr.FALSE;
+    return generator.nextBoolean() ? new BoolConstantExpr(true) : new BoolConstantExpr(false);
   }
 
   private IntConstantExpr randomIntLiteral(IRandom generator) {

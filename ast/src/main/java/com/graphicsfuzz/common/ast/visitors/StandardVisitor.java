@@ -314,7 +314,10 @@ public abstract class StandardVisitor implements IAstVisitor {
   @Override
   public void visitParameterDecl(ParameterDecl parameterDecl) {
     visitChildFromParent(parameterDecl.getType(), parameterDecl);
-    visitChildFromParent(this::visitArrayInfo, parameterDecl.getArrayInfo(), parameterDecl);
+    if (parameterDecl.getArrayInfo() != null) {
+      // Only visit the parameter's array information if there actually is array information.
+      visitChildFromParent(this::visitArrayInfo, parameterDecl.getArrayInfo(), parameterDecl);
+    }
   }
 
   @Override
