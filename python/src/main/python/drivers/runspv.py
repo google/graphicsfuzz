@@ -847,10 +847,13 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
         with open(logfile, 'w', encoding='utf-8', errors='ignore') as f:
             adb_check('logcat -d', stdout=f)
     else:
-        cmd = 'amber -b ' + ssbo_output \
-              + ' -B ' + ssbo_binding \
-              + ' ' + amberscript_file \
-              + ' > ' + logfile
+        cmd = (
+            'amber'
+            + ' -b ' + ssbo_output
+            + ' -B ' + ssbo_binding
+            + ' ' + amberscript_file
+            + ' > ' + logfile
+        )
 
         status = 'SUCCESS'
         try:
@@ -881,9 +884,11 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
 
 
 def some_shader_format_exists(prefix: str, kind: str) -> bool:
-    return os.path.isfile(prefix + '.' + kind) \
-           or os.path.isfile(prefix + '.' + kind + '.asm') \
-           or os.path.isfile(prefix + '.' + kind + '.spv')
+    return (
+        os.path.isfile(prefix + '.' + kind)
+        or os.path.isfile(prefix + '.' + kind + '.asm')
+        or os.path.isfile(prefix + '.' + kind + '.spv')
+    )
 
 
 def multiple_shader_formats_exist(prefix: str, kind: str) -> bool:
@@ -962,8 +967,10 @@ def main_helper(args):
 
     # If a compute shader is present...
     if some_shader_format_exists(shader_prefix, 'comp'):
-        if some_shader_format_exists(shader_prefix, 'vert') \
-                or some_shader_format_exists(shader_prefix, 'frag'):
+        if (
+            some_shader_format_exists(shader_prefix, 'vert')
+            or some_shader_format_exists(shader_prefix, 'frag')
+        ):
             raise ValueError('Compute shader cannot coexist with vertex/fragment shaders')
         compute_shader_file = pick_shader_format(shader_prefix, 'comp')
         vertex_shader_file = None
