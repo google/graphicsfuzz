@@ -484,21 +484,29 @@ def main():
     worker_info_file = 'worker_info.json'
     remove(worker_info_file)
 
-    if is_android:
-        runspv.dump_info_android_legacy(wait_for_screen=not args.force)
-    else:
-        runspv.dump_info_host_legacy()
-
-    if not os.path.isfile(worker_info_file):
-        raise Exception('Failed to retrieve worker information.  If targeting Android, make sure '
-                        'the app permission to write to external storage is enabled.')
-
     worker_info_json_string = '{}'
+
     try:
+        if is_android:
+            runspv.dump_info_android_legacy(wait_for_screen=not args.force)
+        else:
+            runspv.dump_info_host_legacy()
+
+        if not os.path.isfile(worker_info_file):
+            raise Exception(
+                'Failed to retrieve worker information.  If targeting Android, make sure '
+                'the app permission to write to external storage is enabled.'
+            )
+
         with open(worker_info_file, 'r') as f:
             worker_info_json_string = f.read()
-    except OSError:
-        print('Failed to read worker info JSON. Continuing anyway.')
+
+    except Exception as ex:
+        if args.legacy_worker:
+            raise ex
+        else:
+            print(ex)
+            print('Continuing without worker information.')
 
     # Main loop
     while True:
