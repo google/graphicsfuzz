@@ -17,6 +17,14 @@
 package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
+import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
+import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -29,7 +37,9 @@ import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.util.GenerationParams;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Rule;
@@ -190,7 +200,7 @@ public class IdentityMutationFinderTest {
     checkValidAfterExpressionIdentities(program);
   }
 
-  public void checkValidAfterExpressionIdentities(String program) throws Exception {
+  private void checkValidAfterExpressionIdentities(String program) throws Exception {
     final TranslationUnit tu = ParseHelper.parse(program);
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
@@ -229,6 +239,58 @@ public class IdentityMutationFinderTest {
     assertEquals("void main()\n{\n true;\n}\n",
         PrettyPrinterVisitor.prettyPrintAsString(tu.getMainFunction()));
 
+  }
+
+  @Test
+  public void testMatrixIdentityOk() throws Exception {
+    // This test aims to check that when we replace m with "m / e" or "m * e", "e" is the
+    // identity matrix.
+    final String program = "#version 300 es\n"
+        + "precision highp float;\n"
+        + "void main() {"
+        + "  mat2 m;"
+        + "  m;"
+        + "}";
+    for (int i = 0; i < 10; i++) {
+      final TranslationUnit tu = ParseHelper.parse(program);
+      IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(tu,
+          new RandomWrapper(i), GenerationParams.small(ShaderKind.FRAGMENT, false));
+      identityMutationFinder.findMutations().forEach(Expr2ExprMutation::apply);
+      new StandardVisitor() {
+        @Override
+        public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+          super.visitFunctionCallExpr(functionCallExpr);
+          if (!functionCallExpr.getCallee().equals(Constants.GLF_IDENTITY)) {
+            return;
+          }
+          if (!(functionCallExpr.getArgs().get(0) instanceof VariableIdentifierExpr)) {
+            return;
+          }
+          if (!(((VariableIdentifierExpr) functionCallExpr.getArgs().get(0)).getName().equals("m"))) {
+            return;
+          }
+          if (!(functionCallExpr.getArgs().get(1) instanceof BinaryExpr)) {
+            return;
+          }
+          final BinaryExpr binaryExpr = (BinaryExpr) functionCallExpr.getArgs().get(1);
+          if (!Arrays.asList(BinOp.MUL, BinOp.DIV).contains(binaryExpr.getOp())) {
+            return;
+          }
+          if (!(binaryExpr.getRhs() instanceof TypeConstructorExpr)) {
+            return;
+          }
+          final TypeConstructorExpr typeConstructorExpr = (TypeConstructorExpr) binaryExpr.getRhs();
+          if (!typeConstructorExpr.getTypename().equals(BasicType.MAT2X2.toString())) {
+            return;
+          }
+          // The identity matrix should only have one arg.
+          assertTrue(typeConstructorExpr.getNumArgs() == 1);
+          if (typeConstructorExpr.getArg(0) instanceof FloatConstantExpr) {
+            assertEquals("1.0", ((FloatConstantExpr) typeConstructorExpr.getArg(0)).getValue());
+          }
+        }
+      }.visit(tu);
+    }
   }
 
 }
