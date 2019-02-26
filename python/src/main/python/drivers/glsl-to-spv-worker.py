@@ -493,8 +493,12 @@ def main():
         raise Exception('Failed to retrieve worker information.  If targeting Android, make sure '
                         'the app permission to write to external storage is enabled.')
 
-    with open(worker_info_file, 'r') as f:
-        worker_info_json_string = f.read()
+    worker_info_json_string = '{}'
+    try:
+        with open(worker_info_file, 'r') as f:
+            worker_info_json_string = f.read()
+    except OSError:
+        print('Failed to read worker info JSON. Continuing anyway.')
 
     # Main loop
     while True:
