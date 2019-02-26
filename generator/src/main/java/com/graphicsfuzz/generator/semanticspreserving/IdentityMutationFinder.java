@@ -18,20 +18,13 @@ package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInitializer;
-import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
-import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
-import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
-import com.graphicsfuzz.common.ast.expr.ParenExpr;
-import com.graphicsfuzz.common.ast.expr.TernaryExpr;
-import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
-import com.graphicsfuzz.common.ast.expr.UnOp;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
@@ -40,18 +33,14 @@ import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
-import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
 import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutationFinder;
-import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import com.graphicsfuzz.generator.util.GenerationParams;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -258,9 +247,7 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
   private boolean isConstContext() {
     if (inInitializer) {
       assert enclosingVariablesDeclarationType != null;
-      if (enclosingVariablesDeclarationType instanceof QualifiedType
-            && ((QualifiedType) enclosingVariablesDeclarationType).hasQualifier(
-            TypeQualifier.CONST)) {
+      if (enclosingVariablesDeclarationType.hasQualifier(TypeQualifier.CONST)) {
         return true;
       }
       if (atGlobalScope()) {
