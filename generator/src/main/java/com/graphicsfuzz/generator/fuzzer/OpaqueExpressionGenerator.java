@@ -38,7 +38,6 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.SideEffectChecker;
-import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.transformation.ExpressionIdentity;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
@@ -142,7 +141,7 @@ public final class OpaqueExpressionGenerator {
     // If isZero holds, we are making an opaque zero, otherwise an opaque one
 
     if (isTooDeep(depth)) {
-      return makeRegularIntegerValuedLiteral(type, isZero ? "0" : "1");
+      return makeLiteralZeroOrOne(isZero, type);
     }
     final int newDepth = depth + 1;
     while (true) {
@@ -186,11 +185,11 @@ public final class OpaqueExpressionGenerator {
   }
 
   private Expr makeRegularZero(BasicType type) {
-    return makeRegularIntegerValuedLiteral(type, "0");
+    return makeLiteralZeroOrOne(true, type);
   }
 
   private Expr makeRegularOne(BasicType type) {
-    return makeRegularIntegerValuedLiteral(type, "1");
+    return makeLiteralZeroOrOne(false, type);
   }
 
   private Expr makeOpaqueBooleanScalar(boolean value, boolean constContext, final int depth,
@@ -316,8 +315,12 @@ public final class OpaqueExpressionGenerator {
     return macroConstructor(Constants.GLF_TRUE, new BoolConstantExpr(true), expr);
   }
 
-  private Expr makeRegularIntegerValuedLiteral(BasicType type, String integerPart) {
+  private Expr makeLiteralZeroOrOne(boolean isZero, BasicType type) {
     assert type.getElementType() != BasicType.BOOL;
+    assert isZero || !BasicType.allNonSquareMatrixTypes().contains(type);
+
+    final String integerPart = isZero ? "0" : "1";
+
     if (type == BasicType.FLOAT) {
       return new FloatConstantExpr(integerPart + ".0");
     }
@@ -328,9 +331,12 @@ public final class OpaqueExpressionGenerator {
       return new UIntConstantExpr(integerPart + "u");
     }
     List<Expr> args = new ArrayList<>();
-    for (int i = 0; i < type.getNumElements(); i++) {
+    // We are either making a vector/matrix of zeroes, or a square identity matrix.  In the latter
+    // case we only pass in one value.
+    final int numConstructorParams = isZero ? type.getNumElements() : 1;
+    for (int i = 0; i < numConstructorParams; i++) {
       assert type.getElementType() != type;
-      args.add(makeRegularIntegerValuedLiteral(type.getElementType(), integerPart));
+      args.add(makeLiteralZeroOrOne(isZero, type.getElementType()));
     }
     return new TypeConstructorExpr(type.toString(), args);
   }
