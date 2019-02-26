@@ -384,12 +384,6 @@ def run_image_android_legacy(
         # Something went wrong. Make sure we stop the app.
         adb_can_fail('shell am force-stop ' + ANDROID_LEGACY_APP)
 
-    # Grab image if present.
-    image_path = ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/image_0.png'
-    return_code = adb_can_fail('shell test -f ' + image_path).returncode
-    if return_code == 0:
-        adb_check('pull ' + image_path + ' ' + output_dir)
-
 
 def dump_info_android_legacy(wait_for_screen):
     prepare_device(wait_for_screen, True)
