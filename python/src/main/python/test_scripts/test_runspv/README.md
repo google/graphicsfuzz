@@ -1,4 +1,4 @@
-`run_spvtests.py` runs a series of tests that check `runspv` is behaving
+`runspv_tests.py` runs a series of tests that check `runspv` is behaving
 correctly.
 
 The tests assume that you are working under Linux and that an Android device is connected.
