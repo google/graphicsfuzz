@@ -22,7 +22,7 @@ import subprocess
 import sys
 import time
 
-import vkrun
+import runspv
 
 HERE = os.path.abspath(__file__)
 
@@ -41,7 +41,6 @@ from thrift.Thrift import TApplicationException
 # noinspection PyPep8
 from thrift.protocol import TBinaryProtocol
 
-
 ################################################################################
 # Timeouts, in seconds
 
@@ -59,12 +58,14 @@ orig_print = print
 def print(s):
     orig_print(s, flush=True)
 
+
 ################################################################################
 
 
 def write_to_file(content, filename):
     with open(filename, 'w') as f:
         f.write(content)
+
 
 ################################################################################
 
@@ -74,6 +75,7 @@ def remove(f):
         shutil.rmtree(f)
     elif os.path.isfile(f):
         os.remove(f)
+
 
 ################################################################################
 
@@ -89,12 +91,14 @@ void main (void) {
     if not os.path.isfile(vert_filename):
         write_to_file(vert_file_default_content, vert_filename)
 
+
 ################################################################################
 
 
 def remove_end(str_in: str, str_end: str):
     assert str_in.endswith(str_end), 'Expected {} to end with {}'.format(str_in, str_end)
     return str_in[:-len(str_end)]
+
 
 ################################################################################
 
@@ -106,6 +110,7 @@ def get_bin_type():
     else:
         assert host == 'Darwin'
         return 'Mac'
+
 
 ################################################################################
 
@@ -120,13 +125,13 @@ def glsl2spv(glsl, spv):
 
 
 def prepare_shaders(frag_file, frag_spv_file, vert_spv_file):
-
     # Vert
     prepare_vert_file()
     glsl2spv('test.vert', vert_spv_file)
 
     # Frag
     glsl2spv(frag_file, frag_spv_file)
+
 
 ################################################################################
 
@@ -170,6 +175,7 @@ def run_spirv_opt(spv_file, args):
     # Return the name of the optimized file, and the error log.  If the error
     # log is non-empty, the optimized file should be ignored.
     return spv_file_opt, log, success
+
 
 ################################################################################
 
@@ -216,18 +222,36 @@ def do_image_job(args, image_job):
             return res
 
     remove(png)
-    remove(vkrun.LOGFILE)
+    remove(runspv.LOGFILE_NAME)
 
-    if args.linux:
-        vkrun.run_linux(vert_spv_file, frag_spv_file, json_file, skip_render)
-    elif args.vkrunner:
-        vkrun.run_vkrunner(vert_spv_file, frag_spv_file, json_file)
+    if args.legacy_worker:
+        if args.target == 'host':
+            runspv.run_image_host_legacy(
+                vert=vert_spv_file,
+                frag=frag_spv_file,
+                json_file=json_file,
+                output_dir=os.getcwd(),
+                skip_render=skip_render)
+        else:
+            assert args.target == 'android'
+            runspv.run_image_android_legacy(
+                vert=vert_spv_file,
+                frag=frag_spv_file,
+                json_file=json_file,
+                output_dir=os.getcwd(),
+                force=args.force,
+                skip_render=skip_render)
     else:
-        wait_for_screen = not args.force
-        vkrun.run_android(vert_spv_file, frag_spv_file, json_file, skip_render, wait_for_screen)
+        runspv.run_image_amber(
+            vert=vert_spv_file,
+            frag=frag_spv_file,
+            json_file=json_file,
+            output_dir=os.getcwd(),
+            force=args.force,
+            is_android=(args.target == 'android'))
 
-    if os.path.isfile(vkrun.LOGFILE):
-        with open(vkrun.LOGFILE, 'r', encoding='utf-8', errors='ignore') as f:
+    if os.path.isfile(runspv.LOGFILE_NAME):
+        with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
             res.log += f.read()
 
     if os.path.isfile(png):
@@ -263,6 +287,7 @@ def do_image_job(args, image_job):
 
     return res
 
+
 ################################################################################
 
 
@@ -288,10 +313,17 @@ def do_compute_job(args, comp_job):
             res.status = tt.JobStatus.UNEXPECTED_ERROR
             return res
 
-    vkrun.run_compute(tmpcompspv, tmpjson)
+    assert not args.legacy_worker
+    runspv.run_compute_amber(
+        comp=tmpcompspv,
+        json_file=tmpjson,
+        output_dir=os.getcwd(),
+        force=args.force,
+        is_android=(args.target == 'android')
+    )
 
-    if os.path.isfile(vkrun.LOGFILE):
-        with open(vkrun.LOGFILE, 'r', encoding='utf-8', errors='ignore') as f:
+    if os.path.isfile(runspv.LOGFILE_NAME):
+        with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
             res.log += f.read()
 
     if os.path.isfile('STATUS'):
@@ -299,7 +331,7 @@ def do_compute_job(args, comp_job):
             status = f.read().rstrip()
         if status == 'SUCCESS':
             res.status = tt.JobStatus.SUCCESS
-            assert(os.path.isfile('ssbo.json'))
+            assert (os.path.isfile('ssbo.json'))
             with open('ssbo.json', 'r') as f:
                 res.computeOutputs = f.read()
 
@@ -316,6 +348,7 @@ def do_compute_job(args, comp_job):
         res.status = tt.JobStatus.UNEXPECTED_ERROR
 
     return res
+
 
 ################################################################################
 
@@ -344,7 +377,7 @@ def get_service(server, args, worker_info_json_string):
         worker = worker_res.workerName
 
         print("Got worker: " + worker)
-        assert(worker == args.worker)
+        assert (worker == args.worker)
 
         os.makedirs(args.worker, exist_ok=True)
 
@@ -356,13 +389,14 @@ def get_service(server, args, worker_info_json_string):
     except (TApplicationException, ConnectionRefusedError, ConnectionResetError):
         return None, None
 
+
 ################################################################################
 
 
 def is_device_available(serial):
     cmd = 'adb devices'
     devices = subprocess.run(cmd, shell=True, universal_newlines=True, stdout=subprocess.PIPE,
-                             timeout=vkrun.TIMEOUT_RUN).stdout.splitlines()
+                             timeout=runspv.TIMEOUT_RUN).stdout.splitlines()
     for line in devices:
         if serial in line:
             parts = line.split()
@@ -373,6 +407,7 @@ def is_device_available(serial):
     # Here the serial number was not present in `adb devices` output
     return False
 
+
 ################################################################################
 # Main
 
@@ -380,31 +415,29 @@ def is_device_available(serial):
 def main():
     parser = argparse.ArgumentParser()
 
+    # Required arguments
     parser.add_argument(
         'worker',
         help='Worker name to identify to the server')
 
     parser.add_argument(
+        'target',
+        help=runspv.TARGET_HELP)
+
+    # Optional arguments
+    parser.add_argument(
+        '--force',
+        action='store_true',
+        help=runspv.FORCE_OPTION_HELP)
+
+    parser.add_argument(
+        '--legacy-worker',
+        action='store_true',
+        help=runspv.LEGACY_OPTION_HELP)
+
+    parser.add_argument(
         '--serial',
-        help='Serial number of device to target. Run "adb devices -l" to list the serial numbers. '
-             'The serial number will have the form "IP:port" if using adb over TCP. '
-             'See: https://developer.android.com/studio/command-line/adb')
-
-    parser.add_argument(
-        '--linux',
-        action='store_true',
-        help='Use Linux worker')
-
-    parser.add_argument(
-        '--vkrunner',
-        action='store_true',
-        help='Use VkRunner to render on device')
-
-    parser.add_argument(
-        '--adb-no-serial',
-        action='store_true',
-        help='Use adb without providing a device serial number; '
-             'this works if "adb devices" just shows one connected device.')
+        help=runspv.SERIAL_OPTION_HELP)
 
     parser.add_argument(
         '--server',
@@ -416,33 +449,33 @@ def main():
         help='Enable spirv-opt with these optimisation flags (e.g. --spirvopt=-O)')
 
     parser.add_argument(
-        '-f', '--force',
-        action='store_true',
-        help='Do not wait for the device\'s screen to be on; just continue.')
-
-    parser.add_argument(
         '--local-shader-job',
         help='Execute a single, locally stored shader job (for debugging), instead of using the '
              'server.')
 
     args = parser.parse_args()
 
+    # Check the target is known.
+    if not (args.target == 'android' or args.target == 'host'):
+        raise ValueError('Target must be "android" or "host"')
+
+    # Record whether or not we are targeting Android.
+    is_android = (args.target == 'android')
+
+    # Check the optional arguments are consistent with the target.
+    if not is_android and args.force:
+        raise ValueError('"force" option is only compatible with "android" target')
+
+    if not is_android and args.serial:
+        raise ValueError('"serial" option is only compatible with "android" target')
+
     print('Worker: ' + args.worker)
 
     server = args.server + '/request'
     print('server: ' + server)
 
-    if not args.linux and not args.adb_no_serial:
-        # Set device serial number
-        if args.serial:
-            os.environ['ANDROID_SERIAL'] = args.serial
-        else:
-            if 'ANDROID_SERIAL' not in os.environ:
-                print('Please set ANDROID_SERIAL env variable, or use --serial or --adb-no-serial.')
-                print('Use "adb devices -l" to find the device serial number,'
-                      ' which will have the form "IP:port" if using adb over TCP. '
-                      'See: https://developer.android.com/studio/command-line/adb')
-                exit(1)
+    if args.serial:
+        os.environ['ANDROID_SERIAL'] = args.serial
 
     service = None
     worker = None
@@ -451,30 +484,40 @@ def main():
     worker_info_file = 'worker_info.json'
     remove(worker_info_file)
 
-    if args.linux:
-        vkrun.dump_info_linux()
-    else:
-        vkrun.dump_info_android(wait_for_screen=not args.force)
+    worker_info_json_string = '{}'
 
-    if not os.path.isfile(worker_info_file):
-        print('Failed to retrieve worker information. '
-              'Make sure the app permission to write to external storage is enabled.')
-        exit(1)
+    try:
+        if is_android:
+            runspv.dump_info_android_legacy(wait_for_screen=not args.force)
+        else:
+            runspv.dump_info_host_legacy()
 
-    # noinspection PyUnusedLocal
-    worker_info_json_string = '{}'  # Default value: dummy but valid JSON string
-    with open(worker_info_file, 'r') as f:
-        worker_info_json_string = f.read()
+        if not os.path.isfile(worker_info_file):
+            raise Exception(
+                'Failed to retrieve worker information.  If targeting Android, make sure '
+                'the app permission to write to external storage is enabled.'
+            )
+
+        with open(worker_info_file, 'r') as f:
+            worker_info_json_string = f.read()
+
+    except Exception as ex:
+        if args.legacy_worker:
+            raise ex
+        else:
+            print(ex)
+            print('Continuing without worker information.')
 
     # Main loop
     while True:
 
-        if not args.linux \
-                and not args.adb_no_serial \
-                and not is_device_available(os.environ['ANDROID_SERIAL']):
-            print('#### ABORT: device {} is not available (either offline or not connected?)'
-                  .format(os.environ['ANDROID_SERIAL']))
-            exit(1)
+        if is_android \
+            and 'ANDROID_SERIAL' in os.environ and \
+                not is_device_available(os.environ['ANDROID_SERIAL']):
+            raise Exception(
+                '#### ABORT: device {} is not available (either offline or not connected?)'
+                .format(os.environ['ANDROID_SERIAL'])
+            )
 
         # Special case: local shader job for debugging.
         if args.local_shader_job:
