@@ -53,6 +53,7 @@ TARGET_HELP = 'One of \'host\' (run on host machine) or \'android\' (run on Andr
 HERE = os.path.abspath(__file__)
 
 LOGFILE_NAME = 'vklog.txt'
+SSBO_JSON_FILENAME = 'ssbo.json'
 TIMEOUT_RUN = 30
 NUM_RENDER = 3
 BUSY_WAIT_SLEEP_SLOW = 1.0
@@ -590,8 +591,8 @@ def run_image_amber(
     amberscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
     logfile = os.path.join(output_dir, LOGFILE_NAME)
     statusfile = os.path.join(output_dir, 'STATUS')
-    ppm_image = os.path.join(output_dir, 'image.ppm')
     png_image = os.path.join(output_dir, 'image_0.png')
+    device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image_0.png'
 
     with open(amberscript_file, 'w') as f:
         f.write(amberscriptify_image(vert, frag, json_file))
@@ -600,8 +601,9 @@ def run_image_amber(
         prepare_device(force, False)
 
         adb_check('push ' + amberscript_file + ' ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR)
-        device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image.ppm'
-        adb_check('shell rm -f ' + device_image)
+
+        # If the file exists at this stage, something has gone very wrong.
+        adb_check('test ! -e ' + device_image)
 
         # Call amber
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
@@ -629,14 +631,14 @@ def run_image_amber(
             else:
                 if adb_can_fail('shell test -f' + device_image).returncode == 0:
                     status = 'SUCCESS'
-                    adb_check('pull ' + device_image + ' ' + ppm_image)
+                    adb_check('pull ' + device_image + ' ' + png_image)
 
         # Grab log:
         with open(logfile, 'w', encoding='utf-8', errors='ignore') as f:
             adb_check('logcat -d', stdout=f)
 
     else:
-        cmd = 'amber -i ' + ppm_image + ' ' + amberscript_file + ' > ' + logfile
+        cmd = 'amber -i ' + png_image + ' ' + amberscript_file + ' > ' + logfile
         status = 'SUCCESS'
         try:
             subprocess.run(cmd, shell=True, timeout=TIMEOUT_RUN).check_returncode()
@@ -646,13 +648,10 @@ def run_image_amber(
             status = 'CRASH'
 
         if status == 'SUCCESS':
-            assert os.path.isfile(ppm_image)
+            assert os.path.isfile(png_image)
 
         with open(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
-
-    if os.path.isfile(ppm_image):
-        subprocess.run('convert ' + ppm_image + ' ' + png_image, shell=True)
 
     with open(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
@@ -788,7 +787,7 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
 
     amberscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
     ssbo_output = os.path.join(output_dir, 'ssbo')
-    ssbo_json = os.path.join(output_dir, 'ssbo.json')
+    ssbo_json = os.path.join(output_dir, SSBO_JSON_FILENAME)
     logfile = os.path.join(output_dir, LOGFILE_NAME)
     statusfile = os.path.join(output_dir, 'STATUS')
 
@@ -909,8 +908,11 @@ def pick_shader_format(prefix: str, kind: str) -> str:
 
 
 def main_helper(args):
-    # TODO: update description to reflect final output.
-    description = 'Run SPIR-V shaders.  Output: ' + LOGFILE_NAME + ', image.png'
+    description = (
+        'Run SPIR-V shaders.  '
+        'Output: ' + LOGFILE_NAME + ', image_0.png, or '
+        + SSBO_JSON_FILENAME + 'for compute shader output.')
+
     parser = argparse.ArgumentParser(description=description)
 
     # Required arguments
