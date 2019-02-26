@@ -12,7 +12,7 @@ Alternatively, pytest can be installed as follows:
 
 ```
 sudo apt-get install python3-pip
-pip3 install pytest
+pip3 install pytest pathlib2 Pillow
 ```
 
 (The other dependencies should be similar).
