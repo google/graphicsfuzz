@@ -18,8 +18,6 @@ package com.graphicsfuzz.generator.tool;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.graphicsfuzz.common.util.GlslParserException;
-import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.util.Constants;
@@ -101,7 +99,7 @@ public class GlslGenerateTest {
     final String prefix = "family";
     generateShaderFamily(references.getAbsolutePath(), donors, numVariants, prefix,
         outputDir.getAbsolutePath(),
-        0, new ArrayList<>());
+        0, new ArrayList<>(), false);
 
     final File unexpectedOutputDirectory = new File(outputDir, prefix + "_bad");
     // We should not get a directory for the bad reference.
@@ -148,11 +146,9 @@ public class GlslGenerateTest {
                                                    List<String> extraArgs)
       throws ArgumentParserException,
       InterruptedException,
-      IOException,
-      ParseTimeoutException,
-      GlslParserException {
+      IOException, ReferencePreparationException {
 
-    generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs);
+    generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs, true);
 
     for (String reference : Arrays.asList("bubblesort_flag", "colorgrid_modulo",
         "mandelbrot_blurry", "prefix_sum", "squares")) {
@@ -180,11 +176,9 @@ public class GlslGenerateTest {
                                                    List<String> extraArgs)
       throws ArgumentParserException,
       InterruptedException,
-      IOException,
-      ParseTimeoutException,
-      GlslParserException {
+      IOException, ReferencePreparationException {
 
-    generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs);
+    generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs, true);
 
     for (String reference : Arrays.asList("comp-0001-findmax", "comp-0002-smooth-mean",
         "comp-0003-random-middle-square")) {
@@ -236,12 +230,11 @@ public class GlslGenerateTest {
                                    String prefix,
                                    String outputDir,
                                    int seed,
-                                   List<String> extraArgs)
+                                   List<String> extraArgs,
+                                   boolean failOnReferencePreparationException)
       throws ArgumentParserException,
       InterruptedException,
-      IOException,
-      ParseTimeoutException,
-      GlslParserException {
+      IOException, ReferencePreparationException {
     final List<String> options = new ArrayList<>();
 
     options.addAll(Arrays.asList(
@@ -258,7 +251,7 @@ public class GlslGenerateTest {
     options.addAll(extraArgs);
 
     GlslGenerate.mainHelper(
-        options.toArray(new String[0])
+        options.toArray(new String[0]), failOnReferencePreparationException
     );
   }
 

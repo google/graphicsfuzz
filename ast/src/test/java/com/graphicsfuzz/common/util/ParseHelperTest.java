@@ -521,6 +521,33 @@ public class ParseHelperTest {
             .getInitializer()).getExpr()).getValue());
   }
 
+  @Test
+  public void testParseSharedKeyword() throws Exception {
+    final String program = "#version 310 es\n"
+        + "layout(std430, binding = 0) buffer theSSBO {\n"
+        + "  bool b;\n"
+        + "};\n"
+        + "\n"
+        + "layout(local_size_x=20, local_size_y=1, local_size_z=1) in;\n"
+        + "\n"
+        + "shared float result[10];\n"
+        + "\n"
+        + "void main() { }\n";
+    final TranslationUnit tu = ParseHelper.parse(program, ShaderKind.COMPUTE);
+    assertTrue(
+      new CheckPredicateVisitor() {
+        @Override
+        public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+          super.visitVariablesDeclaration(variablesDeclaration);
+          if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.SHARED)) {
+            predicateHolds();
+          }
+        }
+      }.test(tu));
+
+
+  }
+
   private String getStringFromInputStream(InputStream strippedIs) throws IOException {
     StringWriter writer = new StringWriter();
     IOUtils.copy(strippedIs, writer, StandardCharsets.UTF_8);

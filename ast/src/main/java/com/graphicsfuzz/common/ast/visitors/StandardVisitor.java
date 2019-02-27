@@ -265,7 +265,7 @@ public abstract class StandardVisitor implements IAstVisitor {
   public void visitForStmt(ForStmt forStmt) {
     // A ForStmt always has an initializer; it will be a NullStmt in the case of "for( ; cond; inc)"
     visitChildFromParent(forStmt.getInit(), forStmt);
-    if (forStmt.hasCond()) {
+    if (forStmt.hasCondition()) {
       visitChildFromParent(forStmt.getCondition(), forStmt);
     }
     if (forStmt.hasIncrement()) {

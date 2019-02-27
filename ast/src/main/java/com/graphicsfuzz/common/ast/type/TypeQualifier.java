@@ -54,6 +54,7 @@ public class TypeQualifier {
   public static final TypeQualifier SHADER_INPUT = new TypeQualifier("in");
   public static final TypeQualifier SHADER_OUTPUT = new TypeQualifier("out");
   public static final TypeQualifier BUFFER = new TypeQualifier("buffer");
+  public static final TypeQualifier SHARED = new TypeQualifier("shared");
 
   @Override
   public String toString() {
