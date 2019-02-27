@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.util;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.ast.TranslationUnit;
@@ -74,6 +75,7 @@ import org.slf4j.LoggerFactory;
 public class ShaderJobFileOperations {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ShaderJobFileOperations.class);
+  public static final String FUZZY_DIFF_KEY = "fuzzydiff";
 
   public boolean areImagesOfShaderResultsIdentical(
       File referenceShaderResultFile,
@@ -835,7 +837,7 @@ public class ShaderJobFileOperations {
   private static JsonObject makeInfoJson(
       ImageJobResult res,
       File outputImage,
-      Optional<ImageData> referenceImage) {
+      Optional<ImageData> referenceImage) throws IOException {
     JsonObject infoJson = new JsonObject();
     if (res.isSetTimingInfo()) {
       JsonObject timingInfoJson = new JsonObject();
@@ -847,21 +849,13 @@ public class ShaderJobFileOperations {
       infoJson.add("timingInfo", timingInfoJson);
     }
     if (res.isSetPNG() && referenceImage.isPresent()) {
-      try {
-        // Add image data, e.g. histogram distance
-        final Map<String, Double> imageStats =
-            referenceImage.get().getImageDiffStats(new ImageData(outputImage.getAbsolutePath()));
-        final JsonObject metrics = new JsonObject();
-        for (String key : imageStats.keySet()) {
-          metrics.addProperty(key, imageStats.get(key));
-        }
-        boolean isIdentical =
-            ImageUtil.identicalImages(outputImage, referenceImage.get().imageFile);
-        metrics.addProperty("identical", isIdentical);
-        infoJson.add("metrics", metrics);
-      } catch (FileNotFoundException err) {
-        err.printStackTrace();
-      }
+      // Add image data, e.g. histogram distance
+      final JsonObject metrics = new JsonObject();
+      referenceImage.get().getImageDiffStats(new ImageData(outputImage.getAbsolutePath()), metrics);
+      boolean isIdentical =
+          ImageUtil.identicalImages(outputImage, referenceImage.get().imageFile);
+      metrics.addProperty("identical", isIdentical);
+      infoJson.add("metrics", metrics);
     }
     if (res.isSetStage()) {
       infoJson.addProperty("stage", res.stage.toString());
@@ -1292,11 +1286,28 @@ public class ShaderJobFileOperations {
       this(new File(imageFileName));
     }
 
-    public Map<String, Double> getImageDiffStats(ImageData other) {
-      Map<String, Double> result = new HashMap<>();
-      result.put("histogramDistance", ImageUtil.compareHistograms(this.histogram, other.histogram));
-      result.put("psnr", opencv_core.PSNR(this.imageMat, other.imageMat));
-      return result;
+    public void getImageDiffStats(
+        ImageData other,
+        JsonObject metrics) throws IOException {
+
+      metrics.addProperty(
+          "histogramDistance",
+          ImageUtil.compareHistograms(this.histogram, other.histogram));
+
+      metrics.addProperty(
+          "psnr",
+          opencv_core.PSNR(this.imageMat, other.imageMat));
+
+      FuzzyImageComparison.MainResult fuzzyDiffResult;
+      try {
+        fuzzyDiffResult = FuzzyImageComparison.mainHelper(
+            new String[] {imageFile.toString(), other.imageFile.toString()});
+      } catch (ArgumentParserException exception) {
+        throw new RuntimeException(exception);
+      }
+
+      JsonElement fuzzDiffResultJson = new Gson().toJsonTree(fuzzyDiffResult);
+      metrics.add(FUZZY_DIFF_KEY, fuzzDiffResultJson);
     }
 
   }

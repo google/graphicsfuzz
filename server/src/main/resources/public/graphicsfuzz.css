@@ -46,6 +46,14 @@ td.wrongimg img {
   border: 3px solid red;
 }
 
+td.metricsdisimg {
+  background-color: #ffff80;
+}
+
+td.metricsdisimg img {
+  border: 3px solid purple;
+}
+
 td.nondet {
   background-color: #eeccff;
 }

@@ -20,6 +20,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.util.FileHelper;
+import com.graphicsfuzz.common.util.FuzzyImageComparison;
 import com.graphicsfuzz.common.util.ReductionProgressHelper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.ReductionKind;
@@ -52,6 +53,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.thrift.TException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple Web UI.
@@ -74,12 +77,21 @@ import org.apache.thrift.TException;
  */
 public class WebUi extends HttpServlet {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(WebUi.class);
+
   private final StringBuilder html;
   private long startTime;
   private final AccessFileInfo accessFileInfo;
 
   private final FilenameFilter variantFragFilter =
       (dir, name) -> name.startsWith("variant_") && name.endsWith(".frag");
+
+  private enum ImageDifferenceResult {
+    IDENTICAL,
+    SIMILAR,
+    DIFFERENT,
+    METRICS_DISAGREE
+  }
 
   private final ShaderJobFileOperations fileOps;
   private final FuzzerServiceManager.Iface fuzzerServiceManagerProxy;
@@ -121,6 +133,7 @@ public class WebUi extends HttpServlet {
     int nbErrors;
     int nbSameImage;
     int nbSlightlyDifferentImage;
+    int nbMetricsDisagree;
     int nbWrongImage;
 
     public ShadersetExp(String name, String worker, AccessFileInfo accessFileInfo)
@@ -138,12 +151,23 @@ public class WebUi extends HttpServlet {
           JsonObject info = accessFileInfo.getResultInfo(file);
           String status = info.get("status").getAsString();
           if (status.contentEquals("SUCCESS")) {
-            if (imageIsIdentical(info)) {
-              nbSameImage++;
-            } else if (imageIsAcceptable(info)) {
-              nbSlightlyDifferentImage++;
-            } else {
-              nbWrongImage++;
+            ImageDifferenceResult result = getImageDiffResult(info);
+            switch (result) {
+              case IDENTICAL:
+                ++nbSameImage;
+                break;
+              case SIMILAR:
+                ++nbSlightlyDifferentImage;
+                break;
+              case DIFFERENT:
+                ++nbWrongImage;
+                break;
+              case METRICS_DISAGREE:
+                ++nbWrongImage;
+                ++nbMetricsDisagree;
+                break;
+              default:
+                LOGGER.error("Unrecognized image difference result: " + result);
             }
           } else {
             nbErrors++;
@@ -153,44 +177,65 @@ public class WebUi extends HttpServlet {
     }
   }
 
-  private static boolean imageIsIdentical(JsonObject info) {
-    // We're looking for metrics/identical, conservatively return false if it is not found.
-    if (info == null) {
-      return false;
-    }
-    if (!info.has("metrics")) {
-      return false;
-    }
-    final JsonObject metricsJson = info.get("metrics").getAsJsonObject();
-    if (!metricsJson.has("identical")) {
-      return false;
-    }
-    return metricsJson.get("identical").getAsBoolean();
-  }
+  private static ImageDifferenceResult getImageDiffResult(JsonObject info) {
 
-  private static boolean imageIsAcceptable(JsonObject info) {
-
-    // This currently uses histogram data, if available, but can easily be adapted to
-    // use other data that is available, e.g. PSNR.
+    // This method is a refactor/merge of two older methods.
 
     final String metricsKey = "metrics";
     final String histogramDistanceKey = "histogramDistance";
     final double histogramThreshold = 100.0;
 
     if (info == null) {
-      // If we do not have a stats file, conservatively say that the image is unacceptable.
-      return false;
+      return ImageDifferenceResult.DIFFERENT;
     }
 
-    if (!info.has(metricsKey)) {
-      return false;
+    if (!info.has("metrics")) {
+      return ImageDifferenceResult.DIFFERENT;
     }
-    final JsonObject metricsJson = info.get(metricsKey).getAsJsonObject();
-    if (!(metricsJson.has(histogramDistanceKey))) {
-      return false;
+    final JsonObject metricsJson = info.get("metrics").getAsJsonObject();
+    if (metricsJson.has("identical") && metricsJson.get("identical").getAsBoolean()) {
+      return ImageDifferenceResult.IDENTICAL;
     }
-    return metricsJson.get(histogramDistanceKey)
-          .getAsJsonPrimitive().getAsNumber().doubleValue() < histogramThreshold;
+
+    ImageDifferenceResult result = null;
+
+    // Check if fuzzy diff metric thinks the images are different.
+
+    if (metricsJson.has(ShaderJobFileOperations.FUZZY_DIFF_KEY)) {
+      JsonObject fuzzyDiffInfo = metricsJson
+          .get(ShaderJobFileOperations.FUZZY_DIFF_KEY)
+          .getAsJsonObject();
+      if (fuzzyDiffInfo.has(FuzzyImageComparison.MainResult.ARE_IMAGES_DIFFERENT_KEY)) {
+        boolean different = fuzzyDiffInfo
+            .get(FuzzyImageComparison.MainResult.ARE_IMAGES_DIFFERENT_KEY)
+            .getAsBoolean();
+        result = different ? ImageDifferenceResult.DIFFERENT : ImageDifferenceResult.SIMILAR;
+        // Fallthrough, as we want to note if histogram metric differs.
+      }
+    }
+
+    // Check if histogram metric thinks the images are different.
+    if (metricsJson.has(histogramDistanceKey)) {
+
+      boolean different = metricsJson.get(histogramDistanceKey)
+          .getAsJsonPrimitive().getAsNumber().doubleValue() > histogramThreshold;
+
+      ImageDifferenceResult histogramResult =
+          different ? ImageDifferenceResult.DIFFERENT : ImageDifferenceResult.SIMILAR;
+
+      if (result != null && result != histogramResult) {
+        return ImageDifferenceResult.METRICS_DISAGREE;
+      }
+
+      result = histogramResult;
+    }
+
+    // We assume images are different if the metrics are missing.
+    if (result == null) {
+      result = ImageDifferenceResult.DIFFERENT;
+    }
+
+    return result;
   }
 
   private enum ReductionStatus {
@@ -511,6 +556,7 @@ public class WebUi extends HttpServlet {
           " | Wrong images: ", Integer.toString(shadersetExp.nbWrongImage),
           " | Slightly different images: ", Integer.toString(shadersetExp.nbSlightlyDifferentImage),
           " | Errors: ", Integer.toString(shadersetExp.nbErrors),
+          " | Metrics disagree: ", Integer.toString(shadersetExp.nbMetricsDisagree),
           "</div></a>");
     }
     htmlAppendLn("</div></div>");
@@ -1790,14 +1836,30 @@ public class WebUi extends HttpServlet {
 
     if (status.contentEquals("SUCCESS")) {
 
-      if (imageIsIdentical(info)) {
+      ImageDifferenceResult result = getImageDiffResult(info);
+
+      if (result == ImageDifferenceResult.IDENTICAL) {
         htmlAppendLn("<td class='selectable center aligned'><a href='",
             cellHref,
             "'>",
             "<img class='ui centered tiny image' src='/webui/file/", referencePngPath, "'></a>");
       } else {
+        String warningClass = "wrongimg";
+        switch (result) {
+          case SIMILAR:
+            warningClass = "warnimg";
+            break;
+          case DIFFERENT:
+            warningClass = "wrongimg";
+            break;
+          case METRICS_DISAGREE:
+            warningClass = "metricsdisimg";
+            break;
+          default:
+            LOGGER.error("Unrecognized image difference result: " + result);
+        }
         htmlAppendLn("<td class='",
-            imageIsAcceptable(info) ? "warnimg" : "wrongimg",
+            warningClass,
             " selectable center aligned'>",
             "<a href='",
             cellHref,

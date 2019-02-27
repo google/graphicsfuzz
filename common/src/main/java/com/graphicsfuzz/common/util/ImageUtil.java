@@ -122,17 +122,10 @@ public class ImageUtil {
     return opencv_core.PSNR(image1, image2);
   }
 
-  public static boolean identicalImages(File file1, File file2) {
+  public static boolean identicalImages(File file1, File file2) throws IOException {
 
-    BufferedImage img1 = null;
-    BufferedImage img2 = null;
-
-    try {
-      img1 = ImageIO.read(file1);
-      img2 = ImageIO.read(file2);
-    } catch (IOException exception) {
-      exception.printStackTrace();
-    }
+    BufferedImage img1 = ImageIO.read(file1);
+    BufferedImage img2 = ImageIO.read(file2);
 
     int height = img1.getHeight();
     int width = img1.getWidth();
@@ -140,9 +133,9 @@ public class ImageUtil {
       return false;
     }
 
-    for (int i = 0; i < height; i++) {
-      for (int j = 0; j < width; j++) {
-        if (img1.getRGB(i, j) != img2.getRGB(i, j)) {
+    for (int y = 0; y < height; ++y) {
+      for (int x = 0; x < width; ++x) {
+        if (img1.getRGB(x, y) != img2.getRGB(x, y)) {
           return false;
         }
       }
