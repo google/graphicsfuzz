@@ -62,6 +62,15 @@ public class GlslReduce {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GlslReduce.class);
 
+  public static final String METRICS_HELP_SHARED =
+      "When reducing based on images being different, recommended related settings are:\n\n"
+      + ImageComparisonMetric.FUZZY_DIFF
+      + ": --reduction-kind ABOVE_THRESHOLD (provided threshold is ignored)\n\n"
+      + ImageComparisonMetric.HISTOGRAM_CHISQR
+      + ": --reduction-kind ABOVE_THRESHOLD --threshold 100.0\n\n"
+      + ImageComparisonMetric.PSNR
+      + ": --reduction-kind BELOW_THRESHOLD --threshold 30.0\n\n";
+
   private static ArgumentParser getParser() {
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("glsl-reduce")
@@ -142,9 +151,11 @@ public class GlslReduce {
 
     parser.addArgument("--metric")
         .help("Metric used for image comparison.  Options are:\n"
+            + "   " + ImageComparisonMetric.FUZZY_DIFF + "\n"
             + "   " + ImageComparisonMetric.HISTOGRAM_CHISQR + "\n"
-            + "   " + ImageComparisonMetric.PSNR + "\n")
-        .setDefault(ImageComparisonMetric.HISTOGRAM_CHISQR.toString())
+            + "   " + ImageComparisonMetric.PSNR + "\n"
+            + "\n" + METRICS_HELP_SHARED)
+        .setDefault(ImageComparisonMetric.FUZZY_DIFF.toString())
         .type(String.class);
 
     parser.addArgument("--reference")
@@ -152,7 +163,7 @@ public class GlslReduce {
           .type(File.class);
 
     parser.addArgument("--threshold")
-          .help("Threshold used for image comparison.")
+          .help("Threshold used for image comparison. See --metric for suggested values.")
           .setDefault(100.0)
           .type(Double.class);
 

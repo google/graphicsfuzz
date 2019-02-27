@@ -16,11 +16,13 @@
 
 package com.graphicsfuzz.common.util;
 
+import com.google.gson.annotations.SerializedName;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -150,8 +152,17 @@ public class FuzzyImageComparison {
    */
   @SuppressWarnings("WeakerAccess")
   public static final class MainResult {
+
+    // TODO: Yet another use of untyped JSON. We should use Thrift or protobufs.
+    public static final String ARE_IMAGES_DIFFERENT_KEY = "are_images_different";
+
+    @SerializedName(ARE_IMAGES_DIFFERENT_KEY)
     public boolean areImagesDifferent;
+
+    @SerializedName("exit_status")
     public int exitStatus;
+
+    @SerializedName("configurations")
     public List<ThresholdConfiguration> configurations;
 
     public static int EXIT_STATUS_SIMILAR = 0;
@@ -164,6 +175,13 @@ public class FuzzyImageComparison {
       this.areImagesDifferent = areImagesDifferent;
       this.exitStatus = exitStatus;
       this.configurations = configurations;
+    }
+
+    public String outputsString() {
+      return configurations
+          .stream()
+          .map(FuzzyImageComparison.ThresholdConfiguration::outputsString)
+          .collect(Collectors.joining(" "));
     }
   }
 

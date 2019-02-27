@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.util;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.ast.TranslationUnit;
@@ -56,10 +57,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageOutputStream;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -72,6 +75,7 @@ import org.slf4j.LoggerFactory;
 public class ShaderJobFileOperations {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ShaderJobFileOperations.class);
+  public static final String FUZZY_DIFF_KEY = "fuzzydiff";
 
   public boolean areImagesOfShaderResultsIdentical(
       File referenceShaderResultFile,
@@ -89,12 +93,12 @@ public class ShaderJobFileOperations {
     return identical;
   }
 
-  public boolean areImagesOfShaderResultsSimilar(
+  public boolean areImagesOfShaderResultsInteresting(
       File referenceShaderResultFile,
       File variantShaderResultFile,
       ImageComparisonMetric metric,
       double threshold,
-      boolean aboveThresholdIsSimilar) throws FileNotFoundException {
+      boolean aboveThresholdIsInteresting) throws IOException {
 
 
     //noinspection deprecation: OK in this class.
@@ -104,28 +108,49 @@ public class ShaderJobFileOperations {
 
     LOGGER.info("Comparing: {} and {}.", reference, variant);
 
-    double diff = 0.0;
+    boolean result;
+    String comparisonValue;
+
     switch (metric) {
 
-      case HISTOGRAM_CHISQR:
-        diff = ImageUtil.compareHistograms(
+      case HISTOGRAM_CHISQR: {
+        final double diff = ImageUtil.compareHistograms(
             ImageUtil.getHistogram(reference.toString()),
             ImageUtil.getHistogram(variant.toString()));
+        result = (aboveThresholdIsInteresting ? diff > threshold : diff <= threshold);
+        comparisonValue = String.valueOf(diff);
         break;
-      case PSNR:
-        diff = ImageUtil.comparePSNR(reference, variant);
+      }
+      case PSNR: {
+        final double diff = ImageUtil.comparePSNR(reference, variant);
+        result = (aboveThresholdIsInteresting ? diff > threshold : diff <= threshold);
+        comparisonValue = String.valueOf(diff);
         break;
+      }
+      case FUZZY_DIFF: {
+        try {
+          FuzzyImageComparison.MainResult mainResult =
+              FuzzyImageComparison.mainHelper(
+                  new String[] {reference.toString(), variant.toString()});
+          // Fuzzy diff has its own thresholds; images are different if a threshold is exceeded.
+          // We negate this if needed:
+          result = (aboveThresholdIsInteresting == mainResult.areImagesDifferent);
+          comparisonValue = mainResult.outputsString();
+          break;
+        } catch (ArgumentParserException exception) {
+          throw new RuntimeException(exception);
+        }
+      }
       default:
         throw new RuntimeException("Unrecognised image comparison metric: " + metric.toString());
     }
 
-    boolean result = (aboveThresholdIsSimilar ? diff > threshold : diff <= threshold);
     if (result) {
       LOGGER.info("Interesting");
     } else {
       LOGGER.info("Not interesting");
     }
-    LOGGER.info(": difference is " + diff);
+    LOGGER.info(": comparison value is " + comparisonValue);
     return result;
 
   }
@@ -812,7 +837,7 @@ public class ShaderJobFileOperations {
   private static JsonObject makeInfoJson(
       ImageJobResult res,
       File outputImage,
-      Optional<ImageData> referenceImage) {
+      Optional<ImageData> referenceImage) throws IOException {
     JsonObject infoJson = new JsonObject();
     if (res.isSetTimingInfo()) {
       JsonObject timingInfoJson = new JsonObject();
@@ -824,21 +849,13 @@ public class ShaderJobFileOperations {
       infoJson.add("timingInfo", timingInfoJson);
     }
     if (res.isSetPNG() && referenceImage.isPresent()) {
-      try {
-        // Add image data, e.g. histogram distance
-        final Map<String, Double> imageStats =
-            referenceImage.get().getImageDiffStats(new ImageData(outputImage.getAbsolutePath()));
-        final JsonObject metrics = new JsonObject();
-        for (String key : imageStats.keySet()) {
-          metrics.addProperty(key, imageStats.get(key));
-        }
-        boolean isIdentical =
-            ImageUtil.identicalImages(outputImage, referenceImage.get().imageFile);
-        metrics.addProperty("identical", isIdentical);
-        infoJson.add("metrics", metrics);
-      } catch (FileNotFoundException err) {
-        err.printStackTrace();
-      }
+      // Add image data, e.g. histogram distance
+      final JsonObject metrics = new JsonObject();
+      referenceImage.get().getImageDiffStats(new ImageData(outputImage.getAbsolutePath()), metrics);
+      boolean isIdentical =
+          ImageUtil.identicalImages(outputImage, referenceImage.get().imageFile);
+      metrics.addProperty("identical", isIdentical);
+      infoJson.add("metrics", metrics);
     }
     if (res.isSetStage()) {
       infoJson.addProperty("stage", res.stage.toString());
@@ -1269,11 +1286,28 @@ public class ShaderJobFileOperations {
       this(new File(imageFileName));
     }
 
-    public Map<String, Double> getImageDiffStats(ImageData other) {
-      Map<String, Double> result = new HashMap<>();
-      result.put("histogramDistance", ImageUtil.compareHistograms(this.histogram, other.histogram));
-      result.put("psnr", opencv_core.PSNR(this.imageMat, other.imageMat));
-      return result;
+    public void getImageDiffStats(
+        ImageData other,
+        JsonObject metrics) throws IOException {
+
+      metrics.addProperty(
+          "histogramDistance",
+          ImageUtil.compareHistograms(this.histogram, other.histogram));
+
+      metrics.addProperty(
+          "psnr",
+          opencv_core.PSNR(this.imageMat, other.imageMat));
+
+      FuzzyImageComparison.MainResult fuzzyDiffResult;
+      try {
+        fuzzyDiffResult = FuzzyImageComparison.mainHelper(
+            new String[] {imageFile.toString(), other.imageFile.toString()});
+      } catch (ArgumentParserException exception) {
+        throw new RuntimeException(exception);
+      }
+
+      JsonElement fuzzDiffResultJson = new Gson().toJsonTree(fuzzyDiffResult);
+      metrics.add(FUZZY_DIFF_KEY, fuzzDiffResultJson);
     }
 
   }

@@ -39,10 +39,18 @@ td.warnimg img {
 }
 
 td.wrongimg {
-  background-color: #ffff80;
+  background-color: #ff7780;
 }
 
 td.wrongimg img {
+  border: 3px solid red;
+}
+
+td.metricsdisimg {
+  background-color: #ffff80;
+}
+
+td.metricsdisimg img {
   border: 3px solid red;
 }
 
