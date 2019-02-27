@@ -739,12 +739,15 @@ def run_image_amber(
             adb_check(['logcat', '-d'], stdout=f)
 
     else:
-        cmd = [
-            tool_on_path('amber'),
-            '-i',
-            png_image,
-            amberscript_file
-        ]
+        cmd = [tool_on_path('amber')]
+        if skip_render:
+            # -ps tells amber to stop after graphics pipeline creation
+            cmd.append('-ps')
+        else:
+            # -i tells amber to dump the framebuffer
+            cmd.append('-i')
+            cmd.append(png_image)
+        cmd.append(amberscript_file)
         status = 'SUCCESS'
         try:
             with open_helper(logfile, 'w') as f:
@@ -755,7 +758,7 @@ def run_image_amber(
             status = 'CRASH'
 
         if status == 'SUCCESS':
-            assert os.path.isfile(png_image)
+            assert skip_render or os.path.isfile(png_image)
 
         with open_helper(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
@@ -897,7 +900,7 @@ def get_ssbo_binding(comp_json):
     return binding
 
 
-def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, is_android: bool):
+def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, is_android: bool, skip_render: bool):
     assert os.path.isfile(comp)
     assert os.path.isfile(json_file)
 
@@ -930,6 +933,12 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
             'rm -f ' + device_ssbo
         ])
 
+        flags = ' -d '
+        if skip_render:
+            flags += '-ps '
+        else:
+            flags += '-b ' + device_ssbo + ' -B ' + ssbo_binding + ' '
+
         # Call amber
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
         cmd = [
@@ -937,9 +946,8 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
             # The following is a single string:
             'cd ' + ANDROID_DEVICE_DIR + ' && '
             './' + ANDROID_AMBER_NDK
-            + ' -b ' + device_ssbo
-            + ' -B ' + ssbo_binding
-            + ' -d ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
+            + flags
+            + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
         ]
 
         adb_check(['logcat', '-c'])
@@ -955,6 +963,8 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
         if status != 'TIMEOUT':
             if result.returncode != 0:
                 status = 'CRASH'
+            elif skip_render:
+                status = 'SUCCESS'
             else:
                 if adb_can_fail([
                     'shell',
@@ -971,14 +981,15 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
         with open_helper(logfile, 'w') as f:
             adb_check(['logcat', '-d'], stdout=f)
     else:
-        cmd = [
-            tool_on_path('amber'),
-            '-b',
-            ssbo_output,
-            '-B',
-            ssbo_binding,
-            amberscript_file,
-        ]
+        cmd = [tool_on_path('amber')]
+        if skip_render:
+            cmd.append('-ps')
+        else:
+            cmd.append('-b')
+            cmd.append(ssbo_output)
+            cmd.append('-B')
+            cmd.append(ssbo_binding)
+        cmd.append(amberscript_file)
 
         status = 'SUCCESS'
         try:
@@ -990,7 +1001,7 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
             status = 'CRASH'
 
         if status == 'SUCCESS':
-            assert os.path.isfile(ssbo_output)
+            assert skip_render or os.path.isfile(ssbo_output)
 
         with open_helper(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
@@ -1134,7 +1145,8 @@ def main_helper(args):
             json_file=args.json,
             output_dir=args.output_dir,
             force=args.force,
-            is_android=(args.target == 'android'))
+            is_android=(args.target == 'android'),
+            skip_render=args.skip_render)
         return
 
     assert vertex_shader_file

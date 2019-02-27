@@ -162,6 +162,28 @@ def check_host_and_android_match_compute(tmp_path: pathlib2.Path, json: str):
     assert ssbo_host == ssbo_android
 
 
+def check_no_image_skip_render(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool, json: str):
+    out_dir = tmp_path / 'out'
+    args = ['android' if is_android else 'host', get_image_test(json), str(out_dir), '--skip-render']
+    if is_legacy_worker:
+        args.append('--legacy-worker')
+    runspv.main_helper(args)
+    assert is_success(out_dir)
+    image_file = out_dir / 'image_0.png'
+    # We used skip-render, so there should be no image.
+    assert not image_file.exists()
+
+
+def check_no_ssbo_skip_render(tmp_path: pathlib2.Path, is_android: bool, json: str):
+    out_dir = tmp_path / 'out'
+    args = ['android' if is_android else 'host', get_compute_test(json), str(out_dir), '--skip-render']
+    runspv.main_helper(args)
+    assert is_success(out_dir)
+    # We used skip-render, so there should be no dumped SSBO.
+    ssbo_json = out_dir / 'ssbo.json'
+    assert not ssbo_json.exists()
+
+
 #########################################
 # Helper functions for specific shaders
 
@@ -346,19 +368,23 @@ def test_no_compute_in_legacy(tmp_path: pathlib2.Path):
 
 
 def test_skip_render_image_amber_host(tmp_path: pathlib2.Path):
-    assert False
+    check_no_image_skip_render(tmp_path, is_android=False, is_legacy_worker=False, json='image_test_0007.json')
 
 
 def test_skip_render_image_amber_android(tmp_path: pathlib2.Path):
-    assert False
+    check_no_image_skip_render(tmp_path, is_android=True, is_legacy_worker=False, json='image_test_0007.json')
+
+
+def test_skip_render_image_legacy_android(tmp_path: pathlib2.Path):
+    check_no_image_skip_render(tmp_path, is_android=True, is_legacy_worker=True, json='image_test_0007.json')
 
 
 def test_skip_render_compute_amber_host(tmp_path: pathlib2.Path):
-    assert False
+    check_no_ssbo_skip_render(tmp_path, is_android=False, json='simple.json')
 
 
 def test_skip_render_compute_amber_android(tmp_path: pathlib2.Path):
-    assert False
+    check_no_ssbo_skip_render(tmp_path, is_android=True, json='simple.json')
 
 
 def test_simple_compute_host(tmp_path: pathlib2.Path):
