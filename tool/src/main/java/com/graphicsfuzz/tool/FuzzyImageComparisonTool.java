@@ -27,15 +27,7 @@ public class FuzzyImageComparisonTool {
   public static void main(String[] args) throws IOException {
     try {
       FuzzyImageComparison.MainResult result = FuzzyImageComparison.mainHelper(args);
-
-      // Print space-separated outputs for each configuration.
-      System.out.println(
-          result
-            .configurations
-            .stream()
-            .map(FuzzyImageComparison.ThresholdConfiguration::outputsString)
-            .collect(Collectors.joining(" "))
-      );
+      System.out.println(result.outputsString());
       System.exit(result.exitStatus);
 
     } catch (ArgumentParserException exception) {
