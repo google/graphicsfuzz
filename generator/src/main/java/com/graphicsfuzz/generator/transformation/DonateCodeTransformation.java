@@ -33,6 +33,8 @@ import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.LayoutQualifier;
+import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
@@ -657,21 +659,25 @@ public abstract class DonateCodeTransformation implements ITransformation {
     if (!(type instanceof QualifiedType)) {
       return type;
     }
-    List<TypeQualifier> newQualifiers = new ArrayList<>();
-    for (TypeQualifier q : ((QualifiedType) type).getQualifiers()) {
+    final QualifiedType qualifiedType = (QualifiedType) type;
+    final List<TypeQualifier> newQualifiers = new ArrayList<>();
+    for (TypeQualifier qualifier : qualifiedType.getQualifiers()) {
+      // There are probably other qualifiers that are not allowed; move them up as we discover this.
       if (Arrays.asList(
           TypeQualifier.IN_PARAM,
           TypeQualifier.INOUT_PARAM,
           TypeQualifier.OUT_PARAM,
           TypeQualifier.UNIFORM,
           TypeQualifier.SHADER_INPUT,
-          TypeQualifier.SHADER_OUTPUT).contains(q)) {
+          TypeQualifier.SHADER_OUTPUT).contains(qualifier)) {
         continue;
       }
-      // Many of the other qualifiers are probably not allowed; move them up as we discover this
-      newQualifiers.add(q);
+      if (qualifier instanceof LayoutQualifierSequence) {
+        continue;
+      }
+      newQualifiers.add(qualifier);
     }
-    return new QualifiedType(((QualifiedType) type).getTargetType(), newQualifiers);
+    return new QualifiedType(qualifiedType.getTargetType(), newQualifiers);
   }
 
   abstract String getPrefix();
