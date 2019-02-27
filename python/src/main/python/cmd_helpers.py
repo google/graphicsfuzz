@@ -34,7 +34,7 @@ def get_bin_jar_dirs():
         return None
 
     # Perhaps we are running from the IDE.  Check this first, since the deployed files are likely also present if
-    #     # running from the IDE.
+    # running from the IDE.
     res = try_get_jar_bin_dirs(path(os.path.dirname(HERE), os.pardir, os.pardir, os.pardir, os.pardir, "graphicsfuzz",
                                     "target", "graphicsfuzz"))
     if res is not None:
