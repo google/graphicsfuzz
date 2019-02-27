@@ -23,8 +23,8 @@ by following our continuous integration scripts for the
 [NDK](../build/travis/install-android-ndk.sh);
 these scripts install the development kits to the current directory,
 so you should run them from e.g. `${HOME}/android-sdk`
-and `${HOME}/android-ndk`.
-You may need to set some environment variables (e.g. `export ANDROID_HOST_PLATFORM=linux`) as specified in the scripts.
+and `${HOME}/android-ndk`, respectively.
+You may need to set some environment variables (e.g. `export ANDROID_HOST_PLATFORM=linux`) as hinted in the scripts.
 On Windows, you can use the Git Bash shell.
 
 Ensure that the `ANDROID_HOME=/path/to/android-sdk` and `ANDROID_NDK_HOME=/path/to/android-ndk` environment variables are set.
