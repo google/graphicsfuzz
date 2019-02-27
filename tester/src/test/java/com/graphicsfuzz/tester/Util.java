@@ -162,7 +162,7 @@ public final class Util {
 
     return fileOps.listShaderJobFiles(
         Paths
-            .get(ToolPaths.getShadersDirectory(), "samples", "testing", "100")
+            .get(ToolPaths.getShadersDirectory(), "testing", "swiftshader", "100")
             .toFile());
   }
 
@@ -171,13 +171,13 @@ public final class Util {
 
     return fileOps.listShaderJobFiles(
         Paths
-            .get(ToolPaths.getShadersDirectory(), "samples", "testing", "300es")
+            .get(ToolPaths.getShadersDirectory(), "testing", "swiftshader", "300es")
             .toFile());
   }
 
   static File getDonorsFolder() {
     return Paths.get(ToolPaths.getShadersDirectory(),
-        "samples", "testing", "donors").toFile();
+        "testing", "swiftshader", "donors").toFile();
   }
 
 }
