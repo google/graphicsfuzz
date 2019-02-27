@@ -44,8 +44,6 @@ Android app to the server.
 > Tip: Recall that you must exit the gles worker app
 > using the back button, otherwise it will restart.
 
-> Tip: This section also applies to the Vulkan worker Android app.
-
 ### Using the hostname or IP address of the server
 
 The most straightforward approach can be used if the Android device and server
@@ -117,25 +115,12 @@ as described below.
 Once you have `adb` on your path,
 you can install apps using:
 
-`adb install myapp.apk`
+`adb install -g -r myapp.apk`
 
-If the app is already installed, you may get an error like:
+> `-g` grants the app its requested permissions.
+> 
+> `-r` replaces the application if it is already installed.
 
-`adb: failed to install myapp.apk: Failure [INSTALL_FAILED_ALREADY_EXISTS: Attempt to re-install com.example.myapp without first uninstalling.]`
-
-The app should still have installed correctly, but to be safe
-you can uninstall the app first, using:
-
-`adb uninstall com.example.myapp`
-
-Note that the package name (e.g. `com.example.myapp`) can be found in the error
-message.
-
-You can use the following one-liner to reinstall an APK
-(silencing the uninstall output,
-which can be quite verbose if the app is not already installed):
-
-`adb uninstall com.example.myapp >/dev/null 2>&1 ; adb install myapp.apk`
 
 ## Multiple devices plugged at the same time
 
