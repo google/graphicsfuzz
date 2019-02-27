@@ -72,8 +72,9 @@ public class GlslGenerate {
 
   }
 
-  public static void mainHelper(String[] args) throws ArgumentParserException,
-      InterruptedException, IOException, ParseTimeoutException, GlslParserException {
+  public static void mainHelper(String[] args, boolean failOnReferencePreparationException)
+      throws ArgumentParserException,
+      InterruptedException, IOException, ReferencePreparationException {
     final Namespace ns = parse(args);
 
     final File referencesDir = ns.get("references");
@@ -117,6 +118,9 @@ public class GlslGenerate {
       } catch (ReferencePreparationException referencePreparationException) {
         LOGGER.info("Generation of shader family was aborted due to problems preparing the "
             + "reference.");
+        if (failOnReferencePreparationException) {
+          throw referencePreparationException;
+        }
       }
     }
     LOGGER.info("Generation complete.");
@@ -165,7 +169,7 @@ public class GlslGenerate {
 
   public static void main(String[] args) {
     try {
-      mainHelper(args);
+      mainHelper(args, false);
     } catch (ArgumentParserException exception) {
       exception.getParser().handleError(exception);
       System.exit(1);

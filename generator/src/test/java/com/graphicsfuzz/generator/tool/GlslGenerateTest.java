@@ -18,8 +18,6 @@ package com.graphicsfuzz.generator.tool;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.graphicsfuzz.common.util.GlslParserException;
-import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.util.Constants;
@@ -148,9 +146,7 @@ public class GlslGenerateTest {
                                                    List<String> extraArgs)
       throws ArgumentParserException,
       InterruptedException,
-      IOException,
-      ParseTimeoutException,
-      GlslParserException {
+      IOException, ReferencePreparationException {
 
     generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs);
 
@@ -180,9 +176,7 @@ public class GlslGenerateTest {
                                                    List<String> extraArgs)
       throws ArgumentParserException,
       InterruptedException,
-      IOException,
-      ParseTimeoutException,
-      GlslParserException {
+      IOException, ReferencePreparationException {
 
     generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs);
 
@@ -239,9 +233,7 @@ public class GlslGenerateTest {
                                    List<String> extraArgs)
       throws ArgumentParserException,
       InterruptedException,
-      IOException,
-      ParseTimeoutException,
-      GlslParserException {
+      IOException, ReferencePreparationException {
     final List<String> options = new ArrayList<>();
 
     options.addAll(Arrays.asList(
@@ -258,7 +250,7 @@ public class GlslGenerateTest {
     options.addAll(extraArgs);
 
     GlslGenerate.mainHelper(
-        options.toArray(new String[0])
+        options.toArray(new String[0]), true
     );
   }
 
