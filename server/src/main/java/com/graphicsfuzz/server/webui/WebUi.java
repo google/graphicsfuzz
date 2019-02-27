@@ -594,27 +594,7 @@ public class WebUi extends HttpServlet {
     htmlAppendLn("</div>");
 
     // Shader family results table
-    htmlAppendLn("<div class='ui segment'>\n",
-        "<h4>Legend for background colors in result table</h4>",
-        "<table class='ui celled compact collapsing table'>",
-        "<thead><tr><th>Color</th><th>Meaning</th></tr></thead>",
-        "<tbody>",
-        "<tr><td class=''></td>",
-        "<td>Variant is identical to reference</td></tr>",
-        "<tr><td class='wrongimg'></td>",
-        "<td>Variant is significantly different from reference</td></tr>",
-        "<tr><td class='warnimg'></td>",
-        "<td>Variant is similar but not identical to reference</td></tr>",
-        "<tr><td class='gfz-error'></td>",
-        "<td>Rendering the variant led to an error</td></tr>",
-        "<tr><td class='nondet'></td>",
-        "<td>Variant leads to non-deterministic rendering</td></tr>",
-        "<tr><td class='metricsdisimg'></td>",
-        "<td>The image comparison metrics used to compare variant and reference",
-        "disagree on whether they are different or not</td></tr>",
-        "</tbody>",
-        "</table>",
-        "</div>");
+    htmlResultColorLegendTable();
 
     htmlAppendLn("<div class='ui segment'>\n",
         "<h3>Results table</h3>");
@@ -640,6 +620,8 @@ public class WebUi extends HttpServlet {
     String workerName = path[2];
 
     htmlHeaderResultTable(workerName + " all results");
+
+    htmlResultColorLegendTable();
 
     htmlAppendLn("<div class='ui segment'>",
         "<h3>All results for worker: ",  workerName, "</h3>",
@@ -754,6 +736,8 @@ public class WebUi extends HttpServlet {
     String shaderFamily = request.getPathInfo().split("/")[2];
 
     htmlHeaderResultTable(shaderFamily + " all results");
+
+    htmlResultColorLegendTable();
 
     htmlAppendLn("<div class='ui segment'>\n",
         "<h3>All results for shader family: ", shaderFamily, "</h3>");
@@ -1219,6 +1203,8 @@ public class WebUi extends HttpServlet {
     response.setContentType("text/html");
 
     htmlHeaderResultTable("Compare Results");
+
+    htmlResultColorLegendTable();
 
     htmlAppendLn("<div class='ui segment'>\n",
         "<h3>Comparative results</h3>\n");
@@ -2155,6 +2141,30 @@ public class WebUi extends HttpServlet {
       htmlAppendLn("</tr>");
     }
     htmlAppendLn("</tbody>\n</table>");
+  }
+
+  private void htmlResultColorLegendTable() {
+    htmlAppendLn("<div class='ui segment'>\n",
+        "<h4>Legend for background colors in result table</h4>",
+        "<table class='ui celled compact collapsing table'>",
+        "<thead><tr><th>Color</th><th>Meaning</th></tr></thead>",
+        "<tbody>",
+        "<tr><td class=''></td>",
+        "<td>Variant is identical to reference</td></tr>",
+        "<tr><td class='wrongimg'></td>",
+        "<td>Variant is significantly different from reference</td></tr>",
+        "<tr><td class='warnimg'></td>",
+        "<td>Variant is similar but not identical to reference</td></tr>",
+        "<tr><td class='gfz-error'></td>",
+        "<td>Rendering the variant led to an error</td></tr>",
+        "<tr><td class='nondet'></td>",
+        "<td>Variant leads to non-deterministic rendering</td></tr>",
+        "<tr><td class='metricsdisimg'></td>",
+        "<td>The image comparison metrics used to compare variant and reference",
+        "disagree on whether they are different or not</td></tr>",
+        "</tbody>",
+        "</table>",
+        "</div>");
   }
 
 }
