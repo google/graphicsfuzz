@@ -74,14 +74,14 @@ public final class Compatibility {
     }
 
     if (matchesEitherDirection(first, second,
-        MutationReductionOpportunity.class::equals,
+        IdentityMutationReductionOpportunity.class::equals,
         SimplifyExprReductionOpportunity.class::equals)) {
       return false;
     }
 
     if (matchesEitherDirection(first, second,
         Compatibility::isStructRelated,
-        MutationReductionOpportunity.class::equals)) {
+        IdentityMutationReductionOpportunity.class::equals)) {
       return false;
     }
 
