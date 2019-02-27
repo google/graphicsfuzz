@@ -16,17 +16,18 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public final class IdentityMutationReductionOpportunity extends AbstractReductionOpportunity {
 
-  private Expr parent;
+  private IAstNode parent;
   private Expr childToReduce;
   private OpaqueFunctionType function;
 
-  IdentityMutationReductionOpportunity(Expr parent, Expr childToReduce, OpaqueFunctionType function,
+  IdentityMutationReductionOpportunity(IAstNode parent, Expr childToReduce, OpaqueFunctionType function,
                                        VisitationDepth depth) {
     super(depth);
     this.parent = parent;
