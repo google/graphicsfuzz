@@ -667,7 +667,8 @@ def run_image_amber(
         json_file: str,
         output_dir: str,
         force: bool,
-        is_android: bool):
+        is_android: bool,
+        skip_render: bool):
     assert os.path.isfile(vert)
     assert os.path.isfile(frag)
     assert os.path.isfile(json_file)
@@ -693,13 +694,19 @@ def run_image_amber(
         ])
 
         # Call amber
+        if skip_render:
+            # -ps tells amber to stop after graphics pipeline creation
+            flags = ' -ps '
+        else:
+            # -i tells amber to dump the framebuffer
+            flags = ' -i ' + device_image
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
         cmd = ([
             'shell',
             # The following is a single string:
             'cd ' + ANDROID_DEVICE_DIR + ' && '
             './' + ANDROID_AMBER_NDK
-            + ' -i ' + device_image
+            + flags
             + ' -d ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
         ])
 
@@ -716,7 +723,10 @@ def run_image_amber(
         if status != 'TIMEOUT':
             if result.returncode != 0:
                 status = 'CRASH'
+            elif skip_render:
+                status = 'SUCCESS'
             else:
+                # It is a success only if we can retrieve the image
                 if adb_can_fail([
                     'shell',
                     'test -f' + device_image
@@ -1066,10 +1076,6 @@ def main_helper(args):
     if not is_android and args.serial:
         raise ValueError('"serial" option not compatible with "host" target')
 
-    # TODO: remove this check when issue 273 is resolved
-    if args.skip_render and not args.legacy_worker:
-        raise ValueError('--skip-render option is not yet supported with the Amber-based worker')
-
     # Check the JSON file used to identify other shaders is present.
     if not os.path.isfile(args.json):
         raise ValueError('The given JSON file does not exist: ' + args.json)
@@ -1137,7 +1143,8 @@ def main_helper(args):
         json_file=args.json,
         output_dir=args.output_dir,
         force=args.force,
-        is_android=(args.target == 'android'))
+        is_android=(args.target == 'android'),
+        skip_render=args.skip_render)
 
 
 if __name__ == '__main__':
