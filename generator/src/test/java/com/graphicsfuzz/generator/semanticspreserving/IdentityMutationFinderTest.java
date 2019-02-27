@@ -47,6 +47,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class IdentityMutationFinderTest {
@@ -251,7 +253,7 @@ public class IdentityMutationFinderTest {
         + "  mat2 m;"
         + "  m;"
         + "}";
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 20; i++) {
       final TranslationUnit tu = ParseHelper.parse(program);
       IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(tu,
           new RandomWrapper(i), GenerationParams.small(ShaderKind.FRAGMENT, false));
@@ -273,7 +275,7 @@ public class IdentityMutationFinderTest {
             return;
           }
           final BinaryExpr binaryExpr = (BinaryExpr) functionCallExpr.getArgs().get(1);
-          if (!Arrays.asList(BinOp.MUL, BinOp.DIV).contains(binaryExpr.getOp())) {
+          if (!Arrays.asList(BinOp.DIV, BinOp.MUL).contains(binaryExpr.getOp())) {
             return;
           }
           if (!(binaryExpr.getRhs() instanceof TypeConstructorExpr)) {
@@ -283,10 +285,23 @@ public class IdentityMutationFinderTest {
           if (!typeConstructorExpr.getTypename().equals(BasicType.MAT2X2.toString())) {
             return;
           }
-          // The identity matrix should only have one arg.
-          assertTrue(typeConstructorExpr.getNumArgs() == 1);
-          if (typeConstructorExpr.getArg(0) instanceof FloatConstantExpr) {
-            assertEquals("1.0", ((FloatConstantExpr) typeConstructorExpr.getArg(0)).getValue());
+          if (binaryExpr.getOp() == BinOp.MUL) {
+            // In the case of MUL we should be multiplying by the identity matrix.
+            // The identity matrix should only have one arg, and if it is a literal it should be
+            // 1.0.
+            assertTrue(typeConstructorExpr.getNumArgs() == 1);
+            if (typeConstructorExpr.getArg(0) instanceof FloatConstantExpr) {
+              assertEquals("1.0", ((FloatConstantExpr) typeConstructorExpr.getArg(0)).getValue());
+            }
+          } else {
+            // In the case of DIV we should be multiplying by a matrix of all 1.0s.
+            assertEquals(binaryExpr.getOp(), BinOp.DIV);
+            assertTrue(typeConstructorExpr.getNumArgs() == 4);
+            for (int i = 0; i < 4; i++) {
+              if (typeConstructorExpr.getArg(i) instanceof FloatConstantExpr) {
+                assertEquals("1.0", ((FloatConstantExpr) typeConstructorExpr.getArg(i)).getValue());
+              }
+            }
           }
         }
       }.visit(tu);

@@ -192,6 +192,38 @@ public final class OpaqueExpressionGenerator {
     return makeLiteralZeroOrOne(false, type);
   }
 
+  private Expr makeOpaqueIdentityMatrix(BasicType type, boolean constContext,
+                                   final int depth, Fuzzer fuzzer) {
+    assert BasicType.allSquareMatrixTypes().contains(type);
+    if (isTooDeep(depth)) {
+      return new TypeConstructorExpr(type.toString(), makeRegularOne(BasicType.FLOAT));
+    }
+    final int newDepth = depth + 1;
+    while (true) {
+      final int numTypesOfIdentityMatrix = 2;
+      switch (generator.nextInt(numTypesOfIdentityMatrix)) {
+        case 0:
+          // Make an opaque identity matrix recursively and apply an identity function to it
+          return applyIdentityFunction(makeOpaqueIdentityMatrix(type, constContext,
+              newDepth, fuzzer),
+              type,
+              constContext,
+              newDepth,
+              fuzzer);
+        case 1:
+          // Use injectionSwitch.y
+          if (constContext || !generationParams.getInjectionSwitchIsAvailable()) {
+            continue;
+          }
+          return new TypeConstructorExpr(type.toString(), oneConstructor(
+              injectionSwitch("y"), BasicType.FLOAT));
+        default:
+          throw new RuntimeException();
+      }
+    }
+  }
+
+
   private Expr makeOpaqueBooleanScalar(boolean value, boolean constContext, final int depth,
         Fuzzer fuzzer) {
 
@@ -331,10 +363,7 @@ public final class OpaqueExpressionGenerator {
       return new UIntConstantExpr(integerPart + "u");
     }
     List<Expr> args = new ArrayList<>();
-    // We are either making a vector/matrix of zeroes, or a square identity matrix.  In the latter
-    // case we only pass in one value.
-    final int numConstructorParams = isZero ? type.getNumElements() : 1;
-    for (int i = 0; i < numConstructorParams; i++) {
+    for (int i = 0; i < type.getNumElements(); i++) {
       assert type.getElementType() != type;
       args.add(makeLiteralZeroOrOne(isZero, type.getElementType()));
     }
@@ -410,8 +439,11 @@ public final class OpaqueExpressionGenerator {
       // expr / 1
       assert type.getElementType() != BasicType.BOOL;
       final BinOp operator = generator.nextBoolean() ? BinOp.MUL : BinOp.DIV;
-      return applyBinaryIdentityFunction(expr, makeOpaqueOne(type, constContext,
-            depth, fuzzer), operator,
+      final Expr opaqueOne =
+          (operator == BinOp.MUL && BasicType.allSquareMatrixTypes().contains(type))
+          ? makeOpaqueIdentityMatrix(type, constContext, depth, fuzzer)
+          : makeOpaqueOne(type, constContext, depth, fuzzer);
+      return applyBinaryIdentityFunction(expr, opaqueOne, operator,
             operator == BinOp.MUL, type, constContext,
             depth, fuzzer);
     }
