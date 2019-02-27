@@ -24,6 +24,7 @@ import com.graphicsfuzz.common.util.FuzzyImageComparison;
 import com.graphicsfuzz.common.util.ReductionProgressHelper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.ReductionKind;
+import com.graphicsfuzz.reducer.tool.GlslReduce;
 import com.graphicsfuzz.server.thrift.CommandInfo;
 import com.graphicsfuzz.server.thrift.CommandResult;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
@@ -1927,7 +1928,8 @@ public class WebUi extends HttpServlet {
         "<tr>",
         "<td align='right'><p class='no_space'>Reduction Mode:</p></td>",
         "<td>",
-        "<select name='reduction-kind' class='reduce_col' onchange='selectReduceKind(this);'>",
+        "<select name='reduction-kind' class='reduce_col' ",
+        "onchange='updateReductionElements(this);'>",
         "<option value='ABOVE_THRESHOLD'>Above Threshold</option>",
         (success
             ? "<option value='NO_IMAGE'>No Image</option>"
@@ -1945,16 +1947,14 @@ public class WebUi extends HttpServlet {
         ),
         "<td align='right'><p class='no_space'>Comparison metric:</p></td>",
         "<td>",
-        "<select name='metric' class='reduce_col'>",
+        "<select name='metric' class='reduce_col' onchange='updateReductionElements(this);'>",
+        "<option value='FUZZY_DIFF'>FUZZY_DIFF</option>",
         "<option value='HISTOGRAM_CHISQR'>HISTOGRAM_CHISQR</option>",
         "<option value='PSNR'>PSNR</option>",
         "</select>",
         "</td>",
         "</tr>",
-        (success
-            ? "<tr id='threshold_tr' class=''>"
-            : "<tr id='threshold_tr' class='invisible'>"
-        ),
+        "<tr id='threshold_tr' class='invisible'>",
         "<td align='right'><p class='no_space'>Threshold:</p></td>",
         "<td><input class='reduce_col' name='threshold' value='100.0'/></td>",
         "</tr>",
@@ -2041,6 +2041,11 @@ public class WebUi extends HttpServlet {
         "</table>",
         "<input type='submit' value='Start Reduction'/>",
         "</fieldset>",
+        "<pre id='metric_hints' style='font-size: 10px'>Comparison metric hints ",
+        "(from `glsl-reduce -h`):\n\n",
+        GlslReduce.METRICS_HELP_SHARED.replaceAll("\n\n", "\n"),
+        "\n\n",
+        "</pre>",
         "</form>");
   }
 

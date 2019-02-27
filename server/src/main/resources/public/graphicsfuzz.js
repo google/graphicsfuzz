@@ -80,13 +80,22 @@ function setClass(elem, c, on) {
   }
 }
 
-function selectReduceKind(elem) {
-  var val = elem.value;
-  var error_string_visible = (val !== "NO_IMAGE");
-  var threshold_visible = (val !== "BELOW_THRESHOLD" && val !== "ABOVE_THRESHOLD");
-  setClass(error_string_tr, "invisible", error_string_visible);
-  setClass(threshold_tr, "invisible", threshold_visible);
-  setClass(metric_tr, "invisible", threshold_visible);
+function updateReductionElements(elem) {
+  var reduction_kind_val =
+      document.getElementsByName("reduction-kind")[0].selectedOptions[0].value;
+  var metric_val =
+      document.getElementsByName("metric")[0].selectedOptions[0].value;
+
+  var error_string_invisible = (reduction_kind_val !== "NO_IMAGE");
+  var metric_invisible =
+      (reduction_kind_val !== "BELOW_THRESHOLD" && reduction_kind_val !== "ABOVE_THRESHOLD");
+  var threshold_invisible = (metric_invisible || metric_val === "FUZZY_DIFF");
+
+  setClass(error_string_tr, "invisible", error_string_invisible);
+  setClass(metric_tr, "invisible", metric_invisible);
+  setClass(metric_hints, "invisible", metric_invisible);
+  setClass(threshold_tr, "invisible", threshold_invisible);
+
 }
 
 var lastChecked = -1;

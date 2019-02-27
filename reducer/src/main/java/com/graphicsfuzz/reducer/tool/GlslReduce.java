@@ -62,6 +62,15 @@ public class GlslReduce {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GlslReduce.class);
 
+  public static final String METRICS_HELP_SHARED =
+      "When reducing based on images being different, recommended related settings are:\n\n"
+      + ImageComparisonMetric.FUZZY_DIFF
+      + ": --reduction-kind ABOVE_THRESHOLD (provided threshold is ignored)\n\n"
+      + ImageComparisonMetric.HISTOGRAM_CHISQR
+      + ": --reduction-kind ABOVE_THRESHOLD --threshold 100.0\n\n"
+      + ImageComparisonMetric.PSNR
+      + ": --reduction-kind BELOW_THRESHOLD --threshold 30.0\n\n";
+
   private static ArgumentParser getParser() {
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("glsl-reduce")
@@ -142,17 +151,11 @@ public class GlslReduce {
 
     parser.addArgument("--metric")
         .help("Metric used for image comparison.  Options are:\n"
+            + "   " + ImageComparisonMetric.FUZZY_DIFF + "\n"
             + "   " + ImageComparisonMetric.HISTOGRAM_CHISQR + "\n"
             + "   " + ImageComparisonMetric.PSNR + "\n"
-            + "   " + ImageComparisonMetric.FUZZY_DIFF + "\n\n"
-            + "When reducing based on images being different, recommended related settings are:\n\n"
-            + ImageComparisonMetric.HISTOGRAM_CHISQR
-            + ": --reduction-kind ABOVE_THRESHOLD --threshold 100.0\n\n"
-            + ImageComparisonMetric.PSNR
-            + ": --reduction-kind BELOW_THRESHOLD --threshold 30.0\n\n"
-            + ImageComparisonMetric.FUZZY_DIFF
-            + ": --reduction-kind ABOVE_THRESHOLD (provided threshold is ignored)\n\n")
-        .setDefault(ImageComparisonMetric.HISTOGRAM_CHISQR.toString())
+            + "\n" + METRICS_HELP_SHARED)
+        .setDefault(ImageComparisonMetric.FUZZY_DIFF.toString())
         .type(String.class);
 
     parser.addArgument("--reference")
