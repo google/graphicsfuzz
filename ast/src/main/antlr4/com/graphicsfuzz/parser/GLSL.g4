@@ -386,6 +386,7 @@ storage_qualifier:
    | RESTRICT
    | READONLY
    | WRITEONLY
+   | SHARED
    ;
 
 array_specifier:
@@ -747,6 +748,7 @@ RESTRICT: 'restrict' ;
 VARYING: 'varying' ;
 READONLY: 'readonly' ;
 WRITEONLY: 'writeonly' ;
+SHARED: 'shared' ;
 LAYOUT_TOK: 'layout' ; // REVISIT
 UINTCONSTANT: (DECIMAL_DIGITS | OCTAL_DIGITS | HEX_DIGITS) 'u';
 ROW_MAJOR: 'row_major' ;

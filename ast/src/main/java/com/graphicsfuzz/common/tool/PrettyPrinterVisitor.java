@@ -446,10 +446,14 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append("    ");
     visit(forStmt.getInit());
     out.append("    " + indent());
-    visit(forStmt.getCondition());
+    if (forStmt.hasCondition()) {
+      visit(forStmt.getCondition());
+    }
     out.append(";" + newLine());
     out.append("    " + indent());
-    visit(forStmt.getIncrement());
+    if (forStmt.hasIncrement()) {
+      visit(forStmt.getIncrement());
+    }
     out.append(newLine());
     out.append(indent() + ")" + newLine());
     increaseIndent();

@@ -75,9 +75,9 @@ public class ForStmtTest {
         (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
         .getStmt(0);
     assertFalse(stmt
-        .hasCond());
+        .hasCondition());
     assertFalse(stmt
-        .hasCond());
+        .hasCondition());
     assertTrue(stmt
         .hasIncrement());
 
@@ -90,7 +90,7 @@ public class ForStmtTest {
         (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
         .getStmt(0);
     assertTrue(stmt
-        .hasCond());
+        .hasCondition());
     assertFalse(stmt
         .hasIncrement());
   }
