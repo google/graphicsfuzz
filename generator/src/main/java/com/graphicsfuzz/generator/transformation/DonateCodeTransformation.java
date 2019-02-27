@@ -669,7 +669,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
           TypeQualifier.OUT_PARAM,
           TypeQualifier.UNIFORM,
           TypeQualifier.SHADER_INPUT,
-          TypeQualifier.SHADER_OUTPUT).contains(qualifier)) {
+          TypeQualifier.SHADER_OUTPUT,
+          TypeQualifier.SHARED).contains(qualifier)) {
         continue;
       }
       if (qualifier instanceof LayoutQualifierSequence) {

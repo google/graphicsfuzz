@@ -714,9 +714,11 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         result.addFirst(TypeQualifier.RESTRICT);
       } else if (sq.READONLY() != null) {
         result.addFirst(TypeQualifier.READONLY);
-      } else {
-        assert sq.WRITEONLY() != null;
+      } else if (sq.WRITEONLY() != null) {
         result.addFirst(TypeQualifier.WRITEONLY);
+      } else {
+        assert sq.SHARED() != null;
+        result.addFirst(TypeQualifier.SHARED);
       }
     } else if (ctx.interpolation_qualifier() != null) {
       Interpolation_qualifierContext iq = ctx.interpolation_qualifier();

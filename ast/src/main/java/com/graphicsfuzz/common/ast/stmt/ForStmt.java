@@ -35,7 +35,7 @@ public class ForStmt extends LoopStmt {
    * Reports whether a condition for the loop is present (it is not in e.g. "for(init; ; inc)"
    * @return Whether condition is present.
    */
-  public boolean hasCond() {
+  public boolean hasCondition() {
     return getCondition() != null;
   }
 

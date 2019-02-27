@@ -235,8 +235,12 @@ public abstract class MutationFinderBase<MutationT extends Mutation>
     assert !underForLoopHeader;
     underForLoopHeader = true;
     visitChildFromParent(forStmt.getInit(), forStmt);
-    visitChildFromParent(forStmt.getCondition(), forStmt);
-    visitChildFromParent(forStmt.getIncrement(), forStmt);
+    if (forStmt.hasCondition()) {
+      visitChildFromParent(forStmt.getCondition(), forStmt);
+    }
+    if (forStmt.hasIncrement()) {
+      visitChildFromParent(forStmt.getIncrement(), forStmt);
+    }
     assert underForLoopHeader;
     underForLoopHeader = false;
     visitChildFromParent(forStmt.getBody(), forStmt);

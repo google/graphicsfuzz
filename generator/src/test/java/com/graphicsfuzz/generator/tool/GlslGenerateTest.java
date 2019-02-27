@@ -99,7 +99,7 @@ public class GlslGenerateTest {
     final String prefix = "family";
     generateShaderFamily(references.getAbsolutePath(), donors, numVariants, prefix,
         outputDir.getAbsolutePath(),
-        0, new ArrayList<>());
+        0, new ArrayList<>(), false);
 
     final File unexpectedOutputDirectory = new File(outputDir, prefix + "_bad");
     // We should not get a directory for the bad reference.
@@ -148,7 +148,7 @@ public class GlslGenerateTest {
       InterruptedException,
       IOException, ReferencePreparationException {
 
-    generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs);
+    generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs, true);
 
     for (String reference : Arrays.asList("bubblesort_flag", "colorgrid_modulo",
         "mandelbrot_blurry", "prefix_sum", "squares")) {
@@ -178,7 +178,7 @@ public class GlslGenerateTest {
       InterruptedException,
       IOException, ReferencePreparationException {
 
-    generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs);
+    generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs, true);
 
     for (String reference : Arrays.asList("comp-0001-findmax", "comp-0002-smooth-mean",
         "comp-0003-random-middle-square")) {
@@ -230,7 +230,8 @@ public class GlslGenerateTest {
                                    String prefix,
                                    String outputDir,
                                    int seed,
-                                   List<String> extraArgs)
+                                   List<String> extraArgs,
+                                   boolean failOnReferencePreparationException)
       throws ArgumentParserException,
       InterruptedException,
       IOException, ReferencePreparationException {
@@ -250,7 +251,7 @@ public class GlslGenerateTest {
     options.addAll(extraArgs);
 
     GlslGenerate.mainHelper(
-        options.toArray(new String[0]), true
+        options.toArray(new String[0]), failOnReferencePreparationException
     );
   }
 
