@@ -1754,7 +1754,7 @@ public class WebUi extends HttpServlet {
         Long.toString(System.currentTimeMillis() - startTime),
         "ms</pre>\n",
         "<div class='ui center aligned basic segment'>",
-        "<p>Powered by <a href='https://www.graphicsfuzz.com'>GraphicsFuzz</a></p>",
+        "<p>Powered by <a href='https://github.com/google/graphicsfuzz'>GraphicsFuzz</a></p>",
         "</div>\n",
         "</div>\n",
         "</body>\n</html>\n");
