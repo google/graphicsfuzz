@@ -24,10 +24,10 @@ import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
 import java.util.List;
 
-public class MutationReductionOpportunities
-      extends ReductionOpportunitiesBase<MutationReductionOpportunity> {
+public class IdentityMutationReductionOpportunities
+      extends ReductionOpportunitiesBase<IdentityMutationReductionOpportunity> {
 
-  private MutationReductionOpportunities(
+  private IdentityMutationReductionOpportunities(
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);
@@ -35,37 +35,30 @@ public class MutationReductionOpportunities
 
   @Override
   void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
-    if (!(parent instanceof Expr)) {
-      // TODO: the code was written for the case where 'parent' is an Expr, hence this bail-out.
-      // But it might be the case that things should work just fine if 'parent' is not an Expr.
-      // So this should be re-visited.
-      return;
-    }
-    final Expr parentExpr = (Expr) parent;
     if (MacroNames.isIdentity(child)) {
-      addOpportunity(new MutationReductionOpportunity(parentExpr, child,
+      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
                   OpaqueFunctionType.IDENTITY,
                   getVistitationDepth()));
     } else if (MacroNames.isZero(child)) {
-      addOpportunity(new MutationReductionOpportunity(parentExpr, child,
+      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
             OpaqueFunctionType.ZERO,
             getVistitationDepth()));
     } else if (MacroNames.isOne(child)) {
-      addOpportunity(new MutationReductionOpportunity(parentExpr, child,
+      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
             OpaqueFunctionType.ONE,
             getVistitationDepth()));
     } else if (MacroNames.isFalse(child)) {
-      addOpportunity(new MutationReductionOpportunity(parentExpr, child,
+      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
             OpaqueFunctionType.FALSE,
             getVistitationDepth()));
     } else if (MacroNames.isTrue(child)) {
-      addOpportunity(new MutationReductionOpportunity(parentExpr, child,
+      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
             OpaqueFunctionType.TRUE,
             getVistitationDepth()));
     }
   }
 
-  static List<MutationReductionOpportunity> findOpportunities(
+  static List<IdentityMutationReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
         ReducerContext context) {
     return shaderJob.getShaders()
@@ -74,10 +67,10 @@ public class MutationReductionOpportunities
         .reduce(Arrays.asList(), ListConcat::concatenate);
   }
 
-  private static List<MutationReductionOpportunity> findOpportunitiesForShader(
+  private static List<IdentityMutationReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
       ReducerContext context) {
-    MutationReductionOpportunities finder = new MutationReductionOpportunities(tu,
+    IdentityMutationReductionOpportunities finder = new IdentityMutationReductionOpportunities(tu,
           context);
     finder.visit(tu);
     return finder.getOpportunities();
