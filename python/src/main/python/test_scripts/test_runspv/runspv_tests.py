@@ -22,14 +22,15 @@ import PIL.Image
 import pytest
 import subprocess
 import sys
-from typing import List, Tuple
 
 HERE = os.path.abspath(__file__)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(HERE))) + os.sep + "drivers")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(HERE))))
 
+# noinspection PyPep8
 import cmd_helpers
+# noinspection PyPep8
 import runspv
 
 
@@ -46,10 +47,14 @@ def get_image_test(json_filename: str) -> str:
            + json_filename
 
 
+def get_compute_samples_dir() -> str:
+    return cmd_helpers.get_shaders_dir() + os.sep + 'samples' + os.sep + 'compute' + os.sep + '310es'
+
+
 def make_empty_json(path: pathlib2.Path, prefix: str = 'shader') -> pathlib2.Path:
-    json = path / (prefix + '.json')
-    json.write_text('{}')
-    return json
+    json_path = path / (prefix + '.json')
+    json_path.write_text('{}')
+    return json_path
 
 
 def make_empty_file(path: pathlib2.Path, filename: str) -> pathlib2.Path:
@@ -106,16 +111,16 @@ def get_ssbo_json(output_dir: pathlib2.Path) -> {}:
     return json.load(open(str(ssbo_json), 'r'))
 
 
-def check_images_match(tmp_path: pathlib2.Path, json: str, is_android_1: bool, is_android_2: bool,
+def check_images_match(tmp_path: pathlib2.Path, json_filename: str, is_android_1: bool, is_android_2: bool,
                        is_amber_1: bool, is_amber_2: bool, fuzzy_image_comparison: bool):
     out_dir_1 = tmp_path / 'out_1'
     out_dir_2 = tmp_path / 'out_2'
 
-    args_1 = ['android' if is_android_1 else 'host', get_image_test(json), str(out_dir_1)]
+    args_1 = ['android' if is_android_1 else 'host', get_image_test(json_filename), str(out_dir_1)]
     if not is_amber_1:
         args_1.append('--legacy-worker')
 
-    args_2 = ['android' if is_android_2 else 'host', get_image_test(json), str(out_dir_2)]
+    args_2 = ['android' if is_android_2 else 'host', get_image_test(json_filename), str(out_dir_2)]
     if not is_amber_2:
         args_2.append('--legacy-worker')
 
@@ -126,9 +131,9 @@ def check_images_match(tmp_path: pathlib2.Path, json: str, is_android_1: bool, i
     assert images_match(out_dir_1, out_dir_2, fuzzy_image_comparison)
 
 
-def check_images_match_android_amber_vs_legacy(tmp_path: pathlib2.Path, json: str):
+def check_images_match_android_amber_vs_legacy(tmp_path: pathlib2.Path, json_filename: str):
     check_images_match(tmp_path=tmp_path,
-                       json=json,
+                       json_filename=json_filename,
                        is_android_1=True,
                        is_android_2=True,
                        is_amber_1=True,
@@ -136,9 +141,9 @@ def check_images_match_android_amber_vs_legacy(tmp_path: pathlib2.Path, json: st
                        fuzzy_image_comparison=False)
 
 
-def check_images_match_host_vs_android_amber(tmp_path: pathlib2.Path, json: str):
+def check_images_match_host_vs_android_amber(tmp_path: pathlib2.Path, json_filename: str):
     check_images_match(tmp_path=tmp_path,
-                       json=json,
+                       json_filename=json_filename,
                        is_android_1=False,
                        is_android_2=True,
                        is_amber_1=True,
@@ -146,12 +151,12 @@ def check_images_match_host_vs_android_amber(tmp_path: pathlib2.Path, json: str)
                        fuzzy_image_comparison=True)
 
 
-def check_host_and_android_match_compute(tmp_path: pathlib2.Path, json: str):
+def check_host_and_android_match_compute(tmp_path: pathlib2.Path, json_filename: str):
     out_dir_host = tmp_path / 'out_legacy'
     out_dir_android = tmp_path / 'out_amber'
 
-    args_host = ['host', get_compute_test(json), str(out_dir_host)]
-    args_android = ['android', get_compute_test(json), str(out_dir_android)]
+    args_host = ['host', get_compute_samples_dir() + os.sep + json_filename, str(out_dir_host)]
+    args_android = ['android', get_compute_samples_dir() + os.sep + json_filename, str(out_dir_android)]
     runspv.main_helper(args_host)
     runspv.main_helper(args_android)
     assert is_success(out_dir_host)
@@ -162,9 +167,9 @@ def check_host_and_android_match_compute(tmp_path: pathlib2.Path, json: str):
     assert ssbo_host == ssbo_android
 
 
-def check_no_image_skip_render(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool, json: str):
+def check_no_image_skip_render(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool, json_filename: str):
     out_dir = tmp_path / 'out'
-    args = ['android' if is_android else 'host', get_image_test(json), str(out_dir), '--skip-render']
+    args = ['android' if is_android else 'host', get_image_test(json_filename), str(out_dir), '--skip-render']
     if is_legacy_worker:
         args.append('--legacy-worker')
     runspv.main_helper(args)
@@ -174,9 +179,9 @@ def check_no_image_skip_render(tmp_path: pathlib2.Path, is_android: bool, is_leg
     assert not image_file.exists()
 
 
-def check_no_ssbo_skip_render(tmp_path: pathlib2.Path, is_android: bool, json: str):
+def check_no_ssbo_skip_render(tmp_path: pathlib2.Path, is_android: bool, json_filename: str):
     out_dir = tmp_path / 'out'
-    args = ['android' if is_android else 'host', get_compute_test(json), str(out_dir), '--skip-render']
+    args = ['android' if is_android else 'host', get_compute_test(json_filename), str(out_dir), '--skip-render']
     runspv.main_helper(args)
     assert is_success(out_dir)
     # We used skip-render, so there should be no dumped SSBO.
@@ -228,6 +233,33 @@ def bubblesort_flag(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker:
     assert b in [254, 255]
 
 
+def sklansky_compute(tmp_path: pathlib2.Path, is_android: bool):
+    out_dir = tmp_path / 'out'
+    runspv.main_helper(['android' if is_android else 'host', get_compute_samples_dir() + os.sep
+                        + 'comp-0005-sklansky.json', str(out_dir)])
+    assert is_success(out_dir)
+    ssbo_json = get_ssbo_json(out_dir)
+    assert ssbo_json['ssbo'][0][0] == 1
+    assert ssbo_json['ssbo'][1][0] == 0
+    assert ssbo_json['ssbo'][1][1] == 25
+    assert ssbo_json['ssbo'][1][199] == 100
+    assert ssbo_json['ssbo'][2][0] == 25
+    assert ssbo_json['ssbo'][2][199] == 24
+
+
+def kogge_stone_compute(tmp_path: pathlib2.Path, is_android: bool):
+    out_dir = tmp_path / 'out'
+    runspv.main_helper(['android' if is_android else 'host', get_compute_samples_dir() + os.sep
+                        + 'comp-0004-koggestone.json', str(out_dir)])
+    assert is_success(out_dir)
+    ssbo_json = get_ssbo_json(out_dir)
+    assert ssbo_json['ssbo'][0][0] == 0.0
+    assert ssbo_json['ssbo'][0][255] == 15.0
+    assert ssbo_json['ssbo'][1][0] == 0.0
+    assert ssbo_json['ssbo'][1][255] == 1920.0
+    assert ssbo_json['ssbo'][2][0] == 0
+
+
 #########################################
 # The tests
 
@@ -261,130 +293,130 @@ def test_error_no_json(tmp_path: pathlib2.Path):
 
 def test_error_no_shaders(tmp_path: pathlib2.Path):
     # Check for appropriate error when no .asm or .spv files are passed
-    json = make_empty_json(tmp_path)
+    json_path = make_empty_json(tmp_path)
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out')])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
     assert 'ValueError: No compute nor vertex shader files found' in str(value_error)
 
 
 def test_error_compute_asm_and_spv(tmp_path: pathlib2.Path):
     # Check for appropriate error when both .asm and .spv files are provided for a compute shader.
-    json = make_empty_json(tmp_path, "shader")
+    json_path = make_empty_json(tmp_path, "shader")
     make_empty_file(tmp_path, "shader.comp.asm")
     make_empty_file(tmp_path, "shader.comp.spv")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out')])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
     assert 'ValueError: More than one of .comp, .comp.asm and .comp.spv are present' in str(value_error)
 
 
 def test_error_compute_asm_and_glsl(tmp_path: pathlib2.Path):
     # Check for appropriate error when both .asm and .spv files are provided for a compute shader.
-    json = make_empty_json(tmp_path, "shader")
+    json_path = make_empty_json(tmp_path, "shader")
     make_empty_file(tmp_path, "shader.comp.asm")
     make_empty_file(tmp_path, "shader.comp")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out')])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
     assert 'ValueError: More than one of .comp, .comp.asm and .comp.spv are present' in str(value_error)
 
 
 def test_error_vert_asm_and_spv(tmp_path: pathlib2.Path):
     # Check for appropriate error when both .asm and .spv files are provided for a vertex shader.
-    json = make_empty_json(tmp_path)
+    json_path = make_empty_json(tmp_path)
     make_empty_file(tmp_path, "shader.vert.asm")
     make_empty_file(tmp_path, "shader.vert.spv")
     make_empty_file(tmp_path, "shader.frag.asm")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out')])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
     assert 'ValueError: More than one of .vert, .vert.asm and .vert.spv are present' in str(value_error)
 
 
 def test_error_vert_asm_and_glsl(tmp_path: pathlib2.Path):
     # Check for appropriate error when both .asm and .spv files are provided for a vertex shader.
-    json = make_empty_json(tmp_path)
+    json_path = make_empty_json(tmp_path)
     make_empty_file(tmp_path, "shader.vert.asm")
     make_empty_file(tmp_path, "shader.vert")
     make_empty_file(tmp_path, "shader.frag")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out')])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
     assert 'ValueError: More than one of .vert, .vert.asm and .vert.spv are present' in str(value_error)
 
 
 def test_error_frag_asm_and_spv(tmp_path: pathlib2.Path):
     # Check for appropriate error when both .asm and .spv files are provided for a fragment shader.
-    json = make_empty_json(tmp_path)
+    json_path = make_empty_json(tmp_path)
     make_empty_file(tmp_path, "shader.vert.spv")
     make_empty_file(tmp_path, "shader.frag.asm")
     make_empty_file(tmp_path, "shader.frag.spv")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out')])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
     assert 'ValueError: More than one of .frag, .frag.asm and .frag.spv are present' in str(value_error)
 
 
 def test_error_compute_and_frag(tmp_path: pathlib2.Path):
     # Check for appropriate error when both compute and fragment shaders are provided.
-    json = make_empty_json(tmp_path)
+    json_path = make_empty_json(tmp_path)
     make_empty_file(tmp_path, "shader.comp.spv")
     make_empty_file(tmp_path, "shader.frag.asm")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out')])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
     assert 'ValueError: Compute shader cannot coexist with vertex/fragment shaders' in str(value_error)
 
 
 def test_error_compute_and_vert(tmp_path: pathlib2.Path):
     # Check for appropriate error when both compute and vertex shaders are provided.
-    json = make_empty_json(tmp_path)
+    json_path = make_empty_json(tmp_path)
     make_empty_file(tmp_path, "shader.comp.asm")
     make_empty_file(tmp_path, "shader.frag.spv")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out')])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
     assert 'ValueError: Compute shader cannot coexist with vertex/fragment shaders' in str(value_error)
 
 
 def test_error_frag_no_vert(tmp_path: pathlib2.Path):
     # Check for appropriate error when a fragment shader but no vertex shader is provided.
-    json = make_empty_json(tmp_path)
+    json_path = make_empty_json(tmp_path)
     make_empty_file(tmp_path, "shader.frag.asm")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out')])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
     assert 'ValueError: No compute nor vertex shader files found' in str(value_error)
 
 
 def test_error_vert_no_frag(tmp_path: pathlib2.Path):
     # Check for appropriate error when a vertex shader but no fragment shader is provided.
-    json = make_empty_json(tmp_path)
+    json_path = make_empty_json(tmp_path)
     make_empty_file(tmp_path, "shader.vert.spv")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out')])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
     assert 'ValueError: Vertex shader but no fragment shader found' in str(value_error)
 
 
 def test_no_compute_in_legacy(tmp_path: pathlib2.Path):
     # Check for appropriate error when legacy worker is attempted to be used with compute shader.
-    json = make_empty_json(tmp_path)
+    json_path = make_empty_json(tmp_path)
     make_empty_file(tmp_path, "shader.comp")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out'), '--legacy-worker'])
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out'), '--legacy-worker'])
     assert 'ValueError: Compute shaders are not supported with the legacy worker' in str(value_error)
 
 
 def test_skip_render_image_amber_host(tmp_path: pathlib2.Path):
-    check_no_image_skip_render(tmp_path, is_android=False, is_legacy_worker=False, json='image_test_0007.json')
+    check_no_image_skip_render(tmp_path, is_android=False, is_legacy_worker=False, json_filename='image_test_0007.json')
 
 
 def test_skip_render_image_amber_android(tmp_path: pathlib2.Path):
-    check_no_image_skip_render(tmp_path, is_android=True, is_legacy_worker=False, json='image_test_0007.json')
+    check_no_image_skip_render(tmp_path, is_android=True, is_legacy_worker=False, json_filename='image_test_0007.json')
 
 
 def test_skip_render_image_legacy_android(tmp_path: pathlib2.Path):
-    check_no_image_skip_render(tmp_path, is_android=True, is_legacy_worker=True, json='image_test_0007.json')
+    check_no_image_skip_render(tmp_path, is_android=True, is_legacy_worker=True, json_filename='image_test_0007.json')
 
 
 def test_skip_render_compute_amber_host(tmp_path: pathlib2.Path):
-    check_no_ssbo_skip_render(tmp_path, is_android=False, json='simple.json')
+    check_no_ssbo_skip_render(tmp_path, is_android=False, json_filename='simple.json')
 
 
 def test_skip_render_compute_amber_android(tmp_path: pathlib2.Path):
-    check_no_ssbo_skip_render(tmp_path, is_android=True, json='simple.json')
+    check_no_ssbo_skip_render(tmp_path, is_android=True, json_filename='simple.json')
 
 
 def test_simple_compute_host(tmp_path: pathlib2.Path):
@@ -396,19 +428,19 @@ def test_simple_compute_android(tmp_path: pathlib2.Path):
 
 
 def test_sklansky_compute_host(tmp_path: pathlib2.Path):
-    pass
+    sklansky_compute(tmp_path, False)
 
 
 def test_sklansky_compute_android(tmp_path: pathlib2.Path):
-    pass
+    sklansky_compute(tmp_path, True)
 
 
 def test_kogge_stone_compute_host(tmp_path: pathlib2.Path):
-    pass
+    kogge_stone_compute(tmp_path, False)
 
 
 def test_kogge_stone_compute_android(tmp_path: pathlib2.Path):
-    pass
+    kogge_stone_compute(tmp_path, True)
 
 
 def test_red_image_amber_host(tmp_path: pathlib2.Path):
@@ -504,3 +536,23 @@ def test_image_0006_host_vs_android_amber(tmp_path: pathlib2.Path):
 
 def test_image_0007_host_vs_android_amber(tmp_path: pathlib2.Path):
     check_images_match_host_vs_android_amber(tmp_path, 'image_test_0007.json')
+
+
+def test_compute_0001_findmax_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_host_and_android_match_compute(tmp_path, 'comp-0001-findmax.json')
+
+
+def test_compute_0002_smooth_mean_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_host_and_android_match_compute(tmp_path, 'comp-0002-smooth-mean.json')
+
+
+def test_compute_0003_random_middle_square_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_host_and_android_match_compute(tmp_path, 'comp-0003-random-middle-square.json')
+
+
+def test_compute_0004_koggestone_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_host_and_android_match_compute(tmp_path, 'comp-0004-koggestone.json')
+
+
+def test_compute_0005_sklansky_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_host_and_android_match_compute(tmp_path, 'comp-0005-sklansky.json')
