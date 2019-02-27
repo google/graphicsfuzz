@@ -739,12 +739,15 @@ def run_image_amber(
             adb_check(['logcat', '-d'], stdout=f)
 
     else:
-        cmd = [
-            tool_on_path('amber'),
-            '-i',
-            png_image,
-            amberscript_file
-        ]
+        cmd = [tool_on_path('amber')]
+        if skip_render:
+            # -ps tells amber to stop after graphics pipeline creation
+            cmd.append('-ps')
+        else:
+            # -i tells amber to dump the framebuffer
+            cmd.append('-i')
+            cmd.append(png_image)
+        cmd.append(amberscript_file)
         status = 'SUCCESS'
         try:
             with open_helper(logfile, 'w') as f:
@@ -755,7 +758,7 @@ def run_image_amber(
             status = 'CRASH'
 
         if status == 'SUCCESS':
-            assert os.path.isfile(png_image)
+            assert skip_render or os.path.isfile(png_image)
 
         with open_helper(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
@@ -769,6 +772,12 @@ def run_image_amber(
 
 ################################################################################
 # Amber worker: compute test
+
+
+def translate_type_for_amber(type_name: str) -> str:
+    if type_name == 'bool':
+        return 'uint'
+    return type_name
 
 
 def comp_json_to_amberscript(comp_json):
@@ -808,7 +817,8 @@ def comp_json_to_amberscript(comp_json):
     binding = j['buffer']['binding']
     offset = 0
     for field_info in j['buffer']['fields']:
-        result += 'ssbo ' + str(binding) + ' subdata ' + field_info['type'] + ' ' + str(offset)
+        result += 'ssbo ' + str(binding) + ' subdata ' + translate_type_for_amber(field_info['type']) + ' '\
+                  + str(offset)
         for datum in field_info['data']:
             result += ' ' + str(datum)
             offset += 4
@@ -868,7 +878,7 @@ def ssbo_text_to_json(ssbo_text_file, ssbo_json_file, comp_json):
             for byte in range(0, 4):
                 hex_val += values[byte_pointer]
                 byte_pointer += 1
-            if field_info['type'] == 'int':
+            if field_info['type'] in ['bool', 'int', 'uint']:
                 result_for_field.append(
                     int.from_bytes(bytearray.fromhex(hex_val), byteorder='little'))
             elif field_info['type'] in ['float', 'vec2', 'vec3', 'vec4']:
@@ -890,7 +900,7 @@ def get_ssbo_binding(comp_json):
     return binding
 
 
-def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, is_android: bool):
+def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, is_android: bool, skip_render: bool):
     assert os.path.isfile(comp)
     assert os.path.isfile(json_file)
 
@@ -923,6 +933,12 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
             'rm -f ' + device_ssbo
         ])
 
+        flags = ' -d '
+        if skip_render:
+            flags += '-ps '
+        else:
+            flags += '-b ' + device_ssbo + ' -B ' + ssbo_binding + ' '
+
         # Call amber
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
         cmd = [
@@ -930,9 +946,8 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
             # The following is a single string:
             'cd ' + ANDROID_DEVICE_DIR + ' && '
             './' + ANDROID_AMBER_NDK
-            + ' -b ' + device_ssbo
-            + ' -B ' + ssbo_binding
-            + ' -d ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
+            + flags
+            + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
         ]
 
         adb_check(['logcat', '-c'])
@@ -948,6 +963,8 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
         if status != 'TIMEOUT':
             if result.returncode != 0:
                 status = 'CRASH'
+            elif skip_render:
+                status = 'SUCCESS'
             else:
                 if adb_can_fail([
                     'shell',
@@ -964,14 +981,15 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
         with open_helper(logfile, 'w') as f:
             adb_check(['logcat', '-d'], stdout=f)
     else:
-        cmd = [
-            tool_on_path('amber'),
-            '-b',
-            ssbo_output,
-            '-B',
-            ssbo_binding,
-            amberscript_file,
-        ]
+        cmd = [tool_on_path('amber')]
+        if skip_render:
+            cmd.append('-ps')
+        else:
+            cmd.append('-b')
+            cmd.append(ssbo_output)
+            cmd.append('-B')
+            cmd.append(ssbo_binding)
+        cmd.append(amberscript_file)
 
         status = 'SUCCESS'
         try:
@@ -983,7 +1001,7 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
             status = 'CRASH'
 
         if status == 'SUCCESS':
-            assert os.path.isfile(ssbo_output)
+            assert skip_render or os.path.isfile(ssbo_output)
 
         with open_helper(logfile, 'a') as f:
             f.write('\nSTATUS ' + status + '\n')
@@ -1127,7 +1145,8 @@ def main_helper(args):
             json_file=args.json,
             output_dir=args.output_dir,
             force=args.force,
-            is_android=(args.target == 'android'))
+            is_android=(args.target == 'android'),
+            skip_render=args.skip_render)
         return
 
     assert vertex_shader_file

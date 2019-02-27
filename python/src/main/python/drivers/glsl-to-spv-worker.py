@@ -320,7 +320,8 @@ def do_compute_job(args, comp_job):
         json_file=tmpjson,
         output_dir=os.getcwd(),
         force=args.force,
-        is_android=(args.target == 'android')
+        is_android=(args.target == 'android'),
+        skip_render=comp_job.skip_render
     )
 
     if os.path.isfile(runspv.LOGFILE_NAME):
