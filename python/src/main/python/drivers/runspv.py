@@ -771,6 +771,12 @@ def run_image_amber(
 # Amber worker: compute test
 
 
+def translate_type_for_amber(type_name: str) -> str:
+    if type_name == 'bool':
+        return 'uint'
+    return type_name
+
+
 def comp_json_to_amberscript(comp_json):
     """
     Returns the string representing VkScript version of compute shader setup,
@@ -808,7 +814,8 @@ def comp_json_to_amberscript(comp_json):
     binding = j['buffer']['binding']
     offset = 0
     for field_info in j['buffer']['fields']:
-        result += 'ssbo ' + str(binding) + ' subdata ' + field_info['type'] + ' ' + str(offset)
+        result += 'ssbo ' + str(binding) + ' subdata ' + translate_type_for_amber(field_info['type']) + ' '\
+                  + str(offset)
         for datum in field_info['data']:
             result += ' ' + str(datum)
             offset += 4
@@ -868,7 +875,7 @@ def ssbo_text_to_json(ssbo_text_file, ssbo_json_file, comp_json):
             for byte in range(0, 4):
                 hex_val += values[byte_pointer]
                 byte_pointer += 1
-            if field_info['type'] == 'int':
+            if field_info['type'] in ['bool', 'int', 'uint']:
                 result_for_field.append(
                     int.from_bytes(bytearray.fromhex(hex_val), byteorder='little'))
             elif field_info['type'] in ['float', 'vec2', 'vec3', 'vec4']:
