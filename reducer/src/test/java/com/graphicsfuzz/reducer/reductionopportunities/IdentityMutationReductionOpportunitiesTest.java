@@ -89,6 +89,7 @@ public class IdentityMutationReductionOpportunitiesTest {
     final String afterReduction = "#version 310 es\n"
         + "precision highp float;\n"
         + "void main() {\n"
+        + "  int i;\n"
         + "  for(i = 0; i < 10; i++) { }\n"
         + "}\n";
     checkOneReductionOpportunity(program, afterReduction);
@@ -105,6 +106,7 @@ public class IdentityMutationReductionOpportunitiesTest {
     final String afterReduction = "#version 310 es\n"
         + "precision highp float;\n"
         + "void main() {\n"
+        + "  int i;\n"
         + "  for(i = 0; i < 10; i++) { }\n"
         + "}\n";
     checkOneReductionOpportunity(program, afterReduction);
@@ -121,6 +123,7 @@ public class IdentityMutationReductionOpportunitiesTest {
     final String afterReduction = "#version 310 es\n"
         + "precision highp float;\n"
         + "void main() {\n"
+        + "  int i;\n"
         + "  for(i = 0; i < 10; i++) { }\n"
         + "}\n";
     checkOneReductionOpportunity(program, afterReduction);
