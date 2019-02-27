@@ -347,24 +347,20 @@ def test_no_compute_in_legacy(tmp_path: pathlib2.Path):
     assert 'ValueError: Compute shaders are not supported with the legacy worker' in str(value_error)
 
 
-def test_no_skip_render_image_with_amber(tmp_path: pathlib2.Path):
-    # TODO: used to guard against issue 273
-    # Check for appropriate error when skip-render is passed to Amber worker for an image test.
-    json = make_empty_json(tmp_path)
-    make_empty_file(tmp_path, "shader.frag")
-    with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out'), '--skip-render'])
-    assert 'ValueError: --skip-render option is not yet supported with the Amber-based worker' in str(value_error)
+def test_skip_render_image_amber_host(tmp_path: pathlib2.Path):
+    assert False
 
 
-def test_no_skip_render_compute_with_amber(tmp_path: pathlib2.Path):
-    # TODO: used to guard against issue 273
-    # Check for appropriate error when skip-render is passed to Amber worker for a compute test.
-    json = make_empty_json(tmp_path)
-    make_empty_file(tmp_path, "shader.comp.spv")
-    with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json), str(tmp_path / 'out'), '--skip-render'])
-    assert 'ValueError: --skip-render option is not yet supported with the Amber-based worker' in str(value_error)
+def test_skip_render_image_amber_android(tmp_path: pathlib2.Path):
+    assert False
+
+
+def test_skip_render_compute_amber_host(tmp_path: pathlib2.Path):
+    assert False
+
+
+def test_skip_render_compute_amber_android(tmp_path: pathlib2.Path):
+    assert False
 
 
 def test_simple_compute_host(tmp_path: pathlib2.Path):
@@ -373,6 +369,22 @@ def test_simple_compute_host(tmp_path: pathlib2.Path):
 
 def test_simple_compute_android(tmp_path: pathlib2.Path):
     simple_compute(tmp_path, True)
+
+
+def test_sklansky_compute_host(tmp_path: pathlib2.Path):
+    pass
+
+
+def test_sklansky_compute_android(tmp_path: pathlib2.Path):
+    pass
+
+
+def test_kogge_stone_compute_host(tmp_path: pathlib2.Path):
+    pass
+
+
+def test_kogge_stone_compute_android(tmp_path: pathlib2.Path):
+    pass
 
 
 def test_red_image_amber_host(tmp_path: pathlib2.Path):
