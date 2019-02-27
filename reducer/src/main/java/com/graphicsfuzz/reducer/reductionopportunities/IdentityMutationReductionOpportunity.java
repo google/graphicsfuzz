@@ -20,14 +20,14 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
-public final class MutationReductionOpportunity extends AbstractReductionOpportunity {
+public final class IdentityMutationReductionOpportunity extends AbstractReductionOpportunity {
 
   private Expr parent;
   private Expr childToReduce;
   private OpaqueFunctionType function;
 
-  MutationReductionOpportunity(Expr parent, Expr childToReduce, OpaqueFunctionType function,
-      VisitationDepth depth) {
+  IdentityMutationReductionOpportunity(Expr parent, Expr childToReduce, OpaqueFunctionType function,
+                                       VisitationDepth depth) {
     super(depth);
     this.parent = parent;
     this.childToReduce = childToReduce;
@@ -68,7 +68,7 @@ public final class MutationReductionOpportunity extends AbstractReductionOpportu
 
   @Override
   public String toString() {
-    return "MutationReductionOpportunity(" + childToReduce.getText()
+    return "IdentityMutationReductionOpportunity(" + childToReduce.getText()
         + " -> " + getReducedExpr().getText() + ")";
   }
 

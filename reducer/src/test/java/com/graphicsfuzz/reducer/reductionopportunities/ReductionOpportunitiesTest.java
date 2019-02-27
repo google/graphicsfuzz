@@ -674,8 +674,8 @@ public class ReductionOpportunitiesTest {
       assertEquals(0, ops.size());
     }
     {
-      List<MutationReductionOpportunity> ops =
-          MutationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+      List<IdentityMutationReductionOpportunity> ops =
+          IdentityMutationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
       assertEquals(1, ops.size());
       ops.get(0).applyReduction();

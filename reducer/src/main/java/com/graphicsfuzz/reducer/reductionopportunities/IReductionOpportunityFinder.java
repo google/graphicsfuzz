@@ -152,12 +152,12 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
-  static IReductionOpportunityFinder<MutationReductionOpportunity> mutationFinder() {
-    return new IReductionOpportunityFinder<MutationReductionOpportunity>() {
+  static IReductionOpportunityFinder<IdentityMutationReductionOpportunity> mutationFinder() {
+    return new IReductionOpportunityFinder<IdentityMutationReductionOpportunity>() {
       @Override
-      public List<MutationReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReducerContext context) {
-        return MutationReductionOpportunities.findOpportunities(shaderJob, context);
+      public List<IdentityMutationReductionOpportunity> findOpportunities(ShaderJob shaderJob,
+                                                                          ReducerContext context) {
+        return IdentityMutationReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
       @Override
