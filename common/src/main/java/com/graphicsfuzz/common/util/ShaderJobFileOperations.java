@@ -56,10 +56,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageOutputStream;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -89,12 +91,12 @@ public class ShaderJobFileOperations {
     return identical;
   }
 
-  public boolean areImagesOfShaderResultsSimilar(
+  public boolean areImagesOfShaderResultsInteresting(
       File referenceShaderResultFile,
       File variantShaderResultFile,
       ImageComparisonMetric metric,
       double threshold,
-      boolean aboveThresholdIsSimilar) throws FileNotFoundException {
+      boolean aboveThresholdIsInteresting) throws IOException {
 
 
     //noinspection deprecation: OK in this class.
@@ -104,28 +106,52 @@ public class ShaderJobFileOperations {
 
     LOGGER.info("Comparing: {} and {}.", reference, variant);
 
-    double diff = 0.0;
+    boolean result;
+    String comparisonValue;
+
     switch (metric) {
 
       case HISTOGRAM_CHISQR:
-        diff = ImageUtil.compareHistograms(
+      {
+        final double diff = ImageUtil.compareHistograms(
             ImageUtil.getHistogram(reference.toString()),
             ImageUtil.getHistogram(variant.toString()));
+        result = (aboveThresholdIsInteresting ? diff > threshold : diff <= threshold);
+        comparisonValue = String.valueOf(diff);
         break;
+      }
       case PSNR:
-        diff = ImageUtil.comparePSNR(reference, variant);
+      {
+        final double diff = ImageUtil.comparePSNR(reference, variant);
+        result = (aboveThresholdIsInteresting ? diff > threshold : diff <= threshold);
+        comparisonValue = String.valueOf(diff);
         break;
+      }
+      case FUZZY_DIFF:
+      {
+        try {
+          FuzzyImageComparison.MainResult mainResult =
+              FuzzyImageComparison.mainHelper(
+                  new String[] {reference.toString(), variant.toString()});
+          // Fuzzy diff has its own thresholds; images are different if a threshold is exceeded.
+          // We negate this if needed:
+          result = (aboveThresholdIsInteresting == mainResult.areImagesDifferent);
+          comparisonValue = mainResult.outputsString();
+          break;
+        } catch (ArgumentParserException exception) {
+          throw new RuntimeException(exception);
+        }
+      }
       default:
         throw new RuntimeException("Unrecognised image comparison metric: " + metric.toString());
     }
 
-    boolean result = (aboveThresholdIsSimilar ? diff > threshold : diff <= threshold);
     if (result) {
       LOGGER.info("Interesting");
     } else {
       LOGGER.info("Not interesting");
     }
-    LOGGER.info(": difference is " + diff);
+    LOGGER.info(": comparison value is " + comparisonValue);
     return result;
 
   }

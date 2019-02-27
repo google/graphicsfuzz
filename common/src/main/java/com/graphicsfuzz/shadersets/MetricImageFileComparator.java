@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.server.thrift.ImageComparisonMetric;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,10 +45,11 @@ public class MetricImageFileComparator implements IImageFileComparator {
   }
 
   @Override
-  public boolean areFilesInteresting(File shaderResultFileReference, File shaderResultFileVariant) {
+  public boolean areFilesInteresting(File shaderResultFileReference, File shaderResultFileVariant)
+      throws IOException {
     try {
 
-      return fileOps.areImagesOfShaderResultsSimilar(
+      return fileOps.areImagesOfShaderResultsInteresting(
           shaderResultFileReference,
           shaderResultFileVariant,
           metric,

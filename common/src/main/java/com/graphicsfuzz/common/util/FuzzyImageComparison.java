@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -164,6 +165,13 @@ public class FuzzyImageComparison {
       this.areImagesDifferent = areImagesDifferent;
       this.exitStatus = exitStatus;
       this.configurations = configurations;
+    }
+
+    public String outputsString() {
+      return configurations
+          .stream()
+          .map(FuzzyImageComparison.ThresholdConfiguration::outputsString)
+          .collect(Collectors.joining(" "));
     }
   }
 
