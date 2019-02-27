@@ -39,7 +39,7 @@ td.warnimg img {
 }
 
 td.wrongimg {
-  background-color: #ffff80;
+  background-color: #ff7780;
 }
 
 td.wrongimg img {
@@ -51,7 +51,7 @@ td.metricsdisimg {
 }
 
 td.metricsdisimg img {
-  border: 3px solid purple;
+  border: 3px solid red;
 }
 
 td.nondet {
