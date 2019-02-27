@@ -30,24 +30,28 @@ body {
   height: 100px;
 }
 
-td.warnimg {
-  background-color: #ffccff;
-}
-
-td.warnimg img {
-  border: 3px solid blue;
+td.gfz-error {
+  background-color: #ffaaaa;
 }
 
 td.wrongimg {
-  background-color: #ff7780;
+  background-color: #ffff44;
 }
 
 td.wrongimg img {
   border: 3px solid red;
 }
 
+td.warnimg {
+  background-color: #ccccbb;
+}
+
+td.warnimg img {
+  border: 3px solid blue;
+}
+
 td.metricsdisimg {
-  background-color: #ffff80;
+  background-color: #dd99ff;
 }
 
 td.metricsdisimg img {
@@ -55,15 +59,11 @@ td.metricsdisimg img {
 }
 
 td.nondet {
-  background-color: #eeccff;
+  background-color: #eecc88;
 }
 
 td.nondet img {
   border: 3px solid red;
-}
-
-td.gfz-error {
-  background-color: #ffb3b3;
 }
 
 div.resultmain {
