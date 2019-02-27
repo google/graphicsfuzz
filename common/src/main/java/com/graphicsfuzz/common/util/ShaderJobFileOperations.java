@@ -111,8 +111,7 @@ public class ShaderJobFileOperations {
 
     switch (metric) {
 
-      case HISTOGRAM_CHISQR:
-      {
+      case HISTOGRAM_CHISQR: {
         final double diff = ImageUtil.compareHistograms(
             ImageUtil.getHistogram(reference.toString()),
             ImageUtil.getHistogram(variant.toString()));
@@ -120,15 +119,13 @@ public class ShaderJobFileOperations {
         comparisonValue = String.valueOf(diff);
         break;
       }
-      case PSNR:
-      {
+      case PSNR: {
         final double diff = ImageUtil.comparePSNR(reference, variant);
         result = (aboveThresholdIsInteresting ? diff > threshold : diff <= threshold);
         comparisonValue = String.valueOf(diff);
         break;
       }
-      case FUZZY_DIFF:
-      {
+      case FUZZY_DIFF: {
         try {
           FuzzyImageComparison.MainResult mainResult =
               FuzzyImageComparison.mainHelper(
