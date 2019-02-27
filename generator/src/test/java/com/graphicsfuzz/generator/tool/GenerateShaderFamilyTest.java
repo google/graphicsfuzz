@@ -146,6 +146,28 @@ public class GenerateShaderFamilyTest {
   }
 
   @Test
+  public void testGenerateSmallVulkanShaderFamilyWithReferencesAsDonors() throws Exception {
+    // This is designed to guard against bugs whereby donating 310 es features into a 310 es shader
+    // causes problems
+    final String samplesSubdir = "310es";
+    final String referenceShaderName = "squares";
+    final int numVariants = 3;
+    final int seed = 0;
+    final String reference = Paths.get(ToolPaths.getShadersDirectory(), "samples",
+        "310es", "squares.json").toString();
+    // Note that we are using the 310es samples as donors here.
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
+        "310es").toString();
+
+    final List<String> extraOptions = Arrays.asList(
+        "--stop-on-fail",
+        "--max-uniforms",
+        String.valueOf(10),
+        "--generate-uniform-bindings");
+    checkShaderFamilyGeneration(numVariants, seed, extraOptions, reference, donors);
+  }
+
+  @Test
   public void testIgnoreShaderTranslator() throws Exception {
     // shader_translator would reject this due to the non-constant array access; glslangValidator
     // accepts it.
