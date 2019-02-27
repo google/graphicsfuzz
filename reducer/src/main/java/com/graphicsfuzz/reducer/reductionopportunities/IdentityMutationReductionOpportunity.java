@@ -27,7 +27,8 @@ public final class IdentityMutationReductionOpportunity extends AbstractReductio
   private Expr childToReduce;
   private OpaqueFunctionType function;
 
-  IdentityMutationReductionOpportunity(IAstNode parent, Expr childToReduce, OpaqueFunctionType function,
+  IdentityMutationReductionOpportunity(IAstNode parent, Expr childToReduce,
+                                       OpaqueFunctionType function,
                                        VisitationDepth depth) {
     super(depth);
     this.parent = parent;
