@@ -29,6 +29,7 @@ import com.graphicsfuzz.server.thrift.CommandInfo;
 import com.graphicsfuzz.server.thrift.CommandResult;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
 import com.graphicsfuzz.server.thrift.WorkerInfo;
+import com.graphicsfuzz.server.thrift.WorkerNameNotFoundException;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -1401,11 +1402,11 @@ public class WebUi extends HttpServlet {
     try {
       fuzzerServiceManagerProxy.queueCommand(
           args.get(0) + ":" + shaderJobFilePath, args, worker, output + "/command.log");
+      reduceReference(shaderJobFilePath, worker);
       message = "Reduction started successfully!";
     } catch (TException exception) {
-      message = "Reduction failed (is worker live?):\\n" + exception.getMessage();
+      message = "Reduction failed (is worker live?):\\n" + exception;
     }
-    reduceReference(shaderJobFilePath, worker);
 
     html.setLength(0);
     htmlAppendLn("<script>\n",
@@ -1416,7 +1417,7 @@ public class WebUi extends HttpServlet {
     response.getWriter().println(html);
   }
 
-  private void reduceReference(String shaderJobFilePath, String worker) {
+  private void reduceReference(String shaderJobFilePath, String worker) throws TException {
     File shaderJobFile = new File(shaderJobFilePath);
     File referenceShaderJobFile;
     if (!shaderJobFile.getName().startsWith("reference")) {
@@ -1449,15 +1450,11 @@ public class WebUi extends HttpServlet {
     args.add(worker);
     args.add("--server");
     args.add("http://localhost:8080");
-    try {
-      fuzzerServiceManagerProxy.queueCommand(
-          "Reference Reduction: " + shaderset,
-          args,
-          worker,
-          new File(reductionDir, "command.log").toString());
-    } catch (TException exception) {
-      throw new RuntimeException(exception);
-    }
+    fuzzerServiceManagerProxy.queueCommand(
+        "Reference Reduction: " + shaderset,
+        args,
+        worker,
+        new File(reductionDir, "command.log").toString());
   }
 
   //POST - Link to clear a queue (worker or reduction)
