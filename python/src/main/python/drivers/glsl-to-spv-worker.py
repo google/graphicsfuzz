@@ -248,7 +248,8 @@ def do_image_job(args, image_job):
             json_file=json_file,
             output_dir=os.getcwd(),
             force=args.force,
-            is_android=(args.target == 'android'))
+            is_android=(args.target == 'android'),
+            skip_render=skip_render)
 
     if os.path.isfile(runspv.LOGFILE_NAME):
         with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
