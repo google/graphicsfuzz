@@ -139,7 +139,7 @@ Android and Linux builds are actively used; other platforms are tested less regu
 
 Required: [Android SDK and
 NDK](https://developer.android.com/studio/#command-tools).
-See our [continuous integration script](../build/travis/1-install-deps-travis.sh) for a fast way to install the correct versions from the command line.
+See [Android Notes](android-notes.md) for a fast way to install the correct versions from the command line.
 
 To build for Android:
 

@@ -18,13 +18,16 @@ to install missing packages and the Android NDK.
 
 **Alternatively**, you can install the exact configuration
 of the Android SDK and NDK that we use from the command line
-by following our
-[continuous integration script](../build/travis/1-install-deps-travis.sh);
-the download of the Android SDK starts about halfway down.
-You may need to set some environment variables as specified in the comments.
+by following our continuous integration scripts for the
+[SDK](../build/travis/install-android-sdk.sh) and
+[NDK](../build/travis/install-android-ndk.sh);
+these scripts install the development kits to the current directory,
+so you should run them from e.g. `${HOME}/android-sdk`
+and `${HOME}/android-ndk`, respectively.
+You may need to set some environment variables (e.g. `export ANDROID_HOST_PLATFORM=linux`) as hinted in the scripts.
 On Windows, you can use the Git Bash shell.
 
-Ensure that the `ANDROID_HOME=/path/to/android-sdk` and `ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle` environment variables are set.
+Ensure that the `ANDROID_HOME=/path/to/android-sdk` and `ANDROID_NDK_HOME=/path/to/android-ndk` environment variables are set.
 If using IntelliJ and/or Android Studio,
 you may need to open your IDE from the terminal depending on how
 you set the environment variables.
@@ -40,8 +43,6 @@ Android app to the server.
 
 > Tip: Recall that you must exit the gles worker app
 > using the back button, otherwise it will restart.
-
-> Tip: This section also applies to the Vulkan worker Android app.
 
 ### Using the hostname or IP address of the server
 
@@ -114,25 +115,12 @@ as described below.
 Once you have `adb` on your path,
 you can install apps using:
 
-`adb install myapp.apk`
+`adb install -g -r myapp.apk`
 
-If the app is already installed, you may get an error like:
+> `-g` grants the app its requested permissions.
+> 
+> `-r` replaces the application if it is already installed.
 
-`adb: failed to install myapp.apk: Failure [INSTALL_FAILED_ALREADY_EXISTS: Attempt to re-install com.example.myapp without first uninstalling.]`
-
-The app should still have installed correctly, but to be safe
-you can uninstall the app first, using:
-
-`adb uninstall com.example.myapp`
-
-Note that the package name (e.g. `com.example.myapp`) can be found in the error
-message.
-
-You can use the following one-liner to reinstall an APK
-(silencing the uninstall output,
-which can be quite verbose if the app is not already installed):
-
-`adb uninstall com.example.myapp >/dev/null 2>&1 ; adb install myapp.apk`
 
 ## Multiple devices plugged at the same time
 
