@@ -35,31 +35,24 @@ public class IdentityMutationReductionOpportunities
 
   @Override
   void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
-    if (!(parent instanceof Expr)) {
-      // TODO: the code was written for the case where 'parent' is an Expr, hence this bail-out.
-      // But it might be the case that things should work just fine if 'parent' is not an Expr.
-      // So this should be re-visited.
-      return;
-    }
-    final Expr parentExpr = (Expr) parent;
     if (MacroNames.isIdentity(child)) {
-      addOpportunity(new IdentityMutationReductionOpportunity(parentExpr, child,
+      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
                   OpaqueFunctionType.IDENTITY,
                   getVistitationDepth()));
     } else if (MacroNames.isZero(child)) {
-      addOpportunity(new IdentityMutationReductionOpportunity(parentExpr, child,
+      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
             OpaqueFunctionType.ZERO,
             getVistitationDepth()));
     } else if (MacroNames.isOne(child)) {
-      addOpportunity(new IdentityMutationReductionOpportunity(parentExpr, child,
+      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
             OpaqueFunctionType.ONE,
             getVistitationDepth()));
     } else if (MacroNames.isFalse(child)) {
-      addOpportunity(new IdentityMutationReductionOpportunity(parentExpr, child,
+      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
             OpaqueFunctionType.FALSE,
             getVistitationDepth()));
     } else if (MacroNames.isTrue(child)) {
-      addOpportunity(new IdentityMutationReductionOpportunity(parentExpr, child,
+      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
             OpaqueFunctionType.TRUE,
             getVistitationDepth()));
     }
