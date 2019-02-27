@@ -18,13 +18,16 @@ to install missing packages and the Android NDK.
 
 **Alternatively**, you can install the exact configuration
 of the Android SDK and NDK that we use from the command line
-by following our
-[continuous integration script](../build/travis/1-install-deps-travis.sh);
-the download of the Android SDK starts about halfway down.
-You may need to set some environment variables as specified in the comments.
+by following our continuous integration scripts for the
+[SDK](../build/travis/install-android-sdk.sh) and
+[NDK](../build/travis/install-android-ndk.sh);
+these scripts install the development kits to the current directory,
+so it is suggested to run them from e.g. `${HOME}/android-sdk`
+and `${HOME}/android-ndk`.
+You may need to set some environment variables (e.g. `export ANDROID_HOST_PLATFORM=linux`) as specified in the scripts.
 On Windows, you can use the Git Bash shell.
 
-Ensure that the `ANDROID_HOME=/path/to/android-sdk` and `ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle` environment variables are set.
+Ensure that the `ANDROID_HOME=/path/to/android-sdk` and `ANDROID_NDK_HOME=/path/to/android-ndk` environment variables are set.
 If using IntelliJ and/or Android Studio,
 you may need to open your IDE from the terminal depending on how
 you set the environment variables.
