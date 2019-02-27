@@ -70,25 +70,62 @@ def print(s):
     orig_print(s, flush=True)
 
 
-def subprocess_helper(cmd: List[str], check=False, timeout=None, stdout=None):
+def convert_and_print_stdout_stderr_returncode(result, verbose=False):
 
-    # Note: encoding= errors= are Python 3.6.
-    # We manually decode to utf-8 so we have full control.
+    print('RETURNCODE:' + str(result.returncode))
+
+    if result.stdout is not None:
+        result.stdout = result.stdout.decode(encoding='utf-8', errors='ignore')
+        if verbose:
+            print('STDOUT:')
+            print(result.stdout)
+            print('')
+    else:
+        if verbose:
+            print('STDOUT not captured.')
+
+    if result.stderr is not None:
+        result.stderr = result.stderr.decode(encoding='utf-8', errors='ignore')
+        if verbose:
+            print('STDERR:')
+            print(result.stderr)
+            print('')
+    else:
+        if verbose:
+            print('STDERR not captured.')
+
+
+def subprocess_helper(
+    cmd: List[str],
+    check=True,
+    timeout=None,
+    stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
+    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
+    verbose=False
+):
+
+    # We capture stdout and stderr by default so we have something to report if the command fails.
+
+    # Note: "encoding=" and "errors=" are Python 3.6.
+    # We manually decode to utf-8 instead of using "universal_newlines=" so we have full control.
     # text= is Python 3.6.
     # Do not use shell=True.
 
-    result = subprocess.run(
-        cmd,
-        check=check,
-        timeout=timeout,
-        stdout=stdout,
-    )
+    try:
+        print('Exec: ' + str(cmd))
 
-    if stdout == subprocess.PIPE:
-        if result.stdout is not None:
-            result.stdout = result.stdout.decode(encoding='utf-8', errors='ignore')
-        if result.stderr is not None:
-            result.stderr = result.stderr.decode(encoding='utf-8', errors='ignore')
+        result = subprocess.run(
+            cmd,
+            check=check,
+            timeout=timeout,
+            stdout=stdout,
+            stderr=stderr
+        )
+    except subprocess.CalledProcessError as ex:
+        convert_and_print_stdout_stderr_returncode(ex, verbose=verbose)
+        raise ex
+
+    convert_and_print_stdout_stderr_returncode(result, verbose=verbose)
 
     return result
 
@@ -186,7 +223,7 @@ def prepare_shader(output_dir: str, shader: Optional[str]):
             '-V', shader,
             '-o', result
         ]
-        subprocess_helper(cmd, timeout=TIMEOUT_RUN, check=True)
+        subprocess_helper(cmd, timeout=TIMEOUT_RUN)
     elif shader_basename.endswith('.asm'):
         result = os.path.join(output_dir, remove_end(shader_basename, '.asm') + '.spv')
         cmd = [
@@ -194,7 +231,7 @@ def prepare_shader(output_dir: str, shader: Optional[str]):
             shader,
             '-o', result
         ]
-        subprocess_helper(cmd, timeout=TIMEOUT_RUN, check=True)
+        subprocess_helper(cmd, timeout=TIMEOUT_RUN)
     elif shader_basename.endswith('.spv'):
         result = shader_basename
         shutil.copy(shader, result)
@@ -220,28 +257,26 @@ ANDROID_LEGACY_APP = 'com.graphicsfuzz.vkworker'
 TIMEOUT_APP = 30
 
 
-def adb_helper(adb_args: List[str], check, stdout: Union[None, int, IO[Any]]):
+def adb_helper(adb_args: List[str], check, stdout: Union[None, int, IO[Any]]=subprocess.PIPE):
     adb_cmd = ['adb'] + adb_args
 
     try:
-        p = subprocess_helper(
+        return subprocess_helper(
             adb_cmd,
             check=check,
             timeout=TIMEOUT_RUN,
             stdout=stdout,
         )
-        return p
-
     except subprocess.TimeoutExpired as err:
-        print('adb command timed out: ' + str(adb_cmd))
+        print('adb command timed out')
         raise err
 
 
-def adb_check(adb_args: List[str], stdout: Union[None, int, IO[Any]] = subprocess.PIPE):
+def adb_check(adb_args: List[str], stdout: Union[None, int, IO[Any]]=subprocess.PIPE):
     return adb_helper(adb_args, True, stdout)
 
 
-def adb_can_fail(adb_args: List[str], stdout: Union[None, int, IO[Any]] = subprocess.PIPE):
+def adb_can_fail(adb_args: List[str], stdout: Union[None, int, IO[Any]]=subprocess.PIPE):
     return adb_helper(adb_args, False, stdout)
 
 
@@ -516,8 +551,7 @@ def run_image_host_legacy(vert: str, frag: str, json_file: str, output_dir: str,
             subprocess_helper(
                 cmd,
                 timeout=TIMEOUT_RUN,
-                stdout=f,
-                check=True
+                stdout=f
             )
     except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
@@ -535,7 +569,7 @@ def dump_info_host_legacy():
     cmd = ['vkworker', '--info']
     status = 'SUCCESS'
     try:
-        subprocess_helper(cmd, timeout=TIMEOUT_RUN, check=True)
+        subprocess_helper(cmd, timeout=TIMEOUT_RUN)
     except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
     except subprocess.CalledProcessError:
@@ -571,7 +605,7 @@ def run_image_legacy(vert_spv, frag_spv, args):
 
 def spv_get_disassembly(shader_filename):
     cmd = [spirvdis_path(), shader_filename]
-    return subprocess_helper(cmd, check=True, stdout=subprocess.PIPE).stdout
+    return subprocess_helper(cmd).stdout
 
 
 def uniform_json_to_amberscript(uniform_json):
@@ -751,7 +785,7 @@ def run_image_amber(
         status = 'SUCCESS'
         try:
             with open_helper(logfile, 'w') as f:
-                subprocess_helper(cmd, timeout=TIMEOUT_RUN, check=True, stdout=f)
+                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f)
         except subprocess.TimeoutExpired:
             status = 'TIMEOUT'
         except subprocess.CalledProcessError:
@@ -994,7 +1028,7 @@ def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, i
         status = 'SUCCESS'
         try:
             with open_helper(logfile, 'w') as f:
-                subprocess_helper(cmd, timeout=TIMEOUT_RUN, check=True, stdout=f)
+                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f)
         except subprocess.TimeoutExpired:
             status = 'TIMEOUT'
         except subprocess.CalledProcessError:
