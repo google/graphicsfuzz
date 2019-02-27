@@ -233,7 +233,7 @@ def adb_helper(adb_args: List[str], check, stdout: Union[None, int, IO[Any]]):
         return p
 
     except subprocess.TimeoutExpired as err:
-        print('ERROR: adb command timed out: ' + err.cmd)
+        print('adb command timed out: ' + str(adb_cmd))
         raise err
 
 
