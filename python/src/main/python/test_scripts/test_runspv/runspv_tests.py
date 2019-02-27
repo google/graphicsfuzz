@@ -27,19 +27,23 @@ from typing import List, Tuple
 HERE = os.path.abspath(__file__)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(HERE))) + os.sep + "drivers")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(HERE))))
 
+import cmd_helpers
 import runspv
 
 
 #########################################
 # General helper functions
 
-def get_jar_dir():
-    # graphics-fuzz/python/drivers/
-    jar_dir = os.path.dirname(os.path.abspath(__file__))
-    for i in range(0, 6):
-        jar_dir = os.path.dirname(jar_dir)
-    return os.path.join(jar_dir, 'graphicsfuzz', 'target', 'graphicsfuzz', 'jar')
+def get_compute_test(json_filename: str) -> str:
+    return cmd_helpers.get_shaders_dir() + os.sep + 'testing' + os.sep + 'runspv' + os.sep + 'compute' + os.sep\
+           + json_filename
+
+
+def get_image_test(json_filename: str) -> str:
+    return cmd_helpers.get_shaders_dir() + os.sep + 'testing' + os.sep + 'runspv' + os.sep + 'image' + os.sep\
+           + json_filename
 
 
 def make_empty_json(path: pathlib2.Path, prefix: str = 'shader') -> pathlib2.Path:
@@ -79,7 +83,8 @@ def exact_image_match(image_file_1: pathlib2.Path, image_file_2: pathlib2.Path) 
 
 def fuzzy_image_match(image_file_1: PIL.Image, image_file_2: PIL.Image) -> bool:
     tolerance_parameters = '25 4 300 200 60 4 130 80'
-    cmd = 'java -ea -cp ' + get_jar_dir() + os.sep + 'tool-1.0.jar com.graphicsfuzz.tool.FuzzyImageComparisonTool '\
+    cmd = 'java -ea -cp ' + cmd_helpers.get_bin_jar_dirs()[1] + os.sep\
+          + 'tool-1.0.jar com.graphicsfuzz.tool.FuzzyImageComparisonTool '\
           + str(image_file_1) + ' ' + str(image_file_2) + ' ' + tolerance_parameters
     return subprocess.run(cmd, shell=True).returncode == 0
 
@@ -106,13 +111,11 @@ def check_images_match(tmp_path: pathlib2.Path, json: str, is_android_1: bool, i
     out_dir_1 = tmp_path / 'out_1'
     out_dir_2 = tmp_path / 'out_2'
 
-    args_1 = ['android' if is_android_1 else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
-                   + json, str(out_dir_1)]
+    args_1 = ['android' if is_android_1 else 'host', get_image_test(json), str(out_dir_1)]
     if not is_amber_1:
         args_1.append('--legacy-worker')
 
-    args_2 = ['android' if is_android_2 else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
-                   + json, str(out_dir_2)]
+    args_2 = ['android' if is_android_2 else 'host', get_image_test(json), str(out_dir_2)]
     if not is_amber_2:
         args_2.append('--legacy-worker')
 
@@ -147,8 +150,8 @@ def check_host_and_android_match_compute(tmp_path: pathlib2.Path, json: str):
     out_dir_host = tmp_path / 'out_legacy'
     out_dir_android = tmp_path / 'out_amber'
 
-    args_host = ['host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep + json, str(out_dir_host)]
-    args_android = ['android', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep + json, str(out_dir_android)]
+    args_host = ['host', get_compute_test(json), str(out_dir_host)]
+    args_android = ['android', get_compute_test(json), str(out_dir_android)]
     runspv.main_helper(args_host)
     runspv.main_helper(args_android)
     assert is_success(out_dir_host)
@@ -164,9 +167,7 @@ def check_host_and_android_match_compute(tmp_path: pathlib2.Path, json: str):
 
 def simple_compute(tmp_path: pathlib2.Path, is_android: bool):
     out_dir = tmp_path / 'out'
-    runspv.main_helper(['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
-                        + 'simple.json',
-                        str(out_dir)])
+    runspv.main_helper(['android' if is_android else 'host', get_compute_test('simple.json'), str(out_dir)])
     assert is_success(out_dir)
     ssbo_json = get_ssbo_json(out_dir)
     assert ssbo_json['ssbo'][0][0] == 42
@@ -174,9 +175,7 @@ def simple_compute(tmp_path: pathlib2.Path, is_android: bool):
 
 def red_image(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool):
     out_dir = tmp_path / 'out'
-    args = ['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
-            + 'image_test_0007.json',
-            str(out_dir)]
+    args = ['android' if is_android else 'host', get_image_test('image_test_0007.json'), str(out_dir)]
     if is_legacy_worker:
         args.append('--legacy-worker')
     runspv.main_helper(args)
@@ -192,8 +191,7 @@ def red_image(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool)
 
 def bubblesort_flag(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool):
     out_dir = tmp_path / 'out'
-    args = ['android' if is_android else 'host', os.path.dirname(HERE) + os.sep + 'shaders' + os.sep
-            + 'image_test_0002.json',
+    args = ['android' if is_android else 'host', get_image_test('image_test_0002.json'),
             str(out_dir)]
     if is_legacy_worker:
         args.append('--legacy-worker')

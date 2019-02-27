@@ -33,18 +33,35 @@ def get_bin_jar_dirs():
             return os.path.abspath(bin_dir), os.path.abspath(jar_dir)
         return None
 
+    # Perhaps we are running from the IDE.  Check this first, since the deployed files are likely also present if
+    #     # running from the IDE.
+    res = try_get_jar_bin_dirs(path(os.path.dirname(HERE), os.pardir, os.pardir, os.pardir, os.pardir, "graphicsfuzz",
+                                    "target", "graphicsfuzz"))
+    if res is not None:
+        return res
+
     # Perhaps we are running from the zip.
     res = try_get_jar_bin_dirs(path(os.path.dirname(HERE), os.pardir))
     if res is not None:
         return res
 
-    # Perhaps we are running from the IDE.
-    res = try_get_jar_bin_dirs(path(os.path.dirname(HERE), os.pardir, os.pardir, os.pardir,
-                                    os.pardir, "graphicsfuzz", "target", "graphicsfuzz"))
-    if res is not None:
-        return res
-
     raise Exception("Could not find bin and jar directories")
+
+
+def get_shaders_dir():
+
+    # Perhaps we are running from the IDE.  Check this first, since the deployed files are likely also present if
+    # running from the IDE.
+    res = path(os.path.dirname(HERE), os.pardir, os.pardir, os.pardir, os.pardir, "shaders", "src", "main", "glsl")
+    if os.path.isdir(res):
+        return os.path.abspath(res)
+
+    # Perhaps we are running from the zip.
+    res = path(os.path.dirname(HERE), os.pardir, "shaders")
+    if os.path.isdir(res):
+        return os.path.abspath(res)
+
+    raise Exception("Could not find shaders directory")
 
 
 def execute(cmd, verbose):
@@ -56,6 +73,7 @@ def execute(cmd, verbose):
     return {"returncode": proc.returncode,
             "stdout": validator_stdout,
             "stderr": validator_stderr}
+
 
 def validate_frag(frag_file, validator, verbose):
     cmd = [validator, frag_file]
