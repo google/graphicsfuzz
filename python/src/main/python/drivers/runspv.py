@@ -745,30 +745,35 @@ def run_image_amber(
     if is_android:
         prepare_device(force, False)
 
-        adb_check(['push', amberscript_file, ANDROID_DEVICE_GRAPHICSFUZZ_DIR])
+        adb_check([
+            'push',
+            amberscript_file,
+            ANDROID_DEVICE_GRAPHICSFUZZ_DIR
+        ])
 
-        # If the file exists at this stage, something has gone very wrong.
+        # If the output file exists at this stage, something has gone very wrong.
         adb_check([
             'shell',
             'test ! -e ' + device_image
         ])
 
-        # Call amber
         if skip_render:
             # -ps tells amber to stop after graphics pipeline creation
             flags = ' -ps '
         else:
             # -i tells amber to dump the framebuffer
             flags = ' -i ' + device_image
+
+        # Call amber.
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
-        cmd = ([
+        cmd = [
             'shell',
             # The following is a single string:
             'cd ' + ANDROID_DEVICE_DIR + ' && '
             './' + ANDROID_AMBER_NDK
             + flags
             + ' -d ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
-        ])
+        ]
 
         adb_check(['logcat', '-c'])
 
@@ -787,13 +792,17 @@ def run_image_amber(
             elif skip_render:
                 status = 'SUCCESS'
             else:
-                # It is a success only if we can retrieve the image
+                # It is a success only if we can retrieve the output image
                 if adb_can_fail([
                     'shell',
                     'test -f' + device_image
                 ]).returncode == 0:
                     status = 'SUCCESS'
-                    adb_check(['pull', device_image, png_image])
+                    adb_check([
+                        'pull',
+                        device_image,
+                        png_image
+                    ])
 
         # Grab log:
         with open_helper(logfile, 'a') as f:
@@ -988,7 +997,6 @@ def run_compute_amber(
     ssbo_binding = str(get_ssbo_binding(json_file))
 
     if is_android:
-
         prepare_device(force, False)
 
         # Prepare files on device.
@@ -998,19 +1006,21 @@ def run_compute_amber(
             ANDROID_DEVICE_GRAPHICSFUZZ_DIR
         ])
 
+        # If the output file exists at this stage, something has gone very wrong.
         device_ssbo = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/ssbo'
         adb_check([
             'shell',
-            'rm -f ' + device_ssbo
+            'test ! -e ' + device_ssbo
         ])
 
         flags = ' -d '
         if skip_render:
+            # -ps tells amber to stop after graphics pipeline creation
             flags += '-ps '
         else:
             flags += '-b ' + device_ssbo + ' -B ' + ssbo_binding + ' '
 
-        # Call amber
+        # Call amber.
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
         cmd = [
             'shell',
@@ -1026,7 +1036,8 @@ def run_compute_amber(
         status = 'UNEXPECTED_ERROR'
 
         try:
-            result = adb_can_fail(cmd)
+            with open_helper(logfile, 'w') as f:
+                result = adb_can_fail(cmd, stdout=f, stderr=subprocess.STDOUT)
         except subprocess.TimeoutExpired:
             result = None
             status = 'TIMEOUT'
@@ -1037,6 +1048,7 @@ def run_compute_amber(
             elif skip_render:
                 status = 'SUCCESS'
             else:
+                # It is a success only if we can retrieve the output ssbo
                 if adb_can_fail([
                     'shell',
                     'test -f' + device_ssbo
@@ -1049,8 +1061,9 @@ def run_compute_amber(
                     ])
 
         # Grab log:
-        with open_helper(logfile, 'w') as f:
+        with open_helper(logfile, 'a') as f:
             adb_check(['logcat', '-d'], stdout=f, stderr=subprocess.STDOUT)
+
     else:
         cmd = [tool_on_path('amber')]
         if skip_render:
@@ -1073,9 +1086,6 @@ def run_compute_amber(
 
         if status == 'SUCCESS':
             assert skip_render or os.path.isfile(ssbo_output)
-
-        with open_helper(logfile, 'a') as f:
-            f.write('\nSTATUS ' + status + '\n')
 
     if os.path.isfile(ssbo_output):
         ssbo_text_to_json(ssbo_output, ssbo_json, json_file)
