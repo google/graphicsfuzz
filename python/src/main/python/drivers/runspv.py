@@ -185,6 +185,14 @@ def spirvdis_path():
     return tool_on_path('spirv-dis')
 
 
+def adb_path():
+    if 'ANDROID_HOME' in os.environ:
+        adb = os.path.join(os.environ['ANDROID_HOME'], 'platform-tools', 'adb')
+        if os.path.isfile(adb):
+            return adb
+    tool_on_path('adb')
+
+
 def remove_end(str_in: str, str_end: str):
     assert str_in.endswith(str_end), 'Expected {} to end with {}'.format(str_in, str_end)
     return str_in[:-len(str_end)]
@@ -263,7 +271,7 @@ def adb_helper(
     stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
     verbose=False
 ):
-    adb_cmd = ['adb'] + adb_args
+    adb_cmd = [adb_path()] + adb_args
 
     try:
         return subprocess_helper(
