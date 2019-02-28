@@ -21,7 +21,7 @@ import shutil
 import subprocess
 import sys
 import time
-from typing import Optional
+from typing import Optional, List
 
 import runspv
 
@@ -137,7 +137,7 @@ def prepare_shaders(frag_file: str, frag_spv_file: str, vert_spv_file: Optional[
 ################################################################################
 
 
-def do_image_job(args, image_job):
+def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
     name = image_job.name
     if name.endswith('.frag'):
         name = remove_end(name, '.frag')
@@ -174,42 +174,49 @@ def do_image_job(args, image_job):
         res.status = tt.JobStatus.UNEXPECTED_ERROR
         return res
 
-    # Optimize
-    if args.spirvopt:
-        frag_spv_file, log, success = run_spirv_opt(frag_spv_file, args)
-        if not success:
-            res.status = tt.JobStatus.UNEXPECTED_ERROR
-            return res
-
     remove(png)
     remove(runspv.LOGFILE_NAME)
 
-    if args.legacy_worker:
-        if args.target == 'host':
-            runspv.run_image_host_legacy(
-                vert=vert_spv_file,
-                frag=frag_spv_file,
-                json_file=json_file,
-                output_dir=os.getcwd(),
-                skip_render=skip_render)
-        else:
-            assert args.target == 'android'
-            runspv.run_image_android_legacy(
-                vert=vert_spv_file,
-                frag=frag_spv_file,
-                json_file=json_file,
-                output_dir=os.getcwd(),
-                force=args.force,
-                skip_render=skip_render)
-    else:
-        runspv.run_image_amber(
-            vert=vert_spv_file,
-            frag=frag_spv_file,
-            json_file=json_file,
-            output_dir=os.getcwd(),
-            force=args.force,
-            is_android=(args.target == 'android'),
-            skip_render=skip_render)
+    # Set runspv logger. Use try-finally to clean up.
+
+    with open(runspv.LOGFILE_NAME, 'w', encoding='utf-8', errors='ignore') as f:
+        try:
+            runspv.log_to_file = f
+
+            if args.legacy_worker:
+                if args.target == 'host':
+                    runspv.run_image_host_legacy(
+                        vert_original=vert_spv_file,
+                        frag_original=frag_spv_file,
+                        json_file=json_file,
+                        output_dir=os.getcwd(),
+                        skip_render=skip_render,
+                        spirv_opt_args=spirv_opt_args,
+                    )
+                else:
+                    assert args.target == 'android'
+                    runspv.run_image_android_legacy(
+                        vert_original=vert_spv_file,
+                        frag_original=frag_spv_file,
+                        json_file=json_file,
+                        output_dir=os.getcwd(),
+                        force=args.force,
+                        skip_render=skip_render,
+                        spirv_opt_args=spirv_opt_args,
+                    )
+            else:
+                runspv.run_image_amber(
+                    vert_original=vert_spv_file,
+                    frag_original=frag_spv_file,
+                    json_file=json_file,
+                    output_dir=os.getcwd(),
+                    force=args.force,
+                    is_android=(args.target == 'android'),
+                    skip_render=skip_render,
+                    spirv_opt_args=spirv_opt_args,
+                )
+        finally:
+            runspv.log_to_file = None
 
     if os.path.isfile(runspv.LOGFILE_NAME):
         with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
@@ -252,7 +259,7 @@ def do_image_job(args, image_job):
 ################################################################################
 
 
-def do_compute_job(args, comp_job):
+def do_compute_job(args, comp_job, spirv_opt_args: Optional[List[str]]):
     ssbo = 'ssbo'
     tmpcomp = 'tmp.comp'
     tmpcompspv = 'tmp.comp.spv'
@@ -267,22 +274,25 @@ def do_compute_job(args, comp_job):
     res = tt.ImageJobResult()
     res.log = '#### Start compute shader\n\n'
 
-    if args.spirvopt:
-        tmpcompspv, log, success = run_spirv_opt(tmpcompspv, args)
-        res.log += log
-        if not success:
-            res.status = tt.JobStatus.UNEXPECTED_ERROR
-            return res
-
     assert not args.legacy_worker
-    runspv.run_compute_amber(
-        comp=tmpcompspv,
-        json_file=tmpjson,
-        output_dir=os.getcwd(),
-        force=args.force,
-        is_android=(args.target == 'android'),
-        skip_render=comp_job.skip_render
-    )
+
+    # Set runspv logger. Use try-finally to clean up.
+
+    with open(runspv.LOGFILE_NAME, 'w', encoding='utf-8', errors='ignore') as f:
+        try:
+            runspv.log_to_file = f
+
+            runspv.run_compute_amber(
+                comp_original=tmpcompspv,
+                json_file=tmpjson,
+                output_dir=os.getcwd(),
+                force=args.force,
+                is_android=(args.target == 'android'),
+                skip_render=comp_job.skip_render,
+                spirv_opt_args=spirv_opt_args,
+            )
+        finally:
+            runspv.log_to_file = None
 
     if os.path.isfile(runspv.LOGFILE_NAME):
         with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
@@ -408,7 +418,11 @@ def main():
 
     parser.add_argument(
         '--spirvopt',
-        help='Enable spirv-opt with these optimisation flags (e.g. --spirvopt=-O)')
+        help=(
+            'Enable spirv-opt with these optimization flags. '
+            'Multiple arguments should be space-separated. '
+            'E.g. --spirvopt="-O --merge-blocks"')
+    )
 
     parser.add_argument(
         '--local-shader-job',
@@ -416,6 +430,10 @@ def main():
              'server.')
 
     args = parser.parse_args()
+
+    spirv_args = None  # type: Optional[List[str]]
+    if args.spirvopt:
+        spirv_args = args.spirvopt.split()
 
     # Check the target is known.
     if not (args.target == 'android' or args.target == 'host'):
@@ -505,7 +523,7 @@ def main():
                 with open(shader_job_prefix + '.comp', 'r', encoding='utf-8', errors='ignore') as f:
                     fake_job.computeSource = f.read()
                 fake_job.computeInfo = fake_job.uniformsInfo
-            do_image_job(args, fake_job)
+            do_image_job(args, fake_job, spirv_args)
             return
 
         if not service:
@@ -531,11 +549,11 @@ def main():
 
                 if job.imageJob.computeSource:
                     print("#### Compute job: " + job.imageJob.name)
-                    job.imageJob.result = do_compute_job(args, job.imageJob)
+                    job.imageJob.result = do_compute_job(args, job.imageJob, spirv_args)
 
                 else:
                     print("#### Image job: " + job.imageJob.name)
-                    job.imageJob.result = do_image_job(args, job.imageJob)
+                    job.imageJob.result = do_image_job(args, job.imageJob, spirv_args)
 
                 print("Send back, results status: {}".format(job.imageJob.result.status))
                 service.jobDone(worker, job)
