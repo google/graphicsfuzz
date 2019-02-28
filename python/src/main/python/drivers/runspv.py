@@ -257,7 +257,12 @@ ANDROID_LEGACY_APP = 'com.graphicsfuzz.vkworker'
 TIMEOUT_APP = 30
 
 
-def adb_helper(adb_args: List[str], check, stdout: Union[None, int, IO[Any]]=subprocess.PIPE):
+def adb_helper(
+    adb_args: List[str],
+    check,
+    stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
+    verbose=False
+):
     adb_cmd = ['adb'] + adb_args
 
     try:
@@ -266,18 +271,27 @@ def adb_helper(adb_args: List[str], check, stdout: Union[None, int, IO[Any]]=sub
             check=check,
             timeout=TIMEOUT_RUN,
             stdout=stdout,
+            verbose=verbose
         )
     except subprocess.TimeoutExpired as err:
         print('adb command timed out')
         raise err
 
 
-def adb_check(adb_args: List[str], stdout: Union[None, int, IO[Any]]=subprocess.PIPE):
-    return adb_helper(adb_args, True, stdout)
+def adb_check(
+    adb_args: List[str],
+    stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
+    verbose=False
+):
+    return adb_helper(adb_args, True, stdout, verbose)
 
 
-def adb_can_fail(adb_args: List[str], stdout: Union[None, int, IO[Any]]=subprocess.PIPE):
-    return adb_helper(adb_args, False, stdout)
+def adb_can_fail(
+    adb_args: List[str],
+    stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
+    verbose=False
+):
+    return adb_helper(adb_args, False, stdout, verbose)
 
 
 def stay_awake_warning():
@@ -851,8 +865,14 @@ def comp_json_to_amberscript(comp_json):
     binding = j['buffer']['binding']
     offset = 0
     for field_info in j['buffer']['fields']:
-        result += 'ssbo ' + str(binding) + ' subdata ' + translate_type_for_amber(field_info['type']) + ' '\
-                  + str(offset)
+        result += (
+            'ssbo '
+            + str(binding)
+            + ' subdata '
+            + translate_type_for_amber(field_info['type'])
+            + ' '
+            + str(offset)
+        )
         for datum in field_info['data']:
             result += ' ' + str(datum)
             offset += 4
@@ -934,7 +954,14 @@ def get_ssbo_binding(comp_json):
     return binding
 
 
-def run_compute_amber(comp: str, json_file: str, output_dir: str, force: bool, is_android: bool, skip_render: bool):
+def run_compute_amber(
+    comp: str,
+    json_file: str,
+    output_dir: str,
+    force: bool,
+    is_android: bool,
+    skip_render: bool
+):
     assert os.path.isfile(comp)
     assert os.path.isfile(json_file)
 
