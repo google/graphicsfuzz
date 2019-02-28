@@ -58,6 +58,7 @@ TIMEOUT_RUN = 30
 NUM_RENDER = 3
 BUSY_WAIT_SLEEP_SLOW = 1.0
 BUSY_WAIT_SLEEP_FAST = 0.1
+AMBER_FENCE_TIMEOUT_MS = 60000
 
 ################################################################################
 # Common
@@ -699,29 +700,32 @@ def amberscriptify_image(vert, frag, uniform_json):
     Generates Amberscript representation of an image test
     """
 
-    script = '# Generated\n'
+    result = '# Generated\n\n'
 
-    script += '[require]\n'
-    script += 'fbsize 256 256\n'
+    result += '[require]\n'
+    result += 'fbsize 256 256\n\n'
+
+    result += '[require]\n'
+    result += 'fence_timeout ' + str(AMBER_FENCE_TIMEOUT_MS) + '\n\n'
 
     if vert:
-        script += '[vertex shader spirv]\n'
-        script += spv_get_disassembly(vert)
+        result += '[vertex shader spirv]\n'
+        result += spv_get_disassembly(vert)
     else:
-        script += '[vertex shader passthrough]\n'
-    script += '\n\n'
+        result += '[vertex shader passthrough]\n'
+    result += '\n\n'
 
-    script += '[fragment shader spirv]\n'
-    script += spv_get_disassembly(frag)
-    script += '\n\n'
+    result += '[fragment shader spirv]\n'
+    result += spv_get_disassembly(frag)
+    result += '\n\n'
 
-    script += '[test]\n'
-    script += '## Uniforms\n'
-    script += uniform_json_to_amberscript(uniform_json)
-    script += '\n'
-    script += 'draw rect -1 -1 2 2\n'
+    result += '[test]\n'
+    result += '## Uniforms\n'
+    result += uniform_json_to_amberscript(uniform_json)
+    result += '\n'
+    result += 'draw rect -1 -1 2 2\n'
 
-    return script
+    return result
 
 
 def run_image_amber(
@@ -917,6 +921,9 @@ def amberscriptify_comp(comp_spv: str, comp_json: str):
     """
 
     result = '# Generated\n'
+
+    result += '[require]\n'
+    result += 'fence_timeout ' + str(AMBER_FENCE_TIMEOUT_MS) + '\n\n'
 
     result += '[compute shader spirv]\n'
     result += spv_get_disassembly(comp_spv)
