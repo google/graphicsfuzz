@@ -157,10 +157,15 @@ def get_bin_dir():
 BIN_DIR = get_bin_dir()
 
 
+# A distinguished exception for the case where a tool is not on the path.
+class ToolNotOnPathError(Exception):
+    pass
+
+
 def tool_on_path(tool: str) -> str:
     result = shutil.which(tool)
     if result is None:
-        raise FileNotFoundError('Could not find {} on PATH. Please add to PATH.'.format(tool))
+        raise ToolNotOnPathError('Could not find {} on PATH. Please add to PATH.'.format(tool))
     return result
 
 
@@ -183,6 +188,15 @@ def spirvdis_path():
     if os.path.isfile(spirvas):
         return spirvas
     return tool_on_path('spirv-dis')
+
+
+def maybe_add_catchsegv(cmd: List[str]) -> None:
+    # Add catchsegv to cmd if it is available
+    try:
+        cmd.append(tool_on_path('catchsegv'))
+    except ToolNotOnPathError:
+        # Didn't find catchsegv on path; that's OK
+        pass
 
 
 def adb_path():
@@ -813,7 +827,9 @@ def run_image_amber(
             adb_check(['logcat', '-d'], stdout=f, stderr=subprocess.STDOUT)
 
     else:
-        cmd = [tool_on_path('amber')]
+        cmd = []
+        maybe_add_catchsegv(cmd)
+        cmd.append(tool_on_path('amber'))
         if skip_render:
             # -ps tells amber to stop after graphics pipeline creation
             cmd.append('-ps')
@@ -1069,7 +1085,9 @@ def run_compute_amber(
             adb_check(['logcat', '-d'], stdout=f, stderr=subprocess.STDOUT)
 
     else:
-        cmd = [tool_on_path('amber')]
+        cmd = []
+        maybe_add_catchsegv(cmd)
+        cmd.append(tool_on_path('amber'))
         if skip_render:
             cmd.append('-ps')
         else:
