@@ -269,6 +269,7 @@ def adb_helper(
     adb_args: List[str],
     check,
     stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
+    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
     verbose=False
 ):
     adb_cmd = [adb_path()] + adb_args
@@ -279,6 +280,7 @@ def adb_helper(
             check=check,
             timeout=TIMEOUT_RUN,
             stdout=stdout,
+            stderr=stderr,
             verbose=verbose
         )
     except subprocess.TimeoutExpired as err:
@@ -289,17 +291,19 @@ def adb_helper(
 def adb_check(
     adb_args: List[str],
     stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
+    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
     verbose=False
 ):
-    return adb_helper(adb_args, True, stdout, verbose)
+    return adb_helper(adb_args, True, stdout, stderr, verbose)
 
 
 def adb_can_fail(
     adb_args: List[str],
     stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
+    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
     verbose=False
 ):
-    return adb_helper(adb_args, False, stdout, verbose)
+    return adb_helper(adb_args, False, stdout, stderr, verbose)
 
 
 def stay_awake_warning():
@@ -464,7 +468,7 @@ def run_image_android_legacy(
     with open_helper(logfile, 'w') as f:
         adb_check(
             ['logcat', '-d'],
-            stdout=f
+            stdout=f, stderr=subprocess.STDOUT
         )
 
     # retrieve all files: the "/." is a special syntax to pull all files from the graphicsfuzz
@@ -573,7 +577,7 @@ def run_image_host_legacy(vert: str, frag: str, json_file: str, output_dir: str,
             subprocess_helper(
                 cmd,
                 timeout=TIMEOUT_RUN,
-                stdout=f
+                stdout=f, stderr=subprocess.STDOUT
             )
     except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
@@ -741,37 +745,43 @@ def run_image_amber(
     if is_android:
         prepare_device(force, False)
 
-        adb_check(['push', amberscript_file, ANDROID_DEVICE_GRAPHICSFUZZ_DIR])
+        adb_check([
+            'push',
+            amberscript_file,
+            ANDROID_DEVICE_GRAPHICSFUZZ_DIR
+        ])
 
-        # If the file exists at this stage, something has gone very wrong.
+        # If the output file exists at this stage, something has gone very wrong.
         adb_check([
             'shell',
             'test ! -e ' + device_image
         ])
 
-        # Call amber
         if skip_render:
             # -ps tells amber to stop after graphics pipeline creation
             flags = ' -ps '
         else:
             # -i tells amber to dump the framebuffer
             flags = ' -i ' + device_image
+
+        # Call amber.
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
-        cmd = ([
+        cmd = [
             'shell',
             # The following is a single string:
             'cd ' + ANDROID_DEVICE_DIR + ' && '
             './' + ANDROID_AMBER_NDK
             + flags
             + ' -d ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
-        ])
+        ]
 
         adb_check(['logcat', '-c'])
 
         status = 'UNEXPECTED_ERROR'
 
         try:
-            result = adb_can_fail(cmd)
+            with open_helper(logfile, 'w') as f:
+                result = adb_can_fail(cmd, stdout=f, stderr=subprocess.STDOUT)
         except subprocess.TimeoutExpired:
             result = None
             status = 'TIMEOUT'
@@ -782,17 +792,21 @@ def run_image_amber(
             elif skip_render:
                 status = 'SUCCESS'
             else:
-                # It is a success only if we can retrieve the image
+                # It is a success only if we can retrieve the output image
                 if adb_can_fail([
                     'shell',
                     'test -f' + device_image
                 ]).returncode == 0:
                     status = 'SUCCESS'
-                    adb_check(['pull', device_image, png_image])
+                    adb_check([
+                        'pull',
+                        device_image,
+                        png_image
+                    ])
 
         # Grab log:
-        with open_helper(logfile, 'w') as f:
-            adb_check(['logcat', '-d'], stdout=f)
+        with open_helper(logfile, 'a') as f:
+            adb_check(['logcat', '-d'], stdout=f, stderr=subprocess.STDOUT)
 
     else:
         cmd = [tool_on_path('amber')]
@@ -807,7 +821,7 @@ def run_image_amber(
         status = 'SUCCESS'
         try:
             with open_helper(logfile, 'w') as f:
-                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f)
+                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f, stderr=subprocess.STDOUT)
         except subprocess.TimeoutExpired:
             status = 'TIMEOUT'
         except subprocess.CalledProcessError:
@@ -815,9 +829,6 @@ def run_image_amber(
 
         if status == 'SUCCESS':
             assert skip_render or os.path.isfile(png_image)
-
-        with open_helper(logfile, 'a') as f:
-            f.write('\nSTATUS ' + status + '\n')
 
     with open_helper(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
@@ -986,7 +997,6 @@ def run_compute_amber(
     ssbo_binding = str(get_ssbo_binding(json_file))
 
     if is_android:
-
         prepare_device(force, False)
 
         # Prepare files on device.
@@ -996,19 +1006,21 @@ def run_compute_amber(
             ANDROID_DEVICE_GRAPHICSFUZZ_DIR
         ])
 
+        # If the output file exists at this stage, something has gone very wrong.
         device_ssbo = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/ssbo'
         adb_check([
             'shell',
-            'rm -f ' + device_ssbo
+            'test ! -e ' + device_ssbo
         ])
 
         flags = ' -d '
         if skip_render:
+            # -ps tells amber to stop after graphics pipeline creation
             flags += '-ps '
         else:
             flags += '-b ' + device_ssbo + ' -B ' + ssbo_binding + ' '
 
-        # Call amber
+        # Call amber.
         # Note the use of '/' rather than 'os.sep' in the command that will run under Android.
         cmd = [
             'shell',
@@ -1024,7 +1036,8 @@ def run_compute_amber(
         status = 'UNEXPECTED_ERROR'
 
         try:
-            result = adb_can_fail(cmd)
+            with open_helper(logfile, 'w') as f:
+                result = adb_can_fail(cmd, stdout=f, stderr=subprocess.STDOUT)
         except subprocess.TimeoutExpired:
             result = None
             status = 'TIMEOUT'
@@ -1035,6 +1048,7 @@ def run_compute_amber(
             elif skip_render:
                 status = 'SUCCESS'
             else:
+                # It is a success only if we can retrieve the output ssbo
                 if adb_can_fail([
                     'shell',
                     'test -f' + device_ssbo
@@ -1047,8 +1061,9 @@ def run_compute_amber(
                     ])
 
         # Grab log:
-        with open_helper(logfile, 'w') as f:
-            adb_check(['logcat', '-d'], stdout=f)
+        with open_helper(logfile, 'a') as f:
+            adb_check(['logcat', '-d'], stdout=f, stderr=subprocess.STDOUT)
+
     else:
         cmd = [tool_on_path('amber')]
         if skip_render:
@@ -1063,7 +1078,7 @@ def run_compute_amber(
         status = 'SUCCESS'
         try:
             with open_helper(logfile, 'w') as f:
-                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f)
+                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f, stderr=subprocess.STDOUT)
         except subprocess.TimeoutExpired:
             status = 'TIMEOUT'
         except subprocess.CalledProcessError:
@@ -1071,9 +1086,6 @@ def run_compute_amber(
 
         if status == 'SUCCESS':
             assert skip_render or os.path.isfile(ssbo_output)
-
-        with open_helper(logfile, 'a') as f:
-            f.write('\nSTATUS ' + status + '\n')
 
     if os.path.isfile(ssbo_output):
         ssbo_text_to_json(ssbo_output, ssbo_json, json_file)
