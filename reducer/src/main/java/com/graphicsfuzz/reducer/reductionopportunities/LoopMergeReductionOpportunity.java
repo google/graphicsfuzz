@@ -66,6 +66,7 @@ public class LoopMergeReductionOpportunity extends AbstractReductionOpportunity 
       return false;
     }
     if (!(firstLoop.getIncrement() instanceof UnaryExpr)) {
+      // Note: instanceof handles the case where there is no increment
       return false;
     }
     if (!(((UnaryExpr) firstLoop.getIncrement()).getExpr() instanceof VariableIdentifierExpr)) {

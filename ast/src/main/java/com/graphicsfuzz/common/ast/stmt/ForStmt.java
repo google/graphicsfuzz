@@ -59,7 +59,10 @@ public class ForStmt extends LoopStmt {
 
   @Override
   public ForStmt clone() {
-    return new ForStmt(init.clone(), getCondition().clone(), increment.clone(), getBody().clone());
+    return new ForStmt(init.clone(),
+        hasCondition() ? getCondition().clone() : null,
+        hasIncrement() ? increment.clone() : null,
+        getBody().clone());
   }
 
   @Override
