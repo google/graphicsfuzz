@@ -222,6 +222,35 @@ public class ReturnRemoverTest {
   }
 
   @Test
+  public void testReturnsRemovedEmptyFor() throws Exception {
+    final String program = "void foo() {"
+        + "  int i = 0;"
+        + "  for(;;) {"
+        + "    if (i > 5) {"
+        + "      return;"
+        + "    }"
+        + "    i++;"
+        + "  }"
+        + "}";
+    final String expected = "void foo() {"
+        + "  bool foo_has_returned = false;"
+        + "  int i = 0;"
+        + "  for(; (!foo_has_returned) && true; ) {"
+        + "    if (i > 5) {"
+        + "      foo_has_returned = true;"
+        + "    }"
+        + "    if (!foo_has_returned) {"
+        + "      i++;"
+        + "    }"
+        + "  }"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final FunctionDefinition fd = findFunctionDefinition(tu, "foo");
+    ReturnRemover.removeReturns(fd, ShadingLanguageVersion.ESSL_310);
+    CompareAstsDuplicate.assertEqualAsts(expected, tu);
+  }
+
+  @Test
   public void testNoReturnNoOp() throws Exception {
     final String program = "void foo() {"
           + "  int x = 2;"

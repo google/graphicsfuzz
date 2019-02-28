@@ -20,6 +20,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
@@ -93,6 +94,13 @@ public class ForStmtTest {
         .hasCondition());
     assertFalse(stmt
         .hasIncrement());
+  }
+
+  @Test
+  public void testCloneEmptyFor() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() { for (;;) ; }");
+    final TranslationUnit tu2 = tu.clone();
+    CompareAstsDuplicate.assertEqualAsts(tu, tu2);
   }
 
 }
