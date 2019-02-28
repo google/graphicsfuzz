@@ -99,6 +99,7 @@ public class WebUi extends HttpServlet {
     public ImageDifferenceResult summary = null;
     public ImageDifferenceResult histogram = null;
     public ImageDifferenceResult fuzzy = null;
+    public double histogramDistance = 0.0;
   }
 
   private final ShaderJobFileOperations fileOps;
@@ -225,12 +226,14 @@ public class WebUi extends HttpServlet {
     // Check if histogram metric thinks the images are different.
     if (metricsJson.has(histogramDistanceKey)) {
 
-      boolean different = metricsJson.get(histogramDistanceKey)
-          .getAsJsonPrimitive().getAsNumber().doubleValue() > histogramThreshold;
+      final double histogramDistance = metricsJson.get(histogramDistanceKey)
+          .getAsJsonPrimitive().getAsNumber().doubleValue();
+      boolean different = histogramDistance > histogramThreshold;
 
       result.histogram =
           different ? ImageDifferenceResult.DIFFERENT : ImageDifferenceResult.SIMILAR;
 
+      result.histogramDistance = histogramDistance;
       result.summary = result.histogram;
     }
 
@@ -902,27 +905,39 @@ public class WebUi extends HttpServlet {
       htmlAppendLn("<p>No image to display for this result status</p>");
     }
 
+    htmlAppendLn("<div class='ui divider'></div>");
+
     ImageDifferenceResultSet metricResults = getImageDiffResult(info);
 
+    if (metricResults.summary != ImageDifferenceResult.IDENTICAL && status.equals("SUCCESS")) {
+      htmlAppendLn(
+          "Image comparison metrics:",
+          "<ul>",
+          "<li>",
+          "Summary: ",
+          metricResults.summary.toString(),
+          "</li>",
+          "<li>",
+          "Fuzzy comparison: ",
+          metricResults.fuzzy != null ? metricResults.fuzzy.toString() : "No results",
+          "</li>",
+          "<li>",
+          "Histogram comparison: ",
+          metricResults.histogram != null
+              ? (
+                  metricResults.histogram.toString()
+                      + " (distance: " + metricResults.histogramDistance + ")"
+                )
+              : "No results",
+          "</li>",
+          "</ul>"
+      );
+    }
+
+
     htmlAppendLn(
-        "<div class='ui divider'></div>",
-        "Image comparison metrics:",
-        "<ul>",
-        "<li>",
-        "Summary: ",
-        metricResults.summary.toString(),
-        "</li>",
-        "<li>",
-        "Fuzzy comparison: ",
-        metricResults.fuzzy != null ? metricResults.fuzzy.toString() : "No results",
-        "</li>",
-        "<li>",
-        "Histogram comparison: ",
-        metricResults.histogram != null ? metricResults.histogram.toString() : "No results",
-        "</li>",
-        "</ul>",
         "<p>",
-        "<a href='/webui/file/", infoFile.toString(), "'>Full details</a>",
+        "<a href='/webui/file/", infoFile.toString(), "'>Raw data</a>",
         "</p>"
     );
 
