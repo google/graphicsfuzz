@@ -1895,7 +1895,6 @@ public class WebUi extends HttpServlet {
           "<a href='",
           cellHref,
           "'>", status.replace("_", " "), " ",
-          info.get("stage").getAsString().replace("_", " "),
           "</a>\n",
           "<div class='ui tiny ", reductionLabelColor(reductionStatus), " label'>",
           reductionStatus.toString(),
@@ -2114,7 +2113,6 @@ public class WebUi extends HttpServlet {
               "<a href='/webui/result/",
               refHref,
               "'>", refStatus.replace("_", " "), " ",
-              refInfo.get("stage").getAsString().replace("_", " "),
               "</a>\n");
         }
       } else {
