@@ -24,7 +24,8 @@ import time
 import platform
 import json
 import sys
-from typing import Any, IO, Optional, Union, List
+from typing import Any, IO, Optional, Union, List, Callable
+import io
 
 ################################################################################
 # Help messages for options that are duplicated elsewhere
@@ -64,47 +65,83 @@ TIMEOUT_SPIRV_OPT_SECONDS = 120
 ################################################################################
 # Common
 
+
 orig_print = print
 
 
 # noinspection PyShadowingBuiltins
-def print(s):
+def print():
     orig_print(s, flush=True)
 
 
-def convert_and_print_stdout_stderr_returncode(result, verbose=False):
+log_to_stdout = True
+log_to_file = None  # type: io.TextIOBase
 
-    print('RETURNCODE:' + str(result.returncode))
+
+class open_for_logging(object):
+    def __init__(self, file: str):
+        global log_to_file
+        self.file = open_helper(file, 'w')
+        log_to_file = self.file
+
+    def __enter__(self):
+        return self.file
+
+    def __exit__(self, type, value, traceback):
+        global log_to_file
+        log_to_file = None
+        self.file.close()
+
+
+def log(message: str) -> None:
+    if log_to_stdout:
+        print(message)
+    if log_to_file:
+        log_to_file.write(message)
+        log_to_file.flush()
+
+
+def log_stdout_stderr(
+    result: Union[
+        subprocess.CalledProcessError, subprocess.CompletedProcess, subprocess.TimeoutExpired],
+    log: Callable[[str], None],
+) -> None:
+
+    log('STDOUT:')
+    log(result.stdout)
+    log('')
+
+    log('STDERR:')
+    log(result.stderr)
+    log('')
+
+
+def log_returncode(
+    result: Union[
+        subprocess.CalledProcessError, subprocess.CompletedProcess, subprocess.TimeoutExpired],
+    log: Callable[[str], None],
+) -> None:
+    log('RETURNCODE: ' + str(result.returncode))
+
+
+def convert_stdout_stderr(
+    result: Union[
+        subprocess.CalledProcessError, subprocess.CompletedProcess, subprocess.TimeoutExpired]
+) -> None:
 
     if result.stdout is not None:
         result.stdout = result.stdout.decode(encoding='utf-8', errors='ignore')
-        if verbose:
-            print('STDOUT:')
-            print(result.stdout)
-            print('')
-    else:
-        if verbose:
-            print('STDOUT not captured.')
-
     if result.stderr is not None:
         result.stderr = result.stderr.decode(encoding='utf-8', errors='ignore')
-        if verbose:
-            print('STDERR:')
-            print(result.stderr)
-            print('')
-    else:
-        if verbose:
-            print('STDERR not captured.')
 
 
 def subprocess_helper(
     cmd: List[str],
+    log: Callable[[str], None],
     check=True,
     timeout=None,
-    stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
-    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
     verbose=False
-):
+) -> subprocess.CompletedProcess:
 
     assert cmd[0] is not None and isinstance(cmd[0], str)
 
@@ -116,20 +153,26 @@ def subprocess_helper(
     # Do not use shell=True.
 
     try:
-        print('Exec: ' + str(cmd))
+        log('Exec: ' + str(cmd))
 
         result = subprocess.run(
             cmd,
             check=check,
             timeout=timeout,
-            stdout=stdout,
-            stderr=stderr
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
-    except subprocess.CalledProcessError as ex:
-        convert_and_print_stdout_stderr_returncode(ex, verbose=verbose)
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as ex:
+        convert_stdout_stderr(ex)
+        log_returncode(ex, log)
+        log_stdout_stderr(ex, log)
         raise ex
 
-    convert_and_print_stdout_stderr_returncode(result, verbose=verbose)
+    convert_stdout_stderr(result)
+    log_returncode(result, log)
+
+    if verbose:
+        log_stdout_stderr(result, log)
 
     return result
 
@@ -224,47 +267,30 @@ def remove_end(str_in: str, str_end: str):
     return str_in[:-len(str_end)]
 
 
-def run_spirv_opt(spv_file: str, spirv_opt_args: str):
-    print("Running optimizer.")
-    spv_file_opt = spv_file + '.opt'
-    cmd = spirvopt_path() + ' ' + spirv_opt_args + ' ' + spv_file + ' -o ' + spv_file_opt
-    log = ''
+def run_spirv_opt(
+    spv_file: str,
+    log: Callable[[str], None],
+    spirv_opt_args: List[str]
+) -> str:
 
-    success = True
+    log('Running optimizer.')
 
-    try:
-        log += 'spirv-opt flags: ' + spirv_opt_args + '\n'
-        print('Calling spirv-opt with flags: ' + spirv_opt_args)
-        subprocess.run(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            universal_newlines=True, check=True, timeout=TIMEOUT_SPIRV_OPT_SECONDS)
-    except subprocess.CalledProcessError as err:
-        # spirv-opt failed
-        success = False
-        log += 'Error triggered by spirv-opt\n'
-        log += 'COMMAND:\n' + err.cmd + '\n'
-        log += 'RETURNCODE: ' + str(err.returncode) + '\n'
-        if err.stdout:
-            log += 'STDOUT:\n' + err.stdout + '\n'
-        if err.stderr:
-            log += 'STDERR:\n' + err.stderr + '\n'
-    except subprocess.TimeoutExpired as err:
-        success = False
-        # spirv-opt timed out
-        log += 'Timeout from spirv-opt\n'
-        log += 'COMMAND:\n' + err.cmd + '\n'
-        log += 'TIMEOUT: ' + str(err.timeout) + ' sec\n'
-        if err.stdout:
-            log += 'STDOUT:\n' + err.stdout + '\n'
-        if err.stderr:
-            log += 'STDERR:\n' + err.stderr + '\n'
+    spv_out_file = spv_file + '.spv'
 
-    # Return the name of the optimized file, and the error log.  If the error
-    # log is non-empty, the optimized file should be ignored.
-    return spv_file_opt, log, success
+    cmd = [spirvopt_path(), spv_file, '-o', spv_out_file]
+    cmd += spirv_opt_args
+
+    subprocess_helper(cmd, log, timeout=TIMEOUT_SPIRV_OPT_SECONDS)
+
+    return spv_out_file
 
 
-def prepare_shader(output_dir: str, shader: Optional[str], spirv_opt_args: Optional[str]):
+def prepare_shader(
+    output_dir: str,
+    shader: Optional[str],
+    spirv_opt_args: Optional[List[str]],
+    log: Callable[[str], None],
+):
     """
     Translates a shader to binary SPIR-V, and optionally optimizes it.
 
@@ -277,6 +303,8 @@ def prepare_shader(output_dir: str, shader: Optional[str], spirv_opt_args: Optio
     shader.comp.asm -> shader.comp.[opt].spv
     shader.spv -> shader.[opt].spv
 
+    :param log:
+    :param spirv_opt_args: spirv-opt arguments, if the shader should be optimized
     :param output_dir: output directory
     :param shader: e.g. shader.frag, shader.vert, shader.frag.asm
     :return: the resulting .spv file
@@ -298,7 +326,7 @@ def prepare_shader(output_dir: str, shader: Optional[str], spirv_opt_args: Optio
             '-V', shader,
             '-o', result
         ]
-        subprocess_helper(cmd, timeout=TIMEOUT_RUN)
+        subprocess_helper(cmd, log, timeout=TIMEOUT_RUN)
     elif shader_basename.endswith('.asm'):
         result = os.path.join(output_dir, remove_end(shader_basename, '.asm') + '.spv')
         cmd = [
@@ -306,7 +334,7 @@ def prepare_shader(output_dir: str, shader: Optional[str], spirv_opt_args: Optio
             shader,
             '-o', result
         ]
-        subprocess_helper(cmd, timeout=TIMEOUT_RUN)
+        subprocess_helper(cmd, log, timeout=TIMEOUT_RUN)
     elif shader_basename.endswith('.spv'):
         result = shader_basename
         shutil.copy(shader, result)
@@ -316,7 +344,7 @@ def prepare_shader(output_dir: str, shader: Optional[str], spirv_opt_args: Optio
     assert len(result) > 0
 
     if spirv_opt_args:
-        pass  # TODO: call run spirv-opt from here
+        run_spirv_opt(result, log, spirv_opt_args)
 
     return result
 
@@ -337,43 +365,38 @@ TIMEOUT_APP = 30
 
 def adb_helper(
     adb_args: List[str],
-    check,
-    stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
-    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
-    verbose=False
-):
+    log: Callable[[str], None],
+    check: bool,
+    verbose: bool=False
+) -> subprocess.CompletedProcess:
+
     adb_cmd = [adb_path()] + adb_args
 
-    try:
-        return subprocess_helper(
-            adb_cmd,
-            check=check,
-            timeout=TIMEOUT_RUN,
-            stdout=stdout,
-            stderr=stderr,
-            verbose=verbose
-        )
-    except subprocess.TimeoutExpired as err:
-        print('adb command timed out')
-        raise err
+    return subprocess_helper(
+        adb_cmd,
+        log=log,
+        check=check,
+        timeout=TIMEOUT_RUN,
+        verbose=verbose
+    )
 
 
 def adb_check(
     adb_args: List[str],
-    stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
-    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
-    verbose=False
-):
-    return adb_helper(adb_args, True, stdout, stderr, verbose)
+    log: Callable[[str], None],
+    verbose: bool=False
+) -> subprocess.CompletedProcess:
+
+    return adb_helper(adb_args, log=log, check=True, verbose=verbose)
 
 
 def adb_can_fail(
     adb_args: List[str],
-    stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
-    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
-    verbose=False
-):
-    return adb_helper(adb_args, False, stdout, stderr, verbose)
+    log: Callable[[str], None],
+    verbose: bool=False
+) -> subprocess.CompletedProcess:
+
+    return adb_helper(adb_args, log=log, check=False, verbose=verbose)
 
 
 def stay_awake_warning():
@@ -400,8 +423,12 @@ def is_screen_off_or_locked():
     return False
 
 
-def prepare_device(wait_for_screen: bool, using_legacy_worker: bool):
-    adb_check(['logcat', '-c'])
+def prepare_device(
+    wait_for_screen: bool,
+    using_legacy_worker: bool,
+    log: Callable[[str], None],
+) -> None:
+    adb_check(['logcat', '-c'], log=log)
 
     if using_legacy_worker:
         # If the legacy worker is being used, give it the right permissions, stop it if already
@@ -409,29 +436,29 @@ def prepare_device(wait_for_screen: bool, using_legacy_worker: bool):
         adb_check([
             'shell',
             'pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE'
-        ])
+        ], log=log)
         adb_check([
             'shell',
             'pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE'
-        ])
+        ], log=log)
         adb_can_fail([
             'shell',
             'am force-stop ' + ANDROID_LEGACY_APP
-        ])
+        ], log=log)
         adb_can_fail([
             'shell',
             'rm -rf ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR
-        ])
+        ], log=log)
         adb_check([
             'shell',
             'mkdir -p ' + ANDROID_SDCARD_GRAPHICSFUZZ_DIR
-        ])
+        ], log=log)
     else:
-        res = adb_can_fail(['shell', 'test -e ' + ANDROID_DEVICE_AMBER])
+        res = adb_can_fail(['shell', 'test -e ' + ANDROID_DEVICE_AMBER], log=log)
         if res.returncode != 0:
             raise AssertionError('Failed to find amber on device at: ' + ANDROID_DEVICE_AMBER)
-        adb_can_fail(['shell', 'rm -rf ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR])
-        adb_check(['shell', 'mkdir -p ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR])
+        adb_can_fail(['shell', 'rm -rf ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR], log=log)
+        adb_check(['shell', 'mkdir -p ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR], log=log)
 
     if wait_for_screen:
         stay_awake_warning()
@@ -448,27 +475,30 @@ def prepare_device(wait_for_screen: bool, using_legacy_worker: bool):
 
 
 def run_image_android_legacy(
-        vert_original: str,
-        frag_original: str,
-        json_file: str,
-        output_dir: str,
-        force: bool,
-        skip_render: bool):
+    vert_original: str,
+    frag_original: str,
+    json_file: str,
+    output_dir: str,
+    force: bool,
+    skip_render: bool,
+    spirv_opt_args: Optional[List[str]],
+    log: Callable[[str], None],
+) -> None:
+
     assert os.path.isfile(vert_original)
     assert os.path.isfile(frag_original)
     assert os.path.isfile(json_file)
 
-    vert = prepare_shader(output_dir, vert_original)
-    frag = prepare_shader(output_dir, frag_original)
+    vert = prepare_shader(output_dir, vert_original, spirv_opt_args, log)
+    frag = prepare_shader(output_dir, frag_original, spirv_opt_args, log)
 
-    logfile = os.path.join(output_dir, LOGFILE_NAME)
-    statusfile = os.path.join(output_dir, 'STATUS')
+    status_file = os.path.join(output_dir, 'STATUS')
 
-    prepare_device(not force, True)
+    prepare_device(not force, True, log=log)
 
-    adb_check(['push', vert, ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.vert.spv'])
-    adb_check(['push', frag, ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.frag.spv'])
-    adb_check(['push', json_file, ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.json'])
+    adb_check(['push', vert, ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.vert.spv'], log=log)
+    adb_check(['push', frag, ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.frag.spv'], log=log)
+    adb_check(['push', json_file, ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/test.json'], log=log)
 
     # Build app args.
     flags = '--num-render {}'.format(NUM_RENDER)
@@ -577,7 +607,7 @@ def run_image_android_legacy(
         if status == 'UNEXPECTED_ERROR':
             f.write('\n App did not start?\n')
 
-    with open_helper(statusfile, 'w') as f:
+    with open_helper(status_file, 'w') as f:
         f.write(status)
 
     if status != 'SUCCESS':
@@ -621,11 +651,16 @@ def dump_info_android_legacy(wait_for_screen):
     ])
 
 
-def run_image_host_legacy(vert_original: str,
-                          frag_original: str,
-                          json_file: str,
-                          output_dir: str,
-                          skip_render: bool):
+def run_image_host_legacy(
+    vert_original: str,
+    frag_original: str,
+    json_file: str,
+    output_dir: str,
+    skip_render: bool,
+    spirv_opt_args: Optional[List[str]],
+    log: Callable[[str], None],
+) -> None:
+
     assert os.path.isfile(vert_original)
     assert os.path.isfile(frag_original)
     assert os.path.isfile(json_file)
@@ -685,7 +720,13 @@ def dump_info_host_legacy():
         f.write(status)
 
 
-def run_image_legacy(vert_original: str, frag_original: str, args: argparse.Namespace) -> None:
+def run_image_legacy(
+    vert_original: str,
+    frag_original: str,
+    args: argparse.Namespace,
+    spirv_opt_args: Optional[List[str]],
+    log: Callable[[str], None],
+) -> None:
     if args.target == 'android':
         run_image_android_legacy(
             vert_original=vert_original,
@@ -693,7 +734,10 @@ def run_image_legacy(vert_original: str, frag_original: str, args: argparse.Name
             json_file=args.json,
             output_dir=args.output_dir,
             force=args.force,
-            skip_render=args.skip_render)
+            skip_render=args.skip_render,
+            spirv_opt_args=spirv_opt_args,
+            log=log,
+        )
 
         return
     assert args.target == 'host'
@@ -702,7 +746,10 @@ def run_image_legacy(vert_original: str, frag_original: str, args: argparse.Name
         frag_original=frag_original,
         json_file=args.json,
         output_dir=args.output_dir,
-        skip_render=args.skip_render)
+        skip_render=args.skip_render,
+        spirv_opt_args=spirv_opt_args,
+        log=log,
+    )
 
 
 ################################################################################
@@ -1074,17 +1121,19 @@ def run_compute_amber(
     output_dir: str,
     force: bool,
     is_android: bool,
-    skip_render: bool
-):
+    skip_render: bool,
+    spirv_opt_args: Optional[List[str]],
+    log: Callable[[str], None],
+) -> None:
     assert os.path.isfile(comp_original)
     assert os.path.isfile(json_file)
-    comp = prepare_shader(output_dir, comp_original)
 
     amberscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
     ssbo_output = os.path.join(output_dir, 'ssbo')
     ssbo_json = os.path.join(output_dir, SSBO_JSON_FILENAME)
-    logfile = os.path.join(output_dir, LOGFILE_NAME)
-    statusfile = os.path.join(output_dir, 'STATUS')
+    status_file = os.path.join(output_dir, 'STATUS')
+
+    comp = prepare_shader(output_dir, comp_original, spirv_opt_args, log=log)
 
     with open_helper(amberscript_file, 'w') as f:
         f.write(amberscriptify_comp(comp, json_file))
@@ -1093,21 +1142,21 @@ def run_compute_amber(
     ssbo_binding = str(get_ssbo_binding(json_file))
 
     if is_android:
-        prepare_device(force, False)
+        prepare_device(force, False, log=log)
 
         # Prepare files on device.
         adb_check([
             'push',
             amberscript_file,
-            ANDROID_DEVICE_GRAPHICSFUZZ_DIR
-        ])
+            ANDROID_DEVICE_GRAPHICSFUZZ_DIR,
+        ], log=log)
 
         # If the output file exists at this stage, something has gone very wrong.
         device_ssbo = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/ssbo'
         adb_check([
             'shell',
             'test ! -e ' + device_ssbo
-        ])
+        ], log=log)
 
         flags = ' -d '
         if skip_render:
@@ -1127,13 +1176,12 @@ def run_compute_amber(
             + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
         ]
 
-        adb_check(['logcat', '-c'])
+        adb_check(['logcat', '-c'], log=log)
 
         status = 'UNEXPECTED_ERROR'
 
         try:
-            with open_helper(logfile, 'w') as f:
-                result = adb_can_fail(cmd, stdout=f, stderr=subprocess.STDOUT)
+            result = adb_can_fail(cmd, log=log, verbose=True)
         except subprocess.TimeoutExpired:
             result = None
             status = 'TIMEOUT'
@@ -1148,17 +1196,16 @@ def run_compute_amber(
                 if adb_can_fail([
                     'shell',
                     'test -f' + device_ssbo
-                ]).returncode == 0:
+                ], log=log).returncode == 0:
                     status = 'SUCCESS'
                     adb_check([
                         'pull',
                         device_ssbo,
                         ssbo_output
-                    ])
+                    ], log=log)
 
-        # Grab log:
-        with open_helper(logfile, 'a') as f:
-            adb_check(['logcat', '-d'], stdout=f, stderr=subprocess.STDOUT)
+        # Grab logcat:
+        adb_check(['logcat', '-d'], log=log, verbose=True)
 
     else:
         cmd = []
@@ -1175,8 +1222,7 @@ def run_compute_amber(
 
         status = 'SUCCESS'
         try:
-            with open_helper(logfile, 'w') as f:
-                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f, stderr=subprocess.STDOUT)
+            subprocess_helper(cmd, timeout=TIMEOUT_RUN, log=log, verbose=True)
         except subprocess.TimeoutExpired:
             status = 'TIMEOUT'
         except subprocess.CalledProcessError:
@@ -1188,10 +1234,9 @@ def run_compute_amber(
     if os.path.isfile(ssbo_output):
         ssbo_text_to_json(ssbo_output, ssbo_json, json_file)
 
-    with open_helper(logfile, 'a') as f:
-        f.write('\nSTATUS ' + status + '\n')
+    log('\nSTATUS ' + status + '\n')
 
-    with open_helper(statusfile, 'w') as f:
+    with open_helper(status_file, 'w') as f:
         f.write(status)
 
 
@@ -1256,6 +1301,13 @@ def main_helper(args):
     parser.add_argument('--legacy-worker', action='store_true', help=LEGACY_OPTION_HELP)
     parser.add_argument('--skip-render', action='store_true', help=SKIP_RENDER_OPTION_HELP)
     parser.add_argument('--force', action='store_true', help=FORCE_OPTION_HELP)
+    parser.add_argument(
+        '--spirvopt',
+        help=(
+            'Enable spirv-opt with these optimization flags. '
+            'Multiple arguments should be space-separated. '
+            'E.g. --spirvopt="-O --merge-blocks"')
+    )
 
     args = parser.parse_args(args)
 
@@ -1298,7 +1350,9 @@ def main_helper(args):
         fragment_shader_file = pick_shader_format(shader_prefix, 'frag')
     elif some_shader_format_exists(shader_prefix, 'frag'):
         if args.legacy_worker:
-            raise ValueError('Fragment shader requires accompanying vertex shader when legacy worker is used')
+            raise ValueError(
+                'Fragment shader requires accompanying vertex shader when legacy worker is used'
+            )
         # Because Amber has a pass through option, we can do without a vertex shader
         compute_shader_file = None
         vertex_shader_file = None
@@ -1316,36 +1370,61 @@ def main_helper(args):
     if args.serial:
         os.environ['ANDROID_SERIAL'] = args.serial
 
-    if compute_shader_file:
-        assert not vertex_shader_file
-        assert not fragment_shader_file
-        assert not args.legacy_worker
-        run_compute_amber(
-            comp_original=compute_shader_file,
-            json_file=args.json,
-            output_dir=args.output_dir,
-            force=args.force,
-            is_android=(args.target == 'android'),
-            skip_render=args.skip_render)
-        return
+    logfile = os.path.join(args.output_dir, LOGFILE_NAME)
 
-    assert vertex_shader_file or not args.legacy_worker
-    assert fragment_shader_file
+    with open_for_logging(logfile) as f:
 
-    if args.legacy_worker:
-        run_image_legacy(vert_original=vertex_shader_file,
-                         frag_original=fragment_shader_file,
-                         args=args)
-        return
+        # This log function ensure we print to stdout and log to the logfile.
+        def log_func(message: str) -> None:
+            print(message)
+            f.write(message)
+            f.write('\n')
+            f.flush()
 
-    run_image_amber(
-        vert_original=vertex_shader_file,
-        frag_original=fragment_shader_file,
-        json_file=args.json,
-        output_dir=args.output_dir,
-        force=args.force,
-        is_android=(args.target == 'android'),
-        skip_render=args.skip_render)
+        try:
+
+            if compute_shader_file:
+                assert not vertex_shader_file
+                assert not fragment_shader_file
+                assert not args.legacy_worker
+                run_compute_amber(
+                    comp_original=compute_shader_file,
+                    json_file=args.json,
+                    output_dir=args.output_dir,
+                    force=args.force,
+                    is_android=(args.target == 'android'),
+                    skip_render=args.skip_render,
+                    log=log_func,
+                    spirv_opt_args=args.spirvopt
+                )
+                return
+
+            assert vertex_shader_file or not args.legacy_worker
+            assert fragment_shader_file
+
+            if args.legacy_worker:
+                run_image_legacy(
+                    vert_original=vertex_shader_file,
+                    frag_original=fragment_shader_file,
+                    args=args,
+                    spirv_opt_args=args.spirvopt.spit(),
+                    log=log_func,
+                )
+                return
+
+            run_image_amber(
+                vert_original=vertex_shader_file,
+                frag_original=fragment_shader_file,
+                json_file=args.json,
+                output_dir=args.output_dir,
+                force=args.force,
+                is_android=(args.target == 'android'),
+                skip_render=args.skip_render,
+                spirv_opt_args=args.spirvopt.spit(),
+                log=log_func,
+            )
+        except subprocess.CalledProcessError as ex:
+
 
 
 if __name__ == '__main__':
