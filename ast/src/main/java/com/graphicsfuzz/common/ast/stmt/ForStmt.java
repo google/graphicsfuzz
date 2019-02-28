@@ -31,10 +31,7 @@ public class ForStmt extends LoopStmt {
     this.increment = increment;
   }
 
-  /**
-   * Reports whether a condition for the loop is present (it is not in e.g. "for(init; ; inc)"
-   * @return Whether condition is present.
-   */
+  @Override
   public boolean hasCondition() {
     return getCondition() != null;
   }

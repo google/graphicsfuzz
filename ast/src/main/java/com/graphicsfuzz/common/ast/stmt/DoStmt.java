@@ -26,6 +26,11 @@ public class DoStmt extends LoopStmt {
   }
 
   @Override
+  public boolean hasCondition() {
+    return true;
+  }
+
+  @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitDoStmt(this);
   }
