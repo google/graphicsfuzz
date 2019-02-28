@@ -1084,4 +1084,37 @@ public class ReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts("#version 310 es\nvoid main() { }", tu);
   }
 
+  @Test
+  public void testReductionOpportunitiesOnEmptyForLoops() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 310 es\n"
+        + "precision highp float;\n"
+        + "void main() {"
+        + "  for(int i1 = 0;;) {"
+        + "    for(int i2 = 0;;) {"
+        + "      for(;;) {"
+        + "        for(int i3 = 0;;) {"
+        + "          x++;"
+        + "          if (x > 10) break;"
+        + "        }"
+        + "        for(int i3 = 0;;) {"
+        + "          x++;"
+        + "          if (x > 10) break;"
+        + "        }"
+        + "        x++;"
+        + "        if(x > 20) break;"
+        + "      }"
+        + "      x++;"
+        + "      if(x > 30) break;"
+        + "    }"
+        + "    x++;"
+        + "    if(x > 40) break;"
+        + "  };"
+        + "}");
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
+            ShadingLanguageVersion.GLSL_440,
+            new RandomWrapper(0), new IdGenerator(), true), fileOps);
+    ops.forEach(IReductionOpportunity::applyReduction);
+  }
+
 }

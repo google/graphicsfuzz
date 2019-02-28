@@ -124,6 +124,7 @@ public class SplitForLoopMutation implements Mutation {
     // We need the loop increment to be ++ or --.  First, check that it is a unary expression
     Expr increment = forStmt.getIncrement();
     if (!(increment instanceof UnaryExpr)) {
+      // Note: instanceof handles the case where there is no increment
       return Optional.empty();
     }
 

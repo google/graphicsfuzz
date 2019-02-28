@@ -38,6 +38,12 @@ public abstract class LoopStmt extends Stmt {
     this.body = body;
   }
 
+  /**
+   * Reports whether a condition for the loop is present (it is not in e.g. "for(init; ; inc)"
+   * @return Whether condition is present.
+   */
+  public abstract boolean hasCondition();
+
   public final Expr getCondition() {
     return condition;
   }

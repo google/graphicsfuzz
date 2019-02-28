@@ -134,7 +134,9 @@ public class ReturnRemover {
           loopStmt.setCondition(
                 new BinaryExpr(
                       new ParenExpr(new UnaryExpr(makeHasReturned(), UnOp.LNOT)),
-                      loopStmt.getCondition(), BinOp.LAND));
+                      loopStmt.hasCondition() ? loopStmt.getCondition() :
+                          new BoolConstantExpr(true),
+                    BinOp.LAND));
         }
       }
 
