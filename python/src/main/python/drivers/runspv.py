@@ -396,15 +396,18 @@ def prepare_device(wait_for_screen: bool, using_legacy_worker: bool):
 
 
 def run_image_android_legacy(
-        vert: str,
-        frag: str,
+        vert_original: str,
+        frag_original: str,
         json_file: str,
         output_dir: str,
         force: bool,
         skip_render: bool):
-    assert os.path.isfile(vert)
-    assert os.path.isfile(frag)
+    assert os.path.isfile(vert_original)
+    assert os.path.isfile(frag_original)
     assert os.path.isfile(json_file)
+
+    vert = prepare_shader(output_dir, vert_original)
+    frag = prepare_shader(output_dir, frag_original)
 
     logfile = os.path.join(output_dir, LOGFILE_NAME)
     statusfile = os.path.join(output_dir, 'STATUS')
@@ -566,10 +569,17 @@ def dump_info_android_legacy(wait_for_screen):
     ])
 
 
-def run_image_host_legacy(vert: str, frag: str, json_file: str, output_dir: str, skip_render: bool):
-    assert os.path.isfile(vert)
-    assert os.path.isfile(frag)
+def run_image_host_legacy(vert_original: str,
+                          frag_original: str,
+                          json_file: str,
+                          output_dir: str,
+                          skip_render: bool):
+    assert os.path.isfile(vert_original)
+    assert os.path.isfile(frag_original)
     assert os.path.isfile(json_file)
+
+    vert = prepare_shader(output_dir, vert_original)
+    frag = prepare_shader(output_dir, frag_original)
 
     logfile = os.path.join(output_dir, LOGFILE_NAME)
     statusfile = os.path.join(output_dir, 'STATUS')
@@ -623,11 +633,11 @@ def dump_info_host_legacy():
         f.write(status)
 
 
-def run_image_legacy(vert_spv, frag_spv, args):
+def run_image_legacy(vert_original: str, frag_original: str, args: argparse.Namespace) -> None:
     if args.target == 'android':
         run_image_android_legacy(
-            vert=vert_spv,
-            frag=frag_spv,
+            vert_original=vert_original,
+            frag_original=frag_original,
             json_file=args.json,
             output_dir=args.output_dir,
             force=args.force,
@@ -636,8 +646,8 @@ def run_image_legacy(vert_spv, frag_spv, args):
         return
     assert args.target == 'host'
     run_image_host_legacy(
-        vert=vert_spv,
-        frag=frag_spv,
+        vert_original=vert_original,
+        frag_original=frag_original,
         json_file=args.json,
         output_dir=args.output_dir,
         skip_render=args.skip_render)
@@ -746,17 +756,20 @@ def amberscriptify_image(vert, frag, uniform_json):
 
 
 def run_image_amber(
-        vert: str,
-        frag: str,
+        vert_original: str,
+        frag_original: str,
         json_file: str,
         output_dir: str,
         force: bool,
         is_android: bool,
         skip_render: bool):
     # The vertex shader is optional; passthrough will be used if it is not present
-    assert not vert or os.path.isfile(vert)
-    assert os.path.isfile(frag)
+    assert not vert_original or os.path.isfile(vert_original)
+    assert os.path.isfile(frag_original)
     assert os.path.isfile(json_file)
+
+    frag = prepare_shader(output_dir, frag_original)
+    vert = prepare_shader(output_dir, vert_original) if vert_original else None
 
     amberscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
     logfile = os.path.join(output_dir, LOGFILE_NAME)
@@ -1004,15 +1017,16 @@ def get_ssbo_binding(comp_json):
 
 
 def run_compute_amber(
-    comp: str,
+    comp_original: str,
     json_file: str,
     output_dir: str,
     force: bool,
     is_android: bool,
     skip_render: bool
 ):
-    assert os.path.isfile(comp)
+    assert os.path.isfile(comp_original)
     assert os.path.isfile(json_file)
+    comp = prepare_shader(output_dir, comp_original)
 
     amberscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
     ssbo_output = os.path.join(output_dir, 'ssbo')
@@ -1247,12 +1261,6 @@ def main_helper(args):
     if not os.path.isdir(args.output_dir):
         os.makedirs(args.output_dir)
 
-    # Copy the shaders into the output directory, turning them into SPIR-V binary format first if
-    # needed.
-    compute_shader_file = prepare_shader(args.output_dir, compute_shader_file)
-    vertex_shader_file = prepare_shader(args.output_dir, vertex_shader_file)
-    fragment_shader_file = prepare_shader(args.output_dir, fragment_shader_file)
-
     if args.serial:
         os.environ['ANDROID_SERIAL'] = args.serial
 
@@ -1261,7 +1269,7 @@ def main_helper(args):
         assert not fragment_shader_file
         assert not args.legacy_worker
         run_compute_amber(
-            comp=compute_shader_file,
+            comp_original=compute_shader_file,
             json_file=args.json,
             output_dir=args.output_dir,
             force=args.force,
@@ -1273,12 +1281,14 @@ def main_helper(args):
     assert fragment_shader_file
 
     if args.legacy_worker:
-        run_image_legacy(vertex_shader_file, fragment_shader_file, args)
+        run_image_legacy(vert_original=vertex_shader_file,
+                         frag_original=fragment_shader_file,
+                         args=args)
         return
 
     run_image_amber(
-        vert=vertex_shader_file,
-        frag=fragment_shader_file,
+        vert_original=vertex_shader_file,
+        frag_original=fragment_shader_file,
         json_file=args.json,
         output_dir=args.output_dir,
         force=args.force,
