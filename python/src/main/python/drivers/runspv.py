@@ -59,6 +59,7 @@ NUM_RENDER = 3
 BUSY_WAIT_SLEEP_SLOW = 1.0
 BUSY_WAIT_SLEEP_FAST = 0.1
 AMBER_FENCE_TIMEOUT_MS = 60000
+TIMEOUT_SPIRV_OPT_SECONDS = 120
 
 ################################################################################
 # Common
@@ -193,6 +194,13 @@ def spirvdis_path():
     return tool_on_path('spirv-dis')
 
 
+def spirvopt_path():
+    spirvopt = os.path.join(BIN_DIR, 'spirv-opt')
+    if os.path.isfile(spirvopt):
+        return spirvopt
+    return tool_on_path('spirv-opt')
+
+
 def maybe_add_catchsegv(cmd: List[str]) -> None:
     # Add catchsegv to cmd if it is available
     try:
@@ -216,17 +224,58 @@ def remove_end(str_in: str, str_end: str):
     return str_in[:-len(str_end)]
 
 
-def prepare_shader(output_dir: str, shader: Optional[str]):
+def run_spirv_opt(spv_file: str, spirv_opt_args: str):
+    print("Running optimizer.")
+    spv_file_opt = spv_file + '.opt'
+    cmd = spirvopt_path() + ' ' + spirv_opt_args + ' ' + spv_file + ' -o ' + spv_file_opt
+    log = ''
+
+    success = True
+
+    try:
+        log += 'spirv-opt flags: ' + spirv_opt_args + '\n'
+        print('Calling spirv-opt with flags: ' + spirv_opt_args)
+        subprocess.run(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True, check=True, timeout=TIMEOUT_SPIRV_OPT_SECONDS)
+    except subprocess.CalledProcessError as err:
+        # spirv-opt failed
+        success = False
+        log += 'Error triggered by spirv-opt\n'
+        log += 'COMMAND:\n' + err.cmd + '\n'
+        log += 'RETURNCODE: ' + str(err.returncode) + '\n'
+        if err.stdout:
+            log += 'STDOUT:\n' + err.stdout + '\n'
+        if err.stderr:
+            log += 'STDERR:\n' + err.stderr + '\n'
+    except subprocess.TimeoutExpired as err:
+        success = False
+        # spirv-opt timed out
+        log += 'Timeout from spirv-opt\n'
+        log += 'COMMAND:\n' + err.cmd + '\n'
+        log += 'TIMEOUT: ' + str(err.timeout) + ' sec\n'
+        if err.stdout:
+            log += 'STDOUT:\n' + err.stdout + '\n'
+        if err.stderr:
+            log += 'STDERR:\n' + err.stderr + '\n'
+
+    # Return the name of the optimized file, and the error log.  If the error
+    # log is non-empty, the optimized file should be ignored.
+    return spv_file_opt, log, success
+
+
+def prepare_shader(output_dir: str, shader: Optional[str], spirv_opt_args: Optional[str]):
     """
-    Translates a shader to binary SPIR-V.
+    Translates a shader to binary SPIR-V, and optionally optimizes it.
 
     None -> None
-    shader.frag -> shader.frag.spv
-    shader.vert -> shader.vert.spv
-    shader.comp -> shader.comp.spv
-    shader.frag.asm -> shader.frag.spv
-    shader.vert.asm -> shader.vert.spv
-    shader.comp.asm -> shader.comp.spv
+    shader.frag -> shader.frag.[opt].spv
+    shader.vert -> shader.vert.[opt].spv
+    shader.comp -> shader.comp.[opt].spv
+    shader.frag.asm -> shader.frag.[opt].spv
+    shader.vert.asm -> shader.vert.[opt].spv
+    shader.comp.asm -> shader.comp.[opt].spv
+    shader.spv -> shader.[opt].spv
 
     :param output_dir: output directory
     :param shader: e.g. shader.frag, shader.vert, shader.frag.asm
@@ -265,6 +314,9 @@ def prepare_shader(output_dir: str, shader: Optional[str]):
         assert False, 'unexpected shader extension: {}'.format(shader)
 
     assert len(result) > 0
+
+    if spirv_opt_args:
+        pass  # TODO: call run spirv-opt from here
 
     return result
 

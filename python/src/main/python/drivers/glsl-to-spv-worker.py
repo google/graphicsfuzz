@@ -46,7 +46,6 @@ from thrift.protocol import TBinaryProtocol
 # Timeouts, in seconds
 
 
-TIMEOUT_SPIRV_OPT = 120
 TIMEOUT_APP = 30
 TIMEOUT_ADB_CMD = 5
 
@@ -133,50 +132,6 @@ def prepare_shaders(frag_file: str, frag_spv_file: str, vert_spv_file: Optional[
 
     # Prepare fragment shader
     glsl2spv(frag_file, frag_spv_file)
-
-
-################################################################################
-
-
-def run_spirv_opt(spv_file, args):
-    print("Running optimizer.")
-    spv_file_opt = spv_file + '.opt'
-    cmd = os.path.dirname(HERE) + '/../../bin/' + get_bin_type() + '/spirv-opt ' + \
-        args.spirvopt + ' ' + spv_file + ' -o ' + spv_file_opt
-    log = ""
-
-    success = True
-
-    try:
-        log += 'spirv-opt flags: ' + args.spirvopt + '\n'
-        print('Calling spirv-opt with flags: ' + args.spirvopt)
-        subprocess.run(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            universal_newlines=True, check=True, timeout=TIMEOUT_SPIRV_OPT)
-    except subprocess.CalledProcessError as err:
-        # spirv-opt failed
-        success = False
-        log += 'Error triggered by spirv-opt\n'
-        log += 'COMMAND:\n' + err.cmd + '\n'
-        log += 'RETURNCODE: ' + str(err.returncode) + '\n'
-        if err.stdout:
-            log += 'STDOUT:\n' + err.stdout + '\n'
-        if err.stderr:
-            log += 'STDERR:\n' + err.stderr + '\n'
-    except subprocess.TimeoutExpired as err:
-        success = False
-        # spirv-opt timed out
-        log += 'Timeout from spirv-opt\n'
-        log += 'COMMAND:\n' + err.cmd + '\n'
-        log += 'TIMEOUT: ' + str(err.timeout) + ' sec\n'
-        if err.stdout:
-            log += 'STDOUT:\n' + err.stdout + '\n'
-        if err.stderr:
-            log += 'STDERR:\n' + err.stderr + '\n'
-
-    # Return the name of the optimized file, and the error log.  If the error
-    # log is non-empty, the optimized file should be ignored.
-    return spv_file_opt, log, success
 
 
 ################################################################################
