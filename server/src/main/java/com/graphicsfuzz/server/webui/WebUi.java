@@ -95,6 +95,12 @@ public class WebUi extends HttpServlet {
     METRICS_DISAGREE
   }
 
+  private static final class ImageDifferenceResultSet {
+    public ImageDifferenceResult summary = null;
+    public ImageDifferenceResult histogram = null;
+    public ImageDifferenceResult fuzzy = null;
+  }
+
   private final ShaderJobFileOperations fileOps;
   private final FuzzerServiceManager.Iface fuzzerServiceManagerProxy;
 
@@ -153,7 +159,7 @@ public class WebUi extends HttpServlet {
           JsonObject info = accessFileInfo.getResultInfo(file);
           String status = info.get("status").getAsString();
           if (status.contentEquals("SUCCESS")) {
-            ImageDifferenceResult result = getImageDiffResult(info);
+            ImageDifferenceResult result = getImageDiffResult(info).summary;
             switch (result) {
               case IDENTICAL:
                 ++nbSameImage;
@@ -179,7 +185,7 @@ public class WebUi extends HttpServlet {
     }
   }
 
-  private static ImageDifferenceResult getImageDiffResult(JsonObject info) {
+  private static ImageDifferenceResultSet getImageDiffResult(JsonObject info) {
 
     // This method is a refactor/merge of two older methods.
 
@@ -187,19 +193,17 @@ public class WebUi extends HttpServlet {
     final String histogramDistanceKey = "histogramDistance";
     final double histogramThreshold = 100.0;
 
+    ImageDifferenceResultSet result = new ImageDifferenceResultSet();
+    result.summary = ImageDifferenceResult.DIFFERENT;
+
     if (info == null) {
-      return ImageDifferenceResult.DIFFERENT;
+      return result;
     }
 
     if (!info.has("metrics")) {
-      return ImageDifferenceResult.DIFFERENT;
+      return result;
     }
     final JsonObject metricsJson = info.get("metrics").getAsJsonObject();
-    if (metricsJson.has("identical") && metricsJson.get("identical").getAsBoolean()) {
-      return ImageDifferenceResult.IDENTICAL;
-    }
-
-    ImageDifferenceResult result = null;
 
     // Check if fuzzy diff metric thinks the images are different.
 
@@ -211,8 +215,10 @@ public class WebUi extends HttpServlet {
         boolean different = fuzzyDiffInfo
             .get(FuzzyImageComparison.MainResult.ARE_IMAGES_DIFFERENT_KEY)
             .getAsBoolean();
-        result = different ? ImageDifferenceResult.DIFFERENT : ImageDifferenceResult.SIMILAR;
-        // Fallthrough, as we want to note if histogram metric differs.
+        result.fuzzy =
+            different ? ImageDifferenceResult.DIFFERENT : ImageDifferenceResult.SIMILAR;
+
+        result.summary = result.fuzzy;
       }
     }
 
@@ -222,19 +228,18 @@ public class WebUi extends HttpServlet {
       boolean different = metricsJson.get(histogramDistanceKey)
           .getAsJsonPrimitive().getAsNumber().doubleValue() > histogramThreshold;
 
-      ImageDifferenceResult histogramResult =
+      result.histogram =
           different ? ImageDifferenceResult.DIFFERENT : ImageDifferenceResult.SIMILAR;
 
-      if (result != null && result != histogramResult) {
-        return ImageDifferenceResult.METRICS_DISAGREE;
-      }
-
-      result = histogramResult;
+      result.summary = result.histogram;
     }
 
-    // We assume images are different if the metrics are missing.
-    if (result == null) {
-      result = ImageDifferenceResult.DIFFERENT;
+    if (result.histogram != null && result.fuzzy != null && result.histogram != result.fuzzy) {
+      result.summary = ImageDifferenceResult.METRICS_DISAGREE;
+    }
+
+    if (metricsJson.has("identical") && metricsJson.get("identical").getAsBoolean()) {
+      result.summary = ImageDifferenceResult.IDENTICAL;
     }
 
     return result;
@@ -896,6 +901,30 @@ public class WebUi extends HttpServlet {
     if (!(pngFile.exists()) && !(gifFile.exists())) {
       htmlAppendLn("<p>No image to display for this result status</p>");
     }
+
+    ImageDifferenceResultSet metricResults = getImageDiffResult(info);
+
+    htmlAppendLn(
+        "<div class='ui divider'></div>",
+        "Image metric results:",
+        "<ul>",
+        "<li>",
+        "Summary: ",
+        metricResults.summary.toString(),
+        "</li>",
+        "<li>",
+        "Fuzzy comparison: ",
+        metricResults.fuzzy != null ? metricResults.fuzzy.toString() : "No results",
+        "</li>",
+        "<li>",
+        "Histogram: ",
+        metricResults.histogram != null ? metricResults.histogram.toString() : "No results",
+        "</li>",
+        "</ul>",
+        "<p>",
+        "<a href='/webui/file/", infoFile.toString(), "'>Full details</a>",
+        "</p>"
+    );
 
     htmlAppendLn("</div>\n",
         "<div class='ui segment'>\n",
@@ -1841,7 +1870,7 @@ public class WebUi extends HttpServlet {
 
     if (status.contentEquals("SUCCESS")) {
 
-      ImageDifferenceResult result = getImageDiffResult(info);
+      ImageDifferenceResult result = getImageDiffResult(info).summary;
 
       if (result == ImageDifferenceResult.IDENTICAL) {
         htmlAppendLn("<td class='selectable center aligned'><a href='",
