@@ -38,32 +38,16 @@ td.wrongimg {
   background-color: #ffff44;
 }
 
-td.wrongimg img {
-  border: 3px solid red;
-}
-
 td.warnimg {
   background-color: #ccccbb;
-}
-
-td.warnimg img {
-  border: 3px solid blue;
 }
 
 td.metricsdisimg {
   background-color: #dd99ff;
 }
 
-td.metricsdisimg img {
-  border: 3px solid red;
-}
-
 td.nondet {
   background-color: #eecc88;
-}
-
-td.nondet img {
-  border: 3px solid red;
 }
 
 div.resultmain {
