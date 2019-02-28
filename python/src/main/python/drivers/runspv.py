@@ -104,6 +104,8 @@ def subprocess_helper(
     verbose=False
 ):
 
+    assert cmd[0] is not None and isinstance(cmd[0], str)
+
     # We capture stdout and stderr by default so we have something to report if the command fails.
 
     # Note: "encoding=" and "errors=" are Python 3.6.
