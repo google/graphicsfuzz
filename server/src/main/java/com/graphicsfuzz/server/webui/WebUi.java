@@ -906,7 +906,7 @@ public class WebUi extends HttpServlet {
 
     htmlAppendLn(
         "<div class='ui divider'></div>",
-        "Image metric results:",
+        "Image comparison metrics:",
         "<ul>",
         "<li>",
         "Summary: ",
@@ -917,7 +917,7 @@ public class WebUi extends HttpServlet {
         metricResults.fuzzy != null ? metricResults.fuzzy.toString() : "No results",
         "</li>",
         "<li>",
-        "Histogram: ",
+        "Histogram comparison: ",
         metricResults.histogram != null ? metricResults.histogram.toString() : "No results",
         "</li>",
         "</ul>",
