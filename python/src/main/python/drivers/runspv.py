@@ -105,6 +105,8 @@ def subprocess_helper(
     verbose=False
 ):
 
+    assert cmd[0] is not None and isinstance(cmd[0], str)
+
     # We capture stdout and stderr by default so we have something to report if the command fails.
 
     # Note: "encoding=" and "errors=" are Python 3.6.
@@ -202,10 +204,11 @@ def maybe_add_catchsegv(cmd: List[str]) -> None:
 
 def adb_path():
     if 'ANDROID_HOME' in os.environ:
-        adb = os.path.join(os.environ['ANDROID_HOME'], 'platform-tools', 'adb')
-        if os.path.isfile(adb):
+        platform_tools_path = os.path.join(os.environ['ANDROID_HOME'], 'platform-tools')
+        adb = shutil.which('adb', path=platform_tools_path)
+        if adb is not None:
             return adb
-    tool_on_path('adb')
+    return tool_on_path('adb')
 
 
 def remove_end(str_in: str, str_end: str):
