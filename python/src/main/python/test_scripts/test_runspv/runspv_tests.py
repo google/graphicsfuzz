@@ -216,6 +216,26 @@ def red_image(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool)
     assert b == 0
 
 
+def red_image_no_vert(tmp_path: pathlib2.Path, is_android: bool):
+    out_dir = tmp_path / 'out'
+    # There should be a fragment shader...
+    assert os.path.isfile(cmd_helpers.get_shaders_dir() + os.sep + 'testing' + os.sep + 'runspv' + os.sep + 'image'
+                          + os.sep + 'red_image_no_vert.frag')
+    # ...but no vertex shader
+    assert not os.path.isfile(cmd_helpers.get_shaders_dir() + os.sep + 'testing' + os.sep + 'runspv' + os.sep + 'image'
+                          + os.sep + 'red_image_no_vert.vert')
+    args = ['android' if is_android else 'host', get_image_test('red_image_no_vert.json'), str(out_dir)]
+    runspv.main_helper(args)
+    assert is_success(out_dir)
+    image_file = out_dir / 'image_0.png'
+    assert image_file.exists()
+    image = PIL.Image.open(str(image_file)).convert('RGB')
+    r, g, b = image.getpixel((0, 0))
+    assert r == 255
+    assert g == 0
+    assert b == 0
+
+
 def bubblesort_flag(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool):
     out_dir = tmp_path / 'out'
     args = ['android' if is_android else 'host', get_image_test('image_test_0002.json'),
@@ -296,7 +316,7 @@ def test_error_no_shaders(tmp_path: pathlib2.Path):
     json_path = make_empty_json(tmp_path)
     with pytest.raises(ValueError) as value_error:
         runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
-    assert 'ValueError: No compute nor vertex shader files found' in str(value_error)
+    assert 'ValueError: No shader files found' in str(value_error)
 
 
 def test_error_compute_asm_and_spv(tmp_path: pathlib2.Path):
@@ -372,13 +392,13 @@ def test_error_compute_and_vert(tmp_path: pathlib2.Path):
     assert 'ValueError: Compute shader cannot coexist with vertex/fragment shaders' in str(value_error)
 
 
-def test_error_frag_no_vert(tmp_path: pathlib2.Path):
+def test_error_frag_no_vert_legacy(tmp_path: pathlib2.Path):
     # Check for appropriate error when a fragment shader but no vertex shader is provided.
     json_path = make_empty_json(tmp_path)
     make_empty_file(tmp_path, "shader.frag.asm")
     with pytest.raises(ValueError) as value_error:
-        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out')])
-    assert 'ValueError: No compute nor vertex shader files found' in str(value_error)
+        runspv.main_helper(['host', str(json_path), str(tmp_path / 'out'), "--legacy-worker"])
+    assert 'ValueError: Fragment shader requires accompanying vertex shader when legacy worker is used' in str(value_error)
 
 
 def test_error_vert_no_frag(tmp_path: pathlib2.Path):
@@ -449,6 +469,14 @@ def test_red_image_amber_host(tmp_path: pathlib2.Path):
 
 def test_red_image_amber_android(tmp_path: pathlib2.Path):
     red_image(tmp_path, True, False)
+
+
+def test_red_image_no_vert_amber_host(tmp_path: pathlib2.Path):
+    red_image_no_vert(tmp_path, is_android=False)
+
+
+def test_red_image_no_vert_amber_android(tmp_path: pathlib2.Path):
+    red_image_no_vert(tmp_path, is_android=True)
 
 
 def test_red_image_legacy_android(tmp_path: pathlib2.Path):
