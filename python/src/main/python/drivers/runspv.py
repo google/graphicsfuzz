@@ -269,6 +269,7 @@ def adb_helper(
     adb_args: List[str],
     check,
     stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
+    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
     verbose=False
 ):
     adb_cmd = [adb_path()] + adb_args
@@ -279,6 +280,7 @@ def adb_helper(
             check=check,
             timeout=TIMEOUT_RUN,
             stdout=stdout,
+            stderr=stderr,
             verbose=verbose
         )
     except subprocess.TimeoutExpired as err:
@@ -289,17 +291,19 @@ def adb_helper(
 def adb_check(
     adb_args: List[str],
     stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
+    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
     verbose=False
 ):
-    return adb_helper(adb_args, True, stdout, verbose)
+    return adb_helper(adb_args, True, stdout, stderr, verbose)
 
 
 def adb_can_fail(
     adb_args: List[str],
     stdout: Union[None, int, IO[Any]]=subprocess.PIPE,
+    stderr: Union[None, int, IO[Any]]=subprocess.PIPE,
     verbose=False
 ):
-    return adb_helper(adb_args, False, stdout, verbose)
+    return adb_helper(adb_args, False, stdout, stderr, verbose)
 
 
 def stay_awake_warning():
@@ -464,7 +468,7 @@ def run_image_android_legacy(
     with open_helper(logfile, 'w') as f:
         adb_check(
             ['logcat', '-d'],
-            stdout=f
+            stdout=f, stderr=subprocess.STDOUT
         )
 
     # retrieve all files: the "/." is a special syntax to pull all files from the graphicsfuzz
@@ -573,7 +577,7 @@ def run_image_host_legacy(vert: str, frag: str, json_file: str, output_dir: str,
             subprocess_helper(
                 cmd,
                 timeout=TIMEOUT_RUN,
-                stdout=f
+                stdout=f, stderr=subprocess.STDOUT
             )
     except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
@@ -771,7 +775,8 @@ def run_image_amber(
         status = 'UNEXPECTED_ERROR'
 
         try:
-            result = adb_can_fail(cmd)
+            with open_helper(logfile, 'w') as f:
+                result = adb_can_fail(cmd, stdout=f, stderr=subprocess.STDOUT)
         except subprocess.TimeoutExpired:
             result = None
             status = 'TIMEOUT'
@@ -791,8 +796,8 @@ def run_image_amber(
                     adb_check(['pull', device_image, png_image])
 
         # Grab log:
-        with open_helper(logfile, 'w') as f:
-            adb_check(['logcat', '-d'], stdout=f)
+        with open_helper(logfile, 'a') as f:
+            adb_check(['logcat', '-d'], stdout=f, stderr=subprocess.STDOUT)
 
     else:
         cmd = [tool_on_path('amber')]
@@ -807,7 +812,7 @@ def run_image_amber(
         status = 'SUCCESS'
         try:
             with open_helper(logfile, 'w') as f:
-                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f)
+                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f, stderr=subprocess.STDOUT)
         except subprocess.TimeoutExpired:
             status = 'TIMEOUT'
         except subprocess.CalledProcessError:
@@ -815,9 +820,6 @@ def run_image_amber(
 
         if status == 'SUCCESS':
             assert skip_render or os.path.isfile(png_image)
-
-        with open_helper(logfile, 'a') as f:
-            f.write('\nSTATUS ' + status + '\n')
 
     with open_helper(logfile, 'a') as f:
         f.write('\nSTATUS ' + status + '\n')
@@ -1048,7 +1050,7 @@ def run_compute_amber(
 
         # Grab log:
         with open_helper(logfile, 'w') as f:
-            adb_check(['logcat', '-d'], stdout=f)
+            adb_check(['logcat', '-d'], stdout=f, stderr=subprocess.STDOUT)
     else:
         cmd = [tool_on_path('amber')]
         if skip_render:
@@ -1063,7 +1065,7 @@ def run_compute_amber(
         status = 'SUCCESS'
         try:
             with open_helper(logfile, 'w') as f:
-                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f)
+                subprocess_helper(cmd, timeout=TIMEOUT_RUN, stdout=f, stderr=subprocess.STDOUT)
         except subprocess.TimeoutExpired:
             status = 'TIMEOUT'
         except subprocess.CalledProcessError:
