@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import time
+from typing import Optional
 
 import runspv
 
@@ -124,12 +125,13 @@ def glsl2spv(glsl, spv):
 ################################################################################
 
 
-def prepare_shaders(frag_file, frag_spv_file, vert_spv_file):
-    # Vert
-    prepare_vert_file()
-    glsl2spv('test.vert', vert_spv_file)
+def prepare_shaders(frag_file: str, frag_spv_file: str, vert_spv_file: Optional[str]):
+    # Prepare vertex shader if it is needed
+    if vert_spv_file:
+        prepare_vert_file()
+        glsl2spv('test.vert', vert_spv_file)
 
-    # Frag
+    # Prepare fragment shader
     glsl2spv(frag_file, frag_spv_file)
 
 
@@ -184,12 +186,15 @@ def do_image_job(args, image_job):
     name = image_job.name
     if name.endswith('.frag'):
         name = remove_end(name, '.frag')
+    # TODO(324): the worker currently assumes that no vertex shader is present in the image job.
     frag_file = name + '.frag'
     json_file = name + '.json'
     png = 'image_0.png'
 
     frag_spv_file = name + '.frag.spv'
-    vert_spv_file = name + '.vert.spv'
+
+    # The Amber worker does not need a default vertex shader, but the legacy worker does.
+    vert_spv_file = name + '.vert.spv' if args.legacy_worker else None
 
     res = tt.ImageJobResult()
 

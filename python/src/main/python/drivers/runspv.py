@@ -704,8 +704,11 @@ def amberscriptify_image(vert, frag, uniform_json):
     script += '[require]\n'
     script += 'fbsize 256 256\n'
 
-    script += '[vertex shader spirv]\n'
-    script += spv_get_disassembly(vert)
+    if vert:
+        script += '[vertex shader spirv]\n'
+        script += spv_get_disassembly(vert)
+    else:
+        script += '[vertex shader passthrough]\n'
     script += '\n\n'
 
     script += '[fragment shader spirv]\n'
@@ -729,7 +732,8 @@ def run_image_amber(
         force: bool,
         is_android: bool,
         skip_render: bool):
-    assert os.path.isfile(vert)
+    # The vertex shader is optional; passthrough will be used if it is not present
+    assert not vert or os.path.isfile(vert)
     assert os.path.isfile(frag)
     assert os.path.isfile(json_file)
 
@@ -1198,8 +1202,15 @@ def main_helper(args):
         compute_shader_file = None
         vertex_shader_file = pick_shader_format(shader_prefix, 'vert')
         fragment_shader_file = pick_shader_format(shader_prefix, 'frag')
+    elif some_shader_format_exists(shader_prefix, 'frag'):
+        if args.legacy_worker:
+            raise ValueError('Fragment shader requires accompanying vertex shader when legacy worker is used')
+        # Because Amber has a pass through option, we can do without a vertex shader
+        compute_shader_file = None
+        vertex_shader_file = None
+        fragment_shader_file = pick_shader_format(shader_prefix, 'frag')
     else:
-        raise ValueError('No compute nor vertex shader files found')
+        raise ValueError('No shader files found')
 
     if compute_shader_file and args.legacy_worker:
         raise ValueError('Compute shaders are not supported with the legacy worker')
@@ -1230,7 +1241,7 @@ def main_helper(args):
             skip_render=args.skip_render)
         return
 
-    assert vertex_shader_file
+    assert vertex_shader_file or not args.legacy_worker
     assert fragment_shader_file
 
     if args.legacy_worker:
