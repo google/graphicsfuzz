@@ -104,27 +104,6 @@ def remove_end(str_in: str, str_end: str):
 ################################################################################
 
 
-def get_bin_type():
-    host = platform.system()
-    if host == 'Linux' or host == 'Windows':
-        return host
-    else:
-        assert host == 'Darwin'
-        return 'Mac'
-
-
-################################################################################
-
-
-def glsl2spv(glsl, spv):
-    glslang = os.path.dirname(HERE) + '/../../bin/' + get_bin_type() + '/glslangValidator'
-    cmd = glslang + ' ' + glsl + ' -V -o ' + spv
-    subprocess.run(cmd, shell=True, check=True)
-
-
-################################################################################
-
-
 def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
     name = image_job.name
     if name.endswith('.frag'):
@@ -234,9 +213,7 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
 def do_compute_job(args, comp_job, spirv_opt_args: Optional[List[str]]):
     ssbo = 'ssbo'
     tmpcomp = 'tmp.comp'
-    tmpcompspv = 'tmp.comp.spv'
     write_to_file(comp_job.computeSource, tmpcomp)
-    glsl2spv(tmpcomp, tmpcompspv)
 
     tmpjson = 'tmp.json'
     write_to_file(comp_job.computeInfo, tmpjson)
@@ -255,12 +232,12 @@ def do_compute_job(args, comp_job, spirv_opt_args: Optional[List[str]]):
             runspv.log_to_file = f
 
             runspv.run_compute_amber(
-                comp_original=tmpcompspv,
+                comp_original=tmpcomp,
                 json_file=tmpjson,
                 output_dir=os.getcwd(),
                 force=args.force,
                 is_android=(args.target == 'android'),
-                skip_render=comp_job.skip_render,
+                skip_render=comp_job.skipRender,
                 spirv_opt_args=spirv_opt_args,
             )
         finally:
