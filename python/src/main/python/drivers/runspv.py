@@ -46,8 +46,9 @@ SERIAL_OPTION_HELP = (
 
 SKIP_RENDER_OPTION_HELP = 'Compile shaders but do not actually run them.'
 
-SPIRV_OPT_OPTION_HELP = 'Enable spirv-opt with these optimization flags.  Multiple arguments ' \
-                        'should be space-separated.  E.g. --spirvopt="-O --merge-blocks" '
+SPIRV_OPT_OPTION_HELP = (
+    'Enable spirv-opt with these optimization flags.  Multiple arguments should be space-separated.'
+    ' E.g. --spirvopt="-O --merge-blocks" ')
 
 TARGET_HELP = 'One of \'host\' (run on host machine) or \'android\' (run on Android device).'
 
