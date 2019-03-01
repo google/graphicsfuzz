@@ -882,9 +882,12 @@ public class WebUi extends HttpServlet {
 
     String pngPath = variantDir + variant + ".png";
     File pngFile = new File(pngPath);
-    if (pngFile.exists()) {
-      htmlAppendLn("<p>Result image:</p>",
-          "<img src='/webui/file/", pngPath, "'>");
+
+    if (!variant.equals("reference")) {
+      if (pngFile.exists()) {
+        htmlAppendLn("<p>Result image:</p>",
+            "<img src='/webui/file/", pngPath, "'>");
+      }
     }
 
     String gifPath = variantDir + variant + ".gif";
@@ -909,7 +912,16 @@ public class WebUi extends HttpServlet {
 
     ImageDifferenceResultSet metricResults = getImageDiffResult(info);
 
-    if (metricResults.summary != ImageDifferenceResult.IDENTICAL && status.equals("SUCCESS")) {
+    if (metricResults.summary == ImageDifferenceResult.IDENTICAL
+        && status.equals("SUCCESS")
+        && !variant.equals("reference")) {
+      htmlAppendLn("<p>Images are identical.</p>");
+    }
+
+    if (metricResults.summary != ImageDifferenceResult.IDENTICAL
+        && status.equals("SUCCESS")
+        && !variant.equals("reference")) {
+
       htmlAppendLn(
           "Image comparison metrics:",
           "<ul>",
