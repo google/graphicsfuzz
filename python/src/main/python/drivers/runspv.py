@@ -136,7 +136,7 @@ def subprocess_helper(
     # Do not use shell=True.
 
     try:
-        log('Exec: ' + str(cmd))
+        log('Exec' + (' (verbose):' if verbose else ':') + str(cmd))
 
         result = subprocess.run(
             cmd,
