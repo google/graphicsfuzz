@@ -151,7 +151,7 @@ def subprocess_helper(
         )
     except subprocess.TimeoutExpired as ex:
         convert_stdout_stderr(ex)
-        # No returncode in case of timeout.
+        # no returncode to log in case of timeout
         log_stdout_stderr(ex)
         raise ex
 
@@ -237,13 +237,24 @@ def spirvopt_path():
     return tool_on_path('spirv-opt')
 
 
-def maybe_add_catchsegv(cmd: List[str]) -> None:
-    # Add catchsegv to cmd if it is available
-    try:
-        cmd.append(tool_on_path('catchsegv'))
-    except ToolNotOnPathError:
-        # Didn't find catchsegv on path; that's OK
-        pass
+# FIXME: using gdb wrapping leads to a weird issue where, once a test times out,
+# subsequent tests leads to the whole worker being SIGSTOP'ed.
+# See https://github.com/google/graphicsfuzz/issues/338
+
+# def maybe_add_gdb(cmd: List[str]) -> None:
+#     # If gdb is available, use it to obtain backtraces in case of segfault
+
+#     # TODO: using gdb as a wrapper adds at least a second-long overhead to each
+#     # run, there may be a way to avoid this overhead e.g. detecting Linux host
+#     # and using ulimit -c unlimited followed by an analysis of a core dump, but
+#     # the location of the core dump is not portable.
+
+#     try:
+#         cmd.append(tool_on_path('gdb'))
+#         cmd += ['-return-child-result', '-batch-silent', '-ex', 'run', '-ex', 'backtrace', '--args']
+#     except ToolNotOnPathError:
+#         # Didn't find gdb on path; that's OK
+#         pass
 
 
 def adb_path():
@@ -920,7 +931,7 @@ def run_image_amber(
 
     else:
         cmd = []
-        maybe_add_catchsegv(cmd)
+        #maybe_add_gdb(cmd)
         cmd.append(tool_on_path('amber'))
         if skip_render:
             # -ps tells amber to stop after graphics pipeline creation
@@ -1180,7 +1191,7 @@ def run_compute_amber(
 
     else:
         cmd = []
-        maybe_add_catchsegv(cmd)
+        #maybe_add_gdb(cmd)
         cmd.append(tool_on_path('amber'))
         if skip_render:
             cmd.append('-ps')
