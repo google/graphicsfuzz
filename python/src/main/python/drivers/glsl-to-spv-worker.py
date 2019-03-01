@@ -21,7 +21,7 @@ import shutil
 import subprocess
 import sys
 import time
-from typing import Optional
+from typing import Optional, List
 
 import runspv
 
@@ -46,7 +46,6 @@ from thrift.protocol import TBinaryProtocol
 # Timeouts, in seconds
 
 
-TIMEOUT_SPIRV_OPT = 120
 TIMEOUT_APP = 30
 TIMEOUT_ADB_CMD = 5
 
@@ -81,16 +80,17 @@ def remove(f):
 ################################################################################
 
 
-def prepare_vert_file():
+def prepare_vert_file() -> str:
     vert_filename = 'test.vert'
-    vert_file_default_content = '''#version 310 es
+    if not os.path.isfile(vert_filename):
+        vert_file_default_content = '''#version 310 es
 layout(location=0) in highp vec4 a_position;
 void main (void) {
   gl_Position = a_position;
 }
 '''
-    if not os.path.isfile(vert_filename):
         write_to_file(vert_file_default_content, vert_filename)
+    return vert_filename
 
 
 ################################################################################
@@ -125,76 +125,15 @@ def glsl2spv(glsl, spv):
 ################################################################################
 
 
-def prepare_shaders(frag_file: str, frag_spv_file: str, vert_spv_file: Optional[str]):
-    # Prepare vertex shader if it is needed
-    if vert_spv_file:
-        prepare_vert_file()
-        glsl2spv('test.vert', vert_spv_file)
-
-    # Prepare fragment shader
-    glsl2spv(frag_file, frag_spv_file)
-
-
-################################################################################
-
-
-def run_spirv_opt(spv_file, args):
-    print("Running optimizer.")
-    spv_file_opt = spv_file + '.opt'
-    cmd = os.path.dirname(HERE) + '/../../bin/' + get_bin_type() + '/spirv-opt ' + \
-        args.spirvopt + ' ' + spv_file + ' -o ' + spv_file_opt
-    log = ""
-
-    success = True
-
-    try:
-        log += 'spirv-opt flags: ' + args.spirvopt + '\n'
-        print('Calling spirv-opt with flags: ' + args.spirvopt)
-        subprocess.run(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            universal_newlines=True, check=True, timeout=TIMEOUT_SPIRV_OPT)
-    except subprocess.CalledProcessError as err:
-        # spirv-opt failed
-        success = False
-        log += 'Error triggered by spirv-opt\n'
-        log += 'COMMAND:\n' + err.cmd + '\n'
-        log += 'RETURNCODE: ' + str(err.returncode) + '\n'
-        if err.stdout:
-            log += 'STDOUT:\n' + err.stdout + '\n'
-        if err.stderr:
-            log += 'STDERR:\n' + err.stderr + '\n'
-    except subprocess.TimeoutExpired as err:
-        success = False
-        # spirv-opt timed out
-        log += 'Timeout from spirv-opt\n'
-        log += 'COMMAND:\n' + err.cmd + '\n'
-        log += 'TIMEOUT: ' + str(err.timeout) + ' sec\n'
-        if err.stdout:
-            log += 'STDOUT:\n' + err.stdout + '\n'
-        if err.stderr:
-            log += 'STDERR:\n' + err.stderr + '\n'
-
-    # Return the name of the optimized file, and the error log.  If the error
-    # log is non-empty, the optimized file should be ignored.
-    return spv_file_opt, log, success
-
-
-################################################################################
-
-
-def do_image_job(args, image_job):
+def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
     name = image_job.name
     if name.endswith('.frag'):
         name = remove_end(name, '.frag')
     # TODO(324): the worker currently assumes that no vertex shader is present in the image job.
+    vert_file = prepare_vert_file() if args.legacy_worker else None
     frag_file = name + '.frag'
     json_file = name + '.json'
     png = 'image_0.png'
-
-    frag_spv_file = name + '.frag.spv'
-
-    # The Amber worker does not need a default vertex shader, but the legacy worker does.
-    vert_spv_file = name + '.vert.spv' if args.legacy_worker else None
 
     res = tt.ImageJobResult()
 
@@ -207,54 +146,49 @@ def do_image_job(args, image_job):
     write_to_file(image_job.fragmentSource, frag_file)
     write_to_file(image_job.uniformsInfo, json_file)
 
-    # Shader preparation may fail for invalid shaders
-    try:
-        prepare_shaders(frag_file, frag_spv_file, vert_spv_file)
-    except subprocess.CalledProcessError as err:
-        res.log += 'ERROR\n'
-        res.log += 'COMMAND: {}\n'.format(err.cmd)
-        res.log += 'RETURNCODE: {}\n'.format(err.returncode)
-        res.log += 'STDOUT: {}\n'.format(err.stdout)
-        res.log += 'STDERR: {}\n'.format(err.stderr)
-        res.status = tt.JobStatus.UNEXPECTED_ERROR
-        return res
-
-    # Optimize
-    if args.spirvopt:
-        frag_spv_file, log, success = run_spirv_opt(frag_spv_file, args)
-        if not success:
-            res.status = tt.JobStatus.UNEXPECTED_ERROR
-            return res
-
     remove(png)
     remove(runspv.LOGFILE_NAME)
 
-    if args.legacy_worker:
-        if args.target == 'host':
-            runspv.run_image_host_legacy(
-                vert=vert_spv_file,
-                frag=frag_spv_file,
-                json_file=json_file,
-                output_dir=os.getcwd(),
-                skip_render=skip_render)
-        else:
-            assert args.target == 'android'
-            runspv.run_image_android_legacy(
-                vert=vert_spv_file,
-                frag=frag_spv_file,
-                json_file=json_file,
-                output_dir=os.getcwd(),
-                force=args.force,
-                skip_render=skip_render)
-    else:
-        runspv.run_image_amber(
-            vert=vert_spv_file,
-            frag=frag_spv_file,
-            json_file=json_file,
-            output_dir=os.getcwd(),
-            force=args.force,
-            is_android=(args.target == 'android'),
-            skip_render=skip_render)
+    # Set runspv logger. Use try-finally to clean up.
+
+    with open(runspv.LOGFILE_NAME, 'w', encoding='utf-8', errors='ignore') as f:
+        try:
+            runspv.log_to_file = f
+
+            if args.legacy_worker:
+                if args.target == 'host':
+                    runspv.run_image_host_legacy(
+                        vert_original=vert_file,
+                        frag_original=frag_file,
+                        json_file=json_file,
+                        output_dir=os.getcwd(),
+                        skip_render=skip_render,
+                        spirv_opt_args=spirv_opt_args,
+                    )
+                else:
+                    assert args.target == 'android'
+                    runspv.run_image_android_legacy(
+                        vert_original=vert_file,
+                        frag_original=frag_file,
+                        json_file=json_file,
+                        output_dir=os.getcwd(),
+                        force=args.force,
+                        skip_render=skip_render,
+                        spirv_opt_args=spirv_opt_args,
+                    )
+            else:
+                runspv.run_image_amber(
+                    vert_original=vert_file,
+                    frag_original=frag_file,
+                    json_file=json_file,
+                    output_dir=os.getcwd(),
+                    force=args.force,
+                    is_android=(args.target == 'android'),
+                    skip_render=skip_render,
+                    spirv_opt_args=spirv_opt_args,
+                )
+        finally:
+            runspv.log_to_file = None
 
     if os.path.isfile(runspv.LOGFILE_NAME):
         with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
@@ -297,7 +231,7 @@ def do_image_job(args, image_job):
 ################################################################################
 
 
-def do_compute_job(args, comp_job):
+def do_compute_job(args, comp_job, spirv_opt_args: Optional[List[str]]):
     ssbo = 'ssbo'
     tmpcomp = 'tmp.comp'
     tmpcompspv = 'tmp.comp.spv'
@@ -312,22 +246,25 @@ def do_compute_job(args, comp_job):
     res = tt.ImageJobResult()
     res.log = '#### Start compute shader\n\n'
 
-    if args.spirvopt:
-        tmpcompspv, log, success = run_spirv_opt(tmpcompspv, args)
-        res.log += log
-        if not success:
-            res.status = tt.JobStatus.UNEXPECTED_ERROR
-            return res
-
     assert not args.legacy_worker
-    runspv.run_compute_amber(
-        comp=tmpcompspv,
-        json_file=tmpjson,
-        output_dir=os.getcwd(),
-        force=args.force,
-        is_android=(args.target == 'android'),
-        skip_render=comp_job.skip_render
-    )
+
+    # Set runspv logger. Use try-finally to clean up.
+
+    with open(runspv.LOGFILE_NAME, 'w', encoding='utf-8', errors='ignore') as f:
+        try:
+            runspv.log_to_file = f
+
+            runspv.run_compute_amber(
+                comp_original=tmpcompspv,
+                json_file=tmpjson,
+                output_dir=os.getcwd(),
+                force=args.force,
+                is_android=(args.target == 'android'),
+                skip_render=comp_job.skip_render,
+                spirv_opt_args=spirv_opt_args,
+            )
+        finally:
+            runspv.log_to_file = None
 
     if os.path.isfile(runspv.LOGFILE_NAME):
         with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
@@ -453,7 +390,7 @@ def main():
 
     parser.add_argument(
         '--spirvopt',
-        help='Enable spirv-opt with these optimisation flags (e.g. --spirvopt=-O)')
+        help=runspv.SPIRV_OPT_OPTION_HELP)
 
     parser.add_argument(
         '--local-shader-job',
@@ -461,6 +398,10 @@ def main():
              'server.')
 
     args = parser.parse_args()
+
+    spirv_args = None  # type: Optional[List[str]]
+    if args.spirvopt:
+        spirv_args = args.spirvopt.split()
 
     # Check the target is known.
     if not (args.target == 'android' or args.target == 'host'):
@@ -550,7 +491,7 @@ def main():
                 with open(shader_job_prefix + '.comp', 'r', encoding='utf-8', errors='ignore') as f:
                     fake_job.computeSource = f.read()
                 fake_job.computeInfo = fake_job.uniformsInfo
-            do_image_job(args, fake_job)
+            do_image_job(args, fake_job, spirv_args)
             return
 
         if not service:
@@ -576,11 +517,11 @@ def main():
 
                 if job.imageJob.computeSource:
                     print("#### Compute job: " + job.imageJob.name)
-                    job.imageJob.result = do_compute_job(args, job.imageJob)
+                    job.imageJob.result = do_compute_job(args, job.imageJob, spirv_args)
 
                 else:
                     print("#### Image job: " + job.imageJob.name)
-                    job.imageJob.result = do_image_job(args, job.imageJob)
+                    job.imageJob.result = do_image_job(args, job.imageJob, spirv_args)
 
                 print("Send back, results status: {}".format(job.imageJob.result.status))
                 service.jobDone(worker, job)
