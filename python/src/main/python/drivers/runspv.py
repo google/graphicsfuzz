@@ -46,6 +46,9 @@ SERIAL_OPTION_HELP = (
 
 SKIP_RENDER_OPTION_HELP = 'Compile shaders but do not actually run them.'
 
+SPIRV_OPT_OPTION_HELP = 'Enable spirv-opt with these optimization flags.  Multiple arguments ' \
+                        'should be space-separated.  E.g. --spirvopt="-O --merge-blocks" '
+
 TARGET_HELP = 'One of \'host\' (run on host machine) or \'android\' (run on Android device).'
 
 ################################################################################
@@ -1261,14 +1264,8 @@ def main_helper(args):
     parser.add_argument('--serial', help=SERIAL_OPTION_HELP)
     parser.add_argument('--legacy-worker', action='store_true', help=LEGACY_OPTION_HELP)
     parser.add_argument('--skip-render', action='store_true', help=SKIP_RENDER_OPTION_HELP)
+    parser.add_argument('--spirvopt', help=SPIRV_OPT_OPTION_HELP)
     parser.add_argument('--force', action='store_true', help=FORCE_OPTION_HELP)
-    parser.add_argument(
-        '--spirvopt',
-        help=(
-            'Enable spirv-opt with these optimization flags. '
-            'Multiple arguments should be space-separated. '
-            'E.g. --spirvopt="-O --merge-blocks"')
-    )
 
     args = parser.parse_args(args)
 

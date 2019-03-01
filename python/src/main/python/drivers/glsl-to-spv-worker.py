@@ -418,11 +418,7 @@ def main():
 
     parser.add_argument(
         '--spirvopt',
-        help=(
-            'Enable spirv-opt with these optimization flags. '
-            'Multiple arguments should be space-separated. '
-            'E.g. --spirvopt="-O --merge-blocks"')
-    )
+        help=runspv.SPIRV_OPT_OPTION_HELP)
 
     parser.add_argument(
         '--local-shader-job',
