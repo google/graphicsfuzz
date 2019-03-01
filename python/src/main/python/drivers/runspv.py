@@ -260,14 +260,14 @@ def run_spirv_opt(
 
     log('Running optimizer.')
 
-    spv_out_file = spv_file + '.spv'
+    result = spv_file + '.opt.spv'
 
-    cmd = [spirvopt_path(), spv_file, '-o', spv_out_file]
+    cmd = [spirvopt_path(), spv_file, '-o', result]
     cmd += spirv_opt_args
 
     subprocess_helper(cmd, timeout=TIMEOUT_SPIRV_OPT_SECONDS)
 
-    return spv_out_file
+    return result
 
 
 def prepare_shader(
@@ -330,7 +330,7 @@ def prepare_shader(
     assert len(result) > 0
 
     if spirv_opt_args:
-        run_spirv_opt(result, spirv_opt_args)
+        result = run_spirv_opt(result, spirv_opt_args)
 
     return result
 

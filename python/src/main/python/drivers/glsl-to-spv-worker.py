@@ -80,16 +80,17 @@ def remove(f):
 ################################################################################
 
 
-def prepare_vert_file():
+def prepare_vert_file() -> str:
     vert_filename = 'test.vert'
-    vert_file_default_content = '''#version 310 es
+    if not os.path.isfile(vert_filename):
+        vert_file_default_content = '''#version 310 es
 layout(location=0) in highp vec4 a_position;
 void main (void) {
   gl_Position = a_position;
 }
 '''
-    if not os.path.isfile(vert_filename):
         write_to_file(vert_file_default_content, vert_filename)
+    return vert_filename
 
 
 ################################################################################
@@ -124,32 +125,15 @@ def glsl2spv(glsl, spv):
 ################################################################################
 
 
-def prepare_shaders(frag_file: str, frag_spv_file: str, vert_spv_file: Optional[str]):
-    # Prepare vertex shader if it is needed
-    if vert_spv_file:
-        prepare_vert_file()
-        glsl2spv('test.vert', vert_spv_file)
-
-    # Prepare fragment shader
-    glsl2spv(frag_file, frag_spv_file)
-
-
-################################################################################
-
-
 def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
     name = image_job.name
     if name.endswith('.frag'):
         name = remove_end(name, '.frag')
     # TODO(324): the worker currently assumes that no vertex shader is present in the image job.
+    vert_file = prepare_vert_file() if args.legacy_worker else None
     frag_file = name + '.frag'
     json_file = name + '.json'
     png = 'image_0.png'
-
-    frag_spv_file = name + '.frag.spv'
-
-    # The Amber worker does not need a default vertex shader, but the legacy worker does.
-    vert_spv_file = name + '.vert.spv' if args.legacy_worker else None
 
     res = tt.ImageJobResult()
 
@@ -161,18 +145,6 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
 
     write_to_file(image_job.fragmentSource, frag_file)
     write_to_file(image_job.uniformsInfo, json_file)
-
-    # Shader preparation may fail for invalid shaders
-    try:
-        prepare_shaders(frag_file, frag_spv_file, vert_spv_file)
-    except subprocess.CalledProcessError as err:
-        res.log += 'ERROR\n'
-        res.log += 'COMMAND: {}\n'.format(err.cmd)
-        res.log += 'RETURNCODE: {}\n'.format(err.returncode)
-        res.log += 'STDOUT: {}\n'.format(err.stdout)
-        res.log += 'STDERR: {}\n'.format(err.stderr)
-        res.status = tt.JobStatus.UNEXPECTED_ERROR
-        return res
 
     remove(png)
     remove(runspv.LOGFILE_NAME)
@@ -186,8 +158,8 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
             if args.legacy_worker:
                 if args.target == 'host':
                     runspv.run_image_host_legacy(
-                        vert_original=vert_spv_file,
-                        frag_original=frag_spv_file,
+                        vert_original=vert_file,
+                        frag_original=frag_file,
                         json_file=json_file,
                         output_dir=os.getcwd(),
                         skip_render=skip_render,
@@ -196,8 +168,8 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
                 else:
                     assert args.target == 'android'
                     runspv.run_image_android_legacy(
-                        vert_original=vert_spv_file,
-                        frag_original=frag_spv_file,
+                        vert_original=vert_file,
+                        frag_original=frag_file,
                         json_file=json_file,
                         output_dir=os.getcwd(),
                         force=args.force,
@@ -206,8 +178,8 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
                     )
             else:
                 runspv.run_image_amber(
-                    vert_original=vert_spv_file,
-                    frag_original=frag_spv_file,
+                    vert_original=vert_file,
+                    frag_original=frag_file,
                     json_file=json_file,
                     output_dir=os.getcwd(),
                     force=args.force,
