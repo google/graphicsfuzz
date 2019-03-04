@@ -40,7 +40,7 @@ static const VkSampleCountFlagBits num_samples_ = VK_SAMPLE_COUNT_1_BIT;
 static const VkFormat depth_format_ = VK_FORMAT_D24_UNORM_S8_UINT;
 static const uint64_t fence_timeout_nanoseconds_ = 100000000;
 // Clear with opaque black
-static const float clear_color_[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+static const float clear_color_[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 // Sanity
 const char *sanity_uniforms_string = "{}";
 
