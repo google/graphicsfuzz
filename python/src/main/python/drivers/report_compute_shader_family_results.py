@@ -32,8 +32,11 @@ def exact_match(reference_result: str, variant_result: str) -> bool:
 
 
 def fuzzy_match(reference_result: str, variant_result: str, args: argparse.Namespace) -> bool:
-    cmd = ['inspect_compute_results', 'fuzzydiff', reference_result, variant_result,
-           '--rel_tol=' + args.rel_tol, '--abs_tol=' + args.abs_tol]
+    cmd = ['inspect_compute_results', 'fuzzydiff', reference_result, variant_result]
+    if args.rel_tol:
+        cmd.append('--rel_tol=' + args.rel_tol)
+    if args.abs_tol:
+        cmd.append('--abs_tol=' + args.abs_tol)
     proc = subprocess.run(cmd)
     return proc.returncode == 0
 
