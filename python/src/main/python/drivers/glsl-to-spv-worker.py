@@ -503,7 +503,7 @@ def main():
                 with open(shader_job_prefix + '.comp', 'r', encoding='utf-8', errors='ignore') as f:
                     fake_job.computeSource = f.read()
                 fake_job.computeInfo = fake_job.uniformsInfo
-            do_image_job(args, fake_job, spirv_args)
+            do_image_job(args, fake_job, spirv_args, work_dir='out')
             return
 
         if not service:
