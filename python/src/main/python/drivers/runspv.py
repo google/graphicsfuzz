@@ -18,6 +18,7 @@ import argparse
 import filecmp
 import os
 import shutil
+import signal
 import struct
 import subprocess
 import time
@@ -107,7 +108,7 @@ def log_stdout_stderr(
 
 def log_returncode(
     result: Union[
-        subprocess.CalledProcessError, subprocess.CompletedProcess],
+        subprocess.CalledProcessError, subprocess.CompletedProcess, subprocess.Popen],
 ) -> None:
     log('RETURNCODE: ' + str(result.returncode))
 
@@ -139,6 +140,8 @@ def subprocess_helper(
     # text= is Python 3.6.
     # Do not use shell=True.
 
+    # Note: changes here should be reflected in run_catchsegv()
+
     try:
         log('Exec' + (' (verbose):' if verbose else ':') + str(cmd))
 
@@ -168,6 +171,45 @@ def subprocess_helper(
         log_stdout_stderr(result)
 
     return result
+
+
+def run_catchsegv(cmd: List[str], timeout=None, verbose=False) -> str:
+    # Subprocess_helper cannot handle the proper killing of other sub-processes
+    # spawned by catchsegv, hence the direct Popen call and process group
+    # management below.
+    status = 'SUCCESS'
+
+    log('Exec' + (' (verbose):' if verbose else ':') + str(cmd))
+
+    proc = subprocess.Popen(cmd,
+                            start_new_session=True, # this creates a process group for all children
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+
+    try:
+        outs, errs = proc.communicate(timeout=TIMEOUT_RUN)
+        if proc.returncode != 0:
+            status = 'CRASH'
+        log_returncode(proc)
+
+        if verbose:
+            if outs is not None:
+                outs = outs.decode(encoding='utf-8', errors='ignore')
+            if errs is not None:
+                errs = errs.decode(encoding='utf-8', errors='ignore')
+            log('STDOUT:')
+            log(outs)
+            log('')
+            log('STDERR:')
+            log(errs)
+            log('')
+
+    except subprocess.TimeoutExpired as ex:
+        # Kill the whole process group to include all children of catchsegv
+        os.killpg(proc.pid, signal.SIGKILL)
+        status = 'TIMEOUT'
+
+    return status
 
 
 def open_helper(file: str, mode: str):
@@ -235,6 +277,14 @@ def spirvopt_path():
     if os.path.isfile(spirvopt):
         return spirvopt
     return tool_on_path('spirv-opt')
+
+
+def maybe_add_catchsegv(cmd: List[str]) -> None:
+    try:
+        cmd.append(tool_on_path('catchsegv'))
+    except ToolNotOnPathError:
+        # Didn't find catchsegv on path; that's OK
+        pass
 
 
 def adb_path():
@@ -911,6 +961,7 @@ def run_image_amber(
 
     else:
         cmd = []
+        maybe_add_catchsegv(cmd)
         cmd.append(tool_on_path('amber'))
         if skip_render:
             # -ps tells amber to stop after graphics pipeline creation
@@ -921,12 +972,16 @@ def run_image_amber(
             cmd.append(png_image)
         cmd.append(amberscript_file)
         status = 'SUCCESS'
-        try:
-            subprocess_helper(cmd, timeout=TIMEOUT_RUN, verbose=True)
-        except subprocess.TimeoutExpired:
-            status = 'TIMEOUT'
-        except subprocess.CalledProcessError:
-            status = 'CRASH'
+
+        if 'catchsegv' in cmd[0]:
+            status = run_catchsegv(cmd, timeout=TIMEOUT_RUN, verbose=True)
+        else:
+            try:
+                subprocess_helper(cmd, timeout=TIMEOUT_RUN, verbose=True)
+            except subprocess.TimeoutExpired:
+                status = 'TIMEOUT'
+            except subprocess.CalledProcessError:
+                status = 'CRASH'
 
         if status == 'SUCCESS':
             assert skip_render or os.path.isfile(png_image)
@@ -1170,6 +1225,7 @@ def run_compute_amber(
 
     else:
         cmd = []
+        maybe_add_catchsegv(cmd)
         cmd.append(tool_on_path('amber'))
         if skip_render:
             cmd.append('-ps')
@@ -1181,12 +1237,16 @@ def run_compute_amber(
         cmd.append(amberscript_file)
 
         status = 'SUCCESS'
-        try:
-            subprocess_helper(cmd, timeout=TIMEOUT_RUN, verbose=True)
-        except subprocess.TimeoutExpired:
-            status = 'TIMEOUT'
-        except subprocess.CalledProcessError:
-            status = 'CRASH'
+
+        if 'catchsegv' in cmd[0]:
+            status = run_catchsegv(cmd, timeout=TIMEOUT_RUN, verbose=True)
+        else:
+            try:
+                subprocess_helper(cmd, timeout=TIMEOUT_RUN, verbose=True)
+            except subprocess.TimeoutExpired:
+                status = 'TIMEOUT'
+            except subprocess.CalledProcessError:
+                status = 'CRASH'
 
         if status == 'SUCCESS':
             assert skip_render or os.path.isfile(ssbo_output)
