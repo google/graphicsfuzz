@@ -608,6 +608,10 @@ def test_image_0007_android_amber_vs_legacy(tmp_path: pathlib2.Path):
     check_images_match_android_amber_vs_legacy(tmp_path, 'image_test_0007.json')
 
 
+def test_image_0008_android_amber_vs_legacy(tmp_path: pathlib2.Path):
+    check_images_match_android_amber_vs_legacy(tmp_path, 'image_test_0008.json')
+
+
 #################################
 # Android vs. host, amber
 
@@ -643,6 +647,10 @@ def test_image_0006_host_vs_android_amber(tmp_path: pathlib2.Path):
 
 def test_image_0007_host_vs_android_amber(tmp_path: pathlib2.Path):
     check_images_match_host_vs_android_amber(tmp_path, 'image_test_0007.json')
+
+
+def test_image_0008_host_vs_android_amber(tmp_path: pathlib2.Path):
+    check_images_match_host_vs_android_amber(tmp_path, 'image_test_0008.json')
 
 
 def test_compute_0001_findmax_host_vs_android_amber(tmp_path: pathlib2.Path):
