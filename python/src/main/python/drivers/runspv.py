@@ -94,7 +94,10 @@ def log(message: str) -> None:
 
 def log_stdout_stderr(
     result: Union[
-        subprocess.CalledProcessError, subprocess.CompletedProcess, subprocess.TimeoutExpired],
+        subprocess.CalledProcessError,
+        subprocess.CompletedProcess,
+        subprocess.TimeoutExpired,
+    ],
 ) -> None:
 
     log('STDOUT:')
@@ -194,7 +197,7 @@ def run_catchsegv(cmd: List[str], timeout=None, verbose=False) -> str:
             status = 'CRASH'
         log_returncode(proc)
 
-        if verbose:
+        if verbose or proc.returncode != 0:
             if outs is not None:
                 outs = outs.decode(encoding='utf-8', errors='ignore')
             if errs is not None:
@@ -206,9 +209,21 @@ def run_catchsegv(cmd: List[str], timeout=None, verbose=False) -> str:
             log(errs)
             log('')
 
-    except subprocess.TimeoutExpired as ex:
+    except subprocess.TimeoutExpired:
         # Kill the whole process group to include all children of catchsegv
         os.killpg(proc.pid, signal.SIGKILL)
+        outs, errs = proc.communicate()
+        if outs is not None:
+            outs = outs.decode(encoding='utf-8', errors='ignore')
+        if errs is not None:
+            errs = errs.decode(encoding='utf-8', errors='ignore')
+        log('STDOUT:')
+        log(outs)
+        log('')
+        log('STDERR:')
+        log(errs)
+        log('')
+
         status = 'TIMEOUT'
 
     return status
