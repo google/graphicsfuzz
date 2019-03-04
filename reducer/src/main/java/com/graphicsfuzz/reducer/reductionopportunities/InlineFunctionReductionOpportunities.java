@@ -29,7 +29,7 @@ import java.util.List;
 
 public class InlineFunctionReductionOpportunities extends StandardVisitor {
 
-  private static final int INLINE_NODE_LIMIT = 100; // Only inline relatively small functions
+  private static final int INLINE_NODE_LIMIT = 50; // Only inline relatively small functions
 
   private final List<InlineFunctionReductionOpportunity> opportunities;
   private final TranslationUnit tu;

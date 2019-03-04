@@ -30,7 +30,8 @@ public class ArrayIndexExpr extends Expr {
     // v[0]; // fine
     // v + vec2(0.0)[0]; // not fine - the following was probably intended:
     // (v + vec2(0.0))[0]; // fine
-    assert !(array instanceof BinaryExpr);
+    assert !(array instanceof BinaryExpr) :
+        "Array index into binary expression " + array.getText() + " not allowed.";
     this.array = array;
     this.index = index;
   }
