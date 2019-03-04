@@ -180,6 +180,11 @@ def do_image_job(
                     skip_render=skip_render,
                     spirv_opt_args=spirv_opt_args,
                 )
+        except Exception as ex:
+            runspv.log('Exception: ' + str(ex))
+            runspv.log('Removing STATUS file.')
+            remove(status_file)
+            runspv.log('Continuing.')
         finally:
             runspv.log_to_file = None
 
@@ -270,6 +275,11 @@ def do_compute_job(
                 skip_render=comp_job.skipRender,
                 spirv_opt_args=spirv_opt_args,
             )
+        except Exception as ex:
+            runspv.log('Exception: ' + str(ex))
+            runspv.log('Removing STATUS file.')
+            remove(status_file)
+            runspv.log('Continuing.')
         finally:
             runspv.log_to_file = None
 
