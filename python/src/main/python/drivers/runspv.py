@@ -181,10 +181,12 @@ def run_catchsegv(cmd: List[str], timeout=None, verbose=False) -> str:
 
     log('Exec' + (' (verbose):' if verbose else ':') + str(cmd))
 
-    proc = subprocess.Popen(cmd,
-                            start_new_session=True, # this creates a process group for all children
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    proc = subprocess.Popen(
+        cmd,
+        start_new_session=True,  # this creates a process group for all children
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
 
     try:
         outs, errs = proc.communicate(timeout=TIMEOUT_RUN)
@@ -279,12 +281,14 @@ def spirvopt_path():
     return tool_on_path('spirv-opt')
 
 
-def maybe_add_catchsegv(cmd: List[str]) -> None:
+def maybe_add_catchsegv(cmd: List[str]) -> bool:
     try:
         cmd.append(tool_on_path('catchsegv'))
+        return True
     except ToolNotOnPathError:
         # Didn't find catchsegv on path; that's OK
         pass
+    return False
 
 
 def adb_path():
@@ -961,7 +965,7 @@ def run_image_amber(
 
     else:
         cmd = []
-        maybe_add_catchsegv(cmd)
+        added_catchsegv = maybe_add_catchsegv(cmd)
         cmd.append(tool_on_path('amber'))
         if skip_render:
             # -ps tells amber to stop after graphics pipeline creation
@@ -973,7 +977,7 @@ def run_image_amber(
         cmd.append(amberscript_file)
         status = 'SUCCESS'
 
-        if 'catchsegv' in cmd[0]:
+        if added_catchsegv:
             status = run_catchsegv(cmd, timeout=TIMEOUT_RUN, verbose=True)
         else:
             try:
@@ -1225,7 +1229,7 @@ def run_compute_amber(
 
     else:
         cmd = []
-        maybe_add_catchsegv(cmd)
+        added_catchsegv = maybe_add_catchsegv(cmd)
         cmd.append(tool_on_path('amber'))
         if skip_render:
             cmd.append('-ps')
@@ -1238,7 +1242,7 @@ def run_compute_amber(
 
         status = 'SUCCESS'
 
-        if 'catchsegv' in cmd[0]:
+        if added_catchsegv:
             status = run_catchsegv(cmd, timeout=TIMEOUT_RUN, verbose=True)
         else:
             try:
