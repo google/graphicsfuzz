@@ -715,7 +715,7 @@ def run_image_host_legacy(
     status_file = os.path.join(output_dir, 'STATUS')
 
     cmd = [
-        'vkworker',
+        tool_on_path('vkworker'),
         vert,
         frag,
         json_file,
@@ -743,17 +743,8 @@ def run_image_host_legacy(
 
 
 def dump_info_host_legacy():
-    cmd = ['vkworker', '--info']
-    status = 'SUCCESS'
-    try:
-        subprocess_helper(cmd, timeout=TIMEOUT_RUN)
-    except subprocess.TimeoutExpired:
-        status = 'TIMEOUT'
-    except subprocess.CalledProcessError:
-        status = 'CRASH'
-
-    with open_helper('STATUS', 'w') as f:
-        f.write(status)
+    cmd = [tool_on_path('vkworker'), '--info']
+    subprocess_helper(cmd, timeout=TIMEOUT_RUN)
 
 
 def run_image_legacy(
