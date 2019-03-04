@@ -241,9 +241,9 @@ def do_compute_job(
     tmpcomp = os.path.join(output_dir, 'tmp.comp')
     tmpjson = os.path.join(output_dir, 'tmp.json')
     log_file = os.path.join(output_dir, runspv.LOGFILE_NAME)
+    ssbo_json_file = os.path.join(output_dir, 'ssbo.json')
 
     # Output files from running the app.
-    ssbo = os.path.join(output_dir, 'ssbo')
     status_file = os.path.join(output_dir, 'STATUS')
 
     write_to_file(comp_job.computeSource, tmpcomp)
@@ -282,8 +282,8 @@ def do_compute_job(
             status = f.read().rstrip()
         if status == 'SUCCESS':
             res.status = tt.JobStatus.SUCCESS
-            assert (os.path.isfile('ssbo.json'))
-            with open('ssbo.json', 'r') as f:
+            assert (os.path.isfile(ssbo_json_file))
+            with open(ssbo_json_file, 'r') as f:
                 res.computeOutputs = f.read()
 
         elif status == 'CRASH':
