@@ -107,7 +107,7 @@ def log_stdout_stderr(
 
 def log_returncode(
     result: Union[
-        subprocess.CalledProcessError, subprocess.CompletedProcess, subprocess.TimeoutExpired],
+        subprocess.CalledProcessError, subprocess.CompletedProcess],
 ) -> None:
     log('RETURNCODE: ' + str(result.returncode))
 
@@ -149,7 +149,13 @@ def subprocess_helper(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as ex:
+    except subprocess.TimeoutExpired as ex:
+        convert_stdout_stderr(ex)
+        # No returncode in case of timeout.
+        log_stdout_stderr(ex)
+        raise ex
+
+    except subprocess.CalledProcessError as ex:
         convert_stdout_stderr(ex)
         log_returncode(ex)
         log_stdout_stderr(ex)
