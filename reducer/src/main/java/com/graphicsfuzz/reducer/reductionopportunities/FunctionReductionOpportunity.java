@@ -21,11 +21,17 @@ import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
+import com.graphicsfuzz.common.util.StatsVisitor;
 
 class FunctionReductionOpportunity extends AbstractReductionOpportunity {
 
   private TranslationUnit tu;
   private Declaration functionDefinitionOrPrototype;
+
+  // This tracks the number of nodes that will be removed by applying the opportunity at its
+  // time of creation (this number may be different when the opportunity is actually applied,
+  // due to the effects of other opportunities).
+  private final int numRemovableNodes;
 
   public FunctionReductionOpportunity(TranslationUnit tu,
                                       Declaration functionDefinitionOrPrototype,
@@ -35,6 +41,7 @@ class FunctionReductionOpportunity extends AbstractReductionOpportunity {
         || functionDefinitionOrPrototype instanceof FunctionPrototype;
     this.tu = tu;
     this.functionDefinitionOrPrototype = functionDefinitionOrPrototype;
+    this.numRemovableNodes = new StatsVisitor(functionDefinitionOrPrototype).getNumNodes();
   }
 
   @Override
@@ -51,6 +58,10 @@ class FunctionReductionOpportunity extends AbstractReductionOpportunity {
   @Override
   public boolean preconditionHolds() {
     return tu.getTopLevelDeclarations().contains(functionDefinitionOrPrototype);
+  }
+
+  public int getNumRemovableNodes() {
+    return numRemovableNodes;
   }
 
 }

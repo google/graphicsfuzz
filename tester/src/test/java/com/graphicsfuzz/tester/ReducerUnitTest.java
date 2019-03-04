@@ -228,10 +228,10 @@ public class ReducerUnitTest {
 
       new ReductionDriver(new ReducerContext(false,
           shadingLanguageVersion, generator,
-            new IdGenerator(), true), false, fileOps, initialState)
-            .doReduction(shaderJobShortName, 0,
-                  new RandomFileJudge(generator, threshold, throwExceptionOnInvalid, fileOps),
-                workDir,
+            new IdGenerator(), true), false, fileOps,
+          new RandomFileJudge(generator, threshold, throwExceptionOnInvalid, fileOps),
+          workDir)
+            .doReduction(initialState, shaderJobShortName, 0,
                   100);
     }
 
@@ -391,9 +391,10 @@ public class ReducerUnitTest {
     final ShaderJob state = fileOps.readShaderJobFile(shaderJobFile);
     fileOps.copyShaderJobFileTo(shaderJobFile, new File(temporaryFolder.getRoot(),
         shaderJobFile.getName()), false);
-    return new ReductionDriver(new ReducerContext(false, version, generator, new IdGenerator(), true), false, fileOps, state)
-        .doReduction(shaderJobShortName, 0,
-          fileJudge, temporaryFolder.getRoot(), -1);
+    return new ReductionDriver(new ReducerContext(false, version, generator,
+        new IdGenerator(), true), false, fileOps,
+        fileJudge, temporaryFolder.getRoot())
+        .doReduction(state, shaderJobShortName, 0, -1);
   }
 
   @Test

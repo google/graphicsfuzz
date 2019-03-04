@@ -145,15 +145,15 @@ public class ReducerBugPoint {
                 1, true),
             verbose,
             fileOps,
-            initialState
-        ).doReduction(
-            FilenameUtils.removeExtension(interestingShaderJobFile.getAbsolutePath()),
-            0,
             new RandomFileJudge(
                 generator,
                 10,
                 ns.getBoolean("exception_on_invalid"), fileOps),
-            workDir,
+            workDir
+        ).doReduction(
+            initialState,
+            FilenameUtils.removeExtension(interestingShaderJobFile.getAbsolutePath()),
+            0,
             STEP_LIMIT);
 
       } catch (Throwable throwable) {

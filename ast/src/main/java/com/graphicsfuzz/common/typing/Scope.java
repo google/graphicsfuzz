@@ -59,6 +59,25 @@ public class Scope {
   }
 
   /**
+   * Checks whether the given name occurs more than once in this scope and all of its ancestor
+   * scopes.
+   * @param name A variable name.
+   * @return true if and only if the name is shadowed.
+   */
+  public boolean isShadowed(String name) {
+    boolean seenNameAlready = false;
+    for (Scope current = this; current != null; current = current.parent) {
+      if (current.keys().contains(name)) {
+        if (seenNameAlready) {
+          return true;
+        }
+        seenNameAlready = true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Look in current scope to see whether we have a struct definition type matching the struct name.
    * @param structName Name of struct type.
    * @return Corresponding struct definition, if found, otherwise null.

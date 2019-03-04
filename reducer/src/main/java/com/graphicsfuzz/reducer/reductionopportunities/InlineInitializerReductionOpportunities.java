@@ -38,7 +38,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class InlineInitializerReductionOpportunities
       extends ReductionOpportunitiesBase<SimplifyExprReductionOpportunity> {
 
-  private static final int INITIALIZER_NODE_LIMIT = 20;
+  private static final int INITIALIZER_NODE_LIMIT = 10;
 
   // All variable identifier expressions that can be potentially replaced with initializers.
   private final List<Pair<VariableDeclInfo, VariableIdentifierExpr>> inlineableUsages;
@@ -97,6 +97,21 @@ public class InlineInitializerReductionOpportunities
     if (!allowedToReduce(variableDeclInfo)) {
       return;
     }
+
+    // For each variable name referenced in the initializer, we check that there is no name
+    // shadowing of the name in the current scope.  We could do something more refined here, to
+    // allow some shadowing, but it is simpler to just disallow shadowing completely.
+    if (new CheckPredicateVisitor() {
+      @Override
+      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        if (currentScope.isShadowed(variableIdentifierExpr.getName())) {
+          predicateHolds();
+        }
+      }
+    }.test(variableDeclInfo.getInitializer())) {
+      return;
+    }
+
     if (inLValueContext()) {
       if (!context.reduceEverywhere() && !currentProgramPointHasNoEffect()) {
         // The declaration is used as an l-value.  To preserve semantics we cannot inline its

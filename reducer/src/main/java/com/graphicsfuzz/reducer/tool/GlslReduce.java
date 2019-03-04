@@ -514,12 +514,12 @@ public class GlslReduce {
             emitGraphicsFuzzDefines),
         verbose,
         fileOps,
-        initialState)
+        fileJudge,
+        workDir)
         .doReduction(
+            initialState,
             outputShortName,
             fileCountOffset,
-            fileJudge,
-            workDir,
             stepLimit);
   }
 

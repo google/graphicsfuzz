@@ -21,11 +21,17 @@ import com.graphicsfuzz.common.ast.stmt.CaseLabel;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
+import com.graphicsfuzz.common.util.StatsVisitor;
 
 public final class StmtReductionOpportunity extends AbstractReductionOpportunity {
 
   private final BlockStmt blockStmt;
   private final Stmt childOfBlockStmt;
+
+  // This tracks the number of nodes that will be removed by applying the opportunity at its
+  // time of creation (this number may be different when the opportunity is actually applied,
+  // due to the effects of other opportunities).
+  private final int numRemovableNodes;
 
   public StmtReductionOpportunity(BlockStmt blockStmt,
                                   Stmt childOfBlockStmt,
@@ -33,6 +39,11 @@ public final class StmtReductionOpportunity extends AbstractReductionOpportunity
     super(depth);
     this.blockStmt = blockStmt;
     this.childOfBlockStmt = childOfBlockStmt;
+    this.numRemovableNodes = new StatsVisitor(childOfBlockStmt).getNumNodes();
+  }
+
+  public Stmt getChild() {
+    return childOfBlockStmt;
   }
 
   @Override
@@ -85,4 +96,9 @@ public final class StmtReductionOpportunity extends AbstractReductionOpportunity
 
     return true;
   }
+
+  public int getNumRemovableNodes() {
+    return numRemovableNodes;
+  }
+
 }

@@ -16,6 +16,19 @@
 
 package com.graphicsfuzz.reducer.glslreducers;
 
-public class NoMoreToReduceException extends Exception {
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import java.util.Optional;
+
+public interface IReductionPass {
+
+  Optional<ShaderJob> tryApplyReduction(ShaderJob shaderJob);
+
+  void notifyInteresting(boolean interesting);
+
+  String getName();
+
+  void replenish();
+
+  boolean reachedMinimumGranularity();
 
 }
