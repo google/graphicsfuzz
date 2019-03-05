@@ -77,10 +77,13 @@ public class SystematicReductionPassManager implements IReductionPassManager {
       if (passIndex < currentPasses.size()) {
         anotherRoundWorthwhile |= !getCurrentPass().reachedMinimumGranularity();
       } else if (anotherRoundWorthwhile) {
+        LOGGER.info("Trying another round of the current set of passes");
         startNewRound(currentPasses);
       } else if (currentPasses == initialPasses) {
+        LOGGER.info("Moving to core passes");
         startNewRound(corePasses);
       } else if (currentPasses == corePasses) {
+        LOGGER.info("Moving to exhaustive passes (cleanup)");
         startNewRound(exhaustivePasses);
       } else {
         return Optional.empty();
