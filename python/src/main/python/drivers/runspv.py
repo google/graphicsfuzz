@@ -233,6 +233,11 @@ def open_helper(file: str, mode: str):
     return open(file, mode, encoding='utf-8', errors='ignore')
 
 
+def open_bin_helper(file: str, mode: str):
+    assert 'b' in mode
+    return open(file, mode)
+
+
 def get_platform():
     host = platform.system()
     if host == 'Linux' or host == 'Windows':
@@ -386,7 +391,7 @@ def prepare_shader(
         ]
         subprocess_helper(cmd, timeout=TIMEOUT_RUN)
     elif shader_basename.endswith('.spv'):
-        result = shader_basename
+        result = os.path.join(output_dir, shader_basename)
         try:
             shutil.copy(shader, result)
         except shutil.SameFileError:
@@ -538,8 +543,15 @@ def run_image_android_legacy(
 
     vert = prepare_shader(output_dir, vert_original, spirv_opt_args)
     frag = prepare_shader(output_dir, frag_original, spirv_opt_args)
-
     status_file = os.path.join(output_dir, 'STATUS')
+
+    sanity_before = os.path.join(output_dir, 'sanity_before.png')
+    sanity_after = os.path.join(output_dir, 'sanity_after.png')
+    ref_image = os.path.join(output_dir, 'image_0.png')
+    next_image_template = os.path.join(output_dir, 'image_{}.png')
+
+    nondet_0 = os.path.join(output_dir, 'nondet0.png')
+    nondet_1 = os.path.join(output_dir, 'nondet1.png')
 
     prepare_device(not force, True)
 
@@ -623,27 +635,23 @@ def run_image_android_legacy(
 
     # Check sanity:
     if status == 'SUCCESS':
-        sanity_before = os.path.join(output_dir, 'sanity_before.png')
-        sanity_after = os.path.join(output_dir, 'sanity_after.png')
         if os.path.isfile(sanity_before) and os.path.isfile(sanity_after):
             if not filecmp.cmp(sanity_before, sanity_after, shallow=False):
                 status = 'SANITY_ERROR'
 
     # Check nondet:
     if status == 'SUCCESS':
-        ref_image = os.path.join(output_dir, 'image_0.png')
         if os.path.isfile(ref_image):
             # If reference image is here then report nondet if any image is different or missing.
             for i in range(1, NUM_RENDER):
-                next_image = os.path.join(output_dir, 'image_{}.png'.format(i))
+                next_image = next_image_template.format(i)
                 if not os.path.isfile(next_image):
                     status = 'UNEXPECTED_ERROR'
-                    with open_helper(LOGFILE_NAME, 'a') as f:
-                        f.write('\n Not all images were produced? Missing image: {}\n'.format(i))
+                    log('\n Not all images were produced? Missing image: {}\n'.format(i))
                 elif not filecmp.cmp(ref_image, next_image, shallow=False):
                     status = 'NONDET'
-                    shutil.copy(ref_image, 'nondet0.png')
-                    shutil.copy(next_image, 'nondet1.png')
+                    shutil.copy(ref_image, nondet_0)
+                    shutil.copy(next_image, nondet_1)
 
     log('\nSTATUS ' + status + '\n')
     if status == 'UNEXPECTED_ERROR':
@@ -711,20 +719,15 @@ def run_image_host_legacy(
 
     status_file = os.path.join(output_dir, 'STATUS')
 
-    if skip_render:
-        with open_helper('SKIP_RENDER', 'w') as f:
-            f.write('SKIP_RENDER')
-    elif os.path.isfile('SKIP_RENDER'):
-        os.remove('SKIP_RENDER')
-
     cmd = [
-        'vkworker',
+        tool_on_path('vkworker'),
         vert,
         frag,
         json_file,
-        '--png_template={}'.format(os.path.join(output_dir, 'image')),
-        '--sanity_before={}'.format(os.path.join(output_dir, 'sanity_before.png')),
-        '--sanity_after={}'.format(os.path.join(output_dir, 'sanity_after.png'))
+        '-png_template={}'.format(os.path.join(output_dir, 'image')),
+        '-sanity_before={}'.format(os.path.join(output_dir, 'sanity_before.png')),
+        '-sanity_after={}'.format(os.path.join(output_dir, 'sanity_after.png')),
+        '-skip_render=' + ('true' if skip_render else 'false'),
     ]
     status = 'SUCCESS'
     try:
@@ -745,17 +748,8 @@ def run_image_host_legacy(
 
 
 def dump_info_host_legacy():
-    cmd = ['vkworker', '--info']
-    status = 'SUCCESS'
-    try:
-        subprocess_helper(cmd, timeout=TIMEOUT_RUN)
-    except subprocess.TimeoutExpired:
-        status = 'TIMEOUT'
-    except subprocess.CalledProcessError:
-        status = 'CRASH'
-
-    with open_helper('STATUS', 'w') as f:
-        f.write(status)
+    cmd = [tool_on_path('vkworker'), '--info']
+    subprocess_helper(cmd, timeout=TIMEOUT_RUN)
 
 
 def run_image_legacy(
@@ -909,6 +903,7 @@ def run_image_amber(
     amberscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
     status_file = os.path.join(output_dir, 'STATUS')
     png_image = os.path.join(output_dir, 'image_0.png')
+
     device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image_0.png'
 
     with open_helper(amberscript_file, 'w') as f:
