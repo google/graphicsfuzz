@@ -135,7 +135,7 @@ platform tools zip file without installing the rest of the SDK.
 
 ## Generating shaders using `glsl-generate`
 
-GraphicsFuzz works by taking a *reference shader* and producing a family of *variant shaders*, where each variant should render the same image as the reference (modulo possible floating-point differences).
+GraphicsFuzz works by taking a *reference shader* and producing a family of *variant shaders*, where each variant should render the same image or compute the same results as the reference (modulo possible floating-point differences).
 
 ![reference and variants, to GPU, to many equivalent images](images/variant-same.png)
 
@@ -150,18 +150,22 @@ and a folder of *donor shaders* (not pictured above).
 
 Although `glsl-generate` supports
 GLSL fragment, vertex, and compute shaders,
-our well-tested use-case is fragment shaders
-that only use uniforms as inputs,
-and our worker applications can only set uniforms
+our well-tested use-cases are:
+
+* fragment shaders that only use uniforms as inputs
+* compute shaders that only use a single SSBO plus uniforms as inputs
+
+Our worker applications can only set uniforms and SSBOs
 (they cannot set textures, etc.).
 Thus,
-we will focus on this use-case for the walkthrough.
+we will focus on these use-cases for the walkthrough.
 
-Each fragment shader input is, in fact,
+Each shader input is, in fact,
 a JSON file that we refer to as a
 **shader job**.
 This file contains the set of uniforms (and their values)
-that will be set;
+that will be set, as well as details about the SSBO
+and and number of work groups for a compute shader;
 [we discuss the format of the JSON file in more detail below](#format-of-json-files).
 For example, from our release zip:
 
@@ -192,9 +196,9 @@ For example, from our release zip:
 }
 ```
 
-The fragment shader file for this shader job
+The fragment or compute shader file for this shader job
 must have the same name and be alongside the shader job file
-with a `.frag` extension;
+with a `.frag` or `.comp` extension;
 in this case, at `graphicsfuzz/samples/300es/squares.frag`.
 Thus, the inputs and outputs for `glsl-generate` are actually
 folders of shader jobs.
@@ -212,17 +216,20 @@ cp -r graphicsfuzz/shaders/samples .
 # Synopsis:
 # glsl-generate [options] references donors num_variants prefix output_folder
 
-# Generate some GLSL version 300 es shaders.
+# Generate some GLSL version 300 es fragment shaders.
 glsl-generate --seed 0 samples/300es samples/donors 10 family_300es work/shaderfamilies
 
-# Generate some GLSL version 100 shaders.
+# Generate some GLSL version 100 fragment shaders.
 glsl-generate --seed 0 samples/100 samples/donors 10 family_100 work/shaderfamilies
 
-# Generate some "Vulkan-compatible" GLSL version 310 es shaders that can be translated to SPIR-V for Vulkan testing.
+# Generate some "Vulkan-compatible" GLSL version 310 es fragment shaders that can be translated to SPIR-V for Vulkan testing.
 glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 family_vulkan work/shaderfamilies
 
+# Generate some "Vulkan-compatible" GLSL version 310 es compute shaders that can be translated to SPIR-V for Vulkan testing.
+glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/compute/310es samples/donors 10 family_vulkan_compute work/shaderfamilies
+
 # Each line above will take approx. 1 minute, and will generate a shader family for every
-# shader in samples/300es or samples/100:
+# shader in samples/300es, samples/100, samples/310es and samples/compute/310es:
 ls work/shaderfamilies
 
 # Output:
@@ -244,6 +251,17 @@ ls work/shaderfamilies
 # family_vulkan_squares
 # family_vulkan_colorgrid_modulo
 # family_vulkan_prefix_sum
+
+# family_vulkan_compute_comp-0001-findmax
+# family_vulkan_compute_comp-0002-smooth-mean
+# family_vulkan_compute_comp-0003-random-middle-square
+# family_vulkan_compute_comp-0004-koggestone
+# family_vulkan_compute_comp-0005-sklansky
+# family_vulkan_compute_frag2comp-0001-bubblesort_flag
+# family_vulkan_compute_frag2comp-0002-colorgrid_modulo
+# family_vulkan_compute_frag2comp-0003-mandelbrot_blurry
+# family_vulkan_compute_frag2comp-0004-prefix_sum
+# family_vulkan_compute_frag2comp-0005-squares
 ```
 
 > The commands above are deterministic because we passed `--seed 0`.
@@ -476,6 +494,8 @@ worker application is failing to connect to the server.
 
 ## Running shaders on the worker applications
 
+> Running of compute shaders is only supported for the amber-based Vulkan worker (on both desktop and Android).  Compute shaders are not supported by the GLES workers.
+
 Return to the Web UI
 at [http://localhost:8080/webui](http://localhost:8080/webui)
 and refresh the page.
@@ -490,7 +510,10 @@ We can now queue some shader families to the workers:
 You should see the worker applications rendering images;
 these images are being captured and uploaded to the server.
 
-## Viewing shader family results
+## Viewing fragment shader family results
+
+> Viewing of compute shader family results in the Web UI is not supported.
+> [Instructions for inspecting compute shader results are provided below](Inspecting-results-for-compute-shader-families).
 
 Return to the Web UI
 at [http://localhost:8080/webui](http://localhost:8080/webui)
@@ -522,8 +545,9 @@ we will reduce the shader to obtain a smaller and simpler shader
 that is more useful in understanding the root cause of the bug.
 
 
-
 ## Queuing a bad image reduction
+
+> Reductions for bad results from compute shaders cannot be launched via the Web UI.  [See how to launch them via the command line](#Performing-a-bad-result-reduction-for-a-compute-shader).
 
 Return to the results table view:
 
@@ -569,6 +593,8 @@ was enough to cause the wrong image to be rendered.
 > available and on the path, which may not be the case on your system.
 
 ## Queuing a no image reduction
+
+> Reductions for the case where no SSBO is produced by a compute shader cannot be launched via the Web UI.  [See how to launch them via the command line](#Performing-a-"no-image"-reduction-on-a-fragment-or-compute-shader).
 
 The results table for the shader family below shows
 that `variant_004` failed to render due to a crash
@@ -698,6 +724,101 @@ the reduction of this variant leads to the following files:
   reduction. It typically refers to the smallest shader the reducer could obtain
   for this particular reduction.
 
+
+## Inspecting results for compute shader families
+
+A compute shader takes its inputs via uniforms and a single SSBO, and writes results via the SSBO.  The final state of the SSBO for a compute shader is stored in the `ssbo` sub-field of the `outputs` field of the `.info.json` result file produced upon running the shader.  The `ssbo` subfield is a list of lists: there is one list for each field of the SSBO, and it contains a list of data elements associated with that field.
+
+For instance, suppose a compute shader's SSBO is declared as follows:
+
+```
+layout(std430, binding = 0) buffer doesNotMatter {
+ int result;
+ int data[];
+};
+```
+
+A possible end-state for the SSBO is:
+
+```
+[[88],[28,12,14,14,18,16,18,18,28,22,24,24,28,26,28,28,48,32,34,34,38,36,38,
+38,48,42,44,44,48,46,48,48,68,52,54,54,58,56,58,58,68,62,64,64,68,66,68,68,88,72
+,74,74,78,76,78,78,88,82,84,84,88,86,88,88]]
+```
+
+This corresponds to a value of 88 for the `result` field of the SSBO, and values of 28, 12, 14, etc., for the elements of the `data` array field.
+
+### Showing the SSBO for a compute shader result
+
+To view the SSBO for a compute shader result in pretty-printed form, do:
+
+```sh
+# The 'show' argument specifies that we wish to view the SSBO for the given result file
+inspect_compute_results show /path/to/results/reference_or_variant.info.json
+```
+
+### Comparing SSBOs for two compute shader results
+
+To compare SSBOs for two result files from the same shader family (typically the reference and a variant), do:
+
+```sh
+# The 'exactdiff' argument specifies that we wish to compare the SSBOs for the given result files, and that they should be identical
+inspect_compute_results exactdiff /path/to/result/reference.info.json /path/to/result/variant_XXX.info.json
+```
+
+This will exit with code 0 if and only if the SSBOs associated with the two result files match *exactly*.  Otherwise, a mismatch will be reported and a non-zero exit code returned.
+
+To tolerate some degree of floating-point difference when comparing SSBO entries, do:
+
+```sh
+# The 'fuzzydiff' argument specifies that we wish to compare the SSBOs for the given result files, and that we want to allow some tolerance of numerical differences
+inspect_compute_results fuzzydiff /path/to/result/reference.info.json /path/to/result/variant_XXX.info.json
+```
+
+Fuzzy diffing uses the Python `isclose` function to compare numbers.  You can pass `--rel_tol` and `--abs_tol` to `inspect_compute_results` to control the relative and absolute tolerance used by `isclose`; see the [Python math documentation](https://docs.python.org/3/library/math.html) for details of the `rel_tol` and `abs_tol` arguments to `isclose`.
+
+```sh
+# Request a fuzzy diff with relative tolerance of 1e-5 and absolute tolerance of 0.1
+inspect_compute_results fuzzydiff --rel_tol=1e-5 --abs_tol=0.1 /path/to/result/reference.info.json /path/to/result/variant_XXX.info.json
+```
+
+To see the default values for `--rel_tol` and `--abs_tol`, do:
+
+```sh
+inspect_compute_results --help
+```
+
+## Viewing summary results for a compute shader family
+
+To see a summary of the results for a compute shader family, do e.g.:
+
+```sh
+report_compute_shader_family_results family_vulkan_compute_frag2comp-0005-squares
+
+# Possible output below, where:
+# - CRASH indicates that no results were produced
+# - SUCCESS indicates that the compute shader ran successfully
+# - EXACT_MATCH indicates that the SSBO results for a variant exactly match the reference
+# - FUZZY_MATCH indicates that the SSBO results for a variant differ from the reference but by a tolerable amount
+# - DIFFERENT indicates that the SSBO results for a variant differ from the reference by an intolerable amount
+#
+# family_vulkan_compute_frag2comp-0005-squares/reference.info.json: SUCCESS
+# family_vulkan_compute_frag2comp-0005-squares/variant_007.info.json: SUCCESS, EXACT_MATCH
+# family_vulkan_compute_frag2comp-0005-squares/variant_002.info.json: SUCCESS, FUZZY_MATCH
+# family_vulkan_compute_frag2comp-0005-squares/variant_004.info.json: CRASH
+# family_vulkan_compute_frag2comp-0005-squares/variant_006.info.json: SUCCESS, DIFFERENT
+# family_vulkan_compute_frag2comp-0005-squares/variant_003.info.json: SUCCESS, EXACT_MATCH
+# family_vulkan_compute_frag2comp-0005-squares/variant_009.info.json: SUCCESS, EXACT_MATCH
+# family_vulkan_compute_frag2comp-0005-squares/variant_005.info.json: SUCCESS, EXACT_MATCH
+# family_vulkan_compute_frag2comp-0005-squares/variant_000.info.json: SUCCESS, EXACT_MATCH
+# family_vulkan_compute_frag2comp-0005-squares/variant_008.info.json: CRASH
+# family_vulkan_compute_frag2comp-0005-squares/variant_001.info.json: SUCCESS, EXACT_MATCH
+```
+
+Arguments `--rel_tol` and `--abs_tol` can be used to control relative and absolute tolerance, [as described above](#Comparing-SSBOs-for-two-compute-shader-results).
+
+
+
 ## Running shaders from the command line
 
 Sometimes it can be useful to run individual shaders
@@ -817,7 +938,9 @@ Specify a server and worker name to run the shader jobs on a worker that is conn
 to the server.
 
 
-### Performing a no image reduction
+### Performing a "no image" reduction on a fragment or compute shader
+
+> Even though compute shaders do not produce images, a "no image" reduction can be performed on a compute shader to reduce cases where processing of the compute shader fails, such that an SSBO is not produced.
 
 Here is an example of a no image reduction command,
 similar to what the server would run.
@@ -836,7 +959,7 @@ glsl-reduce \
   --retry-limit 2 \
   --seed -136936935 \
   --server http://localhost:8080 \
-  --worker-name my-worker
+  --worker my-worker
 ```
 
 Explanation:
@@ -844,7 +967,7 @@ Explanation:
 * `shaderfamilies/sf1/variant_007.json`
   * The shader job to reduce.
 * `--reduction-kind NO_IMAGE`
-  * Interestingness test: no image is produced, plus the error-string provided below must match
+  * Interestingness test: no image (or SSBO) is produced, plus the error-string provided below must match
     the run log.
 * `--error-string "Fatal signal 11"`
   * The run log must contain this string for the shader job to be regarded as interesting.
@@ -858,10 +981,36 @@ Explanation:
   * If the worker fails to respond twice, assume the shader fails to render.
 * `--seed -136936935`
   * Random seed for the reduction algorithm.
-* `--server http://localhost:8080 --worker-name my-worker`
+* `--server http://localhost:8080 --worker my-worker`
   * `glsl-reduce` will, by default, run shader jobs locally, which is not well-tested.
 We specify a server and worker name to run the shader jobs on a worker that is connected
 to the server.
+
+
+### Performing a bad result reduction for a compute shader
+
+If you have a variant compute shader that produces a different SSBO result compared with its associated reference, you can reduce the problem as follows.
+
+```sh
+# Copy the .info.json file for the reference into your working directory
+cp /path/to/reference.info.json .
+# Make a copy of the template interestingness test for compute shader differences
+cp graphicsfuzz/python/interestingness/compute_interesting_diff.py .
+# Make the script executable
+chmod +x compute_interesting_diff.py
+
+# Edit 'REFERENCE_RESULTS', 'WORKER_NAME' and 'SERVER_URL' in 'compute_interesting_diff.py' to suit your needs
+
+# Run a reduction using 'compute_interesting_diff.py' to decide whether each reduced shader is interesting.  Results will be placed in 'someoutputdir'.  --preserve-semantics ensures that only semantics-preserving changes are made during reduction.
+glsl-reduce /path/to/bad/variant.json ./compute_interesting_diff.py --preserve-semantics --output someoutputdir
+```
+
+Sometimes it can be useful to reduce a compute shader while its SSBO continues to match an original result.  Another interestingness template is provided to facilitate this:
+
+```sh
+# This template can be used to reduce a compute shader while its results match 'reference.info.json'
+graphicsfuzz/python/interestingness/compute_interesting_same.py
+```
 
 ### Additional options
 
@@ -889,3 +1038,32 @@ Here is an example uniform value entry:
 ```
 
 The key, `iDate`, is the name of the uniform.  This maps to a sub-dictionary specifying: via `func` the OpenGL function used to set the uniform (`glUniform4f` in this case, corresponding to a `vec4`), via `args` a sequence of values that should be used to populate the uniform (four floating point values in this case), and optionally via `binding` an integer which, if provided, must match the binding of the uniform buffer to which the uniform belongs.
+
+In the case of compute shaders, the JSON file has a single additional entry with the key `$compute`.  
+
+Here is an example `$compute` entry:
+
+```
+  "$compute": {
+    "num_groups": [ 4, 1, 1 ],
+    "buffer": {
+      "binding": 0,
+      "fields":
+      [
+        { "type": "int", "data": [ 0 ] },
+        { "type": "int", "data":
+          [ 11, 12, 13, 14, 15, 16, 17, 18,
+            21, 22, 23, 24, 25, 26, 27, 28,
+            31, 32, 33, 34, 35, 36, 37, 38,
+            41, 42, 43, 44, 45, 46, 47, 48,
+            51, 52, 53, 54, 55, 56, 57, 58,
+            61, 62, 63, 64, 65, 66, 67, 68,
+            71, 72, 73, 74, 75, 76, 77, 78,
+            81, 82, 83, 84, 85, 86, 87, 88 ]
+        }
+      ]
+    }
+  }
+```
+
+The key, `$compute`, distinguishes this entry from uniform entries.  This maps to a sub-dictionary specifying: via `num_groups` the number of work groups that should execute the compute shader, and via `buffer` details of the SSBO for the compute shader.  In turn, `buffer` maps to a sub-dictionary specifying: via `binding` the binding for the SSBO, and via `fields` the layout of the SSBO struct including types and initial values for its fields.  This consists of an ordered list of dictionaries, one per field, where each dictionary specifies: via `type` the base type of the field, and via `data` the initial values for the field.  In the above example there are two fields: a scalar `int` field initialized to 0, and an `int` array field, initialized to 11, 12, 13, etc.
