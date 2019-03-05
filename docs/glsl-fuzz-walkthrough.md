@@ -49,17 +49,20 @@ If building from source, this directory can be found at `graphicsfuzz/target/gra
 
 ### amber
 
-In March 2019 we deprecated our legacy Vulkan worker to instead rely on
-[amber](https://github.com/google/amber) by default. (See the [legacy Vulkan
-worker documentation](legacy-vulkan-worker.md) in case of need.)
+In March 2019, we deprecated our legacy Vulkan worker to instead rely on
+[amber](https://github.com/google/amber) by default. See the [legacy Vulkan
+worker documentation](legacy-vulkan-worker.md) if necessary.
 
 For testing Vulkan drivers on Android, you need to build amber as a native
-Android executable, and place that executable in `/data/local/tmp` on any device
-where you want to run tests.
+Android executable, and place that executable in `/data/local/tmp/` on any device you want to test.
 
-As of March 2019, building amber as a native Android executable should require
-the following (amber commit `f0a3613b727c240ae8b98e232e655db71d87217e` is known
-to work):
+As of March 2019, you can build amber as a native Android executable as follows. 
+Commit `4c4017d29dddd40433b5865aa391e212ffe741d6` is known
+to work.
+
+> Note: on some platforms, it may be preferable to run the "tools" below using
+> `python tools/git-sync-deps` 
+> and `python tools/update_build_version.py . samples/ third_party/`.
 
 ```
 git clone git@github.com:google/amber
@@ -74,8 +77,8 @@ ${ANDROID_NDK_HOME}/ndk-build -C ../samples NDK_PROJECT_PATH=. NDK_LIBS_OUT=`pwd
 
 # The resulting native executable will be under build/libs/<abi>/amber_ndk
 
-# Don't forget to install it on any Android device you want to test, with the
-# matching ABI, e.g. for ARM 64 bits devices:
+# Don't forget to install it on any Android device you want to test. with the
+# matching ABI. E.g. for ARM 64-bit devices:
 adb push libs/arm64-v8a/amber_ndk /data/local/tmp/
 ```
 
@@ -83,7 +86,7 @@ For testing Vulkan drivers on desktop, you need to build amber on the relevant
 platform, and add it to your path.
 
 Please refer to the [amber repo](https://github.com/google/amber) for up-to-date
-documentation on how to build it.
+build documentation.
 
 ### Java 8+
 
@@ -318,8 +321,8 @@ to test the devices on which the workers run.
 The Vulkan worker is based on amber (see [amber in requirements](#amber)) to
 enable testing Vulkan drivers on Android, Linux, and Windows.
 
-> We used to ship our own legacy Vulkan worker app, which is now
-> depreciated. Please switch to amber.
+> We previously shipped our own legacy Vulkan worker app, which is now
+> deprecated. Please switch to amber.
 
 For Android, the Vulkan worker requires running `glsl-to-spv-worker` on a desktop machine, with
 the Android device accessible via adb:
@@ -331,8 +334,7 @@ glsl-server     <--- HTTP --->    glsl-to-spv-worker (calls runspv)   --- adb co
 
 > Note that the `runspv` script uses the `adb` tool to copy the shader files to
 > the device, run amber or the legacy worker, and copy back the results.
-> `runspv` can be used as a standalone tool to run shaders, with possible prior
-> conversion to SPIR-V.
+> `runspv` can be used as a standalone tool to run shaders in GLSL or SPIR-V format.
 > [We describe this in more detail below](#running-shaders-from-the-command-line).
 
 To start a Vulkan worker, make sure amber is installed (see [amber in
@@ -341,7 +343,7 @@ requirements](#amber)). On desktop, `amber` should be on your PATH.
 You can then use the `glsl-to-spv-worker` script to connect to the server:
 
 ```sh
-# Execute the worker script, pass the target ('android' or 'host') and the
+# Execute the worker script, passing the target ('android' or 'host') and the
 # worker name as arguments.
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
@@ -361,15 +363,17 @@ If you see `Cannot connect to server` then the worker script is failing to
 connect to the server.
 
 The intermediate files are saved in the current directory under
-a `WORKERNAME/` directory.
+`WORKER_NAME/SHADER_NAME/` subdirectories.
 For example, we might have a worker name of `pixel3`
-and so under `pixel3/` we will see:
+receiving shaders named `variant_000`, `variant_001`, etc.
+So, for example, under `pixel3/variant_000` we will see:
 
 ```sh
-tmpscript.shader_test    # The amber script for the latest test to have been ran
-variant_005.json         # The shader job file (containing uniforms data).
-variant_005.frag         # The GLSL fragment shader.
-variant_005.frag.spv     # The SPIR-V version of the fragment shader.
+tmpscript.shader_test    # The self-contained amber script test file for input to amber.
+variant_000.json         # The shader job file (containing uniforms data).
+variant_000.frag         # The GLSL fragment shader.
+variant_000.frag.spv     # The SPIR-V version of the fragment shader.
+image_0.png              # The image produced by the device.
 ```
 
 Don't care about the other kinds of worker? [Skip ahead to running shaders on workers](#running-shaders-on-the-worker-applications).
@@ -720,15 +724,21 @@ The output `.txt` files contain the run log for each shader.
 
 As described under the [Vulkan worker](vulkan-worker) section, the Vulkan worker
 uses `runspv` to run shaders on the device. You can use this script directly if
-you want to re-run some shaders.  Your device must show in `adb devices`.  For
+you want to re-run some shaders.
+
+Your device must show in `adb devices`.  For
 example:
 
 ```sh
-runspv --spirvopt=-O --serial 123ABC android variant_005.json outdir
+# add --spirvopt=-O to run spirv-opt on your shader 
+# add --serial 123ABC to specify the serial of your device from adb devices
+runspv android variant_005.json outdir
 ```
 
-where `123ABC` is the device serial number shown in `adb devices`. The results
-of running the shader will be output to `outdir/`.
+However, note that `runspv` will fail if you have, for example, 
+both `variant_005.frag` and `variant_005.frag.spv`;
+you must delete one of these files so `runspv` knows which file you want to test.
+The temporary files and results will be output to `outdir/`.
 
 ## Reducing shaders from the command line using `glsl-reduce`
 

@@ -89,8 +89,8 @@ or read the [walkthrough for a brief overview of using all tools
 
 The Vulkan worker relies on amber; see the [amber project
 documentation](https://github.com/google/amber) on how to build it. For Android,
-you will need to build the Android native executable `amber_ndk`, and push it on
-the device under `/data/local/tmp`.
+you will need to build the Android native executable `amber_ndk`, and push it to
+your device under `/data/local/tmp/`.
 
 ### Build the OpenGL worker (gles-worker)
 
