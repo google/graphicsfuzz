@@ -21,15 +21,15 @@ precision mediump float;
 uniform vec2 resolution;
 
 vec3 pickColor(int i) {
-  return vec3(float(i) / 100.0);
+  return vec3(float(i) / 50.0, float(i) / 120.0, float(i) / 140.0);
 }
 
 vec3 mand(float xCoord, float yCoord) {
   float height = resolution.y;
   float width = resolution.x;
 
-  float c_re = (xCoord - width/2.0)*4.0/width;
-  float c_im = (yCoord - height/2.0)*4.0/width;
+  float c_re = 0.8*(xCoord - width/2.0)*4.0/width - 0.4;
+  float c_im = 0.8*(yCoord - height/2.0)*4.0/width;
   float x = 0.0, y = 0.0;
   int iteration = 0;
   for (int k = 0; k < 1000; k++) {
@@ -49,16 +49,16 @@ vec3 mand(float xCoord, float yCoord) {
 }
 
 void main() {
-  vec3 data[9];
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      data[3*j + i] = mand(gl_FragCoord.x + float(i - 1), gl_FragCoord.y + float(j - 1));
+  vec3 data[16];
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      data[4*j + i] = mand(gl_FragCoord.x + float(i - 1), gl_FragCoord.y + float(j - 1));
     }
   }
   vec3 sum = vec3(0.0);
-  for (int i = 0; i < 9; i++) {
+  for (int i = 0; i < 16; i++) {
     sum += data[i];
   }
-  sum /= vec3(9.0);
+  sum /= vec3(16.0);
   gl_FragColor = vec4(sum, 1.0);
 }
