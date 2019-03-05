@@ -27,6 +27,7 @@ public final class WebUiConstants {
   static final String SHADERSET_DIR = "shaderfamilies";
   static final String WORKER_INFO_FILE = "client.json";
   static final String COMPUTE_SHADER_DOC_URL =
-      "https://github.com/google/graphicsfuzz/todo-compute-shader-url";
+      "https://github.com/google/graphicsfuzz/blob/master/docs/glsl-fuzz-walkthrough"
+          + ".md#Inspecting-results-for-compute-shader-families";
 
 }
