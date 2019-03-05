@@ -118,7 +118,7 @@ our well-tested use-case is
 a shader job that contains a fragment shader
 and a set of uniform values.
 Our worker applications that are used to render a frame
-can only set uniforms
+can only set uniforms for now
 (they cannot set textures, etc.).
 
 For example, from our release zip:
