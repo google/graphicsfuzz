@@ -93,15 +93,16 @@ public class ImageUtil {
         // source array
         new opencv_core.MatVector(new opencv_core.Mat[]{mat}),
         // channels: hue, saturation, alpha
-        new IntPointer(0, 1, 3),
+        new IntPointer(0, 1, 2, 3),
         // mask (none)
         new opencv_core.Mat(),
         // output
         hist,
-        // histogram size: number of levels for hue, saturation, alpha
-        new IntPointer(50, 60, 60),
-        // input ranges for: hue, saturation, alpha
-        new FloatPointer(0, 256, 0, 256, 0, 256)
+        // histogram size: number of levels for hue, saturation, V, alpha.
+        // We use a low number of levels for V as we don't want it to have as much impact.
+        new IntPointer(50, 60, 5, 60),
+        // input ranges for: hue, saturation, V, alpha
+        new FloatPointer(0, 256, 0, 256, 0, 256, 0, 256)
     );
     return hist;
   }
