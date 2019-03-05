@@ -18,7 +18,6 @@ import argparse
 import glob
 import json
 import os
-import subprocess
 import sys
 from typing import List
 
@@ -26,19 +25,22 @@ import inspect_compute_results
 
 
 def exact_match(reference_result: str, variant_result: str) -> bool:
-    cmd = ['inspect_compute_results', 'exactdiff', reference_result, variant_result]
-    proc = subprocess.run(cmd)
-    return proc.returncode == 0
+    result, _ = inspect_compute_results.exactdiff_ssbos(reference_result, variant_result)
+    return result
 
 
 def fuzzy_match(reference_result: str, variant_result: str, args: argparse.Namespace) -> bool:
-    cmd = ['inspect_compute_results', 'fuzzydiff', reference_result, variant_result]
     if args.rel_tol:
-        cmd.append('--rel_tol=' + args.rel_tol)
+        rel_tol = float(args.rel_tol)
+    else:
+        rel_tol = float(inspect_compute_results.DEFAULT_REL_TOL)
     if args.abs_tol:
-        cmd.append('--abs_tol=' + args.abs_tol)
-    proc = subprocess.run(cmd)
-    return proc.returncode == 0
+        abs_tol = float(args.abs_tol)
+    else:
+        abs_tol = float(inspect_compute_results.DEFAULT_ABS_TOL)
+    result, _ = inspect_compute_results.fuzzydiff_ssbos(reference_result, variant_result,
+                                                        rel_tol=rel_tol, abs_tol=abs_tol)
+    return result
 
 
 def main_helper(args: List[str]) -> None:
