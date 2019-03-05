@@ -18,9 +18,9 @@ page](glsl-fuzz-releases.md).
 * For our Android workers: [Android SDK & NDK](android-notes.md)
 * For the Vulkan desktop worker: [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
 
-> Our *workers* are applications that run on the device you wish to test;
-> they communicate with the `glsl-server` application that is typically run on
-> a more powerful x86 machine.
+> Our *workers* are applications that run on the device you wish to test; they
+> communicate with the `glsl-server` application that is typically run on a more
+> powerful x86 machine.
 
 ### Get a local copy of this repository
 
@@ -85,42 +85,12 @@ See [documentation for these tools](../README.md#Tools)
 or read the [walkthrough for a brief overview of using all tools
 (also requires downloading or building some worker applications)](glsl-fuzz-walkthrough.md).
 
-### Build the Vulkan worker (vulkan-worker)
+### Build amber for the Vulkan worker
 
-#### Android
-
-Ensure that the `ANDROID_HOME=/path/to/android-sdk` and
-`ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle` environment variables are set.
-
-```shell
-cd vulkan-worker
-./gradlew assembleDebug
-```
-
-The resulting APK is here:
-
-`vulkan-worker/src/android/build/outputs/apk/debug/vulkan-worker-android-debug.apk`
-
-#### Linux
-
-Make sure the [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
-is installed and the environment variable `VULKAN_SDK` is
-properly set.
-
-```sh
-cd vulkan-worker
-
-mkdir build
-cd build
-
-cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug  # Or: -G "Ninja"
-cmake --build . --config Debug
-cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
-```
-
-The resulting binary is here: `vulkan-worker/build/install/vkworker`.
-
-The last step (install) is optional, in which case the binary can be found here: `vulkan-worker/build/vkworker`.
+The Vulkan worker relies on amber; see the [amber project
+documentation](https://github.com/google/amber) on how to build it. For Android,
+you will need to build the Android native executable `amber_ndk`, and push it to
+your device under `/data/local/tmp/`.
 
 ### Build the OpenGL worker (gles-worker)
 

@@ -47,6 +47,47 @@ Add the following directories to your path:
 The `graphicsfuzz/` directory is the unzipped release.
 If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz/`.
 
+### amber
+
+In March 2019, we deprecated our legacy Vulkan worker to instead rely on
+[amber](https://github.com/google/amber) by default. See the [legacy Vulkan
+worker documentation](legacy-vulkan-worker.md) if necessary.
+
+For testing Vulkan drivers on Android, you need to build amber as a native
+Android executable, and place that executable in `/data/local/tmp/` on any device you want to test.
+
+As of March 2019, you can build amber as a native Android executable as follows. 
+Commit `4c4017d29dddd40433b5865aa391e212ffe741d6` is known
+to work.
+
+> Note: on some platforms, it may be preferable to run the "tools" below using
+> `python tools/git-sync-deps` 
+> and `python tools/update_build_version.py . samples/ third_party/`.
+
+```
+git clone git@github.com:google/amber
+cd amber
+./tools/git-sync-deps
+./tools/update_build_version.py . samples/ third_party/
+mkdir build
+cd build
+mkdir app
+mkdir libs
+${ANDROID_NDK_HOME}/ndk-build -C ../samples NDK_PROJECT_PATH=. NDK_LIBS_OUT=`pwd`/libs NDK_APP_OUT=`pwd`/app
+
+# The resulting native executable will be under build/libs/<abi>/amber_ndk
+
+# Don't forget to install it on any Android device you want to test. with the
+# matching ABI. E.g. for ARM 64-bit devices:
+adb push libs/arm64-v8a/amber_ndk /data/local/tmp/
+```
+
+For testing Vulkan drivers on desktop, you need to build amber on the relevant
+platform, and add it to your path.
+
+Please refer to the [amber repo](https://github.com/google/amber) for up-to-date
+build documentation.
+
 ### Java 8+
 
 You will also need to install the latest version of the Java 8 Development Kit,
@@ -272,9 +313,70 @@ some connected workers.
 
 ## Running workers
 
-We will now run some worker applications
-that connect to the server, allowing us to test the devices on which
-the workers run.
+We will now run some worker applications that connect to the server, allowing us
+to test the devices on which the workers run.
+
+### Vulkan worker
+
+The Vulkan worker is based on amber (see [amber in requirements](#amber)) to
+enable testing Vulkan drivers on Android, Linux, and Windows.
+
+> We previously shipped our own legacy Vulkan worker app, which is now
+> deprecated. Please switch to amber.
+
+For Android, the Vulkan worker requires running `glsl-to-spv-worker` on a desktop machine, with
+the Android device accessible via adb:
+
+```
+glsl-server     <--- HTTP --->    glsl-to-spv-worker (calls runspv)   --- adb commands --->   amber, or legacy vulkan worker
+(on a desktop)                    (on a desktop)                                              (on an Android device)
+```
+
+> Note that the `runspv` script uses the `adb` tool to copy the shader files to
+> the device, run amber or the legacy worker, and copy back the results.
+> `runspv` can be used as a standalone tool to run shaders in GLSL or SPIR-V format.
+> [We describe this in more detail below](#running-shaders-from-the-command-line).
+
+To start a Vulkan worker, make sure amber is installed (see [amber in
+requirements](#amber)). On desktop, `amber` should be on your PATH.
+
+You can then use the `glsl-to-spv-worker` script to connect to the server:
+
+```sh
+# Execute the worker script, passing the target ('android' or 'host') and the
+# worker name as arguments.
+# Add `--help` to see options
+# Add `--server` to specify a server URL (default is http://localhost:8080)
+# Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.
+# Add `--serial 123ABC` to specify the serial number of the Android device
+#   to target (found using `adb devices -l`)
+glsl-to-spv-worker android pixel3
+```
+
+Note that running `spirv-opt` on each shader by adding the `--spirvopt=ARGS`
+argument can help find additional bugs that would otherwise not be found.  This
+approach can also find bugs in `spirv-opt` itself.
+
+You should see `No job` repeatedly output to the terminal.
+
+If you see `Cannot connect to server` then the worker script is failing to
+connect to the server.
+
+The intermediate files are saved in the current directory under
+`WORKER_NAME/SHADER_NAME/` subdirectories.
+For example, we might have a worker name of `pixel3`
+receiving shaders named `variant_000`, `variant_001`, etc.
+So, for example, under `pixel3/variant_000` we will see:
+
+```sh
+tmpscript.shader_test    # The self-contained amber script test file for input to amber.
+variant_000.json         # The shader job file (containing uniforms data).
+variant_000.frag         # The GLSL fragment shader.
+variant_000.frag.spv     # The SPIR-V version of the fragment shader.
+image_0.png              # The image produced by the device.
+```
+
+Don't care about the other kinds of worker? [Skip ahead to running shaders on workers](#running-shaders-on-the-worker-applications).
 
 ### `gles-desktop-worker`
 
@@ -370,99 +472,6 @@ The app will show a second dialogue where you must enter the worker name.  Once
 you have entered a name, you should see a mostly black screen with animated text
 that contains `state: GET_JOB`.  If you see `state: NO_CONNECTION` then the
 worker application is failing to connect to the server.
-
-Don't care about the other kinds of worker?  [Skip ahead to running shaders on workers](#running-shaders-on-the-worker-applications).
-
-### `vulkan-worker-android`
-
-> Warning: you must ensure the screen of your Android device stays on.
-> You should therefore enable "Stay awake" in developer settings.
-> See [Android notes](android-notes.md#useful-device-settings) for a description of how to enable this setting.
-
-You can use the `vulkan-worker-android` app
-to test the Vulkan drivers on an Android device.
-This worker requires running a `glsl-to-spv-worker`
-on a desktop machine,
-with an Android device (connected via USB) that has the `vulkan-worker-android` app installed.
-
-```
-glsl-server     <--- HTTP --->    glsl-to-spv-worker (calls vkrun.py)   --- adb commands --->    vulkan-worker-android app
-(on a desktop)                    (on a desktop)                                                 (on an Android device)
-```
-
-
-The `glsl-to-spv-worker` script translates the GLSL shaders to SPIR-V
-via `glslangValidator` before sending the shader to
-the `vulkan-worker-android` app running on the Android device.
-
-> Note that the `vkrun.py` Python script
-> uses the `adb` tool to
-> copy the SPIR-V files to the device,
-> run the `vulkan-worker-android` app,
-> and copy back the results.
-> `vkrun` can be used as a standalone tool to
-> re-run SPIR-V shaders on the device.
-> [We describe this in more detail below](#running-shaders-from-the-command-line).
-
-The intermediate files are saved in the current directory under
-a `WORKERNAME/` directory.
-For example, we might have a worker name of `pixel3`
-and so under `pixel3/` we will see:
-
-```
-test.vert                # The default GLSL vertex shader.
-variant_005.json         # The shader job file (containing uniforms data).
-variant_005.frag         # The GLSL fragment shader.
-variant_005.frag.spv     # The SPIR-V version of the fragment shader.
-variant_005.frag.spv.opt # The optimized SPIR-V version of the fragment shader
-                         # (assuming e.g. --spirvopt=-O was passed to glsl-to-spirv-worker).
-variant_005.vert.spv     # The SPIR-V version of the default vertex shader.
-```
-
-Download the latest `vulkan-worker-android-debug.apk` file
-from the [releases page](glsl-fuzz-releases.md)
-and install it on your Android device.
-You can download the .apk file from your device directly
-(e.g. using the Chrome app) and open the .apk file to install it,
-or you can install it using `adb`.
-
-> You may need to allow installation of apps from unknown sources. See the
-> [Android notes](android-notes.md) for various settings that you may need to change on your Android device, and for other ways of installing the app.
-
-There is no point in manually running this app from the Android device; it will crash unless
-it finds shaders in the `/sdcard/graphicsfuzz` directory.
-
-You can run the worker as follows.
-
-> Note that `glsl-to-spv-worker` assumes `adb` is on your PATH.
-
-```sh
-# Install the apk, if not installed already.
-adb install vulkan-worker-android-debug.apk
-
-# Make sure the app can read/write /sdcard/
-adb shell pm grant com.graphicsfuzz.vkworker android.permission.READ_EXTERNAL_STORAGE
-adb shell pm grant com.graphicsfuzz.vkworker android.permission.WRITE_EXTERNAL_STORAGE
-
-# Execute the worker script. Pass the worker name as an argument
-# and the serial number (or "IP:port") of the Android device (found using `adb devices -l`).
-# For more information on adb and serial numbers, see:
-#  https://developer.android.com/studio/command-line/adb
-# Add `--help` to see options
-# Add `--server` to specify a server URL (default is http://localhost:8080)
-# Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.
-glsl-to-spv-worker galaxy-s9-vulkan --serial 21372144e90c7fae
-```
-
-Note that running `spirv-opt` on each shader by adding the `--spirvopt=ARGS` argument
-can help find additional bugs that would otherwise not be found.
-This approach can also find bugs in `spirv-opt` itself.
-
-You should see `No job` repeatedly output to the terminal.
-
-If you see `Cannot connect to server`
-then the worker script
-is failing to connect to the server.
 
 
 ## Running shaders on the worker applications
@@ -659,7 +668,7 @@ The `status` field is a string summarizing the result. It can be:
 * `CRASH`: the variant led to a driver crash
 * `NONDET`: the variant led to a non-deterministic rendering
 *  `TIMEOUT`: the variant took too long to be processed (in the case of the
-    vulkan worker, this may indicate glslangValidator or spirv-opt taking too
+    Vulkan worker, this may indicate glslangValidator or spirv-opt taking too
     long to process the variant)
 * `UNEXPECTED_ERROR`: the variant led to an unexpected error
 
@@ -711,26 +720,25 @@ The results will be output to the current directory by default, or to the direct
 by `--output`.
 The output `.txt` files contain the run log for each shader.
 
-### vkrun
+### `runspv`
 
-As described earlier,
-the Vulkan worker uses `vkrun`
-to run SPIR-V shaders on the device.
-You can use this script directly
-if you want to re-run some SPIR-V shaders.
-The vertex shader must be provided explicitly, by default you can use our "passthrough"
-vertex shader available in
-`vulkan-worker/samples/shader.vert.spv`.
-Your device must show in `adb devices`.
-For example:
+As described under the [Vulkan worker](vulkan-worker) section, the Vulkan worker
+uses `runspv` to run shaders on the device. You can use this script directly if
+you want to re-run some shaders.
+
+Your device must show in `adb devices`.  For
+example:
 
 ```sh
-vkrun variant_005.vert.spv variant_005.frag.spv variant_005.json --serial ABCD
+# add --spirvopt=-O to run spirv-opt on your shader 
+# add --serial 123ABC to specify the serial of your device from adb devices
+runspv android variant_005.json outdir
 ```
 
-where `ABCD` is the device serial number shown in `adb devices`.
-The results of running the shader will be output to
-`results/`.
+However, note that `runspv` will fail if you have, for example, 
+both `variant_005.frag` and `variant_005.frag.spv`;
+you must delete one of these files so `runspv` knows which file you want to test,
+The temporary files and results will be output to `outdir/`.
 
 ## Reducing shaders from the command line using `glsl-reduce`
 
