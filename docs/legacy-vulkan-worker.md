@@ -1,6 +1,6 @@
 # GraphicsFuzz legacy Vulkan worker
 
-The legacy vulkan worker has been depreciated in March 2019. This documentation
+The legacy vulkan worker has been deprecated in March 2019. This documentation
 is an archive that is not meant to be up-to-date.
 
 ## Using the worker

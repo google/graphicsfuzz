@@ -49,16 +49,17 @@ If building from source, this directory can be found at `graphicsfuzz/target/gra
 
 ### amber
 
-In March 2019 we depreciated our legacy vulkan worker to instead rely on
-[amber](https://github.com/google/amber) by default.
+In March 2019 we deprecated our legacy Vulkan worker to instead rely on
+[amber](https://github.com/google/amber) by default. (See the [legacy Vulkan
+worker documentation](legacy-vulkan-worker.md) in case of need.)
 
 For testing Vulkan drivers on Android, you need to build amber as a native
 Android executable, and place that executable in `/data/local/tmp` on any device
 where you want to run tests.
 
-As of March 2019, building amber as a native executable should require the
-following (amber commit `f0a3613b727c240ae8b98e232e655db71d87217e` is known to
-work):
+As of March 2019, building amber as a native Android executable should require
+the following (amber commit `f0a3613b727c240ae8b98e232e655db71d87217e` is known
+to work):
 
 ```
 git clone git@github.com:google/amber
@@ -71,7 +72,7 @@ mkdir app
 mkdir libs
 ${ANDROID_NDK_HOME}/ndk-build -C ../samples NDK_PROJECT_PATH=. NDK_LIBS_OUT=`pwd`/libs NDK_APP_OUT=`pwd`/app
 
-# the resulting native executable will be under build/libs/<abi>/amber_ndk
+# The resulting native executable will be under build/libs/<abi>/amber_ndk
 
 # Don't forget to install it on any Android device you want to test, with the
 # matching ABI, e.g. for ARM 64 bits devices:
@@ -314,10 +315,10 @@ to test the devices on which the workers run.
 
 ### Vulkan worker
 
-The vulkan worker is based on amber (see [amber in requirements](#amber)) to
+The Vulkan worker is based on amber (see [amber in requirements](#amber)) to
 enable testing Vulkan drivers on Android, Linux, and Windows.
 
-> We used to ship our own legacy vulkan worker app, which is now
+> We used to ship our own legacy Vulkan worker app, which is now
 > depreciated. Please switch to amber.
 
 For Android, the Vulkan worker requires running `glsl-to-spv-worker` on a desktop machine, with
@@ -335,7 +336,7 @@ glsl-server     <--- HTTP --->    glsl-to-spv-worker (calls runspv)   --- adb co
 > [We describe this in more detail below](#running-shaders-from-the-command-line).
 
 To start a Vulkan worker, make sure amber is installed (see [amber in
-requirements](#amber)). On desktops, `amber` should be on your PATH.
+requirements](#amber)). On desktop, `amber` should be on your PATH.
 
 You can then use the `glsl-to-spv-worker` script to connect to the server:
 
@@ -663,7 +664,7 @@ The `status` field is a string summarizing the result. It can be:
 * `CRASH`: the variant led to a driver crash
 * `NONDET`: the variant led to a non-deterministic rendering
 *  `TIMEOUT`: the variant took too long to be processed (in the case of the
-    vulkan worker, this may indicate glslangValidator or spirv-opt taking too
+    Vulkan worker, this may indicate glslangValidator or spirv-opt taking too
     long to process the variant)
 * `UNEXPECTED_ERROR`: the variant led to an unexpected error
 
@@ -717,9 +718,10 @@ The output `.txt` files contain the run log for each shader.
 
 ### `runspv`
 
-As described earlier, the Vulkan worker uses `runspv` to run shaders on the
-device. You can use this script directly if you want to re-run some shaders.
-Your device must show in `adb devices`.  For example:
+As described under the [Vulkan worker](vulkan-worker) section, the Vulkan worker
+uses `runspv` to run shaders on the device. You can use this script directly if
+you want to re-run some shaders.  Your device must show in `adb devices`.  For
+example:
 
 ```sh
 runspv --spirvopt=-O --serial 123ABC android variant_005.json outdir

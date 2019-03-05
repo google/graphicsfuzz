@@ -15,6 +15,13 @@ page](glsl-fuzz-releases.md).
 * [Maven](https://maven.apache.org/)
 * [Python 3.5+](https://www.python.org/)
 
+* For our Android workers: [Android SDK & NDK](android-notes.md)
+* For the Vulkan desktop worker: [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
+
+> Our *workers* are applications that run on the device you wish to test; they
+> communicate with the `glsl-server` application that is typically run on a more
+> powerful x86 machine.
+
 ### Get a local copy of this repository
 
 To clone this repository:
@@ -80,7 +87,7 @@ or read the [walkthrough for a brief overview of using all tools
 
 ### Build amber for the Vulkan worker
 
-The vulkan worker relies on amber, see the [amber project
+The Vulkan worker relies on amber; see the [amber project
 documentation](https://github.com/google/amber) on how to build it. For Android,
 you will need to build the Android native executable `amber_ndk`, and push it on
 the device under `/data/local/tmp`.
