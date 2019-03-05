@@ -41,54 +41,52 @@ def show_ssbo(result_json_filename: str) -> None:
         print(str(value_error))
 
 
-def get_ssbo_pair(result_json_filename_1: str, result_json_filename_2: str) ->\
-        Optional[Tuple[List, List]]:
+def get_ssbo_pair(result_json_filename_1: str, result_json_filename_2: str) -> Tuple[List, List]:
     try:
         ssbo_1 = get_ssbo(result_json_filename_1)
     except ValueError:
-        sys.stderr.write('First input file did not contain valid SSBO data')
-        return None
+        raise ValueError('First input file did not contain valid SSBO data')
     try:
         ssbo_2 = get_ssbo(result_json_filename_2)
     except ValueError:
-        sys.stderr.write('Second input file did not contain valid SSBO data')
-        return None
+        raise ValueError('Second input file did not contain valid SSBO data')
     return ssbo_1, ssbo_2
 
 
+# Returns [true, None] if and only if the SSBOs should be regarded as matching.  When [false, msg]
+# is returned, msg contains information about why the SSBOs differed
 def abstract_diff_ssbos(result_json_filename_1: str,
                         result_json_filename_2: str,
-                        comparator: Callable[[float, float], bool]) -> int:
+                        comparator: Callable[[float, float], bool]) -> Tuple[bool, Optional[str]]:
     ssbo_pair = get_ssbo_pair(result_json_filename_1, result_json_filename_2)
-    if not ssbo_pair:
-        return 1
     ssbo_1 = ssbo_pair[0]
     ssbo_2 = ssbo_pair[1]
     if len(ssbo_1) != len(ssbo_2):
-        sys.stderr.write('SSBOs have different numbers of fields: ' + str(len(ssbo_1)) + ' vs. '
-                         + str(len(ssbo_2)) + '\n')
-        return 1
+        return False, (
+            'SSBOs have different numbers of fields: ' + str(len(ssbo_1)) + ' vs. '
+            + str(len(ssbo_2)))
     for i in range(0, len(ssbo_1)):
         if len(ssbo_1[i]) != len(ssbo_2[i]):
-            sys.stderr.write('Data for field ' + str(i) + ' has different lengths: '
-                             + str(len(ssbo_1[i])) + ' vs. ' + str(len(ssbo_2[i])) + '\n')
-            return 1
+            return False, (
+                'Data for field ' + str(i) + ' has different lengths: ' + str(len(ssbo_1[i]))
+                + ' vs. ' + str(len(ssbo_2[i])))
         for j in range(0, len(ssbo_1[i])):
             if not comparator(float(ssbo_1[i][j]), float(ssbo_2[i][j])):
-                sys.stderr.write('Mismatch at field ' + str(i) + ' element ' + str(j) + ': '
-                                 + str(ssbo_1[i][j]) + ' vs. ' + str(ssbo_2[i][j]) + '\n')
-                return 1
-    return 0
+                return False, (
+                    'Mismatch at field ' + str(i) + ' element ' + str(j) + ': ' + str(ssbo_1[i][j])
+                    + ' vs. ' + str(ssbo_2[i][j]))
+    return True, None
 
 
-def exactdiff_ssbos(result_json_filename_1: str, result_json_filename_2: str) -> int:
+def exactdiff_ssbos(result_json_filename_1: str,
+                    result_json_filename_2: str) -> Tuple[bool, Optional[str]]:
     return abstract_diff_ssbos(result_json_filename_1, result_json_filename_2, lambda x, y: x == y)
 
 
 def fuzzydiff_ssbos(result_json_filename_1: str,
                     result_json_filename_2: str,
                     abs_tol: float,
-                    rel_tol: float) -> int:
+                    rel_tol: float) -> Tuple[bool, Optional[str]]:
     return abstract_diff_ssbos(result_json_filename_1, result_json_filename_2,
                                lambda x, y: math.isclose(x, y, rel_tol=rel_tol, abs_tol=abs_tol))
 
@@ -165,17 +163,29 @@ def main_helper(args: List[str]) -> int:
             raise ValueError('Command "exactdiff" requires exactly 2 inputs; ' + str(
                 len(args.inputs)) + ' provided')
         check_input_files_exist([args.inputs[0], args.inputs[1]])
-        return exactdiff_ssbos(args.inputs[0], args.inputs[1])
+        result, msg = exactdiff_ssbos(args.inputs[0], args.inputs[1])
+        if result:
+            return 0
+        sys.stderr.write(msg + '\n')
+        return 1
 
     if args.command == 'fuzzydiff':
         if len(args.inputs) != 2:
             raise ValueError('Command "fuzzydiff" requires exactly 2 inputs; ' + str(
                 len(args.inputs)) + ' provided')
         check_input_files_exist([args.inputs[0], args.inputs[1]])
-        return fuzzydiff_ssbos(args.inputs[0], args.inputs[1], abs_tol, rel_tol)
+        result, msg = fuzzydiff_ssbos(args.inputs[0], args.inputs[1], abs_tol, rel_tol)
+        if result:
+            return 0
+        sys.stderr.write(msg + '\n')
+        return 1
 
     raise ValueError('Unknown command "' + args.command + '"')
 
 
 if __name__ == '__main__':
-    sys.exit(main_helper(sys.argv[1:]))
+    try:
+        sys.exit(main_helper(sys.argv[1:]))
+    except ValueError as value_error:
+        sys.stderr.write(str(value_error))
+        sys.exit(1)

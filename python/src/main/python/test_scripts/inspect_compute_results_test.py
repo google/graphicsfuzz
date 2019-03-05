@@ -76,19 +76,19 @@ def test_exactdiff_handles_first_file_not_found(tmp_path: pathlib2.Path):
     assert 'FileNotFoundError: Input file "nofile.json" not found' in str(file_not_found_error)
 
 
-def test_fuzzydiff_handles_second_file_not_found(tmp_path: pathlib2.Path):
+def test_exactdiff_handles_second_file_not_found(tmp_path: pathlib2.Path):
     onefile = tmp_path / 'something.json'
     onefile.touch(exist_ok=False)
     with pytest.raises(FileNotFoundError) as file_not_found_error:
-        inspect_compute_results.main_helper(['fuzzydiff', str(onefile), 'nofile.json'])
+        inspect_compute_results.main_helper(['exactdiff', str(onefile), 'nofile.json'])
     assert 'FileNotFoundError: Input file "nofile.json" not found' in str(file_not_found_error)
 
 
-def test_exactdiff_handles_first_file_not_found(tmp_path: pathlib2.Path):
+def test_fuzzydiff_handles_first_file_not_found(tmp_path: pathlib2.Path):
     onefile = tmp_path / 'something.json'
     onefile.touch(exist_ok=False)
     with pytest.raises(FileNotFoundError) as file_not_found_error:
-        inspect_compute_results.main_helper(['exactdiff', 'nofile.json', str(onefile)])
+        inspect_compute_results.main_helper(['fuzzydiff', 'nofile.json', str(onefile)])
     assert 'FileNotFoundError: Input file "nofile.json" not found' in str(file_not_found_error)
 
 
@@ -150,17 +150,21 @@ def test_exactdiff_pass3(tmp_path: pathlib2.Path):
 
 
 def test_exactdiff_fail_first_invalid(tmp_path: pathlib2.Path):
-    assert 0 != check_exact_diff(tmp_path, (
-        'not_json'), (
-        '{"status": "IGNORED_DURING_DIFF", "log": "#### Different stuff", "outputs": '
-        '{"ssbo": [ [2.0] ] } }'))
+    with pytest.raises(ValueError) as value_error:
+        check_exact_diff(tmp_path, (
+            'not_json'), (
+            '{"status": "IGNORED_DURING_DIFF", "log": "#### Different stuff", "outputs": '
+            '{"ssbo": [ [2.0] ] } }'))
+    assert 'ValueError: First input file did not contain valid SSBO data' in str(value_error)
 
 
 def test_exactdiff_fail_second_invalid(tmp_path: pathlib2.Path):
-    assert 0 != check_exact_diff(tmp_path, (
-        '{"status": "IGNORED_DURING_DIFF", "log": "#### Different stuff", "outputs": '
-        '{"ssbo": [ [2.0] ] } }'), (
-        'not_json'))
+    with pytest.raises(ValueError) as value_error:
+        check_exact_diff(tmp_path, (
+            '{"status": "IGNORED_DURING_DIFF", "log": "#### Different stuff", "outputs": '
+            '{"ssbo": [ [2.0] ] } }'), (
+            'not_json'))
+    assert 'ValueError: Second input file did not contain valid SSBO data' in str(value_error)
 
 
 def test_exactdiff_fail_mismatched_number_of_fields(tmp_path: pathlib2.Path):
@@ -255,17 +259,21 @@ def test_fuzzydiff_pass3(tmp_path: pathlib2.Path):
 
 
 def test_fuzzydiff_fail_first_invalid(tmp_path: pathlib2.Path):
-    assert 0 != check_exact_diff(tmp_path, (
-        'not_json'), (
-        '{"status": "IGNORED_DURING_DIFF", "log": "#### Different stuff", "outputs": '
-        '{"ssbo": [ [2.0] ] } }'))
+    with pytest.raises(ValueError) as value_error:
+        check_exact_diff(tmp_path, (
+            'not_json'), (
+            '{"status": "IGNORED_DURING_DIFF", "log": "#### Different stuff", "outputs": '
+            '{"ssbo": [ [2.0] ] } }'))
+    assert 'ValueError: First input file did not contain valid SSBO data' in str(value_error)
 
 
 def test_fuzzydiff_fail_second_invalid(tmp_path: pathlib2.Path):
-    assert 0 != check_exact_diff(tmp_path, (
-        '{"status": "IGNORED_DURING_DIFF", "log": "#### Different stuff", "outputs": '
-        '{"ssbo": [ [2.0] ] } }'), (
-        'not_json'))
+    with pytest.raises(ValueError) as value_error:
+        check_exact_diff(tmp_path, (
+            '{"status": "IGNORED_DURING_DIFF", "log": "#### Different stuff", "outputs": '
+            '{"ssbo": [ [2.0] ] } }'), (
+            'not_json'))
+    assert 'ValueError: Second input file did not contain valid SSBO data' in str(value_error)
 
 
 def test_fuzzydiff_fail_mismatched_number_of_fields(tmp_path: pathlib2.Path):
