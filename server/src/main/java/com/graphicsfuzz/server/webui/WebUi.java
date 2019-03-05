@@ -121,11 +121,10 @@ public class WebUi extends HttpServlet {
 
     public Shaderset(String name) {
       this.name = name;
-      this.dir = new File(WebUiConstants.SHADERSET_DIR + "/" + name);
-      this.preview = new File(dir + "/thumb.png");
+      this.dir = new File(WebUiConstants.SHADERSET_DIR, name);
+      this.preview = new File(dir, "thumb.png");
+      this.isComp = new File(dir, "reference.comp").isFile();
       this.nbVariants = getNbVariants();
-      File refComp = new File(dir + "/reference.comp");
-      this.isComp = refComp.isFile();
     }
 
     private int getNbVariants() {
