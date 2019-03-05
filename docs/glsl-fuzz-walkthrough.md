@@ -994,22 +994,29 @@ If you have a variant compute shader that produces a different SSBO result compa
 ```sh
 # Copy the .info.json file for the reference into your working directory
 cp /path/to/reference.info.json .
-# Make a copy of the template interestingness test for compute shader differences
+# Make a copy of the template interestingness test for compute shader
+# differences
 cp graphicsfuzz/python/interestingness/compute-interesting-diff.py .
-# Copy over a shell script wrapper for the interestingness test (only one of the following two files is required, but it does no harm to copy both)
+# Copy over a shell script wrapper for the interestingness test (only one of
+# the following two files is required, but it does no harm to copy both)
 cp graphicsfuzz/python/interestingness/compute-interesting-diff .
 cp graphicsfuzz/python/interestingness/compute-interesting-diff.bat .
 
-# Edit 'REFERENCE_RESULTS', 'WORKER_NAME' and 'SERVER_URL' in 'compute-interesting-diff.py' to suit your needs
+# Edit 'REFERENCE_RESULTS', 'WORKER_NAME' and 'SERVER_URL' in
+# 'compute-interesting-diff.py' to suit your needs
 
-# Run a reduction using 'compute-interesting-diff.py' to decide whether each reduced shader is interesting.  Results will be placed in 'someoutputdir'.  --preserve-semantics ensures that only semantics-preserving changes are made during reduction.
+# Run a reduction using 'compute-interesting-diff.py' to decide whether each
+# reduced shader is interesting.  Results will be placed in 'someoutputdir'.
+# --preserve-semantics ensures that only semantics-preserving changes are made
+# during reduction.
 glsl-reduce /path/to/bad/variant.json ./compute-interesting-diff --preserve-semantics --output someoutputdir
 ```
 
 Sometimes it can be useful to reduce a compute shader while its SSBO continues to match an original result.  Another interestingness template is provided to facilitate this:
 
 ```sh
-# This template can be used to reduce a compute shader while its results match 'reference.info.json'
+# This template can be used to reduce a compute shader while its results match
+# 'reference.info.json'
 graphicsfuzz/python/interestingness/compute-interesting-same.py
 ```
 
