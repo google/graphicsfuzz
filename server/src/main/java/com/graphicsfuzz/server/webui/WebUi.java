@@ -420,7 +420,8 @@ public class WebUi extends HttpServlet {
       for (File file : shadersets) {
         Shaderset shaderset = new Shaderset(file.getName());
         htmlAppendLn("<a class='item' href='/webui/shaderset/", shaderset.name, "'>",
-            "<img class='ui mini image' src='/webui/file/", shaderset.preview.getPath(), "'>",
+            "<img class='ui mini image' alt='Reference image preview' src='/webui/file/",
+            shaderset.preview.getPath(), "' onerror=\"this.style.display='none'\">",
             "<div class='content'><div class='header'>", shaderset.name,
             "</div>#variants: ", Integer.toString(shaderset.nbVariants),
             "</div></a>");
