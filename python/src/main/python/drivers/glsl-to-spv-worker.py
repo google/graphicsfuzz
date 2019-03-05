@@ -62,7 +62,7 @@ def print(s):
 
 
 def write_to_file(content, filename):
-    with open(filename, 'w') as f:
+    with runspv.open_helper(filename, 'w') as f:
         f.write(content)
 
 
@@ -144,7 +144,7 @@ def do_image_job(
 
     # Set runspv logger. Use try-finally to clean up.
 
-    with open(log_file, 'w', encoding='utf-8', errors='ignore') as f:
+    with runspv.open_helper(log_file, 'w') as f:
         try:
             runspv.log_to_file = f
 
@@ -189,15 +189,15 @@ def do_image_job(
             runspv.log_to_file = None
 
     if os.path.isfile(log_file):
-        with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+        with runspv.open_helper(log_file, 'r') as f:
             res.log += f.read()
 
     if os.path.isfile(png_file):
-        with open(png_file, 'rb') as f:
+        with runspv.open_bin_helper(png_file, 'rb') as f:
             res.PNG = f.read()
 
     if os.path.isfile(status_file):
-        with open(status_file, 'r') as f:
+        with runspv.open_helper(status_file, 'r') as f:
             status = f.read().rstrip()
         if status == 'SUCCESS':
             res.status = tt.JobStatus.SUCCESS
@@ -211,9 +211,9 @@ def do_image_job(
             res.status = tt.JobStatus.UNEXPECTED_ERROR
         elif status == 'NONDET':
             res.status = tt.JobStatus.NONDET
-            with open(nondet_0, 'rb') as f:
+            with runspv.open_bin_helper(nondet_0, 'rb') as f:
                 res.PNG = f.read()
-            with open(nondet_1, 'rb') as f:
+            with runspv.open_bin_helper(nondet_1, 'rb') as f:
                 res.PNG2 = f.read()
         else:
             res.log += '\nUnknown status value: ' + status + '\n'
@@ -262,7 +262,7 @@ def do_compute_job(
 
     # Set runspv logger. Use try-finally to clean up.
 
-    with open(log_file, 'w', encoding='utf-8', errors='ignore') as f:
+    with runspv.open_helper(log_file, 'w') as f:
         try:
             runspv.log_to_file = f
 
@@ -284,16 +284,16 @@ def do_compute_job(
             runspv.log_to_file = None
 
     if os.path.isfile(log_file):
-        with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+        with runspv.open_helper(log_file, 'r') as f:
             res.log += f.read()
 
     if os.path.isfile(status_file):
-        with open(status_file, 'r') as f:
+        with runspv.open_helper(status_file, 'r') as f:
             status = f.read().rstrip()
         if status == 'SUCCESS':
             res.status = tt.JobStatus.SUCCESS
             assert (os.path.isfile(ssbo_json_file))
-            with open(ssbo_json_file, 'r') as f:
+            with runspv.open_helper(ssbo_json_file, 'r') as f:
                 res.computeOutputs = f.read()
 
         elif status == 'CRASH':
@@ -458,7 +458,7 @@ def main():
                 'the app permission to write to external storage is enabled.'
             )
 
-        with open(worker_info_file, 'r') as f:
+        with runspv.open_helper(worker_info_file, 'r') as f:
             worker_info_json_string = f.read()
 
     except Exception as ex:
@@ -491,16 +491,16 @@ def main():
 
             assert os.path.isfile(args.local_shader_job), \
                 'Shader job {} does not exist'.format(args.local_shader_job)
-            with open(args.local_shader_job, 'r', encoding='utf-8', errors='ignore') as f:
+            with runspv.open_helper(args.local_shader_job) as f:
                 fake_job.uniformsInfo = f.read()
             if os.path.isfile(shader_job_prefix + '.frag'):
-                with open(shader_job_prefix + '.frag', 'r', encoding='utf-8', errors='ignore') as f:
+                with runspv.open_helper(shader_job_prefix + '.frag', 'r') as f:
                     fake_job.fragmentSource = f.read()
             if os.path.isfile(shader_job_prefix + '.vert'):
-                with open(shader_job_prefix + '.vert', 'r', encoding='utf-8', errors='ignore') as f:
+                with runspv.open_helper(shader_job_prefix + '.vert', 'r') as f:
                     fake_job.vertexSource = f.read()
             if os.path.isfile(shader_job_prefix + '.comp'):
-                with open(shader_job_prefix + '.comp', 'r', encoding='utf-8', errors='ignore') as f:
+                with runspv.open_helper(shader_job_prefix + '.comp', 'r') as f:
                     fake_job.computeSource = f.read()
                 fake_job.computeInfo = fake_job.uniformsInfo
             do_image_job(args, fake_job, spirv_args, work_dir='out')

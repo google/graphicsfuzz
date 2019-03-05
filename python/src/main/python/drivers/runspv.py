@@ -233,6 +233,11 @@ def open_helper(file: str, mode: str):
     return open(file, mode, encoding='utf-8', errors='ignore')
 
 
+def open_bin_helper(file: str, mode: str):
+    assert 'b' in mode
+    return open(file, mode)
+
+
 def get_platform():
     host = platform.system()
     if host == 'Linux' or host == 'Windows':
