@@ -594,7 +594,7 @@ was enough to cause the wrong image to be rendered.
 
 ## Queuing a no image reduction
 
-> Reductions for the case where no SSBO is produced by a compute shader cannot be launched via the Web UI.  [See how to launch them via the command line](#Performing-a-"no-image"-reduction-on-a-fragment-or-compute-shader).
+> Reductions for the case where no SSBO is produced by a compute shader cannot be launched via the Web UI.  [See how to launch them via the command line](#Performing-a-no-image-reduction-on-a-fragment-or-compute-shader).
 
 The results table for the shader family below shows
 that `variant_004` failed to render due to a crash
@@ -754,7 +754,7 @@ To view the SSBO for a compute shader result in pretty-printed form, do:
 
 ```sh
 # The 'show' argument specifies that we wish to view the SSBO for the given result file
-inspect_compute_results show /path/to/results/reference_or_variant.info.json
+inspect-compute-results show /path/to/results/reference_or_variant.info.json
 ```
 
 ### Comparing SSBOs for two compute shader results
@@ -763,7 +763,7 @@ To compare SSBOs for two result files from the same shader family (typically the
 
 ```sh
 # The 'exactdiff' argument specifies that we wish to compare the SSBOs for the given result files, and that they should be identical
-inspect_compute_results exactdiff /path/to/result/reference.info.json /path/to/result/variant_XXX.info.json
+inspect-compute-results exactdiff /path/to/result/reference.info.json /path/to/result/variant_XXX.info.json
 ```
 
 This will exit with code 0 if and only if the SSBOs associated with the two result files match *exactly*.  Otherwise, a mismatch will be reported and a non-zero exit code returned.
@@ -772,20 +772,20 @@ To tolerate some degree of floating-point difference when comparing SSBO entries
 
 ```sh
 # The 'fuzzydiff' argument specifies that we wish to compare the SSBOs for the given result files, and that we want to allow some tolerance of numerical differences
-inspect_compute_results fuzzydiff /path/to/result/reference.info.json /path/to/result/variant_XXX.info.json
+inspect-compute-results fuzzydiff /path/to/result/reference.info.json /path/to/result/variant_XXX.info.json
 ```
 
-Fuzzy diffing uses the Python `isclose` function to compare numbers.  You can pass `--rel_tol` and `--abs_tol` to `inspect_compute_results` to control the relative and absolute tolerance used by `isclose`; see the [Python math documentation](https://docs.python.org/3/library/math.html) for details of the `rel_tol` and `abs_tol` arguments to `isclose`.
+Fuzzy diffing uses the Python `isclose` function to compare numbers.  You can pass `--rel_tol` and `--abs_tol` to `inspect-compute-results` to control the relative and absolute tolerance used by `isclose`; see the [Python math documentation](https://docs.python.org/3/library/math.html) for details of the `rel_tol` and `abs_tol` arguments to `isclose`.
 
 ```sh
 # Request a fuzzy diff with relative tolerance of 1e-5 and absolute tolerance of 0.1
-inspect_compute_results fuzzydiff --rel_tol=1e-5 --abs_tol=0.1 /path/to/result/reference.info.json /path/to/result/variant_XXX.info.json
+inspect-compute-results fuzzydiff --rel_tol=1e-5 --abs_tol=0.1 /path/to/result/reference.info.json /path/to/result/variant_XXX.info.json
 ```
 
 To see the default values for `--rel_tol` and `--abs_tol`, do:
 
 ```sh
-inspect_compute_results --help
+inspect-compute-results --help
 ```
 
 ## Viewing summary results for a compute shader family
@@ -793,7 +793,7 @@ inspect_compute_results --help
 To see a summary of the results for a compute shader family, do e.g.:
 
 ```sh
-report_compute_shader_family_results family_vulkan_compute_frag2comp-0005-squares
+report-compute-shader-family-results family_vulkan_compute_frag2comp-0005-squares
 
 # Possible output below, where:
 # - CRASH indicates that no results were produced
@@ -938,7 +938,7 @@ Specify a server and worker name to run the shader jobs on a worker that is conn
 to the server.
 
 
-### Performing a "no image" reduction on a fragment or compute shader
+### Performing a no image reduction on a fragment or compute shader
 
 > Even though compute shaders do not produce images, a "no image" reduction can be performed on a compute shader to reduce cases where processing of the compute shader fails, such that an SSBO is not produced.
 
@@ -995,21 +995,22 @@ If you have a variant compute shader that produces a different SSBO result compa
 # Copy the .info.json file for the reference into your working directory
 cp /path/to/reference.info.json .
 # Make a copy of the template interestingness test for compute shader differences
-cp graphicsfuzz/python/interestingness/compute_interesting_diff.py .
-# Make the script executable
-chmod +x compute_interesting_diff.py
+cp graphicsfuzz/python/interestingness/compute-interesting-diff.py .
+# Copy over a shell script wrapper for the interestingness test (only one of the following two files is required, but it does no harm to copy both)
+cp graphicsfuzz/python/interestingness/compute-interesting-diff .
+cp graphicsfuzz/python/interestingness/compute-interesting-diff.bat .
 
-# Edit 'REFERENCE_RESULTS', 'WORKER_NAME' and 'SERVER_URL' in 'compute_interesting_diff.py' to suit your needs
+# Edit 'REFERENCE_RESULTS', 'WORKER_NAME' and 'SERVER_URL' in 'compute-interesting-diff.py' to suit your needs
 
-# Run a reduction using 'compute_interesting_diff.py' to decide whether each reduced shader is interesting.  Results will be placed in 'someoutputdir'.  --preserve-semantics ensures that only semantics-preserving changes are made during reduction.
-glsl-reduce /path/to/bad/variant.json ./compute_interesting_diff.py --preserve-semantics --output someoutputdir
+# Run a reduction using 'compute-interesting-diff.py' to decide whether each reduced shader is interesting.  Results will be placed in 'someoutputdir'.  --preserve-semantics ensures that only semantics-preserving changes are made during reduction.
+glsl-reduce /path/to/bad/variant.json ./compute-interesting-diff --preserve-semantics --output someoutputdir
 ```
 
 Sometimes it can be useful to reduce a compute shader while its SSBO continues to match an original result.  Another interestingness template is provided to facilitate this:
 
 ```sh
 # This template can be used to reduce a compute shader while its results match 'reference.info.json'
-graphicsfuzz/python/interestingness/compute_interesting_same.py
+graphicsfuzz/python/interestingness/compute-interesting-same.py
 ```
 
 ### Additional options

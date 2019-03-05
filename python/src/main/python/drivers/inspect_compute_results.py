@@ -181,11 +181,3 @@ def main_helper(args: List[str]) -> int:
         return 1
 
     raise ValueError('Unknown command "' + args.command + '"')
-
-
-if __name__ == '__main__':
-    try:
-        sys.exit(main_helper(sys.argv[1:]))
-    except ValueError as value_error:
-        sys.stderr.write(str(value_error))
-        sys.exit(1)

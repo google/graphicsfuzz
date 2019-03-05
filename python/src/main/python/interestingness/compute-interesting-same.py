@@ -49,11 +49,11 @@ with open(variant_results_filename, 'r') as f:
         sys.stderr.write('Not interesting: result was ' + json_variant_results['status'] + '\n')
         sys.exit(4)
 
-cmd = ['inspect_compute_results', 'exactdiff', REFERENCE_RESULTS, variant_results_filename]
+cmd = ['inspect-compute-results', 'exactdiff', REFERENCE_RESULTS, variant_results_filename]
 proc = subprocess.run(cmd)
 
-if proc.returncode == 0:
-    sys.stderr.write('Not interesting: results match\n')
+if proc.returncode != 0:
+    sys.stderr.write('Not interesting: results differ\n')
     sys.exit(5)
 
 sys.stderr.write('Interesting!\n')
