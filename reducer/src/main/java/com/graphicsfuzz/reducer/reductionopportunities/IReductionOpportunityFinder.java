@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
 
@@ -375,13 +376,15 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
   }
 
   static IReductionOpportunityFinder<StmtReductionOpportunity>
-      largestStmtsFinder(int maxOpportunities) {
+      largestStmtsFinder(int maxOpportunities, int minSizePerOpportunity) {
     return new IReductionOpportunityFinder<StmtReductionOpportunity>() {
       @Override
       public List<StmtReductionOpportunity> findOpportunities(
           ShaderJob shaderJob,
           ReducerContext context) {
         List<StmtReductionOpportunity> ops = stmtFinder().findOpportunities(shaderJob, context);
+        ops = ops.stream().filter(item -> item.getNumRemovableNodes() >= minSizePerOpportunity)
+            .collect(Collectors.toList());
         ops.sort(Comparator.comparingInt(
             StmtReductionOpportunity::getNumRemovableNodes).reversed());
         return ops.subList(0, Math.min(ops.size(), maxOpportunities));

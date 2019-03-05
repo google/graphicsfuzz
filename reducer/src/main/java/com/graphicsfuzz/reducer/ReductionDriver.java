@@ -79,7 +79,7 @@ public class ReductionDriver {
 
     final List<IReductionPass> initialPasses = new ArrayList<>();
     initialPasses.add(new SystematicReductionPass(context, verbose,
-        IReductionOpportunityFinder.largestStmtsFinder(10), 1));
+        IReductionOpportunityFinder.largestStmtsFinder(10, 50), 1));
     initialPasses.add(new SystematicReductionPass(context, verbose,
         IReductionOpportunityFinder.largestFunctionsFinder(5), 1));
 
