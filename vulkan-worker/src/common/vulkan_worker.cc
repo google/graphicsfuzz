@@ -1542,7 +1542,13 @@ void VulkanWorker::ExportPNG(const char *png_filename) {
   // Convert to PNG
   std::vector<unsigned char> png;
   log("PNGENCODE START");
-  unsigned int png_encode_error = lodepng::encode(png, rgba_blob, width_, height_);
+  lodepng::State state;
+  state.encoder.auto_convert = 0;
+  state.info_raw.colortype = LodePNGColorType::LCT_RGBA;
+  state.info_raw.bitdepth = 8;
+  state.info_png.color.colortype = LodePNGColorType::LCT_RGBA;
+  state.info_png.color.bitdepth = 8;
+  unsigned int png_encode_error = lodepng::encode(png, rgba_blob, width_, height_, state);
   log("PNGENCODE END");
   assert(!png_encode_error);
   log("PNGSAVEFILE START");
