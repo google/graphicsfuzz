@@ -16,7 +16,6 @@
 
 import argparse
 import os
-import platform
 import shutil
 import subprocess
 import sys
@@ -63,7 +62,7 @@ def print(s):
 
 
 def write_to_file(content, filename):
-    with open(filename, 'w') as f:
+    with runspv.open_helper(filename, 'w') as f:
         f.write(content)
 
 
@@ -80,17 +79,17 @@ def remove(f):
 ################################################################################
 
 
-def prepare_vert_file() -> str:
-    vert_filename = 'test.vert'
-    if not os.path.isfile(vert_filename):
+def prepare_vert_file(output_dir: str) -> str:
+    vert_file = os.path.join(output_dir, 'test.vert')
+    if not os.path.isfile(vert_file):
         vert_file_default_content = '''#version 310 es
 layout(location=0) in highp vec4 a_position;
 void main (void) {
   gl_Position = a_position;
 }
 '''
-        write_to_file(vert_file_default_content, vert_filename)
-    return vert_filename
+        write_to_file(vert_file_default_content, vert_file)
+    return vert_file
 
 
 ################################################################################
@@ -104,15 +103,33 @@ def remove_end(str_in: str, str_end: str):
 ################################################################################
 
 
-def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
+def do_image_job(
+    args,
+    image_job,
+    spirv_opt_args: Optional[List[str]],
+    work_dir: str
+) -> tt.ImageJobResult:
+
+    # Output directory is based on the name of job.
+    output_dir = os.path.join(work_dir, image_job.name)
+
+    # Delete and create output directory.
+    remove(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+
     name = image_job.name
     if name.endswith('.frag'):
         name = remove_end(name, '.frag')
     # TODO(324): the worker currently assumes that no vertex shader is present in the image job.
-    vert_file = prepare_vert_file() if args.legacy_worker else None
-    frag_file = name + '.frag'
-    json_file = name + '.json'
-    png = 'image_0.png'
+
+    vert_file = prepare_vert_file(output_dir) if args.legacy_worker else None
+    frag_file = os.path.join(output_dir, name + '.frag')
+    json_file = os.path.join(output_dir, name + '.json')
+    png_file = os.path.join(output_dir, 'image_0.png')
+    log_file = os.path.join(output_dir, runspv.LOGFILE_NAME)
+    status_file = os.path.join(output_dir, 'STATUS')
+    nondet_0 = os.path.join(output_dir, 'nondet0.png')
+    nondet_1 = os.path.join(output_dir, 'nondet1.png')
 
     res = tt.ImageJobResult()
 
@@ -125,12 +142,9 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
     write_to_file(image_job.fragmentSource, frag_file)
     write_to_file(image_job.uniformsInfo, json_file)
 
-    remove(png)
-    remove(runspv.LOGFILE_NAME)
-
     # Set runspv logger. Use try-finally to clean up.
 
-    with open(runspv.LOGFILE_NAME, 'w', encoding='utf-8', errors='ignore') as f:
+    with runspv.open_helper(log_file, 'w') as f:
         try:
             runspv.log_to_file = f
 
@@ -140,7 +154,7 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
                         vert_original=vert_file,
                         frag_original=frag_file,
                         json_file=json_file,
-                        output_dir=os.getcwd(),
+                        output_dir=output_dir,
                         skip_render=skip_render,
                         spirv_opt_args=spirv_opt_args,
                     )
@@ -150,7 +164,7 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
                         vert_original=vert_file,
                         frag_original=frag_file,
                         json_file=json_file,
-                        output_dir=os.getcwd(),
+                        output_dir=output_dir,
                         force=args.force,
                         skip_render=skip_render,
                         spirv_opt_args=spirv_opt_args,
@@ -160,25 +174,30 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
                     vert_original=vert_file,
                     frag_original=frag_file,
                     json_file=json_file,
-                    output_dir=os.getcwd(),
+                    output_dir=output_dir,
                     force=args.force,
                     is_android=(args.target == 'android'),
                     skip_render=skip_render,
                     spirv_opt_args=spirv_opt_args,
                 )
+        except Exception as ex:
+            runspv.log('Exception: ' + str(ex))
+            runspv.log('Removing STATUS file.')
+            remove(status_file)
+            runspv.log('Continuing.')
         finally:
             runspv.log_to_file = None
 
-    if os.path.isfile(runspv.LOGFILE_NAME):
-        with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
+    if os.path.isfile(log_file):
+        with runspv.open_helper(log_file, 'r') as f:
             res.log += f.read()
 
-    if os.path.isfile(png):
-        with open(png, 'rb') as f:
+    if os.path.isfile(png_file):
+        with runspv.open_bin_helper(png_file, 'rb') as f:
             res.PNG = f.read()
 
-    if os.path.isfile('STATUS'):
-        with open('STATUS', 'r') as f:
+    if os.path.isfile(status_file):
+        with runspv.open_helper(status_file, 'r') as f:
             status = f.read().rstrip()
         if status == 'SUCCESS':
             res.status = tt.JobStatus.SUCCESS
@@ -192,9 +211,9 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
             res.status = tt.JobStatus.UNEXPECTED_ERROR
         elif status == 'NONDET':
             res.status = tt.JobStatus.NONDET
-            with open('nondet0.png', 'rb') as f:
+            with runspv.open_bin_helper(nondet_0, 'rb') as f:
                 res.PNG = f.read()
-            with open('nondet1.png', 'rb') as f:
+            with runspv.open_bin_helper(nondet_1, 'rb') as f:
                 res.PNG2 = f.read()
         else:
             res.log += '\nUnknown status value: ' + status + '\n'
@@ -210,15 +229,31 @@ def do_image_job(args, image_job, spirv_opt_args: Optional[List[str]]):
 ################################################################################
 
 
-def do_compute_job(args, comp_job, spirv_opt_args: Optional[List[str]]):
-    ssbo = 'ssbo'
-    tmpcomp = 'tmp.comp'
+def do_compute_job(
+    args,
+    comp_job: tt.ImageJob,
+    spirv_opt_args: Optional[List[str]],
+    work_dir: str
+) -> tt.ImageJobResult:
+
+    # Output directory is based on the name of job.
+    output_dir = os.path.join(work_dir, comp_job.name)
+
+    # Delete and create output directory.
+    remove(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+
+    tmpcomp = os.path.join(output_dir, 'tmp.comp')
+    tmpjson = os.path.join(output_dir, 'tmp.json')
+    log_file = os.path.join(output_dir, runspv.LOGFILE_NAME)
+    ssbo_json_file = os.path.join(output_dir, 'ssbo.json')
+
+    # Output files from running the app.
+    status_file = os.path.join(output_dir, 'STATUS')
+
     write_to_file(comp_job.computeSource, tmpcomp)
 
-    tmpjson = 'tmp.json'
     write_to_file(comp_job.computeInfo, tmpjson)
-
-    remove(ssbo)
 
     res = tt.ImageJobResult()
     res.log = '#### Start compute shader\n\n'
@@ -227,33 +262,38 @@ def do_compute_job(args, comp_job, spirv_opt_args: Optional[List[str]]):
 
     # Set runspv logger. Use try-finally to clean up.
 
-    with open(runspv.LOGFILE_NAME, 'w', encoding='utf-8', errors='ignore') as f:
+    with runspv.open_helper(log_file, 'w') as f:
         try:
             runspv.log_to_file = f
 
             runspv.run_compute_amber(
                 comp_original=tmpcomp,
                 json_file=tmpjson,
-                output_dir=os.getcwd(),
+                output_dir=output_dir,
                 force=args.force,
                 is_android=(args.target == 'android'),
                 skip_render=comp_job.skipRender,
                 spirv_opt_args=spirv_opt_args,
             )
+        except Exception as ex:
+            runspv.log('Exception: ' + str(ex))
+            runspv.log('Removing STATUS file.')
+            remove(status_file)
+            runspv.log('Continuing.')
         finally:
             runspv.log_to_file = None
 
-    if os.path.isfile(runspv.LOGFILE_NAME):
-        with open(runspv.LOGFILE_NAME, 'r', encoding='utf-8', errors='ignore') as f:
+    if os.path.isfile(log_file):
+        with runspv.open_helper(log_file, 'r') as f:
             res.log += f.read()
 
-    if os.path.isfile('STATUS'):
-        with open('STATUS', 'r') as f:
+    if os.path.isfile(status_file):
+        with runspv.open_helper(status_file, 'r') as f:
             status = f.read().rstrip()
         if status == 'SUCCESS':
             res.status = tt.JobStatus.SUCCESS
-            assert (os.path.isfile('ssbo.json'))
-            with open('ssbo.json', 'r') as f:
+            assert (os.path.isfile(ssbo_json_file))
+            with runspv.open_helper(ssbo_json_file, 'r') as f:
                 res.computeOutputs = f.read()
 
         elif status == 'CRASH':
@@ -299,11 +339,6 @@ def get_service(server, args, worker_info_json_string):
 
         print("Got worker: " + worker)
         assert (worker == args.worker)
-
-        os.makedirs(args.worker, exist_ok=True)
-
-        # Set working dir
-        os.chdir(args.worker)
 
         return service, worker
 
@@ -423,7 +458,7 @@ def main():
                 'the app permission to write to external storage is enabled.'
             )
 
-        with open(worker_info_file, 'r') as f:
+        with runspv.open_helper(worker_info_file, 'r') as f:
             worker_info_json_string = f.read()
 
     except Exception as ex:
@@ -456,19 +491,19 @@ def main():
 
             assert os.path.isfile(args.local_shader_job), \
                 'Shader job {} does not exist'.format(args.local_shader_job)
-            with open(args.local_shader_job, 'r', encoding='utf-8', errors='ignore') as f:
+            with runspv.open_helper(args.local_shader_job) as f:
                 fake_job.uniformsInfo = f.read()
             if os.path.isfile(shader_job_prefix + '.frag'):
-                with open(shader_job_prefix + '.frag', 'r', encoding='utf-8', errors='ignore') as f:
+                with runspv.open_helper(shader_job_prefix + '.frag', 'r') as f:
                     fake_job.fragmentSource = f.read()
             if os.path.isfile(shader_job_prefix + '.vert'):
-                with open(shader_job_prefix + '.vert', 'r', encoding='utf-8', errors='ignore') as f:
+                with runspv.open_helper(shader_job_prefix + '.vert', 'r') as f:
                     fake_job.vertexSource = f.read()
             if os.path.isfile(shader_job_prefix + '.comp'):
-                with open(shader_job_prefix + '.comp', 'r', encoding='utf-8', errors='ignore') as f:
+                with runspv.open_helper(shader_job_prefix + '.comp', 'r') as f:
                     fake_job.computeSource = f.read()
                 fake_job.computeInfo = fake_job.uniformsInfo
-            do_image_job(args, fake_job, spirv_args)
+            do_image_job(args, fake_job, spirv_args, work_dir='out')
             return
 
         if not service:
@@ -480,6 +515,8 @@ def main():
                 continue
 
         assert worker is not None
+
+        os.makedirs(worker, exist_ok=True)
 
         try:
             job = service.getJob(worker)
@@ -494,11 +531,21 @@ def main():
 
                 if job.imageJob.computeSource:
                     print("#### Compute job: " + job.imageJob.name)
-                    job.imageJob.result = do_compute_job(args, job.imageJob, spirv_args)
+                    job.imageJob.result = do_compute_job(
+                        args,
+                        job.imageJob,
+                        spirv_args,
+                        work_dir=worker
+                    )
 
                 else:
                     print("#### Image job: " + job.imageJob.name)
-                    job.imageJob.result = do_image_job(args, job.imageJob, spirv_args)
+                    job.imageJob.result = do_image_job(
+                        args,
+                        job.imageJob,
+                        spirv_args,
+                        work_dir=worker
+                    )
 
                 print("Send back, results status: {}".format(job.imageJob.result.status))
                 service.jobDone(worker, job)
