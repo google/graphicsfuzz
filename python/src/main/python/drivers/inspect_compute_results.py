@@ -36,7 +36,7 @@ def get_ssbo(result_json_filename: str) -> List:
 
 def show_ssbo(result_json_filename: str) -> None:
     try:
-        print(json.dumps(get_ssbo(result_json_filename)))
+        print(json.dumps(get_ssbo(result_json_filename), indent=4, sort_keys=True))
     except ValueError as value_error:
         print(str(value_error))
 
