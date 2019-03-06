@@ -31,11 +31,8 @@ git clone https://github.com/google/graphicsfuzz.git
 
 # Change into the cloned directory:
 cd graphicsfuzz
-```
 
-The Vulkan worker build requires git submodules to be initialized and updated:
-
-```sh
+# Update git submodules:
 git submodule update --init
 ```
 
