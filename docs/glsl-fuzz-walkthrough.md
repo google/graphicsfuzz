@@ -516,6 +516,7 @@ the results for this family across all workers.
 > default threshold,
 > while the fuzzy diff algorithm compares pixel locations with various thresholds
 > for pixel-movement and color variation.
+> We find that both metrics combined are informative.
 > The background color of each table cell indicates whether the image appears to be
 > incorrect according to both metrics.
 
