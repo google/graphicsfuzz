@@ -343,7 +343,7 @@ You can then use the `glsl-to-spv-worker` script to connect to the server:
 # Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.
 # Add `--serial 123ABC` to specify the serial number of the Android device
 #   to target (found using `adb devices -l`)
-glsl-to-spv-worker android pixel3
+glsl-to-spv-worker pixel3 android
 ```
 
 Note that running `spirv-opt` on each shader by adding the `--spirvopt=ARGS`
