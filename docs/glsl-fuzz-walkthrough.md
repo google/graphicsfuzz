@@ -55,11 +55,12 @@ worker documentation](legacy-vulkan-worker.md) if you need to use the old worker
 
 For testing Vulkan drivers on Android, you need to build [Amber](https://github.com/google/amber) as a native
 Android executable by following the 
-[build instructions](https://github.com/google/amber), and place that executable in `/data/local/tmp/` on any device you want to test.
+[build instructions](https://github.com/google/amber), and push the `amber_ndk` binary to `/data/local/tmp/` on any device you want to test.
+Also ensure that the binary is executable.
 For testing Vulkan drivers on desktop, you need to build Amber on the relevant
 platform, and add it to your `PATH`.
 
-See [Build Amber for the Vulkan worker](glsl-fuzz-develop.md#build-amber-for-the-vulkan-worker) for more instructions
+See [Build Amber for the Vulkan worker](glsl-fuzz-develop.md#build-amber-for-the-vulkan-worker) for more detailed instructions
 and a last known good commit hash.
 
 

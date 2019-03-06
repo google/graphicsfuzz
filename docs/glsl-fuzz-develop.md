@@ -123,6 +123,11 @@ For Android,
 follow the [documentation](https://github.com/google/amber) to
 build the plain Android native executable, `amber_ndk`, and push it to
 your device under `/data/local/tmp/`.
+Make sure the binary is executable:
+
+```sh
+chmod +x /data/loca/tmp/amber_ndk
+```
 
 * The build instructions assume a Bash shell; on Windows, you 
 can use the Git Bash shell.
