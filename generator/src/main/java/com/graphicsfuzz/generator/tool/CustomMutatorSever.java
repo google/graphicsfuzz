@@ -59,7 +59,7 @@ public class CustomMutatorSever {
     InputStream inputStream = socket.getInputStream();
     OutputStream outputStream = socket.getOutputStream();
     while (true) {
-      // TODO(metzman) Figure out a better way to handle waiting for the header to arrive.
+      // TODO(metzman): Figure out a better way to handle waiting for the header to arrive.
       while (inputStream.available() < headerBuff.length) {
         ;
       }
