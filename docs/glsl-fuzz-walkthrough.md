@@ -512,8 +512,9 @@ the results for this family across all workers.
 > Note the Legend in the screenshot above.
 > Two image comparison metrics are used to comare the actual rendered image
 > with the expected reference image: *histogram* and *fuzzy diff*.
-> The histogram comparison only considers the overall colors of the image,
-> while the fuzzy diff algorithm considers pixel locations with various thresholds
+> The histogram comparison compares the overall colors of the images up to some
+> default threshold,
+> while the fuzzy diff algorithm compares pixel locations with various thresholds
 > for pixel-movement and color variation.
 > The background color of each table cell indicates whether the image appears to be
 > incorrect according to both metrics.
