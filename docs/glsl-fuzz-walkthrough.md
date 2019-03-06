@@ -49,9 +49,9 @@ If building from source, this directory can be found at `graphicsfuzz/target/gra
 
 ### amber
 
-In March 2019, we deprecated our legacy Vulkan worker to instead rely on
-[amber](https://github.com/google/amber) by default. See the [legacy Vulkan
-worker documentation](legacy-vulkan-worker.md) if necessary.
+In March 2019, we deprecated our legacy Vulkan worker in favor of
+[amber](https://github.com/google/amber). See the [legacy Vulkan
+worker documentation](legacy-vulkan-worker.md) if you need to use the old worker.
 
 For testing Vulkan drivers on Android, you need to build amber as a native
 Android executable, and place that executable in `/data/local/tmp/` on any device you want to test.
@@ -361,8 +361,8 @@ requirements](#amber)). On desktop, `amber` should be on your PATH.
 You can then use the `glsl-to-spv-worker` script to connect to the server:
 
 ```sh
-# Execute the worker script, passing the target ('android' or 'host') and the
-# worker name as arguments.
+# Execute the worker script, passing the worker name and the target
+# ('android' or 'host') as arguments.
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
 # Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.
