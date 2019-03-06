@@ -199,10 +199,10 @@ cd gles-worker/
 ./gradlew ios:launchIPhoneSimulator
 ```
 
-## Vulkan worker developer documentation
+## Legacy Vulkan worker developer documentation
 
-In March 2019, we deprecated our legacy Vulkan worker to instead rely on
-[amber](https://github.com/google/amber) by default.
+In March 2019, we deprecated our legacy Vulkan worker in favor of
+[amber](https://github.com/google/amber).
 Please build [amber](https://github.com/google/amber)
 as described above and use `glsl-to-spv-worker` as described in the
 [walkthrough ](glsl-fuzz-walkthrough.md).
