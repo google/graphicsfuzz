@@ -350,6 +350,8 @@ cd pixel3
 glsl-to-spv-worker pixel3 android
 ```
 
+> You can safely ignore any warnings related to `vkworker`.
+
 Note that running `spirv-opt` on each shader by adding the `--spirvopt=ARGS`
 argument can help find additional bugs that would otherwise not be found.  This
 approach can also find bugs in `spirv-opt` itself.
