@@ -140,7 +140,7 @@ a JSON file that we refer to as a
 **shader job**.
 This file contains the set of uniforms (and their values)
 that will be set, as well as details about the SSBO
-and and number of work groups for a compute shader;
+and the number of work groups for a compute shader;
 [we discuss the format of the JSON file in more detail below](#format-of-json-files).
 For example, from our release zip:
 
