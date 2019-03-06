@@ -509,16 +509,25 @@ the results for this family across all workers.
 
 ![Table of image results](images/screenshot-results-table.png)
 
-In the example above,
-the image for shader `variant_001` differs from the rest.
-Recall that all images should be identical,
-thus `variant_001` has exposed a bug that causes the wrong image to rendered.
+> Note the Legend in the screenshot above.
+> Two image comparison metrics are used to comare the actual rendered image
+> with the expected reference image: *histogram* and *fuzzy diff*.
+> The histogram comparison only considers the overall colors of the image,
+> while the fuzzy diff algorithm considers pixel locations with various thresholds
+> for pixel-movement and color variation.
+> The background color of each table cell indicates whether the image appears to be
+> incorrect according to both metrics.
 
-Clicking on `variant_001`
+In the example above,
+the image for shader `variant_009` differs from the rest.
+Recall that all images should be identical,
+thus `variant_009` has exposed a bug that causes the wrong image to rendered.
+
+Clicking on `variant_009`
 reveals the GLSL fragment shader source that
 triggered the bug:
 
-![Variant_001 fragment shader source](images/screenshot-variant-source.png)
+![Variant_009 fragment shader source](images/screenshot-variant-source.png)
 
 However,
 this shader is much larger and more complex than it needs to be
@@ -527,30 +536,45 @@ in the next section,
 we will reduce the shader to obtain a smaller and simpler shader
 that is more useful in understanding the root cause of the bug.
 
+Return to the results table view
+and click on the image under `variant_009`
+to reveal the single result page.
+
+![Variant_009 single result](images/screenshot-single-result-bad-image.png)
+
+*Images sizes have been reduced to fit more information into the screenshot.*
+
+As seen above,
+the reference image and result image are shown for comparison,
+as well as the results of the individual image comparison metrics
+(if the images are different).
+The *histogram distance* is shown, which can be useful when
+launching a reduction, as explained below. 
+
 
 ## Queuing a bad image reduction
 
 > Reductions for bad results from compute shaders cannot be launched via the Web UI.  [See how to launch them via the command line](#Performing-a-bad-result-reduction-for-a-compute-shader).
 
-Return to the results table view:
+![Variant_009 single result reduction panel](images/screenshot-single-result-bad-image-reduction.png)
 
-![Table of image results](images/screenshot-results-table.png)
-
-Click on the image under `variant_001`
-to reveal the single result page,
-and click the "Reduce result" button
-to reveal the reduction panel:
-
-![Variant_001 single result](images/screenshot-single-result-bad-image.png)
-
+From the single result page,
+click the "Reduce Result" button to reveal the reduction panel.
 From here,
 we can queue a reduction of the variant shader
 to find a smaller, simpler shader
 that still exposes the bug.
-The default reduction settings are sufficient, so just click
+The "fuzzy diff" algorithm is selected by default,
+which will work in this case,
+as both metrics detected the image as different from the reference.
+You can select the "HISTOGRAM_CHISQR" metric from the "Comparison metric" dropdown
+to switch the histogram comparison metric;
+you can then adjust the threshold based on the histogram distance reported
+higher up the page, although we find that 100.0 usually works,
+which is the default.
+In this case,
+the default reduction settings are sufficient, so just click
 "Start reduction".
-
-Once again, you should see the worker application rendering images.
 
 > Note that the server will not progress with the reduction until
 > all prior work for the specified worker has finished.
