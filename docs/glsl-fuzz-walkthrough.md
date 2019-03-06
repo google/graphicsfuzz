@@ -570,11 +570,10 @@ that still exposes the bug.
 The "fuzzy diff" algorithm is selected by default,
 which will work in this case,
 as both metrics detected the image as different from the reference.
-You can select the "HISTOGRAM_CHISQR" metric from the "Comparison metric" dropdown
-to switch the histogram comparison metric;
-you can then adjust the threshold based on the histogram distance reported
-higher up the page, although we find that 100.0 usually works,
-which is the default.
+You can select the "HISTOGRAM_CHISQR" metric from the "Comparison metric" dropdown;
+a threshold field will be revealed so that you can then adjust
+the threshold based on the histogram distance reported
+higher up the page, although we find that the default value of `100.0` usually works well.
 In this case,
 the default reduction settings are sufficient, so just click
 "Start reduction".
