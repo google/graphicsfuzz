@@ -68,7 +68,7 @@ public class CustomMutatorSever {
       headerByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
       long size1 = headerByteBuffer.getLong();
-      // Support two sizes for now so that one message format can be used between CustomMutate and
+      // Support two sizes for now so that one message format can be used for both CustomMutate and
       // CustomCrossOver.
       long size2 = headerByteBuffer.getLong();
       assert size2 == 0;
