@@ -495,7 +495,7 @@ We can now queue some shader families to the workers:
 ## Viewing fragment shader family results
 
 > Viewing of compute shader family results in the Web UI is not supported.
-> [Instructions for inspecting compute shader results are provided below](Inspecting-results-for-compute-shader-families).
+> [Instructions for inspecting compute shader results are provided below](#inspecting-results-for-compute-shader-families).
 
 Return to the Web UI
 at [http://localhost:8080/webui](http://localhost:8080/webui)
