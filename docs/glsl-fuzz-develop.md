@@ -94,7 +94,7 @@ the [documentation](https://github.com/google/amber)
 and add the `amber` binary to your `PATH`.
 For Android,
 follow the [documentation](https://github.com/google/amber) to
-build the plain Android native executable `amber_ndk`, and push it to
+build the plain Android native executable, `amber_ndk`, and push it to
 your device under `/data/local/tmp/`.
 
 ### Build the OpenGL worker (gles-worker)
