@@ -18,7 +18,7 @@ page](glsl-fuzz-releases.md).
 * [Maven](https://maven.apache.org/)
 * [Python 3.5+](https://www.python.org/)
 
-* For our Android workers: [Android SDK & NDK](android-notes.md)
+* For our Android workers: [Android SDK & NDK](android-notes.md) (see our quick [installation scripts](android-notes.md))
 * For the Vulkan desktop worker: [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
 
 > Our *workers* are applications that run on the device you wish to test; they
@@ -99,12 +99,21 @@ build Amber according to
 the [documentation](https://github.com/google/amber)
 and add the `amber` binary to your `PATH`.
 
-> The build instructions assume a Bash shell.
-> On Windows, you can use the Git Bash shell, but you may need to use
-> a "Command Prompt for Visual Studio" to execute the CMake commands
-> so that the Visual Studio C++ compiler is found.
-> Note that CMake 3.7+ is recommended for automatic discovery of
-> an installed Vulkan SDK.
+Tips:
+
+* Note that CMake 3.7+ is recommended for automatic discovery of
+an installed Vulkan SDK.
+* The build instructions assume a Bash shell; on Windows, you 
+can use the Git Bash shell.
+* Using Ninja is optional; any CMake workflow should be fine.
+* If compiling with Visual Studio and Ninja, you may need to use 
+the *Command Prompt for Visual Studio* to execute the CMake commands
+so that the Visual Studio C++ compiler is found.
+You can also add the following arguments to the first CMake command if
+there continue to be ambiguities:
+`-DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe`.
+* If you see build errors on Windows related to manifest files, exclude
+your build directory from your anti-virus scanner.
 
 #### Android
 
@@ -112,6 +121,9 @@ For Android,
 follow the [documentation](https://github.com/google/amber) to
 build the plain Android native executable, `amber_ndk`, and push it to
 your device under `/data/local/tmp/`.
+
+* The build instructions assume a Bash shell; on Windows, you 
+can use the Git Bash shell.
 
 ### Build the OpenGL worker (gles-worker)
 
