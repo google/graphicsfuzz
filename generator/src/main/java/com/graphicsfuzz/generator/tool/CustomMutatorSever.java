@@ -18,6 +18,7 @@ package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.typing.DuplicateVariableException;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -114,7 +115,8 @@ public class CustomMutatorSever {
 
           outputStream.write(outputShader.getBytes());
         }
-      } catch (GlslParserException | FuzzedIntoACornerException exception) {
+      } catch (GlslParserException | FuzzedIntoACornerException |
+          DuplicateVariableException exception) {
         exception.printStackTrace();
         System.out.println(new String(inputShaderBuff));
         // Tell libFuzzer we will "send" it a 0-length shader.
