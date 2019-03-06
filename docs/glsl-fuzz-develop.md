@@ -87,9 +87,17 @@ or read the [walkthrough for a brief overview of using all tools
 
 ### Build amber for the Vulkan worker
 
-The Vulkan worker relies on amber; see the [amber project
-documentation](https://github.com/google/amber) on how to build it. For Android,
-you will need to build the Android native executable `amber_ndk`, and push it to
+The Vulkan worker, `glsl-to-spv-worker`,
+receives shaders from our server application (`glsl-server`)
+and runs them on a device
+using [Amber](https://github.com/google/amber).
+For testing Linux, Windows, and Mac devices,
+build Amber according to 
+the [documentation](https://github.com/google/amber)
+and add the `amber` binary to your `PATH`.
+For Android,
+follow the [documentation](https://github.com/google/amber) to
+build the plain Android native executable `amber_ndk`, and push it to
 your device under `/data/local/tmp/`.
 
 ### Build the OpenGL worker (gles-worker)
