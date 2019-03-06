@@ -561,7 +561,8 @@ launching a reduction, as explained below.
 ![Variant_009 single result reduction panel](images/screenshot-single-result-bad-image-reduction.png)
 
 From the single result page,
-click the "Reduce Result" button to reveal the reduction panel.
+click the "Reduce Result" button to reveal the reduction panel,
+as shown in the above screenshot.
 From here,
 we can queue a reduction of the variant shader
 to find a smaller, simpler shader
