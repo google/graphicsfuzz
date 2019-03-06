@@ -117,17 +117,25 @@ public class WebUi extends HttpServlet {
     final File dir;
     final File preview;
     final int nbVariants;
+    final boolean isComp;
 
     public Shaderset(String name) {
       this.name = name;
-      this.dir = new File(WebUiConstants.SHADERSET_DIR + "/" + name);
-      this.preview = new File(dir + "/thumb.png");
+      this.dir = new File(WebUiConstants.SHADERSET_DIR, name);
+      this.preview = new File(dir, "thumb.png");
+      this.isComp = new File(dir, "reference.comp").isFile();
       this.nbVariants = getNbVariants();
     }
 
     private int getNbVariants() {
-      final File[] variants = dir.listFiles(item -> item.getName().startsWith("variant")
-          && item.getName().endsWith(".frag"));
+      final File[] variants;
+      if (this.isComp) {
+        variants = dir.listFiles(item -> item.getName().startsWith("variant")
+            && item.getName().endsWith(".comp"));
+      } else {
+        variants = dir.listFiles(item -> item.getName().startsWith("variant")
+            && item.getName().endsWith(".frag"));
+      }
       return variants == null ? 0 : variants.length;
     }
   }
@@ -317,7 +325,7 @@ public class WebUi extends HttpServlet {
     return workers;
   }
 
-  //Get list of all shaderset directories
+  // Get list of all shaderset directories
   private List<File> getAllShadersets(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
     List<File> shadersets = new ArrayList<>();
@@ -412,7 +420,8 @@ public class WebUi extends HttpServlet {
       for (File file : shadersets) {
         Shaderset shaderset = new Shaderset(file.getName());
         htmlAppendLn("<a class='item' href='/webui/shaderset/", shaderset.name, "'>",
-            "<img class='ui mini image' src='/webui/file/", shaderset.preview.getPath(), "'>",
+            "<img class='ui mini image' alt='Reference image preview' src='/webui/file/",
+            shaderset.preview.getPath(), "' onerror=\"this.style.display='none'\">",
             "<div class='content'><div class='header'>", shaderset.name,
             "</div>#variants: ", Integer.toString(shaderset.nbVariants),
             "</div></a>");
@@ -554,7 +563,22 @@ public class WebUi extends HttpServlet {
         (f1, f2) -> new AlphanumComparator().compare(f1.getName(), f2.getName()));
     for (File shaderFamilyFile : shaderFamilies) {
       final String shaderFamily = shaderFamilyFile.getName();
+
       ShadersetExp shadersetExp = new ShadersetExp(shaderFamily, workerName, accessFileInfo);
+
+      // TODO(360): Show results for compute shaders. For now, just indicate that some results
+      // exists, and point to documentation.
+      if (shadersetExp.shaderset.isComp) {
+        htmlAppendLn(
+            "<a class='item' target='_blank' rel='noopener noreferrer'",
+            " href='", WebUiConstants.COMPUTE_SHADER_DOC_URL, "'>",
+            "<div class='content'>",
+            "<div class='header'>Compute shader family: ", shaderFamily, "</div>",
+            "The Web interface does not support showing results for compute shaders",
+            " yet, click to open documentation.",
+            "</div></a>");
+        continue;
+      }
 
       htmlAppendLn(
           "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
@@ -1335,6 +1359,13 @@ public class WebUi extends HttpServlet {
 
     dataNum = 0;
     for (File shaderFamily: getAllShadersets(request, response)) {
+
+      // TODO(360): Handle compute shaders
+      Shaderset shaderset = new Shaderset(shaderFamily.getName());
+      if (shaderset.isComp) {
+        continue;
+      }
+
       htmlAppendLn("<div class='ui field'>",
           "<div class='ui checkbox'>",
           "<input tabindex='0' class='hidden' type='checkbox' name='shadersetcheck'",
@@ -2110,6 +2141,19 @@ public class WebUi extends HttpServlet {
 
   private void htmlComparativeTable(String shaderFamily, String[] workers)
       throws FileNotFoundException {
+
+    Shaderset shaderset = new Shaderset(shaderFamily);
+    if (shaderset.isComp) {
+      // TODO(360): Handle compute shaders
+      htmlAppendLn("<p>Compute shader family: ",
+          shaderFamily, ". ",
+          "The UI does not display results for compute shaders yet.",
+          " <a class='item' target='_blank' rel='noopener noreferrer'",
+          " href='", WebUiConstants.COMPUTE_SHADER_DOC_URL, "'>",
+          "See the compute shader documentation for more information.",
+          "</a></p>");
+      return;
+    }
 
     htmlAppendLn("<table class='ui celled compact collapsing table'>\n",
         "<thead><tr>");
