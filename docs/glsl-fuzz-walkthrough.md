@@ -26,7 +26,7 @@ in this walkthrough.
 
 ## Requirements
 
-**Summary:** the latest release zip and worker applications, Java 8+, Python 3.5+, and (if you want to do Vulkan Android testing) `adb` on your path.
+**Summary:** you need the latest release zip and worker applications, Java 8+, Python 3.5+, `amber` on your `PATH` (for desktop Vulkan testing), `amber_ndk` on your device (for Android Vulkan testing), and `adb` on your path (for Android Vulkan testing).
 
 ### Release zip and workers
 
@@ -47,46 +47,22 @@ Add the following directories to your path:
 The `graphicsfuzz/` directory is the unzipped release.
 If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz/`.
 
-### amber
+### Amber
 
-In March 2019, we deprecated our legacy Vulkan worker to instead rely on
-[amber](https://github.com/google/amber) by default. See the [legacy Vulkan
-worker documentation](legacy-vulkan-worker.md) if necessary.
+In March 2019, we deprecated our legacy Vulkan worker in favor of
+[Amber](https://github.com/google/amber). See the [legacy Vulkan
+worker documentation](legacy-vulkan-worker.md) if you need to use the old worker.
 
-For testing Vulkan drivers on Android, you need to build amber as a native
-Android executable, and place that executable in `/data/local/tmp/` on any device you want to test.
+For testing Vulkan drivers on Android, you need to build [Amber](https://github.com/google/amber) as a native
+Android executable by following the 
+[build instructions](https://github.com/google/amber), and push the `amber_ndk` binary to `/data/local/tmp/` on any device you want to test.
+Also ensure that the binary is executable.
+For testing Vulkan drivers on desktop, you need to build Amber on the relevant
+platform, and add it to your `PATH`.
 
-As of March 2019, you can build amber as a native Android executable as follows. 
-Commit `4c4017d29dddd40433b5865aa391e212ffe741d6` is known
-to work.
+See [Build Amber for the Vulkan worker](glsl-fuzz-develop.md#build-amber-for-the-vulkan-worker) for more detailed instructions
+and a last known good commit hash.
 
-> Note: on some platforms, it may be preferable to run the "tools" below using
-> `python tools/git-sync-deps` 
-> and `python tools/update_build_version.py . samples/ third_party/`.
-
-```
-git clone git@github.com:google/amber
-cd amber
-./tools/git-sync-deps
-./tools/update_build_version.py . samples/ third_party/
-mkdir build
-cd build
-mkdir app
-mkdir libs
-${ANDROID_NDK_HOME}/ndk-build -C ../samples NDK_PROJECT_PATH=. NDK_LIBS_OUT=`pwd`/libs NDK_APP_OUT=`pwd`/app
-
-# The resulting native executable will be under build/libs/<abi>/amber_ndk
-
-# Don't forget to install it on any Android device you want to test. with the
-# matching ABI. E.g. for ARM 64-bit devices:
-adb push libs/arm64-v8a/amber_ndk /data/local/tmp/
-```
-
-For testing Vulkan drivers on desktop, you need to build amber on the relevant
-platform, and add it to your path.
-
-Please refer to the [amber repo](https://github.com/google/amber) for up-to-date
-build documentation.
 
 ### Java 8+
 
@@ -165,7 +141,7 @@ a JSON file that we refer to as a
 **shader job**.
 This file contains the set of uniforms (and their values)
 that will be set, as well as details about the SSBO
-and and number of work groups for a compute shader;
+and the number of work groups for a compute shader;
 [we discuss the format of the JSON file in more detail below](#format-of-json-files).
 For example, from our release zip:
 
@@ -336,11 +312,11 @@ to test the devices on which the workers run.
 
 ### Vulkan worker
 
-The Vulkan worker is based on amber (see [amber in requirements](#amber)) to
+The Vulkan worker is based on Amber (see [amber in requirements](#amber)) to
 enable testing Vulkan drivers on Android, Linux, and Windows.
 
 > We previously shipped our own legacy Vulkan worker app, which is now
-> deprecated. Please switch to amber.
+> deprecated. Please switch to Amber.
 
 For Android, the Vulkan worker requires running `glsl-to-spv-worker` on a desktop machine, with
 the Android device accessible via adb:
@@ -351,25 +327,31 @@ glsl-server     <--- HTTP --->    glsl-to-spv-worker (calls runspv)   --- adb co
 ```
 
 > Note that the `runspv` script uses the `adb` tool to copy the shader files to
-> the device, run amber or the legacy worker, and copy back the results.
+> the device, run `amber_ndk` or the legacy worker, and copy back the results.
 > `runspv` can be used as a standalone tool to run shaders in GLSL or SPIR-V format.
 > [We describe this in more detail below](#running-shaders-from-the-command-line).
 
-To start a Vulkan worker, make sure amber is installed (see [amber in
-requirements](#amber)). On desktop, `amber` should be on your PATH.
+To start a Vulkan worker, make sure Amber is installed (see [amber in
+requirements](#amber)). On desktop, `amber` should be on your `PATH`.
 
 You can then use the `glsl-to-spv-worker` script to connect to the server:
 
 ```sh
-# Execute the worker script, passing the target ('android' or 'host') and the
-# worker name as arguments.
+# Make a directory for the worker.
+mkdir pixel3
+cd pixel3
+
+# Execute the worker script, passing the worker name and the target
+# ('android' or 'host') as arguments.
 # Add `--help` to see options
 # Add `--server` to specify a server URL (default is http://localhost:8080)
 # Add `--spirvopt=-O` to run `spirv-opt -O` on every shader.
 # Add `--serial 123ABC` to specify the serial number of the Android device
 #   to target (found using `adb devices -l`)
-glsl-to-spv-worker android pixel3
+glsl-to-spv-worker pixel3 android
 ```
+
+> You can safely ignore any warnings related to `vkworker`.
 
 Note that running `spirv-opt` on each shader by adding the `--spirvopt=ARGS`
 argument can help find additional bugs that would otherwise not be found.  This
@@ -387,7 +369,7 @@ receiving shaders named `variant_000`, `variant_001`, etc.
 So, for example, under `pixel3/variant_000` we will see:
 
 ```sh
-tmpscript.shader_test    # The self-contained amber script test file for input to amber.
+tmpscript.shader_test    # The self-contained Amber script test file for input to amber.
 variant_000.json         # The shader job file (containing uniforms data).
 variant_000.frag         # The GLSL fragment shader.
 variant_000.frag.spv     # The SPIR-V version of the fragment shader.
@@ -494,7 +476,7 @@ worker application is failing to connect to the server.
 
 ## Running shaders on the worker applications
 
-> Running of compute shaders is only supported for the amber-based Vulkan worker (on both desktop and Android).  Compute shaders are not supported by the GLES workers.
+> Running of compute shaders is only supported for the Amber-based Vulkan worker (on both desktop and Android).  Compute shaders are not supported by the GLES workers.
 
 Return to the Web UI
 at [http://localhost:8080/webui](http://localhost:8080/webui)
@@ -507,13 +489,14 @@ We can now queue some shader families to the workers:
 * Select one or more shader families via the checkboxes under "Shader families".
 * Click "Run jobs".
 
-You should see the worker applications rendering images;
-these images are being captured and uploaded to the server.
+> Note that only Vulkan-compatible shaders can be run on Vulkan workers;
+> the Vulkan-compatible shader families that we generated earlier start with
+> `family_vulkan_`.
 
 ## Viewing fragment shader family results
 
 > Viewing of compute shader family results in the Web UI is not supported.
-> [Instructions for inspecting compute shader results are provided below](Inspecting-results-for-compute-shader-families).
+> [Instructions for inspecting compute shader results are provided below](#inspecting-results-for-compute-shader-families).
 
 Return to the Web UI
 at [http://localhost:8080/webui](http://localhost:8080/webui)
@@ -526,16 +509,27 @@ the results for this family across all workers.
 
 ![Table of image results](images/screenshot-results-table.png)
 
-In the example above,
-the image for shader `variant_001` differs from the rest.
-Recall that all images should be identical,
-thus `variant_001` has exposed a bug that causes the wrong image to rendered.
+> Note the Legend in the screenshot above.
+> Two image comparison metrics are used to comare the actual rendered image
+> with the expected reference image: *histogram* and *fuzzy diff*.
+> The histogram comparison compares the overall colors of the images up to some
+> default threshold,
+> while the fuzzy diff algorithm compares pixel locations with various thresholds
+> for pixel-movement and color variation.
+> We find that both metrics combined are informative.
+> The background color of each table cell indicates whether the image appears to be
+> incorrect according to both metrics.
 
-Clicking on `variant_001`
+In the example above,
+the image for shader `variant_009` differs from the rest.
+Recall that all images should be identical,
+thus `variant_009` has exposed a bug that causes the wrong image to rendered.
+
+Clicking on `variant_009`
 reveals the GLSL fragment shader source that
 triggered the bug:
 
-![Variant_001 fragment shader source](images/screenshot-variant-source.png)
+![Variant_009 fragment shader source](images/screenshot-variant-source.png)
 
 However,
 this shader is much larger and more complex than it needs to be
@@ -544,30 +538,45 @@ in the next section,
 we will reduce the shader to obtain a smaller and simpler shader
 that is more useful in understanding the root cause of the bug.
 
+Return to the results table view
+and click on the image under `variant_009`
+to reveal the single result page.
+
+![Variant_009 single result](images/screenshot-single-result-bad-image.png)
+
+*Images sizes have been reduced to fit more information into the screenshot.*
+
+As seen above,
+the reference image and result image are shown for comparison,
+as well as the results of the individual image comparison metrics
+(if the images are different).
+The *histogram distance* is shown, which can be useful when
+launching a reduction, as explained below. 
+
 
 ## Queuing a bad image reduction
 
 > Reductions for bad results from compute shaders cannot be launched via the Web UI.  [See how to launch them via the command line](#Performing-a-bad-result-reduction-for-a-compute-shader).
 
-Return to the results table view:
+![Variant_009 single result reduction panel](images/screenshot-single-result-bad-image-reduction.png)
 
-![Table of image results](images/screenshot-results-table.png)
-
-Click on the image under `variant_001`
-to reveal the single result page,
-and click the "Reduce result" button
-to reveal the reduction panel:
-
-![Variant_001 single result](images/screenshot-single-result-bad-image.png)
-
+From the single result page,
+click the "Reduce Result" button to reveal the reduction panel,
+as shown in the above screenshot.
 From here,
 we can queue a reduction of the variant shader
 to find a smaller, simpler shader
 that still exposes the bug.
-The default reduction settings are sufficient, so just click
+The "fuzzy diff" algorithm is selected by default,
+which will work in this case,
+as both metrics detected the image as different from the reference.
+You can select the "HISTOGRAM_CHISQR" metric from the "Comparison metric" dropdown;
+a threshold field will be revealed so that you can adjust
+the threshold value based on the histogram distance reported
+higher up the page, although we find that the default value of `100.0` usually works well.
+In this case,
+the default reduction settings are sufficient, so just click
 "Start reduction".
-
-Once again, you should see the worker application rendering images.
 
 > Note that the server will not progress with the reduction until
 > all prior work for the specified worker has finished.
@@ -577,30 +586,33 @@ Once again, you should see the worker application rendering images.
 > on the worker. You can kill and restart the server to clear its
 > work queues.
 
+Refresh the page to check the progress of the reduction.
 Once the reduction has finished,
-refresh the page and you should see the result:
+you should see the result:
 
-![Variant_001 reduction result](images/screenshot-variant-reduction-result.png)
+![Variant_009 reduction result](images/screenshot-variant-reduction-result.png)
 
 In particular, you can see the difference between the
 reference shader and the reduced variant shader.
 The results will depend on what shader compiler bugs (if any!) you find on your platform, but
 in the above example,
-adding just 4 lines (that should have no effect) to the reference shader
+adding just a few lines (that should have no effect) to the reference shader
 was enough to cause the wrong image to be rendered.
 
 > The diff view currently assumes that the `diff` command line tool is
-> available and on the path, which may not be the case on your system.
+> available on the path, which may not be the case on your system.
 
 ## Queuing a no image reduction
 
 > Reductions for the case where no SSBO is produced by a compute shader cannot be launched via the Web UI.  [See how to launch them via the command line](#Performing-a-no-image-reduction-on-a-fragment-or-compute-shader).
 
 The results table for the shader family below shows
-that `variant_004` failed to render due to a crash
-during shader compilation:
+that `variant_004` failed to render due to a crash:
 
 ![Table of image results](images/screenshot-results-table-crash.png)
+
+> The CRASH status indicates that no image was produced; the
+> worker may not have necessarily crashed.
 
 Click on the red table cell to view the single result page
 and click "Reduce result" to reveal the reduction panel:
@@ -608,32 +620,22 @@ and click "Reduce result" to reveal the reduction panel:
 ![Single result page with crash](images/screenshot-single-result-crash.png)
 
 In the "Error string" text box, enter a substring from the "Run log" text box
-that will confirm the issue.  For example, in this case, we could enter "Fatal
-signal 11".  Ideally, we should enter something even more specific, such as a
+that will confirm the issue.  For example, in this case, we could enter
+"Calling vkWaitForFences Timeout" (without quotes). 
+Another common string is: "Fatal signal 11".
+Ideally, we should enter something even more specific, such as a
 function name from a stack trace, but this is only possible if a stack trace is
 shown in the run log.
 
-We can also surmise that the error occurs during shader compilation,
-and so any successful shader compilation during the reduction process
-is uninteresting.
-As such,
-we can greatly speed up the reduction by enabling the "Skip Render"
-option.
-
-> The "Skip Render" option causes the worker to only compile the shader,
+> Enabling the "Skip Render" option causes the worker to only compile the shader,
 > without rendering an image, which is much faster.
-> In this case,
-> a successful compilation is regarded as uninteresting for the reduction.
-> You should not enable this option if the error you are reducing
-> occurs during rendering, or as a result of rendering.
+> However, you must ensure that this is still sufficient to trigger
+> the required error string output.
+> If you enable "Skip Render", 
+> the reduction will fail almost instantly if the error string output
+> does not appear, in which case you can try again without "Skip Render".
 
-The other default settings are sufficient, so click "Start Reduction".
-
-This time, you will not see the worker rendering the image,
-because the "Skip Render" option has been set,
-although you may still see the "sanity image" being rendered,
-which is used to check that the graphics driver is still
-able to render a basic image.
+The default settings are sufficient, so click "Start Reduction".
 
 Once the reduction has finished,
 refresh the page and you should see the result.
@@ -644,19 +646,13 @@ as the reducer will have removed as much code as possible
 Thus, click "View reduced shader" to
 see the small, simple shader that triggers the bug:
 
-![Reduced result](images/screenshot-crash-reduction-result.png)
-
-In the above example,
-a function body that contains a somewhat complex `pow` function call
-is enough to trigger the bug.
-
 
 ## After updating a device
 
 If you update a device,
 its "fingerprint" will change
 and the server will usually reject it.
-The solution is to give the worker a new name.
+The simplest solution is to give the worker a new name.
 This also allows you to compare
 results across different versions of your device
 in the Web UI,
@@ -858,7 +854,7 @@ runspv android variant_005.json outdir
 
 However, note that `runspv` will fail if you have, for example, 
 both `variant_005.frag` and `variant_005.frag.spv`;
-you must delete one of these files so `runspv` knows which file you want to test,
+you must delete one of these files so `runspv` knows which file you want to test.
 The temporary files and results will be output to `outdir/`.
 
 ## Reducing shaders from the command line using `glsl-reduce`
