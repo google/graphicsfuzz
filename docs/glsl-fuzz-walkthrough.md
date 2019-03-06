@@ -855,7 +855,7 @@ runspv android variant_005.json outdir
 
 However, note that `runspv` will fail if you have, for example, 
 both `variant_005.frag` and `variant_005.frag.spv`;
-you must delete one of these files so `runspv` knows which file you want to test,
+you must delete one of these files so `runspv` knows which file you want to test.
 The temporary files and results will be output to `outdir/`.
 
 ## Reducing shaders from the command line using `glsl-reduce`
