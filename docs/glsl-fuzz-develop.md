@@ -3,6 +3,9 @@
 The developer documentation describes how to build the projects
 from the command line, as well as
 [opening and building from IntelliJ IDEA](#opening-and-building-from-intellij-idea).
+We present commands assuming a Linux/Mac environment,
+but Windows users can adapt the commands or
+use the Git Bash shell.
 
 ## Build from command line
 
@@ -88,10 +91,23 @@ The Vulkan worker, `glsl-to-spv-worker`,
 receives shaders from our server application (`glsl-server`)
 and runs them on a device
 using [Amber](https://github.com/google/amber).
+
+#### Desktop
+
 For testing Linux, Windows, and Mac devices,
 build Amber according to 
 the [documentation](https://github.com/google/amber)
 and add the `amber` binary to your `PATH`.
+
+> The build instructions assume a Bash shell.
+> On Windows, you can use the Git Bash shell, but you may need to use
+> a "Command Prompt for Visual Studio" to execute the CMake commands
+> so that the Visual Studio C++ compiler is found.
+> Note that CMake 3.7+ is recommended for automatic discovery of
+> an installed Vulkan SDK.
+
+#### Android
+
 For Android,
 follow the [documentation](https://github.com/google/amber) to
 build the plain Android native executable, `amber_ndk`, and push it to
