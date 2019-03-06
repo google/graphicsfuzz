@@ -587,30 +587,33 @@ the default reduction settings are sufficient, so just click
 > on the worker. You can kill and restart the server to clear its
 > work queues.
 
+Refresh the page to check the progress of the reduction.
 Once the reduction has finished,
-refresh the page and you should see the result:
+you should see the result:
 
-![Variant_001 reduction result](images/screenshot-variant-reduction-result.png)
+![Variant_009 reduction result](images/screenshot-variant-reduction-result.png)
 
 In particular, you can see the difference between the
 reference shader and the reduced variant shader.
 The results will depend on what shader compiler bugs (if any!) you find on your platform, but
 in the above example,
-adding just 4 lines (that should have no effect) to the reference shader
+adding just a few lines (that should have no effect) to the reference shader
 was enough to cause the wrong image to be rendered.
 
 > The diff view currently assumes that the `diff` command line tool is
-> available and on the path, which may not be the case on your system.
+> available on the path, which may not be the case on your system.
 
 ## Queuing a no image reduction
 
 > Reductions for the case where no SSBO is produced by a compute shader cannot be launched via the Web UI.  [See how to launch them via the command line](#Performing-a-no-image-reduction-on-a-fragment-or-compute-shader).
 
 The results table for the shader family below shows
-that `variant_004` failed to render due to a crash
-during shader compilation:
+that `variant_004` failed to render due to a crash:
 
 ![Table of image results](images/screenshot-results-table-crash.png)
+
+> The CRASH status indicates that no image was produced; the
+> worker may not have necessarily crashed.
 
 Click on the red table cell to view the single result page
 and click "Reduce result" to reveal the reduction panel:
@@ -618,32 +621,22 @@ and click "Reduce result" to reveal the reduction panel:
 ![Single result page with crash](images/screenshot-single-result-crash.png)
 
 In the "Error string" text box, enter a substring from the "Run log" text box
-that will confirm the issue.  For example, in this case, we could enter "Fatal
-signal 11".  Ideally, we should enter something even more specific, such as a
+that will confirm the issue.  For example, in this case, we could enter
+"Calling vkWaitForFences Timeout" (without quotes). 
+Another common string is: "Fatal signal 11".
+Ideally, we should enter something even more specific, such as a
 function name from a stack trace, but this is only possible if a stack trace is
 shown in the run log.
 
-We can also surmise that the error occurs during shader compilation,
-and so any successful shader compilation during the reduction process
-is uninteresting.
-As such,
-we can greatly speed up the reduction by enabling the "Skip Render"
-option.
-
-> The "Skip Render" option causes the worker to only compile the shader,
+> Enabling the "Skip Render" option causes the worker to only compile the shader,
 > without rendering an image, which is much faster.
-> In this case,
-> a successful compilation is regarded as uninteresting for the reduction.
-> You should not enable this option if the error you are reducing
-> occurs during rendering, or as a result of rendering.
+> However, you must ensure that this is still sufficient to trigger
+> the required error string output.
+> If you enable "Skip Render", 
+> the reduction will fail almost instantly if the error string output
+> does not appear, in which case you can try again without "Skip Render".
 
-The other default settings are sufficient, so click "Start Reduction".
-
-This time, you will not see the worker rendering the image,
-because the "Skip Render" option has been set,
-although you may still see the "sanity image" being rendered,
-which is used to check that the graphics driver is still
-able to render a basic image.
+The default settings are sufficient, so click "Start Reduction".
 
 Once the reduction has finished,
 refresh the page and you should see the result.
@@ -653,12 +646,6 @@ as the reducer will have removed as much code as possible
 (because the "Preserve Semantics" option was disabled).
 Thus, click "View reduced shader" to
 see the small, simple shader that triggers the bug:
-
-![Reduced result](images/screenshot-crash-reduction-result.png)
-
-In the above example,
-a function body that contains a somewhat complex `pow` function call
-is enough to trigger the bug.
 
 
 ## After updating a device
