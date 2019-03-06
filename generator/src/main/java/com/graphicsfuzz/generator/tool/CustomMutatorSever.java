@@ -59,7 +59,8 @@ public class CustomMutatorSever {
     OutputStream outputStream = socket.getOutputStream();
     while (true) {
       // TODO(metzman) Figure out a better way to handle waiting for the header to arrive.
-      while (inputStream.available() < headerBuff.length) {;
+      while (inputStream.available() < headerBuff.length) {
+        ;
       }
       inputStream.read(headerBuff, 0, headerBuff.length);
       ByteBuffer headerByteBuffer = ByteBuffer.wrap(headerBuff);
