@@ -653,7 +653,7 @@ see the small, simple shader that triggers the bug:
 If you update a device,
 its "fingerprint" will change
 and the server will usually reject it.
-The solution is to give the worker a new name.
+The simplest solution is to give the worker a new name.
 This also allows you to compare
 results across different versions of your device
 in the Web UI,
