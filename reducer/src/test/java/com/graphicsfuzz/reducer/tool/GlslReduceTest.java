@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.util.ExecHelper;
 import java.io.File;
 import java.io.IOException;
 import org.junit.Rule;
@@ -29,6 +30,7 @@ import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class GlslReduceTest {
 
@@ -120,6 +122,10 @@ public class GlslReduceTest {
 
   @Test
   public void checkCustomJudgeIsExecutable() throws Exception {
+    if (ExecHelper.IS_WINDOWS) {
+      // All files are executable on Windows.
+      return;
+    }
     final File jsonFile = getShaderJobReady();
     final File emptyFile = temporaryFolder.newFile(); // Not executable
     try {
@@ -130,8 +136,7 @@ public class GlslReduceTest {
           emptyFile.getAbsolutePath(),
           "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
-      assertTrue("An exception should have been thrown as the " +
-          "judge script is not executable.", false);
+      fail("An exception should have been thrown as the judge script is not executable.");
     } catch (RuntimeException exception) {
       assertTrue(exception.getMessage().contains("judge script must be executable"));
     }
