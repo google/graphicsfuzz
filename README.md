@@ -12,6 +12,7 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
 ## Tools
 
 * **glsl-reduce**: a stand-alone GLSL shader reducer
+* **spirv-reduce**: a stand-alone SPIR-V shader reducer
 * **glsl-fuzz**: a family of tools for testing GLSL shader compilers using randomized metamorphic testing
 
 ### glsl-reduce
@@ -19,6 +20,10 @@ glslangValidator and spirv-tools to additionally target SPIR-V.
 * [Introduction: my shader is being weird, now what?](docs/glsl-reduce-intro.md)
 * [glsl-reduce walkthrough](docs/glsl-reduce-walkthrough.md)
 * [glsl-reduce manual](docs/glsl-reduce.md)
+
+### spirv-reduce
+
+* [spirv-reduce is provided as a component of SPIRV-Tools](https://github.com/KhronosGroup/SPIRV-Tools)
 
 ### glsl-fuzz
 
