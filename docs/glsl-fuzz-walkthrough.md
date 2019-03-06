@@ -488,8 +488,9 @@ We can now queue some shader families to the workers:
 * Select one or more shader families via the checkboxes under "Shader families".
 * Click "Run jobs".
 
-You should see the worker applications rendering images;
-these images are being captured and uploaded to the server.
+> Note that only Vulkan-compatible shaders can be run on Vulkan workers;
+> the Vulkan-compatible shader families that we generated earlier start with
+> `family_vulkan_`.
 
 ## Viewing fragment shader family results
 
