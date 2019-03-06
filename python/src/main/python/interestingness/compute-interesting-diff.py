@@ -18,6 +18,7 @@ import json
 import os
 import subprocess
 import sys
+import shutil
 
 REFERENCE_RESULTS = os.path.dirname(os.path.realpath(__file__)) + os.sep + 'reference.info.json'  # Edit according to your needs
 WORKER_NAME = 'your-worker'  # Edit according to your needs
@@ -27,10 +28,10 @@ SERVER_URL = 'http://localhost:8080'  # Edit according to your needs
 variant_shader_job = sys.argv[1]
 
 if not os.path.isfile(REFERENCE_RESULTS):
-  sys.stderr.write('Not interesting: file ' + REFERENCE_RESULTS + ' not found; this is likely fatal.')
-  sys.exit(1)
+    sys.stderr.write('Not interesting: file ' + REFERENCE_RESULTS + ' not found; this is likely fatal.')
+    sys.exit(1)
 
-cmd = ['run-shader-family', '--worker', WORKER_NAME, '--server', SERVER_URL, variant_shader_job]
+cmd = [shutil.which('run-shader-family'), '--worker', WORKER_NAME, '--server', SERVER_URL, variant_shader_job]
 proc = subprocess.run(cmd)
 
 if proc.returncode != 0:
@@ -49,7 +50,7 @@ with open(variant_results_filename, 'r') as f:
         sys.stderr.write('Not interesting: result was ' + json_variant_results['status'] + '\n')
         sys.exit(4)
 
-cmd = ['inspect-compute-results', 'exactdiff', REFERENCE_RESULTS, variant_results_filename]
+cmd = [shutil.which('inspect-compute-results'), 'exactdiff', REFERENCE_RESULTS, variant_results_filename]
 proc = subprocess.run(cmd)
 
 if proc.returncode == 0:

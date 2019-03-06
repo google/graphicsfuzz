@@ -3,6 +3,9 @@
 The developer documentation describes how to build the projects
 from the command line, as well as
 [opening and building from IntelliJ IDEA](#opening-and-building-from-intellij-idea).
+We present commands assuming a Linux/Mac environment,
+but Windows users can adapt the commands or
+use the Git Bash shell.
 
 ## Build from command line
 
@@ -15,7 +18,7 @@ page](glsl-fuzz-releases.md).
 * [Maven](https://maven.apache.org/)
 * [Python 3.5+](https://www.python.org/)
 
-* For our Android workers: [Android SDK & NDK](android-notes.md)
+* For our Android workers: [Android SDK & NDK](android-notes.md) (see our quick [installation scripts](android-notes.md))
 * For the Vulkan desktop worker: [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
 
 > Our *workers* are applications that run on the device you wish to test; they
@@ -31,11 +34,8 @@ git clone https://github.com/google/graphicsfuzz.git
 
 # Change into the cloned directory:
 cd graphicsfuzz
-```
 
-The Vulkan worker build requires git submodules to be initialized and updated:
-
-```sh
+# Update git submodules:
 git submodule update --init
 ```
 
@@ -85,12 +85,55 @@ See [documentation for these tools](../README.md#Tools)
 or read the [walkthrough for a brief overview of using all tools
 (also requires downloading or building some worker applications)](glsl-fuzz-walkthrough.md).
 
-### Build amber for the Vulkan worker
+### Build Amber for the Vulkan worker
 
-The Vulkan worker relies on amber; see the [amber project
-documentation](https://github.com/google/amber) on how to build it. For Android,
-you will need to build the Android native executable `amber_ndk`, and push it to
+The Vulkan worker, `glsl-to-spv-worker`,
+receives shaders from our server application (`glsl-server`)
+and runs them on a device
+using [Amber](https://github.com/google/amber).
+
+Commit `c7ea9967a04b5b00aed14e1a15978e36f39a1d62` is known to work.
+
+#### Desktop
+
+For testing Linux, Windows, and Mac devices,
+build Amber according to 
+the [documentation](https://github.com/google/amber)
+and add the `amber` binary to your `PATH`.
+
+Tips:
+
+* Note that CMake 3.7+ is recommended for automatic discovery of
+an installed Vulkan SDK.
+* The build instructions assume a Bash shell; on Windows, you 
+can use the Git Bash shell.
+* Using Ninja is optional; any CMake workflow should be fine.
+* If compiling with Visual Studio and Ninja, you may need to use 
+the *Command Prompt for Visual Studio* to execute the CMake commands
+so that the Visual Studio C++ compiler is found.
+You can also add the following arguments to the first CMake command if
+there continue to be ambiguities:
+`-DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe`.
+* If you see build errors on Windows related to manifest files, exclude
+your build directory from your anti-virus scanner.
+
+#### Android
+
+For Android,
+follow the [documentation](https://github.com/google/amber) to
+build the plain Android native executable, `amber_ndk`, and push it to
 your device under `/data/local/tmp/`.
+Make sure the binary is executable:
+
+```sh
+chmod +x /data/loca/tmp/amber_ndk
+```
+
+* The build instructions assume a Bash shell; on Windows, you 
+can use the Git Bash shell.
+However, using `adb` from a Git Bash shell may give unexpected results,
+so using the command prompt is recommended when executing `adb` commands such as
+`adb push`.
 
 ### Build the OpenGL worker (gles-worker)
 
@@ -156,9 +199,17 @@ cd gles-worker/
 ./gradlew ios:launchIPhoneSimulator
 ```
 
-## Vulkan worker developer documentation
+## Legacy Vulkan worker developer documentation
 
-The Vulkan worker enables to run spirv shaders on Linux and Android. Its source
+In March 2019, we deprecated our legacy Vulkan worker in favor of
+[amber](https://github.com/google/amber).
+Please build [amber](https://github.com/google/amber)
+as described above and use `glsl-to-spv-worker` as described in the
+[walkthrough ](glsl-fuzz-walkthrough.md).
+
+*Original documentation:*
+
+The Vulkan worker runs spirv shaders on Linux and Android. Its source
 code can be found under `vulkan-worker`.
 
 ### Source code layout
@@ -192,30 +243,12 @@ We are relying on, and grateful to, the following open-source projects:
 
 ### Requirements:
 
-* [JDK 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
-* [Maven](https://maven.apache.org/)
-* [Python](https://www.python.org/)
+You need the build requirements, plus:
+
 * [IntelliJ IDEA Community or Ultimate](https://www.jetbrains.com/idea/)
-* Android SDK and NDK: see [Android Notes](android-notes.md)
 
-### Get a local copy of this repository
-
-To clone this repository:
-
-```sh
-git clone https://github.com/google/graphicsfuzz.git
-
-# Or: git clone git@github.com:google/graphicsfuzz.git
-
-# Change into the cloned directory:
-cd graphicsfuzz
-```
-
-The Vulkan worker build requires git submodules to be initialized and updated:
-
-```sh
-git submodule update --init
-```
+Follow the instructions for building from the command line above
+before proceeding.
 
 ### Opening GraphicsFuzz in IntelliJ
 

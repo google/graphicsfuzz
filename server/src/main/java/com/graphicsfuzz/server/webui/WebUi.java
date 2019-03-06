@@ -2255,7 +2255,7 @@ public class WebUi extends HttpServlet {
         "<tr><td class='nondet'></td>",
         "<td>Variant leads to non-deterministic rendering</td></tr>",
         "<tr><td class='metricsdisimg'></td>",
-        "<td>The image comparison metrics used to compare variant and reference",
+        "<td>The image comparison metrics used to compare variant and reference ",
         "disagree on whether they are different or not</td></tr>",
         "</tbody>",
         "</table>",
