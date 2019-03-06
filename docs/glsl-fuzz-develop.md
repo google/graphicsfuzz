@@ -163,7 +163,15 @@ cd gles-worker/
 
 ## Vulkan worker developer documentation
 
-The Vulkan worker enables to run spirv shaders on Linux and Android. Its source
+In March 2019, we deprecated our legacy Vulkan worker to instead rely on
+[amber](https://github.com/google/amber) by default.
+Please build [amber](https://github.com/google/amber)
+as described above and use `glsl-to-spv-worker` as described in the
+[walkthrough ](glsl-fuzz-walkthrough.md).
+
+*Original documentation:*
+
+The Vulkan worker runs spirv shaders on Linux and Android. Its source
 code can be found under `vulkan-worker`.
 
 ### Source code layout
@@ -197,30 +205,12 @@ We are relying on, and grateful to, the following open-source projects:
 
 ### Requirements:
 
-* [JDK 1.8](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
-* [Maven](https://maven.apache.org/)
-* [Python](https://www.python.org/)
+You need the build requirements, plus:
+
 * [IntelliJ IDEA Community or Ultimate](https://www.jetbrains.com/idea/)
-* Android SDK and NDK: see [Android Notes](android-notes.md)
 
-### Get a local copy of this repository
-
-To clone this repository:
-
-```sh
-git clone https://github.com/google/graphicsfuzz.git
-
-# Or: git clone git@github.com:google/graphicsfuzz.git
-
-# Change into the cloned directory:
-cd graphicsfuzz
-```
-
-The Vulkan worker build requires git submodules to be initialized and updated:
-
-```sh
-git submodule update --init
-```
+Follow the instructions for building from the command line above
+before proceeding.
 
 ### Opening GraphicsFuzz in IntelliJ
 
