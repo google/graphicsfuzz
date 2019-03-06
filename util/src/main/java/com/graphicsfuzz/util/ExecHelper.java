@@ -39,7 +39,7 @@ public class ExecHelper {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ExecHelper.class);
 
-  private static final boolean isWindows =
+  public static final boolean IS_WINDOWS =
       System.getProperty("os.name").toLowerCase().startsWith("windows");
 
   private static final String pathVar;
@@ -78,7 +78,7 @@ public class ExecHelper {
     List<String> commandList = new ArrayList<>(Arrays.asList(command));
 
     if (shell) {
-      if (isWindows) {
+      if (IS_WINDOWS) {
         commandList.addAll(0, Arrays.asList("cmd.exe", "/c"));
       } else {
         commandList.addAll(0, Arrays.asList("env", "--"));
