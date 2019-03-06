@@ -115,8 +115,8 @@ public class CustomMutatorSever {
 
           outputStream.write(outputShader.getBytes());
         }
-      } catch (GlslParserException | FuzzedIntoACornerException |
-          DuplicateVariableException exception) {
+      } catch (GlslParserException | FuzzedIntoACornerException
+          | DuplicateVariableException exception) {
         exception.printStackTrace();
         System.out.println(new String(inputShaderBuff));
         // Tell libFuzzer we will "send" it a 0-length shader.
