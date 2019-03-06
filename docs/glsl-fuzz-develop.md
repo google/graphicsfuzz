@@ -92,6 +92,8 @@ receives shaders from our server application (`glsl-server`)
 and runs them on a device
 using [Amber](https://github.com/google/amber).
 
+Commit `c7ea9967a04b5b00aed14e1a15978e36f39a1d62` is known to work.
+
 #### Desktop
 
 For testing Linux, Windows, and Mac devices,
