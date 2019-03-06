@@ -336,6 +336,10 @@ requirements](#amber)). On desktop, `amber` should be on your `PATH`.
 You can then use the `glsl-to-spv-worker` script to connect to the server:
 
 ```sh
+# Make a directory for the worker.
+mkdir pixel3
+cd pixel3
+
 # Execute the worker script, passing the worker name and the target
 # ('android' or 'host') as arguments.
 # Add `--help` to see options
