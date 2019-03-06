@@ -60,7 +60,7 @@ For testing Vulkan drivers on desktop, you need to build Amber on the relevant
 platform, and add it to your `PATH`.
 
 See [Build Amber for the Vulkan worker](glsl-fuzz-develop.md#build-amber-for-the-vulkan-worker) for more instructions
-and last known good commit hash.
+and a last known good commit hash.
 
 
 ### Java 8+
