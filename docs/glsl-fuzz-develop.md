@@ -124,6 +124,9 @@ your device under `/data/local/tmp/`.
 
 * The build instructions assume a Bash shell; on Windows, you 
 can use the Git Bash shell.
+However, using `adb` from a Git Bash shell may give unexpected results,
+so using the command prompt is recommended when executing commands such as
+`adb push`.
 
 ### Build the OpenGL worker (gles-worker)
 
