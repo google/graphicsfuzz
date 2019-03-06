@@ -85,7 +85,7 @@ See [documentation for these tools](../README.md#Tools)
 or read the [walkthrough for a brief overview of using all tools
 (also requires downloading or building some worker applications)](glsl-fuzz-walkthrough.md).
 
-### Build amber for the Vulkan worker
+### Build Amber for the Vulkan worker
 
 The Vulkan worker, `glsl-to-spv-worker`,
 receives shaders from our server application (`glsl-server`)

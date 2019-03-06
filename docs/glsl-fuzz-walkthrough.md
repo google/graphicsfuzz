@@ -47,7 +47,7 @@ Add the following directories to your path:
 The `graphicsfuzz/` directory is the unzipped release.
 If building from source, this directory can be found at `graphicsfuzz/target/graphicsfuzz/`.
 
-### amber
+### Amber
 
 In March 2019, we deprecated our legacy Vulkan worker in favor of
 [Amber](https://github.com/google/amber). See the [legacy Vulkan
@@ -310,7 +310,7 @@ to test the devices on which the workers run.
 
 ### Vulkan worker
 
-The Vulkan worker is based on amber (see [amber in requirements](#amber)) to
+The Vulkan worker is based on Amber (see [amber in requirements](#amber)) to
 enable testing Vulkan drivers on Android, Linux, and Windows.
 
 > We previously shipped our own legacy Vulkan worker app, which is now
@@ -325,12 +325,12 @@ glsl-server     <--- HTTP --->    glsl-to-spv-worker (calls runspv)   --- adb co
 ```
 
 > Note that the `runspv` script uses the `adb` tool to copy the shader files to
-> the device, run amber or the legacy worker, and copy back the results.
+> the device, run `amber_ndk` or the legacy worker, and copy back the results.
 > `runspv` can be used as a standalone tool to run shaders in GLSL or SPIR-V format.
 > [We describe this in more detail below](#running-shaders-from-the-command-line).
 
-To start a Vulkan worker, make sure amber is installed (see [amber in
-requirements](#amber)). On desktop, `amber` should be on your PATH.
+To start a Vulkan worker, make sure Amber is installed (see [amber in
+requirements](#amber)). On desktop, `amber` should be on your `PATH`.
 
 You can then use the `glsl-to-spv-worker` script to connect to the server:
 
@@ -361,7 +361,7 @@ receiving shaders named `variant_000`, `variant_001`, etc.
 So, for example, under `pixel3/variant_000` we will see:
 
 ```sh
-tmpscript.shader_test    # The self-contained amber script test file for input to amber.
+tmpscript.shader_test    # The self-contained Amber script test file for input to amber.
 variant_000.json         # The shader job file (containing uniforms data).
 variant_000.frag         # The GLSL fragment shader.
 variant_000.frag.spv     # The SPIR-V version of the fragment shader.
@@ -468,7 +468,7 @@ worker application is failing to connect to the server.
 
 ## Running shaders on the worker applications
 
-> Running of compute shaders is only supported for the amber-based Vulkan worker (on both desktop and Android).  Compute shaders are not supported by the GLES workers.
+> Running of compute shaders is only supported for the Amber-based Vulkan worker (on both desktop and Android).  Compute shaders are not supported by the GLES workers.
 
 Return to the Web UI
 at [http://localhost:8080/webui](http://localhost:8080/webui)
