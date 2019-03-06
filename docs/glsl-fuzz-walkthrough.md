@@ -26,7 +26,7 @@ in this walkthrough.
 
 ## Requirements
 
-**Summary:** the latest release zip and worker applications, Java 8+, Python 3.5+, and (if you want to do Vulkan Android testing) `adb` on your path.
+**Summary:** you need the latest release zip and worker applications, Java 8+, Python 3.5+, `amber` on your `PATH` (for desktop Vulkan testing), `amber_ndk` on your device (for Android Vulkan testing), and `adb` on your path (for Android Vulkan testing).
 
 ### Release zip and workers
 
@@ -50,43 +50,17 @@ If building from source, this directory can be found at `graphicsfuzz/target/gra
 ### amber
 
 In March 2019, we deprecated our legacy Vulkan worker in favor of
-[amber](https://github.com/google/amber). See the [legacy Vulkan
+[Amber](https://github.com/google/amber). See the [legacy Vulkan
 worker documentation](legacy-vulkan-worker.md) if you need to use the old worker.
 
-For testing Vulkan drivers on Android, you need to build amber as a native
-Android executable, and place that executable in `/data/local/tmp/` on any device you want to test.
+For testing Vulkan drivers on Android, you need to build [Amber](https://github.com/google/amber) as a native
+Android executable by following the 
+[build instructions](https://github.com/google/amber), and place that executable in `/data/local/tmp/` on any device you want to test.
+For testing Vulkan drivers on desktop, you need to build Amber on the relevant
+platform, and add it to your `PATH`.
 
-As of March 2019, you can build amber as a native Android executable as follows. 
-Commit `4c4017d29dddd40433b5865aa391e212ffe741d6` is known
-to work.
+See [Build amber for the Vulkan worker](glsl-fuzz-develop.md#build-amber-for-the-vulkan-worker) for more instructions.
 
-> Note: on some platforms, it may be preferable to run the "tools" below using
-> `python tools/git-sync-deps` 
-> and `python tools/update_build_version.py . samples/ third_party/`.
-
-```
-git clone git@github.com:google/amber
-cd amber
-./tools/git-sync-deps
-./tools/update_build_version.py . samples/ third_party/
-mkdir build
-cd build
-mkdir app
-mkdir libs
-${ANDROID_NDK_HOME}/ndk-build -C ../samples NDK_PROJECT_PATH=. NDK_LIBS_OUT=`pwd`/libs NDK_APP_OUT=`pwd`/app
-
-# The resulting native executable will be under build/libs/<abi>/amber_ndk
-
-# Don't forget to install it on any Android device you want to test. with the
-# matching ABI. E.g. for ARM 64-bit devices:
-adb push libs/arm64-v8a/amber_ndk /data/local/tmp/
-```
-
-For testing Vulkan drivers on desktop, you need to build amber on the relevant
-platform, and add it to your path.
-
-Please refer to the [amber repo](https://github.com/google/amber) for up-to-date
-build documentation.
 
 ### Java 8+
 
@@ -340,7 +314,7 @@ The Vulkan worker is based on amber (see [amber in requirements](#amber)) to
 enable testing Vulkan drivers on Android, Linux, and Windows.
 
 > We previously shipped our own legacy Vulkan worker app, which is now
-> deprecated. Please switch to amber.
+> deprecated. Please switch to Amber.
 
 For Android, the Vulkan worker requires running `glsl-to-spv-worker` on a desktop machine, with
 the Android device accessible via adb:
