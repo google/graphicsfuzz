@@ -176,6 +176,7 @@ void main(void)
 ...
 ```
 
+You should also see log messages from the GraphicsFuzz CustomMutatorServer.
 Note that it may appear as though libFuzzer is "stuck" on an invalid input and
 repeatedly asks GraphicsFuzz to mutate it. libFuzzer is not actually stuck it
 should progress within 30 seconds.
