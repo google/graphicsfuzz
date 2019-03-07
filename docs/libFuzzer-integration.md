@@ -37,11 +37,12 @@ cat << EOF > fuzzer.cc
 #include <iostream>
 #include <string>
 
-#define CHECK(COND, MSG) \
-  if (!(COND)) {         \
-    perror(MSG);         \
-    exit(EXIT_FAILURE);  \
-  }
+void CHECK(bool condition, const char* message) {
+  if (condition)
+    return;
+  perror(message);
+  exit(EXIT_FAILURE);
+}
 
 static int sock;
 
