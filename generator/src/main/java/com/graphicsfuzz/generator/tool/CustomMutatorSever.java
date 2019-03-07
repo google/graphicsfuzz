@@ -116,7 +116,8 @@ public class CustomMutatorSever {
 
           outputStream.write(outputShader.getBytes());
         }
-      } catch (GlslParserException | FuzzedIntoACornerException
+      } catch (GlslParserException
+          | FuzzedIntoACornerException
           | DuplicateVariableException exception) {
         exception.printStackTrace();
         System.out.println(new String(inputShaderBuff));
