@@ -43,7 +43,8 @@ import java.util.Optional;
 public class CustomMutatorSever {
   public static void main(String[] args) {
     try {
-      // TODO(metzman): If we don't switch from TCP, allow this to be configurable.
+      // TODO(381): If we don't switch from TCP, allow this to be configured from the command
+      // line.
       runServer(8666);
     } catch (IOException | ParseTimeoutException | InterruptedException exception) {
       exception.printStackTrace();
@@ -53,47 +54,47 @@ public class CustomMutatorSever {
 
   private static void runServer(int port)
       throws IOException, ParseTimeoutException, InterruptedException {
-    byte[] headerBuff = new byte[28];
-    ServerSocket serverSocket = new ServerSocket(port);
-    Socket socket = serverSocket.accept();
-    InputStream inputStream = socket.getInputStream();
-    OutputStream outputStream = socket.getOutputStream();
+    final ServerSocket serverSocket = new ServerSocket(port);
+    final Socket socket = serverSocket.accept();
+    final InputStream inputStream = socket.getInputStream();
+    final OutputStream outputStream = socket.getOutputStream();
+    // Header is composed of
+    // uint64_t size;
+    // uint32_t seed;
+    // uint8_t isFragment;
+    final int headerSize = Long.BYTES + Integer.BYTES + Byte.BYTES;
+    final byte[] headerBuff = new byte[headerSize];
     while (true) {
-      // TODO(metzman): Figure out a better way to handle waiting for the header to arrive.
+      // TODO(381): Figure out a better way to handle waiting for the header to arrive.
       while (inputStream.available() < headerBuff.length) {
         ;
       }
       inputStream.read(headerBuff, 0, headerBuff.length);
-      ByteBuffer headerByteBuffer = ByteBuffer.wrap(headerBuff);
+      final ByteBuffer headerByteBuffer = ByteBuffer.wrap(headerBuff);
       headerByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
-      long size1 = headerByteBuffer.getLong();
-      // Support two sizes for now so that one message format can be used for both CustomMutate and
-      // CustomCrossOver.
-      long size2 = headerByteBuffer.getLong();
-      assert size2 == 0;
-
-      // Java won't allow us to create an array with a "long" size. Therefore, we must convert it to
+      // Java won't allow us to create an array with a "long" size. But the size of a
+      // shader on the client can technically be up to SIZE_T_MAX. Therefore, we must convert it to
       // int before creating the array. This is probably a non-issue because libFuzzer is unlikely
       // to ever give us a shader larger than Integer.MAX_VALUE (e.g. ~2G).
-      assert size1 <= Integer.MAX_VALUE && size2 <= Integer.MAX_VALUE;
+      final long shaderSize = headerByteBuffer.getLong();
+      assert shaderSize <= Integer.MAX_VALUE;
 
-      // GraphicsFuzz can't do anything with this unfortunately.
-      long maxOutSize = headerByteBuffer.getLong();
+      final int seed = headerByteBuffer.getInt();
+      final byte isFragmentByte = headerByteBuffer.get();
+      final ShaderKind shaderKind = isFragmentByte == 1 ? ShaderKind.FRAGMENT : ShaderKind.VERTEX;
 
-      int libfuzzerSeed = headerByteBuffer.getInt();
-
-      // Read the Shader.
-      byte[] inputShaderBuff = new byte[((int) size1) + ((int) size2)];
+      // Read the shader.
+      byte[] inputShaderBuff = new byte[(int) shaderSize];
       socket.getInputStream().read(inputShaderBuff, 0, inputShaderBuff.length);
-      String inputShader = new String(inputShaderBuff);
+      final String inputShader = new String(inputShaderBuff);
 
       try {
-        // Now mutate the shader.
-        TranslationUnit tu = ParseHelper.parse(inputShader, ShaderKind.FRAGMENT);
-        Mutate.mutate(tu, new RandomWrapper(libfuzzerSeed));
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        try (PrintStream stream = new PrintStream(byteArrayOutputStream, true, "UTF-8")) {
+        // Mutate the shader.
+        final TranslationUnit tu = ParseHelper.parse(inputShader, shaderKind);
+        Mutate.mutate(tu, new RandomWrapper(seed));
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try (final PrintStream stream = new PrintStream(byteArrayOutputStream, true, "UTF-8")) {
           PrettyPrinterVisitor.emitShader(
               tu,
               Optional.empty(),
@@ -101,14 +102,14 @@ public class CustomMutatorSever {
               PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
               PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
               false);
-          String outputShader =
+          final String outputShader =
               new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
 
-          // Get shader size as a little endian uint64_t.
-          ByteBuffer lengthByteBuffer = ByteBuffer.allocate(Long.BYTES);
+          // Get shader size as a little endian uint64_t then write it to the socket.
+          final ByteBuffer lengthByteBuffer = ByteBuffer.allocate(Long.BYTES);
           lengthByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
           lengthByteBuffer.putLong((long) outputShader.length());
-          byte[] length = new byte[Long.BYTES];
+          final byte[] length = new byte[Long.BYTES];
           lengthByteBuffer.position(0);
           lengthByteBuffer.get(length);
           outputStream.write(length);
