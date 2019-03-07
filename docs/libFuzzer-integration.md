@@ -31,11 +31,9 @@ cat << EOF > fuzzer.cc
 #include <unistd.h>
 
 #include <algorithm>
-#include <cstring>
 #include <cerrno>
+#include <cstring>
 #include <fstream>
-#include <iostream>
-
 #include <iostream>
 #include <string>
 
