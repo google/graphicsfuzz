@@ -140,12 +140,14 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size,
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   std::string shader(reinterpret_cast<const char*>(data), size);
+  // Give the user some feedback since the coverage won't grow much in an empty
+  // fuzzer.
   std::cout << shader << std::endl;
   return 0;
 }
 EOF
 
-# Must use clang-6.0 or greater (sudo apt install clang-6.0 && clang-6.0 ...).
+# Must use clang-6.0 or greater (sudo apt install clang-6.0 && clang-6.0 -fsanitize=fuzzer...).
 clang++ -g -fsanitize=fuzzer,address fuzzer.cc -o fuzzer
 ```
 
