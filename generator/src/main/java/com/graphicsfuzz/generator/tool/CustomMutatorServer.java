@@ -69,10 +69,6 @@ public class CustomMutatorServer {
     final int headerSize = Long.BYTES + Integer.BYTES + Byte.BYTES;
     final byte[] headerBuff = new byte[headerSize];
     while (true) {
-      // TODO(381): Figure out a better way to handle waiting for the header to arrive.
-      while (inputStream.available() < headerBuff.length) {
-        ;
-      }
       inputStream.read(headerBuff, 0, headerBuff.length);
       final ByteBuffer headerByteBuffer = ByteBuffer.wrap(headerBuff);
       headerByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
