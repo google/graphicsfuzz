@@ -41,11 +41,14 @@ import java.util.Optional;
  * Server that can accept shaders from a libFuzzer custom mutator and send back a mutated shader.
  */
 public class CustomMutatorServer {
+  private static final int INDENTATION_WIDTH = 0;
+  private static final int DEFAULT_PORT = 8666;
+
   public static void main(String[] args) {
     try {
       // TODO(381): If we don't switch from TCP, allow this to be configured from the command
       // line.
-      runServer(8666);
+      runServer(DEFAULT_PORT);
     } catch (IOException | ParseTimeoutException | InterruptedException exception) {
       exception.printStackTrace();
       System.exit(1);
@@ -100,13 +103,14 @@ public class CustomMutatorServer {
               tu,
               Optional.empty(),
               stream,
-              PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+              INDENTATION_WIDTH,
               PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
               false);
           final String outputShader =
               new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
 
-          // Get shader size as a little endian uint64_t then write it to the socket.
+          // Get shader size as a little endian uint64_t then write it to the socket so libFuzzer
+          // knows what to expect.
           final ByteBuffer lengthByteBuffer = ByteBuffer.allocate(Long.BYTES);
           lengthByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
           lengthByteBuffer.putLong((long) outputShader.length());

@@ -118,7 +118,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size,
   // Send the mutation request.
   ssize_t num_bytes_sent =
       send(sock, reinterpret_cast<const void*>(&request_header),
-           sizeof(request_header), 0);
+           sizeof(request_header), flags);
   CHECK(num_bytes_sent == sizeof(request_header), "short write");
   // Send the shader.
   num_bytes_sent = send(sock, reinterpret_cast<const void*>(data), size, flags);
