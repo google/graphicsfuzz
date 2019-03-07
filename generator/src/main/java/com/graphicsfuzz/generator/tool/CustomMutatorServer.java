@@ -40,7 +40,7 @@ import java.util.Optional;
 /**
  * Server that can accept shaders from a libFuzzer custom mutator and send back a mutated shader.
  */
-public class CustomMutatorSever {
+public class CustomMutatorServer {
   public static void main(String[] args) {
     try {
       // TODO(381): If we don't switch from TCP, allow this to be configured from the command
