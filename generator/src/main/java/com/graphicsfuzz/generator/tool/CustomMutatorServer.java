@@ -54,6 +54,7 @@ public class CustomMutatorServer {
 
   private static void runServer(int port)
       throws IOException, ParseTimeoutException, InterruptedException {
+    System.out.println("Listening on port: " + port);
     final ServerSocket serverSocket = new ServerSocket(port);
     final Socket socket = serverSocket.accept();
     final InputStream inputStream = socket.getInputStream();
