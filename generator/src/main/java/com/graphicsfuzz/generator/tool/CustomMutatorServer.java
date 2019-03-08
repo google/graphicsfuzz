@@ -68,7 +68,11 @@ public class CustomMutatorServer {
     final int headerSize = Long.BYTES + Integer.BYTES + Byte.BYTES;
     final byte[] headerBuff = new byte[headerSize];
     while (true) {
-      inputStream.read(headerBuff, 0, headerBuff.length);
+      int bytesRead = inputStream.read(headerBuff, 0, headerBuff.length);
+      if (bytesRead == -1) {
+        System.out.println("Client closed connection");
+        break;
+      }
       final ByteBuffer headerByteBuffer = ByteBuffer.wrap(headerBuff);
       headerByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
