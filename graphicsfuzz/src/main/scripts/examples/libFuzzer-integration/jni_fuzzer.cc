@@ -80,8 +80,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size,
   jboolean is_fragment = true;
 
   // Convert data to a Java string, call mutate and then free it.
-  std::string shader_string =
-      std::string(reinterpret_cast<char*>(data), size);
+  std::string shader_string = std::string(reinterpret_cast<char*>(data), size);
   jstring input_shader = jvm.jni_env->NewStringUTF(shader_string.c_str());
   jstring j_mutated_shader = reinterpret_cast<jstring>(
       jvm.jni_env->CallStaticObjectMethod(jvm.server_class, jvm.mutate_method,

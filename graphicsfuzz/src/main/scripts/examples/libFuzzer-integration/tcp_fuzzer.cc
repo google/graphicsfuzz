@@ -11,8 +11,7 @@
 #include <string>
 
 void CHECK(bool condition, const char* message) {
-  if (condition)
-    return;
+  if (condition) return;
   perror(message);
   exit(EXIT_FAILURE);
 }
