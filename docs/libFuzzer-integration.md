@@ -1,6 +1,6 @@
 # LibFuzzer Integration
 
-*** note
+***note
 **Note:** The libFuzzer integration is actively being developed and is
 experimental.
 ***
