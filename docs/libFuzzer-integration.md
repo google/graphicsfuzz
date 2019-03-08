@@ -1,9 +1,7 @@
 # LibFuzzer Integration
 
-***note
 **Note:** The libFuzzer integration is actively being developed and is
 experimental.
-***
 
 GraphicsFuzz can be used with [libFuzzer](http://llvm.org/docs/LibFuzzer.html)
 as a [custom mutator](https://cs.chromium.org/chromium/src/third_party/libFuzzer/src/FuzzerInterface.h)
