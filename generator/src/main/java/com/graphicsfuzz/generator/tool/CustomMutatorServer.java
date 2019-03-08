@@ -49,14 +49,13 @@ public class CustomMutatorServer {
       // TODO(381): If we don't switch from TCP, allow this to be configured from the command
       // line.
       runServer(DEFAULT_PORT);
-    } catch (IOException | ParseTimeoutException | InterruptedException exception) {
+    } catch (IOException exception) {
       exception.printStackTrace();
       System.exit(1);
     }
   }
 
-  private static void runServer(int port)
-      throws IOException, ParseTimeoutException, InterruptedException {
+  private static void runServer(int port) throws IOException {
     System.out.println("Listening on port: " + port);
     final ServerSocket serverSocket = new ServerSocket(port);
     final Socket socket = serverSocket.accept();
@@ -82,51 +81,62 @@ public class CustomMutatorServer {
 
       final int seed = headerByteBuffer.getInt();
       final byte isFragmentByte = headerByteBuffer.get();
-      final ShaderKind shaderKind = isFragmentByte == 1 ? ShaderKind.FRAGMENT : ShaderKind.VERTEX;
 
       // Read the shader.
       byte[] inputShaderBuff = new byte[(int) shaderSize];
       socket.getInputStream().read(inputShaderBuff, 0, inputShaderBuff.length);
       final String inputShader = new String(inputShaderBuff);
 
-      try {
-        // Mutate the shader.
-        final TranslationUnit tu = ParseHelper.parse(inputShader, shaderKind);
-        Mutate.mutate(tu, new RandomWrapper(seed));
-        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        try (final PrintStream stream = new PrintStream(byteArrayOutputStream, true, "UTF-8")) {
-          PrettyPrinterVisitor.emitShader(
-              tu,
-              Optional.empty(),
-              stream,
-              INDENTATION_WIDTH,
-              PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-              false);
-          final String outputShader =
-              new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
-
-          // Get shader size as a little endian uint64_t then write it to the socket so libFuzzer
-          // knows what to expect.
-          final ByteBuffer lengthByteBuffer = ByteBuffer.allocate(Long.BYTES);
-          lengthByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-          lengthByteBuffer.putLong((long) outputShader.length());
-          final byte[] length = new byte[Long.BYTES];
-          lengthByteBuffer.position(0);
-          lengthByteBuffer.get(length);
-          outputStream.write(length);
-
-          outputStream.write(outputShader.getBytes());
-        }
-      } catch (GlslParserException
-          | FuzzedIntoACornerException
-          | DuplicateVariableException exception) {
-        exception.printStackTrace();
-        System.out.println(new String(inputShaderBuff));
+      // Mutate the shader.
+      String outputShader = mutate(inputShader, seed, isFragmentByte == 0);
+      if (outputShader == null) {
         // Tell libFuzzer we will "send" it a 0-length shader.
         for (int idx = 0; idx < Long.BYTES; idx++) {
           outputStream.write(0);
         }
+        continue;
       }
+
+      // Get shader size as a little endian uint64_t then write it to the socket so libFuzzer
+      // knows what to expect.
+      final ByteBuffer lengthByteBuffer = ByteBuffer.allocate(Long.BYTES);
+      lengthByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+      lengthByteBuffer.putLong((long) outputShader.length());
+      final byte[] length = new byte[Long.BYTES];
+      lengthByteBuffer.position(0);
+      lengthByteBuffer.get(length);
+      outputStream.write(length);
+      outputStream.write(outputShader.getBytes());
+    }
+  }
+
+  private static String mutate(String inputShader, int seed, boolean isFragment) {
+    final ShaderKind shaderKind = isFragment ? ShaderKind.FRAGMENT : ShaderKind.VERTEX;
+    try {
+      final TranslationUnit tu = ParseHelper.parse(inputShader, shaderKind);
+      Mutate.mutate(tu, new RandomWrapper(seed));
+      final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+      try (final PrintStream stream = new PrintStream(byteArrayOutputStream, true, "UTF-8")) {
+        PrettyPrinterVisitor.emitShader(
+            tu,
+            Optional.empty(),
+            stream,
+            INDENTATION_WIDTH,
+            PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
+            false);
+      }
+      final String outputShader =
+          new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
+      return outputShader;
+    } catch (GlslParserException
+        | FuzzedIntoACornerException
+        | DuplicateVariableException
+        | ParseTimeoutException
+        | IOException
+        | InterruptedException exception) {
+      exception.printStackTrace();
+      System.out.println(inputShader);
+      return null;
     }
   }
 }
