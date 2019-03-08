@@ -1,5 +1,5 @@
 // TODO(381): Fix memory leaks.
-#include <unistd.h>
+#include <jni.h>
 
 #include <cerrno>
 #include <cstdlib>
@@ -7,8 +7,6 @@
 #include <cstring>
 #include <iostream>
 #include <string>
-
-#include <jni.h>
 
 class JVM {
  private:
