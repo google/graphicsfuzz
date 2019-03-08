@@ -14,7 +14,8 @@ for fuzzing that is both coverage-guided and [structure-aware](https://github.co
 2. Start the GraphicsFuzz CustomMutatorServer with the following command:
 
 ```bash
-java -ea -cp graphicsfuzz/target/graphicsfuzz/jar/tool-1.0.jar com.graphicsfuzz.generator.tool.CustomMutatorServer
+java -ea -cp graphicsfuzz/target/graphicsfuzz/jar/tool-1.0.jar \
+  com.graphicsfuzz.generator.tool.CustomMutatorServer
 Listening on port: 8666
 ```
 
@@ -179,3 +180,165 @@ out of libFuzzer or it dies on its own you must restart the server.
 Note that it may appear as though libFuzzer is "stuck" on an invalid input and
 repeatedly asks GraphicsFuzz to mutate it. libFuzzer is not actually stuck it
 should progress within 30 seconds.
+
+### (Bonus) Using Java Native Interface for Better Performance
+
+**Note**: This example is known to leak memory.
+
+Although the example above can be implemented easily and without any libraries
+it is pretty slow because of the overhead introduced by TCP. We can use Java
+Native Interface (JNI) to call GraphicsFuzz directly from the libFuzzer process.
+Below are instructions on how this can be done, with an example. As you can see
+building this is a lot more complicated, so it is more likely that some
+instructions may not be exactly right on your machine.
+
+1. Build GraphicsFuzz.
+
+2. Build a fuzz target (in a new shell, since the previous example won't
+   terminate). An example is provided below:
+```bash
+cat << EOF > jni-fuzzer.cc
+// TODO(381): Fix memory leaks.
+#include <unistd.h>
+
+#include <cerrno>
+#include <cstring>
+#include <ctime>
+#include <iostream>
+#include <string>
+
+#include <jni.h>
+
+class JVM {
+ private:
+  std::string kCustomMutatorServerClassName =
+      "com/graphicsfuzz/generator/tool/CustomMutatorServer";
+  std::string kMutateMethodName = "mutate";
+  std::string kMutateMethodSignature =
+      "(Ljava/lang/String;IZ)Ljava/lang/String;";
+  std::string kClassPathOption = "-Djava.class.path=";
+  char* option_c_str;
+
+  JavaVM* java_vm;
+  JavaVMInitArgs vm_args;
+  JavaVMOption vm_options;
+
+ public:
+  JNIEnv* jni_env;
+  jclass server_class;
+  jmethodID mutate_method;
+
+  JVM() {
+    vm_args.version = JNI_VERSION_1_6;
+    vm_args.nOptions = 1;
+
+    const char* jar_path = getenv("GRAPHICSFUZZ_JAR_PATH");
+    if (!jar_path) {
+      std::cout << "GRAPHICSFUZZ_JAR_PATH not Specified" << std::endl;
+      exit(1);
+    }
+    size_t option_size = strlen(jar_path) + 1 + kClassPathOption.size();
+    option_c_str = new char[option_size];
+    std::string option_string = kClassPathOption.append(jar_path);
+    memcpy(option_c_str, option_string.c_str(), option_string.size() + 1);
+    vm_options.optionString = option_c_str;
+    vm_args.options = &vm_options;
+    int result = JNI_CreateJavaVM(&java_vm, reinterpret_cast<void**>(&jni_env),
+                                  &vm_args);
+    if (!jni_env || result < 0) {
+      fprintf(stderr, "Failed to create JVM\n");
+      exit(1);
+    }
+    server_class = jni_env->FindClass(kCustomMutatorServerClassName.c_str());
+    mutate_method =
+        jni_env->GetStaticMethodID(server_class, kMutateMethodName.c_str(),
+                                   kMutateMethodSignature.c_str());
+  }
+
+  // TODO(381): Figure out how to do this without crashing.
+  // ~JVM() { java_vm->DestroyJavaVM(); }
+};
+
+extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size,
+                                          size_t max_size, unsigned int seed) {
+  static JVM jvm;
+
+  if (size <= 1) {
+    // Handle common invalid testcases gracefully.
+    static const std::string basic_shader = "void main(void) { }";
+    if (basic_shader.size() < max_size) {
+      memcpy(reinterpret_cast<char*>(data), basic_shader.c_str(),
+             basic_shader.size());
+      return basic_shader.size();
+    }
+  }
+
+  jint j_seed = seed;
+
+  // TODO(381): Allow use of vertex shaders. This might break if someone uses a
+  // corpus with fragment shaders.
+  jboolean is_fragment = true;
+
+  // Convert data to a Java string, call mutate and then free it.
+  std::string* shader_string =
+      new std::string(reinterpret_cast<char*>(data), size);
+  jstring input_shader = jvm.jni_env->NewStringUTF(shader_string->c_str());
+  jstring j_mutated_shader = reinterpret_cast<jstring>(
+      jvm.jni_env->CallStaticObjectMethod(jvm.server_class, jvm.mutate_method,
+                                          input_shader, j_seed, is_fragment));
+  jvm.jni_env->ReleaseStringUTFChars(input_shader, shader_string->c_str());
+  if (!j_mutated_shader) {
+    return size;
+  }
+
+  jboolean is_copy;
+  const char* mutated_shader =
+      jvm.jni_env->GetStringUTFChars(j_mutated_shader, &is_copy);
+  size_t mutated_size = jvm.jni_env->GetStringUTFLength(j_mutated_shader);
+  if (mutated_size > max_size) return size;
+  memcpy(reinterpret_cast<char*>(data), mutated_shader, mutated_size);
+  if (is_copy) {
+    jvm.jni_env->ReleaseStringUTFChars(j_mutated_shader, mutated_shader);
+  }
+  return mutated_size;
+}
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+  std::string shader(reinterpret_cast<const char*>(data), size);
+  std::cout << shader << std::endl;
+  return 0;
+}
+EOF
+
+# Must use clang-6.0 or greater (sudo apt install clang-6.0 && clang-6.0 -fsanitize=fuzzer...).
+clang++ -g -fsanitize=fuzzer,address \
+  -I/usr/lib/jvm/java-8-openjdk-amd64/include/ \
+  -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux \
+  -L/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/ \
+  -ljvm jni-fuzzer.cc -o jni-fuzzer
+
+```
+
+3. Run the fuzzer, setting the appropriate environment variables (including
+   GRAPHICSFUZZ_JAR_PATH which you must set yourself) and options:
+
+```bash
+export GRAPHICSFUZZ_JAR_PATH=<path>
+export LD_LIBRARY_PATH=/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/
+# Disable leak detection because the fuzzer leaks memory
+export ASAN_OPTIONS=detect_leaks=0
+./jni-fuzzer -max_total_time=10 -print_final_stats=1
+INFO: Seed: 4061094416
+INFO: Loaded 1 modules   (50 inline 8-bit counters): 50 [0x78e320, 0x78e352),
+INFO: Loaded 1 PC tables (50 PCs): 50 [0x56b4a8,0x56b7c8),
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+
+INFO: A corpus is not provided, starting from an empty corpus
+...
+Done 652 runs in 11 second(s)
+stat::number_of_executed_units: 652
+stat::average_exec_per_sec:     59
+```
+
+Here you can see we have sped up the fuzzer by more than 5X, from 11 executions
+per second to 59 executions per second.
