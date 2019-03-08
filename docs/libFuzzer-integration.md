@@ -90,7 +90,8 @@ clang++ -g -fsanitize=fuzzer,address \
 ```
 
 3. Run the fuzzer, setting the appropriate environment variables (including
-   GRAPHICSFUZZ_JAR_PATH which you must set yourself) and options:
+   GRAPHICSFUZZ_JAR_PATH which you must set to `tool-1.0.jar` yourself) and
+   options:
 
 ```bash
 export GRAPHICSFUZZ_JAR_PATH=<path>
