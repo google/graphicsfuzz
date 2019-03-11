@@ -51,8 +51,28 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
               .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(reducedProgram)),
-          PrettyPrinterVisitor.prettyPrintAsString(tu));
+    CompareAsts.assertEqualAsts(reducedProgram, tu);
+  }
+
+  @Test
+  public void testLiveGLFragColorWriteOpportunityAtRootOfMain() throws Exception {
+    // Checks that we can eliminate a live color write if it is at the root of a function, i.e.
+    // not enclosed in any additional block.
+    final String backupName = Constants.GLF_OUT_VAR_BACKUP_PREFIX + OpenGlConstants.GL_FRAG_COLOR;
+    final String program = "void main() {"
+        + "  vec4 " + backupName + ";"
+        + "  " + backupName + " = " + OpenGlConstants.GL_FRAG_COLOR + ";"
+        + "  " + OpenGlConstants.GL_FRAG_COLOR + " = " + backupName + ";"
+        + "}";
+    final String reducedProgram = "void main() {"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    List<LiveOutputVariableWriteReductionOpportunity> ops =
+        LiveOutputVariableWriteReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
+    assertEquals(1, ops.size());
+    ops.get(0).applyReduction();
+    CompareAsts.assertEqualAsts(reducedProgram, tu);
   }
 
   @Test

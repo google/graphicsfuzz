@@ -17,13 +17,19 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.ChildDoesNotExistException;
+import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
+import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
+import com.graphicsfuzz.common.util.ListConcat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class UnwrapReductionOpportunity extends AbstractReductionOpportunity {
 
@@ -80,10 +86,36 @@ public final class UnwrapReductionOpportunity extends AbstractReductionOpportuni
 
   @Override
   public boolean preconditionHolds() {
-    if (!(parentMap.getParent(wrapper) instanceof Stmt)) {
+    final IAstNode parentOfWrapper = parentMap.getParent(wrapper);
+    if (!(parentOfWrapper instanceof Stmt)) {
       return false;
     }
+    if (parentOfWrapper instanceof BlockStmt) {
+      // We need to make sure it is still the case that applying the unwrap will not lead to name
+      // clashes.
+      if (!Collections.disjoint(getNamesDeclaredDirectlyByBlock((BlockStmt) parentOfWrapper),
+          getNamesDeclaredByStmtList(wrapees))) {
+        return false;
+      }
+    }
+
     return true;
+  }
+
+  static Set<String> getNamesDeclaredDirectlyByBlock(BlockStmt block) {
+    final List<Stmt> stmts = block.getStmts();
+    return getNamesDeclaredByStmtList(stmts);
+  }
+
+  private static Set<String> getNamesDeclaredByStmtList(List<Stmt> stmts) {
+    return stmts
+        .stream()
+        .filter(item -> item instanceof DeclarationStmt)
+        .map(item -> ((DeclarationStmt) item).getVariablesDeclaration().getDeclInfos())
+        .reduce(Collections.emptyList(), ListConcat::concatenate)
+        .stream()
+        .map(item -> item.getName())
+        .collect(Collectors.toSet());
   }
 
 }

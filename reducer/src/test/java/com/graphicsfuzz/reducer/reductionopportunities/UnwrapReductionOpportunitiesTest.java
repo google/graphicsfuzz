@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -30,7 +31,9 @@ import java.util.List;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class UnwrapReductionOpportunitiesTest {
 
@@ -53,6 +56,8 @@ public class UnwrapReductionOpportunitiesTest {
     List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(false,
           ShadingLanguageVersion.GLSL_440, new SameValueRandom(false, 0), null, true));
+    // No opportunities because the inner block is empty.  Another reduction pass may be able to
+    // delete it, but it cannot be unwrapped.
     assertEquals(0, ops.size());
   }
 
@@ -64,6 +69,55 @@ public class UnwrapReductionOpportunitiesTest {
         new ReducerContext(false,
             ShadingLanguageVersion.GLSL_440, new SameValueRandom(false, 0), null, true));
     assertEquals(1, ops.size());
+  }
+
+  @Test
+  public void testUnwrapWithDeclNoClash() throws Exception {
+    final String program = "void main() { int x; { int y; } }";
+    final String expected = "void main() { int x; int y; }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false,
+            ShadingLanguageVersion.GLSL_440, new SameValueRandom(false, 0), null, true));
+    assertEquals(1, ops.size());
+    ops.get(0).applyReduction();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testNoUnwrapWithDeclClash() throws Exception {
+    final String program = "void main() { int x; { { int x; } x = 2; } }";
+    final String expected = "void main() { int x; { int x; } x = 2; }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false,
+            ShadingLanguageVersion.GLSL_440, new SameValueRandom(false, 0), null, true));
+    // The inner block cannot be unwrapped as it would change which variable 'x = 2' refers to.
+    assertEquals(1, ops.size());
+  }
+
+  @Test
+  public void testNoUnwrapWithDeclClash2() throws Exception {
+    final String program = "void main() { { int x; } float x; }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false,
+            ShadingLanguageVersion.GLSL_440, new SameValueRandom(false, 0), null, true));
+    assertEquals(0, ops.size());
+  }
+
+  @Test
+  public void testOneUnwrapDisablesAnother() throws Exception {
+    final String program = "void main() { { int x; } { float x; } }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    List<UnwrapReductionOpportunity> ops = UnwrapReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false,
+            ShadingLanguageVersion.GLSL_440, new SameValueRandom(false, 0), null, true));
+    assertEquals(2, ops.size());
+    assertTrue(ops.get(0).preconditionHolds());
+    assertTrue(ops.get(1).preconditionHolds());
+    ops.get(0).applyReduction();
+    assertFalse(ops.get(1).preconditionHolds());
   }
 
   @Test
