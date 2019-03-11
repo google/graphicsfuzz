@@ -16,6 +16,7 @@
 
 import argparse
 import os
+import random
 import shutil
 import subprocess
 import sys
@@ -98,6 +99,44 @@ void main (void) {
 def remove_end(str_in: str, str_end: str):
     assert str_in.endswith(str_end), 'Expected {} to end with {}'.format(str_in, str_end)
     return str_in[:-len(str_end)]
+
+
+################################################################################
+
+OPT_OPTIONS = ['--ccp',
+               '--combine-access-chains',
+               '--convert-local-access-chains',
+               '--copy-propagate-arrays',
+               '--eliminate-dead-branches',
+               '--eliminate-dead-code-aggressive',
+               '--eliminate-dead-inserts',
+               '--eliminate-local-multi-store',
+               '--eliminate-local-single-block',
+               '--eliminate-local-single-store',
+               '--if-conversion',
+               '--inline-entry-points-exhaustive',
+               '--merge-blocks',
+               '--merge-return',
+               '--private-to-local',
+               '--reduce-load-size',
+               '--redundancy-elimination',
+               '--scalar-replacement=100',
+               '--simplify-instructions',
+               '--vector-dce',
+               ]
+
+MAX_OPT_ARGS = 30
+
+
+def random_spirvopt_args() -> List[str]:
+    result = []
+    num_args = random.randint(0, MAX_OPT_ARGS)
+    for i in range(0, num_args):
+        arg = OPT_OPTIONS[random.randint(0, len(OPT_OPTIONS) - 1)]
+        if arg == '--merge-return':
+            result.append('--eliminate-dead-code-aggressive')
+        result.append(arg)
+    return result
 
 
 ################################################################################
@@ -402,7 +441,9 @@ def main():
 
     parser.add_argument(
         '--spirvopt',
-        help=runspv.SPIRV_OPT_OPTION_HELP)
+        help=runspv.SPIRV_OPT_OPTION_HELP + 'Pass RANDOM to have a random selection of '
+                                            'optimization arguments used for each shader job that'
+                                            ' is processed.')
 
     parser.add_argument(
         '--local-shader-job',
@@ -411,9 +452,12 @@ def main():
 
     args = parser.parse_args()
 
-    spirv_args = None  # type: Optional[List[str]]
+    spirvopt_args = None  # type: Optional[List[str]]
     if args.spirvopt:
-        spirv_args = args.spirvopt.split()
+        if args.spirvopt == "RANDOM":
+            spirvopt_args = random_spirvopt_args()
+        else:
+            spirvopt_args = args.spirvopt.split()
 
     # Check the target is known.
     if not (args.target == 'android' or args.target == 'host'):
@@ -503,7 +547,7 @@ def main():
                 with runspv.open_helper(shader_job_prefix + '.comp', 'r') as f:
                     fake_job.computeSource = f.read()
                 fake_job.computeInfo = fake_job.uniformsInfo
-            do_image_job(args, fake_job, spirv_args, work_dir='out')
+            do_image_job(args, fake_job, spirvopt_args, work_dir='out')
             return
 
         if not service:
@@ -534,7 +578,7 @@ def main():
                     job.imageJob.result = do_compute_job(
                         args,
                         job.imageJob,
-                        spirv_args,
+                        spirvopt_args,
                         work_dir=worker
                     )
 
@@ -543,7 +587,7 @@ def main():
                     job.imageJob.result = do_image_job(
                         args,
                         job.imageJob,
-                        spirv_args,
+                        spirvopt_args,
                         work_dir=worker
                     )
 
