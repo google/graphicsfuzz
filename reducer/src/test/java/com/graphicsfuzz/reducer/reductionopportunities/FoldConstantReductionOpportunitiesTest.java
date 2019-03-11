@@ -549,6 +549,35 @@ public class FoldConstantReductionOpportunitiesTest {
         "void main() { 44200u; }");
   }
 
+  @Test
+  public void testCast1ToInt() throws Exception {
+    check("void main() { int(1.0); }", 1, "void main() { 1; }");
+  }
+
+  @Test
+  public void testCast0ToInt() throws Exception {
+    check("void main() { int(0.0); }", 1, "void main() { 0; }");
+  }
+
+  @Test
+  public void testCast100ToInt() throws Exception {
+    check("void main() { int(100.0); }", 1, "void main() { 100; }");
+  }
+
+  @Test
+  public void testCast1ToUint() throws Exception {
+    check("void main() { uint(1.0); }", 1, "void main() { 1u; }");
+  }
+
+  @Test
+  public void testCast0ToUint() throws Exception {
+    check("void main() { uint(0.0); }", 1, "void main() { 0u; }");
+  }
+
+  @Test
+  public void testCast100ToUint() throws Exception {
+    check("void main() { uint(100.0); }", 1, "void main() { 100u; }");
+  }
 
   private void check(String before, int numOps, String after) throws IOException,
       ParseTimeoutException, InterruptedException, GlslParserException {
