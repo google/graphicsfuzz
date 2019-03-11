@@ -42,14 +42,12 @@ public class CustomFileJudge implements IFileJudge {
       throws FileJudgeException {
     try {
       final ExecResult execResult = new ExecHelper().exec(
-          ExecHelper.RedirectType.TO_BUFFER,
+          ExecHelper.RedirectType.TO_LOG,
           directory,
           true,
           judgeScript.getAbsolutePath(),
           shaderJobFile.getAbsolutePath(),
           shaderResultFileOutput.getAbsolutePath());
-      LOGGER.info("Custom file judge stdout: " + execResult.stdout);
-      LOGGER.info("Custom file judge stderr: " + execResult.stderr);
       LOGGER.info("Custom file judge result: " + execResult.res);
       return execResult.res == 0;
     } catch (IOException | InterruptedException exception) {
