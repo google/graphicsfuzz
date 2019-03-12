@@ -56,7 +56,10 @@ public class LiveOutputVariableWriteReductionOpportunities
   }
 
   @Override
-  protected void visitChildOfBlock(BlockStmt block, Stmt child) {
+  protected void visitChildOfBlock(BlockStmt block, int index) {
+
+    final Stmt child = block.getStmt(index);
+
     if (!(child instanceof BlockStmt)) {
       return;
     }
