@@ -17,7 +17,7 @@
 import argparse
 import os
 import sys
-from typing import List
+from typing import List, Dict, Tuple, Any
 
 
 def get_result_files(arg: str) -> List[str]:
@@ -27,7 +27,7 @@ def get_result_files(arg: str) -> List[str]:
                 yield os.path.join(root, filename)
 
 
-def main_helper(args: List[str]) -> int:
+def main_helper(args: List[str]) -> None:
     description = (
         'Summarize back-traces from a results file or set of directories of results files.')
 
@@ -43,21 +43,23 @@ def main_helper(args: List[str]) -> int:
 
     files_to_check = []
 
-    for fileordir in args.files:
-        files_to_check += get_result_files(fileordir)
+    for file_or_dir in args.files:
+        files_to_check += get_result_files(file_or_dir)
 
-    mapping = {}
+    mapping = {}  # type: Dict[str, Tuple[int, str]]
 
     for to_check in files_to_check:
         if 'CRASH' in open(to_check, 'r').read():
-            textfile = os.path.splitext(os.path.splitext(to_check)[0])[0] + '.txt'
-            lines = open(textfile, 'r').readlines()
+            text_file = os.path.splitext(os.path.splitext(to_check)[0])[0] + '.txt'
+            lines = open(text_file, 'r').readlines()
             for i in range(0, len(lines) - 2):
                 if 'backtrace' in lines[i] and '#' in lines[i + 1] and '#' in lines[i + 2]:
-                    crash_string = ('      ' + lines[i + 1][lines[i + 1].index('#'):]
-                        + '      ' + lines[i + 2][lines[i + 2].index('#'):]).rstrip()
+                    crash_string = (
+                        '      ' + lines[i + 1][lines[i + 1].index('#'):]
+                        + '      ' + lines[i + 2][lines[i + 2].index('#'):]
+                    ).rstrip()
                     if crash_string not in mapping:
-                        mapping[crash_string] = (1, textfile)
+                        mapping[crash_string] = (1, text_file)
                     else:
                         existing_entry = mapping[crash_string]
                         mapping[crash_string] = (existing_entry[0] + 1, existing_entry[1])
@@ -65,10 +67,19 @@ def main_helper(args: List[str]) -> int:
 
     print('Distinct crash string(s) found: ' + str(len(mapping)) + '\n')
 
-    for key in mapping:
-        print('Crash string:\n' + key)
-        print('  Occurrences: ' + str(mapping[key][0]))
-        print('  Including in: ' + str(mapping[key][1]) + '\n')
+    def get_key(entry: Tuple[str, Tuple[int, str]]) -> int:
+        # Return the number of occurrences.
+        return entry[1][0]
+
+    # Get the mappings as a list. Type inference seems to fail, so we are explicit.
+    mapping_as_list = list(mapping.items())  # type: List[Tuple[str, Tuple[int, str]]]
+    # Sort it.
+    mapping_as_list = sorted(mapping_as_list, key=get_key)
+
+    for elem in mapping_as_list:
+        print('Crash string:\n' + elem[0])
+        print('  Occurrences: ' + str(elem[1][0]))
+        print('  Including in: ' + elem[1][1] + '\n')
 
 
 if __name__ == '__main__':
