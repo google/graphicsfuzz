@@ -21,7 +21,7 @@ import shutil
 import subprocess
 import sys
 import time
-from typing import Optional, List
+from typing import Optional, List, Union
 
 import runspv
 
@@ -125,6 +125,9 @@ OPT_OPTIONS = ['--ccp',
                '--vector-dce',
                ]
 
+# At most this number of arguments will be chosen in the pipeline of arguments passed to spirv-opt,
+# with the exception that every use of --merge-return will be preceded by --eliminate-dead-branches,
+# which may make the list of options longer.
 MAX_OPT_ARGS = 30
 
 
@@ -133,10 +136,22 @@ def random_spirvopt_args() -> List[str]:
     num_args = random.randint(0, MAX_OPT_ARGS)
     for i in range(0, num_args):
         arg = OPT_OPTIONS[random.randint(0, len(OPT_OPTIONS) - 1)]
+        # --merge-return relies on there not being unreachable code, so we always invoke dead branch
+        # elimination before --merge-return.
         if arg == '--merge-return':
-            result.append('--eliminate-dead-code-aggressive')
+            result.append('--eliminate-dead-branches')
         result.append(arg)
     return result
+
+################################################################################
+
+
+# If concrete (or no) spirv-opt arguments were passed, they remain unchanged.  But if 'RANDOM' was
+# passed, to request random arguments per shader job, they are populated.
+def resolve_spirvopt_args(args: Union[Optional[List[str]], str]) -> Optional[List[str]]:
+    if args == "RANDOM":
+        return random_spirvopt_args()
+    return args
 
 
 ################################################################################
@@ -187,6 +202,8 @@ def do_image_job(
         try:
             runspv.log_to_file = f
 
+            resolved_spirvopt_args = resolve_spirvopt_args(spirv_opt_args)
+
             if args.legacy_worker:
                 if args.target == 'host':
                     runspv.run_image_host_legacy(
@@ -195,7 +212,7 @@ def do_image_job(
                         json_file=json_file,
                         output_dir=output_dir,
                         skip_render=skip_render,
-                        spirv_opt_args=spirv_opt_args,
+                        spirv_opt_args=resolved_spirvopt_args,
                     )
                 else:
                     assert args.target == 'android'
@@ -206,7 +223,7 @@ def do_image_job(
                         output_dir=output_dir,
                         force=args.force,
                         skip_render=skip_render,
-                        spirv_opt_args=spirv_opt_args,
+                        spirv_opt_args=resolved_spirvopt_args,
                     )
             else:
                 runspv.run_image_amber(
@@ -217,7 +234,7 @@ def do_image_job(
                     force=args.force,
                     is_android=(args.target == 'android'),
                     skip_render=skip_render,
-                    spirv_opt_args=spirv_opt_args,
+                    spirv_opt_args=resolved_spirvopt_args,
                 )
         except Exception as ex:
             runspv.log('Exception: ' + str(ex))
@@ -442,20 +459,30 @@ def main():
     parser.add_argument(
         '--spirvopt',
         help=runspv.SPIRV_OPT_OPTION_HELP + 'Pass RANDOM to have a random selection of '
-                                            'optimization arguments used for each shader job that'
-                                            ' is processed.')
+                                            'optimization arguments used for each shader job that '
+                                            'is processed.  Note that this makes repeat runs of '
+                                            'the same shader job nondeterministic, as different '
+                                            'optimizer arguments may be chosen.')
 
     parser.add_argument(
         '--local-shader-job',
         help='Execute a single, locally stored shader job (for debugging), instead of using the '
              'server.')
 
+    parser.add_argument(
+        '--seed',
+        help='A seed to control random number generation.')
+
     args = parser.parse_args()
 
-    spirvopt_args = None  # type: Optional[List[str]]
+    # Seed the random number generator.  If no seed is provided then 'None' will be used, which
+    # seeds the generator based on system time.
+    random.seed(args.seed)
+
+    spirvopt_args = None  # type: Union[Optional[List[str]], str]
     if args.spirvopt:
         if args.spirvopt == "RANDOM":
-            spirvopt_args = random_spirvopt_args()
+            spirvopt_args = "RANDOM"
         else:
             spirvopt_args = args.spirvopt.split()
 
