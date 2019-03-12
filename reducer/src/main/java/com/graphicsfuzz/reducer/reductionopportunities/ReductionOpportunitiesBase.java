@@ -94,7 +94,7 @@ public abstract class ReductionOpportunitiesBase
     injectionTracker.notifySwitchCase(exprCaseLabel);
   }
 
-  protected void visitChildOfBlock(BlockStmt block, Stmt child) {
+  protected void visitChildOfBlock(BlockStmt block, int childIndex) {
     // Override in subclass if needed
   }
 
@@ -102,9 +102,11 @@ public abstract class ReductionOpportunitiesBase
   public void visitBlockStmt(BlockStmt block) {
     enterBlockStmt(block);
 
-    for (Stmt child : block.getStmts()) {
+    for (int i = 0; i < block.getNumStmts(); i++) {
 
-      visitChildOfBlock(block, child);
+      visitChildOfBlock(block, i);
+
+      final Stmt child = block.getStmt(i);
 
       if (child instanceof BreakStmt && parentMap.getParent(block) instanceof SwitchStmt) {
         injectionTracker.notifySwitchBreak();

@@ -271,4 +271,51 @@ public class StmtReductionOpportunitiesTest {
     assertEquals(3, ops.size());
   }
 
+  @Test
+  public void testRemoveDuplicateReturn1() throws Exception {
+    final String program = "int foo() { return 0; return 1; return 2; return 3; }";
+    final String expected = "int foo() { return 3; }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), null,
+            true));
+    assertEquals(3, ops.size());
+    ops.get(0).applyReduction();
+    ops.get(1).applyReduction();
+    ops.get(2).applyReduction();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testRemoveDuplicateReturn2() throws Exception {
+    final String program = "int foo() { int x; return 0; x = 1; return 1; x = 2; return 2; return "
+        + "3; }";
+    final String expected = "int foo() { int x; return 3; }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), null,
+            true));
+    assertEquals(5, ops.size());
+    ops.get(0).applyReduction();
+    ops.get(1).applyReduction();
+    ops.get(2).applyReduction();
+    ops.get(3).applyReduction();
+    ops.get(4).applyReduction();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testRemoveArbitraryVoidReturn() throws Exception {
+    final String program = "void main() { int x; if (x < 3) { return; } else { return; } "
+        + "return; return; }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), null,
+            true));
+    assertEquals(5, ops.size());
+  }
+
 }

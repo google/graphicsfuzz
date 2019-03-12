@@ -71,9 +71,10 @@ public class StmtReductionOpportunities
   }
 
   @Override
-  protected void visitChildOfBlock(BlockStmt block, Stmt child) {
+  protected void visitChildOfBlock(BlockStmt block, int index) {
+    final Stmt child = block.getStmt(index);
     if (isEmptyBlockStmt(child) || isDeadCodeInjection(child)
-          || allowedToReduceStmt(child)) {
+          || allowedToReduceStmt(block, index)) {
       addOpportunity(new StmtReductionOpportunity(block, child, getVistitationDepth()));
     }
   }
@@ -82,7 +83,12 @@ public class StmtReductionOpportunities
     return stmt instanceof BlockStmt && ((BlockStmt) stmt).getNumStmts() == 0;
   }
 
-  private boolean allowedToReduceStmt(Stmt stmt) {
+  /**
+   * Returns true if and only if it is OK to reduce the statement at index childIndex of block.
+   */
+  private boolean allowedToReduceStmt(BlockStmt block, int childIndex) {
+
+    final Stmt stmt = block.getStmt(childIndex);
 
     // We deal separately with removal of declarations
     if (stmt instanceof DeclarationStmt) {
@@ -119,13 +125,32 @@ public class StmtReductionOpportunities
     // We cannot remove non-void return statements without special care, unless we are inside an
     // injected block
     if (containsNonVoidReturn(stmt)) {
-      return false;
+      if (!isReturnFollowedBySubsequentReturn(block, childIndex)) {
+        return false;
+      }
     }
 
     return context.reduceEverywhere()
           || (isLiveCodeInjection(stmt) && !referencesLoopLimiter(stmt))
           || enclosingFunctionIsDead();
 
+  }
+
+  /**
+   * Returns true if and only if the statement at childIndex is a return statement, and the block
+   * has another return statement at a later index.
+   */
+  private boolean isReturnFollowedBySubsequentReturn(BlockStmt block, int childIndex) {
+    if (!(block.getStmt(childIndex) instanceof ReturnStmt)) {
+      return false;
+    }
+    for (int subsequentChildIndex = childIndex + 1; subsequentChildIndex < block.getNumStmts();
+         subsequentChildIndex++) {
+      if (block.getStmt(subsequentChildIndex) instanceof ReturnStmt) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private boolean isLoopLimiterBlock(Stmt stmt) {

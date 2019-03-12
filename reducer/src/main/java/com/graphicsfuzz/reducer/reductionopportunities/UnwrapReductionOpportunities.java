@@ -98,7 +98,8 @@ public class UnwrapReductionOpportunities
   }
 
   @Override
-  protected void visitChildOfBlock(BlockStmt block, Stmt child) {
+  protected void visitChildOfBlock(BlockStmt block, int index) {
+    final Stmt child = block.getStmt(index);
     if (isNonEmptyBlockStmtWithoutTopLevelDeclaration(child)) {
       addOpportunity(
             new UnwrapReductionOpportunity(child, ((BlockStmt) child).getStmts(),
