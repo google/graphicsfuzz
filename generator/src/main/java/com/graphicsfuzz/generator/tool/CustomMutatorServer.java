@@ -36,11 +36,15 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Server that can accept shaders from a libFuzzer custom mutator and send back a mutated shader.
  */
 public class CustomMutatorServer {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CustomMutatorServer.class);
   private static final int INDENTATION_WIDTH = 0;
   private static final int DEFAULT_PORT = 8666;
 
@@ -50,13 +54,13 @@ public class CustomMutatorServer {
       // line.
       runServer(DEFAULT_PORT);
     } catch (IOException exception) {
-      exception.printStackTrace();
+      LOGGER.error("Failed to listen on port: " + DEFAULT_PORT, exception);
       System.exit(1);
     }
   }
 
   private static void runServer(int port) throws IOException {
-    System.out.println("Listening on port: " + port);
+    LOGGER.info("Listening on port: " + port);
     final ServerSocket serverSocket = new ServerSocket(port);
     final Socket socket = serverSocket.accept();
     final InputStream inputStream = socket.getInputStream();
@@ -70,7 +74,7 @@ public class CustomMutatorServer {
     while (true) {
       int bytesRead = inputStream.read(headerBuff, 0, headerBuff.length);
       if (bytesRead == -1) {
-        System.out.println("Client closed connection");
+        LOGGER.info("Client closed connection");
         break;
       }
       final ByteBuffer headerByteBuffer = ByteBuffer.wrap(headerBuff);
@@ -139,7 +143,7 @@ public class CustomMutatorServer {
         | IOException
         | InterruptedException exception) {
       exception.printStackTrace();
-      System.out.println(inputShader);
+      LOGGER.error("Failed to mutate:\n" + inputShader, exception);
       return null;
     }
   }
