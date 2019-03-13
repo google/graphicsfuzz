@@ -103,7 +103,8 @@ public class UnwrapReductionOpportunities
   }
 
   @Override
-  protected void visitChildOfBlock(BlockStmt block, Stmt child) {
+  protected void visitChildOfBlock(BlockStmt block, int childIndex) {
+    final Stmt child = block.getStmt(childIndex);
     if (!(child instanceof BlockStmt)) {
       return;
     }
