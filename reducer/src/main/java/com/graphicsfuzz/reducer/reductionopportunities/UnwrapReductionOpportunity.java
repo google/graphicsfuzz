@@ -92,7 +92,9 @@ public final class UnwrapReductionOpportunity extends AbstractReductionOpportuni
     }
     if (parentOfWrapper instanceof BlockStmt) {
       // We need to make sure it is still the case that applying the unwrap will not lead to name
-      // clashes.
+      // clashes.  We only need to check the names declared directly by the parent block against
+      // the names declared inside the block being unwrapped, because it is only these sets of names
+      // that can have been affected by applying other reduction opportunities.
       if (!Collections.disjoint(getNamesDeclaredDirectlyByBlock((BlockStmt) parentOfWrapper),
           getNamesDeclaredByStmtList(wrapees))) {
         return false;
