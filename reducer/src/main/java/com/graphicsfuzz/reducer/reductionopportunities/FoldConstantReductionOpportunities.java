@@ -183,16 +183,26 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       }
     }
 
-    final String[] components = floatConstantExpr.getValue().split("\\.");
-    assert components.length <= 2;
-    if (components.length == 2) {
-      // There are digits after the decimal point.  Check that they parse to 0.
-      if (Integer.parseInt(components[1]) != 0) {
+    if (floatConstantExpr.getValue().startsWith(".")) {
+      // No digits before the decimal point, so this number is zero if and only if the digits after
+      // the point are zero.
+      if (Integer.parseInt(floatConstantExpr.getValue().substring(1)) != 0) {
         return Optional.empty();
       }
+      return Optional.of(0);
+    } else if (floatConstantExpr.getValue().endsWith(".")) {
+      // No digits after the point, so this number is integer-valued.
+      return Optional.of(Integer.parseInt(floatConstantExpr.getValue().substring(0,
+          floatConstantExpr.getValue().length() - 1)));
     }
-    // We know there's either nothing, or zero, after the decimal point.  So we can interpret
-    // this as an integer by parsing the digits before the decimal point as an integer.
+    // There are digits both sides of the decimal point.
+    final String[] components = floatConstantExpr.getValue().split("\\.");
+    assert components.length == 2;
+    // Check whether the digits after the point parse to 0.
+    if (Integer.parseInt(components[1]) != 0) {
+      return Optional.empty();
+    }
+    // We have 0 after the decimal point, so we can interpret the digits before as an integer.
     return Optional.of(Integer.parseInt(components[0]));
   }
 
