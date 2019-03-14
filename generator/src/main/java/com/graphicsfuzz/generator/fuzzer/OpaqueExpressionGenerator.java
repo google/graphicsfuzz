@@ -173,8 +173,7 @@ public final class OpaqueExpressionGenerator {
   private Expr makeOpaqueZeroOrOneFromBuiltInFunctions(boolean isZero, BasicType type,
                                                        boolean constContext, int depth,
                                                        Fuzzer fuzzer) {
-    return isZero ?
-        makeOpaqueZeroFromBuiltInFunctions(true, type, constContext, depth, fuzzer)
+    return isZero ? makeOpaqueZeroFromBuiltInFunctions(true, type, constContext, depth, fuzzer)
         : makeOpaqueOneFromBuiltInFunctions(false, type, constContext, depth, fuzzer);
   }
 
