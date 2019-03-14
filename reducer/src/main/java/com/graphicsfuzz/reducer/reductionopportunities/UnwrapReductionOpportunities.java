@@ -17,6 +17,7 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
@@ -27,7 +28,11 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UnwrapReductionOpportunities
       extends ReductionOpportunitiesBase<UnwrapReductionOpportunity> {
@@ -98,23 +103,33 @@ public class UnwrapReductionOpportunities
   }
 
   @Override
-  protected void visitChildOfBlock(BlockStmt block, int index) {
-    final Stmt child = block.getStmt(index);
-    if (isNonEmptyBlockStmtWithoutTopLevelDeclaration(child)) {
+  protected void visitChildOfBlock(BlockStmt block, int childIndex) {
+    final Stmt child = block.getStmt(childIndex);
+    if (!(child instanceof BlockStmt)) {
+      return;
+    }
+    final BlockStmt childAsBlock = (BlockStmt) child;
+    if (childAsBlock.getNumStmts() == 0) {
+      // We do not unwrap an empty block statement, as there would be nothing to unwrap.
+      // Other reductions take responsibility for removing a redundant { }.
+      return;
+    }
+    // If unwrapping the child block may lead to name collisions then it cannot be done.
+    // A collision can be with a variable name already in scope, or a variable name that will come
+    // into scope later in the parent block.
+    final Set<String> namesDeclaredDirectlyByParentOrInScopeAlready = new HashSet<>();
+    namesDeclaredDirectlyByParentOrInScopeAlready.addAll(
+        UnwrapReductionOpportunity.getNamesDeclaredDirectlyByBlock(block));
+    namesDeclaredDirectlyByParentOrInScopeAlready.addAll(currentScope.namesOfAllVariablesInScope());
+    final Set<String> namesDeclaredDirectlyByChild =
+        UnwrapReductionOpportunity.getNamesDeclaredDirectlyByBlock(childAsBlock);
+    if (Collections.disjoint(namesDeclaredDirectlyByParentOrInScopeAlready,
+        namesDeclaredDirectlyByChild)) {
       addOpportunity(
-            new UnwrapReductionOpportunity(child, ((BlockStmt) child).getStmts(),
-                  parentMap,
-                  getVistitationDepth()));
+          new UnwrapReductionOpportunity(child, childAsBlock.getStmts(),
+              parentMap,
+              getVistitationDepth()));
     }
-  }
-
-  private boolean isNonEmptyBlockStmtWithoutTopLevelDeclaration(Stmt stmt) {
-    if (!(stmt instanceof BlockStmt)) {
-      return false;
-    }
-    final BlockStmt blockStmt = (BlockStmt) stmt;
-    return blockStmt.getNumStmts() > 0 && blockStmt.getStmts().stream()
-          .noneMatch(item -> item instanceof DeclarationStmt);
   }
 
   private boolean isUnwrappable(LoopStmt loop) {
