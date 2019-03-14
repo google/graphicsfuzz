@@ -93,18 +93,18 @@ public final class OpaqueExpressionGenerator {
   }
 
   public Expr applyIdentityFunction(Expr expr, BasicType type, boolean constContext,
-        final int depth,
-        Fuzzer fuzzer) {
+                                    final int depth,
+                                    Fuzzer fuzzer) {
     if (isTooDeep(depth)) {
       return expr;
     }
     final List<ExpressionIdentity> availableTransformations =
-          expressionIdentities.stream()
-                .filter(item -> item.preconditionHolds(expr, type))
-                .collect(Collectors.toList());
+        expressionIdentities.stream()
+            .filter(item -> item.preconditionHolds(expr, type))
+            .collect(Collectors.toList());
     return availableTransformations.isEmpty() ? expr :
-          availableTransformations.get(generator.nextInt(availableTransformations.size()))
-          .apply(expr, type, constContext, depth + 1, fuzzer);
+        availableTransformations.get(generator.nextInt(availableTransformations.size()))
+            .apply(expr, type, constContext, depth + 1, fuzzer);
   }
 
   private boolean isTooDeep(int depth) {
@@ -112,31 +112,31 @@ public final class OpaqueExpressionGenerator {
   }
 
   private Expr applyBinaryIdentityFunction(Expr expr, Expr opaqueExpr, BinOp operator,
-        boolean considerReverseDirection,
-        BasicType type,
-        boolean constContext,
-        final int depth, Fuzzer fuzzer) {
+                                           boolean considerReverseDirection,
+                                           BasicType type,
+                                           boolean constContext,
+                                           final int depth, Fuzzer fuzzer) {
     Expr exprWithIdentityApplied = new ParenExpr(applyIdentityFunction(expr, type, constContext,
-          depth, fuzzer));
+        depth, fuzzer));
     if (!considerReverseDirection || generator.nextBoolean()) {
       return identityConstructor(expr,
-            new BinaryExpr(exprWithIdentityApplied, opaqueExpr, operator));
+          new BinaryExpr(exprWithIdentityApplied, opaqueExpr, operator));
     }
     return identityConstructor(expr, new BinaryExpr(opaqueExpr, exprWithIdentityApplied, operator));
   }
 
   public Expr makeOpaqueZero(BasicType type, boolean constContext, final int depth,
-        Fuzzer fuzzer) {
+                             Fuzzer fuzzer) {
     return makeOpaqueZeroOrOne(true, type, constContext, depth, fuzzer);
   }
 
   public Expr makeOpaqueOne(BasicType type, boolean constContext, final int depth,
-        Fuzzer fuzzer) {
+                            Fuzzer fuzzer) {
     return makeOpaqueZeroOrOne(false, type, constContext, depth, fuzzer);
   }
 
   private Expr makeOpaqueZeroOrOne(boolean isZero, BasicType type, boolean constContext,
-        final int depth, Fuzzer fuzzer) {
+                                   final int depth, Fuzzer fuzzer) {
 
     // If isZero holds, we are making an opaque zero, otherwise an opaque one
 
@@ -145,26 +145,68 @@ public final class OpaqueExpressionGenerator {
     }
     final int newDepth = depth + 1;
     while (true) {
-      final int numTypesOfOne = 2;
+      final int numTypesOfOne = 3;
       switch (generator.nextInt(numTypesOfOne)) {
         case 0:
           // Make an opaque value recursively and apply an identity function to it
           return applyIdentityFunction(makeOpaqueZeroOrOne(isZero, type, constContext,
-                newDepth, fuzzer),
-                type,
-                constContext,
-                newDepth,
-                fuzzer);
+              newDepth, fuzzer),
+              type,
+              constContext,
+              newDepth,
+              fuzzer);
         case 1:
           // injectionSwitch.x or injectionSwitch.y
           if (constContext || !generationParams.getInjectionSwitchIsAvailable()) {
             continue;
           }
           return makeOpaqueZeroOrOneFromInjectionSwitch(isZero, type);
+        case 2:
+          return makeOpaqueZeroOrOneFromBuiltInFunctions(isZero, type, constContext, newDepth,
+              fuzzer);
         default:
           throw new RuntimeException();
       }
     }
+  }
+
+  private Expr makeOpaqueZeroOrOneFromBuiltInFunctions(boolean isZero, BasicType type,
+                                                       boolean constContext, int depth,
+                                                       Fuzzer fuzzer) {
+    return isZero ?
+        makeOpaqueZeroFromBuiltInFunctions(true, type, constContext, depth, fuzzer)
+        : makeOpaqueOneFromBuiltInFunctions(false, type, constContext, depth, fuzzer);
+  }
+
+  private Expr makeOpaqueOneFromBuiltInFunctions(boolean isZero, BasicType type,
+                                                 boolean constContext, int depth,
+                                                 Fuzzer fuzzer) {
+    // TODO: add another built-in functions generating one
+    final int newDepth = depth + 1;
+    while (true) {
+      final int numTypesOfOne = 1;
+      switch (generator.nextInt(numTypesOfOne)) {
+        case 0:
+          return makeOpaqueOneFromNormalizedVectorLength(type, makeOpaqueZeroOrOne(isZero,
+              BasicType.FLOAT,
+              constContext, newDepth, fuzzer));
+        default:
+          throw new RuntimeException();
+      }
+    }
+  }
+
+  private Expr makeOpaqueZeroFromBuiltInFunctions(boolean isZero, BasicType type,
+                                                  boolean constContext, int depth,
+                                                  Fuzzer fuzzer) {
+    // TODO: implement built-in functions generating zero
+    return makeOpaqueZeroOrOne(isZero, type, constContext, depth, fuzzer);
+  }
+
+  private Expr makeOpaqueOneFromNormalizedVectorLength(BasicType type, Expr expr) {
+    Expr normalizedExpr = new FunctionCallExpr("normalize", expr);
+    Expr lengthExpr = new FunctionCallExpr("length", normalizedExpr);
+    return new TypeConstructorExpr(type.toString(), lengthExpr);
   }
 
   private Expr makeOpaqueZeroOrOneFromInjectionSwitch(boolean isZero, BasicType type) {
@@ -193,7 +235,7 @@ public final class OpaqueExpressionGenerator {
   }
 
   private Expr makeOpaqueIdentityMatrix(BasicType type, boolean constContext,
-                                   final int depth, Fuzzer fuzzer) {
+                                        final int depth, Fuzzer fuzzer) {
     assert BasicType.allSquareMatrixTypes().contains(type);
     if (isTooDeep(depth)) {
       return new TypeConstructorExpr(type.toString(), makeRegularOne(BasicType.FLOAT));
@@ -225,7 +267,7 @@ public final class OpaqueExpressionGenerator {
 
 
   private Expr makeOpaqueBooleanScalar(boolean value, boolean constContext, final int depth,
-        Fuzzer fuzzer) {
+                                       Fuzzer fuzzer) {
 
     if (isTooDeep(depth)) {
       return value ? new BoolConstantExpr(true) : new BoolConstantExpr(false);
@@ -237,7 +279,7 @@ public final class OpaqueExpressionGenerator {
     }
     final int numTypesOfBool = generationParams.getShaderKind() == ShaderKind.FRAGMENT ? 4 : 2;
     final Function<Expr, Expr> constructorFunction =
-          value ? this::trueConstructor : this::falseConstructor;
+        value ? this::trueConstructor : this::falseConstructor;
     while (true) {
       switch (generator.nextInt(numTypesOfBool)) {
         case 0:
@@ -271,33 +313,33 @@ public final class OpaqueExpressionGenerator {
 
   private Expr makeOpaqueBooleanScalarFromExpr(boolean value, Expr expr) {
     final Function<Expr, Expr> constructorFunction =
-          value ? this::trueConstructor : this::falseConstructor;
+        value ? this::trueConstructor : this::falseConstructor;
     return constructorFunction
-          .apply(new ParenExpr(expr));
+        .apply(new ParenExpr(expr));
   }
 
   private BinaryExpr compareWithGlFragCoord(boolean value, boolean constContext, Fuzzer fuzzer,
-        int newDepth, String coord) {
+                                            int newDepth, String coord) {
     return new BinaryExpr(
-          new MemberLookupExpr(new VariableIdentifierExpr(OpenGlConstants.GL_FRAG_COORD), coord),
-          makeOpaqueZero(BasicType.FLOAT, constContext, newDepth, fuzzer),
-          value ? BinOp.GE : BinOp.LT);
+        new MemberLookupExpr(new VariableIdentifierExpr(OpenGlConstants.GL_FRAG_COORD), coord),
+        makeOpaqueZero(BasicType.FLOAT, constContext, newDepth, fuzzer),
+        value ? BinOp.GE : BinOp.LT);
   }
 
   private Expr recursivelyMakeOpaqueBooleanScalar(boolean value, boolean constContext,
-        Fuzzer fuzzer,
-        int newDepth) {
+                                                  Fuzzer fuzzer,
+                                                  int newDepth) {
     return applyIdentityFunction(makeOpaqueBooleanScalar(value, constContext,
-          newDepth, fuzzer),
-          BasicType.BOOL,
-          constContext,
-          newDepth,
-          fuzzer);
+        newDepth, fuzzer),
+        BasicType.BOOL,
+        constContext,
+        newDepth,
+        fuzzer);
   }
 
 
   public Expr makeOpaqueBoolean(boolean value, BasicType type, boolean constContext,
-        final int depth, Fuzzer fuzzer) {
+                                final int depth, Fuzzer fuzzer) {
     assert type.isBoolean();
     if (type == BasicType.BOOL) {
       return makeOpaqueBooleanScalar(value, constContext, depth, fuzzer);
@@ -311,7 +353,7 @@ public final class OpaqueExpressionGenerator {
 
   public Expr makeDeadCondition(Fuzzer fuzzer) {
     return new FunctionCallExpr(Constants.GLF_DEAD,
-          makeOpaqueBoolean(false, BasicType.BOOL, false, 0, fuzzer));
+        makeOpaqueBoolean(false, BasicType.BOOL, false, 0, fuzzer));
   }
 
   private Expr injectionSwitch(String dimension) {
@@ -380,7 +422,7 @@ public final class OpaqueExpressionGenerator {
     private final boolean exprMustBeSideEffectFree;
 
     AbstractIdentityTransformation(Collection<BasicType> acceptableTypes,
-          boolean exprMustBeSideEffectFree) {
+                                   boolean exprMustBeSideEffectFree) {
       this.acceptableTypes = acceptableTypes;
       this.exprMustBeSideEffectFree = exprMustBeSideEffectFree;
     }
@@ -407,7 +449,7 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
-          Fuzzer fuzzer) {
+                      Fuzzer fuzzer) {
       // expr + 0
       // or
       // 0 + x
@@ -416,9 +458,9 @@ public final class OpaqueExpressionGenerator {
       assert type != BasicType.BOOL;
       final BinOp operator = generator.nextBoolean() ? BinOp.ADD : BinOp.SUB;
       return applyBinaryIdentityFunction(expr, makeOpaqueZero(type, constContext,
-            depth, fuzzer), operator,
-            operator == BinOp.ADD, type, constContext,
-            depth, fuzzer);
+          depth, fuzzer), operator,
+          operator == BinOp.ADD, type, constContext,
+          depth, fuzzer);
     }
 
   }
@@ -431,7 +473,7 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
-          Fuzzer fuzzer) {
+                      Fuzzer fuzzer) {
       // expr * 1
       // or
       // 1 * expr
@@ -441,11 +483,11 @@ public final class OpaqueExpressionGenerator {
       final BinOp operator = generator.nextBoolean() ? BinOp.MUL : BinOp.DIV;
       final Expr opaqueOne =
           (operator == BinOp.MUL && BasicType.allSquareMatrixTypes().contains(type))
-          ? makeOpaqueIdentityMatrix(type, constContext, depth, fuzzer)
-          : makeOpaqueOne(type, constContext, depth, fuzzer);
+              ? makeOpaqueIdentityMatrix(type, constContext, depth, fuzzer)
+              : makeOpaqueOne(type, constContext, depth, fuzzer);
       return applyBinaryIdentityFunction(expr, opaqueOne, operator,
-            operator == BinOp.MUL, type, constContext,
-            depth, fuzzer);
+          operator == BinOp.MUL, type, constContext,
+          depth, fuzzer);
     }
 
   }
@@ -458,15 +500,15 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
-          Fuzzer fuzzer) {
+                      Fuzzer fuzzer) {
       // expr && true
       // or
       // true && expr
       assert type == BasicType.BOOL;
       return applyBinaryIdentityFunction(expr,
-            makeOpaqueBoolean(true, type, constContext, depth, fuzzer), BinOp.LAND,
-            true, type, constContext,
-            depth, fuzzer);
+          makeOpaqueBoolean(true, type, constContext, depth, fuzzer), BinOp.LAND,
+          true, type, constContext,
+          depth, fuzzer);
     }
 
   }
@@ -479,15 +521,15 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
-          Fuzzer fuzzer) {
+                      Fuzzer fuzzer) {
       // expr || false
       // or
       // false || expr
       assert type == BasicType.BOOL;
       return applyBinaryIdentityFunction(expr,
-            makeOpaqueBoolean(false, type, constContext, depth, fuzzer), BinOp.LOR,
-            true, type, constContext,
-            depth, fuzzer);
+          makeOpaqueBoolean(false, type, constContext, depth, fuzzer), BinOp.LOR,
+          true, type, constContext,
+          depth, fuzzer);
     }
 
   }
@@ -524,7 +566,7 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
-          Fuzzer fuzzer) {
+                      Fuzzer fuzzer) {
       // (false ? whatever : expr)
       // or
       // (true  ? expr : whatever)
@@ -534,14 +576,14 @@ public final class OpaqueExpressionGenerator {
       Expr something = fuzzedConstructor(fuzzer.fuzzExpr(type, false, constContext, depth));
       if (generator.nextBoolean()) {
         return identityConstructor(expr,
-              ternary(makeOpaqueBoolean(false, BasicType.BOOL, constContext, depth, fuzzer),
-                    something,
-                    exprWithIdentityApplied));
+            ternary(makeOpaqueBoolean(false, BasicType.BOOL, constContext, depth, fuzzer),
+                something,
+                exprWithIdentityApplied));
       }
       return identityConstructor(expr,
-            ternary(makeOpaqueBoolean(true, BasicType.BOOL, constContext, depth, fuzzer),
-                  exprWithIdentityApplied,
-                  something));
+          ternary(makeOpaqueBoolean(true, BasicType.BOOL, constContext, depth, fuzzer),
+              exprWithIdentityApplied,
+              something));
     }
 
   }
@@ -554,14 +596,14 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
-          Fuzzer fuzzer) {
+                      Fuzzer fuzzer) {
       // min(expr, expr)
       assert BasicType.allNumericTypes().contains(type);
       return identityConstructor(
-            expr,
-            new FunctionCallExpr("min",
-                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
-                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)));
+          expr,
+          new FunctionCallExpr("min",
+              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
+              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)));
     }
 
   }
@@ -574,14 +616,14 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
-          Fuzzer fuzzer) {
+                      Fuzzer fuzzer) {
       // max(expr, expr)
       assert BasicType.allNumericTypes().contains(type);
       return identityConstructor(
-            expr,
-            new FunctionCallExpr("max",
-                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
-                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)));
+          expr,
+          new FunctionCallExpr("max",
+              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
+              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)));
     }
 
   }
@@ -594,15 +636,15 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
-          Fuzzer fuzzer) {
+                      Fuzzer fuzzer) {
       // clamp(expr, expr, expr)
       assert BasicType.allNumericTypes().contains(type);
       return identityConstructor(
-            expr,
-            new FunctionCallExpr("clamp",
-                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
-                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
-                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)));
+          expr,
+          new FunctionCallExpr("clamp",
+              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
+              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
+              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)));
     }
 
   }
@@ -615,7 +657,7 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
-          Fuzzer fuzzer) {
+                      Fuzzer fuzzer) {
       // mix(parts_of_expr, parts_of_expr, special_bvec)
       assert BasicType.allGenTypes().contains(type);
       final List<Expr> xElements = new ArrayList<>();
@@ -625,7 +667,7 @@ public final class OpaqueExpressionGenerator {
       // To avoid exponential fan-out, we only recursively apply an identity function to
       // one child.
       final int indexToWhichIdentityShouldBeApplied
-            = generator.nextInt(type.getNumElements());
+          = generator.nextInt(type.getNumElements());
 
       for (int i = 0; i < type.getNumElements(); i++) {
         final boolean decision = generator.nextBoolean();
@@ -633,11 +675,11 @@ public final class OpaqueExpressionGenerator {
         // When we generate this random sub-expression we set constContext to true as we want to
         // ensure there are no side-effects (we must assume that it can be evaluated).
         final Expr something = fuzzedConstructor(fuzzer.fuzzExpr(type.getElementType(),
-              false, true, depth));
+            false, true, depth));
         Expr index = type.isVector()
-              ? new ArrayIndexExpr(
-              new ParenExpr(expr).clone(), new IntConstantExpr(new Integer(i).toString()))
-              : expr.clone();
+            ? new ArrayIndexExpr(
+            new ParenExpr(expr).clone(), new IntConstantExpr(new Integer(i).toString()))
+            : expr.clone();
 
         if (i == indexToWhichIdentityShouldBeApplied) {
           index = applyIdentityFunction(index, type.getElementType(), constContext, depth, fuzzer);
@@ -647,13 +689,13 @@ public final class OpaqueExpressionGenerator {
         yElements.add(decision ? index : something);
       }
       return identityConstructor(
-            expr,
-            new FunctionCallExpr("mix",
-                  new TypeConstructorExpr(type.toString(), xElements),
-                  new TypeConstructorExpr(type.toString(), yElements),
-                  new TypeConstructorExpr(
-                        BasicType.makeVectorType(BasicType.BOOL, type.getNumElements())
-                              .toString(), aElements)));
+          expr,
+          new FunctionCallExpr("mix",
+              new TypeConstructorExpr(type.toString(), xElements),
+              new TypeConstructorExpr(type.toString(), yElements),
+              new TypeConstructorExpr(
+                  BasicType.makeVectorType(BasicType.BOOL, type.getNumElements())
+                      .toString(), aElements)));
     }
 
   }
