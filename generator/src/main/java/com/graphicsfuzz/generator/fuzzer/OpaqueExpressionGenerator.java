@@ -145,8 +145,8 @@ public final class OpaqueExpressionGenerator {
     }
     final int newDepth = depth + 1;
     while (true) {
-      final int numTypesOfOne = 2;
-      switch (generator.nextInt(numTypesOfOne)) {
+      final int numTypesOfZeroOrOne = 3;
+      switch (generator.nextInt(numTypesOfZeroOrOne)) {
         case 0:
           // Make an opaque value recursively and apply an identity function to it
           return applyIdentityFunction(makeOpaqueZeroOrOne(isZero, type, constContext,
@@ -161,6 +161,13 @@ public final class OpaqueExpressionGenerator {
             continue;
           }
           return makeOpaqueZeroOrOneFromInjectionSwitch(isZero, type);
+        case 2:
+          // sqrt (opaque)
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue; // sqrt doesn't operate on non-gen types.
+          }
+          return new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
+                newDepth, fuzzer));
         default:
           throw new RuntimeException();
       }
