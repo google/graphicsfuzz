@@ -123,8 +123,8 @@ public final class PipelineInfo {
           // For now, just leave them.
           continue;
         }
-        if (withoutQualifiers instanceof StructNameType ||
-          withoutQualifiers instanceof StructDefinitionType) {
+        if (withoutQualifiers instanceof StructNameType
+            || withoutQualifiers instanceof StructDefinitionType) {
           // TODO(414) Need to work out how to do default initialization of structs.
           // For now, just leave them.
           continue;
