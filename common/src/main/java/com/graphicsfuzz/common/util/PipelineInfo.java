@@ -119,13 +119,13 @@ public final class PipelineInfo {
       final Type withoutQualifiers = vd.getBaseType().getWithoutQualifiers();
       if (!(withoutQualifiers instanceof BasicType)) {
         if (withoutQualifiers instanceof SamplerType) {
-          // TODO(XXX) Need to work out how to do default initialization of samplers.
+          // TODO(415) Need to work out how to do default initialization of samplers.
           // For now, just leave them.
           continue;
         }
         if (withoutQualifiers instanceof StructNameType ||
           withoutQualifiers instanceof StructDefinitionType) {
-          // TODO(XXX) Need to work out how to do default initialization of structs.
+          // TODO(414) Need to work out how to do default initialization of structs.
           // For now, just leave them.
           continue;
         }
