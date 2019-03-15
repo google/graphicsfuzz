@@ -26,6 +26,8 @@ import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
@@ -117,7 +119,13 @@ public final class PipelineInfo {
       final Type withoutQualifiers = vd.getBaseType().getWithoutQualifiers();
       if (!(withoutQualifiers instanceof BasicType)) {
         if (withoutQualifiers instanceof SamplerType) {
-          // Need to work out how to do default initialization of samplers.
+          // TODO(XXX) Need to work out how to do default initialization of samplers.
+          // For now, just leave them.
+          continue;
+        }
+        if (withoutQualifiers instanceof StructNameType ||
+          withoutQualifiers instanceof StructDefinitionType) {
+          // TODO(XXX) Need to work out how to do default initialization of structs.
           // For now, just leave them.
           continue;
         }
