@@ -33,13 +33,11 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -141,8 +139,8 @@ public class GenerateTest {
 
     File shaderFile = temporaryFolder.newFile("shader.frag");
     File jsonFile = temporaryFolder.newFile("shader.json");
-    FileUtils.writeStringToFile(shaderFile, program, StandardCharsets.UTF_8);
-    FileUtils.writeStringToFile(jsonFile, json, StandardCharsets.UTF_8);
+    fileOps.writeStringToFile(shaderFile, program);
+    fileOps.writeStringToFile(jsonFile, json);
 
     File outputDir = temporaryFolder.getRoot();
 
@@ -261,8 +259,8 @@ public class GenerateTest {
 
     File vertexShaderFile = temporaryFolder.newFile("shader.vert");
     File jsonFile = temporaryFolder.newFile("shader.json");
-    FileUtils.writeStringToFile(vertexShaderFile, A_VERTEX_SHADER, StandardCharsets.UTF_8);
-    FileUtils.writeStringToFile(jsonFile, EMPTY_JSON, StandardCharsets.UTF_8);
+    fileOps.writeStringToFile(vertexShaderFile, A_VERTEX_SHADER);
+    fileOps.writeStringToFile(jsonFile, EMPTY_JSON);
 
     final File outputDir = temporaryFolder.getRoot();
     final File outputShaderJobFile = new File(outputDir, "output.json");
@@ -308,8 +306,8 @@ public class GenerateTest {
     final String uniforms = "{}";
     final File json = temporaryFolder.newFile("shader.json");
     final File frag = temporaryFolder.newFile("shader.frag");
-    FileUtils.writeStringToFile(frag, program, StandardCharsets.UTF_8);
-    FileUtils.writeStringToFile(json, uniforms, StandardCharsets.UTF_8);
+    fileOps.writeStringToFile(frag, program);
+    fileOps.writeStringToFile(json, uniforms);
 
     final File donors = temporaryFolder.newFolder();
     final File output = temporaryFolder.newFile("output.json");
@@ -348,8 +346,8 @@ public class GenerateTest {
     final String uniforms = "{}";
     final File json = temporaryFolder.newFile("shader.json");
     final File frag = temporaryFolder.newFile("shader.frag");
-    FileUtils.writeStringToFile(frag, program, StandardCharsets.UTF_8);
-    FileUtils.writeStringToFile(json, uniforms, StandardCharsets.UTF_8);
+    fileOps.writeStringToFile(frag, program);
+    fileOps.writeStringToFile(json, uniforms);
 
     final File donors = temporaryFolder.newFolder();
     final File output = temporaryFolder.newFile("output.json");
@@ -380,10 +378,11 @@ public class GenerateTest {
     final String program = "#version 100\n" +
         "void main() { }";
     final String uniforms = "{}";
+
     final File json = temporaryFolder.newFile("shader.json");
     final File frag = temporaryFolder.newFile("shader.frag");
-    FileUtils.writeStringToFile(frag, program, StandardCharsets.UTF_8);
-    FileUtils.writeStringToFile(json, uniforms, StandardCharsets.UTF_8);
+    fileOps.writeStringToFile(frag, program);
+    fileOps.writeStringToFile(json, uniforms);
 
     final File donors = new File(temporaryFolder.getRoot(), "does_not_exist");
     final File output = temporaryFolder.newFile("output.json");
