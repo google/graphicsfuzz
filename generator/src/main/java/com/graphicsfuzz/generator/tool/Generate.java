@@ -503,17 +503,23 @@ public class Generate {
       ShaderKind shaderKind) {
     List<ITransformation> result = new ArrayList<>();
     final EnabledTransformations flags = args.getEnabledTransformations();
-    if (flags.isEnabledDead()) {
+    final File donorsFolder = args.getDonorsFolder();
+    final boolean donorsAvailable = donorsFolder.isDirectory();
+    if (!donorsAvailable) {
+      LOGGER.warn("Donors folder '" + donorsFolder.toString() + "' not found; code injection "
+          + "transformations will not be available.");
+    }
+    if (flags.isEnabledDead() && donorsAvailable) {
       result.add(new DonateDeadCodeTransformation(probabilities::donateDeadCodeAtStmt,
-          args.getDonorsFolder(),
+          donorsFolder,
           generationParams));
     }
     if (flags.isEnabledJump()) {
       result.add(new AddJumpTransformation());
     }
-    if (flags.isEnabledLive()) {
+    if (flags.isEnabledLive() && donorsAvailable) {
       result.add(new DonateLiveCodeTransformation(probabilities::donateLiveCodeAtStmt,
-          args.getDonorsFolder(),
+          donorsFolder,
           generationParams, args.getAllowLongLoops()));
     }
     if (flags.isEnabledMutate()) {

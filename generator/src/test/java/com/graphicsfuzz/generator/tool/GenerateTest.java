@@ -373,4 +373,24 @@ public class GenerateTest {
 
   }
 
+  @Test
+  public void testBeRobustWhenNoDonors() throws Exception {
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    final String program = "#version 100\n" +
+        "void main() { }";
+    final String uniforms = "{}";
+    final File json = temporaryFolder.newFile("shader.json");
+    final File frag = temporaryFolder.newFile("shader.frag");
+    FileUtils.writeStringToFile(frag, program, StandardCharsets.UTF_8);
+    FileUtils.writeStringToFile(json, uniforms, StandardCharsets.UTF_8);
+
+    final File donors = new File(temporaryFolder.getRoot(), "does_not_exist");
+    final File output = temporaryFolder.newFile("output.json");
+
+    for (int i = 0; i < 10; i++) {
+      Generate.mainHelper(new String[]{json.getAbsolutePath(), donors.getAbsolutePath(), "100",
+          output.getAbsolutePath(), "--seed", String.valueOf(i) });
+    }
+  }
+
 }
