@@ -342,6 +342,11 @@ def run_spirv_opt(
     return result
 
 
+def filename_extension_suggests_glsl(file: str):
+    return (file.endswith('.frag')
+            or file.endswith('.vert')
+            or file.endswith('.comp'))
+
 def prepare_shader(
     output_dir: str,
     shader: Optional[str],
@@ -372,9 +377,7 @@ def prepare_shader(
 
     shader_basename = os.path.basename(shader)
 
-    if (shader_basename.endswith('.frag')
-            or shader_basename.endswith('.vert')
-            or shader_basename.endswith('.comp')):
+    if filename_extension_suggests_glsl(shader_basename):
         result = os.path.join(output_dir, shader_basename + '.spv')
         cmd = [
             glslang_path(),
@@ -786,7 +789,7 @@ def run_image_legacy(
 
 
 def spv_get_disassembly(shader_filename):
-    cmd = [spirvdis_path(), shader_filename]
+    cmd = [spirvdis_path(), shader_filename, '--raw-id']
     return subprocess_helper(cmd).stdout
 
 
@@ -849,12 +852,38 @@ def uniform_json_to_amberscript(uniform_json):
     return result
 
 
-def amberscriptify_image(vert, frag, uniform_json):
+def get_shader_as_comment(shader: str) -> str:
+    with open_helper(shader, 'r') as f:
+        lines = f.readlines()
+
+    lines = [('# ' + line).rstrip() for line in lines]
+    return '\n'.join(lines)
+
+
+def amberscriptify_image(vert, frag, uniform_json, vert_original=None, frag_original=None):
     """
     Generates Amberscript representation of an image test
     """
 
     result = '# Generated\n\n'
+
+    result += '# A test for a bug found by GraphicsFuzz.\n\n'
+
+    has_frag_glsl = frag_original and filename_extension_suggests_glsl(frag_original)
+    has_vert_glsl = vert_original and filename_extension_suggests_glsl(vert_original)
+
+    if has_frag_glsl or has_vert_glsl:
+        result += '# Derived from the following GLSL.\n\n'
+
+    if has_vert_glsl:
+        result += '# Vertex shader GLSL:\n'
+        result += get_shader_as_comment(vert_original)
+        result += '\n\n'
+
+    if has_frag_glsl:
+        result += '# Fragment shader GLSL:\n'
+        result += get_shader_as_comment(frag_original)
+        result += '\n\n'
 
     result += '[require]\n'
     result += 'fbsize 256 256\n\n'
@@ -907,7 +936,9 @@ def run_image_amber(
     device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image_0.png'
 
     with open_helper(amberscript_file, 'w') as f:
-        f.write(amberscriptify_image(vert, frag, json_file))
+        f.write(
+            amberscriptify_image(
+                vert, frag, json_file, frag_original=frag_original, vert_original=vert_original))
 
     if is_android:
         prepare_device(force, using_legacy_worker=False)
@@ -1076,12 +1107,20 @@ def comp_json_to_amberscript(comp_json):
     return result
 
 
-def amberscriptify_comp(comp_spv: str, comp_json: str):
+def amberscriptify_comp(comp_spv: str, comp_json: str, comp_original=None):
     """
     Generates an AmberScript representation of a compute test
     """
 
     result = '# Generated\n'
+
+    result += '# A test for a bug found by GraphicsFuzz.\n\n'
+
+    if comp_original and filename_extension_suggests_glsl(comp_original):
+        result += '# Derived from the following GLSL.\n\n'
+        result += '# Compute shader GLSL:\n'
+        result += get_shader_as_comment(comp_original)
+        result += '\n\n'
 
     result += '[require]\n'
     result += 'fence_timeout ' + str(AMBER_FENCE_TIMEOUT_MS) + '\n\n'
