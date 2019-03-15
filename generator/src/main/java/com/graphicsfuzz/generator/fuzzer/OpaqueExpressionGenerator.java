@@ -132,7 +132,25 @@ public final class OpaqueExpressionGenerator {
 
   public Expr makeOpaqueOne(BasicType type, boolean constContext, final int depth,
         Fuzzer fuzzer) {
-    return makeOpaqueZeroOrOne(false, type, constContext, depth, fuzzer);
+    final int newDepth = depth + 1;
+    while (true) {
+      final int numTypesOfOne = 2;
+      switch (generator.nextInt(numTypesOfOne)) {
+        case 0:
+          return makeOpaqueZeroOrOne(false, type, constContext, newDepth, fuzzer);
+        case 1:
+          // length(normalize(opaque))
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue;
+          }
+          Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(false, type,
+              constContext, newDepth, fuzzer));
+          Expr lengthExpr = new FunctionCallExpr("length", normalizedExpr);
+          return new TypeConstructorExpr(type.toString(), lengthExpr);
+        default:
+          throw new RuntimeException();
+      }
+    }
   }
 
   private Expr makeOpaqueZeroOrOne(boolean isZero, BasicType type, boolean constContext,
