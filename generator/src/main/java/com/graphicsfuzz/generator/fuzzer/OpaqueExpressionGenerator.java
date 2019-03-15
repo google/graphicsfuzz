@@ -132,25 +132,7 @@ public final class OpaqueExpressionGenerator {
 
   public Expr makeOpaqueOne(BasicType type, boolean constContext, final int depth,
         Fuzzer fuzzer) {
-    final int newDepth = depth + 1;
-    while (true) {
-      final int numTypesOfOne = 2;
-      switch (generator.nextInt(numTypesOfOne)) {
-        case 0:
-          return makeOpaqueZeroOrOne(false, type, constContext, newDepth, fuzzer);
-        case 1:
-          // length(normalize(opaque))
-          if (!BasicType.allGenTypes().contains(type)) {
-            continue;
-          }
-          Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(false, type,
-              constContext, newDepth, fuzzer));
-          Expr lengthExpr = new FunctionCallExpr("length", normalizedExpr);
-          return new TypeConstructorExpr(type.toString(), lengthExpr);
-        default:
-          throw new RuntimeException();
-      }
-    }
+    return makeOpaqueZeroOrOne(false, type, constContext, depth, fuzzer);
   }
 
   private Expr makeOpaqueZeroOrOne(boolean isZero, BasicType type, boolean constContext,
@@ -163,7 +145,7 @@ public final class OpaqueExpressionGenerator {
     }
     final int newDepth = depth + 1;
     while (true) {
-      final int numTypesOfZeroOrOne = 3;
+      final int numTypesOfZeroOrOne = 4;
       switch (generator.nextInt(numTypesOfZeroOrOne)) {
         case 0:
           // Make an opaque value recursively and apply an identity function to it
@@ -186,10 +168,51 @@ public final class OpaqueExpressionGenerator {
           }
           return new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
                 newDepth, fuzzer));
+        case 3:
+          return makeOpaqueZeroOrOneFromBuiltInFunctions(isZero, type, constContext, newDepth,
+              fuzzer);
         default:
           throw new RuntimeException();
       }
     }
+  }
+
+  private Expr makeOpaqueZeroOrOneFromBuiltInFunctions(boolean isZero, BasicType type,
+                                                       boolean constContext, int depth,
+                                                       Fuzzer fuzzer) {
+    return isZero ? makeOpaqueZeroFromBuiltInFunctions(true, type, constContext, depth, fuzzer)
+        : makeOpaqueOneFromBuiltInFunctions(false, type, constContext, depth, fuzzer);
+  }
+
+  private Expr makeOpaqueOneFromBuiltInFunctions(boolean isZero, BasicType type,
+                                                 boolean constContext, int depth,
+                                                 Fuzzer fuzzer) {
+    // TODO: add another built-in functions generating zero
+    final int newDepth = depth + 1;
+    while (true) {
+      final int numTypesOfOne = 2;
+      switch (generator.nextInt(numTypesOfOne)) {
+        case 0:
+          return makeOpaqueZeroOrOne(isZero, type, constContext, depth, fuzzer);
+        case 1:
+          // length(normalize(opaque))
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue;
+          }
+          Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(false,
+              type, constContext, newDepth, fuzzer));
+          return new FunctionCallExpr("length", normalizedExpr);
+        default:
+          throw new RuntimeException();
+      }
+    }
+  }
+
+  private Expr makeOpaqueZeroFromBuiltInFunctions(boolean isZero, BasicType type,
+                                                  boolean constContext, int depth,
+                                                  Fuzzer fuzzer) {
+    // TODO: implement built-in functions generating zero
+    return makeOpaqueZeroOrOne(isZero, type, constContext, depth, fuzzer);
   }
 
   private Expr makeOpaqueZeroOrOneFromInjectionSwitch(boolean isZero, BasicType type) {
