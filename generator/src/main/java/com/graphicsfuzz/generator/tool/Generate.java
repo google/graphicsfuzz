@@ -339,13 +339,17 @@ public class Generate {
       Namespace ns) {
     final EnabledTransformations enabledTransformations
         = getTransformationDisablingFlags(ns);
+    final File donors = ns.get("donors");
+    if (!donors.isDirectory()) {
+      throw new RuntimeException("Donors directory '" + donors.toString() + "' does not exist.");
+    }
     return new GeneratorArguments(
         ns.getBoolean("small"),
         ns.getBoolean("allow_long_loops"),
         ns.getBoolean("single_pass"),
         ns.getBoolean("aggressively_complicate_control_flow"),
         ns.getBoolean("replace_float_literals"),
-        ns.get("donors"),
+        donors,
         ns.get("generate_uniform_bindings"),
         ns.get("max_uniforms"),
         enabledTransformations,
@@ -503,23 +507,17 @@ public class Generate {
       ShaderKind shaderKind) {
     List<ITransformation> result = new ArrayList<>();
     final EnabledTransformations flags = args.getEnabledTransformations();
-    final File donorsFolder = args.getDonorsFolder();
-    final boolean donorsAvailable = donorsFolder.isDirectory();
-    if (!donorsAvailable) {
-      LOGGER.warn("Donors folder '" + donorsFolder.toString() + "' not found; code injection "
-          + "transformations will not be available.");
-    }
-    if (flags.isEnabledDead() && donorsAvailable) {
+    if (flags.isEnabledDead()) {
       result.add(new DonateDeadCodeTransformation(probabilities::donateDeadCodeAtStmt,
-          donorsFolder,
+          args.getDonorsFolder(),
           generationParams));
     }
     if (flags.isEnabledJump()) {
       result.add(new AddJumpTransformation());
     }
-    if (flags.isEnabledLive() && donorsAvailable) {
+    if (flags.isEnabledLive()) {
       result.add(new DonateLiveCodeTransformation(probabilities::donateLiveCodeAtStmt,
-          donorsFolder,
+          args.getDonorsFolder(),
           generationParams, args.getAllowLongLoops()));
     }
     if (flags.isEnabledMutate()) {

@@ -46,6 +46,7 @@ import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class GenerateTest {
 
@@ -387,9 +388,13 @@ public class GenerateTest {
     final File donors = new File(temporaryFolder.getRoot(), "does_not_exist");
     final File output = temporaryFolder.newFile("output.json");
 
-    for (int i = 0; i < 10; i++) {
+    try {
       Generate.mainHelper(new String[]{json.getAbsolutePath(), donors.getAbsolutePath(), "100",
-          output.getAbsolutePath(), "--seed", String.valueOf(i) });
+          output.getAbsolutePath(), "--seed", "0"});
+      fail("An exception should have been thrown.");
+    } catch (RuntimeException runtimeException) {
+      assertTrue(runtimeException.getMessage().contains("Donors directory"));
+      assertTrue(runtimeException.getMessage().contains("does not exist"));
     }
   }
 
