@@ -29,6 +29,7 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -51,6 +52,7 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,32 +67,19 @@ public class OpaqueExpressionGeneratorTest {
 
   @Test
   public void testGeneratesValidExpressions() throws Exception {
-    final IRandom generator = new RandomWrapper(0);
     for (ShadingLanguageVersion shadingLanguageVersion : Arrays.asList(
-          ShadingLanguageVersion.ESSL_300,
-          ShadingLanguageVersion.ESSL_100)) {
+        ShadingLanguageVersion.ESSL_300,
+        ShadingLanguageVersion.ESSL_100)) {
       for (BasicType t : BasicType.allBasicTypes()) {
         if (!SupportedTypes.supported(t, shadingLanguageVersion)) {
           continue;
         }
-        final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT, true);
-        final Expr expr = new OpaqueExpressionGenerator(generator, generationParams,
-            shadingLanguageVersion)
-              .applyIdentityFunction(t.getCanonicalConstant(), t, false, 0,
-                    new Fuzzer(new FuzzingContext(new Scope(null)), shadingLanguageVersion, generator,
-                          generationParams));
-
         final TranslationUnit tu = new TranslationUnit(Optional.of(ShadingLanguageVersion.ESSL_310),
-              Arrays.asList(
-                    new PrecisionDeclaration("precision mediump float;"),
-                    new FunctionDefinition(
-                          new FunctionPrototype("main", VoidType.VOID, new ArrayList<>()),
-                          new BlockStmt(
-                                Arrays.asList(new DeclarationStmt(new VariablesDeclaration(t,
-                                            new VariableDeclInfo("x", null, null))),
-                                      new ExprStmt(new BinaryExpr(
-                                            new VariableIdentifierExpr("x"),
-                                            expr, BinOp.ASSIGN))), false))));
+            Arrays.asList(
+                new PrecisionDeclaration("precision mediump float;"),
+                new FunctionDefinition(
+                    new FunctionPrototype("main", VoidType.VOID, new ArrayList<>()),
+                    new BlockStmt(makeStmtList(t, shadingLanguageVersion), false))));
         Generate.addInjectionSwitchIfNotPresent(tu);
         final File file = temporaryFolder.newFile("ex.frag");
         try (PrintStream stream = new PrintStream(new FileOutputStream(file))) {
@@ -110,4 +99,28 @@ public class OpaqueExpressionGeneratorTest {
     }
   }
 
+  private List<Stmt> makeStmtList(BasicType basicType,
+                                  ShadingLanguageVersion shadingLanguageVersion) {
+    List<Stmt> newStmts = new ArrayList<>();
+    final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT, true);
+    for (int i = 0; i < 1000; i++) {
+      final IRandom generator = new RandomWrapper(i);
+      final OpaqueExpressionGenerator opaqueExpressionGenerator =
+          new OpaqueExpressionGenerator(generator,
+              generationParams, shadingLanguageVersion);
+      final Fuzzer fuzzer = new Fuzzer(new FuzzingContext(new Scope(null)), shadingLanguageVersion,
+          generator, generationParams);
+      final Expr expr =
+          opaqueExpressionGenerator.applyIdentityFunction(basicType.getCanonicalConstant(),
+              basicType, false, 0, fuzzer);
+      final String name = "x" + i;
+
+      newStmts.add(new DeclarationStmt(new VariablesDeclaration(basicType,
+          new VariableDeclInfo(name, null,
+              null))));
+      newStmts.add(new ExprStmt(new BinaryExpr(new VariableIdentifierExpr(name), expr,
+          BinOp.ASSIGN)));
+    }
+    return newStmts;
+  }
 }
