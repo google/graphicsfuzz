@@ -79,7 +79,7 @@ public class OpaqueExpressionGeneratorTest {
                 new PrecisionDeclaration("precision mediump float;"),
                 new FunctionDefinition(
                     new FunctionPrototype("main", VoidType.VOID, new ArrayList<>()),
-                    new BlockStmt(makeVariableListAndAssignMutatedExpression(t,
+                    new BlockStmt(makeMutatedExpressionAssignments(t,
                         shadingLanguageVersion, 1000),
                         false))));
         Generate.addInjectionSwitchIfNotPresent(tu);
@@ -101,13 +101,18 @@ public class OpaqueExpressionGeneratorTest {
     }
   }
 
-  private List<Stmt> makeVariableListAndAssignMutatedExpression(BasicType basicType,
-                                                                ShadingLanguageVersion shadingLanguageVersion,
-                                                                int variableNumber) {
-    final List<Stmt> newStmts = new ArrayList<>();
+  private List<Stmt> makeMutatedExpressionAssignments(BasicType basicType,
+                                                      ShadingLanguageVersion shadingLanguageVersion,
+                                                      int numberOfAssignments) {
+    // We declare only one variable and generate a number of assignments to this variable,
+    // instead of making multiple declarations and assignments.
+    // numberOfAssignments should be large enough to get high coverage, e.g. 1000.
     final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT, true);
-    // variableNumber should be large enough to get high coverage, e.g. 1000
-    for (int i = 0; i < variableNumber; i++) {
+    final List<Stmt> newStmts = new ArrayList<>();
+    newStmts.add(new DeclarationStmt(new VariablesDeclaration(basicType,
+        new VariableDeclInfo("x", null,
+            null))));
+    for (int i = 0; i < numberOfAssignments; i++) {
       final IRandom generator = new RandomWrapper(i);
       final OpaqueExpressionGenerator opaqueExpressionGenerator =
           new OpaqueExpressionGenerator(generator,
@@ -117,12 +122,8 @@ public class OpaqueExpressionGeneratorTest {
       final Expr expr =
           opaqueExpressionGenerator.applyIdentityFunction(basicType.getCanonicalConstant(),
               basicType, false, 0, fuzzer);
-      final String name = "x" + i;
 
-      newStmts.add(new DeclarationStmt(new VariablesDeclaration(basicType,
-          new VariableDeclInfo(name, null,
-              null))));
-      newStmts.add(new ExprStmt(new BinaryExpr(new VariableIdentifierExpr(name), expr,
+      newStmts.add(new ExprStmt(new BinaryExpr(new VariableIdentifierExpr("x"), expr,
           BinOp.ASSIGN)));
     }
     return newStmts;
