@@ -549,6 +549,78 @@ public class FoldConstantReductionOpportunitiesTest {
         "void main() { 44200u; }");
   }
 
+  @Test
+  public void testCast1ToInt() throws Exception {
+    check("void main() { int(1.0); }", 1, "void main() { 1; }");
+  }
+
+  @Test
+  public void testCast0ToInt() throws Exception {
+    check("void main() { int(0.0); }", 1, "void main() { 0; }");
+  }
+
+  @Test
+  public void testCast100ToInt() throws Exception {
+    check("void main() { int(100.0); }", 1, "void main() { 100; }");
+  }
+
+  @Test
+  public void testCast1ToUint() throws Exception {
+    check("void main() { uint(1.0); }", 1, "void main() { 1u; }");
+  }
+
+  @Test
+  public void testCast0ToUint() throws Exception {
+    check("void main() { uint(0.0); }", 1, "void main() { 0u; }");
+  }
+
+  @Test
+  public void testCast100ToUint() throws Exception {
+    check("void main() { uint(100.0); }", 1, "void main() { 100u; }");
+  }
+
+  @Test
+  public void testCastingEdgeCases() throws Exception {
+    final String before = "#version 310 es\n"
+        + "\n"
+        + "void main() {\n"
+        + "  uint(.0);\n"
+        + "  int(-.0);\n"
+        + "  int(1.1);\n"
+        + "  int(-1.1);\n"
+        + "  int(-0.0);\n"
+        + "  int(.1);\n"
+        + "  int(1.00001e1000000);\n"
+        + "  uint(-1.0);\n"
+        + "  uint(1.0e0);\n"
+        + "  int(-1.0e0);\n"
+        + "  int(127.);\n"
+        + "  int(.00000);\n"
+        + "  uint(1024.000);\n"
+        + "}\n"
+        + "\n";
+    final String after = "#version 310 es\n"
+        + "\n"
+        + "void main() {\n"
+        + "  0u;\n"
+        + "  int(-.0);\n" // Not folded as '-' is interpreted as a unary operator
+        + "  int(1.1);\n"
+        + "  int(-1.1);\n"
+        + "  int(0.0);\n" // The unary '-' is folded away, but it would take another round of
+                          // constant folding to further simplify this to 0.
+        + "  int(.1);\n"
+        + "  int(1.00001e1000000);\n"
+        + "  uint(-1.0);\n"
+        + "  uint(1.0e0);\n" // Not currently folded as 'e' is not a digit
+        + "  int(-1.0e0);\n" // Not folded as '-' is interpreted as a unary operator
+        + "  127;\n"
+        + "  0;\n"
+        + "  1024u;\n"
+        + "}\n"
+        + "\n";
+    check(before, 5, after);
+  }
+
 
   private void check(String before, int numOps, String after) throws IOException,
       ParseTimeoutException, InterruptedException, GlslParserException {

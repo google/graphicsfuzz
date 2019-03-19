@@ -131,6 +131,27 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       }
     }
 
+    Optional<TypeConstructorExpr> maybeTypeConstructorExpr = asTypeConstructorExpr(child);
+    if (maybeTypeConstructorExpr.isPresent()) {
+      final String typename = maybeTypeConstructorExpr.get().getTypename();
+      if (typename.equals(BasicType.INT.toString())) {
+        Optional<Integer> maybeInteger =
+            tryGetFloatConstantAsInteger(maybeTypeConstructorExpr.get().getArg(0));
+        if (maybeInteger.isPresent()) {
+          addReplaceWithExpr(parent, child, new IntConstantExpr(
+              String.valueOf(maybeInteger.get())));
+        }
+      }
+      if (typename.equals(BasicType.UINT.toString())) {
+        Optional<Integer> maybeInteger =
+            tryGetFloatConstantAsInteger(maybeTypeConstructorExpr.get().getArg(0));
+        if (maybeInteger.isPresent()) {
+          addReplaceWithExpr(parent, child, new UIntConstantExpr(maybeInteger.get() + "u"));
+        }
+      }
+      return;
+    }
+
     Optional<ParenExpr> maybeParen = asParenExpr(child);
     if (maybeParen.isPresent()) {
       findRemoveParenOpportunities(parent, child, maybeParen.get().getExpr());
@@ -142,6 +163,47 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
           maybeMemberLookup.get());
     }
 
+  }
+
+  private Optional<Integer> tryGetFloatConstantAsInteger(Expr expr) {
+    if (!(expr instanceof FloatConstantExpr)) {
+      return Optional.empty();
+    }
+    // Check that the string representation has the form "digits.digits" or "digits."
+    final FloatConstantExpr floatConstantExpr = (FloatConstantExpr) expr;
+    if (!floatConstantExpr.getValue().contains(".")) {
+      return Optional.empty();
+    }
+    for (int i = 0; i < floatConstantExpr.getValue().length(); i++) {
+      if (floatConstantExpr.getValue().charAt(i) == '.') {
+        continue;
+      }
+      if (!Character.isDigit(floatConstantExpr.getValue().charAt(i))) {
+        return Optional.empty();
+      }
+    }
+
+    if (floatConstantExpr.getValue().startsWith(".")) {
+      // No digits before the decimal point, so this number is zero if and only if the digits after
+      // the point are zero.
+      if (Integer.parseInt(floatConstantExpr.getValue().substring(1)) != 0) {
+        return Optional.empty();
+      }
+      return Optional.of(0);
+    } else if (floatConstantExpr.getValue().endsWith(".")) {
+      // No digits after the point, so this number is integer-valued.
+      return Optional.of(Integer.parseInt(floatConstantExpr.getValue().substring(0,
+          floatConstantExpr.getValue().length() - 1)));
+    }
+    // There are digits both sides of the decimal point.
+    final String[] components = floatConstantExpr.getValue().split("\\.");
+    assert components.length == 2;
+    // Check whether the digits after the point parse to 0.
+    if (Integer.parseInt(components[1]) != 0) {
+      return Optional.empty();
+    }
+    // We have 0 after the decimal point, so we can interpret the digits before as an integer.
+    return Optional.of(Integer.parseInt(components[0]));
   }
 
   private void findReplaceTypeConstructorWithElementOpportunities(
@@ -487,6 +549,12 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
   private Optional<MemberLookupExpr> asMemberLookupExpr(Expr expr) {
     return expr instanceof MemberLookupExpr
         ? Optional.of((MemberLookupExpr) expr)
+        : Optional.empty();
+  }
+
+  private Optional<TypeConstructorExpr> asTypeConstructorExpr(Expr expr) {
+    return expr instanceof TypeConstructorExpr
+        ? Optional.of((TypeConstructorExpr) expr)
         : Optional.empty();
   }
 
