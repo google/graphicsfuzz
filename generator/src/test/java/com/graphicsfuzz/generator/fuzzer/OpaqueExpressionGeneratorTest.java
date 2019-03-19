@@ -79,7 +79,9 @@ public class OpaqueExpressionGeneratorTest {
                 new PrecisionDeclaration("precision mediump float;"),
                 new FunctionDefinition(
                     new FunctionPrototype("main", VoidType.VOID, new ArrayList<>()),
-                    new BlockStmt(makeStmtList(t, shadingLanguageVersion), false))));
+                    new BlockStmt(makeVariableListAndAssignMutatedExpression(t,
+                        shadingLanguageVersion, 1000),
+                        false))));
         Generate.addInjectionSwitchIfNotPresent(tu);
         final File file = temporaryFolder.newFile("ex.frag");
         try (PrintStream stream = new PrintStream(new FileOutputStream(file))) {
@@ -99,11 +101,13 @@ public class OpaqueExpressionGeneratorTest {
     }
   }
 
-  private List<Stmt> makeStmtList(BasicType basicType,
-                                  ShadingLanguageVersion shadingLanguageVersion) {
-    List<Stmt> newStmts = new ArrayList<>();
+  private List<Stmt> makeVariableListAndAssignMutatedExpression(BasicType basicType,
+                                                                ShadingLanguageVersion shadingLanguageVersion,
+                                                                int variableNumber) {
+    final List<Stmt> newStmts = new ArrayList<>();
     final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT, true);
-    for (int i = 0; i < 1000; i++) {
+    // variableNumber should be large enough to get high coverage, e.g. 1000
+    for (int i = 0; i < variableNumber; i++) {
       final IRandom generator = new RandomWrapper(i);
       final OpaqueExpressionGenerator opaqueExpressionGenerator =
           new OpaqueExpressionGenerator(generator,
