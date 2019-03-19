@@ -397,4 +397,24 @@ public class GenerateTest {
     }
   }
 
+  public void testStructUniform() throws Exception {
+    // Checks that the generator does not fall over when presented with struct uniforms.
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    final String program = "#version 310 es\n"
+        + "struct S { float x; };"
+        + "uniform S myS;"
+        + "uniform struct T { int y; } myT;"
+        + "void main() {}";
+    final String uniforms = "{}";
+    final File json = temporaryFolder.newFile("shader.json");
+    final File frag = temporaryFolder.newFile("shader.frag");
+    fileOps.writeStringToFile(frag, program);
+    fileOps.writeStringToFile(json, uniforms);
+    final File donors = temporaryFolder.newFolder();
+    final File output = temporaryFolder.newFile("output.json");
+
+    Generate.mainHelper(new String[] { json.getAbsolutePath(), donors.getAbsolutePath(),
+        "310 es", output.getAbsolutePath(), "--seed", "0" });
+  }
+
 }
