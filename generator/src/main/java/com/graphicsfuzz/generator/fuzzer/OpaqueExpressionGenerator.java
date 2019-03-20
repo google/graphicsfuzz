@@ -169,50 +169,17 @@ public final class OpaqueExpressionGenerator {
           return new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
                 newDepth, fuzzer));
         case 3:
-          return makeOpaqueZeroOrOneFromBuiltInFunctions(isZero, type, constContext, newDepth,
-              fuzzer);
-        default:
-          throw new RuntimeException();
-      }
-    }
-  }
-
-  private Expr makeOpaqueZeroOrOneFromBuiltInFunctions(boolean isZero, BasicType type,
-                                                       boolean constContext, int depth,
-                                                       Fuzzer fuzzer) {
-    return isZero ? makeOpaqueZeroFromBuiltInFunctions(true, type, constContext, depth, fuzzer)
-        : makeOpaqueOneFromBuiltInFunctions(false, type, constContext, depth, fuzzer);
-  }
-
-  private Expr makeOpaqueOneFromBuiltInFunctions(boolean isZero, BasicType type,
-                                                 boolean constContext, int depth,
-                                                 Fuzzer fuzzer) {
-    // TODO: add another built-in functions generating zero
-    final int newDepth = depth + 1;
-    while (true) {
-      final int numTypesOfOne = 2;
-      switch (generator.nextInt(numTypesOfOne)) {
-        case 0:
-          return makeOpaqueZeroOrOne(isZero, type, constContext, depth, fuzzer);
-        case 1:
-          // length(normalize(opaque))
-          if (!BasicType.allGenTypes().contains(type)) {
-            continue;
+          // represent 1 as the length of normalized vector
+          if (!BasicType.allGenTypes().contains(type) || isZero) {
+            continue; // normalize doesn't operate on non-gen types.
           }
-          Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(false,
+          Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(isZero,
               type, constContext, newDepth, fuzzer));
           return new FunctionCallExpr("length", normalizedExpr);
         default:
           throw new RuntimeException();
       }
     }
-  }
-
-  private Expr makeOpaqueZeroFromBuiltInFunctions(boolean isZero, BasicType type,
-                                                  boolean constContext, int depth,
-                                                  Fuzzer fuzzer) {
-    // TODO: implement built-in functions generating zero
-    return makeOpaqueZeroOrOne(isZero, type, constContext, depth, fuzzer);
   }
 
   private Expr makeOpaqueZeroOrOneFromInjectionSwitch(boolean isZero, BasicType type) {
