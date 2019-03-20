@@ -144,7 +144,7 @@ public class Mutate {
 
   }
 
-  private static void mutate(TranslationUnit tu, IRandom random) {
+  public static void mutate(TranslationUnit tu, IRandom random) {
     final int maxTries = 10;
 
     List<? extends Mutation> mutations;

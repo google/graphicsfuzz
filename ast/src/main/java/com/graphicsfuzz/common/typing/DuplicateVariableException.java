@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.common.typing;
 
-class DuplicateVariableException extends RuntimeException {
+public class DuplicateVariableException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
