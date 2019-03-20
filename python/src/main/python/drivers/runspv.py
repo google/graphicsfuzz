@@ -342,6 +342,12 @@ def run_spirv_opt(
     return result
 
 
+def filename_extension_suggests_glsl(file: str):
+    return (file.endswith('.frag')
+            or file.endswith('.vert')
+            or file.endswith('.comp'))
+
+
 def prepare_shader(
     output_dir: str,
     shader: Optional[str],
@@ -372,9 +378,7 @@ def prepare_shader(
 
     shader_basename = os.path.basename(shader)
 
-    if (shader_basename.endswith('.frag')
-            or shader_basename.endswith('.vert')
-            or shader_basename.endswith('.comp')):
+    if filename_extension_suggests_glsl(shader_basename):
         result = os.path.join(output_dir, shader_basename + '.spv')
         cmd = [
             glslang_path(),
@@ -786,7 +790,7 @@ def run_image_legacy(
 
 
 def spv_get_disassembly(shader_filename):
-    cmd = [spirvdis_path(), shader_filename]
+    cmd = [spirvdis_path(), shader_filename, '--raw-id']
     return subprocess_helper(cmd).stdout
 
 
@@ -849,12 +853,58 @@ def uniform_json_to_amberscript(uniform_json):
     return result
 
 
-def amberscriptify_image(vert, frag, uniform_json):
+def get_shader_as_comment(shader: str) -> str:
+    with open_helper(shader, 'r') as f:
+        lines = f.readlines()
+
+    lines = [('# ' + line).rstrip() for line in lines]
+    return '\n'.join(lines)
+
+
+def get_spirv_opt_args_comment(spirv_args: Optional[List[str]]) -> str:
+    if spirv_args:
+        result = '# spirv-opt was used with the following arguments:\n'
+        args = ['# \'{}\''.format(arg) for arg in spirv_args]
+        result += '\n'.join(args)
+        result += '\n\n'
+        return result
+    else:
+        return ''
+
+
+def amberscriptify_image(
+    vert,
+    frag,
+    uniform_json,
+    vert_original,
+    frag_original,
+    spirv_args
+):
     """
     Generates Amberscript representation of an image test
     """
 
     result = '# Generated\n\n'
+
+    result += '# A test for a bug found by GraphicsFuzz.\n\n'
+
+    has_frag_glsl = frag_original and filename_extension_suggests_glsl(frag_original)
+    has_vert_glsl = vert_original and filename_extension_suggests_glsl(vert_original)
+
+    result += get_spirv_opt_args_comment(spirv_args)
+
+    if has_frag_glsl or has_vert_glsl:
+        result += '# Derived from the following GLSL.\n\n'
+
+    if has_vert_glsl:
+        result += '# Vertex shader GLSL:\n'
+        result += get_shader_as_comment(vert_original)
+        result += '\n\n'
+
+    if has_frag_glsl:
+        result += '# Fragment shader GLSL:\n'
+        result += get_shader_as_comment(frag_original)
+        result += '\n\n'
 
     result += '[require]\n'
     result += 'fbsize 256 256\n\n'
@@ -907,7 +957,14 @@ def run_image_amber(
     device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image_0.png'
 
     with open_helper(amberscript_file, 'w') as f:
-        f.write(amberscriptify_image(vert, frag, json_file))
+        f.write(amberscriptify_image(
+            vert,
+            frag,
+            json_file,
+            vert_original,
+            frag_original,
+            spirv_opt_args,
+        ))
 
     if is_android:
         prepare_device(force, using_legacy_worker=False)
@@ -1076,12 +1133,27 @@ def comp_json_to_amberscript(comp_json):
     return result
 
 
-def amberscriptify_comp(comp_spv: str, comp_json: str):
+def amberscriptify_comp(
+    comp_spv: str,
+    comp_json: str,
+    comp_original: Optional[str],
+    spirv_args: Optional[List[str]]
+):
     """
     Generates an AmberScript representation of a compute test
     """
 
-    result = '# Generated\n'
+    result = '# Generated\n\n'
+
+    result += '# A test for a bug found by GraphicsFuzz.\n\n'
+
+    result += get_spirv_opt_args_comment(spirv_args)
+
+    if comp_original and filename_extension_suggests_glsl(comp_original):
+        result += '# Derived from the following GLSL.\n\n'
+        result += '# Compute shader GLSL:\n'
+        result += get_shader_as_comment(comp_original)
+        result += '\n\n'
 
     result += '[require]\n'
     result += 'fence_timeout ' + str(AMBER_FENCE_TIMEOUT_MS) + '\n\n'
@@ -1166,7 +1238,7 @@ def run_compute_amber(
     comp = prepare_shader(output_dir, comp_original, spirv_opt_args)
 
     with open_helper(amberscript_file, 'w') as f:
-        f.write(amberscriptify_comp(comp, json_file))
+        f.write(amberscriptify_comp(comp, json_file, comp_original, spirv_opt_args))
 
     # FIXME: in case of multiple SSBOs, we should pass the binding of the ones to be dumped
     ssbo_binding = str(get_ssbo_binding(json_file))
