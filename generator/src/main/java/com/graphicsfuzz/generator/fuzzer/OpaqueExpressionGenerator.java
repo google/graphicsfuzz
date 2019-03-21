@@ -170,7 +170,10 @@ public final class OpaqueExpressionGenerator {
                 newDepth, fuzzer));
         case 3:
           // represent 1 as the length of normalized vector
-          if (!BasicType.allGenTypes().contains(type) || isZero) {
+          if (isZero) {
+            continue; // length(normalize(opaque)) only provides a means of representing 1, not 0
+          }
+          if (!BasicType.allGenTypes().contains(type)) {
             continue; // normalize doesn't operate on non-gen types.
           }
           Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(isZero,
