@@ -145,7 +145,7 @@ public final class OpaqueExpressionGenerator {
     }
     final int newDepth = depth + 1;
     while (true) {
-      final int numTypesOfZeroOrOne = 3;
+      final int numTypesOfZeroOrOne = 4;
       switch (generator.nextInt(numTypesOfZeroOrOne)) {
         case 0:
           // Make an opaque value recursively and apply an identity function to it
@@ -168,6 +168,17 @@ public final class OpaqueExpressionGenerator {
           }
           return new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
                 newDepth, fuzzer));
+        case 3:
+          // represent 1 as the length of normalized vector
+          if (isZero) {
+            continue; // length(normalize(opaque)) only provides a means of representing 1, not 0
+          }
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue; // normalize doesn't operate on non-gen types.
+          }
+          Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(isZero,
+              type, constContext, newDepth, fuzzer));
+          return new FunctionCallExpr("length", normalizedExpr);
         default:
           throw new RuntimeException();
       }
