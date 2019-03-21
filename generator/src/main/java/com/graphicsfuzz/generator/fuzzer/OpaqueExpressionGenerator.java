@@ -145,7 +145,7 @@ public final class OpaqueExpressionGenerator {
     }
     final int newDepth = depth + 1;
     while (true) {
-      final int numTypesOfZeroOrOne = 4;
+      final int numTypesOfZeroOrOne = 5;
       switch (generator.nextInt(numTypesOfZeroOrOne)) {
         case 0:
           // Make an opaque value recursively and apply an identity function to it
@@ -179,6 +179,16 @@ public final class OpaqueExpressionGenerator {
           Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(isZero,
               type, constContext, newDepth, fuzzer));
           return new FunctionCallExpr("length", normalizedExpr);
+        case 4:
+          // represent 1 as cos(opaqueZero) function, e.g, cos(0.0)
+          if (isZero) {
+            continue; // cos(opaqueZero) only provides a means of representing 1, not 0
+          }
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue; // cos doesn't operate on non-gen types.
+          }
+          return new FunctionCallExpr("cos", makeOpaqueZero(type, constContext, newDepth,
+              fuzzer));
         default:
           throw new RuntimeException();
       }
