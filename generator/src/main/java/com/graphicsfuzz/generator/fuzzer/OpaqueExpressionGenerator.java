@@ -180,7 +180,7 @@ public final class OpaqueExpressionGenerator {
               type, constContext, newDepth, fuzzer));
           return new FunctionCallExpr("length", normalizedExpr);
         case 4:
-          // represent 1 as cos(opaqueZero) function, e.g, cos(0.0)
+          // represent 1 as cos(opaqueZero) function, e.g. cos(0.0)
           if (isZero) {
             continue; // cos(opaqueZero) only provides a means of representing 1, not 0
           }
