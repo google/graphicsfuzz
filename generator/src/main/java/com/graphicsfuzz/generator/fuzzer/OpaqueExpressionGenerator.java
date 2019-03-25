@@ -145,7 +145,7 @@ public final class OpaqueExpressionGenerator {
     }
     final int newDepth = depth + 1;
     while (true) {
-      final int numTypesOfZeroOrOne = 6;
+      final int numTypesOfZeroOrOne = 7;
       switch (generator.nextInt(numTypesOfZeroOrOne)) {
         case 0:
           // Make an opaque value recursively and apply an identity function to it
@@ -198,6 +198,16 @@ public final class OpaqueExpressionGenerator {
             continue; // exp doesn't operate on non-gen types.
           }
           return new FunctionCallExpr("exp", makeOpaqueZero(type, constContext, newDepth,
+              fuzzer));
+        case 6:
+          // represent 0 as the length of a vector guaranteed to be zero
+          if (!isZero) {
+            continue; // the length of a zero vector can only be 0
+          }
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue; // length doesn't operate on non-gen types.
+          }
+          return new FunctionCallExpr("length", makeOpaqueZero(type, constContext, newDepth,
               fuzzer));
         default:
           throw new RuntimeException();
