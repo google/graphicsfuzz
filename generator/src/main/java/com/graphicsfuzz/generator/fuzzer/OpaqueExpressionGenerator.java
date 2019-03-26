@@ -202,7 +202,7 @@ public final class OpaqueExpressionGenerator {
         case 6:
           // represent 0 as the natural logarithm of opaqueOne, e.g. log(1.0)
           if (!isZero) {
-            continue; // log(opaqueZero) only provides a means of representing 0, not 1
+            continue; // log(opaqueOne) only provides a means of representing 0, not 1
           }
           if (!BasicType.allGenTypes().contains(type)) {
             continue; // log doesn't operate on non-gen types.
