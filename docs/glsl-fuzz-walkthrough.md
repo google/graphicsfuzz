@@ -145,7 +145,7 @@ and the number of work groups for a compute shader;
 [we discuss the format of the JSON file in more detail below](#format-of-json-files).
 For example, from our release zip:
 
-`graphicsfuzz/samples/300es/squares.json`:
+`graphicsfuzz/shaders/samples/300es/squares.json`:
 
 ```json
 {
@@ -175,7 +175,7 @@ For example, from our release zip:
 The fragment or compute shader file for this shader job
 must have the same name and be alongside the shader job file
 with a `.frag` or `.comp` extension;
-in this case, at `graphicsfuzz/samples/300es/squares.frag`.
+in this case, at `graphicsfuzz/shaders/samples/300es/squares.frag`.
 Thus, the inputs and outputs for `glsl-generate` are actually
 folders of shader jobs.
 
