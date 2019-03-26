@@ -17,7 +17,6 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
@@ -35,13 +34,10 @@ import java.util.List;
 public class CompoundToBlockReductionOpportunities
       extends ReductionOpportunitiesBase<CompoundToBlockReductionOpportunity> {
 
-  private int enclosingLiveCodeInjections;
-
   public CompoundToBlockReductionOpportunities(
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);
-    this.enclosingLiveCodeInjections = 0;
   }
 
   static List<CompoundToBlockReductionOpportunity> findOpportunities(
@@ -112,22 +108,12 @@ public class CompoundToBlockReductionOpportunities
     }
   }
 
-  @Override
-  public void visitBlockStmt(BlockStmt block) {
-    if (StmtReductionOpportunities.isLiveCodeInjection(block)) {
-      enclosingLiveCodeInjections++;
-    }
-    super.visitBlockStmt(block);
-    if (StmtReductionOpportunities.isLiveCodeInjection(block)) {
-      enclosingLiveCodeInjections--;
-    }
-  }
-
   private boolean allowedToReduce(Stmt compoundStmt) {
     return context.reduceEverywhere()
           || injectionTracker.enclosedByDeadCodeInjection()
           || injectionTracker.underUnreachableSwitchCase()
-          || (inLiveCodeInjection() && !isLoopLimiterCheck(compoundStmt))
+          || (StmtReductionOpportunities.isLiveCodeInjection(compoundStmt)
+               && !isLoopLimiterCheck(compoundStmt))
           || enclosingFunctionIsDead()
           || SideEffectChecker.isSideEffectFree(compoundStmt, context.getShadingLanguageVersion());
   }
@@ -135,10 +121,6 @@ public class CompoundToBlockReductionOpportunities
   private static boolean isLoopLimiterCheck(Stmt compoundStmt) {
     return compoundStmt instanceof IfStmt
           && StmtReductionOpportunities.referencesLoopLimiter(compoundStmt);
-  }
-
-  private boolean inLiveCodeInjection() {
-    return enclosingLiveCodeInjections > 0;
   }
 
 }

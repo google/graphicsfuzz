@@ -30,9 +30,13 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.ForStmt;
+import com.graphicsfuzz.common.ast.stmt.IfStmt;
+import com.graphicsfuzz.common.ast.stmt.LoopStmt;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
@@ -194,20 +198,65 @@ public class StmtReductionOpportunities
   }
 
   /**
-   * Determines whether the given statement came from a live code injection.
+   * Determines whether the given statement came from a live code injection.  This is the case if
+   * one of the following holds:
+   * - the statement is an expression statement that can be identified as coming from a live code
+   *   injection.
+   * - the statement is a loop, conditional or switch whose guard refers
+   *   to a live-injected variable directly (i.e., not due to a 'fuzzed' macro).
    *
    * @param stmt A statement to be analysed
    * @return Whether the statement is injected live code or not
    */
-  public static boolean isLiveCodeInjection(Stmt stmt) {
-    if (isSimpleLiveCodeInjection(stmt)) {
-      return true;
+  static boolean isLiveCodeInjection(Stmt stmt) {
+    if (stmt instanceof ExprStmt) {
+      return isSimpleLiveCodeInjection((ExprStmt) stmt);
     }
-    if (stmt instanceof BlockStmt) {
-      return ((BlockStmt) stmt).getStmts().stream().anyMatch(
-        item -> isLiveCodeVariableDeclaration(item) || isSimpleLiveCodeInjection(item));
+    if (stmt instanceof IfStmt) {
+      return refersDirectlyToLiveInjectedVariable(((IfStmt) stmt).getCondition());
+    }
+    if (stmt instanceof SwitchStmt) {
+      return refersDirectlyToLiveInjectedVariable(((SwitchStmt) stmt).getExpr());
+    }
+
+    // Deal with for loops and non-for loops separately.
+    if (stmt instanceof ForStmt) {
+      final ForStmt forStmt = (ForStmt) stmt;
+      if (forStmt.hasIncrement()
+          && refersDirectlyToLiveInjectedVariable(forStmt.getIncrement())) {
+        return true;
+      }
+      if (forStmt.hasCondition() && refersDirectlyToLiveInjectedVariable(forStmt.getCondition())) {
+        return true;
+      }
+      return isLiveCodeInjection(forStmt.getInit());
+    } else if (stmt instanceof LoopStmt) {
+      return refersDirectlyToLiveInjectedVariable(((LoopStmt) stmt).getCondition());
     }
     return false;
+  }
+
+  /**
+   * Returns true if and only if the expression refers to a live-injected variable that is not
+   * under a 'fuzzed' macro.
+   */
+  private static boolean refersDirectlyToLiveInjectedVariable(Expr expr) {
+    return new CheckPredicateVisitor() {
+      @Override
+      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        if (isLiveInjectionVariableReference(variableIdentifierExpr)) {
+          predicateHolds();
+        }
+      }
+
+      @Override
+      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        // Do not visit the children of the call if it is a 'fuzzed' macro.
+        if (!MacroNames.isFuzzed(functionCallExpr)) {
+          super.visitFunctionCallExpr(functionCallExpr);
+        }
+      }
+    }.test(expr);
   }
 
   /**
@@ -216,30 +265,36 @@ public class StmtReductionOpportunities
    * @param stmt A statement to be analysed
    * @return Whether the statement is the declaration of a live code variable
    */
-  public static boolean isLiveCodeVariableDeclaration(Stmt stmt) {
-    if (!(stmt instanceof DeclarationStmt)) {
-      return false;
-    }
-    return ((DeclarationStmt) stmt).getVariablesDeclaration().getDeclInfos()
+  static boolean isLiveCodeVariableDeclaration(DeclarationStmt stmt) {
+    return stmt.getVariablesDeclaration().getDeclInfos()
           .stream()
-          .anyMatch(item -> isLiveCodeVariableDeclaration(item));
+          .anyMatch(StmtReductionOpportunities::isLiveCodeVariableDeclaration);
   }
 
-  public static boolean isLiveCodeVariableDeclaration(VariableDeclInfo vdi) {
-    return vdi.getName().startsWith(Constants.LIVE_PREFIX);
+  private static boolean isLiveCodeVariableDeclaration(VariableDeclInfo vdi) {
+    final String name = vdi.getName();
+    return isLiveInjectedVariableName(name);
+  }
+
+  private static boolean isLiveInjectedVariableName(String name) {
+    return name.startsWith(Constants.LIVE_PREFIX);
   }
 
   /**
+   * <p>
    * Determines whether the given statement came from a live code injection.
-   *
+   * </p>
+   * <p>
+   * We identify a statement as being a live code injection if it is either:
+   * - an assignment (using e.g. the = or += operators)
+   * - a unary increment or decrement (using ++ or --)
+   * - a function call
+   * </p>
    * @param stmt A statement to be analysed
    * @return Whether the statement is injected live code or not
    */
-  public static boolean isSimpleLiveCodeInjection(Stmt stmt) {
-    if (!(stmt instanceof ExprStmt)) {
-      return false;
-    }
-    final Expr expr = ((ExprStmt) stmt).getExpr();
+  static boolean isSimpleLiveCodeInjection(ExprStmt stmt) {
+    final Expr expr = stmt.getExpr();
     if (expr instanceof BinaryExpr) {
       if (!((BinaryExpr) expr).getOp().isSideEffecting()) {
         return false;
@@ -253,7 +308,7 @@ public class StmtReductionOpportunities
       return isLiveInjectionVariableReference(((UnaryExpr) expr).getExpr());
     }
     if (expr instanceof FunctionCallExpr) {
-      return ((FunctionCallExpr) expr).getCallee().startsWith(Constants.LIVE_PREFIX);
+      return isLiveInjectedVariableName(((FunctionCallExpr) expr).getCallee());
     }
     return false;
   }
@@ -262,9 +317,10 @@ public class StmtReductionOpportunities
     while (lhs instanceof MemberLookupExpr) {
       lhs = ((MemberLookupExpr) lhs).getStructure();
     }
-    return lhs instanceof VariableIdentifierExpr && ((VariableIdentifierExpr) lhs).getName()
-          .startsWith(
-                Constants.LIVE_PREFIX);
+    if (!(lhs instanceof VariableIdentifierExpr)) {
+      return false;
+    }
+    return isLiveInjectedVariableName(((VariableIdentifierExpr) lhs).getName());
   }
 
   private boolean containsNonVoidReturn(Stmt stmt) {
@@ -303,7 +359,7 @@ public class StmtReductionOpportunities
   }
 
   static boolean isLooplimiter(String name) {
-    return name.startsWith(Constants.LIVE_PREFIX)
+    return isLiveInjectedVariableName(name)
           && name.contains("looplimiter");
   }
 
