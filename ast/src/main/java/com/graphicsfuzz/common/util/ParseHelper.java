@@ -188,6 +188,8 @@ public class ParseHelper {
                 lexer.getInterpreter().decisionToDFA, cache));
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     GLSLParser parser = new GLSLParser(tokens);
+    // Remove error listeners, otherwise errors get output to the console.
+    parser.removeErrorListeners();
     if (listener != null) {
       parser.addParseListener(listener);
     }

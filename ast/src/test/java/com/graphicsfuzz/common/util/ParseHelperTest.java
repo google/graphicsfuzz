@@ -548,6 +548,16 @@ public class ParseHelperTest {
 
   }
 
+  @Test
+  public void testParseError() throws Exception {
+    try {
+      ParseHelper.parse("void foo(");
+      fail("Expected GlslParserException to be thrown.");
+    } catch (GlslParserException exception) {
+      // nothing
+    }
+  }
+
   private String getStringFromInputStream(InputStream strippedIs) throws IOException {
     StringWriter writer = new StringWriter();
     IOUtils.copy(strippedIs, writer, StandardCharsets.UTF_8);
