@@ -449,4 +449,31 @@ public class CompoundToBlockReductionOpportunitiesTest {
         .collect(Collectors.toList());
   }
 
+  @Test
+  public void testDoNotTurnForLoopIntoBlock() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "void GLF_live4doConvert()\n"
+        + "{\n"
+        + "}\n"
+        + "void main()\n"
+        + "{\n"
+        + " vec4 c = vec4(0.0, 0.0, 0.0, 1.0);\n"
+        + " for(\n"
+        + "     int i = 0;\n"
+        + "     i < 3;\n"
+        + "     i ++\n"
+        + " )\n"
+        + "  {\n"
+        + "     c[i] = c[i] * c[i];\n"
+        + "  }\n"
+        + " " + Constants.LIVE_PREFIX + "4doConvert();\n"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    final List<CompoundToBlockReductionOpportunity> ops =
+        CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+                new RandomWrapper(0), new IdGenerator(), true));
+    assertEquals(0, ops.size());
+  }
+
 }
