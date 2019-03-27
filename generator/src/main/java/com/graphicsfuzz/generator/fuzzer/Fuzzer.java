@@ -52,6 +52,7 @@ import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
+import com.graphicsfuzz.common.typing.SupportedTypes;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.fuzzer.templates.FunctionCallExprTemplate;
@@ -136,7 +137,7 @@ public class Fuzzer {
       return makeExpr(qualifiedType.getTargetType(), isLValue, constContext, depth);
     }
     if (targetType instanceof BasicType) {
-
+      assert SupportedTypes.supported((BasicType) targetType, shadingLanguageVersion);
       List<IExprTemplate> applicableTemplates = availableTemplatesFromContext()
             .filter(item -> item.getResultType().equals(targetType)).collect(Collectors.toList());
       if (isLValue) {

@@ -17,14 +17,18 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.stmt.BlockStmt;
+import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.util.Constants;
 import java.util.List;
 import org.junit.Test;
 
@@ -317,5 +321,94 @@ public class StmtReductionOpportunitiesTest {
             true));
     assertEquals(5, ops.size());
   }
+
+  @Test
+  public void testIdentifyLiveCodeProperly() throws Exception {
+    final String liveInjectedVariableName = Constants.LIVE_PREFIX + "somevar";
+    final String nonLiveInjectedVariableName = "x";
+    final String program = ""
+        + "void main() {"
+        + "  float x;"
+        + "  float " + liveInjectedVariableName + ";\n"
+        + "  " + liveInjectedVariableName + " = 2.0;\n"
+        + "  " + nonLiveInjectedVariableName + " = " + Constants.GLF_FUZZED + "("
+        + liveInjectedVariableName + ");\n"
+        + "  " + liveInjectedVariableName + " += 2.0;\n"
+        + "  " + nonLiveInjectedVariableName + " += 2.0;\n"
+        + "  " + liveInjectedVariableName + " *= 2.0;\n"
+        + "  " + nonLiveInjectedVariableName + " *= 2.0;\n"
+        + "  " + liveInjectedVariableName + " -= 2.0;\n"
+        + "  " + nonLiveInjectedVariableName + " -= 2.0;\n"
+        + "  " + liveInjectedVariableName + " /= 2.0;\n"
+        + "  " + nonLiveInjectedVariableName + " /= 2.0;\n"
+        + "  " + liveInjectedVariableName + "++;\n"
+        + "  " + nonLiveInjectedVariableName + "++;\n"
+        + "  " + liveInjectedVariableName + "--;"
+        + "  " + nonLiveInjectedVariableName + "--;\n"
+        + "  ++" + liveInjectedVariableName + ";\n"
+        + "  ++" + nonLiveInjectedVariableName + ";\n"
+        + "  --" + liveInjectedVariableName + ";\n"
+        + "  --" + nonLiveInjectedVariableName + ";\n"
+        + "  {" // Should not be identified as live, even though it contains live stuff
+               // These are all live:
+        + "    for (" + liveInjectedVariableName + " = 1.0; ; ) { }\n"
+        + "    for (" + nonLiveInjectedVariableName + " = 1.0; "+ liveInjectedVariableName + " < "
+        + nonLiveInjectedVariableName + "; ) { }\n"
+        + "    for (" + nonLiveInjectedVariableName + " = 1.0; " + nonLiveInjectedVariableName +
+        " < " + nonLiveInjectedVariableName + "; " + liveInjectedVariableName + ") { }\n"
+        + "    while (" + liveInjectedVariableName + " < 10.0) { }\n"
+        + "    do { } while (" + liveInjectedVariableName + " < 10.0);\n"
+        + "    switch (int(" + liveInjectedVariableName + ")) { default: break; }\n"
+               // None of these are live
+        + "    for (" + nonLiveInjectedVariableName + " = 1.0; ; ) { }"
+        + "    for (" + nonLiveInjectedVariableName + " = 1.0; " + nonLiveInjectedVariableName +
+        " < " + nonLiveInjectedVariableName + "; ) { }\n"
+        + "    for (" + nonLiveInjectedVariableName + " = 1.0; " + nonLiveInjectedVariableName +
+        " < " + nonLiveInjectedVariableName + "; " + nonLiveInjectedVariableName + ") { }\n"
+        + "    while (" + nonLiveInjectedVariableName + " < 10.0) { }\n"
+        + "    do { } while (" + nonLiveInjectedVariableName + " < 10.0);\n"
+        + "    switch (int(" + nonLiveInjectedVariableName + ")) { default: break; }\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<Stmt> stmtsInMain = tu.getMainFunction().getBody().getStmts();
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(0)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(1)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(2)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(3)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(4)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(5)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(6)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(7)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(8)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(9)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(10)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(11)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(12)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(13)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(14)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(15)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(16)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(17)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(18)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(19)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInMain.get(20)));
+
+    List<Stmt> stmtsInBlock = ((BlockStmt) stmtsInMain.get(20)).getStmts();
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(0)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(1)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(2)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(3)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(4)));
+    assertTrue(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(5)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(6)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(7)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(8)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(9)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(10)));
+    assertFalse(StmtReductionOpportunities.isLiveCodeInjection(stmtsInBlock.get(11)));
+
+  }
+
 
 }

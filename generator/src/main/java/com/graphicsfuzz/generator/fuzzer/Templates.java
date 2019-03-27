@@ -80,15 +80,12 @@ public class Templates {
     }
 
     // Constants
-    for (BasicType type : BasicType.allBasicTypes()) {
-      if (!SupportedTypes.supported(type, shadingLanguageVersion)) {
-        continue;
-      }
+    for (BasicType type : supportedBasicTypes(shadingLanguageVersion)) {
       addTemplate(templates, new ConstantExprTemplate(type));
     }
 
     // Parentheses
-    for (BasicType type : BasicType.allBasicTypes()) {
+    for (BasicType type : supportedBasicTypes(shadingLanguageVersion)) {
       addTemplate(templates, new ParenExprTemplate(type, true));
       addTemplate(templates, new ParenExprTemplate(type, false));
     }
@@ -646,7 +643,7 @@ public class Templates {
       the built-in functions equal and notEqual.
     */
 
-    for (BasicType type : BasicType.allBasicTypes()) {
+    for (BasicType type : supportedBasicTypes(shadingLanguageVersion)) {
       addTemplate(templates, new BinaryExprTemplate(type, type, BasicType.BOOL, BinOp.EQ));
       addTemplate(templates, new BinaryExprTemplate(type, type, BasicType.BOOL, BinOp.NE));
     }
@@ -675,12 +672,10 @@ public class Templates {
       evaluated, in order, from left to right.
       */
     if (GenerationParams.COMMA_OPERATOR_ENABLED) {
-      for (BasicType type : BasicType.allBasicTypes()) {
-        if (!SupportedTypes.supported(type, shadingLanguageVersion)) {
-          continue;
-        }
+      for (BasicType type : supportedBasicTypes(shadingLanguageVersion)) {
         addTemplate(templates,
-              new BinaryExprTemplate(BasicType.allBasicTypes(), type, type, BinOp.COMMA));
+              new BinaryExprTemplate(supportedBasicTypes(shadingLanguageVersion),
+                  type, type, BinOp.COMMA));
       }
     }
 
@@ -693,10 +688,7 @@ public class Templates {
       section 4.1.10 "Implicit Conversions" that can be applied to one of the expressions to make
       their types match. This resulting matching type is the type of the entire expression.
     */
-    for (BasicType type : BasicType.allBasicTypes()) {
-      if (!SupportedTypes.supported(type, shadingLanguageVersion)) {
-        continue;
-      }
+    for (BasicType type : supportedBasicTypes(shadingLanguageVersion)) {
       addTemplate(templates, new TernaryExprTemplate(type));
     }
 
@@ -1086,7 +1078,15 @@ public class Templates {
 
   }
 
-  static void addTemplate(List<IExprTemplate> templates, IExprTemplate template) {
+  private static List<BasicType> supportedBasicTypes(
+      ShadingLanguageVersion shadingLanguageVersion) {
+    return BasicType.allBasicTypes()
+        .stream()
+        .filter(item -> SupportedTypes.supported(item, shadingLanguageVersion))
+        .collect(Collectors.toList());
+  }
+
+  private static void addTemplate(List<IExprTemplate> templates, IExprTemplate template) {
     if (isBannedType(template.getResultType())) {
       return;
     }
