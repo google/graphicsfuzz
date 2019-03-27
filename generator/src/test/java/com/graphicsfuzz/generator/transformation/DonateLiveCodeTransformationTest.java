@@ -19,7 +19,6 @@ package com.graphicsfuzz.generator.transformation;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -40,10 +39,8 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.transformation.donation.DonationContext;
 import com.graphicsfuzz.generator.transformation.injection.BlockInjectionPoint;
-import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.util.ArrayList;
@@ -87,7 +84,8 @@ public class DonateLiveCodeTransformationTest {
     // This test aimed to expose an issue, but did not succeed.  It's been left
     // here in the spirit of "why delete a test?"
 
-    final String reference = "void main() {"
+    final String reference = "#version 300 es\n"
+          + "void main() {"
           + "  int t;"
           + "  {"
           + "  }"
@@ -95,8 +93,6 @@ public class DonateLiveCodeTransformationTest {
           + "}";
 
     final IRandom generator = new RandomWrapper(0);
-
-    final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_300;
 
     for (int i = 0; i < 10; i++) {
 
@@ -163,10 +159,10 @@ public class DonateLiveCodeTransformationTest {
                   freeVariables,
                   new ArrayList<>(),
                   new FunctionDefinition(new FunctionPrototype("foo", VoidType.VOID,
-                        new ArrayList<ParameterDecl>()), null)),
+                        new ArrayList<>()), null)),
             TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
             generator,
-          shadingLanguageVersion);
+          referenceTu.getShadingLanguageVersion());
 
       blockInjectionPoint.inject(toDonate);
 
