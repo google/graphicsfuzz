@@ -72,7 +72,7 @@ public class SingleJob implements IServerJob {
     if (skipJob != null) {
       if (returnedJob.getJobId() != skipJob.getJobId()) {
         throw new ServerJobException("Client tried to finish a job that did not match"
-            + "the current skip job.");
+            + " the current skip job.");
       }
       if (job == null) {
         // this call to jobDone() may be due to an old crash, in which case skipjob is null,
@@ -86,7 +86,7 @@ public class SingleJob implements IServerJob {
 
     if (returnedJob.getJobId() != job.getJobId()) {
       throw new ServerJobException("Client tried to finish a job that did not match"
-          + "the currently queued job.");
+          + " the currently queued job.");
     }
     completer.completeJob(returnedJob);
     return true;
