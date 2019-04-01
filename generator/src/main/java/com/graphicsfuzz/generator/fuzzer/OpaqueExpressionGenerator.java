@@ -127,12 +127,73 @@ public final class OpaqueExpressionGenerator {
 
   public Expr makeOpaqueZero(BasicType type, boolean constContext, final int depth,
         Fuzzer fuzzer) {
-    return makeOpaqueZeroOrOne(true, type, constContext, depth, fuzzer);
+    if (isTooDeep(depth)) {
+      return makeLiteralZeroOrOne(true, type);
+    }
+    final int newDepth = depth + 1;
+    while (true) {
+      final int numTypesOfZero = 3;
+      switch (generator.nextInt(numTypesOfZero)) {
+        case 0:
+          // represent 0 as the natural logarithm of opaqueOne, e.g. log(1.0)
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue; // log doesn't operate on non-gen types.
+          }
+          return new FunctionCallExpr("log", makeOpaqueOne(type, constContext, newDepth,
+              fuzzer));
+        case 1:
+          // represent 0 as sin(opaqueZero) function, e.g. sin(0.0)
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue; // sin doesn't operate on non-gen types.
+          }
+          return new FunctionCallExpr("sin", makeOpaqueZero(type, constContext, newDepth,
+              fuzzer));
+        case 2:
+          return makeOpaqueZeroOrOne(true, type, constContext, newDepth, fuzzer);
+        default:
+          throw new RuntimeException();
+      }
+    }
   }
 
   public Expr makeOpaqueOne(BasicType type, boolean constContext, final int depth,
         Fuzzer fuzzer) {
-    return makeOpaqueZeroOrOne(false, type, constContext, depth, fuzzer);
+
+    if (isTooDeep(depth)) {
+      return makeLiteralZeroOrOne(false, type);
+    }
+    final int newDepth = depth + 1;
+    while (true) {
+      final int numTypesOfOne = 4;
+      switch (generator.nextInt(numTypesOfOne)) {
+        case 0:
+          // represent 1 as the length of normalized non-zero vector
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue; // normalize doesn't operate on non-gen types.
+          }
+          Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueOne(
+              type, constContext, newDepth, fuzzer));
+          return new FunctionCallExpr("length", normalizedExpr);
+        case 1:
+          // represent 1 as cos(opaqueZero) function, e.g. cos(0.0)
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue; // cos doesn't operate on non-gen types.
+          }
+          return new FunctionCallExpr("cos", makeOpaqueZero(type, constContext, newDepth,
+              fuzzer));
+        case 2:
+          // represent 1 as the exponential function of opaqueZero, e.g. exp(0.0)
+          if (!BasicType.allGenTypes().contains(type)) {
+            continue; // exp doesn't operate on non-gen types.
+          }
+          return new FunctionCallExpr("exp", makeOpaqueZero(type, constContext, newDepth,
+              fuzzer));
+        case 3:
+          return makeOpaqueZeroOrOne(false, type, constContext, newDepth, fuzzer);
+        default:
+          throw new RuntimeException();
+      }
+    }
   }
 
   private Expr makeOpaqueZeroOrOne(boolean isZero, BasicType type, boolean constContext,
@@ -145,16 +206,16 @@ public final class OpaqueExpressionGenerator {
     }
     final int newDepth = depth + 1;
     while (true) {
-      final int numTypesOfZeroOrOne = 8;
+      final int numTypesOfZeroOrOne = 3;
       switch (generator.nextInt(numTypesOfZeroOrOne)) {
         case 0:
           // Make an opaque value recursively and apply an identity function to it
           return applyIdentityFunction(makeOpaqueZeroOrOne(isZero, type, constContext,
-                newDepth, fuzzer),
-                type,
-                constContext,
-                newDepth,
-                fuzzer);
+              newDepth, fuzzer),
+              type,
+              constContext,
+              newDepth,
+              fuzzer);
         case 1:
           // injectionSwitch.x or injectionSwitch.y
           if (constContext || !generationParams.getInjectionSwitchIsAvailable()) {
@@ -167,58 +228,7 @@ public final class OpaqueExpressionGenerator {
             continue; // sqrt doesn't operate on non-gen types.
           }
           return new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
-                newDepth, fuzzer));
-        case 3:
-          // represent 1 as the length of normalized vector
-          if (isZero) {
-            continue; // length(normalize(opaque)) only provides a means of representing 1, not 0
-          }
-          if (!BasicType.allGenTypes().contains(type)) {
-            continue; // normalize doesn't operate on non-gen types.
-          }
-          Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(isZero,
-              type, constContext, newDepth, fuzzer));
-          return new FunctionCallExpr("length", normalizedExpr);
-        case 4:
-          // represent 1 as cos(opaqueZero) function, e.g. cos(0.0)
-          if (isZero) {
-            continue; // cos(opaqueZero) only provides a means of representing 1, not 0
-          }
-          if (!BasicType.allGenTypes().contains(type)) {
-            continue; // cos doesn't operate on non-gen types.
-          }
-          return new FunctionCallExpr("cos", makeOpaqueZero(type, constContext, newDepth,
-              fuzzer));
-        case 5:
-          // represent 1 as the exponential function of opaqueZero, e.g. exp(0.0)
-          if (isZero) {
-            continue; // exp(opaqueZero) only provides a means of representing 1, not 0
-          }
-          if (!BasicType.allGenTypes().contains(type)) {
-            continue; // exp doesn't operate on non-gen types.
-          }
-          return new FunctionCallExpr("exp", makeOpaqueZero(type, constContext, newDepth,
-              fuzzer));
-        case 6:
-          // represent 0 as the natural logarithm of opaqueOne, e.g. log(1.0)
-          if (!isZero) {
-            continue; // log(opaqueOne) only provides a means of representing 0, not 1
-          }
-          if (!BasicType.allGenTypes().contains(type)) {
-            continue; // log doesn't operate on non-gen types.
-          }
-          return new FunctionCallExpr("log", makeOpaqueOne(type, constContext, newDepth,
-              fuzzer));
-        case 7:
-          // represent 0 as sin(opaqueZero) function, e.g. sin(0.0)
-          if (!isZero) {
-            continue; // sin(opaqueZero) only provides a mean of representing 0, not 1
-          }
-          if (!BasicType.allGenTypes().contains(type)) {
-            continue; // sin doesn't operate on non-gen types.
-          }
-          return new FunctionCallExpr("sin", makeOpaqueZero(type, constContext, newDepth,
-              fuzzer));
+              newDepth, fuzzer));
         default:
           throw new RuntimeException();
       }
