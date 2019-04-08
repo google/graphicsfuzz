@@ -145,7 +145,7 @@ public final class OpaqueExpressionGenerator {
     }
     final int newDepth = depth + 1;
     while (true) {
-      final int numTypesOfZeroOrOne = 8;
+      final int numTypesOfZeroOrOne = 9;
       switch (generator.nextInt(numTypesOfZeroOrOne)) {
         case 0:
           // Make an opaque value recursively and apply an identity function to it
@@ -219,6 +219,16 @@ public final class OpaqueExpressionGenerator {
           }
           return new FunctionCallExpr("sin", makeOpaqueZero(type, constContext, newDepth,
               fuzzer));
+        case 8:
+          // abs(opaque)
+          if (!BasicType.allGenTypes().contains(type)) {
+            final boolean isAbsIntSupported = shadingLanguageVersion.supportedAbsInt();
+            if (!isAbsIntSupported || !BasicType.allIGenTypes().contains(type)) {
+              continue; // abs operates only on gen and igen types.
+            }
+          }
+          return new FunctionCallExpr("abs", makeOpaqueZeroOrOne(isZero, type, constContext,
+              newDepth, fuzzer));
         default:
           throw new RuntimeException();
       }

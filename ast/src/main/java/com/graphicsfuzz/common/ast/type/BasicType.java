@@ -318,6 +318,10 @@ public class BasicType extends BuiltinType {
     return new ArrayList<>(Arrays.asList(FLOAT, VEC2, VEC3, VEC4));
   }
 
+  public static List<BasicType> allIGenTypes() {
+    return new ArrayList<>(Arrays.asList(INT, IVEC2, IVEC3, IVEC4));
+  }
+
   public static List<BasicType> allNumericTypes() {
     final List<BasicType> result = allBasicTypes();
     result.removeAll(allBoolTypes());
