@@ -45,6 +45,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,6 +57,9 @@ public final class OpaqueExpressionGenerator {
   // The available identities that can be applied to expressions.
   private final List<ExpressionIdentity> expressionIdentities;
 
+  private final List<OpaqueZeroOneFactory> opaqueZeroFactories;
+  private final List<OpaqueZeroOneFactory> opaqueOneFactories;
+
   private final ShadingLanguageVersion shadingLanguageVersion;
 
   public OpaqueExpressionGenerator(IRandom generator, GenerationParams generationParams,
@@ -66,6 +70,9 @@ public final class OpaqueExpressionGenerator {
     // for integer types
     this.expressionIdentities = new ArrayList<>();
     this.shadingLanguageVersion = shadingLanguageVersion;
+
+    this.opaqueZeroFactories = new ArrayList<>();
+    this.opaqueOneFactories = new ArrayList<>();
 
     expressionIdentities.add(new IdentityAddSubZero());
     expressionIdentities.add(new IdentityMulDivOne());
@@ -82,6 +89,134 @@ public final class OpaqueExpressionGenerator {
       expressionIdentities.add(new IdentityMixBvec());
     }
 
+  }
+
+  @FunctionalInterface
+  public interface OpaqueZeroOneFactory {
+    Optional tryMakeOpaque(BasicType type, boolean constContext, final int depth,
+                           Fuzzer fuzzer, boolean isZero);
+  }
+
+  private List<OpaqueZeroOneFactory> waysToMakeZero() {
+    if (opaqueZeroFactories.isEmpty()) {
+      opaqueZeroFactories.add(this::opaqueZeroOrOneSquareRoot);
+      opaqueZeroFactories.add(this::opaqueZeroOrOneFromInjectionSwitch);
+      opaqueZeroFactories.add(this::opaqueZeroOrOneFromIdentityFunction);
+      opaqueZeroFactories.add(this::opaqueZeroSin);
+      opaqueZeroFactories.add(this::opaqueZeroLogarithm);
+    }
+    return opaqueZeroFactories;
+  }
+
+  private List<OpaqueZeroOneFactory> waysToMakeOne() {
+    if (opaqueOneFactories.isEmpty()) {
+      opaqueOneFactories.add(this::opaqueZeroOrOneSquareRoot);
+      opaqueOneFactories.add(this::opaqueZeroOrOneFromInjectionSwitch);
+      opaqueOneFactories.add(this::opaqueZeroOrOneFromIdentityFunction);
+      opaqueOneFactories.add(this::opaqueOneExponential);
+      opaqueOneFactories.add(this::opaqueOneCosine);
+      opaqueOneFactories.add(this::opaqueOneNormalizedVectorLength);
+    }
+    return opaqueOneFactories;
+  }
+
+  private Optional opaqueZeroOrOneSquareRoot(BasicType type, boolean constContext, final int depth,
+                                             Fuzzer fuzzer, boolean isZero) {
+    // sqrt (opaque)
+    if (!BasicType.allGenTypes().contains(type)) {
+      return Optional.empty();
+    }
+    return Optional.of(new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
+        depth, fuzzer)));
+  }
+
+  private Optional opaqueZeroOrOneFromInjectionSwitch(BasicType type, boolean constContext,
+                                                      final int depth,
+                                                      Fuzzer fuzzer, boolean isZero) {
+    // injectionSwitch.x or injectionSwitch.y
+    if (constContext || !generationParams.getInjectionSwitchIsAvailable()) {
+      return Optional.empty();
+    }
+    return Optional.of(makeOpaqueZeroOrOneFromInjectionSwitch(isZero, type));
+  }
+
+  private Optional opaqueZeroOrOneFromIdentityFunction(BasicType type, boolean constContext,
+                                                       final int depth,
+                                                       Fuzzer fuzzer, boolean isZero) {
+    // Make an opaque value recursively and apply an identity function to it
+    return Optional.of(applyIdentityFunction(makeOpaqueZeroOrOne(isZero, type, constContext,
+        depth, fuzzer),
+        type,
+        constContext,
+        depth,
+        fuzzer));
+  }
+
+  private Optional opaqueZeroSin(BasicType type, boolean constContext, final int depth,
+                                 Fuzzer fuzzer, boolean isZero) {
+    // represent 0 as sin(opaqueZero) function, e.g. sin(0.0)
+    if (!isZero) {
+      return Optional.empty();
+    }
+    if (!BasicType.allGenTypes().contains(type)) {
+      return Optional.empty();
+    }
+    return Optional.of(new FunctionCallExpr("sin", makeOpaqueZero(type, constContext, depth,
+        fuzzer)));
+  }
+
+  private Optional opaqueZeroLogarithm(BasicType type, boolean constContext, final int depth,
+                                       Fuzzer fuzzer, boolean isZero) {
+    // represent 0 as the natural logarithm of opaqueOne, e.g. log(1.0)
+    if (!isZero) {
+      return Optional.empty();
+    }
+    if (!BasicType.allGenTypes().contains(type)) {
+      return Optional.empty();
+    }
+    return Optional.of(new FunctionCallExpr("log", makeOpaqueOne(type, constContext, depth,
+        fuzzer)));
+  }
+
+  private Optional opaqueOneExponential(BasicType type, boolean constContext, final int depth,
+                                        Fuzzer fuzzer, boolean isZero) {
+    // represent 1 as the exponential function of opaqueZero, e.g. exp(0.0)
+    if (isZero) {
+      return Optional.empty();
+    }
+    if (!BasicType.allGenTypes().contains(type)) {
+      return Optional.empty();
+    }
+    return Optional.of(new FunctionCallExpr("exp", makeOpaqueZero(type, constContext, depth,
+        fuzzer)));
+  }
+
+  private Optional opaqueOneCosine(BasicType type, boolean constContext, final int depth,
+                                   Fuzzer fuzzer, boolean isZero) {
+    // represent 1 as cos(opaqueZero) function, e.g. cos(0.0)
+    if (isZero) {
+      return Optional.empty();
+    }
+    if (!BasicType.allGenTypes().contains(type)) {
+      return Optional.empty();
+    }
+    return Optional.of(new FunctionCallExpr("cos", makeOpaqueZero(type, constContext, depth,
+        fuzzer)));
+  }
+
+  private Optional opaqueOneNormalizedVectorLength(BasicType type, boolean constContext,
+                                                   final int depth,
+                                                   Fuzzer fuzzer, boolean isZero) {
+    // represent 1 as the length of normalized vector
+    if (isZero) {
+      return Optional.empty();
+    }
+    if (!BasicType.allGenTypes().contains(type)) {
+      return Optional.empty();
+    }
+    Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(isZero,
+        type, constContext, depth, fuzzer));
+    return Optional.of(new FunctionCallExpr("length", normalizedExpr));
   }
 
   private List<BasicType> numericTypesOrGenTypesIfEssl100() {
@@ -197,42 +332,26 @@ public final class OpaqueExpressionGenerator {
   }
 
   private Expr makeOpaqueZeroOrOne(boolean isZero, BasicType type, boolean constContext,
-        final int depth, Fuzzer fuzzer) {
-
-    // If isZero holds, we are making an opaque zero, otherwise an opaque one
+                                   final int depth, Fuzzer fuzzer) {
 
     if (isTooDeep(depth)) {
       return makeLiteralZeroOrOne(isZero, type);
     }
     final int newDepth = depth + 1;
-    while (true) {
-      final int numTypesOfZeroOrOne = 3;
-      switch (generator.nextInt(numTypesOfZeroOrOne)) {
-        case 0:
-          // Make an opaque value recursively and apply an identity function to it
-          return applyIdentityFunction(makeOpaqueZeroOrOne(isZero, type, constContext,
-              newDepth, fuzzer),
-              type,
-              constContext,
-              newDepth,
-              fuzzer);
-        case 1:
-          // injectionSwitch.x or injectionSwitch.y
-          if (constContext || !generationParams.getInjectionSwitchIsAvailable()) {
-            continue;
-          }
-          return makeOpaqueZeroOrOneFromInjectionSwitch(isZero, type);
-        case 2:
-          // sqrt (opaque)
-          if (!BasicType.allGenTypes().contains(type)) {
-            continue; // sqrt doesn't operate on non-gen types.
-          }
-          return new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
-              newDepth, fuzzer));
-        default:
-          throw new RuntimeException();
-      }
-    }
+
+    // If isZero holds, we are making an opaque zero, otherwise an opaque one
+    final List<OpaqueZeroOneFactory> opaqueFactories = isZero ? waysToMakeZero() : waysToMakeOne();
+    final List<Optional> availableOpaqueFactories = opaqueFactories
+        .stream()
+        .map(item -> item.tryMakeOpaque(type, constContext, newDepth, fuzzer, isZero))
+        .filter(Optional::isPresent)
+        .collect(Collectors.toList());
+
+    final Expr expr = (Expr) availableOpaqueFactories
+        .get(generator.nextInt(availableOpaqueFactories.size()))
+        .orElse(null);
+
+    return expr != null ? expr : makeLiteralZeroOrOne(isZero, type);
   }
 
   private Expr makeOpaqueZeroOrOneFromInjectionSwitch(boolean isZero, BasicType type) {
