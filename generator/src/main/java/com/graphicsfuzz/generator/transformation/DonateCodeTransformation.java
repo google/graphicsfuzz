@@ -118,12 +118,18 @@ public abstract class DonateCodeTransformation implements ITransformation {
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     TranslationUnit tu = ParseHelper.parse(donorFile);
     addPrefixes(tu, getDeclaredFunctionNames(tu));
-    // Add prefixed versions of these builtins, in case they are used
+    // Add prefixed versions of these builtins, in case they are used.
+    // Use explicit precision qualifier to avoid introducing errors if there are no float precision
+    // qualifiers.
+    List<TypeQualifier> coordQualifiers = new ArrayList<>();
+    coordQualifiers.add(TypeQualifier.MEDIUMP);
     tu.addDeclaration(new VariablesDeclaration(
-        BasicType.VEC4,
+        new QualifiedType(BasicType.VEC4, coordQualifiers),
         new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
+    List<TypeQualifier> colorQualifiers = new ArrayList<>();
+    colorQualifiers.add(TypeQualifier.MEDIUMP);
     tu.addDeclaration(new VariablesDeclaration(
-        BasicType.VEC4,
+        new QualifiedType(BasicType.VEC4, colorQualifiers),
         new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
     adaptTranslationUnitForSpecificDonation(tu, generator);
     translationUnitCount++;
@@ -407,8 +413,14 @@ public abstract class DonateCodeTransformation implements ITransformation {
     newRecipientTopLevelDeclarations.addAll(recipient.getTopLevelDeclarations().stream()
         .filter(d -> d instanceof FunctionDefinition).collect(Collectors.toList()));
 
-    newRecipientTopLevelDeclarations = addNecessaryForwardDeclarations(
-        newRecipientTopLevelDeclarations);
+    // Make sure we clone the top-level FunctionPrototypes that are added, otherwise each will
+    // exist twice in the AST: first as a top-level declaration, second as part of the
+    // FunctionDefinition.
+    newRecipientTopLevelDeclarations =
+        addNecessaryForwardDeclarations(newRecipientTopLevelDeclarations)
+            .stream()
+            .map(Declaration::clone)
+            .collect(Collectors.toList());
 
     recipient.setTopLevelDeclarations(newRecipientTopLevelDeclarations);
 
