@@ -99,9 +99,9 @@ public final class OpaqueExpressionGenerator {
 
   private List<OpaqueZeroOneFactory> waysToMakeZero() {
     if (opaqueZeroFactories.isEmpty()) {
+      opaqueZeroFactories.add(this::opaqueZeroOrOneFromIdentityFunction);
       opaqueZeroFactories.add(this::opaqueZeroOrOneFromInjectionSwitch);
       opaqueZeroFactories.add(this::opaqueZeroOrOneSquareRoot);
-      opaqueZeroFactories.add(this::opaqueZeroOrOneFromIdentityFunction);
       opaqueZeroFactories.add(this::opaqueZeroSin);
       opaqueZeroFactories.add(this::opaqueZeroLogarithm);
     }
@@ -110,14 +110,26 @@ public final class OpaqueExpressionGenerator {
 
   private List<OpaqueZeroOneFactory> waysToMakeOne() {
     if (opaqueOneFactories.isEmpty()) {
+      opaqueOneFactories.add(this::opaqueZeroOrOneFromIdentityFunction);
       opaqueOneFactories.add(this::opaqueZeroOrOneFromInjectionSwitch);
       opaqueOneFactories.add(this::opaqueZeroOrOneSquareRoot);
-      opaqueOneFactories.add(this::opaqueZeroOrOneFromIdentityFunction);
       opaqueOneFactories.add(this::opaqueOneExponential);
       opaqueOneFactories.add(this::opaqueOneCosine);
       opaqueOneFactories.add(this::opaqueOneNormalizedVectorLength);
     }
     return opaqueOneFactories;
+  }
+
+  private Optional opaqueZeroOrOneFromIdentityFunction(BasicType type, boolean constContext,
+                                                       final int depth,
+                                                       Fuzzer fuzzer, boolean isZero) {
+    // Make an opaque value recursively and apply an identity function to it
+    return Optional.of(applyIdentityFunction(makeOpaqueZeroOrOne(isZero, type, constContext,
+        depth, fuzzer),
+        type,
+        constContext,
+        depth,
+        fuzzer));
   }
 
   private Optional opaqueZeroOrOneFromInjectionSwitch(BasicType type, boolean constContext,
@@ -139,19 +151,7 @@ public final class OpaqueExpressionGenerator {
     return Optional.of(new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
         depth, fuzzer)));
   }
-
-  private Optional opaqueZeroOrOneFromIdentityFunction(BasicType type, boolean constContext,
-                                                       final int depth,
-                                                       Fuzzer fuzzer, boolean isZero) {
-    // Make an opaque value recursively and apply an identity function to it
-    return Optional.of(applyIdentityFunction(makeOpaqueZeroOrOne(isZero, type, constContext,
-        depth, fuzzer),
-        type,
-        constContext,
-        depth,
-        fuzzer));
-  }
-
+  
   private Optional opaqueZeroSin(BasicType type, boolean constContext, final int depth,
                                  Fuzzer fuzzer, boolean isZero) {
     // represent 0 as sin(opaqueZero) function, e.g. sin(0.0)
