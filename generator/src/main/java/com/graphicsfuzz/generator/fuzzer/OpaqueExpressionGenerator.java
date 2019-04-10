@@ -99,8 +99,8 @@ public final class OpaqueExpressionGenerator {
 
   private List<OpaqueZeroOneFactory> waysToMakeZero() {
     if (opaqueZeroFactories.isEmpty()) {
-      opaqueZeroFactories.add(this::opaqueZeroOrOneSquareRoot);
       opaqueZeroFactories.add(this::opaqueZeroOrOneFromInjectionSwitch);
+      opaqueZeroFactories.add(this::opaqueZeroOrOneSquareRoot);
       opaqueZeroFactories.add(this::opaqueZeroOrOneFromIdentityFunction);
       opaqueZeroFactories.add(this::opaqueZeroSin);
       opaqueZeroFactories.add(this::opaqueZeroLogarithm);
@@ -110,24 +110,14 @@ public final class OpaqueExpressionGenerator {
 
   private List<OpaqueZeroOneFactory> waysToMakeOne() {
     if (opaqueOneFactories.isEmpty()) {
-      opaqueOneFactories.add(this::opaqueZeroOrOneSquareRoot);
       opaqueOneFactories.add(this::opaqueZeroOrOneFromInjectionSwitch);
+      opaqueOneFactories.add(this::opaqueZeroOrOneSquareRoot);
       opaqueOneFactories.add(this::opaqueZeroOrOneFromIdentityFunction);
       opaqueOneFactories.add(this::opaqueOneExponential);
       opaqueOneFactories.add(this::opaqueOneCosine);
       opaqueOneFactories.add(this::opaqueOneNormalizedVectorLength);
     }
     return opaqueOneFactories;
-  }
-
-  private Optional opaqueZeroOrOneSquareRoot(BasicType type, boolean constContext, final int depth,
-                                             Fuzzer fuzzer, boolean isZero) {
-    // sqrt (opaque)
-    if (!BasicType.allGenTypes().contains(type)) {
-      return Optional.empty();
-    }
-    return Optional.of(new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
-        depth, fuzzer)));
   }
 
   private Optional opaqueZeroOrOneFromInjectionSwitch(BasicType type, boolean constContext,
@@ -138,6 +128,16 @@ public final class OpaqueExpressionGenerator {
       return Optional.empty();
     }
     return Optional.of(makeOpaqueZeroOrOneFromInjectionSwitch(isZero, type));
+  }
+
+  private Optional opaqueZeroOrOneSquareRoot(BasicType type, boolean constContext, final int depth,
+                                             Fuzzer fuzzer, boolean isZero) {
+    // sqrt (opaque)
+    if (!BasicType.allGenTypes().contains(type)) {
+      return Optional.empty();
+    }
+    return Optional.of(new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
+        depth, fuzzer)));
   }
 
   private Optional opaqueZeroOrOneFromIdentityFunction(BasicType type, boolean constContext,
