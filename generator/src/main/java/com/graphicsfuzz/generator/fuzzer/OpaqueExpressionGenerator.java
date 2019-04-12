@@ -57,9 +57,6 @@ public final class OpaqueExpressionGenerator {
   // The available identities that can be applied to expressions.
   private final List<ExpressionIdentity> expressionIdentities;
 
-  private final List<OpaqueZeroOneFactory> opaqueZeroFactories;
-  private final List<OpaqueZeroOneFactory> opaqueOneFactories;
-
   private final ShadingLanguageVersion shadingLanguageVersion;
 
   public OpaqueExpressionGenerator(IRandom generator, GenerationParams generationParams,
@@ -70,9 +67,6 @@ public final class OpaqueExpressionGenerator {
     // for integer types
     this.expressionIdentities = new ArrayList<>();
     this.shadingLanguageVersion = shadingLanguageVersion;
-
-    this.opaqueZeroFactories = new ArrayList<>();
-    this.opaqueOneFactories = new ArrayList<>();
 
     expressionIdentities.add(new IdentityAddSubZero());
     expressionIdentities.add(new IdentityMulDivOne());
@@ -95,29 +89,29 @@ public final class OpaqueExpressionGenerator {
   public interface OpaqueZeroOneFactory {
     Optional tryMakeOpaque(BasicType type, boolean constContext, final int depth,
                            Fuzzer fuzzer, boolean isZero);
-  }
 
-  private List<OpaqueZeroOneFactory> waysToMakeZero() {
-    if (opaqueZeroFactories.isEmpty()) {
-      opaqueZeroFactories.add(this::opaqueZeroOrOneFromIdentityFunction);
-      opaqueZeroFactories.add(this::opaqueZeroOrOneFromInjectionSwitch);
-      opaqueZeroFactories.add(this::opaqueZeroOrOneSquareRoot);
-      opaqueZeroFactories.add(this::opaqueZeroSin);
-      opaqueZeroFactories.add(this::opaqueZeroLogarithm);
+    static List<OpaqueZeroOneFactory> waysToMakeZero(OpaqueExpressionGenerator
+                                                         opaqueExpressionGenerator) {
+      return Arrays.asList(
+          opaqueExpressionGenerator::opaqueZeroOrOneFromIdentityFunction,
+          opaqueExpressionGenerator::opaqueZeroOrOneFromInjectionSwitch,
+          opaqueExpressionGenerator::opaqueZeroOrOneSquareRoot,
+          opaqueExpressionGenerator::opaqueZeroSin,
+          opaqueExpressionGenerator::opaqueZeroLogarithm
+      );
     }
-    return opaqueZeroFactories;
-  }
 
-  private List<OpaqueZeroOneFactory> waysToMakeOne() {
-    if (opaqueOneFactories.isEmpty()) {
-      opaqueOneFactories.add(this::opaqueZeroOrOneFromIdentityFunction);
-      opaqueOneFactories.add(this::opaqueZeroOrOneFromInjectionSwitch);
-      opaqueOneFactories.add(this::opaqueZeroOrOneSquareRoot);
-      opaqueOneFactories.add(this::opaqueOneExponential);
-      opaqueOneFactories.add(this::opaqueOneCosine);
-      opaqueOneFactories.add(this::opaqueOneNormalizedVectorLength);
+    static List<OpaqueZeroOneFactory> waysToMakeOne(OpaqueExpressionGenerator
+                                                        opaqueExpressionGenerator) {
+      return Arrays.asList(
+          opaqueExpressionGenerator::opaqueZeroOrOneFromIdentityFunction,
+          opaqueExpressionGenerator::opaqueZeroOrOneFromInjectionSwitch,
+          opaqueExpressionGenerator::opaqueZeroOrOneSquareRoot,
+          opaqueExpressionGenerator::opaqueOneExponential,
+          opaqueExpressionGenerator::opaqueOneCosine,
+          opaqueExpressionGenerator::opaqueOneNormalizedVectorLength
+      );
     }
-    return opaqueOneFactories;
   }
 
   private Optional opaqueZeroOrOneFromIdentityFunction(BasicType type, boolean constContext,
@@ -151,7 +145,7 @@ public final class OpaqueExpressionGenerator {
     return Optional.of(new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
         depth, fuzzer)));
   }
-  
+
   private Optional opaqueZeroSin(BasicType type, boolean constContext, final int depth,
                                  Fuzzer fuzzer, boolean isZero) {
     // represent 0 as sin(opaqueZero) function, e.g. sin(0.0)
@@ -255,7 +249,7 @@ public final class OpaqueExpressionGenerator {
           depth, fuzzer));
     if (!considerReverseDirection || generator.nextBoolean()) {
       return identityConstructor(expr,
-            new BinaryExpr(exprWithIdentityApplied, opaqueExpr, operator));
+          new BinaryExpr(exprWithIdentityApplied, opaqueExpr, operator));
     }
     return identityConstructor(expr, new BinaryExpr(opaqueExpr, exprWithIdentityApplied, operator));
   }
@@ -279,7 +273,9 @@ public final class OpaqueExpressionGenerator {
     final int newDepth = depth + 1;
 
     // If isZero holds, we are making an opaque zero, otherwise an opaque one
-    final List<OpaqueZeroOneFactory> opaqueFactories = isZero ? waysToMakeZero() : waysToMakeOne();
+    final List<OpaqueZeroOneFactory> opaqueFactories = isZero
+        ? OpaqueZeroOneFactory.waysToMakeZero(this)
+        : OpaqueZeroOneFactory.waysToMakeOne(this);
     final List<Optional> availableOpaqueFactories = opaqueFactories
         .stream()
         .map(item -> item.tryMakeOpaque(type, constContext, newDepth, fuzzer, isZero))
