@@ -154,3 +154,57 @@ The fragment shader file for this shader job
 must have the same name and be alongside the shader job file
 with a `.frag` extension;
 in this case, at `graphicsfuzz/samples/300es/squares.frag`.
+
+###Random uniform value generation
+
+At runtime, the generator clones the given shader job file to the
+provided work directory as `reference.json` and parses it, before using it to create
+variants. During this process, one can allow the generator to create
+random inputs for your uniforms or compute data, based on the `--seed` given to the
+generator at runtime, by using certain strings in the `data` or `args` elements
+of a uniform in your shader job file.
+
+These strings are:
+
+`rfloat(value):` Generate a random float in the range of `[0, value]`.
+If value is negative, the generated float will be in the range `[value, 0]`.
+
+`rint(value):` Generate a random integer in the range of `[0, value]`.
+If value is negative, the generated integer will be in the range `[value, 0]`.
+
+`rbool():` Generate a random boolean in the set `{ 0, 1 }`.
+
+For example,
+
+```json
+{
+  "time": {
+    "func": "glUniform1f",
+    "args": [
+      "rfloat(100.0)"
+    ]
+  }
+}
+```
+
+would become something like
+
+```json
+{
+  "time": {
+    "func": "glUniform1f",
+    "args": [
+      47.784789
+    ]
+  }
+}
+```
+
+All of the generated shader variants will have the same random numbers for
+a given uniform - `reference.json` in the work directory will contain the original
+shader job after the random values are supplied.
+
+Note that the generator **does not** validate these values beyond ensuring that
+no overflow occurs when generating them. For example, generating a negative
+integer into a `glUniform1ui` unsigned integer uniform will not be checked.
+Vetting inputs for correctness is left to the user.
