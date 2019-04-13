@@ -53,7 +53,7 @@ public class PipelineInfoTest {
         + "     \"binding\": 0,\n"
         + "     \"fields\":\n"
         + "      [\n"
-        + "        { \"type\": \"int\", \"data\": [ \"rint(256)\" ] },\n"
+        + "        { \"type\": \"int\", \"data\": [ \"rint(256)\" ] }\n"
         + "      ]\n"
         + "    }\n"
         + "  }\n"

@@ -19,6 +19,7 @@ package com.graphicsfuzz.common.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.graphicsfuzz.common.ast.TranslationUnit;
@@ -33,10 +34,13 @@ import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -225,7 +229,85 @@ public final class PipelineInfo {
   }
 
   public void replaceRandomsInJson(IRandom generator) {
-    // TODO: implement function
+    Set<Map.Entry<String, JsonElement>> jsonEntries = dictionary.entrySet();
+
+    for (Map.Entry<String, JsonElement> entry : jsonEntries) {
+      JsonElement elementToParse = entry.getValue();
+      if (elementToParse.isJsonObject()) {
+        JsonObject obj = elementToParse.getAsJsonObject();
+
+        // because JsonObject.get() returns a JsonElement, we need to check elements one by one.
+
+        // compute job
+        if (obj.has(Constants.COMPUTE_BUFFER)) {
+          JsonObject buffer = obj.getAsJsonObject(Constants.COMPUTE_BUFFER);
+          if (buffer.has(Constants.COMPUTE_FIELDS)) {
+            JsonArray fields = buffer.getAsJsonArray(Constants.COMPUTE_FIELDS);
+            for (JsonElement field : fields) {
+              JsonObject fieldObj = field.getAsJsonObject();
+              if (fieldObj.has("data")) {
+                JsonArray data = fieldObj.getAsJsonArray("data");
+                replaceRandom(data, generator);
+              }
+            }
+          }
+        }
+
+        // vertex/fragment job
+        if (obj.has("args")) {
+          JsonArray args = obj.getAsJsonArray("args");
+          if (args.size() != 0) {
+            replaceRandom(args, generator);
+          }
+        }
+      }
+    }
+  }
+
+  private void replaceRandom(JsonArray array, IRandom generator) {
+    // JsonPrimitives are immutable, so we need to replace them if we need to modify them.
+    String primitive;
+    String primitiveNumber;
+    Number range;
+    JsonPrimitive newPrim;
+
+    for (int i = 0; i < array.size(); i++) {
+      primitive = array.get(i).getAsJsonPrimitive().getAsString();
+      try {
+        primitiveNumber = primitive.substring(primitive.indexOf("(") + 1, primitive.indexOf(")"));
+        if (isRandomFloat(primitive)) {
+          range = NumberFormat.getInstance().parse(primitiveNumber);
+          // precision loss here, but it doesn't matter, we're just generating random values.
+          newPrim = new JsonPrimitive(generator.nextFloat() * range.floatValue());
+          array.set(i, newPrim);
+        } else if (isRandomInt(primitive)) {
+          range = NumberFormat.getInstance().parse(primitiveNumber);
+          newPrim = new JsonPrimitive(
+              range.intValue() < 0
+                  ? -1 * generator.nextInt(Math.abs(range.intValue()))
+                  : generator.nextInt(Math.abs(range.intValue())));
+          array.set(i, newPrim);
+        } else if (isRandomBool(primitive)) {
+          // GLSL parses booleans as integer values, so we need to convert from true/false.
+          newPrim = new JsonPrimitive(generator.nextBoolean() ? 1 : 0);
+          array.set(i, newPrim);
+        }
+      } catch (ParseException | IndexOutOfBoundsException exception) {
+        // Just don't bother trying to parse this primitive if invalid input is fed.
+      }
+    }
+  }
+
+  private boolean isRandomFloat(String primitiveString) {
+    return primitiveString.startsWith(Constants.JSON_RANDOM_FLOAT);
+  }
+
+  private boolean isRandomInt(String primitiveString) {
+    return primitiveString.startsWith(Constants.JSON_RANDOM_INT);
+  }
+
+  private boolean isRandomBool(String primitiveString) {
+    return primitiveString.startsWith(Constants.JSON_RANDOM_BOOL);
   }
 
   public void addUniformBinding(String uniformName, int number) {

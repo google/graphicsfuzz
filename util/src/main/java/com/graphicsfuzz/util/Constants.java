@@ -74,4 +74,9 @@ public final class Constants {
   // the buffer.
   public static final String COMPUTE_FIELDS = "fields";
 
+  // Constants for randomizing inputs in .json args or data elements.
+  public static final String JSON_RANDOM_INT = "rint";
+  public static final String JSON_RANDOM_FLOAT = "rfloat";
+  public static final String JSON_RANDOM_BOOL = "rbool";
+
 }

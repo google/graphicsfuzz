@@ -164,7 +164,10 @@ public class GenerateShaderFamily {
           generatorArguments.getReplaceFloatLiterals(),
           // We subtract 1 because we need to be able to add injectionSwitch
           generatorArguments.getMaxUniforms() - 1,
-          generatorArguments.getGenerateUniformBindings(),
+          // Now that we use the prepared job in generation rather than the original reference,
+          // we can't generate bindings in prepareReference, we have to wait until later.
+          // TODO: is there a better way of ensuring bindings don't get made twice?
+          false,
           fileOps,
           generator);
     } catch (ParseTimeoutException | GlslParserException exception) {
@@ -195,11 +198,11 @@ public class GenerateShaderFamily {
       }
     }
 
-    if (primitivesFile(referenceShaderJob).isFile()) {
-      FileUtils.copyFile(primitivesFile(referenceShaderJob),
+    if (primitivesFile(preparedReferenceShaderJob).isFile()) {
+      FileUtils.copyFile(primitivesFile(preparedReferenceShaderJob),
           new File(outputDir, "reference.primitives"));
       final JsonObject primitivesJson =
-          new Gson().fromJson(new FileReader(primitivesFile(referenceShaderJob)),
+          new Gson().fromJson(new FileReader(primitivesFile(preparedReferenceShaderJob)),
               JsonObject.class);
       if (primitivesJson.has("texture")) {
         final String textureFilename = primitivesJson.get("texture").getAsString();
@@ -226,14 +229,14 @@ public class GenerateShaderFamily {
 
       triedVariants++;
       try {
-        Generate.generateVariant(fileOps, referenceShaderJob, variantShaderJobFile,
+        Generate.generateVariant(fileOps, preparedReferenceShaderJob, variantShaderJobFile,
             generatorArguments, innerSeed, writeProbabilities);
       } catch (Exception exception) {
         if (verbose) {
           LOGGER.error("Failed generating variant: " + exception.getMessage()
               + exception.getStackTrace()
               + "\nGenerator arguments: " + generatorArguments
-              + "\nReference shader job: " + referenceShaderJob
+              + "\nReference shader job: " + preparedReferenceShaderJob
               + "\nSeed: " + innerSeed);
         }
         if (stopOnFail) {
