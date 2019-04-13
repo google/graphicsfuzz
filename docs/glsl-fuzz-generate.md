@@ -166,11 +166,11 @@ of a uniform in your shader job file.
 
 These strings are:
 
-`rfloat(value):` Generate a random float in the range of `[0, value]`.
-If value is negative, the generated float will be in the range `[value, 0]`.
+`rfloat(value):` Generate a random float in the range of `[0, value)`.
+If value is negative, the generated float will be in the range `(value, 0]`.
 
-`rint(value):` Generate a random integer in the range of `[0, value]`.
-If value is negative, the generated integer will be in the range `[value, 0]`.
+`rint(value):` Generate a random integer in the range of `[0, value)`.
+If value is negative, the generated integer will be in the range `(value, 0]`.
 
 `rbool():` Generate a random boolean in the set `{ 0, 1 }`.
 
@@ -205,6 +205,6 @@ a given uniform - `reference.json` in the work directory will contain the origin
 shader job after the random values are supplied.
 
 Note that the generator **does not** validate these values beyond ensuring that
-no overflow occurs when generating them. For example, generating a negative
-integer into a `glUniform1ui` unsigned integer uniform will not be checked.
-Vetting inputs for correctness is left to the user.
+no overflow occurs when generating them and that the file is valid JSON. 
+For example, generating a negative integer into a `glUniform1ui` unsigned integer 
+uniform will not be checked. Vetting inputs for correctness is left to the user.
