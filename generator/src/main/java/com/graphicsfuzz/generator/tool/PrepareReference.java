@@ -19,8 +19,10 @@ package com.graphicsfuzz.generator.tool;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.GlslParserException;
+import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.PipelineInfo;
+import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import java.io.File;
@@ -73,7 +75,8 @@ public final class PrepareReference {
 
   public static void main(String[] args) {
     try {
-      mainHelper(args);
+      IRandom generator = new RandomWrapper(0);
+      mainHelper(args, generator);
     } catch (ArgumentParserException exception) {
       exception.getParser().handleError(exception);
       System.exit(1);
@@ -84,7 +87,8 @@ public final class PrepareReference {
     }
   }
 
-  public static void mainHelper(String[] args) throws ArgumentParserException, IOException,
+  public static void mainHelper(String[] args, IRandom generator) throws ArgumentParserException,
+      IOException,
       ParseTimeoutException, InterruptedException, GlslParserException {
 
     Namespace ns = parse(args);
@@ -97,7 +101,8 @@ public final class PrepareReference {
         ns.get("replace_float_literals"),
         ns.get("max_uniforms"),
         ns.get("generate_uniform_bindings"),
-        fileOps);
+        fileOps,
+        generator);
 
 
   }
@@ -108,7 +113,8 @@ public final class PrepareReference {
       boolean replaceFloatLiterals,
       int maxUniforms,
       boolean generateUniformBindings,
-      ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException,
+      ShaderJobFileOperations fileOps,
+      IRandom generator) throws IOException, ParseTimeoutException,
       InterruptedException, GlslParserException {
 
     final ShaderJob shaderJob = fileOps.readShaderJobFile(referenceShaderJobFile);
@@ -117,7 +123,8 @@ public final class PrepareReference {
         shaderJob,
         replaceFloatLiterals,
         maxUniforms,
-        generateUniformBindings);
+        generateUniformBindings,
+        generator);
 
     fileOps.writeShaderJobFile(shaderJob, outputShaderJobFile);
   }
@@ -125,7 +132,9 @@ public final class PrepareReference {
   public static void prepareReference(ShaderJob shaderJob,
                                       boolean replaceFloatLiterals,
                                       int maxUniforms,
-                                      boolean generateUniformBindings) {
+                                      boolean generateUniformBindings,
+                                      IRandom generator) {
+    shaderJob.getPipelineInfo().replaceRandomsInJson(generator);
 
     for (TranslationUnit tu : shaderJob.getShaders()) {
       prepareReferenceShader(

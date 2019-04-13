@@ -151,6 +151,8 @@ public class GenerateShaderFamily {
 
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
+    final IRandom generator = new RandomWrapper(seed);
+
     fileOps.forceMkdir(outputDir);
 
     final File preparedReferenceShaderJob = new File(outputDir, "reference.json");
@@ -163,7 +165,8 @@ public class GenerateShaderFamily {
           // We subtract 1 because we need to be able to add injectionSwitch
           generatorArguments.getMaxUniforms() - 1,
           generatorArguments.getGenerateUniformBindings(),
-          fileOps);
+          fileOps,
+          generator);
     } catch (ParseTimeoutException | GlslParserException exception) {
       // Remove the created output directory and all of its contents, so that we don't get a
       // defunct shader family, then re-throw the exception.
@@ -206,8 +209,6 @@ public class GenerateShaderFamily {
 
     int generatedVariants = 0;
     int triedVariants = 0;
-
-    final IRandom generator = new RandomWrapper(seed);
 
     // Main variant generation loop
     while (generatedVariants < numVariants) {

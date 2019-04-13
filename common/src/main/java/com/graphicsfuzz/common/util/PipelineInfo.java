@@ -224,6 +224,10 @@ public final class PipelineInfo {
     return result;
   }
 
+  public void replaceRandomsInJson(IRandom generator) {
+    // TODO: implement function
+  }
+
   public void addUniformBinding(String uniformName, int number) {
     assert hasUniform(uniformName);
     dictionary.getAsJsonObject(uniformName).addProperty("binding", number);

@@ -16,7 +16,9 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.PipelineInfo;
+import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +34,8 @@ public class PrepareReferenceTest {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  private IRandom generator = new RandomWrapper(0);
 
   @Test
   public void testPreparedReferenceIsValid() throws Exception {
@@ -57,7 +61,7 @@ public class PrepareReferenceTest {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
     PrepareReference.mainHelper(new String[] { jsonFile.getAbsolutePath(),
-        output.getAbsolutePath() });
+        output.getAbsolutePath() }, generator);
 
 
     assertTrue(fileOps.areShadersValid(output, false));
@@ -94,7 +98,7 @@ public class PrepareReferenceTest {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
     PrepareReference.mainHelper(new String[] { jsonFile.getAbsolutePath(),
-        output.getAbsolutePath(), "--generate-uniform-bindings" });
+        output.getAbsolutePath(), "--generate-uniform-bindings" }, generator);
 
     assertTrue(fileOps.areShadersValid(output, false));
 
@@ -143,7 +147,7 @@ public class PrepareReferenceTest {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
     PrepareReference.mainHelper(new String[] { jsonFile.getAbsolutePath(),
-        output.getAbsolutePath(), "--generate-uniform-bindings" });
+        output.getAbsolutePath(), "--generate-uniform-bindings" }, generator);
 
     assertTrue(fileOps.areShadersValid(output, false));
 
@@ -158,6 +162,4 @@ public class PrepareReferenceTest {
     assertTrue(Arrays.asList(0, 2).contains(pipelineInfo.getBinding("g")));
 
   }
-
-
 }
