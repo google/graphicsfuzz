@@ -98,6 +98,7 @@ public final class OpaqueExpressionGenerator {
     opaqueOneFactories.addAll(waysToMakeZeroOrOne());
     opaqueOneFactories.add(this::opaqueZeroSin);
     opaqueOneFactories.add(this::opaqueZeroLogarithm);
+    opaqueOneFactories.add(this::opaqueZeroTan);
     return opaqueOneFactories;
   }
 
@@ -161,6 +162,17 @@ public final class OpaqueExpressionGenerator {
       return Optional.empty();
     }
     return Optional.of(new FunctionCallExpr("log", makeOpaqueOne(type, constContext, depth,
+        fuzzer)));
+  }
+
+  private Optional<Expr> opaqueZeroTan(BasicType type, boolean constContext, final int depth,
+                                             Fuzzer fuzzer, boolean isZero) {
+    // represent 0 as tan(opaqueZero) function, e.g. tan(0.0)
+    assert isZero;
+    if (!BasicType.allGenTypes().contains(type)) {
+      return Optional.empty();
+    }
+    return Optional.of(new FunctionCallExpr("tan", makeOpaqueZero(type, constContext, depth,
         fuzzer)));
   }
 
