@@ -223,8 +223,8 @@ public class DesktopLauncher {
 				}
 			}
 		}
-  }
-  
+	}
+
 	private static void start(
 			String server,
 			ImageJob standaloneRenderJob,
@@ -268,10 +268,10 @@ public class DesktopLauncher {
 		//config.foregroundFPS = 10;
 		//config.backgroundFPS = 10;
 		new Lwjgl3Application(main, config);
-  }
-  
-  private static boolean isMac(){
-    return System.getProperty("os.name").toLowerCase().startsWith("mac");
-  }
-  
+	}
+	
+	private static boolean isMac(){
+		return System.getProperty("os.name").toLowerCase().startsWith("mac");
+	}
+
 }
