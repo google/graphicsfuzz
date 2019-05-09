@@ -89,7 +89,8 @@ public final class OpaqueExpressionGenerator {
     return Arrays.asList(
         this::opaqueZeroOrOneFromIdentityFunction,
         this::opaqueZeroOrOneFromInjectionSwitch,
-        this::opaqueZeroOrOneSquareRoot
+        this::opaqueZeroOrOneSquareRoot,
+        this::opaqueZeroOrOneAbsolute
     );
   }
 
@@ -140,6 +141,16 @@ public final class OpaqueExpressionGenerator {
       return Optional.empty();
     }
     return Optional.of(new FunctionCallExpr("sqrt", makeOpaqueZeroOrOne(isZero, type, constContext,
+        depth, fuzzer)));
+  }
+
+  private Optional<Expr> opaqueZeroOrOneAbsolute(BasicType type, boolean constContext,
+                                                   final int depth, Fuzzer fuzzer, boolean isZero) {
+    // abs (opaque)
+    if (!BasicType.allGenTypes().contains(type)) {
+      return Optional.empty();
+    }
+    return Optional.of(new FunctionCallExpr("abs", makeOpaqueZeroOrOne(isZero, type, constContext,
         depth, fuzzer)));
   }
 
