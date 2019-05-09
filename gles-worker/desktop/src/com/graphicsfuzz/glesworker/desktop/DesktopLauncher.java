@@ -53,16 +53,17 @@ public class DesktopLauncher {
         try {
             return new File(DesktopLauncher.class.getProtectionDomain().getCodeSource().getLocation().toURI())
                     .getAbsoluteFile().toString();
-        } catch (URISyntaxException e) {
+        }
+        catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main (String[] args) throws IOException, InterruptedException {
 
         final String jarPath = getJar();
 
-        if (!jarPath.endsWith(".jar")) {
+        if(!jarPath.endsWith(".jar")) {
             throw new RuntimeException("Starting from outside jar is currently disabled. Run/debug the jar instead.");
         }
 
@@ -107,7 +108,8 @@ public class DesktopLauncher {
         Namespace ns = null;
         try {
             ns = parser.parseArgs(args);
-        } catch (ArgumentParserException e) {
+        }
+        catch (ArgumentParserException e) {
             e.getParser().handleError(e);
             return;
         }
@@ -120,13 +122,13 @@ public class DesktopLauncher {
         String comp = ns.get("comp");
         String output = ns.get("output");
 
-        if (local) {
+        if(local) {
             server = "http://localhost:8080";
         }
 
         ImageJob standaloneRenderJob = null;
 
-        if (frag != null) {
+        if(frag != null) {
 
             if (comp != null) {
                 throw new RuntimeException("Cannot pass both --frag and --comp");
@@ -147,7 +149,7 @@ public class DesktopLauncher {
             }
         }
 
-        if (comp != null) {
+        if(comp != null) {
             standaloneRenderJob = new ImageJob();
             File compFile = new File(comp);
             standaloneRenderJob.setName(compFile.getName());
@@ -158,7 +160,7 @@ public class DesktopLauncher {
         }
 
         // If doing a standalone shader job, or if the "start" flag was passed, start running.
-        if (standaloneRenderJob != null || start) {
+        if(standaloneRenderJob != null || start) {
             start(server, standaloneRenderJob, null, shortBackoff);
             return;
         }
@@ -168,7 +170,7 @@ public class DesktopLauncher {
         List<String> cmd = new ArrayList<>();
         cmd.addAll(Arrays.asList("java", "-ea", "-XX:ErrorFile=" + JVMCrashLogFilename));
 
-        // For Mac, GLFW windows need to run on the main thread
+        // For Mac, GLFW windows need to run on the main thread.
         if (isMac()) {
             cmd.addAll(Arrays.asList("-XstartOnFirstThread"));
         }
@@ -180,13 +182,13 @@ public class DesktopLauncher {
         }
 
         ProcessBuilder pb =
-                new ProcessBuilder(cmd.toArray(new String[0]))
+                new ProcessBuilder(cmd.toArray(new String [0]))
                         .redirectInput(ProcessBuilder.Redirect.INHERIT)
                         .redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
         PersistentData persistentData = new PersistentData();
 
-        while (true) {
+        while(true) {
             Process p = pb.start();
 
             StringBuilder errMsgBuilder = new StringBuilder();
@@ -223,21 +225,17 @@ public class DesktopLauncher {
         }
     }
 
-    private static boolean isMac() {
-        return System.getProperty("os.name").toLowerCase().startsWith("mac");
-    }
-
     private static void start(
             String server,
             ImageJob standaloneRenderJob,
             String output,
             boolean shortBackoff) {
         Main main = new Main();
-        if (standaloneRenderJob != null) {
+        if(standaloneRenderJob != null) {
             main.standaloneRenderJob = standaloneRenderJob;
             main.standaloneOutputFilename = output;
         }
-        if (shortBackoff) {
+        if(shortBackoff){
             main.setBackoffLimit(2);
         }
 
@@ -254,7 +252,8 @@ public class DesktopLauncher {
             co.setAccessible(true);
             GL30 gl30 = (GL30) co.newInstance();
             main.gl30 = gl30;
-        } catch (InvocationTargetException | NoSuchMethodException | ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+        }
+        catch (InvocationTargetException |NoSuchMethodException|ClassNotFoundException|IllegalAccessException|InstantiationException e) {
             throw new RuntimeException(e);
         }
 
@@ -269,5 +268,9 @@ public class DesktopLauncher {
         //config.foregroundFPS = 10;
         //config.backgroundFPS = 10;
         new Lwjgl3Application(main, config);
+    }
+
+    private static boolean isMac(){
+        return System.getProperty("os.name").toLowerCase().startsWith("mac");
     }
 }
