@@ -168,11 +168,18 @@ public class DesktopLauncher {
 		// Otherwise, the current process will be the parent "monitor" process and the child will do the actual work.
 
 		List<String> cmd = new ArrayList<>();
-		cmd.addAll(Arrays.asList("java", "-XX:ErrorFile=" + JVMCrashLogFilename, "-jar", jarPath, "-start"));
-		cmd.addAll(Arrays.asList(args));
-		if(shortBackoff){
-			cmd.add("--shortbackoff");
-		}
+    cmd.addAll(Arrays.asList("java", "-ea", "-XX:ErrorFile=" + JVMCrashLogFilename));
+
+    // For Mac, GLFW windows need to run on the main thread.
+    if (isMac()) {
+        cmd.addAll(Arrays.asList("-XstartOnFirstThread"));
+    }
+
+    cmd.addAll(Arrays.asList("-jar", jarPath, "-start"));
+    cmd.addAll(Arrays.asList(args));
+    if (shortBackoff) {
+        cmd.add("--shortbackoff");
+    }
 
 		ProcessBuilder pb =
 				new ProcessBuilder(cmd.toArray(new String [0]))
@@ -262,4 +269,9 @@ public class DesktopLauncher {
 		//config.backgroundFPS = 10;
 		new Lwjgl3Application(main, config);
 	}
+	
+	private static boolean isMac(){
+		return System.getProperty("os.name").toLowerCase().startsWith("mac");
+	}
+
 }
