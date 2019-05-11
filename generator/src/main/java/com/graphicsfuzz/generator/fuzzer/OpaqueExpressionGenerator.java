@@ -100,6 +100,7 @@ public final class OpaqueExpressionGenerator {
     opaqueOneFactories.add(this::opaqueZeroSin);
     opaqueOneFactories.add(this::opaqueZeroLogarithm);
     opaqueOneFactories.add(this::opaqueZeroTan);
+    opaqueOneFactories.add(this::opaqueZeroVectorLength);
     return opaqueOneFactories;
   }
 
@@ -184,6 +185,18 @@ public final class OpaqueExpressionGenerator {
       return Optional.empty();
     }
     return Optional.of(new FunctionCallExpr("tan", makeOpaqueZero(type, constContext, depth,
+        fuzzer)));
+  }
+
+  private Optional<Expr> opaqueZeroVectorLength(BasicType type, boolean constContext,
+                                                final int depth,
+                                                Fuzzer fuzzer, boolean isZero) {
+    // represent 0 as the length of zero vector, e.g. length(opaqueZero).
+    assert isZero;
+    if (!BasicType.allGenTypes().contains(type)) {
+      return Optional.empty();
+    }
+    return Optional.of(new FunctionCallExpr("length", makeOpaqueZero(type, constContext, depth,
         fuzzer)));
   }
 
