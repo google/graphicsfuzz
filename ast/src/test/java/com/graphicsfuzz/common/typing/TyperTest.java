@@ -604,6 +604,12 @@ public class TyperTest {
   }
 
   @Test
+  public void testBuiltinsEssl320() throws Exception {
+    final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.ESSL_320;
+    testBuiltins(shadingLanguageVersion);
+  }
+
+  @Test
   public void testBuiltinsGlsl110() throws Exception {
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_110;
     testBuiltins(shadingLanguageVersion);
