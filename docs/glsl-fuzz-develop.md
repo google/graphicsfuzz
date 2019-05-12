@@ -126,7 +126,7 @@ your device under `/data/local/tmp/`.
 Make sure the binary is executable:
 
 ```sh
-chmod +x /data/loca/tmp/amber_ndk
+chmod +x /data/local/tmp/amber_ndk
 ```
 
 * The build instructions assume a Bash shell; on Windows, you 
