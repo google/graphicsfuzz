@@ -95,22 +95,22 @@ public final class OpaqueExpressionGenerator {
   }
 
   private List<OpaqueZeroOneFactory> waysToMakeZero() {
-    List<OpaqueZeroOneFactory> opaqueOneFactories = new ArrayList<>();
-    opaqueOneFactories.addAll(waysToMakeZeroOrOne());
-    opaqueOneFactories.add(this::opaqueZeroSin);
-    opaqueOneFactories.add(this::opaqueZeroLogarithm);
-    opaqueOneFactories.add(this::opaqueZeroTan);
-    opaqueOneFactories.add(this::opaqueZeroVectorLength);
-    return opaqueOneFactories;
+    List<OpaqueZeroOneFactory> opaqueZeroFactories = new ArrayList<>();
+    opaqueZeroFactories.addAll(waysToMakeZeroOrOne());
+    opaqueZeroFactories.add(this::opaqueZeroSin);
+    opaqueZeroFactories.add(this::opaqueZeroLogarithm);
+    opaqueZeroFactories.add(this::opaqueZeroTan);
+    opaqueZeroFactories.add(this::opaqueZeroVectorLength);
+    return opaqueZeroFactories;
   }
 
   private List<OpaqueZeroOneFactory> waysToMakeOne() {
-    List<OpaqueZeroOneFactory> opaqueZeroFactories = new ArrayList<>();
-    opaqueZeroFactories.addAll(waysToMakeZeroOrOne());
-    opaqueZeroFactories.add(this::opaqueOneExponential);
-    opaqueZeroFactories.add(this::opaqueOneCosine);
-    opaqueZeroFactories.add(this::opaqueOneNormalizedVectorLength);
-    return opaqueZeroFactories;
+    List<OpaqueZeroOneFactory> opaqueOneFactories = new ArrayList<>();
+    opaqueOneFactories.addAll(waysToMakeZeroOrOne());
+    opaqueOneFactories.add(this::opaqueOneExponential);
+    opaqueOneFactories.add(this::opaqueOneCosine);
+    opaqueOneFactories.add(this::opaqueOneNormalizedVectorLength);
+    return opaqueOneFactories;
   }
 
   private Optional<Expr> opaqueZeroOrOneFromIdentityFunction(BasicType type, boolean constContext,
