@@ -27,16 +27,96 @@ public class SimplifyTest {
   // TODO(110) - this test fails due to issue 110, and should be enabled once that issue is fixed.
   @Ignore
   @Test
-  public void testParenthesesRemoved() throws Exception {
+  public void testIfParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
         + "  if (_GLF_DEAD(_GLF_FALSE(false, false))) {"
-        + "    _GLF_FUZZED(1);"
         + "  }"
         + "}");
     final String expected = "void main() {"
-        + "  if(false) {"
-        + "    1;"
+        + "  if (false) {"
         + "  }"
+        + "}";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
+
+  @Ignore
+  @Test
+  public void testWhileParenthesesRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() {"
+        + "  while (_GLF_DEAD(_GLF_FALSE(false, false))) {"
+        + "  }"
+        + "}");
+    final String expected = "void main() {"
+        + "  while (false) {"
+        + "  }"
+        + "}";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
+
+  @Ignore
+  @Test
+  public void testForParenthesesRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() {"
+        + " for ("
+        + "   int i = _GLF_ONE(1, _GLF_IDENTITY(1, 1));"
+        + "   i > _GLF_IDENTITY(1, _GLF_FUZZED(1));"
+        + "   i++)"
+        + "   { }"
+        + " }"
+        + "}");
+    final String expected = "void main() {"
+        + " for (int i = 1; i > 1; i++)"
+        + "   { }"
+        + "}";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
+
+  @Ignore
+  @Test
+  public void testSwitchParenthesesRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() {"
+        + " switch(_GLF_ZERO(0, _GLF_IDENTITY(0, 0)))"
+        + "   {"
+        + "   }"
+        + "}");
+    final String expected = "void main() {"
+        + " switch(0)"
+        + "   {"
+        + "   }"
+        + "}";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
+
+  @Ignore
+  @Test
+  public void testDoWhileParenthesesRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() {"
+        + " do { } while (_GLF_DEAD(_GLF_FALSE(false, false)));"
+        + "}");
+    final String expected = "void main() {"
+        + " do { } while (false);"
+        + "}";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
+
+  @Ignore
+  @Test
+  public void testMacroBlockRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() {"
+        + " _GLF_FUZZED(1);"
+        + " _GLF_FUZZED(_GLF_IDENTITY(1, 1));"
+        + " int a = _GLF_IDENTITY(_GLF_FUZZED(1), 1);"
+        + "}"
+    );
+    final String expected = "void() {"
+        + " 1;"
+        + " 1;"
+        + " int a = 1;"
         + "}";
     final TranslationUnit simplifiedTu = Simplify.simplify(tu);
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
