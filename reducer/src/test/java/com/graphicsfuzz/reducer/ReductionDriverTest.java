@@ -593,7 +593,8 @@ public class ReductionDriverTest {
         (unused, item) -> true, workDir)
         .doReduction(shaderJob, "temp", 0, 100);
 
-    final ShaderJob after = fileOps.readShaderJobFile(new File(testFolder.getRoot(),resultsPrefix + ".json"));
+    final ShaderJob after = fileOps.readShaderJobFile(new File(testFolder.getRoot(),
+        resultsPrefix + ".json"));
 
     CompareAsts.assertEqualAsts(emptyShader,
         after.getFragmentShader().get());
