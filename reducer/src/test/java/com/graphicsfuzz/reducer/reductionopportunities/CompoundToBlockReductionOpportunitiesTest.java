@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -159,6 +160,40 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "  }"
           + "}";
     check(false, original, expected);
+  }
+
+  // TODO(482): Enable this test once the issue is fixed.
+  @Ignore
+  @Test
+  public void testDeadIfReduceEverywhere() throws Exception {
+    final String original = ""
+        + "void main() {"
+        + "  if (" + Constants.GLF_DEAD + "(false)) {"
+        + "    if (" + Constants.GLF_DEAD + "(false)) {"
+        + "      int a = 2;"
+        + "      a = a + 1;"
+        + "    }"
+        + "  }"
+        + "}";
+    final String expected1 = ""
+        + "void main() {"
+        + "  {" // first if changed to block
+        + "    if (" + Constants.GLF_DEAD + "(false)) {"
+        + "      int a = 2;"
+        + "      a = a + 1;"
+        + "    }"
+        + "  }"
+        + "}";
+    final String expected2 = ""
+        + "void main() {"
+        + "  if (" + Constants.GLF_DEAD + "(false)) {"
+        + "    {" // second if changed to block
+        + "      int a = 2;"
+        + "      a = a + 1;"
+        + "    }"
+        + "  }"
+        + "}";
+    check(true, original, expected1, expected2);
   }
 
   @Test
