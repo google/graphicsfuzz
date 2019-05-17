@@ -50,10 +50,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -558,6 +560,45 @@ public class ReductionDriverTest {
         .doReduction(shaderJob, "temp", 0, 100);
 
     CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+
+  }
+
+  // TODO(478): Enable this test once the issue is fixed.
+  @Ignore
+  @Test
+  public void testReductionOfUnreferencedUniform() throws Exception {
+
+    // Check that a shader job with metadata for one unreferenced uniform gets
+    // reduced to a shader job with no metadata for uniforms.
+
+    final String emptyShader = "void main() { }";
+    final TranslationUnit fragShader = ParseHelper.parse(emptyShader);
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Collections.singletonList(1.0));
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        pipelineInfo,
+        fragShader);
+    assertEquals(1, shaderJob.getPipelineInfo().getNumUniforms());
+
+    final File workDir = testFolder.getRoot();
+    final File tempShaderJobFile = new File(workDir, "temp.json");
+    fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
+
+    final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+        ShadingLanguageVersion.ESSL_100,
+        new RandomWrapper(0),
+        new IdGenerator(), true),
+        false,
+        fileOps,
+        (unused, item) -> true, workDir)
+        .doReduction(shaderJob, "temp", 0, 100);
+
+    final ShaderJob after = fileOps.readShaderJobFile(new File(testFolder.getRoot(),
+        resultsPrefix + ".json"));
+
+    CompareAsts.assertEqualAsts(emptyShader,
+        after.getFragmentShader().get());
+    assertEquals(0, after.getPipelineInfo().getNumUniforms());
 
   }
 
