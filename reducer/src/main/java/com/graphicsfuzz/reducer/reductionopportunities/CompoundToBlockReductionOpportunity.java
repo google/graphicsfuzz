@@ -26,9 +26,9 @@ import java.util.List;
 
 public class CompoundToBlockReductionOpportunity extends AbstractReductionOpportunity {
 
-  final IAstNode parent;
-  final Stmt compoundStmt;
-  final Stmt childStmt;
+  private final IAstNode parent;
+  private final Stmt compoundStmt;
+  private final Stmt childStmt;
 
   public CompoundToBlockReductionOpportunity(IAstNode parent, Stmt compoundStmt, Stmt childStmt,
         VisitationDepth depth) {
