@@ -51,6 +51,7 @@ def go():
 
     subprocess.check_call([
         "github-release",
+        "-prerelease",
         repo_name,
         tag_name,
         commit_hash,
