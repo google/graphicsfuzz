@@ -247,7 +247,7 @@ limitations under the License.
                   <sequential>
                     <delete file="${assembly-zip}" dir="${assembly-dir}"/>
                     <zip destfile="${assembly-zip}" compress="false">
-                      <zipfileset src="${com.graphicsfuzz:assembly-binaries:zip}"/>
+                      <zipfileset src="${com.graphicsfuzz:assembly-binaries:zip}" excludes="**/*.pdb"/>
                       <zipfileset src="${com.graphicsfuzz:python:zip}" prefix="python"/>
                       <zipfileset src="${com.graphicsfuzz.thirdparty:thrift-py:zip}" prefix="python/thrift"/>
                       <zipfileset src="${com.graphicsfuzz.thirdparty:thrift-js:zip}" prefix="server-static/thrift"/>
