@@ -275,7 +275,7 @@ public class GlslReduce {
 
       final double threshold = ns.get("threshold");
       // TODO: integrate timeout into reducer
-      @SuppressWarnings("UnusedAssignment") Integer timeout = ns.get("timeout");
+      @SuppressWarnings("unused") Integer timeout = ns.get("timeout");
       final Integer maxSteps = ns.get("max_steps");
       final Integer retryLimit = ns.get("retry_limit");
       final Boolean verbose = ns.get("verbose");
