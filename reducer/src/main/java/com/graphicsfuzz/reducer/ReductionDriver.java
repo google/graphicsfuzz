@@ -90,6 +90,7 @@ public class ReductionDriver {
         IReductionOpportunityFinder.inlineFunctionFinder(),
         IReductionOpportunityFinder.unusedParamFinder(),
         IReductionOpportunityFinder.foldConstantFinder(),
+        IReductionOpportunityFinder.redundantUniformMetadataFinder()
     }) {
       cleanupPasses.add(new SystematicReductionPass(context,
           verbose,
