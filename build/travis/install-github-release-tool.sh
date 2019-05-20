@@ -20,8 +20,8 @@ set -u
 
 echo "Installing github-release ${GITHUB_RELEASE_TOOL_PLATFORM} (linux_amd64, darwin_amd64, windows_amd64, etc.) tool to $(pwd)."
 
-GITHUB_RELEASE_TOOL_USER="c4milo"
-GITHUB_RELEASE_TOOL_VERSION="v1.1.0"
+GITHUB_RELEASE_TOOL_USER="paulthomson"
+GITHUB_RELEASE_TOOL_VERSION="v1.1.0.1"
 GITHUB_RELEASE_TOOL_FILE="github-release_${GITHUB_RELEASE_TOOL_VERSION}_${GITHUB_RELEASE_TOOL_PLATFORM}.tar.gz"
 
 if test ! -f "${GITHUB_RELEASE_TOOL_FILE}.touch"; then
