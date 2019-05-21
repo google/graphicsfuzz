@@ -17,7 +17,6 @@
 package com.graphicsfuzz.reducer.glslreducers;
 
 import com.graphicsfuzz.common.ast.IAstNode;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -31,7 +30,6 @@ import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
-import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.LoopStmt;
@@ -111,21 +109,6 @@ public class EliminateInjectionMacrosVisitor extends StandardVisitor {
     cleanupLoop(whileStmt);
   }
 
-  @Override
-  public void visitExprStmt(ExprStmt exprStmt) {
-    super.visitExprStmt(exprStmt);
-    if (MacroNames.isIdentity(exprStmt.getExpr())
-        || MacroNames.isZero(exprStmt.getExpr())
-        || MacroNames.isOne(exprStmt.getExpr())
-        || MacroNames.isFalse(exprStmt.getExpr())
-        || MacroNames.isTrue(exprStmt.getExpr())) {
-      exprStmt.setExpr(exprStmt.getExpr().getChild(1));
-    } else if (MacroNames.isFuzzed(exprStmt.getExpr())
-        || MacroNames.isDeadByConstruction(exprStmt.getExpr())) {
-      exprStmt.setExpr(exprStmt.getExpr().getChild(0));
-    }
-  }
-
   private void cleanupLoop(LoopStmt loopStmt) {
     if (MacroNames.isLoopWrapper(loopStmt.getCondition())) {
       loopStmt.setCondition(loopStmt.getCondition().getChild(0));
@@ -142,6 +125,68 @@ public class EliminateInjectionMacrosVisitor extends StandardVisitor {
   public void visitForStmt(ForStmt forStmt) {
     super.visitForStmt(forStmt);
     cleanupLoop(forStmt);
+  }
+
+  @Override
+  protected void visitChildFromParent(IAstNode child, IAstNode parent) {
+    super.visitChildFromParent(child, parent);
+    if (child instanceof FunctionCallExpr) {
+      Expr expr = (Expr) child;
+      if (MacroNames.isIdentity(expr)
+          || MacroNames.isZero(expr)
+          || MacroNames.isOne(expr)
+          || MacroNames.isFalse(expr)
+          || MacroNames.isTrue(expr)) {
+        parent.replaceChild(child,
+            addParenthesesIfNecessary(parent, ((FunctionCallExpr) child).getChild(1)));
+      } else if (MacroNames.isFuzzed(expr)
+          || MacroNames.isDeadByConstruction(expr)) {
+        parent.replaceChild(child,
+            addParenthesesIfNecessary(parent, ((FunctionCallExpr) child).getChild(0)));
+      }
+    }
+  }
+
+  private IAstNode addParenthesesIfNecessary(IAstNode parent, Expr child) {
+    if (ifParenthesesNecessary(parent, child)) {
+      return new ParenExpr(child);
+    }
+    return child;
+  }
+
+  boolean ifParenthesesNecessary(IAstNode parent, Expr child) {
+    if (child instanceof ConstantExpr
+        || child instanceof ParenExpr
+        || child instanceof VariableIdentifierExpr
+        || child instanceof FunctionCallExpr) {
+      // Parentheses is unnecessary in cases such as _GLF_FUNCTION(1),
+      // _GLF_FUNCTION((1)), _GLF_FUNCTION(a), _GLF_FUNCTION(sin(a)).
+      return false;
+    }
+
+    if (!(parent instanceof Expr)) {
+      // No parentheses needed if the parent is not an expression,
+      // for example, int x = _GLF_FUNCTION(a + b).
+      return false;
+    }
+
+    if (parent instanceof ParenExpr) {
+      // If parent is parentheses, adding a new parentheses would be redundant,
+      // e.g. (_GLF_FUNCTION(a + b)).
+      return false;
+    }
+
+    if (parent instanceof FunctionCallExpr) {
+      if (child instanceof BinaryExpr) {
+        // The binary operator must not be the comma operator
+        // as it cannot appear directly as a macro argument.
+        assert ((BinaryExpr) child).getOp() != BinOp.COMMA;
+        return true;
+      }
+      return false;
+    }
+
+    return true;
   }
 
   private void cleanUpMacros(Expr parent) {
@@ -162,61 +207,9 @@ public class EliminateInjectionMacrosVisitor extends StandardVisitor {
     }
   }
 
-  @Override
-  public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-    super.visitScalarInitializer(scalarInitializer);
-    if (MacroNames.isIdentity(scalarInitializer.getExpr())
-        || MacroNames.isZero(scalarInitializer.getExpr())
-        || MacroNames.isOne(scalarInitializer.getExpr())
-        || MacroNames.isFalse(scalarInitializer.getExpr())
-        || MacroNames.isTrue(scalarInitializer.getExpr())) {
-      scalarInitializer.setExpr(scalarInitializer.getExpr().getChild(1));
-    } else if (MacroNames.isFuzzed(scalarInitializer.getExpr())
-        || MacroNames.isDeadByConstruction(scalarInitializer.getExpr())) {
-      scalarInitializer.setExpr(scalarInitializer.getExpr().getChild(0));
-    }
-  }
-
   private void replaceChildWithGrandchild(Expr parent, int childIndex, int grandchildIndex) {
     assert parent.getChild(childIndex).getNumChildren() > grandchildIndex;
-
-    if (suitableToRemoveParentheses(parent, parent.getChild(childIndex))) {
-      parent.setChild(childIndex, parent.getChild(childIndex).getChild(grandchildIndex));
-    } else {
-      parent.setChild(childIndex,
-          new ParenExpr(parent.getChild(childIndex).getChild(grandchildIndex)));
-    }
+    parent.setChild(0, (Expr) addParenthesesIfNecessary(parent,
+        parent.getChild(childIndex).getChild(grandchildIndex)));
   }
-
-  private boolean suitableToRemoveParentheses(IAstNode parent, Expr child) {
-
-    if (child instanceof ConstantExpr
-        || child instanceof VariableIdentifierExpr
-        || child instanceof FunctionCallExpr) {
-      // It's fine to remove parentheses in cases such as (5), (x) and (sin(a)).
-      return true;
-    }
-
-    if (!(parent instanceof Expr)) {
-      // These are outer-most parentheses; fine to remove them.
-      return true;
-    }
-    if (parent instanceof ParenExpr) {
-      // These are parentheses within parentheses; fine to remove them.
-      return true;
-    }
-    if (parent instanceof FunctionCallExpr) {
-      // These are parentheses under a function call argument.  Fine to remove them *unless*
-      // they enclose a use of the comma operator; e.g. we don't want to turn sin((a, b)) into
-      // sin(a, b).
-      if (child instanceof BinaryExpr && ((BinaryExpr) child).getOp() == BinOp.COMMA) {
-        return false;
-      }
-      return true;
-    }
-    // Conservatively say that it is not OK to remove parentheses.  We could be more aggressive
-    // with attention to operator precedence.
-    return false;
-  }
-
 }
