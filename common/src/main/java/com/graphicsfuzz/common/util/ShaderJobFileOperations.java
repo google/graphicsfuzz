@@ -1011,7 +1011,14 @@ public class ShaderJobFileOperations {
     byte[] computeData = isFile(computeShaderFile)
         ? readFileToByteArray(computeShaderFile)
         : new byte[0];
-    byte[] combinedData = new byte[vertexData.length + fragmentData.length + computeData.length];
+    // This metadata is required since in the case of
+    // RemoveRedundantUniformMetadataReductionOpportunities
+    // only metadata in json is removed, not the shaders.
+    byte[] metaData = isFile(shaderJobFile)
+        ? readFileToByteArray(shaderJobFile)
+        : new byte[0];
+    byte[] combinedData =
+        new byte[vertexData.length + fragmentData.length + computeData.length + metaData.length ];
     System.arraycopy(
         vertexData,
         0,
@@ -1030,6 +1037,12 @@ public class ShaderJobFileOperations {
         combinedData,
         vertexData.length + fragmentData.length,
         computeData.length);
+    System.arraycopy(
+        metaData,
+        0,
+        combinedData,
+        vertexData.length + fragmentData.length + computeData.length,
+        metaData.length);
     return DigestUtils.md5Hex(combinedData);
   }
 

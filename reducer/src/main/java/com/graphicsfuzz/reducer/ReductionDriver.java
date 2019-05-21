@@ -297,7 +297,7 @@ public class ReductionDriver {
         context.getEmitGraphicsFuzzDefines()
     );
     if (requiresUniformBindings) {
-      assert state.hasUniformBindings();
+      assert state.getPipelineInfo().getNumUniforms() == 0 || state.hasUniformBindings();
       state.removeUniformBindings();
     }
   }
