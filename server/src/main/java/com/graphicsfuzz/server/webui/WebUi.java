@@ -208,10 +208,10 @@ public class WebUi extends HttpServlet {
       return result;
     }
 
-    if (!info.has("metrics")) {
+    if (!info.has(metricsKey)) {
       return result;
     }
-    final JsonObject metricsJson = info.get("metrics").getAsJsonObject();
+    final JsonObject metricsJson = info.get(metricsKey).getAsJsonObject();
 
     // Check if fuzzy diff metric thinks the images are different.
 
