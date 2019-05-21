@@ -139,7 +139,7 @@ public class WebUi extends HttpServlet {
     }
   }
 
-  private static final class ShadersetExp {
+  private static final class ShaderFamilyResult {
     final ShaderFamily shaderFamily;
     final String name;
     final String worker;
@@ -152,7 +152,7 @@ public class WebUi extends HttpServlet {
     int nbMetricsDisagree;
     int nbWrongImage;
 
-    public ShadersetExp(String name, String worker, AccessFileInfo accessFileInfo)
+    public ShaderFamilyResult(String name, String worker, AccessFileInfo accessFileInfo)
         throws FileNotFoundException {
       this.name = name;
       this.worker = worker;
@@ -324,23 +324,23 @@ public class WebUi extends HttpServlet {
     return workers;
   }
 
-  // Get list of all shaderset directories
-  private List<File> getAllShadersets(HttpServletRequest request, HttpServletResponse response)
+  // Get list of all shader family directories
+  private List<File> getAllShaderFamilies(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
-    List<File> shadersets = new ArrayList<>();
-    File shadersetDir = new File(WebUiConstants.SHADER_FAMILIES_DIR);
-    if (!shadersetDir.isDirectory()) {
+    List<File> shaderFamilies = new ArrayList<>();
+    File shaderFamiliesDir = new File(WebUiConstants.SHADER_FAMILIES_DIR);
+    if (!shaderFamiliesDir.isDirectory()) {
       err404(request, response);
-      return shadersets;
+      return shaderFamilies;
     }
-    File[] shadersetFiles = shadersetDir.listFiles();
-    for (File shaderset : shadersetFiles) {
-      if (shaderset.isDirectory()) {
-        shadersets.add(shaderset);
+    File[] shaderFamilyFiles = shaderFamiliesDir.listFiles();
+    for (File shaderFamily : shaderFamilyFiles) {
+      if (shaderFamily.isDirectory()) {
+        shaderFamilies.add(shaderFamily);
       }
     }
-    shadersets.sort(Comparator.naturalOrder());
-    return shadersets;
+    shaderFamilies.sort(Comparator.naturalOrder());
+    return shaderFamilies;
   }
 
   // Homepage: /webui
@@ -408,15 +408,14 @@ public class WebUi extends HttpServlet {
     }
     htmlAppendLn("</div></div>");
 
-    //List of shadersets
+    // List of shader families
     htmlAppendLn(
         "<div class='ui segment'>\n",
         "<h3>Shader Families</h3>\n",
         "<div class='ui middle aligned selection animated celled list'>\n");
-    //StringBuilder shadersetListHTML = new StringBuilder();
-    List<File> shadersets = getAllShadersets(request, response);
-    if (shadersets.size() > 0) {
-      for (File file : shadersets) {
+    List<File> shaderFamilies = getAllShaderFamilies(request, response);
+    if (shaderFamilies.size() > 0) {
+      for (File file : shaderFamilies) {
         ShaderFamily shaderFamily = new ShaderFamily(file.getName());
         htmlAppendLn("<a class='item' href='/webui/shaderset/", shaderFamily.name, "'>",
             "<img class='ui mini image' alt='Reference image preview' src='/webui/file/",
@@ -563,11 +562,12 @@ public class WebUi extends HttpServlet {
     for (File shaderFamilyFile : shaderFamilies) {
       final String shaderFamily = shaderFamilyFile.getName();
 
-      ShadersetExp shadersetExp = new ShadersetExp(shaderFamily, workerName, accessFileInfo);
+      ShaderFamilyResult shaderFamilyResult = new ShaderFamilyResult(shaderFamily, workerName,
+          accessFileInfo);
 
       // TODO(360): Show results for compute shaders. For now, just indicate that some results
       // exists, and point to documentation.
-      if (shadersetExp.shaderFamily.isComp) {
+      if (shaderFamilyResult.shaderFamily.isComp) {
         htmlAppendLn(
             "<a class='item' target='_blank' rel='noopener noreferrer'",
             " href='", WebUiConstants.COMPUTE_SHADER_DOC_URL, "'>",
@@ -584,12 +584,13 @@ public class WebUi extends HttpServlet {
           "<img class='ui mini image' src='/webui/file/", WebUiConstants.WORKER_DIR, "/",
           workerName, "/", shaderFamily, "/reference.png'>",
           "<div class='content'><div class='header'>", shaderFamily, "</div>",
-          "Variant done: ", Integer.toString(shadersetExp.nbVariantDone),
-          " / ", Integer.toString(shadersetExp.nbVariants),
-          " | Wrong images: ", Integer.toString(shadersetExp.nbWrongImage),
-          " | Slightly different images: ", Integer.toString(shadersetExp.nbSlightlyDifferentImage),
-          " | Errors: ", Integer.toString(shadersetExp.nbErrors),
-          " | Metrics disagree: ", Integer.toString(shadersetExp.nbMetricsDisagree),
+          "Variant done: ", Integer.toString(shaderFamilyResult.nbVariantDone),
+          " / ", Integer.toString(shaderFamilyResult.nbVariants),
+          " | Wrong images: ", Integer.toString(shaderFamilyResult.nbWrongImage),
+          " | Slightly different images: ", Integer.toString(
+              shaderFamilyResult.nbSlightlyDifferentImage),
+          " | Errors: ", Integer.toString(shaderFamilyResult.nbErrors),
+          " | Metrics disagree: ", Integer.toString(shaderFamilyResult.nbMetricsDisagree),
           "</div></a>");
     }
     htmlAppendLn("</div></div>");
@@ -724,10 +725,10 @@ public class WebUi extends HttpServlet {
       }
     }
 
-    List<File> shadersets = getAllShadersets(request, response);
+    List<File> shaderFamilies = getAllShaderFamilies(request, response);
 
     htmlAppendLn("<h4 class='ui dividing header'>Shader families</h4>");
-    if (shadersets.size() == 0) {
+    if (shaderFamilies.size() == 0) {
       htmlAppendLn("<p>No shader families detected</p>");
     } else {
       htmlAppendLn("<button type='button' class='ui black basic button'",
@@ -739,7 +740,7 @@ public class WebUi extends HttpServlet {
           "<div class='ui hidden divider'></div>");
 
       int dataNum = 0;
-      for (File f : shadersets) {
+      for (File f : shaderFamilies) {
         htmlAppendLn("<div class='field'>",
             "<div class='ui checkbox'>",
             "<input tabindex='0' class='hidden' type='checkbox' name='shadersetcheck'",
@@ -760,8 +761,9 @@ public class WebUi extends HttpServlet {
     response.getWriter().println(html);
   }
 
-  //Results page for a shaderset showing results by all workers - /webui/shaderset/<shaderset-name>
-  private void shadersetResults(HttpServletRequest request, HttpServletResponse response)
+  // Results page for a shader family showing results by all workers -
+  // /webui/shaderset/<shaderfamily-name>
+  private void shaderFamilyResults(HttpServletRequest request, HttpServletResponse response)
       throws IOException, ServletException {
     response.setContentType("text/html");
 
@@ -809,7 +811,7 @@ public class WebUi extends HttpServlet {
       shaderPath.append("/").append(path[i]);
     }
     File shader = new File(shaderPath.toString());
-    String shaderset = shader.getParentFile().getName();
+    String shaderFamily = shader.getParentFile().getName();
     String shaderName = FilenameUtils.removeExtension(shader.getName());
 
     htmlHeader(shaderName);
@@ -1146,8 +1148,8 @@ public class WebUi extends HttpServlet {
     }
   }
 
-  private ReductionStatus getReductionStatus(String worker, String shaderSet, String shader) {
-    final File reductionDir = ReductionFilesHelper.getReductionDir(worker, shaderSet, shader);
+  private ReductionStatus getReductionStatus(String worker, String shaderFamily, String shader) {
+    final File reductionDir = ReductionFilesHelper.getReductionDir(worker, shaderFamily, shader);
     if (! reductionDir.exists()) {
       return ReductionStatus.NOREDUCTION;
     }
@@ -1240,17 +1242,17 @@ public class WebUi extends HttpServlet {
     StringBuilder msg = new StringBuilder();
 
     String[] workers = request.getParameterValues("workercheck");
-    String[] shadersets = request.getParameterValues("shadersetcheck");
+    String[] shaderFamilies = request.getParameterValues("shadersetcheck");
 
     if (workers == null || workers.length == 0) {
       msg.append("Select at least one worker");
-    } else if (shadersets == null || shadersets.length == 0) {
-      msg.append("Select at least one shaderset");
+    } else if (shaderFamilies == null || shaderFamilies.length == 0) {
+      msg.append("Select at least one shader family");
     } else {
       //Start experiments for each worker/shader combination, display result in alert
       for (String worker : workers) {
-        for (String shaderset : shadersets) {
-          msg.append("Experiment ").append(shaderset).append(" on worker ").append(worker);
+        for (String shaderFamily : shaderFamilies) {
+          msg.append("Experiment ").append(shaderFamily).append(" on worker ").append(worker);
           List<String> commands = new ArrayList<>();
           commands.add("run_shader_family");
           commands.add("--server");
@@ -1258,10 +1260,10 @@ public class WebUi extends HttpServlet {
           commands.add("--worker");
           commands.add(worker);
           commands.add("--output");
-          commands.add("processing/" + worker + "/" + shaderset);
-          commands.add(WebUiConstants.SHADER_FAMILIES_DIR + "/" + shaderset);
-          fuzzerServiceManagerProxy.queueCommand("run_shader_family: " + shaderset, commands,
-              worker,"processing/" + worker + "/" + shaderset + "/command.log");
+          commands.add("processing/" + worker + "/" + shaderFamily);
+          commands.add(WebUiConstants.SHADER_FAMILIES_DIR + "/" + shaderFamily);
+          fuzzerServiceManagerProxy.queueCommand("run_shader_family: " + shaderFamily, commands,
+              worker,"processing/" + worker + "/" + shaderFamily + "/command.log");
           msg.append(" started successfully!\\n");
         }
       }
@@ -1276,7 +1278,7 @@ public class WebUi extends HttpServlet {
     response.getWriter().println(html);
   }
 
-  // Page for selecting workers/shadersets to compare results - /webui/compareResults
+  // Page for selecting workers/shader families to compare results - /webui/compareResults
   private void compareResults(HttpServletRequest request, HttpServletResponse response)
       throws IOException, ServletException {
 
@@ -1301,7 +1303,7 @@ public class WebUi extends HttpServlet {
     response.getWriter().println(html);
   }
 
-  // Page for selecting workers/shadersets to compare results - /webui/compare
+  // Page for selecting workers/shader families to compare results - /webui/compare
   private void compareWorkers(HttpServletRequest request, HttpServletResponse response)
       throws IOException, ServletException {
 
@@ -1357,11 +1359,11 @@ public class WebUi extends HttpServlet {
         "<div class='ui hidden divider'></div>");
 
     dataNum = 0;
-    for (File shaderFamily: getAllShadersets(request, response)) {
+    for (File shaderFamilyFile: getAllShaderFamilies(request, response)) {
 
       // TODO(360): Handle compute shaders
-      ShaderFamily shaderset = new ShaderFamily(shaderFamily.getName());
-      if (shaderset.isComp) {
+      ShaderFamily shaderFamily = new ShaderFamily(shaderFamilyFile.getName());
+      if (shaderFamily.isComp) {
         continue;
       }
 
@@ -1369,9 +1371,9 @@ public class WebUi extends HttpServlet {
           "<div class='ui checkbox'>",
           "<input tabindex='0' class='hidden' type='checkbox' name='shadersetcheck'",
           " data-num='", Integer.toString(dataNum), "' onclick='applyCheckbox(event);'",
-          " value='", shaderFamily.getName(), "'>",
+          " value='", shaderFamilyFile.getName(), "'>",
           "<label data-num='", Integer.toString(dataNum), "' onclick='applyCheckbox(event);'>",
-          shaderFamily.getName(), "</label>",
+          shaderFamilyFile.getName(), "</label>",
           "</div></div>");
       dataNum += 1;
     }
@@ -1519,15 +1521,15 @@ public class WebUi extends HttpServlet {
     } else {
       referenceShaderJobFile = shaderJobFile;
     }
-    String shaderset = referenceShaderJobFile.getParentFile().getName();
+    String shaderFamily = referenceShaderJobFile.getParentFile().getName();
     File reductionDir =
-        new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderset + "/reductions",
+        new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderFamily + "/reductions",
             "reference");
     if (reductionDir.isDirectory()) {
       return;
     }
     File referenceResult =
-        new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderset,
+        new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderFamily,
             "reference.info.json");
     List<String> args = new ArrayList<>();
     args.add("glsl-reduce");
@@ -1544,7 +1546,7 @@ public class WebUi extends HttpServlet {
     args.add("--server");
     args.add("http://localhost:8080");
     fuzzerServiceManagerProxy.queueCommand(
-        "Reference Reduction: " + shaderset,
+        "Reference Reduction: " + shaderFamily,
         args,
         worker,
         new File(reductionDir, "command.log").toString());
@@ -1658,7 +1660,7 @@ public class WebUi extends HttpServlet {
     // e.g. shaderfamilies/family1/variant2.json
     File shader = new File(shaderPath);
     // e.g. family1
-    String shaderset = shader.getParentFile().getName();
+    String shaderFamily = shader.getParentFile().getName();
     String[] workers = request.getParameterValues("workercheck");
     String javascript = getResourceContent("goBack.js");
 
@@ -1673,11 +1675,11 @@ public class WebUi extends HttpServlet {
         commands.add("--worker");
         commands.add(worker);
         commands.add("--output");
-        commands.add("processing/" + worker + "/" + shaderset + "/");
+        commands.add("processing/" + worker + "/" + shaderFamily + "/");
         try {
           fuzzerServiceManagerProxy
               .queueCommand("run_shader_family: " + shaderPath, commands, worker,
-                  "processing/" + worker + "/" + shaderset + "/command.log");
+                  "processing/" + worker + "/" + shaderFamily + "/command.log");
         } catch (TException exception) {
           err404(request, response, exception.getMessage());
           return;
@@ -1781,7 +1783,7 @@ public class WebUi extends HttpServlet {
       } else if (actions[1].equals("experiment")) {
         experimentSetup(request, response);
       } else if (actions[1].equals("shaderset")) {
-        shadersetResults(request, response);
+        shaderFamilyResults(request, response);
       } else if (actions[1].equals("shader")) {
         viewShader(request, response);
       } else if (actions[1].equals("result")) {
@@ -2138,14 +2140,14 @@ public class WebUi extends HttpServlet {
         "</form>");
   }
 
-  private void htmlComparativeTable(String shaderFamily, String[] workers)
+  private void htmlComparativeTable(String shaderFamilyFilename, String[] workers)
       throws FileNotFoundException {
 
-    ShaderFamily shaderset = new ShaderFamily(shaderFamily);
-    if (shaderset.isComp) {
+    ShaderFamily shaderFamily = new ShaderFamily(shaderFamilyFilename);
+    if (shaderFamily.isComp) {
       // TODO(360): Handle compute shaders
       htmlAppendLn("<p>Compute shader family: ",
-          shaderFamily, ". ",
+          shaderFamilyFilename, ". ",
           "The UI does not display results for compute shaders yet.",
           " <a class='item' target='_blank' rel='noopener noreferrer'",
           " href='", WebUiConstants.COMPUTE_SHADER_DOC_URL, "'>",
@@ -2171,7 +2173,7 @@ public class WebUi extends HttpServlet {
         "<a href='/webui/shader/",
         WebUiConstants.SHADER_FAMILIES_DIR,
         "/",
-        shaderFamily,
+        shaderFamilyFilename,
         "/reference.frag",
         "'>",
         "reference",
@@ -2224,7 +2226,7 @@ public class WebUi extends HttpServlet {
             + "/" + shaderFamily + "/" + f.getName().replace(".frag", ".info.json"));
 
         if (infoFile.isFile()) {
-          ReductionStatus reductionStatus = getReductionStatus(worker, shaderFamily,
+          ReductionStatus reductionStatus = getReductionStatus(worker, shaderFamilyFilename,
               infoFile.getName().replace(".info.json", ""));
 
           htmlVariantResultTableCell(infoFile, refPngPath, reductionStatus);
