@@ -209,7 +209,7 @@ public class EliminateInjectionMacrosVisitor extends StandardVisitor {
 
   private void replaceChildWithGrandchild(Expr parent, int childIndex, int grandchildIndex) {
     assert parent.getChild(childIndex).getNumChildren() > grandchildIndex;
-    parent.setChild(0, (Expr) addParenthesesIfNecessary(parent,
+    parent.setChild(childIndex, (Expr) addParenthesesIfNecessary(parent,
         parent.getChild(childIndex).getChild(grandchildIndex)));
   }
 }
