@@ -29,7 +29,6 @@ import com.graphicsfuzz.server.thrift.CommandInfo;
 import com.graphicsfuzz.server.thrift.CommandResult;
 import com.graphicsfuzz.server.thrift.FuzzerServiceManager;
 import com.graphicsfuzz.server.thrift.WorkerInfo;
-import com.graphicsfuzz.server.thrift.WorkerNameNotFoundException;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -72,7 +71,7 @@ import org.slf4j.LoggerFactory;
  * / : homepage: list workers, and options to start experiments.
  * Should also display the server queue state.
  * worker/"workername" : worker page, with overview of results
- * worker/"workername"/"shadersetname" : result of this worker on this shaderset.
+ * worker/"workername"/"shadersetname" : result of this worker on this shader family.
  * Can start reduction on a single variant
  * startExperiment/
  *
@@ -112,16 +111,16 @@ public class WebUi extends HttpServlet {
     this.fuzzerServiceManagerProxy = fuzzerServiceManager;
   }
 
-  private static final class Shaderset {
+  private static final class ShaderFamily {
     final String name;
     final File dir;
     final File preview;
     final int nbVariants;
     final boolean isComp;
 
-    public Shaderset(String name) {
+    public ShaderFamily(String name) {
       this.name = name;
-      this.dir = new File(WebUiConstants.SHADERSET_DIR, name);
+      this.dir = new File(WebUiConstants.SHADER_FAMILIES_DIR, name);
       this.preview = new File(dir, "thumb.png");
       this.isComp = new File(dir, "reference.comp").isFile();
       this.nbVariants = getNbVariants();
@@ -141,7 +140,7 @@ public class WebUi extends HttpServlet {
   }
 
   private static final class ShadersetExp {
-    final Shaderset shaderset;
+    final ShaderFamily shaderFamily;
     final String name;
     final String worker;
     final File dir;
@@ -158,8 +157,8 @@ public class WebUi extends HttpServlet {
       this.name = name;
       this.worker = worker;
       this.dir = new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + name);
-      this.shaderset = new Shaderset(name);
-      this.nbVariants = shaderset.nbVariants;
+      this.shaderFamily = new ShaderFamily(name);
+      this.nbVariants = shaderFamily.nbVariants;
 
       // Set variant counters
       for (File file : dir.listFiles()) {
@@ -329,7 +328,7 @@ public class WebUi extends HttpServlet {
   private List<File> getAllShadersets(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
     List<File> shadersets = new ArrayList<>();
-    File shadersetDir = new File(WebUiConstants.SHADERSET_DIR);
+    File shadersetDir = new File(WebUiConstants.SHADER_FAMILIES_DIR);
     if (!shadersetDir.isDirectory()) {
       err404(request, response);
       return shadersets;
@@ -418,12 +417,12 @@ public class WebUi extends HttpServlet {
     List<File> shadersets = getAllShadersets(request, response);
     if (shadersets.size() > 0) {
       for (File file : shadersets) {
-        Shaderset shaderset = new Shaderset(file.getName());
-        htmlAppendLn("<a class='item' href='/webui/shaderset/", shaderset.name, "'>",
+        ShaderFamily shaderFamily = new ShaderFamily(file.getName());
+        htmlAppendLn("<a class='item' href='/webui/shaderset/", shaderFamily.name, "'>",
             "<img class='ui mini image' alt='Reference image preview' src='/webui/file/",
-            shaderset.preview.getPath(), "' onerror=\"this.style.display='none'\">",
-            "<div class='content'><div class='header'>", shaderset.name,
-            "</div>#variants: ", Integer.toString(shaderset.nbVariants),
+            shaderFamily.preview.getPath(), "' onerror=\"this.style.display='none'\">",
+            "<div class='content'><div class='header'>", shaderFamily.name,
+            "</div>#variants: ", Integer.toString(shaderFamily.nbVariants),
             "</div></a>");
       }
     }
@@ -568,7 +567,7 @@ public class WebUi extends HttpServlet {
 
       // TODO(360): Show results for compute shaders. For now, just indicate that some results
       // exists, and point to documentation.
-      if (shadersetExp.shaderset.isComp) {
+      if (shadersetExp.shaderFamily.isComp) {
         htmlAppendLn(
             "<a class='item' target='_blank' rel='noopener noreferrer'",
             " href='", WebUiConstants.COMPUTE_SHADER_DOC_URL, "'>",
@@ -1001,7 +1000,7 @@ public class WebUi extends HttpServlet {
 
     final ReductionStatus referenceReductionStatus = getReductionStatus(worker, shaderFamily,
         "reference");
-    File referenceShader = new File(WebUiConstants.SHADERSET_DIR + "/"
+    File referenceShader = new File(WebUiConstants.SHADER_FAMILIES_DIR + "/"
         + shaderFamily, "reference.frag");
     if (referenceReductionStatus == ReductionStatus.FINISHED) {
       referenceShader = new File(
@@ -1260,7 +1259,7 @@ public class WebUi extends HttpServlet {
           commands.add(worker);
           commands.add("--output");
           commands.add("processing/" + worker + "/" + shaderset);
-          commands.add(WebUiConstants.SHADERSET_DIR + "/" + shaderset);
+          commands.add(WebUiConstants.SHADER_FAMILIES_DIR + "/" + shaderset);
           fuzzerServiceManagerProxy.queueCommand("run_shader_family: " + shaderset, commands,
               worker,"processing/" + worker + "/" + shaderset + "/command.log");
           msg.append(" started successfully!\\n");
@@ -1361,7 +1360,7 @@ public class WebUi extends HttpServlet {
     for (File shaderFamily: getAllShadersets(request, response)) {
 
       // TODO(360): Handle compute shaders
-      Shaderset shaderset = new Shaderset(shaderFamily.getName());
+      ShaderFamily shaderset = new ShaderFamily(shaderFamily.getName());
       if (shaderset.isComp) {
         continue;
       }
@@ -2142,7 +2141,7 @@ public class WebUi extends HttpServlet {
   private void htmlComparativeTable(String shaderFamily, String[] workers)
       throws FileNotFoundException {
 
-    Shaderset shaderset = new Shaderset(shaderFamily);
+    ShaderFamily shaderset = new ShaderFamily(shaderFamily);
     if (shaderset.isComp) {
       // TODO(360): Handle compute shaders
       htmlAppendLn("<p>Compute shader family: ",
@@ -2157,7 +2156,7 @@ public class WebUi extends HttpServlet {
 
     htmlAppendLn("<table class='ui celled compact collapsing table'>\n",
         "<thead><tr>");
-    File variantsDir = new File(WebUiConstants.SHADERSET_DIR + "/" + shaderFamily);
+    File variantsDir = new File(WebUiConstants.SHADER_FAMILIES_DIR + "/" + shaderFamily);
     File[] variantFragFiles = variantsDir.listFiles(variantFragFilter);
     Arrays.sort(variantFragFiles, (f1, f2) ->
         new AlphanumComparator().compare(f1.getName(), f2.getName()));
@@ -2170,7 +2169,7 @@ public class WebUi extends HttpServlet {
     }
     htmlAppendLn("<th class='center aligned'>",
         "<a href='/webui/shader/",
-        WebUiConstants.SHADERSET_DIR,
+        WebUiConstants.SHADER_FAMILIES_DIR,
         "/",
         shaderFamily,
         "/reference.frag",
