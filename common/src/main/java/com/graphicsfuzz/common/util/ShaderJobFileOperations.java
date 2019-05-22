@@ -1174,6 +1174,13 @@ public class ShaderJobFileOperations {
     String shaderJobResultNoExtension =
         FileHelper.removeEnd(shaderJobResultFile.toString(), ".info.json");
 
+    // Write the log component of the result to a text file, for easy viewing.
+    if (shaderResult.isSetLog()) {
+      fileOps.writeStringToFile(
+          new File(shaderJobResultNoExtension + ".txt"),
+          shaderResult.getLog());
+    }
+
     // Special case: compute shader job.
     if (shaderResult.isSetComputeOutputs()) {
 
@@ -1269,12 +1276,6 @@ public class ShaderJobFileOperations {
     }
 
     final File outputImage = new File(shaderJobResultNoExtension + ".png");
-
-    if (shaderResult.isSetLog()) {
-      fileOps.writeStringToFile(
-          new File(shaderJobResultNoExtension + ".txt"),
-          shaderResult.getLog());
-    }
 
     if (shaderResult.isSetPNG()) {
       fileOps.writeByteArrayToFile(outputImage, shaderResult.getPNG());
