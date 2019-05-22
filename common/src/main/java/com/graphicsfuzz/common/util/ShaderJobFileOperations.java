@@ -37,6 +37,7 @@ import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
+import com.graphicsfuzz.util.ToolPaths;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -50,6 +51,7 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1173,8 +1175,14 @@ public class ShaderJobFileOperations {
         FileHelper.removeEnd(shaderJobResultFile.toString(), ".info.json");
 
     // Special case: compute shader job.
-
     if (shaderResult.isSetComputeOutputs()) {
+
+      // In addition to a status and log, results for a compute shader job have:
+      // - an "outputs" property, which maps to a dictionary representing the results
+      //   that were obtained by running the shader;
+      // - (if reference result is present) a "comparision_with_reference" property
+      //   describing whether or not the computed results exactly or nearly match those
+      //   for the reference.
 
       JsonObject infoJson = new JsonObject();
       if (shaderResult.isSetStatus()) {
@@ -1188,8 +1196,70 @@ public class ShaderJobFileOperations {
             "outputs", new Gson().fromJson(shaderResult.getComputeOutputs(), JsonObject.class));
       }
 
+      // We write out the .info.json file now, so that the Python tooling for diffing compute
+      // shader results can be invoked on it if needed.
       fileOps.writeStringToFile(
-          new File(shaderJobResultNoExtension + ".info.json"),
+          shaderJobResultFile,
+          infoJson.toString());
+
+      if (referenceShaderResultFile.isPresent()) {
+
+        // We have reference results, so can populate the "comparision_with_reference" property.
+
+        // This maps to a dictionary with up to 4 keys:
+        // - "exact_match", true if and only if the results are identical
+        // - "exactdiff_output", populated only if "exact_match" is false, with the result of
+        //   exact diffing
+        // - "fuzzy_match", present only if "exact_match" is false, and then true if and only if
+        //   the results are similar
+        // - "fuzzydiff_output", present only if "fuzzy_diff" is set, with the result of
+        //   fuzzy diffing.
+
+        final JsonObject computeShaderComparisonWithReference = new JsonObject();
+        try {
+
+          // Check whether the results exactly match those of the reference.
+          final ExecResult exactDiffResult =
+              new ExecHelper().exec(ExecHelper.RedirectType.TO_BUFFER,
+              null, false,
+                  Paths.get(ToolPaths.getPythonDriversDir(),"inspect-compute-results").toString(),
+              "exactdiff",
+              referenceShaderResultFile.get().getAbsolutePath(),
+              shaderJobResultFile.getAbsolutePath());
+          computeShaderComparisonWithReference.addProperty("exact_match",
+              exactDiffResult.res == 0);
+
+          if (exactDiffResult.res != 0) {
+
+            // In the case that we do not have an exact match, store the output obtained by exact
+            // diffing (as it may be useful to inspect).
+            computeShaderComparisonWithReference.addProperty("exactdiff_output",
+                exactDiffResult.stdout.toString());
+
+            // Now perform a fuzzy diff.
+            final ExecResult fuzzyDiffResult =
+                new ExecHelper().exec(ExecHelper.RedirectType.TO_BUFFER,
+                    null, false,
+                    ToolPaths.getPythonDriversDir(),
+                    "inspect-compute-results",
+                    "fuzzydiff",
+                    referenceShaderResultFile.get().getAbsolutePath(),
+                    shaderJobResultFile.getAbsolutePath());
+            computeShaderComparisonWithReference.addProperty("fuzzy_match",
+                fuzzyDiffResult.res == 0);
+            computeShaderComparisonWithReference.addProperty("fuzzydiff_output",
+                fuzzyDiffResult.stdout.toString());
+          }
+          infoJson.add("comparision_with_reference", computeShaderComparisonWithReference);
+        } catch (InterruptedException interruptedException) {
+          LOGGER.error("Error while inspecting compute shader results for differences with "
+              + "reference");
+          interruptedException.printStackTrace();
+        }
+      }
+
+      fileOps.writeStringToFile(
+          shaderJobResultFile,
           infoJson.toString());
 
       return;

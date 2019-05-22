@@ -101,6 +101,12 @@ public class WebUi extends HttpServlet {
     public double histogramDistance = 0.0;
   }
 
+  private enum ComputeDifferenceResult {
+    IDENTICAL,
+    SIMILAR,
+    DIFFERENT
+  }
+
   private final ShaderJobFileOperations fileOps;
   private final FuzzerServiceManager.Iface fuzzerServiceManagerProxy;
 
@@ -147,10 +153,17 @@ public class WebUi extends HttpServlet {
     int nbVariants;
     int nbVariantDone;
     int nbErrors;
+
+    // For image shader families:
     int nbSameImage;
     int nbSlightlyDifferentImage;
     int nbMetricsDisagree;
     int nbWrongImage;
+
+    // For compute shader families:
+    int nbSameComputeResult;
+    int nbSlightlyDifferentComputeResult;
+    int nbWrongComputeResult;
 
     public ShaderFamilyResult(String name, String worker, AccessFileInfo accessFileInfo)
         throws FileNotFoundException {
@@ -167,23 +180,40 @@ public class WebUi extends HttpServlet {
           JsonObject info = accessFileInfo.getResultInfo(file);
           String status = info.get("status").getAsString();
           if (status.contentEquals("SUCCESS")) {
-            ImageDifferenceResult result = getImageDiffResult(info).summary;
-            switch (result) {
-              case IDENTICAL:
-                ++nbSameImage;
-                break;
-              case SIMILAR:
-                ++nbSlightlyDifferentImage;
-                break;
-              case DIFFERENT:
-                ++nbWrongImage;
-                break;
-              case METRICS_DISAGREE:
-                ++nbWrongImage;
-                ++nbMetricsDisagree;
-                break;
-              default:
-                LOGGER.error("Unrecognized image difference result: " + result);
+            if (shaderFamily.isComp) {
+              ComputeDifferenceResult result = getComputeDiffResult(info);
+              switch (result) {
+                case IDENTICAL:
+                  ++nbSameComputeResult;
+                  break;
+                case SIMILAR:
+                  ++nbSlightlyDifferentComputeResult;
+                  break;
+                case DIFFERENT:
+                  ++nbWrongComputeResult;
+                  break;
+                default:
+                  LOGGER.error("Unrecognized compute difference result: " + result);
+              }
+            } else {
+              ImageDifferenceResult result = getImageDiffResult(info).summary;
+              switch (result) {
+                case IDENTICAL:
+                  ++nbSameImage;
+                  break;
+                case SIMILAR:
+                  ++nbSlightlyDifferentImage;
+                  break;
+                case DIFFERENT:
+                  ++nbWrongImage;
+                  break;
+                case METRICS_DISAGREE:
+                  ++nbWrongImage;
+                  ++nbMetricsDisagree;
+                  break;
+                default:
+                  LOGGER.error("Unrecognized image difference result: " + result);
+              }
             }
           } else {
             nbErrors++;
@@ -253,6 +283,28 @@ public class WebUi extends HttpServlet {
     }
 
     return result;
+  }
+
+  private static ComputeDifferenceResult getComputeDiffResult(JsonObject info) {
+
+    final String comparisonWithReferenceKey = "comparision_with_reference";
+
+    if (info == null || !info.has(comparisonWithReferenceKey)) {
+      return ComputeDifferenceResult.DIFFERENT;
+    }
+
+    final JsonObject comparisonJson = info.get(comparisonWithReferenceKey).getAsJsonObject();
+
+    if (comparisonJson.has("exact_match") && comparisonJson.get("exact_match").getAsBoolean()) {
+      return ComputeDifferenceResult.IDENTICAL;
+    }
+
+    if (comparisonJson.has("fuzzy_match") && comparisonJson.get("fuzzy_match").getAsBoolean()) {
+      return ComputeDifferenceResult.IDENTICAL;
+    }
+
+    return ComputeDifferenceResult.DIFFERENT;
+
   }
 
   private enum ReductionStatus {
@@ -569,29 +621,31 @@ public class WebUi extends HttpServlet {
       // exists, and point to documentation.
       if (shaderFamilyResult.shaderFamily.isComp) {
         htmlAppendLn(
-            "<a class='item' target='_blank' rel='noopener noreferrer'",
-            " href='", WebUiConstants.COMPUTE_SHADER_DOC_URL, "'>",
-            "<div class='content'>",
-            "<div class='header'>Compute shader family: ", shaderFamily, "</div>",
-            "The Web interface does not support showing results for compute shaders",
-            " yet, click to open documentation.",
+            "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
+            "<b>COMPUTE</b>",
+            "<div class='content'><div class='header'>", shaderFamily, "</div>",
+            "Variant done: ", Integer.toString(shaderFamilyResult.nbVariantDone),
+            " / ", Integer.toString(shaderFamilyResult.nbVariants),
+            " | Wrong results: ", Integer.toString(shaderFamilyResult.nbWrongComputeResult),
+            " | Slightly different results: ",
+                Integer.toString(shaderFamilyResult.nbSlightlyDifferentComputeResult),
+            " | Errors: ", Integer.toString(shaderFamilyResult.nbErrors),
             "</div></a>");
-        continue;
+      } else {
+        htmlAppendLn(
+            "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
+            "<img class='ui mini image' src='/webui/file/", WebUiConstants.WORKER_DIR, "/",
+            workerName, "/", shaderFamily, "/reference.png'>",
+            "<div class='content'><div class='header'>", shaderFamily, "</div>",
+            "Variant done: ", Integer.toString(shaderFamilyResult.nbVariantDone),
+            " / ", Integer.toString(shaderFamilyResult.nbVariants),
+            " | Wrong images: ", Integer.toString(shaderFamilyResult.nbWrongImage),
+            " | Slightly different images: ", Integer.toString(
+                shaderFamilyResult.nbSlightlyDifferentImage),
+            " | Errors: ", Integer.toString(shaderFamilyResult.nbErrors),
+            " | Metrics disagree: ", Integer.toString(shaderFamilyResult.nbMetricsDisagree),
+            "</div></a>");
       }
-
-      htmlAppendLn(
-          "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
-          "<img class='ui mini image' src='/webui/file/", WebUiConstants.WORKER_DIR, "/",
-          workerName, "/", shaderFamily, "/reference.png'>",
-          "<div class='content'><div class='header'>", shaderFamily, "</div>",
-          "Variant done: ", Integer.toString(shaderFamilyResult.nbVariantDone),
-          " / ", Integer.toString(shaderFamilyResult.nbVariants),
-          " | Wrong images: ", Integer.toString(shaderFamilyResult.nbWrongImage),
-          " | Slightly different images: ", Integer.toString(
-              shaderFamilyResult.nbSlightlyDifferentImage),
-          " | Errors: ", Integer.toString(shaderFamilyResult.nbErrors),
-          " | Metrics disagree: ", Integer.toString(shaderFamilyResult.nbMetricsDisagree),
-          "</div></a>");
     }
     htmlAppendLn("</div></div>");
 
