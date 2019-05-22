@@ -1234,21 +1234,24 @@ public class ShaderJobFileOperations {
             // In the case that we do not have an exact match, store the output obtained by exact
             // diffing (as it may be useful to inspect).
             computeShaderComparisonWithReference.addProperty("exactdiff_output",
-                exactDiffResult.stdout.toString());
+                exactDiffResult.stderr.toString());
 
             // Now perform a fuzzy diff.
             final ExecResult fuzzyDiffResult =
-                new ExecHelper().exec(ExecHelper.RedirectType.TO_BUFFER,
-                    null, false,
-                    ToolPaths.getPythonDriversDir(),
-                    "inspect-compute-results",
+                new ExecHelper().exec(
+                    ExecHelper.RedirectType.TO_BUFFER,
+                    null,
+                    false,
+                    Paths.get(
+                        ToolPaths.getPythonDriversDir(),
+                        "inspect-compute-results").toString(),
                     "fuzzydiff",
                     referenceShaderResultFile.get().getAbsolutePath(),
                     shaderJobResultFile.getAbsolutePath());
             computeShaderComparisonWithReference.addProperty("fuzzy_match",
                 fuzzyDiffResult.res == 0);
             computeShaderComparisonWithReference.addProperty("fuzzydiff_output",
-                fuzzyDiffResult.stdout.toString());
+                fuzzyDiffResult.stderr.toString());
           }
           infoJson.add("comparision_with_reference", computeShaderComparisonWithReference);
         } catch (InterruptedException interruptedException) {
