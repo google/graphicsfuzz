@@ -2246,8 +2246,6 @@ public class WebUi extends HttpServlet {
         htmlAppendLn("<td>", worker, "</td>");
       }
 
-      // Reference result is separate as it doesn't contain a "identical" field, etc
-      // FIXME: make sure reference result has same format as variants to be able to refactor
       String refHref = WebUiConstants.WORKER_DIR + "/" + worker + "/"
           + shaderFamilyFilename + "/reference";
       File refInfoFile = new File(refHref + ".info.json");
