@@ -1187,7 +1187,7 @@ public class ShaderJobFileOperations {
       // In addition to a status and log, results for a compute shader job have:
       // - an "outputs" property, which maps to a dictionary representing the results
       //   that were obtained by running the shader;
-      // - (if reference result is present) a "comparision_with_reference" property
+      // - (if reference result is present) a "comparison_with_reference" property
       //   describing whether or not the computed results exactly or nearly match those
       //   for the reference.
 
@@ -1211,7 +1211,7 @@ public class ShaderJobFileOperations {
 
       if (referenceShaderResultFile.isPresent()) {
 
-        // We have reference results, so can populate the "comparision_with_reference" property.
+        // We have reference results, so can populate the "comparison_with_reference" property.
 
         // This maps to a dictionary with up to 4 keys:
         // - "exact_match", true if and only if the results are identical
@@ -1260,7 +1260,7 @@ public class ShaderJobFileOperations {
             computeShaderComparisonWithReference.addProperty("fuzzydiff_output",
                 fuzzyDiffResult.stderr.toString());
           }
-          infoJson.add("comparision_with_reference", computeShaderComparisonWithReference);
+          infoJson.add("comparison_with_reference", computeShaderComparisonWithReference);
         } catch (InterruptedException interruptedException) {
           LOGGER.error("Error while inspecting compute shader results for differences with "
               + "reference");

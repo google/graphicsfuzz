@@ -289,7 +289,7 @@ public class WebUi extends HttpServlet {
 
   private static ComputeDifferenceResult getComputeDiffResult(JsonObject info) {
 
-    final String comparisonWithReferenceKey = "comparision_with_reference";
+    final String comparisonWithReferenceKey = "comparison_with_reference";
 
     if (info == null || !info.has(comparisonWithReferenceKey)) {
       return ComputeDifferenceResult.DIFFERENT;
@@ -978,7 +978,7 @@ public class WebUi extends HttpServlet {
         String fuzzyDiffOutput = null;
 
         final JsonElement comparisonWithReference =
-            info.get("comparision_with_reference");
+            info.get("comparison_with_reference");
         if (comparisonWithReference != null && comparisonWithReference.isJsonObject()) {
           {
             JsonElement exactDiffElement = comparisonWithReference.getAsJsonObject().get(
