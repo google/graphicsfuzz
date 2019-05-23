@@ -302,7 +302,7 @@ public class WebUi extends HttpServlet {
     }
 
     if (comparisonJson.has("fuzzy_match") && comparisonJson.get("fuzzy_match").getAsBoolean()) {
-      return ComputeDifferenceResult.IDENTICAL;
+      return ComputeDifferenceResult.SIMILAR;
     }
 
     return ComputeDifferenceResult.DIFFERENT;
