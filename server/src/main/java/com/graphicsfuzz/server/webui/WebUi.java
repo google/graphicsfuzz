@@ -619,8 +619,6 @@ public class WebUi extends HttpServlet {
       ShaderFamilyResult shaderFamilyResult = new ShaderFamilyResult(shaderFamily, workerName,
           accessFileInfo);
 
-      // TODO(360): Show results for compute shaders. For now, just indicate that some results
-      // exists, and point to documentation.
       if (shaderFamilyResult.shaderFamily.isCompute) {
         htmlAppendLn(
             "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
