@@ -788,7 +788,7 @@ public class ShaderJobFileOperations {
   public void writeShaderResultToFile(
       ImageJobResult shaderResult,
       File shaderResultFile,
-      Optional<File> referenceShaderResultFile) throws IOException {
+      Optional<File> referenceShaderResultFile) throws InterruptedException, IOException {
 
     writeShaderResultToFileHelper(
         shaderResult,
@@ -1167,7 +1167,7 @@ public class ShaderJobFileOperations {
       ImageJobResult shaderResult,
       File shaderJobResultFile,
       ShaderJobFileOperations fileOps,
-      Optional<File> referenceShaderResultFile) throws IOException {
+      Optional<File> referenceShaderResultFile) throws InterruptedException, IOException {
 
     assertIsShaderJobResultFile(shaderJobResultFile);
 
@@ -1223,49 +1223,43 @@ public class ShaderJobFileOperations {
         //   fuzzy diffing.
 
         final JsonObject computeShaderComparisonWithReference = new JsonObject();
-        try {
 
-          // Check whether the results exactly match those of the reference.
-          final ExecResult exactDiffResult =
-              new ExecHelper().exec(ExecHelper.RedirectType.TO_BUFFER,
-              null, false,
-                  Paths.get(ToolPaths.getPythonDriversDir(),"inspect-compute-results").toString(),
-              "exactdiff",
-              referenceShaderResultFile.get().getAbsolutePath(),
-              shaderJobResultFile.getAbsolutePath());
-          computeShaderComparisonWithReference.addProperty("exact_match",
-              exactDiffResult.res == 0);
+        // Check whether the results exactly match those of the reference.
+        final ExecResult exactDiffResult =
+            new ExecHelper().exec(ExecHelper.RedirectType.TO_BUFFER,
+            null, false,
+                Paths.get(ToolPaths.getPythonDriversDir(),"inspect-compute-results").toString(),
+            "exactdiff",
+            referenceShaderResultFile.get().getAbsolutePath(),
+            shaderJobResultFile.getAbsolutePath());
+        computeShaderComparisonWithReference.addProperty("exact_match",
+            exactDiffResult.res == 0);
 
-          if (exactDiffResult.res != 0) {
+        if (exactDiffResult.res != 0) {
 
-            // In the case that we do not have an exact match, store the output obtained by exact
-            // diffing (as it may be useful to inspect).
-            computeShaderComparisonWithReference.addProperty("exactdiff_output",
-                exactDiffResult.stderr.toString());
+          // In the case that we do not have an exact match, store the output obtained by exact
+          // diffing (as it may be useful to inspect).
+          computeShaderComparisonWithReference.addProperty("exactdiff_output",
+              exactDiffResult.stderr.toString());
 
-            // Now perform a fuzzy diff.
-            final ExecResult fuzzyDiffResult =
-                new ExecHelper().exec(
-                    ExecHelper.RedirectType.TO_BUFFER,
-                    null,
-                    false,
-                    Paths.get(
-                        ToolPaths.getPythonDriversDir(),
-                        "inspect-compute-results").toString(),
-                    "fuzzydiff",
-                    referenceShaderResultFile.get().getAbsolutePath(),
-                    shaderJobResultFile.getAbsolutePath());
-            computeShaderComparisonWithReference.addProperty("fuzzy_match",
-                fuzzyDiffResult.res == 0);
-            computeShaderComparisonWithReference.addProperty("fuzzydiff_output",
-                fuzzyDiffResult.stderr.toString());
-          }
-          infoJson.add("comparison_with_reference", computeShaderComparisonWithReference);
-        } catch (InterruptedException interruptedException) {
-          LOGGER.error("Error while inspecting compute shader results for differences with "
-              + "reference");
-          interruptedException.printStackTrace();
+          // Now perform a fuzzy diff.
+          final ExecResult fuzzyDiffResult =
+              new ExecHelper().exec(
+                  ExecHelper.RedirectType.TO_BUFFER,
+                  null,
+                  false,
+                  Paths.get(
+                      ToolPaths.getPythonDriversDir(),
+                      "inspect-compute-results").toString(),
+                  "fuzzydiff",
+                  referenceShaderResultFile.get().getAbsolutePath(),
+                  shaderJobResultFile.getAbsolutePath());
+          computeShaderComparisonWithReference.addProperty("fuzzy_match",
+              fuzzyDiffResult.res == 0);
+          computeShaderComparisonWithReference.addProperty("fuzzydiff_output",
+              fuzzyDiffResult.stderr.toString());
         }
+        infoJson.add("comparison_with_reference", computeShaderComparisonWithReference);
       }
 
       fileOps.writeStringToFile(
@@ -1316,7 +1310,6 @@ public class ShaderJobFileOperations {
         gifOutput.close();
       } catch (Exception err) {
         LOGGER.error("Error while creating GIF for nondet");
-        err.printStackTrace();
       }
     }
 
