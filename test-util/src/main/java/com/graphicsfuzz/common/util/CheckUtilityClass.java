@@ -41,8 +41,7 @@ public class CheckUtilityClass {
     assertEquals("Utility class can only have one constructor", 1,
         utilityClass.getDeclaredConstructors().length);
     final Constructor<?> constructor = utilityClass.getDeclaredConstructor();
-    if (constructor.isAccessible()
-          || !Modifier.isPrivate(constructor.getModifiers())) {
+    if (!Modifier.isPrivate(constructor.getModifiers())) {
       fail("Utility class constructor must be private");
     }
     constructor.setAccessible(true);

@@ -31,17 +31,22 @@ public class SystematicReductionPass extends AbstractReductionPass {
   private int granularity;
   private final int maximumGranularity;
 
-  public SystematicReductionPass(ReducerContext reducerContext,
-                                 boolean verbose, IReductionOpportunityFinder finder,
-                                 int maximumGranularity) {
+  public SystematicReductionPass(
+      ReducerContext reducerContext,
+      boolean verbose,
+      IReductionOpportunityFinder<? extends IReductionOpportunity> finder,
+      int maximumGranularity
+  ) {
     // Ignore verbose argument for now.
     super(reducerContext, finder);
     this.isInitialized = false;
     this.maximumGranularity = maximumGranularity;
   }
 
-  public SystematicReductionPass(ReducerContext reducerContext,
-                                 boolean verbose, IReductionOpportunityFinder finder) {
+  public SystematicReductionPass(
+      ReducerContext reducerContext,
+      boolean verbose,
+      IReductionOpportunityFinder<? extends IReductionOpportunity> finder) {
     this(reducerContext, verbose, finder, Integer.MAX_VALUE);
   }
 
