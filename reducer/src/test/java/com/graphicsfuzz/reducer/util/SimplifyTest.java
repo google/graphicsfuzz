@@ -127,14 +127,14 @@ public class SimplifyTest {
   @Test
   public void testIdentityNotNestedRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
-        + " if(_GLF_IDENTITY(1, 1)) {}"
+        + " if(_GLF_IDENTITY(true, true)) {}"
         + " int x = _GLF_IDENTITY(1, 1);"
         + " x = _GLF_IDENTITY(1, 1);"
         + " _GLF_IDENTITY(1, 1);"
         + "}"
     );
     final String expected = "void main() {"
-        + " if(1) {}"
+        + " if(true) {}"
         + " int x = 1;"
         + " x = 1;"
         + " 1;"
