@@ -23,8 +23,10 @@ import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
@@ -36,6 +38,7 @@ import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
@@ -57,6 +60,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class DonateLiveCodeTransformationTest {
 
@@ -326,6 +331,113 @@ public class DonateLiveCodeTransformationTest {
 
     // Creating a parent map checks that there is no aliasing in the AST.
     IParentMap.createParentMap(referenceShaderJob.getFragmentShader().get());
+  }
+
+  @Test
+  public void testArrayAccessesAreInBounds() throws Exception {
+    // This checks that array accesses are correctly made in-bounds when injecting live code.
+
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+    final File donors = testFolder.newFolder("donors");
+    final File referenceFile = testFolder.newFile("reference.json");
+
+    {
+      // This donor is designed to have a high chance of leading to an array access getting injected
+      // such that the array indexing expression will be a free variable for which a fuzzed initial
+      // value will be created.
+      final String donorSource =
+          "#version 300 es\n"
+              + "void main() {\n"
+              + " int x = 0;"
+              + " {"
+              + "  int A[1];"
+              + "  A[x] = 42;"
+              + "  {"
+              + "   int B[1];"
+              + "   B[x] = 42;"
+              + "   {"
+              + "    int C[1];"
+              + "    C[x] = 42;"
+              + "   }"
+              + "  }"
+              + " }"
+              + "}\n";
+
+      fileOps.writeShaderJobFileFromImageJob(
+          new ImageJob()
+              .setFragmentSource(donorSource)
+              .setUniformsInfo("{}"),
+          new File(donors, "donor.json")
+      );
+    }
+
+    {
+      final String referenceSource = "#version 300 es\n"
+          + "void main() {"
+          + "  "
+          + "}";
+
+      fileOps.writeShaderJobFileFromImageJob(
+          new ImageJob()
+              .setFragmentSource(referenceSource)
+              .setUniformsInfo("{}"),
+          referenceFile
+
+      );
+    }
+
+    // Try the following a few times, so that there is a good chance of triggering the issue
+    // this test was used to catch, should it return:
+    for (int seed = 0; seed < 5; seed++) {
+
+      final ShaderJob referenceShaderJob = fileOps.readShaderJobFile(referenceFile);
+
+      // Do live code donation.
+      DonateLiveCodeTransformation transformation =
+          new DonateLiveCodeTransformation(IRandom::nextBoolean, donors,
+              GenerationParams.normal(ShaderKind.FRAGMENT, true), false);
+
+      assert referenceShaderJob.getFragmentShader().isPresent();
+
+      boolean result = transformation.apply(
+          referenceShaderJob.getFragmentShader().get(),
+          TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
+          new RandomWrapper(seed),
+          GenerationParams.normal(ShaderKind.FRAGMENT, true)
+      );
+
+      Assert.assertTrue(result);
+
+      // An array access injected into the shader must either be (1) already in bounds, or
+      // (2) made in bounds.  Only in the former case can the array index be a variable identifier
+      // expression, and in that case the expression cannot realistically be statically in bounds
+      // if the initializer for that expression is under a _GLF_FUZZED macro.  (There is a tiny
+      // chance that the fuzzed expression might statically evaluate to 0, but currently a
+      // _GLF_FUZZED macro will be treated as not statically in bounds, so the access would be
+      // made in bounds in that case.)
+      //
+      // The following thus checks that if an array is indexed directly by a variable reference,
+      // the initializer for that variable is not a function call expression.
+      new ScopeTreeBuilder() {
+
+        @Override
+        public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
+          super.visitArrayIndexExpr(arrayIndexExpr);
+          if (arrayIndexExpr.getIndex() instanceof VariableIdentifierExpr) {
+            final ScopeEntry scopeEntry = currentScope.lookupScopeEntry(
+                ((VariableIdentifierExpr) arrayIndexExpr.getIndex()).getName());
+            assertTrue(scopeEntry.hasVariableDeclInfo());
+            assertNotNull(scopeEntry.getVariableDeclInfo().getInitializer());
+            assertFalse(((ScalarInitializer) scopeEntry.getVariableDeclInfo().getInitializer())
+                .getExpr() instanceof FunctionCallExpr);
+          }
+        }
+
+      }.visit(referenceShaderJob.getFragmentShader().get());
+
+    }
+
   }
 
 }
