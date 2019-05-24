@@ -33,7 +33,6 @@ import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.LayoutQualifier;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
@@ -79,7 +78,7 @@ import java.util.stream.Collectors;
 
 public abstract class DonateCodeTransformation implements ITransformation {
 
-  final Function<IRandom, Boolean> probabilityOfDonation;
+  private final Function<IRandom, Boolean> probabilityOfDonation;
 
   private Map<File, TranslationUnit> donorsToTranslationUnits;
   private final List<FunctionPrototype> functionPrototypes;
@@ -413,14 +412,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
     newRecipientTopLevelDeclarations.addAll(recipient.getTopLevelDeclarations().stream()
         .filter(d -> d instanceof FunctionDefinition).collect(Collectors.toList()));
 
-    // Make sure we clone the top-level FunctionPrototypes that are added, otherwise each will
-    // exist twice in the AST: first as a top-level declaration, second as part of the
-    // FunctionDefinition.
     newRecipientTopLevelDeclarations =
-        addNecessaryForwardDeclarations(newRecipientTopLevelDeclarations)
-            .stream()
-            .map(Declaration::clone)
-            .collect(Collectors.toList());
+        addNecessaryForwardDeclarations(newRecipientTopLevelDeclarations);
 
     recipient.setTopLevelDeclarations(newRecipientTopLevelDeclarations);
 
@@ -480,12 +473,16 @@ public abstract class DonateCodeTransformation implements ITransformation {
         Set<String> calledFunctionNames =
             getCalledFunctions(decls.get(i));
 
-        Set<FunctionPrototype> toDeclare =
+        List<FunctionPrototype> toDeclare =
             functionsDefinedAfterDecl.get(i).stream().filter(item ->
                 calledFunctionNames.contains(item.getName())).filter(item ->
                 !declared.stream().anyMatch(alreadyDeclared -> alreadyDeclared.matches(item)))
-                .collect(Collectors.toSet());
-        result.addAll(toDeclare);
+                .collect(Collectors.toList());
+
+        // Make sure we clone the FunctionPrototypes that are added, otherwise each will exist
+        // twice in the AST: first as a top-level declaration, second as part of the
+        // FunctionDefinition.
+        result.addAll(toDeclare.stream().map(Declaration::clone).collect(Collectors.toList()));
         declared.addAll(toDeclare);
       }
       if (decls.get(i) instanceof FunctionDefinition) {
