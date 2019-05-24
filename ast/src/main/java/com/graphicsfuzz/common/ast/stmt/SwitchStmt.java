@@ -34,10 +34,6 @@ public class SwitchStmt extends Stmt {
     return expr;
   }
 
-  public void setExpr(Expr expr) {
-    this.expr = expr;
-  }
-
   public BlockStmt getBody() {
     return body;
   }
