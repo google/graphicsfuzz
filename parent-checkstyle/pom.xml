@@ -39,6 +39,10 @@ limitations under the License.
           <!-- declared in parent -->
         </dependencies>
         <configuration>
+          <sourceDirectories>
+            <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+<!--            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>-->
+          </sourceDirectories>
           <configLocation>graphicsfuzz/checkstyle.xml</configLocation>
           <encoding>UTF-8</encoding>
           <consoleOutput>true</consoleOutput>

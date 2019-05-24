@@ -23,6 +23,7 @@ import com.graphicsfuzz.reducer.glslreducers.IReductionPass;
 import com.graphicsfuzz.reducer.glslreducers.IReductionPassManager;
 import com.graphicsfuzz.reducer.glslreducers.SystematicReductionPass;
 import com.graphicsfuzz.reducer.glslreducers.SystematicReductionPassManager;
+import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunityFinder;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 import com.graphicsfuzz.reducer.util.Simplify;
@@ -31,6 +32,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -84,20 +86,19 @@ public class ReductionDriver {
         IReductionOpportunityFinder.largestFunctionsFinder(5), 1));
 
     final List<IReductionPass> cleanupPasses = new ArrayList<>();
-    for (IReductionOpportunityFinder finder : new IReductionOpportunityFinder[]{
+    for (IReductionOpportunityFinder<? extends IReductionOpportunity> finder : Arrays.asList(
         IReductionOpportunityFinder.inlineUniformFinder(),
         IReductionOpportunityFinder.inlineInitializerFinder(),
         IReductionOpportunityFinder.inlineFunctionFinder(),
         IReductionOpportunityFinder.unusedParamFinder(),
-        IReductionOpportunityFinder.foldConstantFinder(),
-    }) {
+        IReductionOpportunityFinder.foldConstantFinder())) {
       cleanupPasses.add(new SystematicReductionPass(context,
           verbose,
           finder));
     }
 
     final List<IReductionPass> corePasses = new ArrayList<>();
-    for (IReductionOpportunityFinder finder : new IReductionOpportunityFinder[]{
+    for (IReductionOpportunityFinder<? extends IReductionOpportunity> finder : Arrays.asList(
         IReductionOpportunityFinder.vectorizationFinder(),
         IReductionOpportunityFinder.unswitchifyFinder(),
         IReductionOpportunityFinder.stmtFinder(),
@@ -117,8 +118,7 @@ public class ReductionDriver {
         IReductionOpportunityFinder.liveFragColorWriteFinder(),
         IReductionOpportunityFinder.functionFinder(),
         IReductionOpportunityFinder.variableDeclFinder(),
-        IReductionOpportunityFinder.globalVariablesDeclarationFinder(),
-    }) {
+        IReductionOpportunityFinder.globalVariablesDeclarationFinder())) {
       final SystematicReductionPass pass = new SystematicReductionPass(context,
           verbose,
           finder);

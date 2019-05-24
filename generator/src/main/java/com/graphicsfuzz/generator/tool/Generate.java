@@ -219,6 +219,7 @@ public class Generate {
    *                               preprocessor or validator.
    * @throws GlslParserException   if a shader in the job fails to parse.
    */
+  @SuppressWarnings("deprecation")
   public static void generateVariant(ShaderJobFileOperations fileOps,
                                      File referenceShaderJobFile,
                                      File outputShaderJobFile,
