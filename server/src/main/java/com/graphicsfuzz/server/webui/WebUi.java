@@ -2143,8 +2143,7 @@ public class WebUi extends HttpServlet {
   private void htmlComparativeTable(String shaderFamilyFilename, String[] workers)
       throws FileNotFoundException {
 
-    ShaderFamily shaderFamily = new ShaderFamily(shaderFamilyFilename);
-    if (shaderFamily.isComp) {
+    if (new ShaderFamily(shaderFamilyFilename).isComp) {
       // TODO(360): Handle compute shaders
       htmlAppendLn("<p>Compute shader family: ",
           shaderFamilyFilename, ". ",
@@ -2158,7 +2157,7 @@ public class WebUi extends HttpServlet {
 
     htmlAppendLn("<table class='ui celled compact collapsing table'>\n",
         "<thead><tr>");
-    File variantsDir = new File(WebUiConstants.SHADER_FAMILIES_DIR + "/" + shaderFamily);
+    File variantsDir = new File(WebUiConstants.SHADER_FAMILIES_DIR + "/" + shaderFamilyFilename);
     File[] variantFragFiles = variantsDir.listFiles(variantFragFilter);
     Arrays.sort(variantFragFiles, (f1, f2) ->
         new AlphanumComparator().compare(f1.getName(), f2.getName()));
@@ -2196,7 +2195,7 @@ public class WebUi extends HttpServlet {
       // Reference result is separate as it doesn't contain a "identical" field, etc
       // FIXME: make sure reference result has same format as variants to be able to refactor
       String refHref = WebUiConstants.WORKER_DIR + "/" + worker + "/"
-          + shaderFamily + "/reference";
+          + shaderFamilyFilename + "/reference";
       File refInfoFile = new File(refHref + ".info.json");
       String refPngPath = refHref + ".png";
 
@@ -2223,7 +2222,7 @@ public class WebUi extends HttpServlet {
 
       for (File f : variantFragFiles) {
         File infoFile = new File(WebUiConstants.WORKER_DIR + "/" + worker
-            + "/" + shaderFamily + "/" + f.getName().replace(".frag", ".info.json"));
+            + "/" + shaderFamilyFilename + "/" + f.getName().replace(".frag", ".info.json"));
 
         if (infoFile.isFile()) {
           ReductionStatus reductionStatus = getReductionStatus(worker, shaderFamilyFilename,
