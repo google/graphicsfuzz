@@ -114,8 +114,6 @@ public class SimplifyTest {
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
 
-  // TODO(491): Enable once issue 491 is fixed.
-  @Ignore
   @Test
   public void testIdentityNotNestedRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
