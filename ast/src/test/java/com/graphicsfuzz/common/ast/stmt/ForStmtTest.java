@@ -17,7 +17,6 @@
 package com.graphicsfuzz.common.ast.stmt;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
@@ -101,6 +100,71 @@ public class ForStmtTest {
     final TranslationUnit tu = ParseHelper.parse("void main() { for (;;) ; }");
     final TranslationUnit tu2 = tu.clone();
     CompareAstsDuplicate.assertEqualAsts(tu, tu2);
+  }
+
+  @Test
+  public void testEmptyFor() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() { for (;;) ; }");
+    final ForStmt stmt =
+        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+        .getStmt(0);
+    assertTrue(stmt.getInit() instanceof NullStmt);
+    assertFalse(stmt
+        .hasCondition());
+    assertFalse(stmt
+        .hasIncrement());
+  }
+
+  @Test
+  public void testOnlyHasInit() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() { for (1; ; ) { } }");
+    final ForStmt stmt =
+        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+            .getStmt(0);
+    assertFalse(stmt.getInit() instanceof NullStmt);
+    assertFalse(stmt
+        .hasCondition());
+    assertFalse(stmt
+        .hasIncrement());
+  }
+
+  @Test
+  public void testOnlyHasCondition() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() { for (; 1; ) { } }");
+    final ForStmt stmt =
+        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+            .getStmt(0);
+    assertTrue(stmt.getInit() instanceof NullStmt);
+    assertTrue(stmt
+        .hasCondition());
+    assertFalse(stmt
+        .hasIncrement());
+  }
+
+  @Test
+  public void testOnlyHasIncrement() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() { for (; ; 1) { } }");
+    final ForStmt stmt =
+        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+            .getStmt(0);
+    assertTrue(stmt.getInit() instanceof NullStmt);
+    assertFalse(stmt
+        .hasCondition());
+    assertTrue(stmt
+        .hasIncrement());
+  }
+
+  @Test
+  public void testHasAllFields() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() { for (1; 1; 1) { } }");
+    final ForStmt stmt =
+        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+            .getStmt(0);
+    assertFalse(stmt.getInit() instanceof NullStmt);
+    assertTrue(stmt
+        .hasCondition());
+    assertTrue(stmt
+        .hasIncrement());
   }
 
 }
