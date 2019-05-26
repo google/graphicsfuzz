@@ -55,45 +55,36 @@ public class EliminateInjectionMacrosVisitor extends StandardVisitor {
   }
 
   private IAstNode addParenthesesIfNecessary(IAstNode parent, Expr child) {
-    if (ifParenthesesNecessary(parent, child)) {
-      return new ParenExpr(child);
-    }
-    return child;
-  }
-
-  boolean ifParenthesesNecessary(IAstNode parent, Expr child) {
     if (child instanceof ConstantExpr
         || child instanceof ParenExpr
         || child instanceof VariableIdentifierExpr
         || child instanceof FunctionCallExpr) {
       // Parentheses is unnecessary in cases such as _GLF_FUNCTION(1),
       // _GLF_FUNCTION((1)), _GLF_FUNCTION(a), _GLF_FUNCTION(sin(a)).
-      return false;
+      return child;
     }
 
     if (!(parent instanceof Expr)) {
       // No parentheses needed if the parent is not an expression,
       // for example, int x = _GLF_FUNCTION(a + b).
-      return false;
+      return child;
     }
 
     if (parent instanceof ParenExpr) {
       // If parent is parentheses, adding a new parentheses would be redundant,
       // e.g. (_GLF_FUNCTION(a + b)).
-      return false;
+      return child;
     }
 
     if (parent instanceof FunctionCallExpr) {
-      if (child instanceof BinaryExpr) {
-        // The binary operator must not be the comma operator
-        // as it cannot appear directly as a macro argument.
-        assert ((BinaryExpr) child).getOp() != BinOp.COMMA;
-        return true;
-      }
-      return false;
+      // This ensures that the binary expression inside the function call is not a comma operator
+      // as it is invalid to have a comma appear directly here, e.g. _GLF_IDENTITY(expr, a, b) is
+      // not valid since a and b are treated as function arguments instead.
+      assert (!(child instanceof BinaryExpr) || ((BinaryExpr) child).getOp() != BinOp.COMMA);
+      return child;
     }
 
-    return true;
+    return new ParenExpr(child);
   }
 
 }

@@ -133,7 +133,6 @@ public class SimplifyTest {
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
 
-  @Ignore
   @Test
   public void testFunctionCallParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
