@@ -19,76 +19,48 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
-import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.ListConcat;
-import com.graphicsfuzz.common.util.PipelineInfo;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class RemoveRedundantUniformMetadataReductionOpportunities
-    extends ReductionOpportunitiesBase<RemoveRedundantUniformMetadataReductionOpportunity> {
-
-  private final PipelineInfo pipelineInfo;
-  private List<String> redundantUniformNames;
-
-  public RemoveRedundantUniformMetadataReductionOpportunities(TranslationUnit tu,
-                                                              ReducerContext context,
-                                                              PipelineInfo pipelineInfo) {
-    super(tu, context);
-    this.pipelineInfo = pipelineInfo;
-  }
+public class RemoveRedundantUniformMetadataReductionOpportunities {
 
   static List<RemoveRedundantUniformMetadataReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
       ReducerContext context) {
-    return shaderJob.getShaders()
+
+    // We initially grab names of all uniforms in the pipeline info.
+    final List<String> canBeRemoved =
+        new ArrayList<>(shaderJob.getPipelineInfo().getUniformNames());
+
+    for (TranslationUnit tu : shaderJob.getShaders()) {
+      new StandardVisitor() {
+        @Override
+        public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+          super.visitVariablesDeclaration(variablesDeclaration);
+          // A uniform in the pipeline info that its declaration is found in shaders
+          // will not be removed by the reducer.
+          if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
+            for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
+              canBeRemoved.remove(vdi.getName());
+            }
+          }
+        }
+      }.visit(tu);
+    }
+
+    // Since we are going to remove redundant uniforms in the pipeline info that do not
+    // belong to any shader, the visitation depth should be zero.
+    return canBeRemoved
         .stream()
-        .map(item -> findOpportunitiesForShader(item, context, shaderJob.getPipelineInfo()))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  @Override
-  public void visitTranslationUnit(TranslationUnit translationUnit) {
-    redundantUniformNames = new ArrayList<>(pipelineInfo.getUniformNames());
-    super.visitTranslationUnit(translationUnit);
-
-    for (String uniformName : redundantUniformNames) {
-      addOpportunity(new RemoveRedundantUniformMetadataReductionOpportunity(uniformName,
-          pipelineInfo, getVistitationDepth()));
-    }
-  }
-
-  private static List<RemoveRedundantUniformMetadataReductionOpportunity>
-      findOpportunitiesForShader(TranslationUnit tu,
-                               ReducerContext context,
-                               PipelineInfo pipelineInfo) {
-    RemoveRedundantUniformMetadataReductionOpportunities finder =
-          new RemoveRedundantUniformMetadataReductionOpportunities(tu, context, pipelineInfo);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-  @Override
-  public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
-    // This prevents removing a uniform declared but not used.
-    super.visitVariablesDeclaration(variablesDeclaration);
-    for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
-      removeRedundantUniformName(vdi.getName());
-    }
-  }
-
-  @Override
-  public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
-    super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    final String name = variableIdentifierExpr.getName();
-    removeRedundantUniformName(name);
-  }
-
-  private void removeRedundantUniformName(String name) {
-    assert redundantUniformNames != null;
-    redundantUniformNames.remove(name);
+        .map(item -> new RemoveRedundantUniformMetadataReductionOpportunity(item,
+            shaderJob.getPipelineInfo(),
+            new VisitationDepth(0))
+        ).collect(Collectors.toList());
   }
 
 }

@@ -1011,9 +1011,8 @@ public class ShaderJobFileOperations {
     byte[] computeData = isFile(computeShaderFile)
         ? readFileToByteArray(computeShaderFile)
         : new byte[0];
-    // This metadata is required since in the case of
-    // RemoveRedundantUniformMetadataReductionOpportunities
-    // only metadata in json is removed, not the shaders.
+    //  This metadata is required in order to distinguish between shader jobs
+    //  with identical shaders but different pipeline information.
     byte[] metaData = isFile(shaderJobFile)
         ? readFileToByteArray(shaderJobFile)
         : new byte[0];

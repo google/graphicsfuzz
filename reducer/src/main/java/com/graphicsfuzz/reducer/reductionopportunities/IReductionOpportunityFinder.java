@@ -476,7 +476,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
 
       @Override
       public String getName() {
-        return "unusedUniformMetadata";
+        return "redundantUniformMetadata";
       }
     };
   }
