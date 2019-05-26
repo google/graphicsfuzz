@@ -563,8 +563,6 @@ public class ReductionDriverTest {
 
   }
 
-  // TODO(478): Enable this test once the issue is fixed.
-  @Ignore
   @Test
   public void testReductionOfUnreferencedUniform() throws Exception {
 

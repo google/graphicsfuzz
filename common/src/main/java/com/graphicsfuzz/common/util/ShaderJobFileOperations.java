@@ -1011,7 +1011,13 @@ public class ShaderJobFileOperations {
     byte[] computeData = isFile(computeShaderFile)
         ? readFileToByteArray(computeShaderFile)
         : new byte[0];
-    byte[] combinedData = new byte[vertexData.length + fragmentData.length + computeData.length];
+    //  This metadata is required in order to distinguish between shader jobs
+    //  with identical shaders but different pipeline information.
+    byte[] metaData = isFile(shaderJobFile)
+        ? readFileToByteArray(shaderJobFile)
+        : new byte[0];
+    byte[] combinedData =
+        new byte[vertexData.length + fragmentData.length + computeData.length + metaData.length ];
     System.arraycopy(
         vertexData,
         0,
@@ -1030,6 +1036,12 @@ public class ShaderJobFileOperations {
         combinedData,
         vertexData.length + fragmentData.length,
         computeData.length);
+    System.arraycopy(
+        metaData,
+        0,
+        combinedData,
+        vertexData.length + fragmentData.length + computeData.length,
+        metaData.length);
     return DigestUtils.md5Hex(combinedData);
   }
 

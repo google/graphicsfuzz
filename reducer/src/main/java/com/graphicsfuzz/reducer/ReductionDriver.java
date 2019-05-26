@@ -91,7 +91,8 @@ public class ReductionDriver {
         IReductionOpportunityFinder.inlineInitializerFinder(),
         IReductionOpportunityFinder.inlineFunctionFinder(),
         IReductionOpportunityFinder.unusedParamFinder(),
-        IReductionOpportunityFinder.foldConstantFinder())) {
+        IReductionOpportunityFinder.foldConstantFinder(),
+        IReductionOpportunityFinder.redundantUniformMetadataFinder())) {
       cleanupPasses.add(new SystematicReductionPass(context,
           verbose,
           finder));
@@ -296,7 +297,7 @@ public class ReductionDriver {
         context.getEmitGraphicsFuzzDefines()
     );
     if (requiresUniformBindings) {
-      assert state.hasUniformBindings();
+      assert state.getPipelineInfo().getNumUniforms() == 0 || state.hasUniformBindings();
       state.removeUniformBindings();
     }
   }

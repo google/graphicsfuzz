@@ -462,4 +462,23 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
+  static IReductionOpportunityFinder<RemoveRedundantUniformMetadataReductionOpportunity>
+      redundantUniformMetadataFinder() {
+    return new IReductionOpportunityFinder<RemoveRedundantUniformMetadataReductionOpportunity>() {
+      @Override
+      public List<RemoveRedundantUniformMetadataReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        return RemoveRedundantUniformMetadataReductionOpportunities.findOpportunities(
+            shaderJob,
+            context);
+      }
+
+      @Override
+      public String getName() {
+        return "redundantUniformMetadata";
+      }
+    };
+  }
+
 }
