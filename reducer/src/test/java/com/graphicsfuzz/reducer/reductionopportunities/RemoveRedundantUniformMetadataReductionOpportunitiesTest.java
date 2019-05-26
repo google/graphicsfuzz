@@ -77,16 +77,14 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     assertEquals(1, shaderJob.getPipelineInfo().getNumUniforms());
 
     // There should be exactly one opportunity to remove a piece of unused pipeline state.
-    // TODO(478): remove the Assert.fail(), and un-comment the lines that follow it.
-    Assert.fail();
-    //List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
-    //    RemoveRedundantUniformMetadataReductionOpportunities
-    //        .findOpportunities(shaderJob,
-    //            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
-    //            null,
-    //            true));
-    //assertEquals(1, ops.size());
-    //ops.get(0).applyReduction();
+    List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
+        RemoveRedundantUniformMetadataReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                null,
+                true));
+    assertEquals(1, ops.size());
+    ops.get(0).applyReduction();
 
     // Check that after applying the reduction opportunity there are no uniforms in the pipeline
     // state and that the shader has not changed.
@@ -94,8 +92,6 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     assertEquals(0, shaderJob.getPipelineInfo().getNumUniforms());
   }
 
-  // TODO(478): enable this test once the issue is addressed.
-  @Ignore
   @Test
   public void testDoNotRemoveUsed() throws Exception {
     // Make a shader job with a simple fragment shader that declares (but does not use)
@@ -109,7 +105,7 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     // Check that initially there is indeed one uniform in the pipeline state.
     assertEquals(1, shaderJob.getPipelineInfo().getNumUniforms());
 
-    // There should be exactly one opportunity to remove a piece of unused pipeline state.
+    // There should be no opportunities to remove a piece of unused pipeline state.
     List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
         RemoveRedundantUniformMetadataReductionOpportunities
         .findOpportunities(shaderJob,
@@ -118,8 +114,6 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     assertEquals(0, ops.size());
   }
 
-  // TODO(478): enable this test once the issue is addressed.
-  @Ignore
   @Test
   public void testDoNotRemoveUsedMultipleShaders() throws Exception {
     // A shader job with a vertex shader and fragment shader that each use a different
@@ -142,14 +136,12 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
 
     // There should be no opportunities to remove a piece of unused pipeline state, since both
     // uniforms are referenced.
-    // TODO(478): remove the Assert.fail(), and un-comment the lines that follow it.
-    Assert.fail();
-    //List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
-    //    RemoveRedundantUniformMetadataReductionOpportunities
-    //        .findOpportunities(shaderJob,
-    //            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
-    //            null, true));
-    //assertEquals(0, ops.size());
+    List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
+        RemoveRedundantUniformMetadataReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                null, true));
+    assertEquals(0, ops.size());
   }
 
 }
