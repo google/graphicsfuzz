@@ -33,23 +33,23 @@ public class EliminateInjectionMacrosVisitor extends StandardVisitor {
   protected void visitChildFromParent(IAstNode child, IAstNode parent) {
     super.visitChildFromParent(child, parent);
     if (child instanceof FunctionCallExpr) {
-      Expr expr = (Expr) child;
-      if (MacroNames.isIdentity(expr)
-          || MacroNames.isZero(expr)
-          || MacroNames.isOne(expr)
-          || MacroNames.isFalse(expr)
-          || MacroNames.isTrue(expr)) {
+      final FunctionCallExpr functionCallExpr = (FunctionCallExpr) child;
+      if (MacroNames.isIdentity(functionCallExpr)
+          || MacroNames.isZero(functionCallExpr)
+          || MacroNames.isOne(functionCallExpr)
+          || MacroNames.isFalse(functionCallExpr)
+          || MacroNames.isTrue(functionCallExpr)) {
         parent.replaceChild(child,
-            addParenthesesIfNecessary(parent, ((FunctionCallExpr) child).getChild(1)));
-      } else if (MacroNames.isFuzzed(expr)
-          || MacroNames.isDeadByConstruction(expr)
-          || MacroNames.isSwitch(expr)
-          || MacroNames.isLoopWrapper(expr)
-          || MacroNames.isIfWrapperFalse(expr)
-          || MacroNames.isIfWrapperTrue(expr)
+            addParenthesesIfNecessary(parent, functionCallExpr.getChild(1)));
+      } else if (MacroNames.isFuzzed(functionCallExpr)
+          || MacroNames.isDeadByConstruction(functionCallExpr)
+          || MacroNames.isSwitch(functionCallExpr)
+          || MacroNames.isLoopWrapper(functionCallExpr)
+          || MacroNames.isIfWrapperFalse(functionCallExpr)
+          || MacroNames.isIfWrapperTrue(functionCallExpr)
       ) {
         parent.replaceChild(child,
-            addParenthesesIfNecessary(parent, ((FunctionCallExpr) child).getChild(0)));
+            addParenthesesIfNecessary(parent, functionCallExpr.getChild(0)));
       }
     }
   }
