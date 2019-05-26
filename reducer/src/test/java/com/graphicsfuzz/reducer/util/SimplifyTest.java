@@ -142,4 +142,18 @@ public class SimplifyTest {
     final TranslationUnit simplifiedTu = Simplify.simplify(tu);
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
+
+  @Ignore
+  @Test
+  public void testFunctionCallParenthesesRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() {"
+        + "foo(_GLF_IDENTITY(1 + 2, 1 + 2));"
+        + "}"
+    );
+    final String expected = "void main() {"
+        + " foo(1 + 2);"
+        + "}";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
 }
