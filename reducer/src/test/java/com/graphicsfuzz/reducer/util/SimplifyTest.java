@@ -44,7 +44,7 @@ public class SimplifyTest {
   @Test
   public void testWhileParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
-        + "  while (_GLF_DEAD(_GLF_FALSE(false, false))) {"
+        + "  while(_GLF_WRAPPED_LOOP(_GLF_FALSE(false ,_GLF_DEAD(_GLF_FALSE(false, false))))) {"
         + "  }"
         + "}");
     final String expected = "void main() {"
@@ -60,14 +60,14 @@ public class SimplifyTest {
   public void testForParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
         + " for ("
-        + "   int i = _GLF_ONE(1, _GLF_IDENTITY(1, 1));"
+        + "   int i = int(_GLF_ONE(1.0, _GLF_IDENTITY(1.0, 1.0)));"
         + "   i > _GLF_IDENTITY(1, _GLF_FUZZED(1));"
         + "   i++)"
         + "   { }"
         + " }"
         + "}");
     final String expected = "void main() {"
-        + " for (int i = 1; i > 1; i++)"
+        + " for (int i = int(1.0); i > 1; i++)"
         + "   { }"
         + "}";
     final TranslationUnit simplifiedTu = Simplify.simplify(tu);
@@ -78,7 +78,7 @@ public class SimplifyTest {
   @Test
   public void testSwitchParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
-        + " switch(_GLF_ZERO(0, _GLF_IDENTITY(0, 0)))"
+        + " switch(_GLF_SWITCH(_GLF_ZERO(0, _GLF_IDENTITY(0, 0))))"
         + "   {"
         + "   }"
         + "}");
@@ -95,7 +95,7 @@ public class SimplifyTest {
   @Test
   public void testDoWhileParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
-        + " do { } while (_GLF_DEAD(_GLF_FALSE(false, false)));"
+        + " do { } while (_GLF_WRAPPED_LOOP(_GLF_DEAD(_GLF_FALSE(false, false))));"
         + "}");
     final String expected = "void main() {"
         + " do { } while (false);"
@@ -113,7 +113,7 @@ public class SimplifyTest {
         + " int a = _GLF_IDENTITY(_GLF_FUZZED(1), 1);"
         + "}"
     );
-    final String expected = "void() {"
+    final String expected = "void main() {"
         + " 1;"
         + " 1;"
         + " int a = 1;"
@@ -122,4 +122,38 @@ public class SimplifyTest {
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
 
+  // TODO(491): Enable once issue 491 is fixed.
+  @Ignore
+  @Test
+  public void testIdentityNotNestedRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() {"
+        + " if(_GLF_IDENTITY(true, true)) {}"
+        + " int x = _GLF_IDENTITY(1, 1);"
+        + " x = _GLF_IDENTITY(1, 1);"
+        + " _GLF_IDENTITY(1, 1);"
+        + "}"
+    );
+    final String expected = "void main() {"
+        + " if(true) {}"
+        + " int x = 1;"
+        + " x = 1;"
+        + " 1;"
+        + "}";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
+
+  @Ignore
+  @Test
+  public void testFunctionCallParenthesesRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() {"
+        + "foo(_GLF_IDENTITY(1 + 2, 1 + 2));"
+        + "}"
+    );
+    final String expected = "void main() {"
+        + " foo(1 + 2);"
+        + "}";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
 }

@@ -1136,20 +1136,10 @@ public class ShaderJobFileOperations {
         shaderFile,
         ShaderTranslatorShadingLanguageVersionSupport
             .getShaderTranslatorArgument(shadingLanguageVersion));
-    if (isMemoryExhaustedError(shaderTranslatorResult)) {
-      return true;
-    }
     return checkValidationResult(
         shaderTranslatorResult,
         shaderFile.getName(),
         throwExceptionOnValidationError);
-  }
-
-  // TODO(171): This is a workaround for an issue where shader_translator reports memory exhaustion.
-  // If the issue in shader_translator can be fixed, we should get rid of this check.
-  private boolean isMemoryExhaustedError(ExecResult shaderTranslatorResult) {
-    return shaderTranslatorResult.res != 0
-        && shaderTranslatorResult.stdout.toString().contains("memory exhausted");
   }
 
   private boolean checkValidationResult(ExecResult res,
