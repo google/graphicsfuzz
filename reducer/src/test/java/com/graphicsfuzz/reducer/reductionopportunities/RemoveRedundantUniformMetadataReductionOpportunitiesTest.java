@@ -130,7 +130,7 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
         Collections.singletonList(20.0));
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         pipelineInfo, ParseHelper.parse(minimalVertexShader, ShaderKind.VERTEX),
-        ParseHelper.parse(minimalVertexShader, ShaderKind.FRAGMENT));
+        ParseHelper.parse(minimalFragmentShader, ShaderKind.FRAGMENT));
     // Check that initially there are indeed two uniforms in the pipeline state.
     assertEquals(2, shaderJob.getPipelineInfo().getNumUniforms());
 
