@@ -16,128 +16,78 @@
 
 package com.graphicsfuzz.reducer.glslreducers;
 
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
-import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
+import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
-import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
-import com.graphicsfuzz.common.ast.expr.TernaryExpr;
-import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
-import com.graphicsfuzz.common.ast.expr.UnaryExpr;
-import com.graphicsfuzz.common.ast.stmt.DoStmt;
-import com.graphicsfuzz.common.ast.stmt.ForStmt;
-import com.graphicsfuzz.common.ast.stmt.IfStmt;
-import com.graphicsfuzz.common.ast.stmt.LoopStmt;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.reducer.reductionopportunities.MacroNames;
 
 public class EliminateInjectionMacrosVisitor extends StandardVisitor {
 
   @Override
-  public void visitBinaryExpr(BinaryExpr binaryExpr) {
-    super.visitBinaryExpr(binaryExpr);
-    cleanUpMacros(binaryExpr);
-  }
-
-  @Override
-  public void visitUnaryExpr(UnaryExpr unaryExpr) {
-    super.visitUnaryExpr(unaryExpr);
-    cleanUpMacros(unaryExpr);
-  }
-
-  @Override
-  public void visitParenExpr(ParenExpr parenExpr) {
-    super.visitParenExpr(parenExpr);
-    cleanUpMacros(parenExpr);
-  }
-
-  @Override
-  public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-    super.visitFunctionCallExpr(functionCallExpr);
-    cleanUpMacros(functionCallExpr);
-  }
-
-  public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
-    super.visitArrayIndexExpr(arrayIndexExpr);
-    cleanUpMacros(arrayIndexExpr);
-  }
-
-  public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
-    super.visitMemberLookupExpr(memberLookupExpr);
-    cleanUpMacros(memberLookupExpr);
-  }
-
-  public void visitTernaryExpr(TernaryExpr ternaryExpr) {
-    super.visitTernaryExpr(ternaryExpr);
-    cleanUpMacros(ternaryExpr);
-  }
-
-  @Override
-  public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
-    super.visitTypeConstructorExpr(typeConstructorExpr);
-    cleanUpMacros(typeConstructorExpr);
-  }
-
-  @Override
-  public void visitIfStmt(IfStmt ifStmt) {
-    super.visitIfStmt(ifStmt);
-    if (MacroNames.isDeadByConstruction(ifStmt.getCondition())
-        || MacroNames.isIfWrapperFalse(ifStmt.getCondition())
-        || MacroNames.isIfWrapperTrue(ifStmt.getCondition())) {
-      ifStmt.setCondition(ifStmt.getCondition().getChild(0));
-    }
-  }
-
-  private void cleanupLoop(LoopStmt loopStmt) {
-    if (MacroNames.isLoopWrapper(loopStmt.getCondition())) {
-      loopStmt.setCondition(loopStmt.getCondition().getChild(0));
-    }
-  }
-
-  @Override
-  public void visitDoStmt(DoStmt doStmt) {
-    super.visitDoStmt(doStmt);
-    cleanupLoop(doStmt);
-  }
-
-  @Override
-  public void visitForStmt(ForStmt forStmt) {
-    super.visitForStmt(forStmt);
-    cleanupLoop(forStmt);
-  }
-
-  private void cleanUpMacros(Expr parent) {
-    for (int i = 0; i < parent.getNumChildren(); i++) {
-      Expr child = parent.getChild(i);
-      // Note: it would be redundant to have a special function reduction opportunity
-      // be classed also as a fuzzed expression reduction opportunity
-      if (MacroNames.isIdentity(child)
-          || MacroNames.isZero(child)
-          || MacroNames.isOne(child)
-          || MacroNames.isFalse(child)
-          || MacroNames.isTrue(child)) {
-        replaceChildWithGrandchild(parent, i, 1);
-      } else if (MacroNames.isFuzzed(child)
-          || MacroNames.isDeadByConstruction(child)) {
-        replaceChildWithGrandchild(parent, i, 0);
+  protected void visitChildFromParent(IAstNode child, IAstNode parent) {
+    super.visitChildFromParent(child, parent);
+    if (child instanceof FunctionCallExpr) {
+      final FunctionCallExpr functionCallExpr = (FunctionCallExpr) child;
+      if (MacroNames.isIdentity(functionCallExpr)
+          || MacroNames.isZero(functionCallExpr)
+          || MacroNames.isOne(functionCallExpr)
+          || MacroNames.isFalse(functionCallExpr)
+          || MacroNames.isTrue(functionCallExpr)) {
+        parent.replaceChild(child,
+            addParenthesesIfNecessary(parent, functionCallExpr.getChild(1)));
+      } else if (MacroNames.isFuzzed(functionCallExpr)
+          || MacroNames.isDeadByConstruction(functionCallExpr)
+          || MacroNames.isSwitch(functionCallExpr)
+          || MacroNames.isLoopWrapper(functionCallExpr)
+          || MacroNames.isIfWrapperFalse(functionCallExpr)
+          || MacroNames.isIfWrapperTrue(functionCallExpr)
+      ) {
+        parent.replaceChild(child,
+            addParenthesesIfNecessary(parent, functionCallExpr.getChild(0)));
       }
     }
   }
 
-  @Override
-  public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-    super.visitScalarInitializer(scalarInitializer);
-    if (MacroNames.isFuzzed(scalarInitializer.getExpr())) {
-      scalarInitializer.setExpr(scalarInitializer.getExpr().getChild(0));
+  private IAstNode addParenthesesIfNecessary(IAstNode parent, Expr child) {
+    if (child instanceof ConstantExpr
+        || child instanceof ParenExpr
+        || child instanceof VariableIdentifierExpr
+        || child instanceof FunctionCallExpr) {
+      // Parentheses is unnecessary in cases such as _GLF_FUNCTION(1),
+      // _GLF_FUNCTION((1)), _GLF_FUNCTION(a), _GLF_FUNCTION(sin(a)).
+      return child;
     }
-  }
 
-  private void replaceChildWithGrandchild(Expr parent, int childIndex, int grandchildIndex) {
-    assert parent.getChild(childIndex).getNumChildren() > grandchildIndex;
-    parent
-        .setChild(childIndex, new ParenExpr(parent.getChild(childIndex).getChild(grandchildIndex)));
+    if (!(parent instanceof Expr)) {
+      // No parentheses needed if the parent is not an expression,
+      // for example, int x = _GLF_FUNCTION(a + b).
+      return child;
+    }
+
+    if (parent instanceof ParenExpr) {
+      // If parent is parentheses, adding a new parentheses would be redundant,
+      // e.g. (_GLF_FUNCTION(a + b)).
+      return child;
+    }
+
+    if (parent instanceof FunctionCallExpr) {
+      // Parentheses is unnecessary if parent is a function call expression.
+      // For example, foo(_GLF_FUNCTION(a)).
+
+      // This asserts that the binary expression inside the function call is not a comma operator
+      // as it is invalid to have a comma appear directly here, e.g. _GLF_IDENTITY(expr, a, b) is
+      // not valid since a and b are treated as function arguments instead.
+      assert (!(child instanceof BinaryExpr) || ((BinaryExpr) child).getOp() != BinOp.COMMA);
+      return child;
+    }
+
+    return new ParenExpr(child);
   }
 
 }

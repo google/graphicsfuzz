@@ -19,13 +19,10 @@ package com.graphicsfuzz.reducer.util;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SimplifyTest {
 
-  // TODO(110) - this test fails due to issue 110, and should be enabled once that issue is fixed.
-  @Ignore
   @Test
   public void testIfParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
@@ -40,7 +37,6 @@ public class SimplifyTest {
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
 
-  @Ignore
   @Test
   public void testWhileParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
@@ -55,7 +51,6 @@ public class SimplifyTest {
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
 
-  @Ignore
   @Test
   public void testForParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
@@ -74,7 +69,6 @@ public class SimplifyTest {
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
 
-  @Ignore
   @Test
   public void testSwitchParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
@@ -91,7 +85,6 @@ public class SimplifyTest {
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
 
-  @Ignore
   @Test
   public void testDoWhileParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
@@ -104,7 +97,6 @@ public class SimplifyTest {
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
 
-  @Ignore
   @Test
   public void testMacroBlockRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
@@ -122,8 +114,6 @@ public class SimplifyTest {
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
 
-  // TODO(491): Enable once issue 491 is fixed.
-  @Ignore
   @Test
   public void testIdentityNotNestedRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
@@ -143,7 +133,6 @@ public class SimplifyTest {
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
 
-  @Ignore
   @Test
   public void testFunctionCallParenthesesRemoved() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("void main() {"
