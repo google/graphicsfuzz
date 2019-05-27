@@ -77,7 +77,10 @@ public class EliminateInjectionMacrosVisitor extends StandardVisitor {
     }
 
     if (parent instanceof FunctionCallExpr) {
-      // This ensures that the binary expression inside the function call is not a comma operator
+      // Parentheses is unnecessary if parent is a function call expression.
+      // For example, foo(_GLF_FUNCTION(a)).
+
+      // This asserts that the binary expression inside the function call is not a comma operator
       // as it is invalid to have a comma appear directly here, e.g. _GLF_IDENTITY(expr, a, b) is
       // not valid since a and b are treated as function arguments instead.
       assert (!(child instanceof BinaryExpr) || ((BinaryExpr) child).getOp() != BinOp.COMMA);
