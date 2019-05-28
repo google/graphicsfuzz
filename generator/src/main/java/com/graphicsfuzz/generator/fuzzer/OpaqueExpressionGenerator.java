@@ -663,7 +663,7 @@ public final class OpaqueExpressionGenerator {
   private class IdentityTernary extends AbstractIdentityTransformation {
 
     private IdentityTernary() {
-      super(BasicType.allScalarTypes(), false);
+      super(BasicType.allBasicTypes(), false);
     }
 
     @Override
@@ -672,9 +672,52 @@ public final class OpaqueExpressionGenerator {
       // (false ? whatever : expr)
       // or
       // (true  ? expr : whatever)
-      assert BasicType.allScalarTypes().contains(type);
-      // Only generate ternary expressions for scalars; the vector case causes massive blow-up
-      Expr exprWithIdentityApplied = applyIdentityFunction(expr, type, constContext, depth, fuzzer);
+
+      // If we generate identities for all entries in a non-scalar type, a huge amount of
+      // identities are applied. To solve that, we only fuzz one entry at random in a vector,
+      // and one column at random in a matrix.
+      Expr exprWithIdentityApplied;
+      if (!BasicType.allScalarTypes().contains(type)) {
+        // v + vec2(0.0)[0]; is not valid GLSL
+        if (!(expr instanceof BinaryExpr)) {
+          int numColumns;
+          int indexToApplyIdentities;
+          if (!BasicType.allMatrixTypes().contains(type)) {
+            // vector case
+            // v -> (true ? vecX(..., identity(v[Y]), ...) : _)
+            // v -> (false ? _ : vecX(..., identity(v[Y]), ...))
+            // where v is a vector of size X, y is the random entry in v we want to apply
+            // identities to, and ... is the other entries in v that we don't change.
+
+            numColumns = type.getNumElements();
+            indexToApplyIdentities = generator.nextInt(numColumns);
+
+            List<Expr> vectorEntryList = new ArrayList<Expr>();
+            for (int i = 0; i < numColumns; i++) {
+              vectorEntryList.add(new ArrayIndexExpr(expr,
+                  new IntConstantExpr(String.valueOf(i))));
+            }
+            vectorEntryList.set(indexToApplyIdentities,
+                applyIdentityFunction(
+                    vectorEntryList.get(indexToApplyIdentities), type.getElementType(),
+                    constContext, depth, fuzzer));
+            exprWithIdentityApplied = new TypeConstructorExpr(type.toString(), vectorEntryList);
+          } else {
+            // matrix case
+            numColumns = type.getNumColumns();
+            indexToApplyIdentities = generator.nextInt(numColumns);
+            // TODO: Apply identities to one column of matrix
+            exprWithIdentityApplied = expr;
+          }
+        } else {
+          // just don't bother.
+          exprWithIdentityApplied = expr;
+        }
+      } else {
+        // scalar case
+        assert BasicType.allScalarTypes().contains(type);
+        exprWithIdentityApplied = applyIdentityFunction(expr, type, constContext, depth, fuzzer);
+      }
       Expr something = fuzzedConstructor(fuzzer.fuzzExpr(type, false, constContext, depth));
       if (generator.nextBoolean()) {
         return identityConstructor(expr,
