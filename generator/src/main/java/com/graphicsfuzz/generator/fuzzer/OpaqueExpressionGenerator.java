@@ -694,7 +694,7 @@ public final class OpaqueExpressionGenerator {
 
             List<Expr> vectorEntryList = new ArrayList<Expr>();
             for (int i = 0; i < numColumns; i++) {
-              vectorEntryList.add(new ArrayIndexExpr(expr,
+              vectorEntryList.add(new ArrayIndexExpr(expr.clone(),
                   new IntConstantExpr(String.valueOf(i))));
             }
             vectorEntryList.set(indexToApplyIdentities,
