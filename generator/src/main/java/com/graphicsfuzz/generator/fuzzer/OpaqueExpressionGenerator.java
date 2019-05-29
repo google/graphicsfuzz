@@ -678,41 +678,42 @@ public final class OpaqueExpressionGenerator {
       // and one column at random in a matrix.
       Expr exprWithIdentityApplied;
       if (!BasicType.allScalarTypes().contains(type)) {
-        // v + vec2(0.0)[0]; is not valid GLSL
-        if (!(expr instanceof BinaryExpr)) {
-          int numColumns;
-          int indexToApplyIdentities;
-          if (!BasicType.allMatrixTypes().contains(type)) {
-            // vector case
-            // v -> (true ? vecX(..., identity(v[Y]), ...) : _)
-            // v -> (false ? _ : vecX(..., identity(v[Y]), ...))
-            // where v is a vector of size X, y is the random entry in v we want to apply
-            // identities to, and ... is the other entries in v that we don't change.
+        final int numColumns;
+        final int indexToApplyIdentities;
+        if (!BasicType.allMatrixTypes().contains(type)) {
+          // vector case
+          // v -> (true ? vecX(..., identity(v[Y]), ...) : _)
+          // v -> (false ? _ : vecX(..., identity(v[Y]), ...))
+          // where v is a vector of size X, y is the random entry in v we want to apply
+          // identities to, and ... is the other entries in v that we don't change.
 
-            numColumns = type.getNumElements();
-            indexToApplyIdentities = generator.nextInt(numColumns);
+          numColumns = type.getNumElements();
+          indexToApplyIdentities = generator.nextInt(numColumns);
 
-            List<Expr> vectorEntryList = new ArrayList<Expr>();
-            for (int i = 0; i < numColumns; i++) {
-              vectorEntryList.add(new ArrayIndexExpr(expr.clone(),
+          final List<Expr> vectorEntryList = new ArrayList<Expr>();
+          for (int i = 0; i < numColumns; i++) {
+            // v + vec2(0.0)[0]; is not what we want to do, so we wrap expr into
+            // parentheses for (v + vec2(0.0))[0]
+            if (i == indexToApplyIdentities) {
+              vectorEntryList.add(applyIdentityFunction(
+                  new ArrayIndexExpr(new ParenExpr(expr.clone()),
+                      new IntConstantExpr(String.valueOf(i))),
+                  type.getElementType(),
+                  constContext, depth, fuzzer));
+            } else {
+              vectorEntryList.add(new ArrayIndexExpr(new ParenExpr(expr.clone()),
                   new IntConstantExpr(String.valueOf(i))));
             }
-            vectorEntryList.set(indexToApplyIdentities,
-                applyIdentityFunction(
-                    vectorEntryList.get(indexToApplyIdentities), type.getElementType(),
-                    constContext, depth, fuzzer));
-            exprWithIdentityApplied = new TypeConstructorExpr(type.toString(), vectorEntryList);
-          } else {
-            // matrix case
-            numColumns = type.getNumColumns();
-            indexToApplyIdentities = generator.nextInt(numColumns);
-            // TODO: Apply identities to one column of matrix
-            exprWithIdentityApplied = expr;
           }
+          exprWithIdentityApplied = new TypeConstructorExpr(type.toString(), vectorEntryList);
         } else {
-          // just don't bother.
+          // matrix case
+          numColumns = type.getNumColumns();
+          indexToApplyIdentities = generator.nextInt(numColumns);
+          // TODO: Apply identities to one column of matrix
           exprWithIdentityApplied = expr;
         }
+
       } else {
         // scalar case
         assert BasicType.allScalarTypes().contains(type);
