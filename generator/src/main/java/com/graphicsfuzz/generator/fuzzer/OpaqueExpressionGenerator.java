@@ -697,22 +697,22 @@ public final class OpaqueExpressionGenerator {
 
           final int indexToApplyIdentities = generator.nextInt(numColumns);
 
-          final List<Expr> vectorEntryList = new ArrayList<Expr>();
+          final List<Expr> nonscalarEntryList = new ArrayList<>();
           for (int i = 0; i < numColumns; i++) {
             // v + vec2(0.0)[0]; is not what we want to do, so we wrap expr into
             // parentheses for (v + vec2(0.0))[0]
             if (i == indexToApplyIdentities) {
-              vectorEntryList.add(applyIdentityFunction(
+              nonscalarEntryList.add(applyIdentityFunction(
                   new ArrayIndexExpr(new ParenExpr(expr.clone()),
                       new IntConstantExpr(String.valueOf(i))),
                   type.getElementType(),
                   constContext, depth, fuzzer));
             } else {
-              vectorEntryList.add(new ArrayIndexExpr(new ParenExpr(expr.clone()),
+              nonscalarEntryList.add(new ArrayIndexExpr(new ParenExpr(expr.clone()),
                   new IntConstantExpr(String.valueOf(i))));
             }
           }
-          exprWithIdentityApplied = new TypeConstructorExpr(type.toString(), vectorEntryList);
+          exprWithIdentityApplied = new TypeConstructorExpr(type.toString(), nonscalarEntryList);
         } else {
           // limit blowup by not applying identities.
           exprWithIdentityApplied = expr;
@@ -722,7 +722,9 @@ public final class OpaqueExpressionGenerator {
         assert BasicType.allScalarTypes().contains(type);
         exprWithIdentityApplied = applyIdentityFunction(expr, type, constContext, depth, fuzzer);
       }
-      Expr something = fuzzedConstructor(fuzzer.fuzzExpr(type, false, constContext, depth));
+      // We have to make sure that the LHS and RHS of the ternary expression evaluate to the same
+      // type, so we set constContext to true to ensure no side effects.
+      Expr something = fuzzedConstructor(fuzzer.fuzzExpr(type, false, true, depth));
       if (generator.nextBoolean()) {
         return identityConstructor(expr,
             ternary(makeOpaqueBoolean(false, BasicType.BOOL, constContext, depth, fuzzer),
