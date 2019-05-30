@@ -663,7 +663,7 @@ public final class OpaqueExpressionGenerator {
   private class IdentityTernary extends AbstractIdentityTransformation {
 
     private IdentityTernary() {
-      super(BasicType.allBasicTypes(), false);
+      super(BasicType.allNumericTypes(), false);
     }
 
     @Override
@@ -673,9 +673,11 @@ public final class OpaqueExpressionGenerator {
       // or
       // (true  ? expr : whatever)
 
+      assert BasicType.allNumericTypes().contains(type);
       // If we generate identities for all entries in a non-scalar type, a huge amount of
       // identities are applied. To solve that, we only fuzz one entry at random in a vector,
       // and one column at random in a matrix.
+
       Expr exprWithIdentityApplied;
       if (!BasicType.allScalarTypes().contains(type)) {
         final int numColumns;
