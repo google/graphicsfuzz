@@ -680,17 +680,22 @@ public final class OpaqueExpressionGenerator {
 
       Expr exprWithIdentityApplied;
       if (!BasicType.allScalarTypes().contains(type)) {
-        final int numColumns;
-        final int indexToApplyIdentities;
-        if (!BasicType.allMatrixTypes().contains(type)) {
-          // vector case
-          // v -> (true ? vecX(..., identity(v[Y]), ...) : _)
-          // v -> (false ? _ : vecX(..., identity(v[Y]), ...))
-          // where v is a vector of size X, y is the random entry in v we want to apply
-          // identities to, and ... is the other entries in v that we don't change.
 
-          numColumns = type.getNumElements();
-          indexToApplyIdentities = generator.nextInt(numColumns);
+        // vector/matrix case
+        // v -> (true ? vecX(..., identity(v[Y]), ...) : _)
+        // v -> (false ? _ : vecX(..., identity(v[Y]), ...))
+        // where v is a vector of size X, y is the random entry in v we want to apply
+        // identities to, and ... is the other entries in v that we don't change.
+        // Similarly for matrices.
+
+        // TODO: Figure out a more interesting way to limit blow-up for vectors/matrices.
+        if (expr instanceof VariableIdentifierExpr) {
+
+          final int numColumns =
+              (BasicType.allVectorTypes().contains(type) ?
+              type.getNumElements() : type.getNumColumns());
+
+          final int indexToApplyIdentities = generator.nextInt(numColumns);
 
           final List<Expr> vectorEntryList = new ArrayList<Expr>();
           for (int i = 0; i < numColumns; i++) {
@@ -709,13 +714,9 @@ public final class OpaqueExpressionGenerator {
           }
           exprWithIdentityApplied = new TypeConstructorExpr(type.toString(), vectorEntryList);
         } else {
-          // matrix case
-          numColumns = type.getNumColumns();
-          indexToApplyIdentities = generator.nextInt(numColumns);
-          // TODO: Apply identities to one column of matrix
+          // limit blowup by not applying identities.
           exprWithIdentityApplied = expr;
         }
-
       } else {
         // scalar case
         assert BasicType.allScalarTypes().contains(type);
