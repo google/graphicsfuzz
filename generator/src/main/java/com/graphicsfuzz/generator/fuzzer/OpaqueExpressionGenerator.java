@@ -692,8 +692,8 @@ public final class OpaqueExpressionGenerator {
         if (expr instanceof VariableIdentifierExpr) {
 
           final int numColumns =
-              (BasicType.allVectorTypes().contains(type) ?
-              type.getNumElements() : type.getNumColumns());
+              (BasicType.allVectorTypes().contains(type)
+                  ? type.getNumElements() : type.getNumColumns());
 
           final int indexToApplyIdentities = generator.nextInt(numColumns);
 
