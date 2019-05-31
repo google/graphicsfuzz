@@ -672,56 +672,8 @@ public final class OpaqueExpressionGenerator {
       // (false ? whatever : expr)
       // or
       // (true  ? expr : whatever)
-
       assert BasicType.allNumericTypes().contains(type);
-      // If we generate identities for all entries in a non-scalar type, a huge amount of
-      // identities are applied. To solve that, we only fuzz one entry at random in a vector,
-      // and one column at random in a matrix.
-
-      Expr exprWithIdentityApplied;
-      if (!BasicType.allScalarTypes().contains(type)) {
-
-        // vector/matrix case
-        // v -> (true ? vecX(..., identity(v[Y]), ...) : _)
-        // v -> (false ? _ : vecX(..., identity(v[Y]), ...))
-        // where v is a vector of size X, y is the random entry in v we want to apply
-        // identities to, and ... is the other entries in v that we don't change.
-        // Similarly for matrices.
-
-        // TODO: Figure out a more interesting way to limit blow-up for vectors/matrices.
-        if (expr instanceof VariableIdentifierExpr) {
-
-          final int numColumns =
-              (BasicType.allVectorTypes().contains(type)
-                  ? type.getNumElements() : type.getNumColumns());
-
-          final int indexToApplyIdentities = generator.nextInt(numColumns);
-
-          final List<Expr> nonscalarEntryList = new ArrayList<>();
-          for (int i = 0; i < numColumns; i++) {
-            // v + vec2(0.0)[0]; is not what we want to do, so we wrap expr into
-            // parentheses for (v + vec2(0.0))[0]
-            if (i == indexToApplyIdentities) {
-              nonscalarEntryList.add(applyIdentityFunction(
-                  new ArrayIndexExpr(new ParenExpr(expr.clone()),
-                      new IntConstantExpr(String.valueOf(i))),
-                  type.getElementType(),
-                  constContext, depth, fuzzer));
-            } else {
-              nonscalarEntryList.add(new ArrayIndexExpr(new ParenExpr(expr.clone()),
-                  new IntConstantExpr(String.valueOf(i))));
-            }
-          }
-          exprWithIdentityApplied = new TypeConstructorExpr(type.toString(), nonscalarEntryList);
-        } else {
-          // limit blowup by not applying identities.
-          exprWithIdentityApplied = expr;
-        }
-      } else {
-        // scalar case
-        assert BasicType.allScalarTypes().contains(type);
-        exprWithIdentityApplied = applyIdentityFunction(expr, type, constContext, depth, fuzzer);
-      }
+      Expr exprWithIdentityApplied = applyIdentityFunction(expr, type, constContext, depth, fuzzer);
       // We have to make sure that the LHS and RHS of the ternary expression evaluate to the same
       // type, so we set constContext to true to ensure no side effects.
       Expr something = fuzzedConstructor(fuzzer.fuzzExpr(type, false, true, depth));
