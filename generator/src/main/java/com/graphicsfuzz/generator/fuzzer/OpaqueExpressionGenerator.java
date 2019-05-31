@@ -676,7 +676,7 @@ public final class OpaqueExpressionGenerator {
       Expr exprWithIdentityApplied = applyIdentityFunction(expr, type, constContext, depth, fuzzer);
       // We have to make sure that the LHS and RHS of the ternary expression evaluate to the same
       // type, so we set constContext to true to ensure no side effects.
-      Expr something = fuzzedConstructor(fuzzer.fuzzExpr(type, false, true, depth));
+      Expr something = fuzzedConstructor(fuzzer.fuzzExpr(type, false, constContext, depth));
       if (generator.nextBoolean()) {
         return identityConstructor(expr,
             ternary(makeOpaqueBoolean(false, BasicType.BOOL, constContext, depth, fuzzer),
