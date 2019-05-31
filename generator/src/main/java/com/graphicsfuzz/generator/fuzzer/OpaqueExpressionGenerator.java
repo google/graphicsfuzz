@@ -44,6 +44,7 @@ import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -78,6 +79,8 @@ public final class OpaqueExpressionGenerator {
     expressionIdentities.add(new IdentityMin());
     expressionIdentities.add(new IdentityMax());
     expressionIdentities.add(new IdentityClamp());
+
+    expressionIdentities.add(new IdentityRewriteComposite());
 
     if (shadingLanguageVersion.supportedMixNonfloatBool()) {
       expressionIdentities.add(new IdentityMixBvec());
@@ -530,7 +533,7 @@ public final class OpaqueExpressionGenerator {
     }
 
     @Override
-    public final boolean preconditionHolds(Expr expr, BasicType basicType) {
+    public boolean preconditionHolds(Expr expr, BasicType basicType) {
       if (!acceptableTypes.contains(basicType)) {
         return false;
       }
@@ -800,6 +803,62 @@ public final class OpaqueExpressionGenerator {
                       .toString(), aElements)));
     }
 
+  }
+
+  private class IdentityRewriteComposite extends AbstractIdentityTransformation {
+    private IdentityRewriteComposite() {
+      // all non-boolean vector/matrix types
+      super(BasicType.allNumericTypes().stream().filter(
+          item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList()),
+          false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      // v -> (true ? vecX(..., identity(v[Y]), ...) : _)
+      // v -> (false ? _ : vecX(..., identity(v[Y]), ...))
+      // where v is a vector of size X, y is the random entry in v we want to apply
+      // identities to, and ... is the other entries in v that we don't change.
+      // Similarly for matrices.
+
+      assert BasicType.allVectorTypes().contains(type)
+          || BasicType.allMatrixTypes().contains(type);
+
+      final int numColumns =
+          (BasicType.allVectorTypes().contains(type)
+          ? type.getNumElements() : type.getNumColumns());
+      final int indexToApplyIdentities = generator.nextInt(numColumns);
+      final List<Expr> nonscalarEntryList = new ArrayList<>();
+      for (int i = 0; i < numColumns; i++) {
+        // v + vec2(0.0)[0]; is not what we want to do, so we wrap expr into
+        // parentheses for (v + vec2(0.0))[0]
+        if (i == indexToApplyIdentities) {
+          nonscalarEntryList.add(applyIdentityFunction(
+              new ArrayIndexExpr(new ParenExpr(expr.clone()),
+                  new IntConstantExpr(String.valueOf(i))),
+              type.getElementType(),
+              constContext, depth, fuzzer));
+        } else {
+          nonscalarEntryList.add(new ArrayIndexExpr(new ParenExpr(expr.clone()),
+              new IntConstantExpr(String.valueOf(i))));
+        }
+      }
+      return identityConstructor(expr,
+          new TypeConstructorExpr(type.toString(), nonscalarEntryList));
+    }
+
+    @Override
+    public boolean preconditionHolds(Expr expr, BasicType basicType) {
+      if (!super.preconditionHolds(expr, basicType)) {
+        return false;
+      }
+      if (!(expr instanceof VariableIdentifierExpr)) {
+        // limit blowup of identities.
+        return false;
+      }
+      return SideEffectChecker.isSideEffectFree(expr, shadingLanguageVersion);
+    }
   }
 
 }
