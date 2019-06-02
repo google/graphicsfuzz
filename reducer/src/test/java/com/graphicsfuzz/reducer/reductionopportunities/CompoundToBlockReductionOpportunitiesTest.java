@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -126,7 +125,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
   }
 
   @Test
-  public void testDoNotRemoveDeadIf() throws Exception {
+  public void testDoRemoveDeadIf() throws Exception {
     final String original = ""
           + "void main() {"
           + "  if (" + Constants.GLF_DEAD + "(false)) {"
@@ -134,9 +133,14 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "    a = a + 1;"
           + "  }"
           + "}";
-    final TranslationUnit tu = ParseHelper.parse(original);
-    assertTrue(CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-          ShadingLanguageVersion.GLSL_440, new RandomWrapper(0), null, true)).isEmpty());
+    final String expected = ""
+        + "void main() {"
+        + "  {"
+        + "    int a = 2;"
+        + "    a = a + 1;"
+        + "  }"
+        + "}";
+    check(false, original, expected);
   }
 
   @Test
@@ -150,7 +154,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "    }"
           + "  }"
           + "}";
-    final String expected = ""
+    final String expected1 = ""
           + "void main() {"
           + "  if (" + Constants.GLF_DEAD + "(false)) {"
           + "    {"
@@ -159,11 +163,18 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "    }"
           + "  }"
           + "}";
-    check(false, original, expected);
+    final String expected2 = ""
+        + "void main() {"
+        + "  {"
+        + "    if (false) {"
+        + "      int a = 2;"
+        + "      a = a + 1;"
+        + "    }"
+        + "  }"
+        + "}";
+    check(false, original, expected1, expected2);
   }
 
-  // TODO(482): Enable this test once the issue is fixed.
-  @Ignore
   @Test
   public void testDeadIfReduceEverywhere() throws Exception {
     final String original = ""
@@ -245,7 +256,20 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "    }"
           + "  }"
           + "}";
-    check(false, original, expected1, expected2, expected3);
+    final String expected4 = ""
+        + "void main() {"
+        + "  int a = 4;"
+        + "  {"
+        + "    if (a) {"
+        + "      if (a > 0) {"
+        + "        int a = 2;"
+        + "        a = a + 1;"
+        + "      } else"
+        + "        a++;"
+        + "    }"
+        + "  }"
+        + "}";
+    check(false, original, expected1, expected2, expected3, expected4);
   }
 
   @Test

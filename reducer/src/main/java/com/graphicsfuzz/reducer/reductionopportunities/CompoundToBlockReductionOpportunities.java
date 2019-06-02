@@ -90,9 +90,6 @@ public class CompoundToBlockReductionOpportunities
   @Override
   public void visitIfStmt(IfStmt ifStmt) {
     super.visitIfStmt(ifStmt);
-    if (MacroNames.isDeadByConstruction(ifStmt.getCondition())) {
-      return;
-    }
     addOpportunity(ifStmt, ifStmt.getThenStmt());
     if (ifStmt.hasElseStmt()) {
       addOpportunity(ifStmt, ifStmt.getElseStmt());
