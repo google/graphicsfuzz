@@ -22,7 +22,8 @@ import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
 import java.util.List;
 
-public class VariableDeclToExprReductionOpportunities extends ReductionOpportunitiesBase<VariableDeclToExprReductionOpportunity> {
+public class VariableDeclToExprReductionOpportunities
+    extends ReductionOpportunitiesBase<VariableDeclToExprReductionOpportunity> {
 
   public VariableDeclToExprReductionOpportunities(TranslationUnit tu, ReducerContext context) {
     super(tu, context);
