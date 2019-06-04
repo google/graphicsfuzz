@@ -36,6 +36,11 @@ final class Glsl400 extends CompositeShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedIntegerFunctions() {
+    return true;
+  }
+
+  @Override
   public boolean supportedPackSnorm4x8() {
     return true;
   }

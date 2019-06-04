@@ -109,6 +109,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   }
 
   @Override
+  public boolean supportedIntegerFunctions() {
+    return prototype.supportedIntegerFunctions();
+  }
+
+  @Override
   public boolean supportedInverse() {
     return prototype.supportedInverse();
   }
