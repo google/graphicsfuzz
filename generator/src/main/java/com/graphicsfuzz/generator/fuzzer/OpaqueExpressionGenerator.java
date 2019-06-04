@@ -663,7 +663,7 @@ public final class OpaqueExpressionGenerator {
   private class IdentityTernary extends AbstractIdentityTransformation {
 
     private IdentityTernary() {
-      super(BasicType.allScalarTypes(), false);
+      super(BasicType.allNumericTypes(), false);
     }
 
     @Override
@@ -672,8 +672,7 @@ public final class OpaqueExpressionGenerator {
       // (false ? whatever : expr)
       // or
       // (true  ? expr : whatever)
-      assert BasicType.allScalarTypes().contains(type);
-      // Only generate ternary expressions for scalars; the vector case causes massive blow-up
+      assert BasicType.allNumericTypes().contains(type);
       Expr exprWithIdentityApplied = applyIdentityFunction(expr, type, constContext, depth, fuzzer);
       Expr something = fuzzedConstructor(fuzzer.fuzzExpr(type, false, constContext, depth));
       if (generator.nextBoolean()) {
