@@ -79,6 +79,8 @@ public final class OpaqueExpressionGenerator {
     expressionIdentities.add(new IdentityMax());
     expressionIdentities.add(new IdentityClamp());
 
+    expressionIdentities.add(new IdentityRewriteComposite());
+
     if (shadingLanguageVersion.supportedMixNonfloatBool()) {
       expressionIdentities.add(new IdentityMixBvec());
     }
@@ -530,7 +532,7 @@ public final class OpaqueExpressionGenerator {
     }
 
     @Override
-    public final boolean preconditionHolds(Expr expr, BasicType basicType) {
+    public boolean preconditionHolds(Expr expr, BasicType basicType) {
       if (!acceptableTypes.contains(basicType)) {
         return false;
       }
@@ -801,4 +803,47 @@ public final class OpaqueExpressionGenerator {
 
   }
 
+  private class IdentityRewriteComposite extends AbstractIdentityTransformation {
+    private IdentityRewriteComposite() {
+      // all non-boolean vector/matrix types
+      super(BasicType.allNumericTypes().stream().filter(
+          item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList()),
+          false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      // v -> (true ? vecX(..., identity(v[Y]), ...) : _)
+      // v -> (false ? _ : vecX(..., identity(v[Y]), ...))
+      // where v is a vector of size X, y is the random entry in v we want to apply
+      // identities to, and ... is the other entries in v that we don't change.
+      // Similarly for matrices.
+
+      assert BasicType.allVectorTypes().contains(type)
+          || BasicType.allMatrixTypes().contains(type);
+      assert expr instanceof VariableIdentifierExpr;
+
+      final int numIndices =
+          (BasicType.allVectorTypes().contains(type)
+          ? type.getNumElements() : type.getNumColumns());
+      final int indexToFurtherTransform = generator.nextInt(numIndices);
+      final List<Expr> typeConstructorArguments = new ArrayList<>();
+      for (int i = 0; i < numIndices; i++) {
+        Expr argument = new ArrayIndexExpr(expr.clone(), new IntConstantExpr(String.valueOf(i)));
+        if (i == indexToFurtherTransform) {
+          argument = applyIdentityFunction(argument, type.getElementType(), constContext, depth,
+              fuzzer);
+        }
+        typeConstructorArguments.add(argument);
+      }
+      return identityConstructor(expr,
+          new TypeConstructorExpr(type.toString(), typeConstructorArguments));
+    }
+
+    @Override
+    public boolean preconditionHolds(Expr expr, BasicType basicType) {
+      return super.preconditionHolds(expr, basicType) && expr instanceof VariableIdentifierExpr;
+    }
+  }
 }
