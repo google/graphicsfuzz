@@ -177,6 +177,8 @@ public interface ShadingLanguageVersion {
 
   boolean supportedIntBitsToFloat();
 
+  boolean supportedIntegerFunctions();
+
   boolean supportedInverse();
 
   boolean supportedIsinf();
