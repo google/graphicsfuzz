@@ -820,8 +820,7 @@ public final class OpaqueExpressionGenerator {
       // identities to, and ... is the other entries in v that we don't change.
       // Similarly for matrices.
 
-      assert BasicType.allVectorTypes().contains(type)
-          || BasicType.allMatrixTypes().contains(type);
+      assert type.isVector() || type.isMatrix();
       assert expr instanceof VariableIdentifierExpr;
 
       final int numIndices =
@@ -832,8 +831,9 @@ public final class OpaqueExpressionGenerator {
       for (int i = 0; i < numIndices; i++) {
         Expr argument = new ArrayIndexExpr(expr.clone(), new IntConstantExpr(String.valueOf(i)));
         if (i == indexToFurtherTransform) {
-          argument = applyIdentityFunction(argument, type.getElementType(), constContext, depth,
-              fuzzer);
+          argument = applyIdentityFunction(argument,
+              (type.isVector() ? type.getElementType() : type.getColumnType()),
+              constContext, depth, fuzzer);
         }
         typeConstructorArguments.add(argument);
       }
