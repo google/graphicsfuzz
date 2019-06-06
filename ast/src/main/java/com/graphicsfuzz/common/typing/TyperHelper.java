@@ -975,7 +975,6 @@ public final class TyperHelper {
     }
   }
 
-
   private static void addBuiltin(Map<String, List<FunctionPrototype>> builtinsForVersion,
       String name, Type resultType, Type... args) {
     if (!builtinsForVersion.containsKey(name)) {
