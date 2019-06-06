@@ -852,7 +852,7 @@ public final class OpaqueExpressionGenerator {
           Expr argument = new ArrayIndexExpr(expr.clone(), new IntConstantExpr(String.valueOf(i)));
           if (i == columnToFurtherTransform) {
             argument = applyIdentityFunction(argument,
-                (type.isVector() ? type.getElementType() : type.getColumnType()),
+                type.isVector() ? type.getElementType() : type.getColumnType(),
                 constContext, depth, fuzzer);
           }
           typeConstructorArguments.add(argument);
