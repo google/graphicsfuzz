@@ -36,8 +36,10 @@ public class VariableDeclToExprReductionOpportunitiesTest {
   public void testDoNotReplace() throws Exception {
     final String original = "void main() { int a = 1, b = 2; int c = 3; }";
     final TranslationUnit tu = ParseHelper.parse(original);
-    final List<VariableDeclToExprReductionOpportunity> ops = VariableDeclToExprReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+    final List<VariableDeclToExprReductionOpportunity> ops =
+        VariableDeclToExprReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null, true));
     // There should be no opportunities as the preserve semantics is enabled.
     assertTrue(ops.isEmpty());
