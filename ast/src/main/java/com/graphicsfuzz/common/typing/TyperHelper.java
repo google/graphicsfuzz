@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 /**
  * This helper class factors out some context-independent parts of typechecking,
@@ -838,6 +839,8 @@ public final class TyperHelper {
 
     // 8.7: Vector Relational Functions
 
+    getBuiltinsForGlslVersionVectorRelational(builtinsForVersion, shadingLanguageVersion);
+
     // 8.8: Integer Functions
 
     // 8.13: Fragment Processing Functions (only available in fragment shaders)
@@ -845,6 +848,131 @@ public final class TyperHelper {
     // 8.14: Noise Functions - deprecated, so we do not consider them
 
     return builtinsForVersion;
+  }
+
+  private static void getBuiltinsForGlslVersionVectorRelational(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+    // We need these for every function, so instead of constantly calling the functions,
+    // we'll just cache them to reduce cruft.
+    final List<Type> genVectors = genType().stream().filter(
+        item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList());
+    final List<Type> igenVectors = igenType().stream().filter(
+        item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList());
+    final List<Type> ugenVectors = ugenType().stream().filter(
+        item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList());
+    final List<Type> bgenVectors = bgenType().stream().filter(
+        item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList());
+    final boolean supportsUnsigned = shadingLanguageVersion.supportedUnsigned();
+
+    {
+      final String name = "lessThan";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+      }
+    }
+
+    {
+      final String name = "lessThanEqual";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+      }
+    }
+
+    {
+      final String name = "greaterThan";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+      }
+    }
+
+    {
+      final String name = "greaterThanEqual";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+      }
+    }
+
+    {
+      final String name = "equal";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), bgenVectors.get(i),
+            bgenVectors.get(i));
+      }
+    }
+
+    {
+      final String name = "notEqual";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), bgenVectors.get(i),
+            bgenVectors.get(i));
+      }
+    }
+
+    {
+      final String name = "any";
+      for (Type t : bgenVectors) {
+        addBuiltin(builtinsForVersion, name, BasicType.BOOL, t);
+      }
+    }
+
+    {
+      final String name = "all";
+      for (Type t : bgenVectors) {
+        addBuiltin(builtinsForVersion, name, BasicType.BOOL, t);
+      }
+    }
+
+    {
+      final String name = "not";
+      for (Type t : bgenVectors) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
   }
 
   private static void addBuiltin(Map<String, List<FunctionPrototype>> builtinsForVersion,
