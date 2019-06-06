@@ -823,19 +823,40 @@ public final class OpaqueExpressionGenerator {
       assert type.isVector() || type.isMatrix();
       assert expr instanceof VariableIdentifierExpr;
 
-      final int numIndices =
+      final int numColumns =
           (BasicType.allVectorTypes().contains(type)
           ? type.getNumElements() : type.getNumColumns());
-      final int indexToFurtherTransform = generator.nextInt(numIndices);
+      final int columnToFurtherTransform = generator.nextInt(numColumns);
       final List<Expr> typeConstructorArguments = new ArrayList<>();
-      for (int i = 0; i < numIndices; i++) {
-        Expr argument = new ArrayIndexExpr(expr.clone(), new IntConstantExpr(String.valueOf(i)));
-        if (i == indexToFurtherTransform) {
-          argument = applyIdentityFunction(argument,
-              (type.isVector() ? type.getElementType() : type.getColumnType()),
-              constContext, depth, fuzzer);
+
+      if (type.isMatrix() && generator.nextBoolean()) {
+        // further break down matrix constructor into single components, to increase diversity
+        // GLSL is column-major. mat2x2(m[0][0], m[0][1], IDENTITY(m[1][0]), m[1][1])
+        final int rowToFurtherTransform = generator.nextInt(type.getNumRows());
+        for (int i = 0; i < numColumns; i++) {
+          for (int j = 0; j < type.getNumRows(); j++) {
+            // inner ArrayIndexExpr is the column (first) index, outer is the row (second) index.
+            Expr argument = new ArrayIndexExpr(new ArrayIndexExpr(expr.clone(),
+                new IntConstantExpr(String.valueOf(i)).clone()),
+                new IntConstantExpr(String.valueOf(j)));
+            if (i == columnToFurtherTransform && j == rowToFurtherTransform) {
+              argument = applyIdentityFunction(argument, type.getElementType(), constContext,
+                  depth, fuzzer);
+            }
+            typeConstructorArguments.add(argument);
+          }
         }
-        typeConstructorArguments.add(argument);
+      } else {
+        // columns only, or a vector. mat2x2(m[0], IDENTITY(m[1]))
+        for (int i = 0; i < numColumns; i++) {
+          Expr argument = new ArrayIndexExpr(expr.clone(), new IntConstantExpr(String.valueOf(i)));
+          if (i == columnToFurtherTransform) {
+            argument = applyIdentityFunction(argument,
+                (type.isVector() ? type.getElementType() : type.getColumnType()),
+                constContext, depth, fuzzer);
+          }
+          typeConstructorArguments.add(argument);
+        }
       }
       return identityConstructor(expr,
           new TypeConstructorExpr(type.toString(), typeConstructorArguments));
