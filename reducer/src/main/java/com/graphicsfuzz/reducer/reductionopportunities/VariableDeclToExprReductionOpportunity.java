@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -29,15 +28,19 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public class VariableDeclToExprReductionOpportunity extends AbstractReductionOpportunity {
 
+  // The initialized variable declaration info.
   private final VariableDeclInfo variableDeclInfo;
+  // The parent of variableDeclInfo.
   private final DeclarationStmt declarationStmt;
-  private final IAstNode parent;
+  // The block in which the declaration statement resides.
+  private final BlockStmt enclosingBlock;
 
-  VariableDeclToExprReductionOpportunity(VariableDeclInfo variableDeclInfo, IAstNode parent,
+  VariableDeclToExprReductionOpportunity(VariableDeclInfo variableDeclInfo,
+                                         BlockStmt enclosingBlock,
                                          DeclarationStmt declarationStmt, VisitationDepth depth) {
     super(depth);
     this.variableDeclInfo = variableDeclInfo;
-    this.parent = parent;
+    this.enclosingBlock = enclosingBlock;
     this.declarationStmt = declarationStmt;
   }
 
@@ -51,14 +54,13 @@ public class VariableDeclToExprReductionOpportunity extends AbstractReductionOpp
         ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
         BinOp.ASSIGN
     );
-    ((BlockStmt) parent).insertAfter(declarationStmt, new ExprStmt(binaryExpr));
+    enclosingBlock.insertAfter(declarationStmt, new ExprStmt(binaryExpr));
     variableDeclInfo.setInitializer(null);
   }
 
   @Override
   public boolean preconditionHolds() {
-    return parent instanceof BlockStmt
-        && parent.hasChild(declarationStmt)
+    return enclosingBlock.hasChild(declarationStmt)
         && variableDeclInfo.hasInitializer();
   }
 }

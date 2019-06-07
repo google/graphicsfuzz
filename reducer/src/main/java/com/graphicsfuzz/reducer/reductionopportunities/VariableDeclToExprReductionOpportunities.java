@@ -17,12 +17,30 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
 import java.util.List;
+
+/*
+ * This class finds opportunities to replace the initialized variable declaration info with
+ * the binary expresion. For example, in:
+ * int a = 1;
+ * int b = foo();
+ * int c;
+ *
+ * <p>We consider only a and b since they are initialized variable declaration info; a has 1 (int
+ * constant expression) as initializer, and b has foo (function call expresion) as the initializer.
+ * Then, we unset its initializer and derive the new binary expression like the following:
+ * int a;
+ * a = 1;
+ * int b;
+ * b = foo();
+ * int c;
+ */
 
 public class VariableDeclToExprReductionOpportunities
     extends ReductionOpportunitiesBase<VariableDeclToExprReductionOpportunity> {
@@ -70,10 +88,11 @@ public class VariableDeclToExprReductionOpportunities
     // correct order with respect to its original order in the variable declaration info list.
     for (int i = declInfos.size() - 1; i >= 0; i--) {
       final VariableDeclInfo variableDeclInfo = declInfos.get(i);
-      if (variableDeclInfo.hasInitializer()) {
+      if (variableDeclInfo.hasInitializer()
+          && variableDeclInfo.getInitializer() instanceof ScalarInitializer) {
         addOpportunity(new VariableDeclToExprReductionOpportunity(
             variableDeclInfo,
-            parentMap.getParent(declarationStmt),
+            currentBlock(),
             declarationStmt,
             getVistitationDepth()));
       }
