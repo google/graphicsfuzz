@@ -982,8 +982,9 @@ public final class TyperHelper {
 
   private static void getBuiltinsForGlslVersionInteger(
       Map<String, List<FunctionPrototype>> builtinsForVersion) {
-    // TODO: Add support for integer functions with out parameters.
-    // TODO: uaddCarry, usubBorrow, umulExtended, imulExtended
+    // TODO (#467): Add support for integer functions with out parameters.
+    //    Fixing of issues #524 and #522 will allow these functions to be added and work properly:
+    //    uaddCarry, usubBorrow, umulExtended, imulExtended.
 
     {
       final String name = "bitfieldExtract";
@@ -1015,7 +1016,7 @@ public final class TyperHelper {
       }
     }
 
-    // we need to use both igen and ugen types of the same size for these builtins, so we need a
+    // We need to use both igen and ugen types of the same size for these builtins, so we need a
     // counting loop instead of an iterator to access both lists at the same time.
     {
       final String name = "bitCount";
