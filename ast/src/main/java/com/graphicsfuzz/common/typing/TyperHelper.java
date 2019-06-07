@@ -18,7 +18,9 @@ package com.graphicsfuzz.common.typing;
 
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import java.util.ArrayList;
@@ -982,9 +984,39 @@ public final class TyperHelper {
 
   private static void getBuiltinsForGlslVersionInteger(
       Map<String, List<FunctionPrototype>> builtinsForVersion) {
-    // TODO (#467): Add support for integer functions with out parameters.
-    //    Fixing of issues #524 and #522 will allow these functions to be added and work properly:
-    //    uaddCarry, usubBorrow, umulExtended, imulExtended.
+    {
+      final String name = "uaddCarry";
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, new QualifiedType(t,
+            Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "usubBorrow";
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, new QualifiedType(t,
+            Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "umulExtended";
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, VoidType.VOID, t, t,
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)),
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "imulExtended";
+      for (Type t : igenType()) {
+        addBuiltin(builtinsForVersion, name, VoidType.VOID, t, t,
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)),
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
 
     {
       final String name = "bitfieldExtract";
