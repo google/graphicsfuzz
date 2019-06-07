@@ -830,12 +830,14 @@ public final class OpaqueExpressionGenerator {
       final List<Expr> typeConstructorArguments = new ArrayList<>();
 
       if (type.isMatrix() && generator.nextBoolean()) {
-        // further break down matrix constructor into single components, to increase diversity
-        // GLSL is column-major. mat2x2(m[0][0], m[0][1], IDENTITY(m[1][0]), m[1][1])
+        // Further break down matrix constructor into single components, to increase diversity.
+        // For example, a 2x2 matrix may become mat2(m[0][0], m[0][1], IDENTITY(m[1][0]), m[1][1]).
+        // GLSL's matrix notation follows column-major indexing rules.
         final int rowToFurtherTransform = generator.nextInt(type.getNumRows());
         for (int i = 0; i < numColumns; i++) {
           for (int j = 0; j < type.getNumRows(); j++) {
-            // inner ArrayIndexExpr is the column (first) index, outer is the row (second) index.
+            // The inner ArrayIndexExpr is the column (first) index, while the outer ArrayIndexExpr
+            // is the row (second) index.
             Expr argument = new ArrayIndexExpr(new ArrayIndexExpr(expr.clone(),
                 new IntConstantExpr(String.valueOf(i)).clone()),
                 new IntConstantExpr(String.valueOf(j)));
@@ -847,7 +849,9 @@ public final class OpaqueExpressionGenerator {
           }
         }
       } else {
-        // columns only, or a vector. mat2x2(m[0], IDENTITY(m[1]))
+        // Create a constructor with columns only (or single entries, in the case of vectors).
+        // A 2x2 matrix may become mat2(m[0], IDENTITY(m[1])).
+        // A vec4 may become vec4(v[0], v[1], IDENTITY(v[2]), v[3]).
         for (int i = 0; i < numColumns; i++) {
           Expr argument = new ArrayIndexExpr(expr.clone(), new IntConstantExpr(String.valueOf(i)));
           if (i == columnToFurtherTransform) {
