@@ -17,6 +17,8 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
@@ -52,5 +54,29 @@ public class VariableDeclToExprReductionOpportunities
         new VariableDeclToExprReductionOpportunities(tu, context);
     finder.visit(tu);
     return finder.getOpportunities();
+  }
+
+  @Override
+  public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
+    super.visitDeclarationStmt(declarationStmt);
+    if (!context.reduceEverywhere()) {
+      // Replacing variable declaration with a new binary expression might have a side-effect,
+      // do not consider these reduction opportunities if we are not reducing everywhere.
+      return;
+    }
+    final List<VariableDeclInfo> declInfos =
+        declarationStmt.getVariablesDeclaration().getDeclInfos();
+    // We iterate backwards so that when applying reduction the new expression is inserted at the
+    // correct order with respect to its original order in the variable declaration info list.
+    for (int i = declInfos.size() - 1; i >= 0; i--) {
+      final VariableDeclInfo variableDeclInfo = declInfos.get(i);
+      if (variableDeclInfo.hasInitializer()) {
+        addOpportunity(new VariableDeclToExprReductionOpportunity(
+            variableDeclInfo,
+            parentMap.getParent(declarationStmt),
+            declarationStmt,
+            getVistitationDepth()));
+      }
+    }
   }
 }

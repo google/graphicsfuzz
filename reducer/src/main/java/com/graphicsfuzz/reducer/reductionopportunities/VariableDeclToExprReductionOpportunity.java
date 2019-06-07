@@ -16,20 +16,49 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.stmt.BlockStmt;
+import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public class VariableDeclToExprReductionOpportunity extends AbstractReductionOpportunity {
 
-  VariableDeclToExprReductionOpportunity(VisitationDepth depth) {
+  private final VariableDeclInfo variableDeclInfo;
+  private final DeclarationStmt declarationStmt;
+  private final IAstNode parent;
+
+  VariableDeclToExprReductionOpportunity(VariableDeclInfo variableDeclInfo, IAstNode parent,
+                                         DeclarationStmt declarationStmt, VisitationDepth depth) {
     super(depth);
+    this.variableDeclInfo = variableDeclInfo;
+    this.parent = parent;
+    this.declarationStmt = declarationStmt;
   }
 
   @Override
   void applyReductionImpl() {
+    // Given the variable declaration info, we unset its initializer and derive a new binary
+    // expression which will be inserted right after the declaration in the block statement.
+    assert variableDeclInfo.getInitializer() instanceof ScalarInitializer;
+    final BinaryExpr binaryExpr = new BinaryExpr(
+        new VariableIdentifierExpr(variableDeclInfo.getName()),
+        ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
+        BinOp.ASSIGN
+    );
+    ((BlockStmt) parent).insertAfter(declarationStmt, new ExprStmt(binaryExpr));
+    variableDeclInfo.setInitializer(null);
   }
 
   @Override
   public boolean preconditionHolds() {
-    return false;
+    return parent instanceof BlockStmt
+        && parent.hasChild(declarationStmt)
+        && variableDeclInfo.hasInitializer();
   }
 }

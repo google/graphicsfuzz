@@ -22,7 +22,6 @@ import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -30,8 +29,6 @@ import static org.junit.Assert.assertTrue;
 
 public class VariableDeclToExprReductionOpportunitiesTest {
 
-  // TODO(480): Enable this test once the issue is fixed.
-  @Ignore
   @Test
   public void testDoNotReplace() throws Exception {
     final String original = "void main() { int a = 1, b = 2; int c = 3; }";
@@ -45,7 +42,6 @@ public class VariableDeclToExprReductionOpportunitiesTest {
     assertTrue(ops.isEmpty());
   }
 
-  @Ignore
   @Test
   public void testMultipleDeclarations() throws Exception {
     final String program = "void main() {"
@@ -72,7 +68,6 @@ public class VariableDeclToExprReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
-  @Ignore
   @Test
   public void testMultipleLineDeclarationsOneLine() throws Exception {
     final String program = "void main() {"
@@ -100,7 +95,6 @@ public class VariableDeclToExprReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
-  @Ignore
   @Test
   public void testAssignVariableIdentifier() throws Exception {
     final String program = "void main() {"
