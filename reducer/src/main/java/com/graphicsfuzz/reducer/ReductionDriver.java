@@ -119,7 +119,8 @@ public class ReductionDriver {
         IReductionOpportunityFinder.liveFragColorWriteFinder(),
         IReductionOpportunityFinder.functionFinder(),
         IReductionOpportunityFinder.variableDeclFinder(),
-        IReductionOpportunityFinder.globalVariablesDeclarationFinder())) {
+        IReductionOpportunityFinder.globalVariablesDeclarationFinder(),
+        IReductionOpportunityFinder.variableDeclToExprFinder())) {
       final SystematicReductionPass pass = new SystematicReductionPass(context,
           verbose,
           finder);
