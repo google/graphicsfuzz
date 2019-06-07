@@ -178,9 +178,9 @@ public interface ShadingLanguageVersion {
   boolean supportedIntBitsToFloat();
 
   /**
-   * Integer Functions are a set of built-in functions (think sqrt, max, min, etc.) that
-   * allow manipulation of integers and their vectors in ways difficult or impossible with normal
-   * GLSL syntax - for example, summing two unsigned integers where the result causes an overflow.
+   * Integer Functions are a set of built-in functions that allow manipulation of integers and
+   * their corresponding vectors in ways difficult or impossible with normal GLSL syntax - for
+   * example, summing two unsigned integers where the result causes an overflow.
    * GLSL versions 4.0+ and ESSL versions 3.1+ support these functions.
    *
    * @return true if Integer Functions are supported - false otherwise.
