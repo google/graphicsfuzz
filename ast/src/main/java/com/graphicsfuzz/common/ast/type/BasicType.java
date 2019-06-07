@@ -456,4 +456,22 @@ public class BasicType extends BuiltinType {
     assert Arrays.asList(BasicType.MAT4X2, BasicType.MAT4X3, BasicType.MAT4X4).contains(this);
     return 4;
   }
+
+  /**
+   * Finds the number of rows in a matrix type. Will cause an assertion failure if
+   * used with a non-matrix type.
+   *
+   * @return the number of rows that the matrix type has.
+   */
+  public int getNumRows() {
+    assert allMatrixTypes().contains(this);
+    if (Arrays.asList(BasicType.MAT2X2, BasicType.MAT3X2, BasicType.MAT4X2).contains(this)) {
+      return 2;
+    }
+    if (Arrays.asList(BasicType.MAT2X3, BasicType.MAT3X3, BasicType.MAT4X3).contains(this)) {
+      return 3;
+    }
+    assert Arrays.asList(BasicType.MAT2X4, BasicType.MAT3X4, BasicType.MAT4X4).contains(this);
+    return 4;
+  }
 }
