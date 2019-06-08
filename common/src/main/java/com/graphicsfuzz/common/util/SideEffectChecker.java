@@ -52,6 +52,8 @@ public class SideEffectChecker {
             TyperHelper.getBuiltins(shadingLanguageVersion).get(functionCallExpr.getCallee())) {
           // We check each argument of the built-in's prototypes to see if they require lvalues -
           // if so, they can cause side effects.
+          // We could be more precise here by finding the specific overload of the function rather
+          // than checking every possible prototype for lvalue parameters.
           for (ParameterDecl param : p.getParameters()) {
             if (param.getType().hasQualifier(TypeQualifier.OUT_PARAM)
                 || param.getType().hasQualifier(TypeQualifier.INOUT_PARAM)) {

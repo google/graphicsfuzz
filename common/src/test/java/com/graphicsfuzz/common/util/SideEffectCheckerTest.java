@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UnOp;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
@@ -26,7 +27,9 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import java.util.ArrayList;
 import java.util.Collections;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -62,4 +65,12 @@ public class SideEffectCheckerTest {
         ShadingLanguageVersion.ESSL_310));
   }
 
+  // TODO: Unignore when #521 is ready to merge.
+  @Ignore
+  @Test
+  public void testOutParamHasSideEffects() throws Exception {
+    assertFalse(SideEffectChecker.isSideEffectFree(new FunctionCallExpr(
+        "uaddCarry", new ArrayList<>()),
+        ShadingLanguageVersion.ESSL_310));
+  }
 }
