@@ -823,8 +823,7 @@ public final class OpaqueExpressionGenerator {
       assert type.isVector() || type.isMatrix();
       assert expr instanceof VariableIdentifierExpr;
 
-      final int numColumns =
-          (type.isVector() ? type.getNumElements() : type.getNumColumns());
+      final int numColumns = type.isVector() ? type.getNumElements() : type.getNumColumns();
       final int columnToFurtherTransform = generator.nextInt(numColumns);
       final List<Expr> typeConstructorArguments = new ArrayList<>();
 
