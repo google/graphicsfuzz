@@ -345,28 +345,6 @@ public class BasicType extends BuiltinType {
   }
 
   /**
-   * Static version of getNumColumns(). Finds the number of columns in a matrix. Can only be
-   * invoked on a matrix type.
-   *
-   * @return the number of columns that the matrix type has.
-   * @throws UnsupportedOperationException if the type is not a matrix.
-   */
-  public static int numColumns(BasicType basicType) {
-    if (!allMatrixTypes().contains(basicType)) {
-      throw new UnsupportedOperationException(
-          "Type" + basicType.toString() + " does not have columns");
-    }
-    if (Arrays.asList(MAT2X2, MAT2X3, MAT2X4).contains(basicType)) {
-      return 2;
-    }
-    if (Arrays.asList(MAT3X2, MAT3X3, MAT3X4).contains(basicType)) {
-      return 3;
-    }
-    assert Arrays.asList(MAT4X2, MAT4X3, MAT4X4).contains(basicType);
-    return 4;
-  }
-
-  /**
    * Creates a vector type of a specified size from a scalar type.
    *
    * @return a vector type of numElements dimension, or the scalar type if numElements is 1.

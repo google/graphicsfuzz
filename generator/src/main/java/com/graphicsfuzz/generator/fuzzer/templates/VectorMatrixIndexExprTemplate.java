@@ -48,7 +48,7 @@ public class VectorMatrixIndexExprTemplate extends AbstractExprTemplate {
       index = generator.nextInt(argType.getNumElements());
     } else {
       assert BasicType.allMatrixTypes().contains(argType);
-      index = generator.nextInt(BasicType.numColumns(argType));
+      index = generator.nextInt(argType.getNumColumns());
     }
     return new ArrayIndexExpr(args[0], new IntConstantExpr(String.valueOf(index)));
 
