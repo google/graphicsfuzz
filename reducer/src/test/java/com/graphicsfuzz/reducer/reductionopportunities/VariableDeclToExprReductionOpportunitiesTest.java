@@ -48,7 +48,7 @@ public class VariableDeclToExprReductionOpportunitiesTest {
   @Ignore
   @Test
   public void testDoNotReplaceConst() throws Exception {
-    final String original = "void main() { const int a = 1}";
+    final String original = "void main() { const int a = 1;}";
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<VariableDeclToExprReductionOpportunity> ops =
         VariableDeclToExprReductionOpportunities
