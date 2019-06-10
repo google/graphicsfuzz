@@ -47,6 +47,21 @@ public class VariableDeclToExprReductionOpportunitiesTest {
 
   @Ignore
   @Test
+  public void testDoNotReplaceConst() throws Exception {
+    final String original = "void main() { const int a = 1}";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<VariableDeclToExprReductionOpportunity> ops =
+        VariableDeclToExprReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
+                ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0), null, true));
+    // There should be no opportunities as it is invalid to declare constant variable
+    // without an initial value.
+    assertTrue(ops.isEmpty());
+  }
+
+  @Ignore
+  @Test
   public void testMultipleDeclarations() throws Exception {
     final String program = "void main() {"
         + "int a = 1;"      // Initialized variable declaration.
