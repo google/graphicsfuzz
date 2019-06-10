@@ -26,15 +26,14 @@ import java.util.Arrays;
 import java.util.List;
 
 /*
- * This class finds opportunities to replace the initialized variable declaration info with
- * the binary expresion. For example, in:
+ * This class finds opportunities to remove initializers from variable declarations and
+ * replace them with assignment statements following the declaration. For example, in:
  * int a = 1;
  * int b = foo();
  * int c;
  *
- * <p>We consider only a and b since they are initialized variable declaration info; a has 1 (int
- * constant expression) as initializer, and b has foo (function call expresion) as the initializer.
- * Then, we unset its initializer and derive the new binary expression like the following:
+ * <p>Because each of a and b has an initializer, we can transform the code fragment
+ * into the following:
  * int a;
  * a = 1;
  * int b;
