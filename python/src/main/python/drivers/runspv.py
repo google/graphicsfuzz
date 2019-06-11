@@ -53,6 +53,8 @@ SPIRV_OPT_OPTION_HELP = (
 
 TARGET_HELP = 'One of \'host\' (run on host machine) or \'android\' (run on Android device).'
 
+USE_AMBERSCRIPT_OPTION_HELP = 'Use AmberScript (not VkScript) test file format.'
+
 ################################################################################
 # Constants
 
@@ -794,7 +796,7 @@ def spv_get_disassembly(shader_filename):
     return subprocess_helper(cmd).stdout
 
 
-def uniform_json_to_amberscript(uniform_json):
+def uniform_json_to_vkscript(uniform_json):
     """
     Returns the string representing VkScript version of uniform declarations.
     Skips the special '$compute' key, if present.
@@ -872,7 +874,7 @@ def get_spirv_opt_args_comment(spirv_args: Optional[List[str]]) -> str:
         return ''
 
 
-def amberscriptify_image(
+def vkscriptify_image(
     vert,
     frag,
     uniform_json,
@@ -881,7 +883,7 @@ def amberscriptify_image(
     spirv_args
 ):
     """
-    Generates Amberscript representation of an image test
+    Generates VkScript representation of an image test
     """
 
     result = '# Generated\n\n'
@@ -925,11 +927,143 @@ def amberscriptify_image(
 
     result += '[test]\n'
     result += '## Uniforms\n'
-    result += uniform_json_to_amberscript(uniform_json)
+    result += uniform_json_to_vkscript(uniform_json)
     result += '\n'
     result += 'draw rect -1 -1 2 2\n'
 
     return result
+
+
+def amberscript_uniform_buffer_decl(uniform_json):
+    '''
+    Returns the string representing AmberScript version of uniform declarations.
+    Skips the special '$compute' key, if present.
+
+    {
+      "myuniform": {
+        "func": "glUniform1f",
+        "args": [ 42.0 ],
+        "binding": 3
+      },
+      "$compute": { ... will be ignored ... }
+    }
+
+    becomes:
+
+    # myuniform
+    BUFFER myuniform DATA_TYPE float DATA
+      42.0
+    END
+
+    '''
+
+    UNIFORM_TYPE = {
+        'glUniform1i': 'int32',
+        'glUniform2i': 'vec2<int32>',
+        'glUniform3i': 'vec3<int32>',
+        'glUniform4i': 'vec4<int32>',
+        'glUniform1f': 'float',
+        'glUniform2f': 'vec2<float>',
+        'glUniform3f': 'vec3<float>',
+        'glUniform4f': 'vec4<float>',
+    }
+
+    result = ''
+    with open(uniform_json, 'r') as f:
+        j = json.load(f)
+    for name, entry in j.items():
+
+        if name == '$compute':
+            continue
+
+        func = entry['func']
+        if func not in UNIFORM_TYPE.keys():
+            print('Error: unknown uniform type for function: ' + func)
+            exit(1)
+        uniform_type = UNIFORM_TYPE[func]
+
+        result += '# ' + name + '\n'
+        result += 'BUFFER ' + name + ' DATA_TYPE ' + uniform_type + ' DATA\n'
+        for arg in entry['args']:
+            result += ' {}'.format(arg)
+        result += '\n'
+        result += 'END\n'
+
+    return result
+
+
+def amberscript_uniform_buffer_bind(uniform_json):
+    '''
+    Returns the string representing AmberScript version of uniform binding.
+    Skips the special '$compute' key, if present.
+
+    {
+      "myuniform": {
+        "func": "glUniform1f",
+        "args": [ 42.0 ],
+        "binding": 3
+      },
+      "$compute": { ... will be ignored ... }
+    }
+
+    becomes:
+
+    BIND BUFFER myuniform AS uniform DESCRIPTOR_SET 0 BINDING 3
+    '''
+
+    result = ''
+    with open(uniform_json, 'r') as f:
+        j = json.load(f)
+    for name, entry in j.items():
+
+        if name == '$compute':
+            continue
+
+        result += 'BIND BUFFER ' + name + ' AS uniform '
+        result += 'DESCRIPTOR_SET 0 BINDING {}\n'.format(entry['binding'])
+
+    return result
+
+
+def amberscriptify_image(
+    vert,
+    frag,
+    uniform_json
+):
+    '''
+    Generates an AmberScript representation of an image test
+    '''
+
+    script = '#!amber\n'
+    script += '# Generated Amber Script\n'
+
+    script += 'SHADER vertex vert SPIRV-ASM\n'
+    script += spv_get_disassembly(vert)
+    script += 'END\n'
+
+    script += 'SHADER fragment frag SPIRV-ASM\n'
+    script += spv_get_disassembly(frag)
+    script += 'END\n'
+
+    # This buffer MUST be named framebuffer to be able to retrieve the image
+    # Format MUST be B8G8R8A8_UNORM (other options may become available once
+    # Amber supports more format for image extraction)
+    script += 'BUFFER framebuffer FORMAT B8G8R8A8_UNORM\n'
+    script += amberscript_uniform_buffer_decl(uniform_json)
+
+    script += 'PIPELINE graphics gfz_pipeline\n'
+    script += '  ATTACH vert\n'
+    script += '  ATTACH frag\n'
+    script += '  FRAMEBUFFER_SIZE 256 256\n'
+    script += '  BIND BUFFER framebuffer AS color LOCATION 0\n'
+    script += amberscript_uniform_buffer_bind(uniform_json)
+    script += 'END\n'
+
+    script += 'CLEAR_COLOR gfz_pipeline 0 0 0 255\n'
+    script += 'CLEAR gfz_pipeline\n'
+    script += 'RUN gfz_pipeline DRAW_RECT POS 0 0 SIZE 256 256\n'
+
+    return script
 
 
 def run_image_amber(
@@ -941,6 +1075,7 @@ def run_image_amber(
     is_android: bool,
     skip_render: bool,
     spirv_opt_args: Optional[List[str]],
+    use_amberscript: bool,
 ):
     # The vertex shader is optional; passthrough will be used if it is not present
     assert not vert_original or os.path.isfile(vert_original)
@@ -950,28 +1085,37 @@ def run_image_amber(
     frag = prepare_shader(output_dir, frag_original, spirv_opt_args)
     vert = prepare_shader(output_dir, vert_original, spirv_opt_args) if vert_original else None
 
-    amberscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
     status_file = os.path.join(output_dir, 'STATUS')
     png_image = os.path.join(output_dir, 'image_0.png')
 
     device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image_0.png'
 
-    with open_helper(amberscript_file, 'w') as f:
-        f.write(amberscriptify_image(
-            vert,
-            frag,
-            json_file,
-            vert_original,
-            frag_original,
-            spirv_opt_args,
-        ))
+    if use_amberscript:
+        shader_test_file = os.path.join(output_dir, 'tmp_shader_test.amber')
+        with open_helper(shader_test_file, 'w') as f:
+            f.write(amberscriptify_image(
+                vert,
+                frag,
+                json_file,
+            ))
+    else:
+        shader_test_file = os.path.join(output_dir, 'tmp_shader_test.vkscript')
+        with open_helper(shader_test_file, 'w') as f:
+            f.write(vkscriptify_image(
+                vert,
+                frag,
+                json_file,
+                vert_original,
+                frag_original,
+                spirv_opt_args,
+            ))
 
     if is_android:
         prepare_device(force, using_legacy_worker=False)
 
         adb_check([
             'push',
-            amberscript_file,
+            shader_test_file,
             ANDROID_DEVICE_GRAPHICSFUZZ_DIR
         ])
 
@@ -996,7 +1140,7 @@ def run_image_amber(
             'cd ' + ANDROID_DEVICE_DIR + ' && '
             './' + ANDROID_AMBER_NDK
             + flags
-            + ' -d ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
+            + ' -d ' + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(shader_test_file)
         ]
 
         adb_check(['logcat', '-c'])
@@ -1041,7 +1185,7 @@ def run_image_amber(
             # -i tells amber to dump the framebuffer
             cmd.append('-i')
             cmd.append(png_image)
-        cmd.append(amberscript_file)
+        cmd.append(shader_test_file)
         status = 'SUCCESS'
 
         if added_catchsegv:
@@ -1067,7 +1211,7 @@ def run_image_amber(
 # Amber worker: compute test
 
 
-def comp_json_to_amberscript(comp_json):
+def comp_json_to_vkscript(comp_json):
     """
     Returns the string representing VkScript version of compute shader setup,
     found under the special "$compute" key in JSON
@@ -1136,14 +1280,14 @@ def comp_json_to_amberscript(comp_json):
     return result
 
 
-def amberscriptify_comp(
+def vkscriptify_comp(
     comp_spv: str,
     comp_json: str,
     comp_original: Optional[str],
     spirv_args: Optional[List[str]]
 ):
     """
-    Generates an AmberScript representation of a compute test
+    Generates an Vkscript representation of a compute test
     """
 
     result = '# Generated\n\n'
@@ -1167,9 +1311,9 @@ def amberscriptify_comp(
 
     result += '[test]\n'
     result += '## Uniforms\n'
-    result += uniform_json_to_amberscript(comp_json)
+    result += uniform_json_to_vkscript(comp_json)
     result += '## SSBO\n'
-    result += comp_json_to_amberscript(comp_json)
+    result += comp_json_to_vkscript(comp_json)
     result += '\n'
 
     return result
@@ -1233,15 +1377,15 @@ def run_compute_amber(
     assert os.path.isfile(comp_original)
     assert os.path.isfile(json_file)
 
-    amberscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
+    vkscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
     ssbo_output = os.path.join(output_dir, 'ssbo')
     ssbo_json = os.path.join(output_dir, SSBO_JSON_FILENAME)
     status_file = os.path.join(output_dir, 'STATUS')
 
     comp = prepare_shader(output_dir, comp_original, spirv_opt_args)
 
-    with open_helper(amberscript_file, 'w') as f:
-        f.write(amberscriptify_comp(comp, json_file, comp_original, spirv_opt_args))
+    with open_helper(vkscript_file, 'w') as f:
+        f.write(vkscriptify_comp(comp, json_file, comp_original, spirv_opt_args))
 
     # FIXME: in case of multiple SSBOs, we should pass the binding of the ones to be dumped
     ssbo_binding = str(get_ssbo_binding(json_file))
@@ -1252,7 +1396,7 @@ def run_compute_amber(
         # Prepare files on device.
         adb_check([
             'push',
-            amberscript_file,
+            vkscript_file,
             ANDROID_DEVICE_GRAPHICSFUZZ_DIR,
         ])
 
@@ -1278,7 +1422,7 @@ def run_compute_amber(
             'cd ' + ANDROID_DEVICE_DIR + ' && '
             './' + ANDROID_AMBER_NDK
             + flags
-            + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(amberscript_file)
+            + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(vkscript_file)
         ]
 
         adb_check(['logcat', '-c'])
@@ -1323,7 +1467,7 @@ def run_compute_amber(
             cmd.append(ssbo_output)
             cmd.append('-B')
             cmd.append(ssbo_binding)
-        cmd.append(amberscript_file)
+        cmd.append(vkscript_file)
 
         status = 'SUCCESS'
 
@@ -1408,6 +1552,7 @@ def main_helper(args):
     # Optional arguments
     parser.add_argument('--serial', help=SERIAL_OPTION_HELP)
     parser.add_argument('--legacy-worker', action='store_true', help=LEGACY_OPTION_HELP)
+    parser.add_argument('--use-amberscript', action='store_true', help=USE_AMBERSCRIPT_OPTION_HELP)
     parser.add_argument('--skip-render', action='store_true', help=SKIP_RENDER_OPTION_HELP)
     parser.add_argument('--spirvopt', help=SPIRV_OPT_OPTION_HELP)
     parser.add_argument('--force', action='store_true', help=FORCE_OPTION_HELP)
@@ -1523,6 +1668,7 @@ def main_helper(args):
                 is_android=(args.target == 'android'),
                 skip_render=args.skip_render,
                 spirv_opt_args=spirv_args,
+                use_amberscript=args.use_amberscript,
             )
         finally:
             log_to_file = None
