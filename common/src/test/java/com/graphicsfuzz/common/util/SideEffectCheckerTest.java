@@ -72,11 +72,9 @@ public class SideEffectCheckerTest {
         ShadingLanguageVersion.ESSL_310));
   }
 
-  // TODO(521): Unignore when #521 is ready to merge.
-  @Ignore
   @Test
   public void testOutParamHasSideEffects() throws Exception {
-    final String shader = "void main { "
+    final String shader = "void main() { "
         + "   uint out1;"
         + "   uvec2 out2;"
         + "   uvec3 out3;"

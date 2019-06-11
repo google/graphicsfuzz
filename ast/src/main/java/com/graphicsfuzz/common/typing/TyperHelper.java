@@ -18,7 +18,10 @@ package com.graphicsfuzz.common.typing;
 
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -843,6 +846,10 @@ public final class TyperHelper {
 
     // 8.8: Integer Functions
 
+    if (shadingLanguageVersion.supportedIntegerFunctions()) {
+      getBuiltinsForGlslVersionInteger(builtinsForVersion);
+    }
+
     // 8.13: Fragment Processing Functions (only available in fragment shaders)
 
     // 8.14: Noise Functions - deprecated, so we do not consider them
@@ -971,6 +978,99 @@ public final class TyperHelper {
       final String name = "not";
       for (Type t : bgenVectors) {
         addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+  }
+
+  private static void getBuiltinsForGlslVersionInteger(
+      Map<String, List<FunctionPrototype>> builtinsForVersion) {
+    {
+      final String name = "uaddCarry";
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, new QualifiedType(t,
+            Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "usubBorrow";
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, new QualifiedType(t,
+            Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "umulExtended";
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, VoidType.VOID, t, t,
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)),
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "imulExtended";
+      for (Type t : igenType()) {
+        addBuiltin(builtinsForVersion, name, VoidType.VOID, t, t,
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)),
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "bitfieldExtract";
+      for (Type t : igenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
+      }
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
+      }
+    }
+
+    {
+      final String name = "bitfieldInsert";
+      for (Type t : igenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, BasicType.INT, BasicType.INT);
+      }
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, BasicType.INT, BasicType.INT);
+      }
+    }
+
+    {
+      final String name = "bitfieldReverse";
+      for (Type t : igenType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    // We need to use both igen and ugen types of the same size for these builtins, so we need a
+    // counting loop instead of an iterator to access both lists at the same time.
+    {
+      final String name = "bitCount";
+      for (int i = 0; i < igenType().size(); i++) {
+        addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
+        addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+      }
+    }
+
+    {
+      final String name = "findLSB";
+      for (int i = 0; i < igenType().size(); i++) {
+        addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
+        addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+      }
+    }
+
+    {
+      final String name = "findMSB";
+      for (int i = 0; i < igenType().size(); i++) {
+        addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
+        addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
       }
     }
   }
