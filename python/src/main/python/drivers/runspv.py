@@ -873,6 +873,31 @@ def get_spirv_opt_args_comment(spirv_args: Optional[List[str]]) -> str:
     else:
         return ''
 
+def get_header_comment_original_source(
+    vert_original: str,
+    frag_original: str,
+    spirv_args: str
+):
+    has_frag_glsl = frag_original and filename_extension_suggests_glsl(frag_original)
+    has_vert_glsl = vert_original and filename_extension_suggests_glsl(vert_original)
+
+    result = get_spirv_opt_args_comment(spirv_args)
+
+    if has_frag_glsl or has_vert_glsl:
+        result += '# Derived from the following GLSL.\n\n'
+
+    if has_vert_glsl:
+        result += '# Vertex shader GLSL:\n'
+        result += get_shader_as_comment(vert_original)
+        result += '\n\n'
+
+    if has_frag_glsl:
+        result += '# Fragment shader GLSL:\n'
+        result += get_shader_as_comment(frag_original)
+        result += '\n\n'
+
+    return result
+
 
 def vkscriptify_image(
     vert,
@@ -890,23 +915,7 @@ def vkscriptify_image(
 
     result += '# A test for a bug found by GraphicsFuzz.\n\n'
 
-    has_frag_glsl = frag_original and filename_extension_suggests_glsl(frag_original)
-    has_vert_glsl = vert_original and filename_extension_suggests_glsl(vert_original)
-
-    result += get_spirv_opt_args_comment(spirv_args)
-
-    if has_frag_glsl or has_vert_glsl:
-        result += '# Derived from the following GLSL.\n\n'
-
-    if has_vert_glsl:
-        result += '# Vertex shader GLSL:\n'
-        result += get_shader_as_comment(vert_original)
-        result += '\n\n'
-
-    if has_frag_glsl:
-        result += '# Fragment shader GLSL:\n'
-        result += get_shader_as_comment(frag_original)
-        result += '\n\n'
+    result += get_header_comment_original_source(vert_original, frag_original, spirv_args)
 
     result += '[require]\n'
     result += 'fbsize 256 256\n\n'
@@ -1028,42 +1037,54 @@ def amberscript_uniform_buffer_bind(uniform_json):
 def amberscriptify_image(
     vert,
     frag,
-    uniform_json
+    uniform_json,
+    vert_original,
+    frag_original,
+    spirv_args
 ):
     '''
-    Generates an AmberScript representation of an image test
+    Generates AmberScript representation of an image test
     '''
 
-    script = '#!amber\n'
-    script += '# Generated Amber Script\n'
+    has_frag_glsl = frag_original and filename_extension_suggests_glsl(frag_original)
+    has_vert_glsl = vert_original and filename_extension_suggests_glsl(vert_original)
 
-    script += 'SHADER vertex vert SPIRV-ASM\n'
-    script += spv_get_disassembly(vert)
-    script += 'END\n'
+    result = '#!amber\n'
+    result += '# Generated AmberScript for a bug found by GraphicsFuzz\n\n'
 
-    script += 'SHADER fragment frag SPIRV-ASM\n'
-    script += spv_get_disassembly(frag)
-    script += 'END\n'
+    result += get_header_comment_original_source(vert_original, frag_original, spirv_args)
+
+    if vert:
+        result += 'SHADER vertex gfz_vert SPIRV-ASM\n'
+        result += spv_get_disassembly(vert)
+        result += 'END\n\n'
+    else:
+        result += 'SHADER vertex gfz_vert PASSTHROUGH\n\n'
+
+    result += 'SHADER fragment gfz_frag SPIRV-ASM\n'
+    result += spv_get_disassembly(frag)
+    result += 'END\n\n'
 
     # This buffer MUST be named framebuffer to be able to retrieve the image
     # Format MUST be B8G8R8A8_UNORM (other options may become available once
     # Amber supports more format for image extraction)
-    script += 'BUFFER framebuffer FORMAT B8G8R8A8_UNORM\n'
-    script += amberscript_uniform_buffer_decl(uniform_json)
+    result += 'BUFFER framebuffer FORMAT B8G8R8A8_UNORM\n'
+    result += amberscript_uniform_buffer_decl(uniform_json)
+    result += '\n'
 
-    script += 'PIPELINE graphics gfz_pipeline\n'
-    script += '  ATTACH vert\n'
-    script += '  ATTACH frag\n'
-    script += '  FRAMEBUFFER_SIZE 256 256\n'
-    script += '  BIND BUFFER framebuffer AS color LOCATION 0\n'
-    script += amberscript_uniform_buffer_bind(uniform_json)
-    script += 'END\n'
+    result += 'PIPELINE graphics gfz_pipeline\n'
+    result += '  ATTACH gfz_vert\n'
+    result += '  ATTACH gfz_frag\n'
+    result += '  FRAMEBUFFER_SIZE 256 256\n'
+    result += '  BIND BUFFER framebuffer AS color LOCATION 0\n'
+    result += amberscript_uniform_buffer_bind(uniform_json)
+    result += 'END\n\n'
 
-    script += 'CLEAR_COLOR gfz_pipeline 0 0 0 255\n'
-    script += 'CLEAR gfz_pipeline\n'
-    script += 'RUN gfz_pipeline DRAW_RECT POS 0 0 SIZE 256 256\n'
+    result += 'CLEAR_COLOR gfz_pipeline 0 0 0 255\n'
+    result += 'CLEAR gfz_pipeline\n'
+    result += 'RUN gfz_pipeline DRAW_RECT POS 0 0 SIZE 256 256\n'
 
-    return script
+    return result
 
 
 def run_image_amber(
@@ -1097,6 +1118,9 @@ def run_image_amber(
                 vert,
                 frag,
                 json_file,
+                vert_original,
+                frag_original,
+                spirv_opt_args,
             ))
     else:
         shader_test_file = os.path.join(output_dir, 'tmp_shader_test.vkscript')
