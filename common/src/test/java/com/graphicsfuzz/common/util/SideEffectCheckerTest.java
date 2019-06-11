@@ -28,6 +28,7 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import java.util.Collections;
 import org.junit.Ignore;
@@ -89,12 +90,12 @@ public class SideEffectCheckerTest {
     final TranslationUnit tu = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
     tu.setShadingLanguageVersion(ShadingLanguageVersion.ESSL_310);
 
-    assertFalse(new CheckPredicateVisitor() {
+    new StandardVisitor() {
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr expr) {
         assertTrue(expr.getCallee().equals("uaddCarry"));
         assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310));
       }
-    }.test(tu));
+    }.visit(tu);
   }
 }
