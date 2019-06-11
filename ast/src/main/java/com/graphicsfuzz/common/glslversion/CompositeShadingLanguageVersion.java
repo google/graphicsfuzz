@@ -74,6 +74,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   }
 
   @Override
+  public boolean supportedDerivativeFunctions() {
+    return prototype.supportedDerivativeFunctions();
+  }
+
+  @Override
   public boolean supportedDeterminant() {
     return prototype.supportedDeterminant();
   }
