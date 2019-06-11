@@ -311,6 +311,9 @@ public class Generate {
   public static void main(String[] args) {
     try {
       mainHelper(args);
+    } catch (ArgumentParserException exception) {
+      exception.getParser().handleError(exception);
+      System.exit(1);
     } catch (Throwable exception) {
       LOGGER.error("", exception);
       System.exit(1);
