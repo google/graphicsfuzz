@@ -33,8 +33,7 @@ public class VectorMatrixIndexExprTemplate extends AbstractExprTemplate {
   private final boolean isLValue;
 
   public VectorMatrixIndexExprTemplate(BasicType argType, boolean isLValue) {
-    assert BasicType.allVectorTypes().contains(argType) || BasicType.allMatrixTypes()
-          .contains(argType);
+    assert argType.isVector() || argType.isMatrix();
     this.argType = argType;
     this.isLValue = isLValue;
   }
@@ -44,11 +43,11 @@ public class VectorMatrixIndexExprTemplate extends AbstractExprTemplate {
     assert args.length == getNumArguments();
 
     int index;
-    if (BasicType.allVectorTypes().contains(argType)) {
+    if (argType.isVector()) {
       index = generator.nextInt(argType.getNumElements());
     } else {
-      assert BasicType.allMatrixTypes().contains(argType);
-      index = generator.nextInt(BasicType.numColumns(argType));
+      assert argType.isMatrix();
+      index = generator.nextInt(argType.getNumColumns());
     }
     return new ArrayIndexExpr(args[0], new IntConstantExpr(String.valueOf(index)));
 

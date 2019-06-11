@@ -344,26 +344,22 @@ public class BasicType extends BuiltinType {
           BVEC4));
   }
 
-  public static int numColumns(BasicType basicType) {
-    assert allMatrixTypes().contains(basicType);
-    if (Arrays.asList(MAT2X2, MAT2X3, MAT2X4).contains(basicType)) {
-      return 2;
-    }
-    if (Arrays.asList(MAT3X2, MAT3X3, MAT3X4).contains(basicType)) {
-      return 3;
-    }
-    if (Arrays.asList(MAT4X2, MAT4X3, MAT4X4).contains(basicType)) {
-      return 4;
-    }
-    throw new RuntimeException("Camnnot get number of columns for " + basicType);
-  }
-
+  /**
+   * Creates a vector type of a specified size from a scalar type.
+   *
+   * @return a vector type of numElements dimension, or the scalar type if numElements is 1.
+   * @throws UnsupportedOperationException if the specified base type is not a scalar, or
+   *     if numElements is outside the bounds of possible dimensions
+   *     (numElements < 0, numElements > 4)
+   */
   public static BasicType makeVectorType(BasicType elementType, int numElements) {
-    if (!allScalarTypes().contains(elementType)) {
-      throw new RuntimeException("Cannot make vector type from element type " + elementType);
+    if (!elementType.isScalar()) {
+      throw new UnsupportedOperationException(
+          "Cannot make vector type from element type " + elementType);
     }
     if (numElements < 0 || numElements > 4) {
-      throw new RuntimeException("Cannot make vector type with " + numElements + " elements");
+      throw new UnsupportedOperationException(
+          "Cannot make vector type with " + numElements + " elements");
     }
     if (elementType == FLOAT) {
       switch (numElements) {
@@ -433,8 +429,18 @@ public class BasicType extends BuiltinType {
     return allMatrixTypes().contains(this);
   }
 
+  /**
+   * Determines the vector type of the columns in the matrix. For example, accessing a column of a
+   * mat2x2 would give you a variable of type vec2. Can only be invoked on a matrix type.
+   *
+   * @return the type that represents that the matrix type has.
+   * @throws UnsupportedOperationException if the type is not a matrix.
+   */
   public BasicType getColumnType() {
-    assert allMatrixTypes().contains(this);
+    if (!this.isMatrix()) {
+      throw new UnsupportedOperationException(
+          "Type" + this.toString() + " does not have a column type");
+    }
     if (Arrays.asList(BasicType.MAT2X2, BasicType.MAT3X2, BasicType.MAT4X2).contains(this)) {
       return VEC2;
     }
@@ -445,8 +451,17 @@ public class BasicType extends BuiltinType {
     return VEC4;
   }
 
+  /**
+   * Finds the number of columns in a matrix. Can only be invoked on a matrix type.
+   *
+   * @return the number of columns that the matrix type has.
+   * @throws UnsupportedOperationException if the type is not a matrix.
+   */
   public int getNumColumns() {
-    assert allMatrixTypes().contains(this);
+    if (!this.isMatrix()) {
+      throw new UnsupportedOperationException(
+          "Type" + this.toString() + " does not have columns");
+    }
     if (Arrays.asList(BasicType.MAT2X2, BasicType.MAT2X3, BasicType.MAT2X4).contains(this)) {
       return 2;
     }
@@ -454,6 +469,27 @@ public class BasicType extends BuiltinType {
       return 3;
     }
     assert Arrays.asList(BasicType.MAT4X2, BasicType.MAT4X3, BasicType.MAT4X4).contains(this);
+    return 4;
+  }
+
+  /**
+   * Finds the number of rows in a matrix. Can only be invoked on a matrix type.
+   *
+   * @return the number of rows that the matrix type has.
+   * @throws UnsupportedOperationException if the type is not a matrix.
+   */
+  public int getNumRows() {
+    if (!this.isMatrix()) {
+      throw new UnsupportedOperationException(
+          "Type" + this.toString() + " does not have rows");
+    }
+    if (Arrays.asList(BasicType.MAT2X2, BasicType.MAT3X2, BasicType.MAT4X2).contains(this)) {
+      return 2;
+    }
+    if (Arrays.asList(BasicType.MAT2X3, BasicType.MAT3X3, BasicType.MAT4X3).contains(this)) {
+      return 3;
+    }
+    assert Arrays.asList(BasicType.MAT2X4, BasicType.MAT3X4, BasicType.MAT4X4).contains(this);
     return 4;
   }
 }

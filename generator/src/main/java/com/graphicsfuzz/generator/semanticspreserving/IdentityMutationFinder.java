@@ -83,8 +83,7 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
         iterators.forEach(clonedScope::remove);
       }
     }
-    if (BasicType.allScalarTypes().contains(basicType)
-        || BasicType.allVectorTypes().contains(basicType)
+    if (basicType.isScalar() || basicType.isVector()
         || BasicType.allSquareMatrixTypes().contains(basicType)) {
       // TODO: add support for non-square matrices.
       addMutation(new Expr2ExprMutation(parentMap.getParent(expr),

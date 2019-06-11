@@ -18,7 +18,10 @@ package com.graphicsfuzz.common.typing;
 
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 /**
  * This helper class factors out some context-independent parts of typechecking,
@@ -838,13 +842,237 @@ public final class TyperHelper {
 
     // 8.7: Vector Relational Functions
 
+    getBuiltinsForGlslVersionVectorRelational(builtinsForVersion, shadingLanguageVersion);
+
     // 8.8: Integer Functions
+
+    if (shadingLanguageVersion.supportedIntegerFunctions()) {
+      getBuiltinsForGlslVersionInteger(builtinsForVersion);
+    }
 
     // 8.13: Fragment Processing Functions (only available in fragment shaders)
 
     // 8.14: Noise Functions - deprecated, so we do not consider them
 
     return builtinsForVersion;
+  }
+
+  private static void getBuiltinsForGlslVersionVectorRelational(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+    // We need these for every function, so instead of constantly calling the functions,
+    // we'll just cache them to reduce cruft.
+    final List<Type> genVectors = genType().stream().filter(
+        item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList());
+    final List<Type> igenVectors = igenType().stream().filter(
+        item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList());
+    final List<Type> ugenVectors = ugenType().stream().filter(
+        item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList());
+    final List<Type> bgenVectors = bgenType().stream().filter(
+        item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList());
+    final boolean supportsUnsigned = shadingLanguageVersion.supportedUnsigned();
+
+    {
+      final String name = "lessThan";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+      }
+    }
+
+    {
+      final String name = "lessThanEqual";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+      }
+    }
+
+    {
+      final String name = "greaterThan";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+      }
+    }
+
+    {
+      final String name = "greaterThanEqual";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+      }
+    }
+
+    {
+      final String name = "equal";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), bgenVectors.get(i),
+            bgenVectors.get(i));
+      }
+    }
+
+    {
+      final String name = "notEqual";
+      for (int i = 0; i < bgenVectors.size(); i++) {
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), genVectors.get(i),
+            genVectors.get(i));
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), igenVectors.get(i),
+            igenVectors.get(i));
+        if (supportsUnsigned) {
+          addBuiltin(builtinsForVersion, name, bgenVectors.get(i), ugenVectors.get(i),
+              ugenVectors.get(i));
+        }
+        addBuiltin(builtinsForVersion, name, bgenVectors.get(i), bgenVectors.get(i),
+            bgenVectors.get(i));
+      }
+    }
+
+    {
+      final String name = "any";
+      for (Type t : bgenVectors) {
+        addBuiltin(builtinsForVersion, name, BasicType.BOOL, t);
+      }
+    }
+
+    {
+      final String name = "all";
+      for (Type t : bgenVectors) {
+        addBuiltin(builtinsForVersion, name, BasicType.BOOL, t);
+      }
+    }
+
+    {
+      final String name = "not";
+      for (Type t : bgenVectors) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+  }
+
+  private static void getBuiltinsForGlslVersionInteger(
+      Map<String, List<FunctionPrototype>> builtinsForVersion) {
+    {
+      final String name = "uaddCarry";
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, new QualifiedType(t,
+            Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "usubBorrow";
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, new QualifiedType(t,
+            Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "umulExtended";
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, VoidType.VOID, t, t,
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)),
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "imulExtended";
+      for (Type t : igenType()) {
+        addBuiltin(builtinsForVersion, name, VoidType.VOID, t, t,
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)),
+            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    {
+      final String name = "bitfieldExtract";
+      for (Type t : igenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
+      }
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
+      }
+    }
+
+    {
+      final String name = "bitfieldInsert";
+      for (Type t : igenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, BasicType.INT, BasicType.INT);
+      }
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, BasicType.INT, BasicType.INT);
+      }
+    }
+
+    {
+      final String name = "bitfieldReverse";
+      for (Type t : igenType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+      for (Type t : ugenType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    // We need to use both igen and ugen types of the same size for these builtins, so we need a
+    // counting loop instead of an iterator to access both lists at the same time.
+    {
+      final String name = "bitCount";
+      for (int i = 0; i < igenType().size(); i++) {
+        addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
+        addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+      }
+    }
+
+    {
+      final String name = "findLSB";
+      for (int i = 0; i < igenType().size(); i++) {
+        addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
+        addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+      }
+    }
+
+    {
+      final String name = "findMSB";
+      for (int i = 0; i < igenType().size(); i++) {
+        addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
+        addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+      }
+    }
   }
 
   private static void addBuiltin(Map<String, List<FunctionPrototype>> builtinsForVersion,

@@ -110,6 +110,11 @@ final class Glsl110 implements ShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedIntegerFunctions() {
+    return false;
+  }
+
+  @Override
   public boolean supportedInverse() {
     return false;
   }
