@@ -46,8 +46,8 @@ public class VariableDeclToExprReductionOpportunity extends AbstractReductionOpp
 
   @Override
   void applyReductionImpl() {
-    // Given the variable declaration info, we unset its initializer and derive a new binary
-    // expression which will be inserted right after the declaration in the block statement.
+    // Given the variable declaration info, we unset its initializer and derive a new assignment
+    // statement which will be inserted right after the declaration in the block statement.
     assert variableDeclInfo.getInitializer() instanceof ScalarInitializer;
     final BinaryExpr binaryExpr = new BinaryExpr(
         new VariableIdentifierExpr(variableDeclInfo.getName()),

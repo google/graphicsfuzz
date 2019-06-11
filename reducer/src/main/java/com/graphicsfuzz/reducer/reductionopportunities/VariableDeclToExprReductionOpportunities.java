@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
@@ -77,8 +78,14 @@ public class VariableDeclToExprReductionOpportunities
   public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
     super.visitDeclarationStmt(declarationStmt);
     if (!context.reduceEverywhere()) {
-      // Replacing variable declaration with a new binary expression might have a side-effect,
+      // Replacing initializers with a new assignment statement might have a side-effect,
       // do not consider these reduction opportunities if we are not reducing everywhere.
+      return;
+    }
+
+    if (declarationStmt.getVariablesDeclaration().getBaseType().hasQualifier(TypeQualifier.CONST)) {
+      // A constant must always be initialized, so do not consider variable declarations that
+      // have const qualifier (i.e., const int a = 1).
       return;
     }
     final List<VariableDeclInfo> declInfos =

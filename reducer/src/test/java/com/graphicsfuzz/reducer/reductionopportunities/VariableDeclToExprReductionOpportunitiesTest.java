@@ -56,7 +56,6 @@ public class VariableDeclToExprReductionOpportunitiesTest {
     assertTrue(ops.isEmpty());
   }
 
-  @Ignore
   @Test
   public void testMultipleDeclarations() throws Exception {
     final String program = "void main() {"
