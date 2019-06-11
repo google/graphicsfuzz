@@ -223,7 +223,7 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       return;
     }
     final BasicType basicType = (BasicType) structureType;
-    if (!BasicType.allVectorTypes().contains(basicType)) {
+    if (!basicType.isVector()) {
       return;
     }
     if (basicType.getNumElements() != tce.getNumArgs()) {

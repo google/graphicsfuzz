@@ -26,8 +26,7 @@ public class SupportedTypes {
         && !shadingLanguageVersion.supportedUnsigned()) {
       return false;
     }
-    if (BasicType.allMatrixTypes().contains(type)
-        && !BasicType.allSquareMatrixTypes().contains(type)
+    if (type.isMatrix() && !BasicType.allSquareMatrixTypes().contains(type)
         && !shadingLanguageVersion.supportedNonSquareMatrices()) {
       return false;
     }

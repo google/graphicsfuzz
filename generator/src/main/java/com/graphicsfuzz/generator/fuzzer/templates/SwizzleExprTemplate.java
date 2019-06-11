@@ -32,9 +32,8 @@ public class SwizzleExprTemplate extends AbstractExprTemplate {
   private final boolean isLValue;
 
   public SwizzleExprTemplate(BasicType argType, BasicType resultType, boolean isLValue) {
-    assert BasicType.allVectorTypes().contains(argType);
-    assert BasicType.allVectorTypes().contains(resultType) || BasicType.allScalarTypes()
-          .contains(resultType);
+    assert argType.isVector();
+    assert resultType.isVector() || resultType.isScalar();
     if (isLValue) {
       assert resultType.getNumElements() <= argType.getNumElements();
     }

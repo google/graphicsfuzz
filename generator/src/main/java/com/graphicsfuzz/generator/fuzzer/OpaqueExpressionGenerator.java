@@ -807,7 +807,7 @@ public final class OpaqueExpressionGenerator {
     private IdentityRewriteComposite() {
       // all non-boolean vector/matrix types
       super(BasicType.allNumericTypes().stream().filter(
-          item -> !BasicType.allScalarTypes().contains(item)).collect(Collectors.toList()),
+          item -> !item.isScalar()).collect(Collectors.toList()),
           false);
     }
 
@@ -823,9 +823,7 @@ public final class OpaqueExpressionGenerator {
       assert type.isVector() || type.isMatrix();
       assert expr instanceof VariableIdentifierExpr;
 
-      final int numColumns =
-          (BasicType.allVectorTypes().contains(type)
-          ? type.getNumElements() : type.getNumColumns());
+      final int numColumns = type.isVector() ? type.getNumElements() : type.getNumColumns();
       final int columnToFurtherTransform = generator.nextInt(numColumns);
       final List<Expr> typeConstructorArguments = new ArrayList<>();
 

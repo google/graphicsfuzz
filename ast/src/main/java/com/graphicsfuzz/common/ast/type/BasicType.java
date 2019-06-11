@@ -353,7 +353,7 @@ public class BasicType extends BuiltinType {
    *     (numElements < 0, numElements > 4)
    */
   public static BasicType makeVectorType(BasicType elementType, int numElements) {
-    if (!allScalarTypes().contains(elementType)) {
+    if (!elementType.isScalar()) {
       throw new UnsupportedOperationException(
           "Cannot make vector type from element type " + elementType);
     }
