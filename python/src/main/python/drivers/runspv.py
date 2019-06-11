@@ -1054,6 +1054,8 @@ def amberscriptify_image(
 
     result += get_header_comment_original_source(vert_original, frag_original, spirv_args)
 
+    result += 'SET ENGINE_DATA fence_timeout_ms ' + str(AMBER_FENCE_TIMEOUT_MS) + '\n\n'
+
     if vert:
         result += 'SHADER vertex gfz_vert SPIRV-ASM\n'
         result += spv_get_disassembly(vert)
