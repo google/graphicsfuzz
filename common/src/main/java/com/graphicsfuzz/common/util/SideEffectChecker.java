@@ -17,6 +17,8 @@
 package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
@@ -28,6 +30,7 @@ import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.TyperHelper;
@@ -44,6 +47,19 @@ public class SideEffectChecker {
             .containsKey(functionCallExpr.getCallee())) {
           // Assume that any call to a non-builtin might have a side-effect.
           predicateHolds();
+        }
+        for (FunctionPrototype p :
+            TyperHelper.getBuiltins(shadingLanguageVersion).get(functionCallExpr.getCallee())) {
+          // We check each argument of the built-in's prototypes to see if they require lvalues -
+          // if so, they can cause side effects.
+          // We could be more precise here by finding the specific overload of the function rather
+          // than checking every possible prototype for lvalue parameters.
+          for (ParameterDecl param : p.getParameters()) {
+            if (param.getType().hasQualifier(TypeQualifier.OUT_PARAM)
+                || param.getType().hasQualifier(TypeQualifier.INOUT_PARAM)) {
+              predicateHolds();
+            }
+          }
         }
         super.visitFunctionCallExpr(functionCallExpr);
       }
