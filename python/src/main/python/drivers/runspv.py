@@ -1067,12 +1067,6 @@ def run_image_amber(
 # Amber worker: compute test
 
 
-def translate_type_for_amber(type_name: str) -> str:
-    if type_name == 'bool':
-        return 'uint'
-    return type_name
-
-
 def comp_json_to_amberscript(comp_json):
     """
     Returns the string representing VkScript version of compute shader setup,
@@ -1109,12 +1103,30 @@ def comp_json_to_amberscript(comp_json):
 
     binding = j['buffer']['binding']
     offset = 0
+
+    # Homogeneise types: Amber does not support to have different types in the
+    # same ssbo. We may have booleans in addition to an other basic type, in
+    # which case we update the boolean to this other basic type.
+    other_type = None
+    for field_info in j['buffer']['fields']:
+        if field_info['type'] != 'bool':
+            if other_type == None:
+                other_type = field_info['type']
+            elif field_info['type'] != other_type:
+                assert("Amber does not support different types within the same SSBO")
+    if other_type != None:
+        # Update bools to be of the other type:
+        for field_info in j['buffer']['fields']:
+            if field_info['type'] == 'bool':
+                field_info['type'] = other_type
+
+
     for field_info in j['buffer']['fields']:
         result += (
             'ssbo '
             + str(binding)
             + ' subdata '
-            + translate_type_for_amber(field_info['type'])
+            + field_info['type']
             + ' '
             + str(offset)
         )
