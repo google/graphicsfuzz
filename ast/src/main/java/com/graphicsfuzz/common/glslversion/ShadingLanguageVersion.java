@@ -167,6 +167,17 @@ public interface ShadingLanguageVersion {
 
   boolean supportedDoStmt();
 
+  /**
+   * Derivative Functions are a subset of fragment processing functions that compute
+   * the rate of change between pixels in a given fragment. In recent GLSL specifications,
+   * new derivative functions were added that allow a user to specify how much precision
+   * the user wants in the calculation, instead of leaving the choice to the compiler.
+   * GLSL versions 4.5+ support these explicit derivative functions.
+   *
+   * @return true if explicit derivative functions are supported - false otherwise.
+   */
+  boolean supportedExplicitDerivativeFunctions();
+
   boolean supportedFloatBitsToInt();
 
   boolean supportedFloatBitsToUint();
@@ -186,6 +197,15 @@ public interface ShadingLanguageVersion {
    * @return true if Integer Functions are supported - false otherwise.
    */
   boolean supportedIntegerFunctions();
+
+  /**
+   * Interpolation Functions are a subset of fragment processing functions that
+   * compute an interpolated value of a fragment shader input variable at a specific location.
+   * GLSL versions 4.0+ and ESSL versions 3.2+ support these functions.
+   *
+   * @return true if Interpolation Functions are supported - false otherwise.
+   */
+  boolean supportedInterpolationFunctions();
 
   boolean supportedInverse();
 

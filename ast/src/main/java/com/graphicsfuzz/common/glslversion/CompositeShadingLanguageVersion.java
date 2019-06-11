@@ -84,6 +84,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   }
 
   @Override
+  public boolean supportedExplicitDerivativeFunctions() {
+    return prototype.supportedExplicitDerivativeFunctions();
+  }
+
+  @Override
   public boolean supportedFloatBitsToInt() {
     return prototype.supportedFloatBitsToInt();
   }
@@ -111,6 +116,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   @Override
   public boolean supportedIntegerFunctions() {
     return prototype.supportedIntegerFunctions();
+  }
+
+  @Override
+  public boolean supportedInterpolationFunctions() {
+    return prototype.supportedInterpolationFunctions();
   }
 
   @Override

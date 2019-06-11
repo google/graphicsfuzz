@@ -85,6 +85,11 @@ final class Glsl110 implements ShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedExplicitDerivativeFunctions() {
+    return false;
+  }
+
+  @Override
   public boolean supportedFloatBitsToInt() {
     return false;
   }
@@ -111,6 +116,11 @@ final class Glsl110 implements ShadingLanguageVersion {
 
   @Override
   public boolean supportedIntegerFunctions() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedInterpolationFunctions() {
     return false;
   }
 
