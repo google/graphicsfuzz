@@ -852,7 +852,7 @@ public final class TyperHelper {
 
     // 8.13: Fragment Processing Functions (only available in fragment shaders)
 
-    if(shadingLanguageVersion.supportedDerivativeFunctions()) {
+    if (shadingLanguageVersion.supportedDerivativeFunctions()) {
       getBuiltinsForGlslVersionFragmentProcessing(builtinsForVersion, shadingLanguageVersion);
     }
 
