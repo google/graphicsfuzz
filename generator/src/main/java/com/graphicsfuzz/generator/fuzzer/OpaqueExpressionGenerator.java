@@ -77,6 +77,7 @@ public final class OpaqueExpressionGenerator {
 
     if (shadingLanguageVersion.supportedBitwiseOperations()) {
       expressionIdentities.add(new IdentityBitwiseNotNot());
+      expressionIdentities.add(new IdentityBitwiseOr());
     }
 
     expressionIdentities.add(new IdentityMin());
@@ -713,6 +714,27 @@ public final class OpaqueExpressionGenerator {
       result = new UnaryExpr(new ParenExpr(applyIdentityFunction(result, type, constContext,
           depth, fuzzer)), UnOp.BNEG);
       return identityConstructor(expr, result);
+    }
+  }
+
+  private class IdentityBitwiseOr extends AbstractIdentityTransformation {
+    private IdentityBitwiseOr() {
+      super(BasicType.allIntegerTypes(), false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      // (expr | expr)
+      assert BasicType.allIntegerTypes().contains(type);
+      // We use parentheses inside of the binary expression to prevent issues with order of
+      // operations - for example, d = d * 2u | d = d * 2u will cause issues.
+      return identityConstructor(
+          expr,
+          new BinaryExpr(
+              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
+              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
+              BinOp.BOR));
     }
   }
 
