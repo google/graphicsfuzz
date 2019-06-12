@@ -324,6 +324,11 @@ public class BasicType extends BuiltinType {
     return result;
   }
 
+  /**
+   * Helper function to return a list of every basic type that is considered an integer.
+   *
+   * @return a list of all basic integer types.
+   */
   public static List<BasicType> allIntegerTypes() {
     return new ArrayList<BasicType>(Arrays.asList(
         UINT,

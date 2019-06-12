@@ -63,11 +63,10 @@ public final class OpaqueExpressionGenerator {
                                    ShadingLanguageVersion shadingLanguageVersion) {
     this.generator = generator;
     this.generationParams = generationParams;
-    // TODO: there are many more identities that we can easily play with here, e.g. bitwise and 1
-    // for integer types
     this.expressionIdentities = new ArrayList<>();
     this.shadingLanguageVersion = shadingLanguageVersion;
 
+    // TODO: there are many more identities that we can easily play with here
     expressionIdentities.add(new IdentityAddSubZero());
     expressionIdentities.add(new IdentityMulDivOne());
     expressionIdentities.add(new IdentityAndTrue());
@@ -698,6 +697,12 @@ public final class OpaqueExpressionGenerator {
 
   }
 
+  /**
+   * Identity transformation for integer types (both unsigned and signed, and their vectors) that
+   * double bitwise inverts an integer, producing the same integer as output. When performed,
+   * transforms an expression, e, such that:
+   *    e -> ~(~(expr)).
+   */
   private class IdentityBitwiseNotNot extends AbstractIdentityTransformation {
     private IdentityBitwiseNotNot() {
       super(BasicType.allIntegerTypes(), false);
@@ -706,7 +711,6 @@ public final class OpaqueExpressionGenerator {
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
                       Fuzzer fuzzer) {
-      // ~(~(expr))
       assert BasicType.allIntegerTypes().contains(type);
       // Invert once
       Expr result = new UnaryExpr(new ParenExpr(applyIdentityFunction(expr, type,
@@ -719,6 +723,12 @@ public final class OpaqueExpressionGenerator {
     }
   }
 
+  /**
+   * Identity transformation for integer types (both unsigned and signed, and their vectors) that
+   * ORs an integer with itself, producing the same integer as output. When performed, transforms an
+   * expression, e, such that:
+   *    e -> (e) | (e).
+   */
   private class IdentityBitwiseOr extends AbstractIdentityTransformation {
     private IdentityBitwiseOr() {
       super(BasicType.allIntegerTypes(), false);
@@ -727,7 +737,6 @@ public final class OpaqueExpressionGenerator {
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
                       Fuzzer fuzzer) {
-      // (expr | expr)
       assert BasicType.allIntegerTypes().contains(type);
       // We use parentheses inside of the binary expression to prevent issues with order of
       // operations - for example, d = d * 2u | d = d * 2u will cause issues.
@@ -740,6 +749,12 @@ public final class OpaqueExpressionGenerator {
     }
   }
 
+  /**
+   * Identity transformation for integer types (both unsigned and signed, and their vectors) that
+   * XORs an integer with zero, producing the same integer as output. When performed, transforms an
+   * expression, e, such that:
+   *    e -> (e) ^ 0.
+   */
   private class IdentityBitwiseXorZero extends AbstractIdentityTransformation {
     private IdentityBitwiseXorZero() {
       super(BasicType.allIntegerTypes(), false);
@@ -748,7 +763,6 @@ public final class OpaqueExpressionGenerator {
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
                       Fuzzer fuzzer) {
-      // (expr) ^ 0
       assert BasicType.allIntegerTypes().contains(type);
       return identityConstructor(
           expr,
@@ -759,6 +773,11 @@ public final class OpaqueExpressionGenerator {
     }
   }
 
+  /**
+   * Identity transformation for integer types (both unsigned and signed, and their vectors) that
+   * shifts an integer by zero. When performed, transforms an expression, e, such that:
+   *    e -> (e) >> 0 or e -> (e) << 0
+   */
   private class IdentityBitwiseShiftZero extends AbstractIdentityTransformation {
     private IdentityBitwiseShiftZero() {
       super(BasicType.allIntegerTypes(), false);
@@ -767,7 +786,6 @@ public final class OpaqueExpressionGenerator {
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
                       Fuzzer fuzzer) {
-      // (expr) << 0 or (expr) >> 0
       assert BasicType.allIntegerTypes().contains(type);
       return identityConstructor(
           expr,
