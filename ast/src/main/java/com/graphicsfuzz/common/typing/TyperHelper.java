@@ -285,7 +285,7 @@ public final class TyperHelper {
   }
 
   public static Map<String, List<FunctionPrototype>> getBuiltins(ShadingLanguageVersion
-                                                                     shadingLanguageVersion) {
+      shadingLanguageVersion) {
     if (!builtins.containsKey(shadingLanguageVersion)) {
       builtins.putIfAbsent(shadingLanguageVersion,
           getBuiltinsForGlslVersion(shadingLanguageVersion));
@@ -1151,7 +1151,7 @@ public final class TyperHelper {
    * Helper function to register built-in function prototypes for Fragment Processing Functions,
    * as specified in section 8.14 of the GLSL 4.6 and ESSL 3.2 specifications.
    *
-   * @param builtinsForVersion     the list of builtins to add prototypes to
+   * @param builtinsForVersion the list of builtins to add prototypes to
    * @param shadingLanguageVersion the version of GLSL in use
    */
   private static void getBuiltinsForGlslVersionFragmentProcessing(
@@ -1228,7 +1228,7 @@ public final class TyperHelper {
   }
 
   private static void addBuiltin(Map<String, List<FunctionPrototype>> builtinsForVersion,
-                                 String name, Type resultType, Type... args) {
+      String name, Type resultType, Type... args) {
     if (!builtinsForVersion.containsKey(name)) {
       builtinsForVersion.put(name, new ArrayList<>());
     }
