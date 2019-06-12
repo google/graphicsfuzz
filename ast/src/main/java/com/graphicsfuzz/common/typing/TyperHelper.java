@@ -1156,28 +1156,7 @@ public final class TyperHelper {
     }
 
     // 8.14.2 Interpolation Functions
-    if (shadingLanguageVersion.supportedInterpolationFunctions()) {
-      {
-        final String name = "interpolateAtCentroid";
-        for (Type t : genType()) {
-          addBuiltin(builtinsForVersion, name, t, t);
-        }
-      }
-
-      {
-        final String name = "interpolateAtSample";
-        for (Type t : genType()) {
-          addBuiltin(builtinsForVersion, name, t, t, BasicType.INT);
-        }
-      }
-
-      {
-        final String name = "interpolateAtOffset";
-        for (Type t : genType()) {
-          addBuiltin(builtinsForVersion, name, t, t, BasicType.VEC2);
-        }
-      }
-    }
+    // TODO(550): Support functions that take non-uniform shader input variables as parameters.
   }
 
   private static void addBuiltin(Map<String, List<FunctionPrototype>> builtinsForVersion,
