@@ -278,4 +278,13 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
     return prototype.supportedUnsigned();
   }
 
+  @Override
+  public boolean supportedAngleAndTrigonometricFunctions() {
+    return prototype.supportedAngleAndTrigonometricFunctions();
+  }
+
+  @Override
+  public boolean supportedHyperbolicAngleAndTrigonometricFunctions() {
+    return prototype.supportedHyperbolicAngleAndTrigonometricFunctions();
+  }
 }

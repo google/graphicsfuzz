@@ -281,4 +281,14 @@ final class Glsl110 implements ShadingLanguageVersion {
   public boolean supportedUnsigned() {
     return false;
   }
+
+  @Override
+  public boolean supportedAngleAndTrigonometricFunctions() {
+    return true;
+  }
+
+  @Override
+  public boolean supportedHyperbolicAngleAndTrigonometricFunctions() {
+    return false;
+  }
 }

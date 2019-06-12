@@ -285,7 +285,7 @@ public final class TyperHelper {
   }
 
   public static Map<String, List<FunctionPrototype>> getBuiltins(ShadingLanguageVersion
-      shadingLanguageVersion) {
+                                                                     shadingLanguageVersion) {
     if (!builtins.containsKey(shadingLanguageVersion)) {
       builtins.putIfAbsent(shadingLanguageVersion,
           getBuiltinsForGlslVersion(shadingLanguageVersion));
@@ -297,49 +297,10 @@ public final class TyperHelper {
       ShadingLanguageVersion shadingLanguageVersion) {
     Map<String, List<FunctionPrototype>> builtinsForVersion = new HashMap<>();
 
-    // Trigonometric Functions
-    {
-      final String name = "sin";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "cos";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "asin";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "acos";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "tan";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "atan";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "atan";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t);
-      }
-    }
+    // 8.1: Angle and Trigonometric Functions
+
+    getBuiltinsForGlslVersionAngleAndTrigonometric(shadingLanguageVersion,
+        builtinsForVersion);
 
     //Exponential Functions
 
@@ -670,13 +631,13 @@ public final class TyperHelper {
     }
 
     {
-      @SuppressWarnings("unused")
+      @SuppressWarnings("unused") 
       final String name = "frexp";
       // TODO: genType frexp(genType, out genIType)
     }
 
     {
-      @SuppressWarnings("unused")
+      @SuppressWarnings("unused") 
       final String name = "ldexp";
       // TODO: genType frexp(genType, in genIType)
     }
@@ -859,6 +820,113 @@ public final class TyperHelper {
     // 8.14: Noise Functions - deprecated, so we do not consider them
 
     return builtinsForVersion;
+  }
+
+  private static void getBuiltinsForGlslVersionAngleAndTrigonometric(
+      ShadingLanguageVersion shadingLanguageVersion,
+      Map<String, List<FunctionPrototype>> builtinsForVersion) {
+    if (shadingLanguageVersion.supportedAngleAndTrigonometricFunctions()) {
+      {
+        final String name = "radians";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "degrees";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "sin";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "cos";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "tan";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "asin";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "acos";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "atan";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+          addBuiltin(builtinsForVersion, name, t, t, t);
+        }
+      }
+    }
+
+    if (shadingLanguageVersion.supportedHyperbolicAngleAndTrigonometricFunctions()) {
+      {
+        final String name = "sinh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "cosh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "tanh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "asinh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "acosh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "atanh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+    }
   }
 
   private static void getBuiltinsForGlslVersionVectorRelational(
@@ -1083,7 +1151,7 @@ public final class TyperHelper {
    * Helper function to register built-in function prototypes for Fragment Processing Functions,
    * as specified in section 8.14 of the GLSL 4.6 and ESSL 3.2 specifications.
    *
-   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param builtinsForVersion     the list of builtins to add prototypes to
    * @param shadingLanguageVersion the version of GLSL in use
    */
   private static void getBuiltinsForGlslVersionFragmentProcessing(
@@ -1160,7 +1228,7 @@ public final class TyperHelper {
   }
 
   private static void addBuiltin(Map<String, List<FunctionPrototype>> builtinsForVersion,
-      String name, Type resultType, Type... args) {
+                                 String name, Type resultType, Type... args) {
     if (!builtinsForVersion.containsKey(name)) {
       builtinsForVersion.put(name, new ArrayList<>());
     }
