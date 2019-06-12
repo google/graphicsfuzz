@@ -92,7 +92,8 @@ public class ReductionDriver {
         IReductionOpportunityFinder.inlineFunctionFinder(),
         IReductionOpportunityFinder.unusedParamFinder(),
         IReductionOpportunityFinder.foldConstantFinder(),
-        IReductionOpportunityFinder.redundantUniformMetadataFinder())) {
+        IReductionOpportunityFinder.redundantUniformMetadataFinder(),
+        IReductionOpportunityFinder.variableDeclToExprFinder())) {
       cleanupPasses.add(new SystematicReductionPass(context,
           verbose,
           finder));

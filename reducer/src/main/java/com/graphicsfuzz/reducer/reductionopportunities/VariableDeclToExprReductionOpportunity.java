@@ -16,20 +16,51 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.stmt.BlockStmt;
+import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public class VariableDeclToExprReductionOpportunity extends AbstractReductionOpportunity {
 
-  VariableDeclToExprReductionOpportunity(VisitationDepth depth) {
+  // The initialized variable declaration info.
+  private final VariableDeclInfo variableDeclInfo;
+  // The parent of variableDeclInfo.
+  private final DeclarationStmt declarationStmt;
+  // The block in which the declaration statement resides.
+  private final BlockStmt enclosingBlock;
+
+  VariableDeclToExprReductionOpportunity(VariableDeclInfo variableDeclInfo,
+                                         BlockStmt enclosingBlock,
+                                         DeclarationStmt declarationStmt, VisitationDepth depth) {
     super(depth);
+    this.variableDeclInfo = variableDeclInfo;
+    this.enclosingBlock = enclosingBlock;
+    this.declarationStmt = declarationStmt;
   }
 
   @Override
   void applyReductionImpl() {
+    // Given the variable declaration info, we unset its initializer and derive a new assignment
+    // statement which will be inserted right after the declaration in the block statement.
+    assert variableDeclInfo.getInitializer() instanceof ScalarInitializer;
+    final BinaryExpr binaryExpr = new BinaryExpr(
+        new VariableIdentifierExpr(variableDeclInfo.getName()),
+        ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
+        BinOp.ASSIGN
+    );
+    enclosingBlock.insertAfter(declarationStmt, new ExprStmt(binaryExpr));
+    variableDeclInfo.setInitializer(null);
   }
 
   @Override
   public boolean preconditionHolds() {
-    return false;
+    return enclosingBlock.hasChild(declarationStmt)
+        && variableDeclInfo.hasInitializer();
   }
 }
