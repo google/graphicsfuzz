@@ -72,8 +72,12 @@ public final class OpaqueExpressionGenerator {
     expressionIdentities.add(new IdentityMulDivOne());
     expressionIdentities.add(new IdentityAndTrue());
     expressionIdentities.add(new IdentityOrFalse());
-    expressionIdentities.add(new IdentityNotNot());
+    expressionIdentities.add(new IdentityLogicalNotNot());
     expressionIdentities.add(new IdentityTernary());
+
+    if (shadingLanguageVersion.supportedBitwiseOperations()) {
+      expressionIdentities.add(new IdentityBitwiseNotNot());
+    }
 
     expressionIdentities.add(new IdentityMin());
     expressionIdentities.add(new IdentityMax());
@@ -638,9 +642,9 @@ public final class OpaqueExpressionGenerator {
 
   }
 
-  private class IdentityNotNot extends AbstractIdentityTransformation {
+  private class IdentityLogicalNotNot extends AbstractIdentityTransformation {
 
-    private IdentityNotNot() {
+    private IdentityLogicalNotNot() {
       super(Arrays.asList(BasicType.BOOL), false);
     }
 
@@ -689,6 +693,27 @@ public final class OpaqueExpressionGenerator {
               something));
     }
 
+  }
+
+  private class IdentityBitwiseNotNot extends AbstractIdentityTransformation {
+    private IdentityBitwiseNotNot() {
+      super(BasicType.allIntegerTypes(), false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      // ~(~(expr))
+      assert BasicType.allIntegerTypes().contains(type);
+      // Invert once
+      Expr result = new UnaryExpr(new ParenExpr(applyIdentityFunction(expr, type,
+          constContext,
+          depth, fuzzer)), UnOp.BNEG);
+      // Invert again
+      result = new UnaryExpr(new ParenExpr(applyIdentityFunction(result, type, constContext,
+          depth, fuzzer)), UnOp.BNEG);
+      return identityConstructor(expr, result);
+    }
   }
 
   private class IdentityMin extends AbstractIdentityTransformation {
