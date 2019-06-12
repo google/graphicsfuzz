@@ -78,6 +78,7 @@ public final class OpaqueExpressionGenerator {
     if (shadingLanguageVersion.supportedBitwiseOperations()) {
       expressionIdentities.add(new IdentityBitwiseNotNot());
       expressionIdentities.add(new IdentityBitwiseOr());
+      expressionIdentities.add(new IdentityBitwiseShiftZero());
     }
 
     expressionIdentities.add(new IdentityMin());
@@ -735,6 +736,25 @@ public final class OpaqueExpressionGenerator {
               new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
               new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
               BinOp.BOR));
+    }
+  }
+
+  private class IdentityBitwiseShiftZero extends AbstractIdentityTransformation {
+    private IdentityBitwiseShiftZero() {
+      super(BasicType.allIntegerTypes(), false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      // (expr) << 0 or (expr) >> 0
+      assert BasicType.allIntegerTypes().contains(type);
+      return identityConstructor(
+          expr,
+          new BinaryExpr(
+              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
+              makeOpaqueZero(type, constContext, depth, fuzzer),
+              generator.nextBoolean() ? BinOp.SHL : BinOp.SHR));
     }
   }
 
