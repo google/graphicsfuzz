@@ -852,6 +852,10 @@ public final class TyperHelper {
 
     // 8.13: Fragment Processing Functions (only available in fragment shaders)
 
+    if (shadingLanguageVersion.supportedDerivativeFunctions()) {
+      getBuiltinsForGlslVersionFragmentProcessing(builtinsForVersion, shadingLanguageVersion);
+    }
+
     // 8.14: Noise Functions - deprecated, so we do not consider them
 
     return builtinsForVersion;
@@ -1073,6 +1077,86 @@ public final class TyperHelper {
         addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
       }
     }
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Fragment Processing Functions,
+   * as specified in section 8.14 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
+  private static void getBuiltinsForGlslVersionFragmentProcessing(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+    // 8.14.1 Derivative Functions
+    {
+      final String name = "dFdx";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "dFdy";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "fwidth";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    if (shadingLanguageVersion.supportedExplicitDerivativeFunctions()) {
+      {
+        final String name = "dFdxFine";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "dFdxCoarse";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "dFdyFine";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "dFdyCoarse";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "fwidthFine";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "fwidthCoarse";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+    }
+
+    // 8.14.2 Interpolation Functions
+    // TODO(550): Support functions that take non-uniform shader input variables as parameters.
   }
 
   private static void addBuiltin(Map<String, List<FunctionPrototype>> builtinsForVersion,

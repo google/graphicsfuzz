@@ -56,6 +56,11 @@ final class Essl300 extends CompositeShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedDerivativeFunctions() {
+    return true;
+  }
+
+  @Override
   public boolean supportedDeterminant() {
     return true;
   }

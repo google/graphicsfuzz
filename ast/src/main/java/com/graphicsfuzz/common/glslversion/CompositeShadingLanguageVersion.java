@@ -74,6 +74,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   }
 
   @Override
+  public boolean supportedDerivativeFunctions() {
+    return prototype.supportedDerivativeFunctions();
+  }
+
+  @Override
   public boolean supportedDeterminant() {
     return prototype.supportedDeterminant();
   }
@@ -81,6 +86,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   @Override
   public boolean supportedDoStmt() {
     return prototype.supportedDoStmt();
+  }
+
+  @Override
+  public boolean supportedExplicitDerivativeFunctions() {
+    return prototype.supportedExplicitDerivativeFunctions();
   }
 
   @Override
@@ -111,6 +121,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   @Override
   public boolean supportedIntegerFunctions() {
     return prototype.supportedIntegerFunctions();
+  }
+
+  @Override
+  public boolean supportedInterpolationFunctions() {
+    return prototype.supportedInterpolationFunctions();
   }
 
   @Override
