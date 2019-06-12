@@ -631,13 +631,13 @@ public final class TyperHelper {
     }
 
     {
-      @SuppressWarnings("unused") 
+      @SuppressWarnings("unused")
       final String name = "frexp";
       // TODO: genType frexp(genType, out genIType)
     }
 
     {
-      @SuppressWarnings("unused") 
+      @SuppressWarnings("unused")
       final String name = "ldexp";
       // TODO: genType frexp(genType, in genIType)
     }
