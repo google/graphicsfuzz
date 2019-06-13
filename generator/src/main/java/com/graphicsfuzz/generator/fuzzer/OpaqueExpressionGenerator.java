@@ -725,27 +725,28 @@ public final class OpaqueExpressionGenerator {
 
   /**
    * Identity transformation for integer types (both unsigned and signed, and their vectors) that
-   * ORs an integer with itself, producing the same integer as output. When performed, transforms an
-   * expression, e, such that:
+   * ORs an integer with itself, producing the same integer as output. This identity requires
+   * expressions to be side effect free because the same mutated expression is evaluated twice.
+   * When performed, transforms an expression, e, such that:
    *    e -> (e) | (e).
    */
   private class IdentityBitwiseOr extends AbstractIdentityTransformation {
     private IdentityBitwiseOr() {
-      super(BasicType.allIntegerTypes(), false);
+      super(BasicType.allIntegerTypes(), true);
     }
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
                       Fuzzer fuzzer) {
       assert BasicType.allIntegerTypes().contains(type);
-      // We use parentheses inside of the binary expression to prevent issues with order of
-      // operations - for example, d = d * 2u | d = d * 2u will cause issues.
+      // We use parentheses to prevent issues with order of operations in ternary expressions.
       return identityConstructor(
           expr,
-          new BinaryExpr(
-              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
-              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
-              BinOp.BOR));
+          new ParenExpr(
+              new BinaryExpr(
+                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
+                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
+                  BinOp.BOR)));
     }
   }
 
