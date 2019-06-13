@@ -76,7 +76,8 @@ public final class OpaqueExpressionGenerator {
 
     if (shadingLanguageVersion.supportedBitwiseOperations()) {
       expressionIdentities.add(new IdentityBitwiseNotNot());
-      expressionIdentities.add(new IdentityBitwiseOr());
+      expressionIdentities.add(new IdentityBitwiseOrSelf());
+      expressionIdentities.add(new IdentityBitwiseOrZero());
       expressionIdentities.add(new IdentityBitwiseXorZero());
       expressionIdentities.add(new IdentityBitwiseShiftZero());
     }
@@ -730,8 +731,8 @@ public final class OpaqueExpressionGenerator {
    * When performed, transforms an expression, e, such that:
    *    e -> (e) | (e).
    */
-  private class IdentityBitwiseOr extends AbstractIdentityTransformation {
-    private IdentityBitwiseOr() {
+  private class IdentityBitwiseOrSelf extends AbstractIdentityTransformation {
+    private IdentityBitwiseOrSelf() {
       super(BasicType.allIntegerTypes(), true);
     }
 
@@ -742,11 +743,29 @@ public final class OpaqueExpressionGenerator {
       // We use parentheses to prevent issues with order of operations in ternary expressions.
       return identityConstructor(
           expr,
-          new ParenExpr(
-              new BinaryExpr(
-                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
-                  applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
-                  BinOp.BOR)));
+          new BinaryExpr(
+              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
+              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
+                  BinOp.BOR));
+    }
+  }
+
+  private class IdentityBitwiseOrZero extends AbstractIdentityTransformation {
+    private IdentityBitwiseOrZero() {
+      super(BasicType.allIntegerTypes(), true);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      assert BasicType.allIntegerTypes().contains(type);
+      // We use parentheses to prevent issues with order of operations in ternary expressions.
+      return identityConstructor(
+          expr,
+          new BinaryExpr(
+              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
+              new ParenExpr(makeOpaqueZero(type, constContext, depth, fuzzer)),
+              BinOp.BOR));
     }
   }
 
