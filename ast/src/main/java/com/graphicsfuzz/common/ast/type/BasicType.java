@@ -324,6 +324,24 @@ public class BasicType extends BuiltinType {
     return result;
   }
 
+  /**
+   * Helper function to return a list of every basic type that is considered an integer.
+   *
+   * @return a list of all basic integer types.
+   */
+  public static List<BasicType> allIntegerTypes() {
+    return new ArrayList<BasicType>(Arrays.asList(
+        UINT,
+        UVEC2,
+        UVEC3,
+        UVEC4,
+        INT,
+        IVEC2,
+        IVEC3,
+        IVEC4
+    ));
+  }
+
   public static List<BasicType> allNumericTypesExceptNonSquareMatrices() {
     final List<BasicType> result = allNumericTypes();
     result.removeAll(allNonSquareMatrixTypes());

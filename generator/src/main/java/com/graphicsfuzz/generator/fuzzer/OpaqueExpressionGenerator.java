@@ -63,17 +63,24 @@ public final class OpaqueExpressionGenerator {
                                    ShadingLanguageVersion shadingLanguageVersion) {
     this.generator = generator;
     this.generationParams = generationParams;
-    // TODO: there are many more identities that we can easily play with here, e.g. bitwise and 1
-    // for integer types
     this.expressionIdentities = new ArrayList<>();
     this.shadingLanguageVersion = shadingLanguageVersion;
 
+    // TODO: there are many more identities that we can easily play with here
     expressionIdentities.add(new IdentityAddSubZero());
     expressionIdentities.add(new IdentityMulDivOne());
     expressionIdentities.add(new IdentityAndTrue());
     expressionIdentities.add(new IdentityOrFalse());
-    expressionIdentities.add(new IdentityNotNot());
+    expressionIdentities.add(new IdentityLogicalNotNot());
     expressionIdentities.add(new IdentityTernary());
+
+    if (shadingLanguageVersion.supportedBitwiseOperations()) {
+      expressionIdentities.add(new IdentityBitwiseNotNot());
+      expressionIdentities.add(new IdentityBitwiseOrSelf());
+      expressionIdentities.add(new IdentityBitwiseOrZero());
+      expressionIdentities.add(new IdentityBitwiseXorZero());
+      expressionIdentities.add(new IdentityBitwiseShiftZero());
+    }
 
     expressionIdentities.add(new IdentityMin());
     expressionIdentities.add(new IdentityMax());
@@ -638,9 +645,9 @@ public final class OpaqueExpressionGenerator {
 
   }
 
-  private class IdentityNotNot extends AbstractIdentityTransformation {
+  private class IdentityLogicalNotNot extends AbstractIdentityTransformation {
 
-    private IdentityNotNot() {
+    private IdentityLogicalNotNot() {
       super(Arrays.asList(BasicType.BOOL), false);
     }
 
@@ -689,6 +696,124 @@ public final class OpaqueExpressionGenerator {
               something));
     }
 
+  }
+
+  /**
+   * Identity transformation for integer types (both unsigned and signed, and their vectors) that
+   * double bitwise inverts an integer, producing the same integer as output. When performed,
+   * transforms an expression, e, such that:
+   *    e -> ~(~(expr)).
+   */
+  private class IdentityBitwiseNotNot extends AbstractIdentityTransformation {
+    private IdentityBitwiseNotNot() {
+      super(BasicType.allIntegerTypes(), false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      assert BasicType.allIntegerTypes().contains(type);
+      // Invert once
+      Expr result = new UnaryExpr(new ParenExpr(applyIdentityFunction(expr, type,
+          constContext,
+          depth, fuzzer)), UnOp.BNEG);
+      // Invert again
+      result = new UnaryExpr(new ParenExpr(applyIdentityFunction(result, type, constContext,
+          depth, fuzzer)), UnOp.BNEG);
+      return identityConstructor(expr, result);
+    }
+  }
+
+  /**
+   * Identity transformation for integer types (both unsigned and signed, and their vectors) that
+   * ORs an integer with itself, producing the same integer as output. This identity requires
+   * expressions to be side effect free because the same mutated expression is evaluated twice.
+   * When performed, transforms an expression, e, such that:
+   *    e -> (e) | (e).
+   */
+  private class IdentityBitwiseOrSelf extends AbstractIdentityTransformation {
+    private IdentityBitwiseOrSelf() {
+      super(BasicType.allIntegerTypes(), true);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      assert BasicType.allIntegerTypes().contains(type);
+      // We use parentheses to prevent issues with order of operations in ternary expressions.
+      return identityConstructor(
+          expr,
+          new BinaryExpr(
+              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
+              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
+                  BinOp.BOR));
+    }
+  }
+  
+  /**
+   * Identity transformation for integer types (both unsigned and signed, and their vectors) that
+   * ORs an integer with zero, producing the same integer as output.
+   * When performed, transforms an expression, e, such that:
+   *    e -> (e) | (opaque 0) or e -> (opaque 0) | (e).
+   */
+  private class IdentityBitwiseOrZero extends AbstractIdentityTransformation {
+    private IdentityBitwiseOrZero() {
+      super(BasicType.allIntegerTypes(), false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      assert BasicType.allIntegerTypes().contains(type);
+      return applyBinaryIdentityFunction(
+          expr.clone(),
+          makeOpaqueZero(type, constContext, depth, fuzzer),
+          BinOp.BOR, true, type, constContext, depth, fuzzer);
+    }
+  }
+
+  /**
+   * Identity transformation for integer types (both unsigned and signed, and their vectors) that
+   * XORs an integer with zero, producing the same integer as output. When performed, transforms an
+   * expression, e, such that:
+   *    e -> (e) ^ (opaque 0) or e -> (opaque 0) ^ (e).
+   */
+  private class IdentityBitwiseXorZero extends AbstractIdentityTransformation {
+    private IdentityBitwiseXorZero() {
+      super(BasicType.allIntegerTypes(), false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      assert BasicType.allIntegerTypes().contains(type);
+      return applyBinaryIdentityFunction(
+          expr.clone(),
+          makeOpaqueZero(type, constContext, depth, fuzzer),
+          BinOp.BXOR, true, type, constContext, depth, fuzzer);
+    }
+  }
+
+  /**
+   * Identity transformation for integer types (both unsigned and signed, and their vectors) that
+   * shifts an integer by zero. When performed, transforms an expression, e, such that:
+   *    e -> (e) >> (opaque 0) or e -> (e) << (opaque 0)
+   */
+  private class IdentityBitwiseShiftZero extends AbstractIdentityTransformation {
+    private IdentityBitwiseShiftZero() {
+      super(BasicType.allIntegerTypes(), false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      assert BasicType.allIntegerTypes().contains(type);
+      final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
+      return applyBinaryIdentityFunction(
+          expr.clone(),
+          makeOpaqueZero(type, constContext, depth, fuzzer),
+          operator, false, type, constContext, depth, fuzzer);
+    }
   }
 
   private class IdentityMin extends AbstractIdentityTransformation {
