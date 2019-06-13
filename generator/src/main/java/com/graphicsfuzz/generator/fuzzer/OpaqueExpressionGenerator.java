@@ -754,7 +754,7 @@ public final class OpaqueExpressionGenerator {
    * Identity transformation for integer types (both unsigned and signed, and their vectors) that
    * ORs an integer with zero, producing the same integer as output.
    * When performed, transforms an expression, e, such that:
-   *    e -> (e) | (opaque 0).
+   *    e -> (e) | (opaque 0) or e -> (opaque 0) | (e).
    */
   private class IdentityBitwiseOrZero extends AbstractIdentityTransformation {
     private IdentityBitwiseOrZero() {
@@ -767,7 +767,7 @@ public final class OpaqueExpressionGenerator {
       assert BasicType.allIntegerTypes().contains(type);
       return applyBinaryIdentityFunction(
           expr.clone(),
-          new ParenExpr(makeOpaqueZero(type, constContext, depth, fuzzer)),
+          makeOpaqueZero(type, constContext, depth, fuzzer),
           BinOp.BOR, true, type, constContext, depth, fuzzer);
     }
   }
@@ -776,7 +776,7 @@ public final class OpaqueExpressionGenerator {
    * Identity transformation for integer types (both unsigned and signed, and their vectors) that
    * XORs an integer with zero, producing the same integer as output. When performed, transforms an
    * expression, e, such that:
-   *    e -> (e) ^ (opaque 0).
+   *    e -> (e) ^ (opaque 0) or e -> (opaque 0) ^ (e).
    */
   private class IdentityBitwiseXorZero extends AbstractIdentityTransformation {
     private IdentityBitwiseXorZero() {
@@ -789,7 +789,7 @@ public final class OpaqueExpressionGenerator {
       assert BasicType.allIntegerTypes().contains(type);
       return applyBinaryIdentityFunction(
           expr.clone(),
-          new ParenExpr(makeOpaqueZero(type, constContext, depth, fuzzer)),
+          makeOpaqueZero(type, constContext, depth, fuzzer),
           BinOp.BXOR, true, type, constContext, depth, fuzzer);
     }
   }
@@ -811,7 +811,7 @@ public final class OpaqueExpressionGenerator {
       final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
       return applyBinaryIdentityFunction(
           expr.clone(),
-          new ParenExpr(makeOpaqueZero(type, constContext, depth, fuzzer)),
+          makeOpaqueZero(type, constContext, depth, fuzzer),
           operator, false, type, constContext, depth, fuzzer);
     }
   }
