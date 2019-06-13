@@ -110,6 +110,7 @@ public final class OpaqueExpressionGenerator {
     opaqueZeroFactories.add(this::opaqueZeroLogarithm);
     opaqueZeroFactories.add(this::opaqueZeroTan);
     opaqueZeroFactories.add(this::opaqueZeroVectorLength);
+    opaqueZeroFactories.add(this::opaqueZeroBitwiseShift);
     return opaqueZeroFactories;
   }
 
@@ -207,6 +208,44 @@ public final class OpaqueExpressionGenerator {
     }
     return Optional.of(new FunctionCallExpr("length", makeOpaqueZero(type, constContext, depth,
         fuzzer)));
+  }
+
+  /**
+   * Function to generate an opaque zero by bitwise shifting zero left or right by an arbitrary
+   * number of bits. Generates an opaque zero if the type of zero to be generated is an integer
+   * and the shading language in use supports bitwise operations.
+   *
+   * @param type - the base type of the zero being created.
+   * @param constContext - true if we're in a constant expression context, false otherwise.
+   * @param depth - how deep we are in the expression.
+   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
+   * @param isZero - true if we are making an opaque zero, false otherwise.
+   * @return Optional.empty() if an opaque zero can't be generated, otherwise an opaque zero
+   *    made from bitwise shifting zero.
+   */
+  private Optional<Expr> opaqueZeroBitwiseShift(BasicType type, boolean constContext,
+                                                final int depth,
+                                                Fuzzer fuzzer, boolean isZero) {
+    assert isZero;
+    if (!BasicType.allIntegerTypes().contains(type)) {
+      return Optional.empty();
+    }
+    if (!shadingLanguageVersion.supportedBitwiseOperations()) {
+      return Optional.empty();
+    }
+    final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
+    // We need to make sure the LHS and RHS of the shift expression are based on the same type.
+    // GLSL resolves bit shift expressions as the type of the right side - expressions like
+    // 0 >> 944u + 1 will resolve to adding an unsigned and signed integer, which is disallowed.
+    // Additionally, we can't shift zero reliably if the number is signed because of sign bit
+    // extension, so we simply shift it zero.
+    final Expr shiftValue = type.getElementType() == BasicType.INT
+        ? new IntConstantExpr(String.valueOf(0))
+        : new UIntConstantExpr(generator.nextInt(1000) + "u");
+    return Optional.of(
+        new BinaryExpr(
+            makeOpaqueZero(type, constContext, depth, fuzzer),
+            shiftValue, operator));
   }
 
   private Optional<Expr> opaqueOneExponential(BasicType type, boolean constContext, final int depth,
