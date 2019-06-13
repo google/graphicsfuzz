@@ -765,13 +765,10 @@ public final class OpaqueExpressionGenerator {
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
                       Fuzzer fuzzer) {
       assert BasicType.allIntegerTypes().contains(type);
-      // We use parentheses to prevent issues with order of operations in ternary expressions.
-      return identityConstructor(
-          expr,
-          new BinaryExpr(
-              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
-              new ParenExpr(makeOpaqueZero(type, constContext, depth, fuzzer)),
-              BinOp.BOR));
+      return applyBinaryIdentityFunction(
+          expr.clone(),
+          new ParenExpr(makeOpaqueZero(type, constContext, depth, fuzzer)),
+          BinOp.BOR, true, type, constContext, depth, fuzzer);
     }
   }
 
@@ -790,12 +787,10 @@ public final class OpaqueExpressionGenerator {
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
                       Fuzzer fuzzer) {
       assert BasicType.allIntegerTypes().contains(type);
-      return identityConstructor(
-          expr,
-          new BinaryExpr(
-              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
-              makeOpaqueZero(type, constContext, depth, fuzzer),
-              BinOp.BXOR));
+      return applyBinaryIdentityFunction(
+          expr.clone(),
+          new ParenExpr(makeOpaqueZero(type, constContext, depth, fuzzer)),
+          BinOp.BXOR, true, type, constContext, depth, fuzzer);
     }
   }
 
@@ -813,12 +808,11 @@ public final class OpaqueExpressionGenerator {
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
                       Fuzzer fuzzer) {
       assert BasicType.allIntegerTypes().contains(type);
-      return identityConstructor(
-          expr,
-          new BinaryExpr(
-              new ParenExpr(applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
-              makeOpaqueZero(type, constContext, depth, fuzzer),
-              generator.nextBoolean() ? BinOp.SHL : BinOp.SHR));
+      final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
+      return applyBinaryIdentityFunction(
+          expr.clone(),
+          new ParenExpr(makeOpaqueZero(type, constContext, depth, fuzzer)),
+          operator, false, type, constContext, depth, fuzzer);
     }
   }
 
