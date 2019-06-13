@@ -235,8 +235,6 @@ public final class OpaqueExpressionGenerator {
     }
     final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
     // We need to make sure the LHS and RHS of the shift expression are based on the same type.
-    // GLSL resolves bit shift expressions as the type of the right side - expressions like
-    // 0 >> 944u + 1 will resolve to adding an unsigned and signed integer, which is disallowed.
     // Additionally, we can't shift zero reliably if the number is signed because of sign bit
     // extension, so we simply shift it zero.
     final Expr shiftValue = type.getElementType() == BasicType.INT
