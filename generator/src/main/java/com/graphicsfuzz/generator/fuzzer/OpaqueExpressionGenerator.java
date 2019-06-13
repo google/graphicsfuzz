@@ -749,10 +749,16 @@ public final class OpaqueExpressionGenerator {
                   BinOp.BOR));
     }
   }
-
+  
+  /**
+   * Identity transformation for integer types (both unsigned and signed, and their vectors) that
+   * ORs an integer with zero, producing the same integer as output.
+   * When performed, transforms an expression, e, such that:
+   *    e -> (e) | (opaque 0).
+   */
   private class IdentityBitwiseOrZero extends AbstractIdentityTransformation {
     private IdentityBitwiseOrZero() {
-      super(BasicType.allIntegerTypes(), true);
+      super(BasicType.allIntegerTypes(), false);
     }
 
     @Override
@@ -773,7 +779,7 @@ public final class OpaqueExpressionGenerator {
    * Identity transformation for integer types (both unsigned and signed, and their vectors) that
    * XORs an integer with zero, producing the same integer as output. When performed, transforms an
    * expression, e, such that:
-   *    e -> (e) ^ 0.
+   *    e -> (e) ^ (opaque 0).
    */
   private class IdentityBitwiseXorZero extends AbstractIdentityTransformation {
     private IdentityBitwiseXorZero() {
@@ -796,7 +802,7 @@ public final class OpaqueExpressionGenerator {
   /**
    * Identity transformation for integer types (both unsigned and signed, and their vectors) that
    * shifts an integer by zero. When performed, transforms an expression, e, such that:
-   *    e -> (e) >> 0 or e -> (e) << 0
+   *    e -> (e) >> (opaque 0) or e -> (e) << (opaque 0)
    */
   private class IdentityBitwiseShiftZero extends AbstractIdentityTransformation {
     private IdentityBitwiseShiftZero() {
