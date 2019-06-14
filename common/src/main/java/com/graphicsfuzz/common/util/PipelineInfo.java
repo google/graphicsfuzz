@@ -33,6 +33,7 @@ import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,9 +53,11 @@ public final class PipelineInfo {
     this(new JsonObject());
   }
 
-  public PipelineInfo(File file) throws FileNotFoundException {
-    dictionary = new Gson().fromJson(new FileReader(file),
+  public PipelineInfo(File file) throws IOException {
+    try (FileReader fr = new FileReader(file)) {
+      dictionary = new Gson().fromJson(fr,
           JsonObject.class);
+    }
   }
 
   public PipelineInfo(String string) {
