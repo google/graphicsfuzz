@@ -34,7 +34,7 @@ final class Glsl330 extends CompositeShadingLanguageVersion {
   public boolean supportedDeterminant() {
     // According to this page:
     // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/determinant.xhtml
-    // determinant should be supported from GLSL 1.40, but glslangValidator disagrees.
+    // determinant should be supported from GLSL 1.50, but glslangValidator disagrees.
     return true;
   }
 

@@ -172,6 +172,15 @@ public interface ShadingLanguageVersion {
    */
   boolean supportedDerivativeFunctions();
 
+  /**
+   * Determinant Function calculates the determinant of a given square matrix.
+   * ESSL versions 3.0+ support this function. But for GLSL, according to this page:
+   * https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/determinant.xhtml
+   * determinant functions should be supported from GLSL 1.5, but glslangValidator seems 
+   * to support this function from GLSL version 3.3.
+   *
+   * @return true if Determinant Function is supported - false otherwise.
+   */
   boolean supportedDeterminant();
 
   boolean supportedDoStmt();
@@ -215,6 +224,15 @@ public interface ShadingLanguageVersion {
    */
   boolean supportedInterpolationFunctions();
 
+  /**
+   * Inverse Function returns the matrix that is the inverse of the given square matrix.
+   * ESSL versions 3.0+ support this function. But for GLSL, according to this page:
+   * https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/inverse.xhtml
+   * inverse function should be supported from GLSL 1.5, but glslangValidator seems to 
+   * support this function from GLSL version 3.3.
+   *
+   * @return true if Inverse Function is supported - false otherwise.
+   */
   boolean supportedInverse();
 
   boolean supportedIsinf();
@@ -234,9 +252,15 @@ public interface ShadingLanguageVersion {
   boolean supportedMixFloatBool();
 
   boolean supportedMixNonfloatBool();
-
+  
   boolean supportedNonSquareMatrices();
 
+  /**
+   * OuterProduct Function does a linear algebraic matrix multiplication of two given vectors.
+   * GLSL versions 1.2+ and ESSL versions 3.0+ support this function.
+   *
+   * @return true if OuterProduct Function is supported - false otherwise.
+   */
   boolean supportedOuterProduct();
 
   boolean supportedPackHalf2x16();
@@ -257,6 +281,12 @@ public interface ShadingLanguageVersion {
 
   boolean supportedSwitchStmt();
 
+  /**
+   * Transpose Function returns the transposed matrix of the given matrix.
+   * GLSL versions 1.2+ and ESSL versions 3.0+ support this function.
+   *
+   * @return true if Transpose Function is supported - false otherwise.
+   */
   boolean supportedTranspose();
 
   boolean supportedTrunc();
