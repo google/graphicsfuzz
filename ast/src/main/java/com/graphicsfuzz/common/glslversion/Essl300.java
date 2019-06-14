@@ -215,4 +215,8 @@ final class Essl300 extends CompositeShadingLanguageVersion {
     return true;
   }
 
+  @Override
+  public boolean supportedHyperbolicAngleAndTrigonometricFunctions() {
+    return true;
+  }
 }

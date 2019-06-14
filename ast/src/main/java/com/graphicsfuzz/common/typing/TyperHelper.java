@@ -297,49 +297,10 @@ public final class TyperHelper {
       ShadingLanguageVersion shadingLanguageVersion) {
     Map<String, List<FunctionPrototype>> builtinsForVersion = new HashMap<>();
 
-    // Trigonometric Functions
-    {
-      final String name = "sin";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "cos";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "asin";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "acos";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "tan";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "atan";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "atan";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t);
-      }
-    }
+    // 8.1: Angle and Trigonometric Functions
+
+    getBuiltinsForGlslVersionAngleAndTrigonometric(shadingLanguageVersion,
+        builtinsForVersion);
 
     //Exponential Functions
 
@@ -846,19 +807,129 @@ public final class TyperHelper {
 
     // 8.8: Integer Functions
 
-    if (shadingLanguageVersion.supportedIntegerFunctions()) {
-      getBuiltinsForGlslVersionInteger(builtinsForVersion);
-    }
+    getBuiltinsForGlslVersionInteger(builtinsForVersion, shadingLanguageVersion);
 
     // 8.13: Fragment Processing Functions (only available in fragment shaders)
 
-    if (shadingLanguageVersion.supportedDerivativeFunctions()) {
-      getBuiltinsForGlslVersionFragmentProcessing(builtinsForVersion, shadingLanguageVersion);
-    }
+    getBuiltinsForGlslVersionFragmentProcessing(builtinsForVersion, shadingLanguageVersion);
 
     // 8.14: Noise Functions - deprecated, so we do not consider them
 
     return builtinsForVersion;
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Angle and Trigonometric
+   * Functions, as specified in section 8.1 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
+  private static void getBuiltinsForGlslVersionAngleAndTrigonometric(
+      ShadingLanguageVersion shadingLanguageVersion,
+      Map<String, List<FunctionPrototype>> builtinsForVersion) {
+    if (shadingLanguageVersion.supportedAngleAndTrigonometricFunctions()) {
+      {
+        final String name = "radians";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "degrees";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "sin";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "cos";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "tan";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "asin";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "acos";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "atan";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+          addBuiltin(builtinsForVersion, name, t, t, t);
+        }
+      }
+    }
+
+    if (shadingLanguageVersion.supportedHyperbolicAngleAndTrigonometricFunctions()) {
+      {
+        final String name = "sinh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "cosh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "tanh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "asinh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "acosh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+
+      {
+        final String name = "atanh";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+    }
   }
 
   private static void getBuiltinsForGlslVersionVectorRelational(
@@ -986,95 +1057,106 @@ public final class TyperHelper {
     }
   }
 
+
+  /**
+   * Helper function to register built-in function prototypes for Integer Functions,
+   * as specified in section 8.8 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
   private static void getBuiltinsForGlslVersionInteger(
-      Map<String, List<FunctionPrototype>> builtinsForVersion) {
-    {
-      final String name = "uaddCarry";
-      for (Type t : ugenType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t, new QualifiedType(t,
-            Arrays.asList(TypeQualifier.OUT_PARAM)));
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+    if (shadingLanguageVersion.supportedIntegerFunctions()) {
+      {
+        final String name = "uaddCarry";
+        for (Type t : ugenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, t, new QualifiedType(t,
+              Arrays.asList(TypeQualifier.OUT_PARAM)));
+        }
       }
-    }
 
-    {
-      final String name = "usubBorrow";
-      for (Type t : ugenType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t, new QualifiedType(t,
-            Arrays.asList(TypeQualifier.OUT_PARAM)));
+      {
+        final String name = "usubBorrow";
+        for (Type t : ugenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, t, new QualifiedType(t,
+              Arrays.asList(TypeQualifier.OUT_PARAM)));
+        }
       }
-    }
 
-    {
-      final String name = "umulExtended";
-      for (Type t : ugenType()) {
-        addBuiltin(builtinsForVersion, name, VoidType.VOID, t, t,
-            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)),
-            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)));
+      {
+        final String name = "umulExtended";
+        for (Type t : ugenType()) {
+          addBuiltin(builtinsForVersion, name, VoidType.VOID, t, t,
+              new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)),
+              new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)));
+        }
       }
-    }
 
-    {
-      final String name = "imulExtended";
-      for (Type t : igenType()) {
-        addBuiltin(builtinsForVersion, name, VoidType.VOID, t, t,
-            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)),
-            new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)));
+      {
+        final String name = "imulExtended";
+        for (Type t : igenType()) {
+          addBuiltin(builtinsForVersion, name, VoidType.VOID, t, t,
+              new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)),
+              new QualifiedType(t, Arrays.asList(TypeQualifier.OUT_PARAM)));
+        }
       }
-    }
 
-    {
-      final String name = "bitfieldExtract";
-      for (Type t : igenType()) {
-        addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
+      {
+        final String name = "bitfieldExtract";
+        for (Type t : igenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
+        }
+        for (Type t : ugenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
+        }
       }
-      for (Type t : ugenType()) {
-        addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
-      }
-    }
 
-    {
-      final String name = "bitfieldInsert";
-      for (Type t : igenType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t, BasicType.INT, BasicType.INT);
+      {
+        final String name = "bitfieldInsert";
+        for (Type t : igenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, t, BasicType.INT, BasicType.INT);
+        }
+        for (Type t : ugenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, t, BasicType.INT, BasicType.INT);
+        }
       }
-      for (Type t : ugenType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t, BasicType.INT, BasicType.INT);
-      }
-    }
 
-    {
-      final String name = "bitfieldReverse";
-      for (Type t : igenType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
+      {
+        final String name = "bitfieldReverse";
+        for (Type t : igenType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+        for (Type t : ugenType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
       }
-      for (Type t : ugenType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
 
-    // We need to use both igen and ugen types of the same size for these builtins, so we need a
-    // counting loop instead of an iterator to access both lists at the same time.
-    {
-      final String name = "bitCount";
-      for (int i = 0; i < igenType().size(); i++) {
-        addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
-        addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+      // We need to use both igen and ugen types of the same size for these builtins, so we need a
+      // counting loop instead of an iterator to access both lists at the same time.
+      {
+        final String name = "bitCount";
+        for (int i = 0; i < igenType().size(); i++) {
+          addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
+          addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+        }
       }
-    }
 
-    {
-      final String name = "findLSB";
-      for (int i = 0; i < igenType().size(); i++) {
-        addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
-        addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+      {
+        final String name = "findLSB";
+        for (int i = 0; i < igenType().size(); i++) {
+          addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
+          addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+        }
       }
-    }
 
-    {
-      final String name = "findMSB";
-      for (int i = 0; i < igenType().size(); i++) {
-        addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
-        addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+      {
+        final String name = "findMSB";
+        for (int i = 0; i < igenType().size(); i++) {
+          addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
+          addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
+        }
       }
     }
   }
@@ -1090,24 +1172,26 @@ public final class TyperHelper {
       Map<String, List<FunctionPrototype>> builtinsForVersion,
       ShadingLanguageVersion shadingLanguageVersion) {
     // 8.14.1 Derivative Functions
-    {
-      final String name = "dFdx";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
+    if (shadingLanguageVersion.supportedDerivativeFunctions()) {
+      {
+        final String name = "dFdx";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
       }
-    }
 
-    {
-      final String name = "dFdy";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
+      {
+        final String name = "dFdy";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
       }
-    }
 
-    {
-      final String name = "fwidth";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
+      {
+        final String name = "fwidth";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
       }
     }
 

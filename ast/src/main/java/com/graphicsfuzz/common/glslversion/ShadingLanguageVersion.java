@@ -275,4 +275,22 @@ public interface ShadingLanguageVersion {
 
   boolean supportedUnsigned();
 
+  /**
+   * Angle and Trigonometric Functions are a set of built-in functions related to the calculation
+   * of an angle. For example, sin(angle) - computes the sine value of the angle provided.
+   * GLSL versions 1.1+ and ESSL versions 1.0+ support these functions.
+   *
+   * @return true if Angle and Trigonometric Functions are supported - false otherwise.
+   */
+  boolean supportedAngleAndTrigonometricFunctions();
+
+  /**
+   * Hyperbolic Angle and Trigonometric Functions are a set of built-in functions that
+   * computes the hyperbolic trigonometric functions. For example, sinh() - calculate the
+   * hyperbolic sine function of the given value.
+   * GLSL versions 1.3+ and ESSL versions 3.0+ support these functions.
+   *
+   * @return true if Hyperbolic Angle and Trigonometric Functions are supported - false otherwise.
+   */
+  boolean supportedHyperbolicAngleAndTrigonometricFunctions();
 }
