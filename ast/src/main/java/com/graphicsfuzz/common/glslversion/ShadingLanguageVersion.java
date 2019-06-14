@@ -174,10 +174,7 @@ public interface ShadingLanguageVersion {
 
   /**
    * Determinant Function calculates the determinant of a given square matrix.
-   * ESSL versions 3.0+ support this function. But for GLSL, according to this page:
-   * https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/determinant.xhtml
-   * determinant functions should be supported from GLSL 1.5, but glslangValidator seems 
-   * to support this function from GLSL version 3.3.
+   * GLSL versions 1.5+ and ESSL versions 3.0+ support this function.
    *
    * @return true if Determinant Function is supported - false otherwise.
    */
@@ -226,10 +223,7 @@ public interface ShadingLanguageVersion {
 
   /**
    * Inverse Function returns the matrix that is the inverse of the given square matrix.
-   * ESSL versions 3.0+ support this function. But for GLSL, according to this page:
-   * https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/inverse.xhtml
-   * inverse function should be supported from GLSL 1.5, but glslangValidator seems to 
-   * support this function from GLSL version 3.3.
+   * GLSL versions 1.5+ and ESSL versions 3.0+ support this function.
    *
    * @return true if Inverse Function is supported - false otherwise.
    */
