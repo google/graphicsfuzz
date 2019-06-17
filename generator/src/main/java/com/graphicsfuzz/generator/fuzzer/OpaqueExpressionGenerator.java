@@ -189,7 +189,9 @@ public final class OpaqueExpressionGenerator {
       return Optional.empty();
     }
     final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
-    // We need to make sure the LHS and RHS of the shift expression are based on the same type.
+    // We need to make sure the LHS and RHS of the shift expression are based on the same type
+    // explicitly, so we can't generate opaque values to shift by as they will implicitly be
+    // considered signed integers, and both sides of the shift must be the same type.
     final Expr shiftValue;
     if (isZero) {
       // We can't shift zero reliably if the number is signed because of sign bit extension, so
