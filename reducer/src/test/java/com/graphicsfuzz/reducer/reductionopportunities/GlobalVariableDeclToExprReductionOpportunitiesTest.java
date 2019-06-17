@@ -35,8 +35,8 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
   public void testDoNotReplace() throws Exception {
     final String original = "int a = 1; void main() { }";
     final TranslationUnit tu = ParseHelper.parse(original);
-    final List<VariableDeclToExprReductionOpportunity> ops =
-        VariableDeclToExprReductionOpportunities
+    final List<GlobalVariableDeclToExprReductionOpportunity> ops =
+        GlobalVariableDeclToExprReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
                 ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), null, true));
@@ -61,12 +61,13 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
         + " int b = a;"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(program);
-    List<VariableDeclToExprReductionOpportunity> ops = VariableDeclToExprReductionOpportunities
+    final List<GlobalVariableDeclToExprReductionOpportunity> ops =
+        GlobalVariableDeclToExprReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
             ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null, true));
     assertEquals(1, ops.size());
-    ops.forEach(VariableDeclToExprReductionOpportunity::applyReductionImpl);
+    ops.forEach(GlobalVariableDeclToExprReductionOpportunity::applyReductionImpl);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -87,14 +88,15 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
         + " b = foo();"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(program);
-    List<VariableDeclToExprReductionOpportunity> ops = VariableDeclToExprReductionOpportunities
+    final List<GlobalVariableDeclToExprReductionOpportunity> ops =
+        GlobalVariableDeclToExprReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
             ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null, true));
     // Only variable declarations a and b have the initializer.
     // Thus, we expect the reducer to find only 2 opportunities.
     assertEquals(2, ops.size());
-    ops.forEach(VariableDeclToExprReductionOpportunity::applyReductionImpl);
+    ops.forEach(GlobalVariableDeclToExprReductionOpportunity::applyReductionImpl);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -103,8 +105,8 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
   public void testDoNotReplaceConst() throws Exception {
     final String original = "const int a = 1; void main() { }";
     final TranslationUnit tu = ParseHelper.parse(original);
-    final List<VariableDeclToExprReductionOpportunity> ops =
-        VariableDeclToExprReductionOpportunities
+    final List<GlobalVariablesDeclarationReductionOpportunity> ops =
+        GlobalVariablesDeclarationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
                 ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), null, true));
@@ -129,12 +131,13 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
         + " f = bar();"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(program);
-    List<VariableDeclToExprReductionOpportunity> ops = VariableDeclToExprReductionOpportunities
+    final List<GlobalVariableDeclToExprReductionOpportunity> ops =
+        GlobalVariableDeclToExprReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
             ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null, true));
     assertEquals(3, ops.size());
-    ops.forEach(VariableDeclToExprReductionOpportunity::applyReductionImpl);
+    ops.forEach(GlobalVariableDeclToExprReductionOpportunity::applyReductionImpl);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -160,12 +163,13 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
         + " d = c;"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(program);
-    List<VariableDeclToExprReductionOpportunity> ops = VariableDeclToExprReductionOpportunities
+    final List<GlobalVariableDeclToExprReductionOpportunity> ops =
+        GlobalVariableDeclToExprReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
             ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null, true));
     assertEquals(4, ops.size());
-    ops.forEach(VariableDeclToExprReductionOpportunity::applyReductionImpl);
+    ops.forEach(GlobalVariableDeclToExprReductionOpportunity::applyReductionImpl);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 }

@@ -17,11 +17,33 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.ListConcat;
+import java.util.Arrays;
+import java.util.List;
 
 public class GlobalVariableDeclToExprReductionOpportunities
     extends ReductionOpportunitiesBase<GlobalVariableDeclToExprReductionOpportunity> {
   public GlobalVariableDeclToExprReductionOpportunities(TranslationUnit tu,
                                                         ReducerContext context) {
     super(tu, context);
+  }
+
+  static List<GlobalVariableDeclToExprReductionOpportunity> findOpportunities(
+      ShaderJob shaderJob,
+      ReducerContext context) {
+    return shaderJob.getShaders()
+        .stream()
+        .map(item -> findOpportunitiesForShader(item, context))
+        .reduce(Arrays.asList(), ListConcat::concatenate);
+  }
+
+  private static List<GlobalVariableDeclToExprReductionOpportunity> findOpportunitiesForShader(
+      TranslationUnit tu,
+      ReducerContext context) {
+    GlobalVariableDeclToExprReductionOpportunities finder =
+        new GlobalVariableDeclToExprReductionOpportunities(tu, context);
+    finder.visit(tu);
+    return finder.getOpportunities();
   }
 }
