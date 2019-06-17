@@ -302,51 +302,9 @@ public final class TyperHelper {
     getBuiltinsForGlslVersionAngleAndTrigonometric(shadingLanguageVersion,
         builtinsForVersion);
 
-    //Exponential Functions
+    // 8.2: Exponential Functions
 
-    {
-      final String name = "pow";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t);
-      }
-    }
-    {
-      final String name = "exp";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "log";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "exp2";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "log2";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "sqrt";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-    {
-      final String name = "inversesqrt";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-
+    getBuiltinsForGlslVersionExponential(builtinsForVersion);
 
     // 8.3: Common Functions
 
@@ -928,6 +886,64 @@ public final class TyperHelper {
         for (Type t : genType()) {
           addBuiltin(builtinsForVersion, name, t, t);
         }
+      }
+    }
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Exponential Functions, as
+   * specified in section 8.2 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   */
+  private static void getBuiltinsForGlslVersionExponential(
+      Map<String, List<FunctionPrototype>> builtinsForVersion) {
+    {
+      final String name = "pow";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t);
+      }
+    }
+
+    {
+      final String name = "exp";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "log";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "exp2";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "log2";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "sqrt";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "inversesqrt";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
       }
     }
   }
