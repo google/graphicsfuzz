@@ -99,7 +99,8 @@ public final class OpaqueExpressionGenerator {
         this::opaqueZeroOrOneFromIdentityFunction,
         this::opaqueZeroOrOneFromInjectionSwitch,
         this::opaqueZeroOrOneSquareRoot,
-        this::opaqueZeroOrOneAbsolute
+        this::opaqueZeroOrOneAbsolute,
+        this::opaqueZeroOrOneBitwiseShift
     );
   }
 
@@ -110,7 +111,6 @@ public final class OpaqueExpressionGenerator {
     opaqueZeroFactories.add(this::opaqueZeroLogarithm);
     opaqueZeroFactories.add(this::opaqueZeroTan);
     opaqueZeroFactories.add(this::opaqueZeroVectorLength);
-    opaqueZeroFactories.add(this::opaqueZeroBitwiseShift);
     opaqueZeroFactories.add(this::opaqueZeroBitwiseOperator);
     return opaqueZeroFactories;
   }
@@ -121,7 +121,6 @@ public final class OpaqueExpressionGenerator {
     opaqueOneFactories.add(this::opaqueOneExponential);
     opaqueOneFactories.add(this::opaqueOneCosine);
     opaqueOneFactories.add(this::opaqueOneNormalizedVectorLength);
-    opaqueOneFactories.add(this::opaqueOneBitwiseShift);
     opaqueOneFactories.add(this::opaqueOneBitwiseOperator);
     return opaqueOneFactories;
   }
@@ -168,6 +167,51 @@ public final class OpaqueExpressionGenerator {
         depth, fuzzer)));
   }
 
+  /**
+   * Function to generate an opaque zero or one by bitwise shifting left or right by an
+   * arbitrary number of bits. Generates an opaque value if the type of zero to be generated is an
+   * integer and the shading language in use supports bitwise operations.
+   *
+   * @param type - the base type of the opaque value being created.
+   * @param constContext - true if we're in a constant expression context, false otherwise.
+   * @param depth - how deep we are in the expression.
+   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
+   * @param isZero - true if we are making an opaque zero, false otherwise.
+   * @return Optional.empty() if an opaque value can't be generated, otherwise an opaque value
+   *     made from bitwise shifting.
+   */
+  private Optional<Expr> opaqueZeroOrOneBitwiseShift(BasicType type, boolean constContext,
+                                                     final int depth, Fuzzer fuzzer,
+                                                     boolean isZero) {
+    if (!BasicType.allIntegerTypes().contains(type)) {
+      return Optional.empty();
+    }
+    if (!shadingLanguageVersion.supportedBitwiseOperations()) {
+      return Optional.empty();
+    }
+    final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
+    // We need to make sure the LHS and RHS of the shift expression are based on the same type.
+    final Expr shiftValue;
+    if (isZero) {
+      // We can't shift zero reliably if the number is signed because of sign bit extension, so
+      // we simply shift it zero.
+      shiftValue = type.getElementType() == BasicType.INT
+          ? new IntConstantExpr("0")
+          : new UIntConstantExpr(generator.nextInt(1000) + "u");
+    } else {
+      assert !isZero;
+      // We can't shift one at all without changing it.
+      shiftValue = type.getElementType() == BasicType.INT
+          ? new IntConstantExpr("0")
+          : new UIntConstantExpr("0u");
+    }
+    return Optional.of(
+        new ParenExpr(
+            new BinaryExpr(
+                makeOpaqueZeroOrOne(isZero, type, constContext, depth, fuzzer),
+                shiftValue, operator)));
+  }
+
   private Optional<Expr> opaqueZeroSin(BasicType type, boolean constContext, final int depth,
                                        Fuzzer fuzzer, boolean isZero) {
     // represent 0 as sin(opaqueZero) function, e.g. sin(0.0)
@@ -211,43 +255,6 @@ public final class OpaqueExpressionGenerator {
     }
     return Optional.of(new FunctionCallExpr("length", makeOpaqueZero(type, constContext, depth,
         fuzzer)));
-  }
-
-  /**
-   * Function to generate an opaque zero by bitwise shifting zero left or right by an arbitrary
-   * number of bits. Generates an opaque zero if the type of zero to be generated is an integer
-   * and the shading language in use supports bitwise operations.
-   *
-   * @param type - the base type of the zero being created.
-   * @param constContext - true if we're in a constant expression context, false otherwise.
-   * @param depth - how deep we are in the expression.
-   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
-   * @param isZero - true if we are making an opaque zero, false otherwise.
-   * @return Optional.empty() if an opaque zero can't be generated, otherwise an opaque zero
-   *     made from bitwise shifting zero.
-   */
-  private Optional<Expr> opaqueZeroBitwiseShift(BasicType type, boolean constContext,
-                                                final int depth,
-                                                Fuzzer fuzzer, boolean isZero) {
-    assert isZero;
-    if (!BasicType.allIntegerTypes().contains(type)) {
-      return Optional.empty();
-    }
-    if (!shadingLanguageVersion.supportedBitwiseOperations()) {
-      return Optional.empty();
-    }
-    final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
-    // We need to make sure the LHS and RHS of the shift expression are based on the same type.
-    // Additionally, we can't shift zero reliably if the number is signed because of sign bit
-    // extension, so we simply shift it zero.
-    final Expr shiftValue = type.getElementType() == BasicType.INT
-        ? new IntConstantExpr("0")
-        : new UIntConstantExpr(generator.nextInt(1000) + "u");
-    return Optional.of(
-        new ParenExpr(
-            new BinaryExpr(
-                makeOpaqueZero(type, constContext, depth, fuzzer),
-                shiftValue, operator)));
   }
 
   /**
@@ -344,41 +351,6 @@ public final class OpaqueExpressionGenerator {
     Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(isZero,
         type, constContext, depth, fuzzer));
     return Optional.of(new FunctionCallExpr("length", normalizedExpr));
-  }
-
-  /**
-   * Function to generate an opaque one by bitwise shifting one left or right by zero bits.
-   * Generates an opaque one if the type of one to be generated is an integer and the shading
-   * language in use supports bitwise operations.
-   *
-   * @param type - the base type of the one being created.
-   * @param constContext - true if we're in a constant expression context, false otherwise.
-   * @param depth - how deep we are in the expression.
-   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
-   * @param isZero - true if we are making an opaque zero, false otherwise.
-   * @return Optional.empty() if an opaque one can't be generated, otherwise an opaque one
-   *     made from bitwise shifting one.
-   */
-  private Optional<Expr> opaqueOneBitwiseShift(BasicType type, boolean constContext,
-                                                final int depth,
-                                                Fuzzer fuzzer, boolean isZero) {
-    assert !isZero;
-    if (!BasicType.allIntegerTypes().contains(type)) {
-      return Optional.empty();
-    }
-    if (!shadingLanguageVersion.supportedBitwiseOperations()) {
-      return Optional.empty();
-    }
-    final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
-    // We need to make sure the LHS and RHS of the shift expression are based on the same type.
-    final Expr shiftValue = type.getElementType() == BasicType.INT
-        ? new IntConstantExpr("0")
-        : new UIntConstantExpr("0u");
-    return Optional.of(
-        new ParenExpr(
-            new BinaryExpr(
-                makeOpaqueOne(type, constContext, depth, fuzzer),
-                shiftValue, operator)));
   }
 
   /**
