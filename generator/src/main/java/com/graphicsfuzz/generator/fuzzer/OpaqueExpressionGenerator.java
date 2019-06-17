@@ -247,21 +247,19 @@ public final class OpaqueExpressionGenerator {
       case 0:
         // Bitwise AND
         if (isZero) {
-          opaqueExpr = generator.nextBoolean()
-              ? Optional.of(
-                  new ParenExpr(
-                      new BinaryExpr(
-                          makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
-                              fuzzer),
-                          makeOpaqueZero(type, constContext, depth, fuzzer),
-                          BinOp.BAND)))
-              : Optional.of(
-                  new ParenExpr(
-                      new BinaryExpr(
-                          makeOpaqueZero(type, constContext, depth, fuzzer),
-                          makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
-                              fuzzer),
-                          BinOp.BAND)));
+          opaqueExpr = Optional.of(
+              new ParenExpr(
+                  generator.nextBoolean()
+                  ? new BinaryExpr(
+                      makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
+                          fuzzer),
+                      makeOpaqueZero(type, constContext, depth, fuzzer),
+                      BinOp.BAND)
+                  : new BinaryExpr(
+                      makeOpaqueZero(type, constContext, depth, fuzzer),
+                      makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
+                          fuzzer),
+                      BinOp.BAND)));
         } else {
           assert !isZero;
           opaqueExpr = Optional.of(
@@ -283,40 +281,36 @@ public final class OpaqueExpressionGenerator {
                       BinOp.BOR)));
         } else {
           assert !isZero;
-          opaqueExpr = generator.nextBoolean()
-              ? Optional.of(
-                  new ParenExpr(
-                      new BinaryExpr(
-                          makeOpaqueOne(type, constContext, depth, fuzzer),
-                          makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
-                              fuzzer),
-                          BinOp.BOR)))
-              : Optional.of(
-                  new ParenExpr(
-                      new BinaryExpr(
-                          makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
-                              fuzzer),
-                          makeOpaqueOne(type, constContext, depth, fuzzer),
-                          BinOp.BOR)));
+          opaqueExpr = Optional.of(
+              new ParenExpr(
+                  generator.nextBoolean()
+                  ? new BinaryExpr(
+                      makeOpaqueOne(type, constContext, depth, fuzzer),
+                      makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
+                          fuzzer),
+                      BinOp.BOR)
+                  : new BinaryExpr(
+                      makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
+                          fuzzer),
+                      makeOpaqueOne(type, constContext, depth, fuzzer),
+                      BinOp.BOR)));
         }
         break;
       default:
         // Bitwise XOR
         assert operator == 2;
         boolean useZeroOrOne = generator.nextBoolean();
-        opaqueExpr = isZero
-            ? Optional.of(
-                new ParenExpr(
-                    new BinaryExpr(
-                        makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
-                        makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
-                        BinOp.BXOR)))
-            : Optional.of(
-                new ParenExpr(
-                    new BinaryExpr(
-                        makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
-                        makeOpaqueZeroOrOne(!useZeroOrOne, type, constContext, depth, fuzzer),
-                        BinOp.BXOR)));
+        opaqueExpr = Optional.of(
+            new ParenExpr(
+                isZero
+                ? new BinaryExpr(
+                    makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
+                    makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
+                    BinOp.BXOR)
+                : new BinaryExpr(
+                    makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
+                    makeOpaqueZeroOrOne(!useZeroOrOne, type, constContext, depth, fuzzer),
+                    BinOp.BXOR)));
     }
     return opaqueExpr;
   }
