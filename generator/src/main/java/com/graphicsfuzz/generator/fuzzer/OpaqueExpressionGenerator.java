@@ -100,7 +100,8 @@ public final class OpaqueExpressionGenerator {
         this::opaqueZeroOrOneFromInjectionSwitch,
         this::opaqueZeroOrOneSquareRoot,
         this::opaqueZeroOrOneAbsolute,
-        this::opaqueZeroOrOneBitwiseShift
+        this::opaqueZeroOrOneBitwiseShift,
+        this::opaqueZeroOrOneBitwiseOp
     );
   }
 
@@ -111,7 +112,6 @@ public final class OpaqueExpressionGenerator {
     opaqueZeroFactories.add(this::opaqueZeroLogarithm);
     opaqueZeroFactories.add(this::opaqueZeroTan);
     opaqueZeroFactories.add(this::opaqueZeroVectorLength);
-    opaqueZeroFactories.add(this::opaqueZeroBitwiseOperator);
     return opaqueZeroFactories;
   }
 
@@ -121,7 +121,6 @@ public final class OpaqueExpressionGenerator {
     opaqueOneFactories.add(this::opaqueOneExponential);
     opaqueOneFactories.add(this::opaqueOneCosine);
     opaqueOneFactories.add(this::opaqueOneNormalizedVectorLength);
-    opaqueOneFactories.add(this::opaqueOneBitwiseOperator);
     return opaqueOneFactories;
   }
 
@@ -212,6 +211,116 @@ public final class OpaqueExpressionGenerator {
                 shiftValue, operator)));
   }
 
+  /**
+   * Function to generate an opaque value by performing a bitwise operation on an opaque zero or
+   * an opaque one.
+   * Possibilities to create zero include:
+   * Bitwise ANDing an opaque zero or one with an opaque zero: (opaque zero or one) & (opaque zero)
+   * Bitwise ORing an opaque zero with an opaque zero: (opaque zero) | (opaque zero)
+   * Bitwise XORing an opaque zero with an opaque zero or an opaque one with an opaque one:
+   *     (opaque zero) ^ (opaque zero) or (opaque one) ^ (opaque one)
+   * Possibilities to create one include:
+   * Bitwise ANDing an opaque one with an opaque one: (opaque one) & (opaque one)
+   * Bitwise ORing an opaque one with an opaque zero or one: (opaque one) | (opaque zero or one)
+   * Bitwise XORing an opaque zero with an opaque one or an opaque one with an opaque zero:
+   *     (opaque zero) ^ (opaque one) or (opaque one) ^ (opaque zero)
+   *
+   * @param type - the base type of the opaque value being created.
+   * @param constContext - true if we're in a constant expression context, false otherwise.
+   * @param depth - how deep we are in the expression.
+   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
+   * @param isZero - true if we are making an opaque zero, false otherwise.
+   * @return Optional.empty() if an opaque value can't be generated, otherwise an opaque value
+   *     made from performing a bitwise operation on an opaque zero or opaque one.
+   */
+  private Optional<Expr> opaqueZeroOrOneBitwiseOp(BasicType type, boolean constContext,
+                                                   final int depth, Fuzzer fuzzer, boolean isZero) {
+    if (!BasicType.allIntegerTypes().contains(type)) {
+      return Optional.empty();
+    }
+    if (!shadingLanguageVersion.supportedBitwiseOperations()) {
+      return Optional.empty();
+    }
+    final int operator = generator.nextInt(3);
+    Optional<Expr> opaqueExpr;
+    switch (operator) {
+      case 0:
+        // Bitwise AND
+        if (isZero) {
+          opaqueExpr = generator.nextBoolean()
+              ? Optional.of(
+                  new ParenExpr(
+                      new BinaryExpr(
+                          makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
+                              fuzzer),
+                          makeOpaqueZero(type, constContext, depth, fuzzer),
+                          BinOp.BAND)))
+              : Optional.of(
+                  new ParenExpr(
+                      new BinaryExpr(
+                          makeOpaqueZero(type, constContext, depth, fuzzer),
+                          makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
+                              fuzzer),
+                          BinOp.BAND)));
+        } else {
+          assert !isZero;
+          opaqueExpr = Optional.of(
+              new ParenExpr(
+                  new BinaryExpr(
+                      makeOpaqueOne(type, constContext, depth, fuzzer),
+                      makeOpaqueOne(type, constContext, depth, fuzzer),
+                      BinOp.BAND)));
+        }
+        break;
+      case 1:
+        // Bitwise OR
+        if (isZero) {
+          opaqueExpr = Optional.of(
+              new ParenExpr(
+                  new BinaryExpr(
+                      makeOpaqueZero(type, constContext, depth, fuzzer),
+                      makeOpaqueZero(type, constContext, depth, fuzzer),
+                      BinOp.BOR)));
+        } else {
+          assert !isZero;
+          opaqueExpr = generator.nextBoolean()
+              ? Optional.of(
+                  new ParenExpr(
+                      new BinaryExpr(
+                          makeOpaqueOne(type, constContext, depth, fuzzer),
+                          makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
+                              fuzzer),
+                          BinOp.BOR)))
+              : Optional.of(
+                  new ParenExpr(
+                      new BinaryExpr(
+                          makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
+                              fuzzer),
+                          makeOpaqueOne(type, constContext, depth, fuzzer),
+                          BinOp.BOR)));
+        }
+        break;
+      default:
+        // Bitwise XOR
+        assert operator == 2;
+        boolean useZeroOrOne = generator.nextBoolean();
+        opaqueExpr = isZero
+            ? Optional.of(
+                new ParenExpr(
+                    new BinaryExpr(
+                        makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
+                        makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
+                        BinOp.BXOR)))
+            : Optional.of(
+                new ParenExpr(
+                    new BinaryExpr(
+                        makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
+                        makeOpaqueZeroOrOne(!useZeroOrOne, type, constContext, depth, fuzzer),
+                        BinOp.BXOR)));
+    }
+    return opaqueExpr;
+  }
+
   private Optional<Expr> opaqueZeroSin(BasicType type, boolean constContext, final int depth,
                                        Fuzzer fuzzer, boolean isZero) {
     // represent 0 as sin(opaqueZero) function, e.g. sin(0.0)
@@ -257,67 +366,6 @@ public final class OpaqueExpressionGenerator {
         fuzzer)));
   }
 
-  /**
-   * Function to generate an opaque zero by performing a bitwise operation on an opaque zero or
-   * an opaque one. Possibilities include:
-   * Bitwise ANDing an opaque zero or one with an opaque zero: (opaque zero or one) & (opaque zero)
-   * Bitwise ORing an opaque zero with an opaque zero: (opaque zero) | (opaque zero)
-   * Bitwise XORing an opaque zero with an opaque zero or an opaque one with an opaque one:
-   *     (opaque zero) ^ (opaque zero) or (opaque one) ^ (opaque one)
-   *
-   * @param type - the base type of the zero being created.
-   * @param constContext - true if we're in a constant expression context, false otherwise.
-   * @param depth - how deep we are in the expression.
-   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
-   * @param isZero - true if we are making an opaque zero, false otherwise.
-   * @return Optional.empty() if an opaque zero can't be generated, otherwise an opaque zero
-   *     made from performing a bitwise operation on an opaque zero or opaque one.
-   */
-  private Optional<Expr> opaqueZeroBitwiseOperator(BasicType type, boolean constContext,
-                                                final int depth,
-                                                Fuzzer fuzzer, boolean isZero) {
-    assert isZero;
-    if (!BasicType.allIntegerTypes().contains(type)) {
-      return Optional.empty();
-    }
-    if (!shadingLanguageVersion.supportedBitwiseOperations()) {
-      return Optional.empty();
-    }
-    final int operator = generator.nextInt(3);
-    switch (operator) {
-      case 0:
-        // Bitwise AND
-        return Optional.of(
-            new ParenExpr(
-                new BinaryExpr(
-                    makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth, fuzzer),
-                    makeOpaqueZero(type, constContext, depth, fuzzer),
-                    BinOp.BAND)));
-      case 1:
-        // Bitwise OR
-        return Optional.of(
-            new ParenExpr(
-                new BinaryExpr(
-                    makeOpaqueZero(type, constContext, depth, fuzzer),
-                    makeOpaqueZero(type, constContext, depth, fuzzer),
-                    BinOp.BOR)));
-      default:
-        // Bitwise XOR
-        assert operator == 2;
-        return generator.nextBoolean()
-            ? Optional.of(new ParenExpr(
-                new BinaryExpr(
-                    makeOpaqueZero(type, constContext, depth, fuzzer),
-                    makeOpaqueZero(type, constContext, depth, fuzzer),
-                    BinOp.BXOR)))
-            : Optional.of(new ParenExpr(
-                new BinaryExpr(
-                    makeOpaqueOne(type, constContext, depth, fuzzer),
-                    makeOpaqueOne(type, constContext, depth, fuzzer),
-                    BinOp.BXOR)));
-    }
-  }
-
   private Optional<Expr> opaqueOneExponential(BasicType type, boolean constContext, final int depth,
                                               Fuzzer fuzzer, boolean isZero) {
     // represent 1 as the exponential function of opaqueZero, e.g. exp(0.0)
@@ -351,67 +399,6 @@ public final class OpaqueExpressionGenerator {
     Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(isZero,
         type, constContext, depth, fuzzer));
     return Optional.of(new FunctionCallExpr("length", normalizedExpr));
-  }
-
-  /**
-   * Function to generate an opaque one by performing a bitwise operation on an opaque zero or
-   * an opaque one. Possibilities include:
-   * Bitwise ANDing an opaque one with an opaque one: (opaque one) & (opaque one)
-   * Bitwise ORing an opaque one with an opaque zero or one: (opaque one) | (opaque zero or one)
-   * Bitwise XORing an opaque zero with an opaque one or an opaque one with an opaque zero:
-   *     (opaque zero) ^ (opaque one) or (opaque one) ^ (opaque zero)
-   *
-   * @param type - the base type of the one being created.
-   * @param constContext - true if we're in a constant expression context, false otherwise.
-   * @param depth - how deep we are in the expression.
-   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
-   * @param isZero - true if we are making an opaque zero, false otherwise.
-   * @return Optional.empty() if an opaque one can't be generated, otherwise an opaque one
-   *     made from performing a bitwise operation on an opaque zero or opaque one.
-   */
-  private Optional<Expr> opaqueOneBitwiseOperator(BasicType type, boolean constContext,
-                                                   final int depth,
-                                                   Fuzzer fuzzer, boolean isZero) {
-    assert !isZero;
-    if (!BasicType.allIntegerTypes().contains(type)) {
-      return Optional.empty();
-    }
-    if (!shadingLanguageVersion.supportedBitwiseOperations()) {
-      return Optional.empty();
-    }
-    final int operator = generator.nextInt(3);
-    switch (operator) {
-      case 0:
-        // Bitwise AND
-        return Optional.of(
-            new ParenExpr(
-                new BinaryExpr(
-                    makeOpaqueOne(type, constContext, depth, fuzzer),
-                    makeOpaqueOne(type, constContext, depth, fuzzer),
-                    BinOp.BAND)));
-      case 1:
-        // Bitwise OR
-        return Optional.of(
-            new ParenExpr(
-                new BinaryExpr(
-                    makeOpaqueOne(type, constContext, depth, fuzzer),
-                    makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth, fuzzer),
-                    BinOp.BOR)));
-      default:
-        // Bitwise XOR
-        assert operator == 2;
-        return generator.nextBoolean()
-            ? Optional.of(new ParenExpr(
-            new BinaryExpr(
-                makeOpaqueZero(type, constContext, depth, fuzzer),
-                makeOpaqueOne(type, constContext, depth, fuzzer),
-                BinOp.BXOR)))
-            : Optional.of(new ParenExpr(
-            new BinaryExpr(
-                makeOpaqueOne(type, constContext, depth, fuzzer),
-                makeOpaqueZero(type, constContext, depth, fuzzer),
-                BinOp.BXOR)));
-    }
   }
 
   private List<BasicType> numericTypesOrGenTypesIfEssl100() {
