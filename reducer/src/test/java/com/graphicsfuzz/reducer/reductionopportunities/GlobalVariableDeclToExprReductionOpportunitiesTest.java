@@ -138,6 +138,7 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
+  @Ignore
   @Test
   public void testAssignVariableIdentifier() throws Exception {
     final String program = ""
