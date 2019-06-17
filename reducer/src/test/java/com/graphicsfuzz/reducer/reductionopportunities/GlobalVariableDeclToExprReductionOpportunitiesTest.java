@@ -105,8 +105,8 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
   public void testDoNotReplaceConst() throws Exception {
     final String original = "const int a = 1; void main() { }";
     final TranslationUnit tu = ParseHelper.parse(original);
-    final List<GlobalVariablesDeclarationReductionOpportunity> ops =
-        GlobalVariablesDeclarationReductionOpportunities
+    final List<GlobalVariableDeclToExprReductionOpportunity> ops =
+        GlobalVariableDeclToExprReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
                 ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), null, true));
