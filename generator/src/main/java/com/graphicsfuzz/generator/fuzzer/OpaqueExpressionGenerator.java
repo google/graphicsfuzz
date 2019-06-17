@@ -193,7 +193,7 @@ public final class OpaqueExpressionGenerator {
     final Expr shiftValue;
     if (isZero) {
       // We can't shift zero reliably if the number is signed because of sign bit extension, so
-      // we simply shift it zero.
+      // we simply shift it zero if it's signed.
       shiftValue = type.getElementType() == BasicType.INT
           ? new IntConstantExpr("0")
           : new UIntConstantExpr(generator.nextInt(1000) + "u");
