@@ -1104,7 +1104,7 @@ def comp_json_to_amberscript(comp_json):
     binding = j['buffer']['binding']
     offset = 0
 
-    # Amber only support one type per buffer, check this limitation.
+    # Amber only supports one type per buffer, check this limitation.
     field_type = None
     for field_info in j['buffer']['fields']:
         if not field_type:
