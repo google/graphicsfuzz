@@ -46,6 +46,39 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
 
   @Ignore
   @Test
+  public void testZeroMethod() throws Exception {
+    final String original = "int a = 1;";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<GlobalVariableDeclToExprReductionOpportunity> ops =
+        GlobalVariableDeclToExprReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+                ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0), null, true));
+    // Since the new assignment statement must be only inserted as the first statement of
+    // the main function, thus we have to ensure that main function exists.
+    // In this case, there is no method at all.
+    assertTrue(ops.isEmpty());
+  }
+
+  @Ignore
+  @Test
+  public void testNoMainMethod() throws Exception {
+    final String original = "int a = 1; void foo() { }";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<GlobalVariableDeclToExprReductionOpportunity> ops =
+        GlobalVariableDeclToExprReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+                ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0), null, true));
+    // Since the new assignment statement must be only inserted as the first statement of
+    // the main function, thus we have to ensure that main function exists.
+    // In this case, there is one method but it is not main though so there should be no
+    // opportunities.
+    assertTrue(ops.isEmpty());
+  }
+
+  @Ignore
+  @Test
   public void testInsertAsFirstStatement() throws Exception {
     final String program = ""
         + "int a = 1;"
