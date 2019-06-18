@@ -23,7 +23,9 @@
 #define INVOCATIONS 100
 
 layout(std430, binding = 0) buffer theSSBO {
-  bool is_exclusive;
+  // Amber only supports one type in a given buffer, hence the 'is_exclusive'
+  // bool field is declared as a uint
+  uint is_exclusive;
   uint data_out[DATA_SIZE];
   uint data_in[DATA_SIZE];
 };
@@ -36,12 +38,12 @@ void main() {
 
   uint tid = gl_LocalInvocationIndex;
   uint gid = gl_GlobalInvocationID.x;
-  
+
   if (tid != gid) {
     // They should be the same.  Use them both and do this check just to shake things up a bit.
     return;
   }
-  
+
   result[2u * tid] = data_in[2u * gid];
   result[2u * tid + 1u] = data_in[2u * gid + 1u];
 
@@ -65,10 +67,10 @@ void main() {
     result[me] = max(result[spine], result[me]);
     d = d * 2u;
   }
-  
+
   barrier();
 
-  if (is_exclusive) {
+  if (bool(is_exclusive)) {
     data_out[2u * gid] = (tid == 0u) ? 0u : result[2u * tid - 1u];
     data_out[2u * gid + 1u] = result[2u * tid];
   } else {
