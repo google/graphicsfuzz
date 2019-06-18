@@ -246,7 +246,7 @@ public interface ShadingLanguageVersion {
   boolean supportedMixFloatBool();
 
   boolean supportedMixNonfloatBool();
-  
+
   boolean supportedNonSquareMatrices();
 
   /**
