@@ -167,9 +167,10 @@ public final class OpaqueExpressionGenerator {
   }
 
   /**
-   * Function to generate an opaque zero or one by bitwise shifting left or right by an
-   * arbitrary number of bits. Generates an opaque value if the type of zero to be generated is an
-   * integer and the shading language in use supports bitwise operations.
+   * Function to generate an opaque zero or one by bitwise shifting left or right by a value
+   * between 0 and 8 bits, inclusive. For example, we can transform an integer i -> i >> 0 or
+   * i << 0. Generates an opaque value if the type of zero to be generated is an integer and the
+   * shading language in use supports bitwise operations.
    *
    * @param type - the base type of the opaque value being created.
    * @param constContext - true if we're in a constant expression context, false otherwise.
@@ -189,35 +190,54 @@ public final class OpaqueExpressionGenerator {
       return Optional.empty();
     }
     final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
-    // We need to make sure the LHS and RHS of the shift expression are based on the same type
-    // explicitly, so we can't generate opaque values to shift by as they will implicitly be
-    // considered signed integers, and both sides of the shift must be the same type.
-    final Expr shiftValue;
+    // The maximum safe value to shift zero without potentially causing undefined behavior is
+    // between zero and eight bits (as nine bits is the minimum precision of an integer in GLSL).
+    // If we're shifting one, we want to be able to shift backwards without losing information, and
+    // so our maximum shift value is seven bits.
+    final int bound = isZero ? 10 : 9;
+    final int maxValue = generator.nextInt(bound);
+    final Expr shiftValue = new FunctionCallExpr(
+        "clamp",
+        fuzzer.fuzzExpr(type, false, constContext, depth),
+        makeOpaqueZero(type, constContext, depth, fuzzer),
+        applyIdentityFunction(
+            new TypeConstructorExpr(
+                type.toString(),
+                type.getElementType() == BasicType.INT
+                    ? new IntConstantExpr(String.valueOf(maxValue))
+                    : new UIntConstantExpr(maxValue + "u")),
+            type, constContext, depth, fuzzer));
     if (isZero) {
-      // We can't shift zero reliably if the number is signed because of sign bit extension, so
-      // we simply shift it zero if it's signed.
-      shiftValue = type.getElementType() == BasicType.INT
-          ? new IntConstantExpr("0")
-          : new UIntConstantExpr(generator.nextInt(1000) + "u");
+      return Optional.of(
+          new ParenExpr(
+              new BinaryExpr(
+                  makeOpaqueZero(type, constContext, depth, fuzzer),
+                  applyIdentityFunction(shiftValue, type, constContext, depth, fuzzer),
+                  operator)));
     } else {
       assert !isZero;
-      // We can't shift one at all without changing it.
-      shiftValue = type.getElementType() == BasicType.INT
-          ? new IntConstantExpr("0")
-          : new UIntConstantExpr("0u");
+      assert operator == BinOp.SHL || operator == BinOp.SHR;
+      // We're going to shift twice in opposite directions by the same value.
+      final BinOp secondOp = operator == BinOp.SHL ? BinOp.SHR : BinOp.SHL;
+      return Optional.of(
+          new ParenExpr(
+              new BinaryExpr(
+                  new ParenExpr(
+                      new BinaryExpr(
+                          makeOpaqueOne(type, constContext, depth, fuzzer),
+                          applyIdentityFunction(shiftValue.clone(), type, constContext, depth,
+                              fuzzer),
+                          operator)),
+                  applyIdentityFunction(shiftValue.clone(), type, constContext, depth, fuzzer),
+                  secondOp)));
     }
-    return Optional.of(
-        new ParenExpr(
-            new BinaryExpr(
-                makeOpaqueZeroOrOne(isZero, type, constContext, depth, fuzzer),
-                shiftValue, operator)));
   }
 
   /**
    * Function to generate an opaque value by performing a bitwise operation on an opaque zero or
    * an opaque one.
    * Possibilities to create zero include:
-   * Bitwise ANDing an opaque zero or one with an opaque zero: (opaque zero or one) & (opaque zero)
+   * Bitwise ANDing a fuzzed expression with an opaque zero: (fuzzedexpr) & (opaque zero)
    * Bitwise ORing an opaque zero with an opaque zero: (opaque zero) | (opaque zero)
    * Bitwise XORing an opaque zero with an opaque zero or an opaque one with an opaque one:
    *     (opaque zero) ^ (opaque zero) or (opaque one) ^ (opaque one)
@@ -253,14 +273,12 @@ public final class OpaqueExpressionGenerator {
               new ParenExpr(
                   generator.nextBoolean()
                   ? new BinaryExpr(
-                      makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
-                          fuzzer),
+                      fuzzer.fuzzExpr(type, false, constContext, depth),
                       makeOpaqueZero(type, constContext, depth, fuzzer),
                       BinOp.BAND)
                   : new BinaryExpr(
                       makeOpaqueZero(type, constContext, depth, fuzzer),
-                      makeOpaqueZeroOrOne(generator.nextBoolean(), type, constContext, depth,
-                          fuzzer),
+                      fuzzer.fuzzExpr(type, false, constContext, depth),
                       BinOp.BAND)));
         } else {
           assert !isZero;
