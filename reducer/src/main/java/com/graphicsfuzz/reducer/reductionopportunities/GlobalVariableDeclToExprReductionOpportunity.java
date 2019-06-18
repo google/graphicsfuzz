@@ -25,10 +25,11 @@ public class GlobalVariableDeclToExprReductionOpportunity extends AbstractReduct
 
   @Override
   void applyReductionImpl() {
+    throw new RuntimeException("Not implemented yet.");
   }
 
   @Override
   public boolean preconditionHolds() {
-    return false;
+    throw new RuntimeException("Not implemented yet.");
   }
 }
