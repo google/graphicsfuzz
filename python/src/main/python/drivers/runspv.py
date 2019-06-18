@@ -1109,8 +1109,8 @@ def comp_json_to_amberscript(comp_json):
     for field_info in j['buffer']['fields']:
         if not field_type:
             field_type = field_info['type']
-        else:
-            assert field_type == field_info['type'], 'Amber only support one type per buffer'
+        elif field_type != field_info['type']:
+            raise ValueError('Amber only supports one type per buffer')
 
     for field_info in j['buffer']['fields']:
         result += (

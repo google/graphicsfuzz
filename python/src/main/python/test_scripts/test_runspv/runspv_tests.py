@@ -494,6 +494,13 @@ def test_spirv_opt_fails_given_silly_argument_compute(tmp_path: pathlib2.Path):
         assert '-ODOESNOTEXIST is not a valid flag' in str(called_process_error)
 
 
+def test_runspv_fails_if_comp_buffer_has_several_types(tmp_path: pathlib2.Path):
+    with pytest.raises(ValueError) as value_error:
+        runspv.main_helper(['host', get_compute_test('buffer-with-several-types.json'),
+                            str(tmp_path / 'out')])
+        assert 'Amber only supports one type per buffer' in str(value_error)
+
+
 def test_skip_render_image_amber_host(tmp_path: pathlib2.Path):
     check_no_image_skip_render(tmp_path, is_android=False, is_legacy_worker=False,
                                json_filename='image_test_0007.json')
