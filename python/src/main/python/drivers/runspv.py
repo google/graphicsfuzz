@@ -876,14 +876,16 @@ def get_spirv_opt_args_comment(spirv_args: Optional[List[str]]) -> str:
 def get_header_comment_original_source(
     vert_original: str,
     frag_original: str,
+    comp_original: str,
     spirv_args: str
 ):
     has_frag_glsl = frag_original and filename_extension_suggests_glsl(frag_original)
     has_vert_glsl = vert_original and filename_extension_suggests_glsl(vert_original)
+    has_comp_glsl = comp_original and filename_extension_suggests_glsl(comp_original)
 
     result = get_spirv_opt_args_comment(spirv_args)
 
-    if has_frag_glsl or has_vert_glsl:
+    if has_frag_glsl or has_vert_glsl or has_comp_glsl:
         result += '# Derived from the following GLSL.\n\n'
 
     if has_vert_glsl:
@@ -896,7 +898,27 @@ def get_header_comment_original_source(
         result += get_shader_as_comment(frag_original)
         result += '\n\n'
 
+    if has_comp_glsl:
+        result += '# Compute shader GLSL:\n'
+        result += get_shader_as_comment(comp_original)
+        result += '\n\n'
+
     return result
+
+
+def get_header_comment_original_source_image(
+    vert_original: str,
+    frag_original: str,
+    spirv_args: str
+):
+    return get_header_comment_original_source(vert_original, frag_original, None, spirv_args)
+
+
+def get_header_comment_original_source_comp(
+    comp_original: str,
+    spirv_args: str
+):
+    return get_header_comment_original_source(None, None, comp_original, spirv_args)
 
 
 def vkscriptify_image(
@@ -915,7 +937,7 @@ def vkscriptify_image(
 
     result += '# A test for a bug found by GraphicsFuzz.\n\n'
 
-    result += get_header_comment_original_source(vert_original, frag_original, spirv_args)
+    result += get_header_comment_original_source_image(vert_original, frag_original, spirv_args)
 
     result += '[require]\n'
     result += 'fbsize 256 256\n\n'
@@ -1052,7 +1074,7 @@ def amberscriptify_image(
     result = '#!amber\n'
     result += '# Generated AmberScript for a bug found by GraphicsFuzz\n\n'
 
-    result += get_header_comment_original_source(vert_original, frag_original, spirv_args)
+    result += get_header_comment_original_source_image(vert_original, frag_original, spirv_args)
 
     result += 'SET ENGINE_DATA fence_timeout_ms ' + str(AMBER_FENCE_TIMEOUT_MS) + '\n\n'
 
@@ -1236,6 +1258,18 @@ def run_image_amber(
 ################################################################################
 # Amber worker: compute test
 
+def amber_check_buffer_single_type(json_filename):
+    with open_helper(json_filename, 'r') as f:
+        j = json.load(f)
+
+    # Amber only supports one type per buffer, check this limitation.
+    field_type = None
+    for field_info in j['$compute']['buffer']['fields']:
+        if not field_type:
+            field_type = field_info['type']
+        elif field_type != field_info['type']:
+            raise ValueError('Amber only supports one type per buffer')
+
 
 def comp_json_to_vkscript(comp_json):
     """
@@ -1273,14 +1307,6 @@ def comp_json_to_vkscript(comp_json):
 
     binding = j['buffer']['binding']
     offset = 0
-
-    # Amber only supports one type per buffer, check this limitation.
-    field_type = None
-    for field_info in j['buffer']['fields']:
-        if not field_type:
-            field_type = field_info['type']
-        elif field_type != field_info['type']:
-            raise ValueError('Amber only supports one type per buffer')
 
     for field_info in j['buffer']['fields']:
         result += (
@@ -1345,6 +1371,165 @@ def vkscriptify_comp(
     return result
 
 
+def amberscript_comp_buff_decl(comp_json):
+    """
+    Returns the string representing AmberScript declaration of buffers for a
+    compute shader test.
+
+      {
+        "myuniform": {
+          "func": "glUniform1f",
+          "args": [ 42.0 ],
+          "binding": 3
+        },
+
+        "$compute": {
+          "num_groups": [12, 13, 14];
+          "buffer": {
+            "binding": 123,
+            "fields":
+            [
+              { "type": "int", "data": [ 0 ] },
+              { "type": "int", "data": [ 1, 2 ] },
+            ]
+          }
+        }
+
+      }
+
+    becomes:
+
+      # myuniform
+      BUFFER myuniform DATA_TYPE float DATA
+        42.0
+      END
+
+      BUFFER gfz_ssbo DATA_TYPE int DATA
+        0 1 2
+      END
+    """
+
+    SSBO_TYPES = {
+        'int': 'int32',
+        'ivec2': 'vec2<int32>',
+        'ivec3': 'vec3<int32>',
+        'ivec4': 'vec4<int32>',
+        'uint': 'uint32',
+        'float': 'float',
+        'vec2': 'vec2<float>',
+        'vec3': 'vec3<float>',
+        'vec4': 'vec4<float>',
+    }
+
+    # regular uniforms
+    result = amberscript_uniform_buffer_decl(comp_json)
+
+    with open_helper(comp_json, 'r') as f:
+        j = json.load(f)
+
+    assert '$compute' in j.keys(), 'Cannot find "$compute" key in JSON file'
+    j = j['$compute']
+
+    binding = j['buffer']['binding']
+    offset = 0
+
+    # A single type for all fields is assumed here
+    assert len(j['buffer']['fields']) > 0, 'Compute shader test with empty SSBO'
+    json_datum_type = j['buffer']['fields'][0]['type']
+    assert json_datum_type in SSBO_TYPES.keys(), 'Unsupported datum type in SSBO'
+    datum_type = SSBO_TYPES[json_datum_type]
+
+    result += 'BUFFER gfz_ssbo DATA_TYPE ' + datum_type + ' DATA\n'
+    for field_info in j['buffer']['fields']:
+        for datum in field_info['data']:
+            result += ' ' + str(datum)
+    result += '\n'
+    result += 'END\n\n'
+
+    return result
+
+
+def amberscript_comp_buff_bind(comp_json):
+    """
+    Returns the string representing AmberScript binding of buffers for a
+    compute shader test.
+
+      {
+        "myuniform": {
+          "func": "glUniform1f",
+          "args": [ 42.0 ],
+          "binding": 3
+        },
+
+        "$compute": {
+          "num_groups": [12, 13, 14];
+          "buffer": {
+            "binding": 123,
+            "fields":
+            [
+              { "type": "int", "data": [ 0 ] },
+              { "type": "int", "data": [ 1, 2 ] },
+            ]
+          }
+        }
+
+      }
+
+    becomes:
+
+      BIND BUFFER myuniform AS uniform DESCRIPTOR_SET 0 BINDING 3
+      BIND BUFFER gfz_ssbo AS storage DESCRIPTOR_SET 0 BINDING 123
+    """
+
+    # regular uniforms
+    result = amberscript_uniform_buffer_bind(comp_json)
+
+    result += 'BIND BUFFER gfz_ssbo AS storage DESCRIPTOR_SET 0 BINDING ' + str(get_ssbo_binding(comp_json)) + '\n\n'
+
+    return result
+
+
+def amberscriptify_comp(
+    comp_spv: str,
+    comp_json: str,
+    comp_original: Optional[str],
+    spirv_args: Optional[List[str]]
+):
+    """
+    Generates an AmberScript representation of a compute test
+    """
+
+    has_comp_glsl = comp_original and filename_extension_suggests_glsl(comp_original)
+
+    result = '#!amber\n'
+    result += '# Generated AmberScript for a bug found by GraphicsFuzz\n\n'
+
+    result += get_header_comment_original_source_comp(comp_original, spirv_args)
+
+    result += 'SET ENGINE_DATA fence_timeout_ms ' + str(AMBER_FENCE_TIMEOUT_MS) + '\n\n'
+
+    result += 'SHADER compute gfz_comp SPIRV-ASM\n'
+    result += spv_get_disassembly(comp_spv)
+    result += 'END\n\n'
+
+    result += amberscript_comp_buff_decl(comp_json)
+
+    result += 'PIPELINE compute gfz_pipeline\n'
+    result += '  ATTACH gfz_comp\n'
+    result += amberscript_comp_buff_bind(comp_json)
+    result += 'END\n\n'
+
+    result += 'RUN gfz_pipeline'
+    with open_helper(comp_json, 'r') as f:
+        j = json.load(f)
+        num_groups = j['$compute']['num_groups']
+        for dimension in num_groups:
+            result += ' ' + str(dimension)
+    result += '\n\n'
+
+    return result
+
+
 def ssbo_text_to_json(ssbo_text_file, ssbo_json_file, comp_json):
     """
     Reads the ssbo_text_file and extracts its contents to a json file.
@@ -1398,20 +1583,37 @@ def run_compute_amber(
     is_android: bool,
     skip_render: bool,
     spirv_opt_args: Optional[List[str]],
+    use_amberscript: bool,
 ) -> None:
 
     assert os.path.isfile(comp_original)
     assert os.path.isfile(json_file)
+    amber_check_buffer_single_type(json_file)
 
-    vkscript_file = os.path.join(output_dir, 'tmpscript.shader_test')
     ssbo_output = os.path.join(output_dir, 'ssbo')
     ssbo_json = os.path.join(output_dir, SSBO_JSON_FILENAME)
     status_file = os.path.join(output_dir, 'STATUS')
 
     comp = prepare_shader(output_dir, comp_original, spirv_opt_args)
 
-    with open_helper(vkscript_file, 'w') as f:
-        f.write(vkscriptify_comp(comp, json_file, comp_original, spirv_opt_args))
+    if use_amberscript:
+        shader_test_file = os.path.join(output_dir, 'tmp_shader_test.amber')
+        with open_helper(shader_test_file, 'w') as f:
+            f.write(amberscriptify_comp(
+                comp,
+                json_file,
+                comp_original,
+                spirv_opt_args,
+            ))
+    else:
+        shader_test_file = os.path.join(output_dir, 'tmp_shader_test.vkscript')
+        with open_helper(shader_test_file, 'w') as f:
+            f.write(vkscriptify_comp(
+                comp,
+                json_file,
+                comp_original,
+                spirv_opt_args,
+            ))
 
     # FIXME: in case of multiple SSBOs, we should pass the binding of the ones to be dumped
     ssbo_binding = str(get_ssbo_binding(json_file))
@@ -1422,7 +1624,7 @@ def run_compute_amber(
         # Prepare files on device.
         adb_check([
             'push',
-            vkscript_file,
+            shader_test_file,
             ANDROID_DEVICE_GRAPHICSFUZZ_DIR,
         ])
 
@@ -1448,7 +1650,7 @@ def run_compute_amber(
             'cd ' + ANDROID_DEVICE_DIR + ' && '
             './' + ANDROID_AMBER_NDK
             + flags
-            + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(vkscript_file)
+            + ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/' + os.path.basename(shader_test_file)
         ]
 
         adb_check(['logcat', '-c'])
@@ -1493,7 +1695,7 @@ def run_compute_amber(
             cmd.append(ssbo_output)
             cmd.append('-B')
             cmd.append(ssbo_binding)
-        cmd.append(vkscript_file)
+        cmd.append(shader_test_file)
 
         status = 'SUCCESS'
 
@@ -1669,7 +1871,8 @@ def main_helper(args):
                     force=args.force,
                     is_android=(args.target == 'android'),
                     skip_render=args.skip_render,
-                    spirv_opt_args=spirv_args
+                    spirv_opt_args=spirv_args,
+                    use_amberscript=args.use_amberscript,
                 )
                 return
 
