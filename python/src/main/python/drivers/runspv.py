@@ -1067,12 +1067,6 @@ def run_image_amber(
 # Amber worker: compute test
 
 
-def translate_type_for_amber(type_name: str) -> str:
-    if type_name == 'bool':
-        return 'uint'
-    return type_name
-
-
 def comp_json_to_amberscript(comp_json):
     """
     Returns the string representing VkScript version of compute shader setup,
@@ -1109,12 +1103,21 @@ def comp_json_to_amberscript(comp_json):
 
     binding = j['buffer']['binding']
     offset = 0
+
+    # Amber only support one type per buffer, check this limitation.
+    field_type = None
+    for field_info in j['buffer']['fields']:
+        if not field_type:
+            field_type = field_info['type']
+        else:
+            assert field_type == field_info['type'], 'Amber only support one type per buffer'
+
     for field_info in j['buffer']['fields']:
         result += (
             'ssbo '
             + str(binding)
             + ' subdata '
-            + translate_type_for_amber(field_info['type'])
+            + field_info['type']
             + ' '
             + str(offset)
         )
