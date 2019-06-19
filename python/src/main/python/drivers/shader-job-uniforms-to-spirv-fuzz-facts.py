@@ -17,15 +17,15 @@
 import argparse
 import json
 import os
-import random
-import shutil
 import struct
-from typing import Optional, List, Union
+from typing import Any, Dict, List
 
 import runspv
 
 
-def main():
+# Turns a GraphicsFuzz .json file into a spirv-fuzz .facts file, with one fact per word of uniform
+# data.
+def main() -> None:
     parser = argparse.ArgumentParser()
 
     # Required arguments
@@ -33,52 +33,20 @@ def main():
         'shader_job',
         help='Shader job (.json) file.')
 
-    parser.add_argument(
-        'output_dir',
-        help='Output directory in which to place temporary and result files')
-
-    # Optional arguments
-    parser.add_argument(
-        '--seed',
-        help='A seed to control random number generation.')
-
-    parser.add_argument(
-        '--spirvopt',
-        help=runspv.SPIRV_OPT_OPTION_HELP + 'Options with which to invoke spirv-opt.')
-
     args = parser.parse_args()
 
-    # Make the output directory if it does not yet exist.
-    if not os.path.isdir(args.output_dir):
-        os.makedirs(args.output_dir)
-
-    fragment_shader = os.path.splitext(args.shader_job)[0] + ".frag"  # type: str
-    if not os.path.isfile(fragment_shader):
-        print('There is no fragment shader associated with "' + args.shader_job + '".')
-        exit(1)
-
-    # Seed the random number generator.  If no seed is provided then 'None' will be used, which
-    # seeds the generator based on system time.
-    random.seed(args.seed)
-
-    # Turn the shader into SPIR-V, invoking spirv-opt along the way if spirv-opt arguments have been
-    # given.
-    spirvopt_args = None  # type: Union[Optional[List[str]], str]
-    if args.spirvopt:
-        spirvopt_args = args.spirvopt.split()
-    spv_file = runspv.prepare_shader(args.output_dir, fragment_shader, spirvopt_args)  # type: str
-
-    # For now we use fixed names for output files.
-    shutil.copyfile(spv_file, args.output_dir + os.sep + "for_spirv_fuzz.spv")
-    shutil.copyfile(args.shader_job, args.output_dir + os.sep + "for_spirv_fuzz.json")
-
     # Generate uniform facts from .json file
-    fact_list = []  # type: list[dict]
+    fact_list = []  # type: List[dict]
 
     # Turn the information about uniform values into facts for spirv-fuzz.
     with runspv.open_helper(args.shader_job, 'r') as f:
-        j = json.load(f)
+        j = json.load(f)  # type: Dict[str, Any]
     for name, entry in j.items():
+
+        # Skip compute shader data
+        if name == "$compute":
+            continue
+
         # Make a separate fact for every component value of each uniform.
         for i in range(0, len(entry["args"])):
             # Every uniform is in its own struct, so we index into the first element of that struct
@@ -111,9 +79,8 @@ def main():
                 constantWord=[int_representation])
             fact_list.append(dict(constantUniformFact=fact_constant_uniform))
 
-    facts = { "fact": fact_list }
-    with open(args.output_dir + os.sep + "for_spirv_fuzz.facts", "w") as f:
-        f.write(json.dumps(facts, indent=1, sort_keys=True))
+    with open(os.path.splitext(args.shader_job)[0] + ".facts", "w") as f:
+        f.write(json.dumps(dict(fact=fact_list), indent=1, sort_keys=True))
 
 
 if __name__ == '__main__':
