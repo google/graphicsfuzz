@@ -24,4 +24,7 @@ To run the tests from the command line:
 
 ```
 python3 -m pytest ./runspv_tests.py
+
+# Filter to test names containing "foo" but not "bar":
+python3 -m pytest ./runspv_tests.py -k 'foo and not bar'
 ```
