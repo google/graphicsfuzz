@@ -1090,7 +1090,7 @@ def amberscriptify_image(
 
     # This buffer MUST be named framebuffer to be able to retrieve the image
     # Format MUST be B8G8R8A8_UNORM (other options may become available once
-    # Amber supports more format for image extraction)
+    # Amber supports more formats for image extraction)
     result += 'BUFFER framebuffer FORMAT B8G8R8A8_UNORM\n'
     result += amberscript_uniform_buffer_decl(uniform_json)
     result += '\n'
