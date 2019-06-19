@@ -178,13 +178,15 @@ public final class OpaqueExpressionGenerator {
    *     If we're generating an opaque one, we have to make sure that we don't lose our 1 bit.
    *     This limits our maximum shift value to 7 bits (more on how we shift an opaque one below).
    * Possibilities for generating an opaque zero include:
-   *     Shifting an opaque zero by n bits: (opaque zero) >> n or (opaque zero) << n, where n is
-   *     an expression of a clamped value between 0 and 8:
-   *     n = clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(8)).
+   *     Shifting an opaque zero by m bits: (opaque zero) >> n or (opaque zero) << n, where n is
+   *     an expression of a clamped value between 0 and m, inclusive:
+   *     n = clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(m)), and m is an integer
+   *     between 0 and 8, inclusive.
    * Possibilities for generating an opaque zero include:
    *     Shifting an opaque one to the left by n bits, then shifting it to the right by n bits:
-   *     ((opaque one) << n) >> n, where n is an expression of a clamped value between 0 and 7,
-   *     inclusive: n = clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(7)).
+   *     ((opaque one) << n) >> n, where n is an expression of a clamped value between 0 and m,
+   *     inclusive: n = clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(m)), and m is an
+   *     integer between 0 and 7, inclusive.
    *
    * @param type - the base type of the opaque value being created.
    * @param constContext - true if we're in a constant expression context, false otherwise.
