@@ -1009,8 +1009,7 @@ def amberscript_uniform_buffer_decl(uniform_json):
 
         func = entry['func']
         if func not in UNIFORM_TYPE.keys():
-            print('Error: unknown uniform type for function: ' + func)
-            exit(1)
+            raise ValueError('Error: unknown uniform type for function: ' + func)
         uniform_type = UNIFORM_TYPE[func]
 
         result += '# ' + name + '\n'
@@ -1436,7 +1435,8 @@ def amberscript_comp_buff_decl(comp_json):
     # A single type for all fields is assumed here
     assert len(j['buffer']['fields']) > 0, 'Compute shader test with empty SSBO'
     json_datum_type = j['buffer']['fields'][0]['type']
-    assert json_datum_type in SSBO_TYPES.keys(), 'Unsupported datum type in SSBO'
+    if json_datum_type not in SSBO_TYPES.keys():
+        raise ValueError('Unsupported SSBO datum type: ' + json_datum_type)
     datum_type = SSBO_TYPES[json_datum_type]
 
     result += 'BUFFER gfz_ssbo DATA_TYPE ' + datum_type + ' DATA\n'
