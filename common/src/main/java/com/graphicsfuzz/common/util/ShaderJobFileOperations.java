@@ -1225,10 +1225,11 @@ public class ShaderJobFileOperations {
         final JsonObject computeShaderComparisonWithReference = new JsonObject();
 
         // Check whether the results exactly match those of the reference.
+
         final ExecResult exactDiffResult =
-            new ExecHelper().exec(ExecHelper.RedirectType.TO_BUFFER,
-            null, false,
-                Paths.get(ToolPaths.getPythonDriversDir(),"inspect-compute-results").toString(),
+            fileOps.runPythonDriver(ExecHelper.RedirectType.TO_BUFFER,
+            null,
+            "inspect-compute-results",
             "exactdiff",
             referenceShaderResultFile.get().getAbsolutePath(),
             shaderJobResultFile.getAbsolutePath());
@@ -1244,16 +1245,12 @@ public class ShaderJobFileOperations {
 
           // Now perform a fuzzy diff.
           final ExecResult fuzzyDiffResult =
-              new ExecHelper().exec(
-                  ExecHelper.RedirectType.TO_BUFFER,
-                  null,
-                  false,
-                  Paths.get(
-                      ToolPaths.getPythonDriversDir(),
-                      "inspect-compute-results").toString(),
-                  "fuzzydiff",
-                  referenceShaderResultFile.get().getAbsolutePath(),
-                  shaderJobResultFile.getAbsolutePath());
+              fileOps.runPythonDriver(ExecHelper.RedirectType.TO_BUFFER,
+              null,
+              "inspect-compute-results",
+              "fuzzydiff",
+              referenceShaderResultFile.get().getAbsolutePath(),
+              shaderJobResultFile.getAbsolutePath());
           computeShaderComparisonWithReference.addProperty("fuzzy_match",
               fuzzyDiffResult.res == 0);
           computeShaderComparisonWithReference.addProperty("fuzzydiff_output",
@@ -1332,6 +1329,28 @@ public class ShaderJobFileOperations {
     fileOps.writeStringToFile(
         shaderJobResultFile,
         JsonHelper.jsonToString(infoObject));
+  }
+
+  /**
+   * Runs a GraphicsFuzz Python driver script, from the python/drivers directory.
+   * @param redirectType Determines where output is redirected to.
+   * @param directory Working directory; set to null if current directory is fine.
+   * @param driverName Name of the Python driver, with no extension.
+   * @param driverArgs Arguments to be passed to the Python driver.
+   * @return the result of executing the Python driver.
+   * @throws IOException if something IO-related goes wrong.
+   * @throws InterruptedException if something goes wrong running the driver command.
+   */
+  public ExecResult runPythonDriver(ExecHelper.RedirectType redirectType, File directory,
+                                      String driverName, String... driverArgs) throws IOException,
+      InterruptedException {
+    final String[] execArgs = new String[driverArgs.length + 1];
+    execArgs[0] = Paths.get(ToolPaths.getPythonDriversDir(), driverName).toString()
+        + (System.getProperty("os.name").startsWith("Windows") ? ".bat" : "");
+    System.arraycopy(driverArgs, 0, execArgs, 1, driverArgs.length);
+    return new ExecHelper().exec(redirectType,
+        directory, false,
+        execArgs);
   }
 
   /**
