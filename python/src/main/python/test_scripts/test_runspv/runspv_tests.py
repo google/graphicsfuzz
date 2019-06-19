@@ -111,22 +111,33 @@ def get_ssbo_json(output_dir: pathlib2.Path) -> {}:
     return json.load(open(str(ssbo_json), 'r'))
 
 
-def check_images_match(tmp_path: pathlib2.Path, json_filename: str, is_android_1: bool,
+def check_images_match(tmp_path: pathlib2.Path,
+                       json_filename: str,
+                       is_android_1: bool,
                        is_android_2: bool,
-                       is_amber_1: bool, is_amber_2: bool, fuzzy_image_comparison: bool,
-                       spirvopt_options_1: str=None, spirvopt_options_2: str=None):
+                       is_amber_1: bool,
+                       is_amber_2: bool,
+                       fuzzy_image_comparison: bool,
+                       use_amberscript_1: bool=None,
+                       use_amberscript_2: bool=None,
+                       spirvopt_options_1: str=None,
+                       spirvopt_options_2: str=None):
     out_dir_1 = tmp_path / 'out_1'
     out_dir_2 = tmp_path / 'out_2'
 
     args_1 = ['android' if is_android_1 else 'host', get_image_test(json_filename), str(out_dir_1)]
     if not is_amber_1:
         args_1.append('--legacy-worker')
+    elif use_amberscript_1:
+        args_1.append('--use-amberscript')
     if spirvopt_options_1:
         args_1.append('--spirvopt=' + spirvopt_options_1)
 
     args_2 = ['android' if is_android_2 else 'host', get_image_test(json_filename), str(out_dir_2)]
     if not is_amber_2:
         args_2.append('--legacy-worker')
+    elif use_amberscript_2:
+        args_2.append('--use-amberscript')
     if spirvopt_options_2:
         args_2.append('--spirvopt=' + spirvopt_options_2)
 
@@ -170,9 +181,26 @@ def check_images_match_spirvopt(tmp_path: pathlib2.Path, json_filename: str, opt
                        spirvopt_options_2=None)
 
 
+def check_images_match_vkscript_amberscript(tmp_path: pathlib2.Path, json_filename: str,
+                                            is_android: bool) -> None:
+    check_images_match(tmp_path,
+                       json_filename=json_filename,
+                       is_android_1=is_android,
+                       is_android_2=is_android,
+                       is_amber_1=True,
+                       is_amber_2=True,
+                       fuzzy_image_comparison=False,
+                       use_amberscript_1=False,
+                       use_amberscript_2=True,
+                       spirvopt_options_1=None,
+                       spirvopt_options_2=None)
+
+
 def check_compute_matches(tmp_path: pathlib2.Path, json_filename: str,
                           is_android_1: bool,
                           is_android_2: bool,
+                          use_amberscript_1: bool=None,
+                          use_amberscript_2: bool=None,
                           spirvopt_options_1: str=None,
                           spirvopt_options_2: str=None):
     out_dir_1 = tmp_path / 'out_1'
@@ -180,6 +208,10 @@ def check_compute_matches(tmp_path: pathlib2.Path, json_filename: str,
 
     args_1 = ['android' if is_android_1 else 'host', get_compute_samples_dir() + os.sep + json_filename, str(out_dir_1)]
     args_2 = ['android' if is_android_2 else 'host', get_compute_samples_dir() + os.sep + json_filename, str(out_dir_2)]
+    if use_amberscript_1:
+        args_1.append('--use-amberscript')
+    if use_amberscript_2:
+        args_2.append('--use-amberscript')
     if spirvopt_options_1:
         args_1.append('--spirvopt=' + spirvopt_options_1)
     if spirvopt_options_2:
@@ -209,6 +241,17 @@ def check_host_and_android_match_compute(tmp_path: pathlib2.Path, json_filename:
                           json_filename=json_filename,
                           is_android_1=False,
                           is_android_2=True)
+
+
+def check_compute_matches_vkscript_amberscript(tmp_path: pathlib2.Path, json_filename: str, is_android: bool):
+    check_compute_matches(tmp_path,
+                          json_filename=json_filename,
+                          is_android_1=is_android,
+                          is_android_2=is_android,
+                          use_amberscript_1=False,
+                          use_amberscript_2=True,
+                          spirvopt_options_1=None,
+                          spirvopt_options_2=None)
 
 
 def check_no_image_skip_render(tmp_path: pathlib2.Path, is_android: bool, is_legacy_worker: bool,
@@ -766,3 +809,173 @@ def test_image_0006_spirvopt_android_legacy(tmp_path: pathlib2.Path):
                                 options='-Os',
                                 is_android=True,
                                 is_amber=False)
+
+#################################
+# VkScript vs AmberScript
+
+def test_image_0000_vksript_amberscript_host(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0000.json',
+                                            is_android=False)
+
+
+def test_image_0000_vksript_amberscript_android(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0000.json',
+                                            is_android=True)
+
+
+def test_image_0001_vksript_amberscript_host(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0001.json',
+                                            is_android=False)
+
+
+def test_image_0001_vksript_amberscript_android(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0001.json',
+                                            is_android=True)
+
+
+def test_image_0002_vksript_amberscript_host(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0002.json',
+                                            is_android=False)
+
+
+def test_image_0002_vksript_amberscript_android(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0002.json',
+                                            is_android=True)
+
+
+def test_image_0003_vksript_amberscript_host(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0003.json',
+                                            is_android=False)
+
+
+def test_image_0003_vksript_amberscript_android(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0003.json',
+                                            is_android=True)
+
+
+def test_image_0004_vksript_amberscript_host(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0004.json',
+                                            is_android=False)
+
+
+def test_image_0004_vksript_amberscript_android(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0004.json',
+                                            is_android=True)
+
+
+def test_image_0005_vksript_amberscript_host(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0005.json',
+                                            is_android=False)
+
+
+def test_image_0005_vksript_amberscript_android(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0005.json',
+                                            is_android=True)
+
+
+def test_image_0006_vksript_amberscript_host(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0006.json',
+                                            is_android=False)
+
+
+def test_image_0006_vksript_amberscript_android(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0006.json',
+                                            is_android=True)
+
+
+def test_image_0007_vksript_amberscript_host(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0007.json',
+                                            is_android=False)
+
+
+def test_image_0007_vksript_amberscript_android(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0007.json',
+                                            is_android=True)
+
+
+def test_image_0008_vksript_amberscript_host(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0008.json',
+                                            is_android=False)
+
+
+def test_image_0008_vksript_amberscript_android(tmp_path: pathlib2.Path):
+    check_images_match_vkscript_amberscript(tmp_path,
+                                            'image_test_0008.json',
+                                            is_android=True)
+
+
+def test_compute_0001_vkscript_amberscript_host(tmp_path: pathlib2.Path):
+    check_compute_matches_vkscript_amberscript(tmp_path,
+                                               'comp-0001-findmax.json',
+                                               is_android=False)
+
+
+def test_compute_0001_vkscript_amberscript_android(tmp_path: pathlib2.Path):
+    check_compute_matches_vkscript_amberscript(tmp_path,
+                                               'comp-0001-findmax.json',
+                                               is_android=True)
+
+
+def test_compute_0002_vkscript_amberscript_host(tmp_path: pathlib2.Path):
+    check_compute_matches_vkscript_amberscript(tmp_path,
+                                               'comp-0002-smooth-mean.json',
+                                               is_android=False)
+
+
+def test_compute_0002_vkscript_amberscript_android(tmp_path: pathlib2.Path):
+    check_compute_matches_vkscript_amberscript(tmp_path,
+                                               'comp-0002-smooth-mean.json',
+                                               is_android=True)
+
+
+def test_compute_0003_vkscript_amberscript_host(tmp_path: pathlib2.Path):
+    check_compute_matches_vkscript_amberscript(tmp_path,
+                                               'comp-0003-random-middle-square.json',
+                                               is_android=False)
+
+
+def test_compute_0003_vkscript_amberscript_android(tmp_path: pathlib2.Path):
+    check_compute_matches_vkscript_amberscript(tmp_path,
+                                               'comp-0003-random-middle-square.json',
+                                               is_android=True)
+
+
+def test_compute_0004_vkscript_amberscript_host(tmp_path: pathlib2.Path):
+    check_compute_matches_vkscript_amberscript(tmp_path,
+                                               'comp-0004-koggestone.json',
+                                               is_android=False)
+
+
+def test_compute_0004_vkscript_amberscript_android(tmp_path: pathlib2.Path):
+    check_compute_matches_vkscript_amberscript(tmp_path,
+                                               'comp-0004-koggestone.json',
+                                               is_android=True)
+
+
+def test_compute_0005_vkscript_amberscript_host(tmp_path: pathlib2.Path):
+    check_compute_matches_vkscript_amberscript(tmp_path,
+                                               'comp-0005-sklansky.json',
+                                               is_android=False)
+
+
+def test_compute_0005_vkscript_amberscript_android(tmp_path: pathlib2.Path):
+    check_compute_matches_vkscript_amberscript(tmp_path,
+                                               'comp-0005-sklansky.json',
+                                               is_android=True)
