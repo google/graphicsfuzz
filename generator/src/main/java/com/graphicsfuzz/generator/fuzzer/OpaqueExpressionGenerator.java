@@ -208,26 +208,16 @@ public final class OpaqueExpressionGenerator {
     // The minimum precision for a lowp integer in GLSL is 9 bits (with one reserved for a sign
     // bit if the integer is signed) - we don't have to worry about losing information if we're
     // shifting zero, but shifting more than 8 bits may result in undefined behavior.
-    final int maxShiftForZero = 9;
+    final int minBitsForLowpInt = 9;
     // While we still have a hard maximum bits to shift of 8 bits, if we're shifting one, then
     // we can potentially lose information because GLSL bit shifting is not circular. To remedy
     // that, we make sure not to shift our 1 bit out of the integer by limiting our maximum shift
     // to 7 bits.
-    final int maxShiftForOne = 8;
-    final int maxValue = generator.nextInt(isZero ? maxShiftForZero : maxShiftForOne);
+    final int minBitsForLowpUnsignedInt = minBitsForLowpInt - 1;
+    final int maxValue = generator.nextInt(isZero ? minBitsForLowpInt : minBitsForLowpUnsignedInt);
     // We pass true as constContext when fuzzing here because the expression will be evaluated,
     // so we don't want any side effects.
-    final Expr shiftValue = new FunctionCallExpr(
-        "clamp",
-        fuzzer.fuzzExpr(type, false, true, depth),
-        makeOpaqueZero(type, constContext, depth, fuzzer),
-        applyIdentityFunction(
-            new TypeConstructorExpr(
-                type.toString(),
-                type.getElementType() == BasicType.INT
-                    ? new IntConstantExpr(String.valueOf(maxValue))
-                    : new UIntConstantExpr(maxValue + "u")),
-            type, constContext, depth, fuzzer));
+    final Expr shiftValue = makeClampedFuzzedExpr(type, constContext, depth, fuzzer, maxValue);
     if (isZero) {
       final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
       return Optional.of(
@@ -238,6 +228,8 @@ public final class OpaqueExpressionGenerator {
                   operator)));
     } else {
       // We're going to shift twice in opposite directions by the same value.
+      final Expr shiftBackValue = generator.nextBoolean() ? shiftValue.clone()
+          : makeClampedFuzzedExpr(type, constContext, depth, fuzzer, maxValue);
       return Optional.of(
           new ParenExpr(
               new BinaryExpr(
@@ -246,9 +238,39 @@ public final class OpaqueExpressionGenerator {
                           makeOpaqueOne(type, constContext, depth, fuzzer),
                           shiftValue.clone(),
                           BinOp.SHL)),
-                  shiftValue.clone(),
+                  shiftBackValue,
                   BinOp.SHR)));
     }
+  }
+
+  /**
+   * Utility function to clamp a fuzzed expression between an opaque zero and the identity of a
+   * type constructor of the given type, with the value of the bound argument. Note that this
+   * function only supports integer types currently - it could be extended to support floating
+   * point numbers as well if needed. Another note is that this function does not check its bound
+   * for validity - specifying a bound larger than 256 or a negative value could cause invalid GLSL
+   * to be generated depending on the precision and type of the integer.
+   *
+   * @param type - the type to make a clamped expression from.
+   * @param bound - the bound for the randomly generated number.
+   * @return an expression of a clamped value between 0 and m, inclusive:
+   *     clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(m)), and m is an integer
+   *     between 0 and maxValue, inclusive.
+   */
+  private Expr makeClampedFuzzedExpr(BasicType type, boolean constContext,
+                                     final int depth, Fuzzer fuzzer, int bound) {
+    assert BasicType.allIntegerTypes().contains(type);
+    return new FunctionCallExpr(
+        "clamp",
+        fuzzer.fuzzExpr(type, false, true, depth),
+        makeOpaqueZero(type, constContext, depth, fuzzer),
+        applyIdentityFunction(
+            new TypeConstructorExpr(
+                type.toString(),
+                type.getElementType() == BasicType.INT
+                    ? new IntConstantExpr(String.valueOf(bound))
+                    : new UIntConstantExpr(bound + "u")),
+            type, constContext, depth, fuzzer));
   }
 
   /**
