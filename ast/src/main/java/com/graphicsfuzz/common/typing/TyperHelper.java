@@ -709,55 +709,8 @@ public final class TyperHelper {
     }
 
     // 8.6: Matrix Functions
-    {
-      final String name = "matrixCompMult";
-      for (Type t : BasicType.allMatrixTypes()) {
-        if (BasicType.allSquareMatrixTypes().contains(t)
-            || shadingLanguageVersion.supportedMatrixCompMultNonSquare()) {
-          addBuiltin(builtinsForVersion, name, t, t, t);
-        }
-      }
-    }
 
-    if (shadingLanguageVersion.supportedOuterProduct()) {
-      final String name = "outerProduct";
-      addBuiltin(builtinsForVersion, name, BasicType.MAT2X2, BasicType.VEC2, BasicType.VEC2);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT3X3, BasicType.VEC3, BasicType.VEC3);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT4X4, BasicType.VEC4, BasicType.VEC4);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT2X3, BasicType.VEC3, BasicType.VEC2);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT3X2, BasicType.VEC2, BasicType.VEC3);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT2X4, BasicType.VEC4, BasicType.VEC2);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT4X2, BasicType.VEC2, BasicType.VEC4);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT3X4, BasicType.VEC4, BasicType.VEC3);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT4X3, BasicType.VEC3, BasicType.VEC4);
-    }
-
-    if (shadingLanguageVersion.supportedTranspose()) {
-      final String name = "transpose";
-      addBuiltin(builtinsForVersion, name, BasicType.MAT2X2, BasicType.MAT2X2);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT3X2, BasicType.MAT2X3);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT4X2, BasicType.MAT2X4);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT2X3, BasicType.MAT3X2);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT3X3, BasicType.MAT3X3);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT4X3, BasicType.MAT3X4);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT2X4, BasicType.MAT4X2);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT3X4, BasicType.MAT4X3);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT4X4, BasicType.MAT4X4);
-    }
-
-    if (shadingLanguageVersion.supportedDeterminant()) {
-      final String name = "determinant";
-      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.MAT2X2);
-      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.MAT3X3);
-      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.MAT4X4);
-    }
-
-    if (shadingLanguageVersion.supportedInverse()) {
-      final String name = "inverse";
-      addBuiltin(builtinsForVersion, name, BasicType.MAT2X2, BasicType.MAT2X2);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT3X3, BasicType.MAT3X3);
-      addBuiltin(builtinsForVersion, name, BasicType.MAT4X4, BasicType.MAT4X4);
-    }
+    getBuiltinsForGlslVersionMatrix(builtinsForVersion, shadingLanguageVersion);
 
     // 8.7: Vector Relational Functions
 
@@ -1257,6 +1210,67 @@ public final class TyperHelper {
 
     // 8.14.2 Interpolation Functions
     // TODO(550): Support functions that take non-uniform shader input variables as parameters.
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Matrix Functions,
+   * as specified in section 8.6 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
+  private static void getBuiltinsForGlslVersionMatrix(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+    {
+      final String name = "matrixCompMult";
+      for (Type t : BasicType.allMatrixTypes()) {
+        if (BasicType.allSquareMatrixTypes().contains(t)
+            || shadingLanguageVersion.supportedMatrixCompMultNonSquare()) {
+          addBuiltin(builtinsForVersion, name, t, t, t);
+        }
+      }
+    }
+
+    if (shadingLanguageVersion.supportedOuterProduct()) {
+      final String name = "outerProduct";
+      addBuiltin(builtinsForVersion, name, BasicType.MAT2X2, BasicType.VEC2, BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT3X3, BasicType.VEC3, BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT4X4, BasicType.VEC4, BasicType.VEC4);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT2X3, BasicType.VEC3, BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT3X2, BasicType.VEC2, BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT2X4, BasicType.VEC4, BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT4X2, BasicType.VEC2, BasicType.VEC4);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT3X4, BasicType.VEC4, BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT4X3, BasicType.VEC3, BasicType.VEC4);
+    }
+
+    if (shadingLanguageVersion.supportedTranspose()) {
+      final String name = "transpose";
+      addBuiltin(builtinsForVersion, name, BasicType.MAT2X2, BasicType.MAT2X2);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT3X2, BasicType.MAT2X3);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT4X2, BasicType.MAT2X4);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT2X3, BasicType.MAT3X2);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT3X3, BasicType.MAT3X3);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT4X3, BasicType.MAT3X4);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT2X4, BasicType.MAT4X2);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT3X4, BasicType.MAT4X3);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT4X4, BasicType.MAT4X4);
+    }
+
+    if (shadingLanguageVersion.supportedDeterminant()) {
+      final String name = "determinant";
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.MAT2X2);
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.MAT3X3);
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.MAT4X4);
+    }
+
+    if (shadingLanguageVersion.supportedInverse()) {
+      final String name = "inverse";
+      addBuiltin(builtinsForVersion, name, BasicType.MAT2X2, BasicType.MAT2X2);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT3X3, BasicType.MAT3X3);
+      addBuiltin(builtinsForVersion, name, BasicType.MAT4X4, BasicType.MAT4X4);
+    }
   }
 
   private static void addBuiltin(Map<String, List<FunctionPrototype>> builtinsForVersion,
