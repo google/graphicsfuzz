@@ -29,8 +29,6 @@ import static org.junit.Assert.*;
 
 public class GlobalVariableDeclToExprReductionOpportunitiesTest {
 
-  // TODO(519): Enable this test when the issue is solved.
-  @Ignore
   @Test
   public void testDoNotReplace() throws Exception {
     final String original = "int a = 1; void main() { }";
@@ -44,7 +42,6 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     assertTrue(ops.isEmpty());
   }
 
-  @Ignore
   @Test
   public void testZeroMethod() throws Exception {
     final String original = "int a = 1;";
@@ -60,7 +57,6 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     assertTrue(ops.isEmpty());
   }
 
-  @Ignore
   @Test
   public void testNoMainMethod() throws Exception {
     final String original = "int a = 1; void foo() { }";
@@ -77,7 +73,6 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     assertTrue(ops.isEmpty());
   }
 
-  @Ignore
   @Test
   public void testInsertAsFirstStatement() throws Exception {
     final String program = ""
@@ -104,7 +99,6 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
-  @Ignore
   @Test
   public void testMultipleDeclarations() throws Exception {
     final String program = ""
@@ -133,7 +127,6 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
-  @Ignore
   @Test
   public void testDoNotReplaceConst() throws Exception {
     final String original = "const int a = 1; void main() { }";
@@ -148,7 +141,6 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     assertTrue(ops.isEmpty());
   }
 
-  @Ignore
   @Test
   public void testMultipleLineDeclarationsOneLine() throws Exception {
     final String program = ""
@@ -174,7 +166,6 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
-  @Ignore
   @Test
   public void testAssignVariableIdentifier() throws Exception {
     final String program = ""
