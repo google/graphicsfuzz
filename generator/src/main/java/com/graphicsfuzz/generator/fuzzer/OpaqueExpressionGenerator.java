@@ -99,7 +99,9 @@ public final class OpaqueExpressionGenerator {
         this::opaqueZeroOrOneFromIdentityFunction,
         this::opaqueZeroOrOneFromInjectionSwitch,
         this::opaqueZeroOrOneSquareRoot,
-        this::opaqueZeroOrOneAbsolute
+        this::opaqueZeroOrOneAbsolute,
+        this::opaqueZeroOrOneBitwiseShift,
+        this::opaqueZeroOrOneBitwiseOp
     );
   }
 
@@ -162,6 +164,206 @@ public final class OpaqueExpressionGenerator {
     }
     return Optional.of(new FunctionCallExpr("abs", makeOpaqueZeroOrOne(isZero, type, constContext,
         depth, fuzzer)));
+  }
+
+  /**
+   * Function to generate an opaque zero or one by bitwise shifting left or right by an amount of
+   * bits dependent on which opaque is being generated.
+   * The minimum precision for a lowp integer in GLSL is 9 bits, with one of those bits reserved as
+   * a sign bit if the integer is signed. The OpenGL specification does not define behavior for
+   * shifting an integer beyond its maximum size in bits.
+   * This influences the process of generating opaque values such that:
+   *     If we're generating an opaque zero, we don't have to worry about losing bits, so our
+   *     maximum shift value is 8 bits.
+   *     If we're generating an opaque one, we have to make sure that we don't lose our 1 bit.
+   *     This limits our maximum shift value to 7 bits (more on how we shift an opaque one below).
+   * Possibilities for generating an opaque zero include:
+   *     Shifting an opaque zero by m bits: (opaque zero) >> n or (opaque zero) << n, where n is
+   *     an expression of a clamped value between 0 and m, inclusive:
+   *     n = clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(m)), and m is an integer
+   *     between 0 and 8, inclusive.
+   * Possibilities for generating an opaque zero include:
+   *     Shifting an opaque one to the left by n bits, then shifting it to the right by n bits:
+   *     ((opaque one) << n) >> n, where n is an expression of a clamped value between 0 and m,
+   *     inclusive: n = clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(m)), and m is an
+   *     integer between 0 and 7, inclusive.
+   *
+   * @param type - the base type of the opaque value being created.
+   * @param constContext - true if we're in a constant expression context, false otherwise.
+   * @param depth - how deep we are in the expression.
+   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
+   * @param isZero - true if we are making an opaque zero, false otherwise.
+   * @return Optional.empty() if an opaque value can't be generated, otherwise an opaque value
+   *     made from bitwise shifting.
+   */
+  private Optional<Expr> opaqueZeroOrOneBitwiseShift(BasicType type, boolean constContext,
+                                                     final int depth, Fuzzer fuzzer,
+                                                     boolean isZero) {
+    if (!BasicType.allIntegerTypes().contains(type)) {
+      return Optional.empty();
+    }
+    if (!shadingLanguageVersion.supportedBitwiseOperations()) {
+      return Optional.empty();
+    }
+    // The minimum precision for a lowp integer in GLSL is 9 bits (with one reserved for a sign
+    // bit if the integer is signed) - we don't have to worry about losing information if we're
+    // shifting zero, but shifting more than 8 bits may result in undefined behavior.
+    final int minBitsForLowpInt = 9;
+    // While we still have a hard maximum bits to shift of 8 bits, if we're shifting one, then
+    // we can potentially lose information because GLSL bit shifting is not circular. To remedy
+    // that, we make sure not to shift our 1 bit out of the integer by limiting our maximum shift
+    // to 7 bits.
+    final int minBitsForLowpUnsignedInt = minBitsForLowpInt - 1;
+    final int maxValue = generator.nextInt(isZero ? minBitsForLowpInt : minBitsForLowpUnsignedInt);
+    // We pass true as constContext when fuzzing here because the expression will be evaluated,
+    // so we don't want any side effects.
+    final Expr shiftValue = makeClampedFuzzedExpr(type, constContext, depth, fuzzer, maxValue);
+    if (isZero) {
+      final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
+      return Optional.of(
+          new ParenExpr(
+              new BinaryExpr(
+                  makeOpaqueZero(type, constContext, depth, fuzzer),
+                  shiftValue,
+                  operator)));
+    } else {
+      // We're going to shift twice in opposite directions by the same value.
+      final Expr shiftBackValue = generator.nextBoolean() ? shiftValue.clone()
+          : makeClampedFuzzedExpr(type, constContext, depth, fuzzer, maxValue);
+      return Optional.of(
+          new ParenExpr(
+              new BinaryExpr(
+                  new ParenExpr(
+                      new BinaryExpr(
+                          makeOpaqueOne(type, constContext, depth, fuzzer),
+                          shiftValue,
+                          BinOp.SHL)),
+                  shiftBackValue,
+                  BinOp.SHR)));
+    }
+  }
+
+  /**
+   * Utility function to clamp a fuzzed expression between an opaque zero and the identity of a
+   * type constructor of the given type, with the value of the bound argument. Note that this
+   * function only supports integer types currently - it could be extended to support floating
+   * point numbers as well if needed. Another note is that this function does not check its bound
+   * for validity - specifying a bound larger than 256 or a negative value could cause invalid GLSL
+   * to be generated depending on the precision and type of the integer.
+   *
+   * @param type - the type to make a clamped expression from.
+   * @param bound - the upper bound for the clamped expression.
+   * @return an expression of a clamped value between 0 and bound, inclusive:
+   *     clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(bound)),
+   */
+  private Expr makeClampedFuzzedExpr(BasicType type, boolean constContext,
+                                     final int depth, Fuzzer fuzzer, int bound) {
+    assert BasicType.allIntegerTypes().contains(type);
+    return new FunctionCallExpr(
+        "clamp",
+        fuzzer.fuzzExpr(type, false, true, depth),
+        makeOpaqueZero(type, constContext, depth, fuzzer),
+        applyIdentityFunction(
+            new TypeConstructorExpr(
+                type.toString(),
+                type.getElementType() == BasicType.INT
+                    ? new IntConstantExpr(String.valueOf(bound))
+                    : new UIntConstantExpr(bound + "u")),
+            type, constContext, depth, fuzzer));
+  }
+
+  /**
+   * Function to generate an opaque value by performing a bitwise operation on an opaque zero or
+   * an opaque one.
+   * Possibilities for generating an opaque zero include:
+   * Bitwise ANDing a fuzzed expression with an opaque zero: (fuzzedexpr) & (opaque zero)
+   * Bitwise ORing an opaque zero with an opaque zero: (opaque zero) | (opaque zero)
+   * Bitwise XORing an opaque zero with an opaque zero or an opaque one with an opaque one:
+   *     (opaque zero) ^ (opaque zero) or (opaque one) ^ (opaque one)
+   * Possibilities for generating an opaque one include:
+   * Bitwise ANDing an opaque one with an opaque one: (opaque one) & (opaque one)
+   * Bitwise ORing an opaque one with an opaque zero or one: (opaque one) | (opaque zero or one)
+   * Bitwise XORing an opaque zero with an opaque one or an opaque one with an opaque zero:
+   *     (opaque zero) ^ (opaque one) or (opaque one) ^ (opaque zero)
+   *
+   * @param type - the base type of the opaque value being created.
+   * @param constContext - true if we're in a constant expression context, false otherwise.
+   * @param depth - how deep we are in the expression.
+   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
+   * @param isZero - true if we are making an opaque zero, false otherwise.
+   * @return Optional.empty() if an opaque value can't be generated, otherwise an opaque value
+   *     made from performing a bitwise operation on an opaque zero or opaque one.
+   */
+  private Optional<Expr> opaqueZeroOrOneBitwiseOp(BasicType type, boolean constContext,
+                                                   final int depth, Fuzzer fuzzer, boolean isZero) {
+    if (!BasicType.allIntegerTypes().contains(type)) {
+      return Optional.empty();
+    }
+    if (!shadingLanguageVersion.supportedBitwiseOperations()) {
+      return Optional.empty();
+    }
+    final int numPossibleOperators = 3;
+    final int operator = generator.nextInt(numPossibleOperators);
+    Optional<Expr> opaqueExpr;
+    switch (operator) {
+      case 0:
+        // Bitwise AND
+        if (isZero) {
+          // We pass true as constContext when fuzzing here because the expression will be
+          // evaluated, so we don't want any side effects.
+          final Expr fuzzedExpr = fuzzer.fuzzExpr(type, false, true, depth);
+          final Expr opaqueZero = makeOpaqueZero(type, constContext, depth, fuzzer);
+          opaqueExpr = Optional.of(
+              new ParenExpr(
+                  generator.nextBoolean()
+                  ? new BinaryExpr(fuzzedExpr, opaqueZero, BinOp.BAND)
+                  : new BinaryExpr(opaqueZero, fuzzedExpr, BinOp.BAND)));
+        } else {
+          opaqueExpr = Optional.of(
+              new ParenExpr(
+                  new BinaryExpr(
+                      makeOpaqueOne(type, constContext, depth, fuzzer),
+                      makeOpaqueOne(type, constContext, depth, fuzzer),
+                      BinOp.BAND)));
+        }
+        break;
+      case 1:
+        // Bitwise OR
+        if (isZero) {
+          opaqueExpr = Optional.of(
+              new ParenExpr(
+                  new BinaryExpr(
+                      makeOpaqueZero(type, constContext, depth, fuzzer),
+                      makeOpaqueZero(type, constContext, depth, fuzzer),
+                      BinOp.BOR)));
+        } else {
+          final Expr opaqueOne = makeOpaqueOne(type, constContext, depth, fuzzer);
+          final Expr opaqueZeroOrOne = makeOpaqueZeroOrOne(generator.nextBoolean(), type,
+              constContext, depth, fuzzer);
+          opaqueExpr = Optional.of(
+              new ParenExpr(
+                  generator.nextBoolean()
+                  ? new BinaryExpr(opaqueOne, opaqueZeroOrOne, BinOp.BOR)
+                  : new BinaryExpr(opaqueZeroOrOne, opaqueOne, BinOp.BOR)));
+        }
+        break;
+      default:
+        // Bitwise XOR
+        assert operator == numPossibleOperators - 1;
+        boolean useZeroOrOne = generator.nextBoolean();
+        opaqueExpr = Optional.of(
+            new ParenExpr(
+                isZero
+                ? new BinaryExpr(
+                    makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
+                    makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
+                    BinOp.BXOR)
+                : new BinaryExpr(
+                    makeOpaqueZeroOrOne(useZeroOrOne, type, constContext, depth, fuzzer),
+                    makeOpaqueZeroOrOne(!useZeroOrOne, type, constContext, depth, fuzzer),
+                    BinOp.BXOR)));
+    }
+    return opaqueExpr;
   }
 
   private Optional<Expr> opaqueZeroSin(BasicType type, boolean constContext, final int depth,
