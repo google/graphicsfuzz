@@ -236,7 +236,7 @@ public final class OpaqueExpressionGenerator {
                   new ParenExpr(
                       new BinaryExpr(
                           makeOpaqueOne(type, constContext, depth, fuzzer),
-                          shiftValue.clone(),
+                          shiftValue,
                           BinOp.SHL)),
                   shiftBackValue,
                   BinOp.SHR)));
@@ -252,10 +252,9 @@ public final class OpaqueExpressionGenerator {
    * to be generated depending on the precision and type of the integer.
    *
    * @param type - the type to make a clamped expression from.
-   * @param bound - the bound for the randomly generated number.
-   * @return an expression of a clamped value between 0 and m, inclusive:
-   *     clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(m)), and m is an integer
-   *     between 0 and maxValue, inclusive.
+   * @param bound - the upper bound for the clamped expression.
+   * @return an expression of a clamped value between 0 and bound, inclusive:
+   *     clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(bound)),
    */
   private Expr makeClampedFuzzedExpr(BasicType type, boolean constContext,
                                      final int depth, Fuzzer fuzzer, int bound) {
