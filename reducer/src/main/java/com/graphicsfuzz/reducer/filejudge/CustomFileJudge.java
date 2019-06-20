@@ -22,6 +22,8 @@ import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ExecResult;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,25 +31,24 @@ public class CustomFileJudge implements IFileJudge {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CustomFileJudge.class);
 
-  private final File judgeScript;
-  private final File directory;
+  private final List<String> judgeScript;
 
-  public CustomFileJudge(File judgeScript, File directory) {
+  public CustomFileJudge(List<String> judgeScript) {
     this.judgeScript = judgeScript;
-    this.directory = directory;
   }
 
   @Override
   public boolean isInteresting(File shaderJobFile, File shaderResultFileOutput)
       throws FileJudgeException {
+    List<String> scriptPlusShaderArg = new ArrayList<>(judgeScript);
+    scriptPlusShaderArg.add(shaderJobFile.toString());
     try {
       final ExecResult execResult = new ExecHelper().exec(
           ExecHelper.RedirectType.TO_LOG,
-          directory,
+          null,
           true,
-          judgeScript.getAbsolutePath(),
-          shaderJobFile.getAbsolutePath(),
-          shaderResultFileOutput.getAbsolutePath());
+          scriptPlusShaderArg.toArray(new String[0])
+      );
       LOGGER.info("Custom file judge result: " + execResult.res);
       return execResult.res == 0;
     } catch (IOException | InterruptedException exception) {
