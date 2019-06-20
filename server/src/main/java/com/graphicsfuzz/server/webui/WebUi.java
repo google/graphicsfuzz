@@ -38,6 +38,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,8 +85,9 @@ public class WebUi extends HttpServlet {
   private long startTime;
   private final AccessFileInfo accessFileInfo;
 
-  private final FilenameFilter variantFragFilter =
-      (dir, name) -> name.startsWith("variant_") && name.endsWith(".frag");
+  private static final String WARNING_CLASS_WRONG_RESULT = "wrongresult";
+  private static final String WARNING_CLASS_WARN_RESULT = "warnresult";
+  private static final String WARNING_CLASS_METRICS_DISAGREE = "metricsdisimg";
 
   private enum ImageDifferenceResult {
     IDENTICAL,
@@ -99,6 +101,12 @@ public class WebUi extends HttpServlet {
     public ImageDifferenceResult histogram = null;
     public ImageDifferenceResult fuzzy = null;
     public double histogramDistance = 0.0;
+  }
+
+  private enum ComputeDifferenceResult {
+    IDENTICAL,
+    SIMILAR,
+    DIFFERENT
   }
 
   private final ShaderJobFileOperations fileOps;
@@ -116,19 +124,19 @@ public class WebUi extends HttpServlet {
     final File dir;
     final File preview;
     final int nbVariants;
-    final boolean isComp;
+    final boolean isCompute;
 
     public ShaderFamily(String name) {
       this.name = name;
       this.dir = new File(WebUiConstants.SHADER_FAMILIES_DIR, name);
       this.preview = new File(dir, "thumb.png");
-      this.isComp = new File(dir, "reference.comp").isFile();
+      this.isCompute = new File(dir, "reference.comp").isFile();
       this.nbVariants = getNbVariants();
     }
 
     private int getNbVariants() {
       final File[] variants;
-      if (this.isComp) {
+      if (this.isCompute) {
         variants = dir.listFiles(item -> item.getName().startsWith("variant")
             && item.getName().endsWith(".comp"));
       } else {
@@ -147,10 +155,17 @@ public class WebUi extends HttpServlet {
     int nbVariants;
     int nbVariantDone;
     int nbErrors;
+
+    // For image shader families:
     int nbSameImage;
     int nbSlightlyDifferentImage;
     int nbMetricsDisagree;
     int nbWrongImage;
+
+    // For compute shader families:
+    int nbSameComputeResult;
+    int nbSlightlyDifferentComputeResult;
+    int nbWrongComputeResult;
 
     public ShaderFamilyResult(String name, String worker, AccessFileInfo accessFileInfo)
         throws FileNotFoundException {
@@ -167,23 +182,40 @@ public class WebUi extends HttpServlet {
           JsonObject info = accessFileInfo.getResultInfo(file);
           String status = info.get("status").getAsString();
           if (status.contentEquals("SUCCESS")) {
-            ImageDifferenceResult result = getImageDiffResult(info).summary;
-            switch (result) {
-              case IDENTICAL:
-                ++nbSameImage;
-                break;
-              case SIMILAR:
-                ++nbSlightlyDifferentImage;
-                break;
-              case DIFFERENT:
-                ++nbWrongImage;
-                break;
-              case METRICS_DISAGREE:
-                ++nbWrongImage;
-                ++nbMetricsDisagree;
-                break;
-              default:
-                LOGGER.error("Unrecognized image difference result: " + result);
+            if (shaderFamily.isCompute) {
+              ComputeDifferenceResult result = getComputeDiffResult(info);
+              switch (result) {
+                case IDENTICAL:
+                  ++nbSameComputeResult;
+                  break;
+                case SIMILAR:
+                  ++nbSlightlyDifferentComputeResult;
+                  break;
+                case DIFFERENT:
+                  ++nbWrongComputeResult;
+                  break;
+                default:
+                  LOGGER.error("Unrecognized compute difference result: " + result);
+              }
+            } else {
+              ImageDifferenceResult result = getImageDiffResult(info).summary;
+              switch (result) {
+                case IDENTICAL:
+                  ++nbSameImage;
+                  break;
+                case SIMILAR:
+                  ++nbSlightlyDifferentImage;
+                  break;
+                case DIFFERENT:
+                  ++nbWrongImage;
+                  break;
+                case METRICS_DISAGREE:
+                  ++nbWrongImage;
+                  ++nbMetricsDisagree;
+                  break;
+                default:
+                  LOGGER.error("Unrecognized image difference result: " + result);
+              }
             }
           } else {
             nbErrors++;
@@ -208,10 +240,10 @@ public class WebUi extends HttpServlet {
       return result;
     }
 
-    if (!info.has("metrics")) {
+    if (!info.has(metricsKey)) {
       return result;
     }
-    final JsonObject metricsJson = info.get("metrics").getAsJsonObject();
+    final JsonObject metricsJson = info.get(metricsKey).getAsJsonObject();
 
     // Check if fuzzy diff metric thinks the images are different.
 
@@ -253,6 +285,28 @@ public class WebUi extends HttpServlet {
     }
 
     return result;
+  }
+
+  private static ComputeDifferenceResult getComputeDiffResult(JsonObject info) {
+
+    final String comparisonWithReferenceKey = "comparison_with_reference";
+
+    if (info == null || !info.has(comparisonWithReferenceKey)) {
+      return ComputeDifferenceResult.DIFFERENT;
+    }
+
+    final JsonObject comparisonJson = info.get(comparisonWithReferenceKey).getAsJsonObject();
+
+    if (comparisonJson.has("exact_match") && comparisonJson.get("exact_match").getAsBoolean()) {
+      return ComputeDifferenceResult.IDENTICAL;
+    }
+
+    if (comparisonJson.has("fuzzy_match") && comparisonJson.get("fuzzy_match").getAsBoolean()) {
+      return ComputeDifferenceResult.SIMILAR;
+    }
+
+    return ComputeDifferenceResult.DIFFERENT;
+
   }
 
   private enum ReductionStatus {
@@ -565,33 +619,33 @@ public class WebUi extends HttpServlet {
       ShaderFamilyResult shaderFamilyResult = new ShaderFamilyResult(shaderFamily, workerName,
           accessFileInfo);
 
-      // TODO(360): Show results for compute shaders. For now, just indicate that some results
-      // exists, and point to documentation.
-      if (shaderFamilyResult.shaderFamily.isComp) {
+      if (shaderFamilyResult.shaderFamily.isCompute) {
         htmlAppendLn(
-            "<a class='item' target='_blank' rel='noopener noreferrer'",
-            " href='", WebUiConstants.COMPUTE_SHADER_DOC_URL, "'>",
-            "<div class='content'>",
-            "<div class='header'>Compute shader family: ", shaderFamily, "</div>",
-            "The Web interface does not support showing results for compute shaders",
-            " yet, click to open documentation.",
+            "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
+            "<b>COMPUTE</b>",
+            "<div class='content'><div class='header'>", shaderFamily, "</div>",
+            "Variant done: ", Integer.toString(shaderFamilyResult.nbVariantDone),
+            " / ", Integer.toString(shaderFamilyResult.nbVariants),
+            " | Wrong results: ", Integer.toString(shaderFamilyResult.nbWrongComputeResult),
+            " | Slightly different results: ",
+                Integer.toString(shaderFamilyResult.nbSlightlyDifferentComputeResult),
+            " | Errors: ", Integer.toString(shaderFamilyResult.nbErrors),
             "</div></a>");
-        continue;
+      } else {
+        htmlAppendLn(
+            "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
+            "<img class='ui mini image' src='/webui/file/", WebUiConstants.WORKER_DIR, "/",
+            workerName, "/", shaderFamily, "/reference.png'>",
+            "<div class='content'><div class='header'>", shaderFamily, "</div>",
+            "Variant done: ", Integer.toString(shaderFamilyResult.nbVariantDone),
+            " / ", Integer.toString(shaderFamilyResult.nbVariants),
+            " | Wrong images: ", Integer.toString(shaderFamilyResult.nbWrongImage),
+            " | Slightly different images: ", Integer.toString(
+                shaderFamilyResult.nbSlightlyDifferentImage),
+            " | Errors: ", Integer.toString(shaderFamilyResult.nbErrors),
+            " | Metrics disagree: ", Integer.toString(shaderFamilyResult.nbMetricsDisagree),
+            "</div></a>");
       }
-
-      htmlAppendLn(
-          "<a class='item' href='/webui/worker/", workerName, "/", shaderFamily, "'>",
-          "<img class='ui mini image' src='/webui/file/", WebUiConstants.WORKER_DIR, "/",
-          workerName, "/", shaderFamily, "/reference.png'>",
-          "<div class='content'><div class='header'>", shaderFamily, "</div>",
-          "Variant done: ", Integer.toString(shaderFamilyResult.nbVariantDone),
-          " / ", Integer.toString(shaderFamilyResult.nbVariants),
-          " | Wrong images: ", Integer.toString(shaderFamilyResult.nbWrongImage),
-          " | Slightly different images: ", Integer.toString(
-              shaderFamilyResult.nbSlightlyDifferentImage),
-          " | Errors: ", Integer.toString(shaderFamilyResult.nbErrors),
-          " | Metrics disagree: ", Integer.toString(shaderFamilyResult.nbMetricsDisagree),
-          "</div></a>");
     }
     htmlAppendLn("</div></div>");
 
@@ -865,19 +919,24 @@ public class WebUi extends HttpServlet {
     final String worker = path[3];
     final String shaderFamily = path[4];
     final String variant = path[5];
-    final String variantDir =
-        WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderFamily + "/";
-    final String variantFullPathNoExtension = variantDir + variant;
+    final Path variantDir =
+        Paths.get(WebUiConstants.WORKER_DIR, worker, shaderFamily);
+    final Path variantFullPathNoExtension = Paths.get(variantDir.toString(), variant);
 
-    File infoFile = new File(variantDir, variant + ".info.json");
+    File infoFile = new File(variantDir.toString(), variant + ".info.json");
     if (!infoFile.isFile()) {
       err404(request, response, "Invalid result path: cannot find corresponding info file");
       return;
     }
 
+    final boolean isCompute =
+        new File(Paths.get("shaderfamilies", shaderFamily, variant + ".comp").toString())
+            .isFile();
+
     JsonObject info = accessFileInfo.getResultInfo(infoFile);
     final String status = info.get("status").getAsString();
-    String shaderPath = "shaderfamilies/" + shaderFamily + "/" + variant + ".frag";
+    final String shaderPath = "shaderfamilies/" + shaderFamily + "/" + variant + "."
+        + (isCompute ? "comp" : "frag");
 
     htmlHeader("Single result");
     htmlAppendLn("<div class='ui segment'><h3>Single result</h3>",
@@ -893,82 +952,139 @@ public class WebUi extends HttpServlet {
         "<input type='hidden' name='num_back' value='2'/>\n",
         "<div class='ui button'",
         " onclick=\"checkAndSubmit('Confirm deletion of ",
-        variantFullPathNoExtension,
+        variantFullPathNoExtension.toString(),
         "', deleteForm)\">",
         "Delete this result</div>\n",
         "</form>",
         "<div class='ui divider'></div>");
 
-    String referencePngPath =
-        variantFullPathNoExtension.replace(variant, "reference.png");
+    if (isCompute) {
 
-    htmlAppendLn("<p>Reference image:</p>",
-        "<img src='/webui/file/", referencePngPath, "'>");
+      ComputeDifferenceResult computeDiffResult = getComputeDiffResult(info);
 
-    String pngPath = variantDir + variant + ".png";
-    File pngFile = new File(pngPath);
-
-    if (!variant.equals("reference")) {
-      if (pngFile.exists()) {
-        htmlAppendLn("<p>Result image:</p>",
-            "<img src='/webui/file/", pngPath, "'>");
+      if (computeDiffResult == ComputeDifferenceResult.IDENTICAL
+          && status.equals("SUCCESS")
+          && !variant.equals("reference")) {
+        htmlAppendLn("<p>Compute results are identical.</p>");
       }
-    }
 
-    String gifPath = variantDir + variant + ".gif";
-    File gifFile = new File(gifPath);
-    if (gifFile.exists()) {
-      htmlAppendLn("<p>Results non-deterministic animation:</p>",
-          "<img src='/webui/file/", gifPath, "'>",
-          "<p>Here are the second-to-last and last renderings:</p>\n",
-          "<img src='/webui/file/",
-          gifPath.replace(".gif", "_nondet2.png"),
-          "'> ",
-          "<img src='/webui/file/",
-          gifPath.replace(".gif", "_nondet1.png"),
-          "'> ");
-    }
+      if (computeDiffResult != ComputeDifferenceResult.IDENTICAL
+          && status.equals("SUCCESS")
+          && !variant.equals("reference")) {
 
-    if (!(pngFile.exists()) && !(gifFile.exists())) {
-      htmlAppendLn("<p>No image to display for this result status</p>");
-    }
+        String exactDiffOutput = null;
+        String fuzzyDiffOutput = null;
 
-    htmlAppendLn("<div class='ui divider'></div>");
+        final JsonElement comparisonWithReference =
+            info.get("comparison_with_reference");
+        if (comparisonWithReference != null && comparisonWithReference.isJsonObject()) {
+          {
+            JsonElement exactDiffElement = comparisonWithReference.getAsJsonObject().get(
+                "exactdiff_output");
+            if (exactDiffElement != null && exactDiffElement.isJsonPrimitive()
+                && exactDiffElement.getAsJsonPrimitive().isString()) {
+              exactDiffOutput = exactDiffElement.getAsJsonPrimitive().getAsString();
+            }
+          }
+          {
+            JsonElement fuzzyDiffElement = comparisonWithReference.getAsJsonObject().get(
+                "fuzzydiff_output");
+            if (fuzzyDiffElement != null && fuzzyDiffElement.isJsonPrimitive()
+                && fuzzyDiffElement.getAsJsonPrimitive().isString()) {
+              fuzzyDiffOutput = fuzzyDiffElement.getAsJsonPrimitive().getAsString();
+            }
+          }
+        }
 
-    ImageDifferenceResultSet metricResults = getImageDiffResult(info);
+        htmlAppendLn(
+            "Compute output comparison results:",
+            "<ul>",
+            "<li>",
+            "Exact comparison: ",
+            exactDiffOutput != null ? exactDiffOutput : "No results",
+            "</li>",
+            "<li>",
+            "Fuzzy comparison: ",
+            fuzzyDiffOutput != null ? fuzzyDiffOutput : "No results",
+            "</li>",
+            "</ul>"
+        );
 
-    if (metricResults.summary == ImageDifferenceResult.IDENTICAL
-        && status.equals("SUCCESS")
-        && !variant.equals("reference")) {
-      htmlAppendLn("<p>Images are identical.</p>");
-    }
+      }
 
-    if (metricResults.summary != ImageDifferenceResult.IDENTICAL
-        && status.equals("SUCCESS")
-        && !variant.equals("reference")) {
+    } else {
+      final String referencePngPath =
+          Paths.get(variantDir.toString(), "reference.png").toString();
 
-      htmlAppendLn(
-          "Image comparison metrics:",
-          "<ul>",
-          "<li>",
-          "Summary: ",
-          metricResults.summary.toString(),
-          "</li>",
-          "<li>",
-          "Fuzzy comparison: ",
-          metricResults.fuzzy != null ? metricResults.fuzzy.toString() : "No results",
-          "</li>",
-          "<li>",
-          "Histogram comparison: ",
-          metricResults.histogram != null
-              ? (
-                  metricResults.histogram.toString()
-                      + " (distance: " + metricResults.histogramDistance + ")"
-                )
-              : "No results",
-          "</li>",
-          "</ul>"
-      );
+      htmlAppendLn("<p>Reference image:</p>",
+          "<img src='/webui/file/", referencePngPath, "'>");
+
+      String pngPath = variantDir + variant + ".png";
+      File pngFile = new File(pngPath);
+
+      if (!variant.equals("reference")) {
+        if (pngFile.exists()) {
+          htmlAppendLn("<p>Result image:</p>",
+              "<img src='/webui/file/", pngPath, "'>");
+        }
+      }
+
+      String gifPath = variantDir + variant + ".gif";
+      File gifFile = new File(gifPath);
+      if (gifFile.exists()) {
+        htmlAppendLn("<p>Results non-deterministic animation:</p>",
+            "<img src='/webui/file/", gifPath, "'>",
+            "<p>Here are the second-to-last and last renderings:</p>\n",
+            "<img src='/webui/file/",
+            gifPath.replace(".gif", "_nondet2.png"),
+            "'> ",
+            "<img src='/webui/file/",
+            gifPath.replace(".gif", "_nondet1.png"),
+            "'> ");
+      }
+
+      if (!(pngFile.exists()) && !(gifFile.exists())) {
+        htmlAppendLn("<p>No image to display for this result status</p>");
+      }
+
+      htmlAppendLn("<div class='ui divider'></div>");
+
+      ImageDifferenceResultSet metricResults = getImageDiffResult(info);
+
+      if (metricResults.summary == ImageDifferenceResult.IDENTICAL
+          && status.equals("SUCCESS")
+          && !variant.equals("reference")) {
+        htmlAppendLn("<p>Images are identical.</p>");
+      }
+
+      if (metricResults.summary != ImageDifferenceResult.IDENTICAL
+          && status.equals("SUCCESS")
+          && !variant.equals("reference")) {
+
+        htmlAppendLn(
+            "Image comparison metrics:",
+            "<ul>",
+            "<li>",
+            "Summary: ",
+            metricResults.summary.toString(),
+            "</li>",
+            "<li>",
+            "Fuzzy comparison: ",
+            metricResults.fuzzy != null ? metricResults.fuzzy.toString() : "No results",
+            "</li>",
+            "<li>",
+            "Histogram comparison: ",
+            metricResults.histogram != null
+                ? (
+                metricResults.histogram.toString()
+                    + " (distance: " + metricResults.histogramDistance + ")"
+            )
+                : "No results",
+            "</li>",
+            "</ul>"
+        );
+      }
+
     }
 
 
@@ -982,12 +1098,13 @@ public class WebUi extends HttpServlet {
         "<div class='ui segment'>\n",
         "<h3>Run log</h3>\n",
         "<textarea readonly rows='25' cols='160'>");
-    htmlAppendLn(getFileContents(new File(variantDir + variant + ".txt")));
+    htmlAppendLn(getFileContents(new File(Paths.get(variantDir.toString(),
+        variant + ".txt").toString())));
     htmlAppendLn("</textarea>\n",
         "</div>");
 
     // Get result file
-    File result = new File(variantFullPathNoExtension);
+    File result = variantFullPathNoExtension.toFile();
 
     // Information/links for result
     File referenceRes = new File(result.getParentFile(), "reference.info.json");
@@ -1011,24 +1128,28 @@ public class WebUi extends HttpServlet {
       );
     }
 
-
-    String reductionHtml = "";
     final ReductionStatus reductionStatus = getReductionStatus(worker, shaderFamily, variant);
 
     htmlAppendLn("<p>Reduction status: <b>", reductionStatus.toString(), "</b></p>");
 
     if (reductionStatus == ReductionStatus.NOREDUCTION) {
-      htmlAppendLn("<button class='ui button' onclick='toggleDiv(this)'",
-          " data-hide='reduce-menu'>Reduce result</button>",
-          "<div class='reduce-menu invisible'>");
-      htmlReductionForm(
-          "shaderfamilies/" + shaderFamily + "/" + variant + ".json",
-          reductionDir.getPath(),
-          workerName,
-          referenceRes.getPath(),
-          result.getPath(),
-          status);
-      htmlAppendLn("</div>");
+
+      if (isCompute) {
+        htmlAppendLn("<p>Reductions for compute shaders are not currently supported via the"
+            + " web UI.</p>");
+      } else {
+        htmlAppendLn("<button class='ui button' onclick='toggleDiv(this)'",
+            " data-hide='reduce-menu'>Reduce result</button>",
+            "<div class='reduce-menu invisible'>");
+        htmlReductionForm(
+            "shaderfamilies/" + shaderFamily + "/" + variant + ".json",
+            reductionDir.getPath(),
+            workerName,
+            referenceRes.getPath(),
+            result.getPath(),
+            status);
+        htmlAppendLn("</div>");
+      }
     } else {
       htmlAppendLn("<p><form method='post' id='deleteReductionForm'>\n",
           "<input type='hidden' name='path' value='", reductionDir.getPath(), "'/>\n",
@@ -1363,7 +1484,7 @@ public class WebUi extends HttpServlet {
 
       // TODO(360): Handle compute shaders
       ShaderFamily shaderFamily = new ShaderFamily(shaderFamilyFile.getName());
-      if (shaderFamily.isComp) {
+      if (shaderFamily.isCompute) {
         continue;
       }
 
@@ -1921,7 +2042,7 @@ public class WebUi extends HttpServlet {
   }
 
   private void htmlVariantResultTableCell(File variantInfoFile, String referencePngPath,
-      ReductionStatus reductionStatus) throws FileNotFoundException {
+      ReductionStatus reductionStatus, boolean isCompute) throws FileNotFoundException {
 
     JsonObject info = accessFileInfo.getResultInfo(variantInfoFile);
     String status = info.get("status").getAsString();
@@ -1929,43 +2050,86 @@ public class WebUi extends HttpServlet {
 
     if (status.contentEquals("SUCCESS")) {
 
-      ImageDifferenceResult result = getImageDiffResult(info).summary;
+      if (isCompute) {
 
-      if (result == ImageDifferenceResult.IDENTICAL) {
-        htmlAppendLn("<td class='selectable center aligned'><a href='",
-            cellHref,
-            "'>",
-            "<img class='ui centered tiny image' src='/webui/file/", referencePngPath, "'></a>");
-      } else {
-        String warningClass = "wrongimg";
-        switch (result) {
-          case SIMILAR:
-            warningClass = "warnimg";
-            break;
-          case DIFFERENT:
-            warningClass = "wrongimg";
-            break;
-          case METRICS_DISAGREE:
-            warningClass = "metricsdisimg";
-            break;
-          default:
-            LOGGER.error("Unrecognized image difference result: " + result);
+        final ComputeDifferenceResult result = getComputeDiffResult(info);
+
+        if (result == ComputeDifferenceResult.IDENTICAL) {
+          htmlAppendLn("<td class='selectable center aligned'><a href='",
+              cellHref,
+              "'>",
+              "<b>MATCH</b>",
+              "</a>");
+        } else {
+          String warningClass = WARNING_CLASS_WRONG_RESULT;
+          switch (result) {
+            case SIMILAR:
+              warningClass = WARNING_CLASS_WARN_RESULT;
+              break;
+            case DIFFERENT:
+              warningClass = WARNING_CLASS_WRONG_RESULT;
+              break;
+            default:
+              LOGGER.error("Unrecognized compute difference result: " + result);
+          }
+          htmlAppendLn("<td class='",
+              warningClass,
+              " selectable center aligned'>",
+              "<a href='",
+              cellHref,
+              "'>",
+              "<b>DIFFERENCE</b>",
+              "</a>\n",
+              "<div class='ui tiny ", reductionLabelColor(reductionStatus), " label'>",
+              reductionStatus.toString(),
+              "</div>");
         }
-        htmlAppendLn("<td class='",
-            warningClass,
-            " selectable center aligned'>",
-            "<a href='",
-            cellHref,
-            "'>",
-            "<img class='wrongimg ui centered tiny image' src='/webui/file/",
-            variantInfoFile.getPath().replace(".info.json", ".png"),
-            "'></a>\n",
-            "<div class='ui tiny ", reductionLabelColor(reductionStatus), " label'>",
-            reductionStatus.toString(),
-            "</div>");
+      } else {
+
+        final ImageDifferenceResult result = getImageDiffResult(info).summary;
+
+        if (result == ImageDifferenceResult.IDENTICAL) {
+          htmlAppendLn("<td class='selectable center aligned'><a href='",
+              cellHref,
+              "'>",
+              "<img class='ui centered tiny image' src='/webui/file/", referencePngPath, "'></a>");
+        } else {
+          String warningClass = WARNING_CLASS_WRONG_RESULT;
+          switch (result) {
+            case SIMILAR:
+              warningClass = WARNING_CLASS_WARN_RESULT;
+              break;
+            case DIFFERENT:
+              warningClass = WARNING_CLASS_WRONG_RESULT;
+              break;
+            case METRICS_DISAGREE:
+              warningClass = WARNING_CLASS_METRICS_DISAGREE;
+              break;
+            default:
+              LOGGER.error("Unrecognized image difference result: " + result);
+          }
+          htmlAppendLn("<td class='",
+              warningClass,
+              " selectable center aligned'>",
+              "<a href='",
+              cellHref,
+              "'>",
+              "<img class='" + warningClass + " ui centered tiny image' "
+                  + "src='/webui/file/",
+              variantInfoFile.getPath().replace(".info.json", ".png"),
+              "'></a>\n",
+              "<div class='ui tiny ", reductionLabelColor(reductionStatus), " label'>",
+              reductionStatus.toString(),
+              "</div>");
+        }
+
       }
 
     } else if (status.contentEquals("NONDET")) {
+
+      // This code applies to image results only.  That is OK at present, as we do not check
+      // nondeterminism for compute results.  Should that change, this could will have to be
+      // re-worked.
 
       htmlAppendLn("<td class='selectable nondet center aligned'><a href='",
           cellHref,
@@ -2143,26 +2307,28 @@ public class WebUi extends HttpServlet {
   private void htmlComparativeTable(String shaderFamilyFilename, String[] workers)
       throws FileNotFoundException {
 
-    if (new ShaderFamily(shaderFamilyFilename).isComp) {
-      // TODO(360): Handle compute shaders
-      htmlAppendLn("<p>Compute shader family: ",
-          shaderFamilyFilename, ". ",
-          "The UI does not display results for compute shaders yet.",
-          " <a class='item' target='_blank' rel='noopener noreferrer'",
-          " href='", WebUiConstants.COMPUTE_SHADER_DOC_URL, "'>",
-          "See the compute shader documentation for more information.",
-          "</a></p>");
-      return;
-    }
+    final ShaderFamily shaderFamily = new ShaderFamily(shaderFamilyFilename);
+
+    // A filter for all variant shader jobs
+    final FilenameFilter variantShaderJobFilter =
+        (dir, name) -> name.startsWith("variant_") && name.endsWith(".json");
 
     htmlAppendLn("<table class='ui celled compact collapsing table'>\n",
         "<thead><tr>");
-    File variantsDir = new File(WebUiConstants.SHADER_FAMILIES_DIR + "/" + shaderFamilyFilename);
-    File[] variantFragFiles = variantsDir.listFiles(variantFragFilter);
-    Arrays.sort(variantFragFiles, (f1, f2) ->
+    final File variantsDir = new File(WebUiConstants.SHADER_FAMILIES_DIR, shaderFamilyFilename);
+    File[] variantShaderJobFiles = variantsDir.listFiles(variantShaderJobFilter);
+    if (variantShaderJobFiles == null) {
+      // If no variant shader job files are found, the array reference will be null; set it to an
+      // empty array so that we can render a table with references only.
+      variantShaderJobFiles = new File[0];
+    }
+
+    Arrays.sort(variantShaderJobFiles, (f1, f2) ->
         new AlphanumComparator().compare(f1.getName(), f2.getName()));
 
     boolean showWorkerNames = workers.length > 1;
+
+    final String extension = shaderFamily.isCompute ? "comp" : "frag";
 
     // First row: variant names
     if (showWorkerNames) {
@@ -2173,14 +2339,14 @@ public class WebUi extends HttpServlet {
         WebUiConstants.SHADER_FAMILIES_DIR,
         "/",
         shaderFamilyFilename,
-        "/reference.frag",
+        "/reference." + extension,
         "'>",
         "reference",
         "</a></th>");
-    for (File f: variantFragFiles) {
+    for (File f: variantShaderJobFiles) {
       htmlAppendLn("<th class='selectable center aligned'>",
           "<a href='/webui/shader/", f.getPath(), "'>",
-          f.getName().replace(".frag", ""), "</a></th>");
+          FilenameUtils.removeExtension(f.getName()), "</a></th>");
     }
     htmlAppendLn("</tr></thead>\n",
         "<tbody>");
@@ -2192,12 +2358,10 @@ public class WebUi extends HttpServlet {
         htmlAppendLn("<td>", worker, "</td>");
       }
 
-      // Reference result is separate as it doesn't contain a "identical" field, etc
-      // FIXME: make sure reference result has same format as variants to be able to refactor
-      String refHref = WebUiConstants.WORKER_DIR + "/" + worker + "/"
+      final String refHref = WebUiConstants.WORKER_DIR + "/" + worker + "/"
           + shaderFamilyFilename + "/reference";
-      File refInfoFile = new File(refHref + ".info.json");
-      String refPngPath = refHref + ".png";
+      final File refInfoFile = new File(refHref + ".info.json");
+      final String refPngPath = refHref + ".png";
 
       htmlAppendLn("<td ");
       if (refInfoFile.exists()) {
@@ -2206,8 +2370,14 @@ public class WebUi extends HttpServlet {
         if (refStatus.contentEquals("SUCCESS")) {
           htmlAppendLn("class='selectable center aligned'><a href='/webui/result/",
               refHref,
-              "'>",
-              "<img class='ui centered tiny image' src='/webui/file/", refPngPath, "'></a>");
+              "'>");
+          if (shaderFamily.isCompute) {
+            htmlAppendLn("<b>COMPUTE</b>");
+
+          } else {
+            htmlAppendLn("<img class='ui centered tiny image' src='/webui/file/", refPngPath, "'>");
+          }
+          htmlAppendLn("</a>");
         } else {
           htmlAppendLn("<td class='gfz-error bound-cell-width selectable center aligned'>",
               "<a href='/webui/result/",
@@ -2220,15 +2390,17 @@ public class WebUi extends HttpServlet {
       }
       htmlAppendLn("</td>");
 
-      for (File f : variantFragFiles) {
-        File infoFile = new File(WebUiConstants.WORKER_DIR + "/" + worker
-            + "/" + shaderFamilyFilename + "/" + f.getName().replace(".frag", ".info.json"));
+      for (File f : variantShaderJobFiles) {
+        final String filenameWithoutExtension = FilenameUtils.removeExtension(f.getName());
+        File infoFile = new File(WebUiConstants.WORKER_DIR,
+            Paths.get(worker, shaderFamilyFilename, filenameWithoutExtension + ".info.json")
+            .toString());
 
         if (infoFile.isFile()) {
           ReductionStatus reductionStatus = getReductionStatus(worker, shaderFamilyFilename,
-              infoFile.getName().replace(".info.json", ""));
+              filenameWithoutExtension);
 
-          htmlVariantResultTableCell(infoFile, refPngPath, reductionStatus);
+          htmlVariantResultTableCell(infoFile, refPngPath, reductionStatus, shaderFamily.isCompute);
         } else {
           htmlAppendLn("<td class='bound-cell-width center aligned'>No result yet</td>");
         }
@@ -2246,15 +2418,15 @@ public class WebUi extends HttpServlet {
         "<tbody>",
         "<tr><td class=''></td>",
         "<td>Variant is identical to reference</td></tr>",
-        "<tr><td class='wrongimg'></td>",
+        "<tr><td class='" + WARNING_CLASS_WRONG_RESULT + "'></td>",
         "<td>Variant is significantly different from reference</td></tr>",
-        "<tr><td class='warnimg'></td>",
+        "<tr><td class='" + WARNING_CLASS_WARN_RESULT + "'></td>",
         "<td>Variant is similar but not identical to reference</td></tr>",
         "<tr><td class='gfz-error'></td>",
         "<td>Rendering the variant led to an error</td></tr>",
         "<tr><td class='nondet'></td>",
         "<td>Variant leads to non-deterministic rendering</td></tr>",
-        "<tr><td class='metricsdisimg'></td>",
+        "<tr><td class='" + WARNING_CLASS_METRICS_DISAGREE + "'></td>",
         "<td>The image comparison metrics used to compare variant and reference ",
         "disagree on whether they are different or not</td></tr>",
         "</tbody>",

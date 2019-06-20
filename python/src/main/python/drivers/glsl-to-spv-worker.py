@@ -235,6 +235,7 @@ def do_image_job(
                     is_android=(args.target == 'android'),
                     skip_render=skip_render,
                     spirv_opt_args=resolved_spirvopt_args,
+                    use_amberscript=True
                 )
         except Exception as ex:
             runspv.log('Exception: ' + str(ex))
@@ -330,6 +331,7 @@ def do_compute_job(
                 is_android=(args.target == 'android'),
                 skip_render=comp_job.skipRender,
                 spirv_opt_args=spirv_opt_args,
+                use_amberscript=True
             )
         except Exception as ex:
             runspv.log('Exception: ' + str(ex))

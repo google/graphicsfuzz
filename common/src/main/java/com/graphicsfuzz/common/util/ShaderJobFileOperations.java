@@ -37,6 +37,7 @@ import com.graphicsfuzz.shadersets.ShaderDispatchException;
 import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
+import com.graphicsfuzz.util.ToolPaths;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -50,6 +51,7 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -786,7 +788,7 @@ public class ShaderJobFileOperations {
   public void writeShaderResultToFile(
       ImageJobResult shaderResult,
       File shaderResultFile,
-      Optional<File> referenceShaderResultFile) throws IOException {
+      Optional<File> referenceShaderResultFile) throws InterruptedException, IOException {
 
     writeShaderResultToFileHelper(
         shaderResult,
@@ -1165,16 +1167,29 @@ public class ShaderJobFileOperations {
       ImageJobResult shaderResult,
       File shaderJobResultFile,
       ShaderJobFileOperations fileOps,
-      Optional<File> referenceShaderResultFile) throws IOException {
+      Optional<File> referenceShaderResultFile) throws InterruptedException, IOException {
 
     assertIsShaderJobResultFile(shaderJobResultFile);
 
     String shaderJobResultNoExtension =
         FileHelper.removeEnd(shaderJobResultFile.toString(), ".info.json");
 
-    // Special case: compute shader job.
+    // Write the log component of the result to a text file, for easy viewing.
+    if (shaderResult.isSetLog()) {
+      fileOps.writeStringToFile(
+          new File(shaderJobResultNoExtension + ".txt"),
+          shaderResult.getLog());
+    }
 
+    // Special case: compute shader job.
     if (shaderResult.isSetComputeOutputs()) {
+
+      // In addition to a status and log, results for a compute shader job have:
+      // - an "outputs" property, which maps to a dictionary representing the results
+      //   that were obtained by running the shader;
+      // - (if reference result is present) a "comparison_with_reference" property
+      //   describing whether or not the computed results exactly or nearly match those
+      //   for the reference.
 
       JsonObject infoJson = new JsonObject();
       if (shaderResult.isSetStatus()) {
@@ -1188,20 +1203,70 @@ public class ShaderJobFileOperations {
             "outputs", new Gson().fromJson(shaderResult.getComputeOutputs(), JsonObject.class));
       }
 
+      // We write out the .info.json file now, so that the Python tooling for diffing compute
+      // shader results can be invoked on it if needed.
       fileOps.writeStringToFile(
-          new File(shaderJobResultNoExtension + ".info.json"),
+          shaderJobResultFile,
+          infoJson.toString());
+
+      if (referenceShaderResultFile.isPresent()) {
+
+        // We have reference results, so can populate the "comparison_with_reference" property.
+
+        // This maps to a dictionary with up to 4 keys:
+        // - "exact_match", true if and only if the results are identical
+        // - "exactdiff_output", populated only if "exact_match" is false, with the result of
+        //   exact diffing
+        // - "fuzzy_match", present only if "exact_match" is false, and then true if and only if
+        //   the results are similar
+        // - "fuzzydiff_output", present only if "fuzzy_diff" is set, with the result of
+        //   fuzzy diffing.
+
+        final JsonObject computeShaderComparisonWithReference = new JsonObject();
+
+        // Check whether the results exactly match those of the reference.
+
+        final ExecResult exactDiffResult =
+            fileOps.runPythonDriver(ExecHelper.RedirectType.TO_BUFFER,
+            null,
+            "inspect-compute-results",
+            "exactdiff",
+            referenceShaderResultFile.get().getAbsolutePath(),
+            shaderJobResultFile.getAbsolutePath());
+        computeShaderComparisonWithReference.addProperty("exact_match",
+            exactDiffResult.res == 0);
+
+        if (exactDiffResult.res != 0) {
+
+          // In the case that we do not have an exact match, store the output obtained by exact
+          // diffing (as it may be useful to inspect).
+          computeShaderComparisonWithReference.addProperty("exactdiff_output",
+              exactDiffResult.stderr.toString());
+
+          // Now perform a fuzzy diff.
+          final ExecResult fuzzyDiffResult =
+              fileOps.runPythonDriver(ExecHelper.RedirectType.TO_BUFFER,
+              null,
+              "inspect-compute-results",
+              "fuzzydiff",
+              referenceShaderResultFile.get().getAbsolutePath(),
+              shaderJobResultFile.getAbsolutePath());
+          computeShaderComparisonWithReference.addProperty("fuzzy_match",
+              fuzzyDiffResult.res == 0);
+          computeShaderComparisonWithReference.addProperty("fuzzydiff_output",
+              fuzzyDiffResult.stderr.toString());
+        }
+        infoJson.add("comparison_with_reference", computeShaderComparisonWithReference);
+      }
+
+      fileOps.writeStringToFile(
+          shaderJobResultFile,
           infoJson.toString());
 
       return;
     }
 
     final File outputImage = new File(shaderJobResultNoExtension + ".png");
-
-    if (shaderResult.isSetLog()) {
-      fileOps.writeStringToFile(
-          new File(shaderJobResultNoExtension + ".txt"),
-          shaderResult.getLog());
-    }
 
     if (shaderResult.isSetPNG()) {
       fileOps.writeByteArrayToFile(outputImage, shaderResult.getPNG());
@@ -1242,7 +1307,6 @@ public class ShaderJobFileOperations {
         gifOutput.close();
       } catch (Exception err) {
         LOGGER.error("Error while creating GIF for nondet");
-        err.printStackTrace();
       }
     }
 
@@ -1265,6 +1329,28 @@ public class ShaderJobFileOperations {
     fileOps.writeStringToFile(
         shaderJobResultFile,
         JsonHelper.jsonToString(infoObject));
+  }
+
+  /**
+   * Runs a GraphicsFuzz Python driver script, from the python/drivers directory.
+   * @param redirectType Determines where output is redirected to.
+   * @param directory Working directory; set to null if current directory is fine.
+   * @param driverName Name of the Python driver, with no extension.
+   * @param driverArgs Arguments to be passed to the Python driver.
+   * @return the result of executing the Python driver.
+   * @throws IOException if something IO-related goes wrong.
+   * @throws InterruptedException if something goes wrong running the driver command.
+   */
+  public ExecResult runPythonDriver(ExecHelper.RedirectType redirectType, File directory,
+                                      String driverName, String... driverArgs) throws IOException,
+      InterruptedException {
+    final String[] execArgs = new String[driverArgs.length + 1];
+    execArgs[0] = Paths.get(ToolPaths.getPythonDriversDir(), driverName).toString()
+        + (System.getProperty("os.name").startsWith("Windows") ? ".bat" : "");
+    System.arraycopy(driverArgs, 0, execArgs, 1, driverArgs.length);
+    return new ExecHelper().exec(redirectType,
+        directory, false,
+        execArgs);
   }
 
   /**
