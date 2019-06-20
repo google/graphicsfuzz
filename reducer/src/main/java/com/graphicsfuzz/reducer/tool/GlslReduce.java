@@ -46,6 +46,7 @@ import com.graphicsfuzz.util.ArgsUtil;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -78,9 +79,9 @@ public class GlslReduce {
         .description("glsl-reduce takes a shader job `SHADER_JOB.json` "
             + "(a .json file alongside shader files with the same name, such as SHADER_JOB.frag "
             + "and/or SHADER_JOB.vert or SHADER_JOB.comp), "
-            + "as well as further arguments or options to specify the interestingness test."
-            + "glsl-reduce will try to simplify the given shader to a smaller,"
-            + "simpler shader that is still deemed \"interesting\".");
+            + "as well as further arguments or options to specify the interestingness test. "
+            + "glsl-reduce will try to simplify the shaders to smaller, simpler shaders that are "
+            + "still deemed \"interesting\".");
 
     // Required arguments
     parser.addArgument("shader-job")
@@ -89,11 +90,17 @@ public class GlslReduce {
 
     // Optional positional argument
     parser.addArgument("interestingness-test")
-        .help("Path to an executable shell script that should decide whether a shader job is "
-            + "interesting.  Only allowed (and then also required) when performing a custom "
-            + "reduction, which is the default.")
-        .nargs("?")
-        .type(File.class);
+        .help("A command to execute (plus any fixed arguments) to determine "
+            + "whether a shader job is interesting.  The command will typically compile and/or "
+            + "run the shader job and check some property.  An exit status of 0 indicates that the "
+            + "shader job is interesting.  The shader job will be passed as an argument "
+            + "(after any fixed arguments). Only allowed (and then also required) when performing "
+            + "a custom reduction, which is the default. Use -- to ensure all command line "
+            + "arguments that follow are parsed as positional arguments. "
+            + "E.g.\n"
+            + "glsl-reduce --preserve-semantics -- shader_job.json is-interesting --run-on-android")
+        .nargs("*")
+        .type(String.class);
 
     parser.addArgument("--reduction-kind")
           .help("Kind of reduction to be performed.  Options are:\n"
@@ -112,10 +119,10 @@ public class GlslReduce {
                 + "     Reduces while histogram difference between produced image and "
                 + "reference is above a threshold.\n"
                 + "   " + ReductionKind.VALIDATOR_ERROR
-                + "     Reduces while validator gives a particular error\n"
+                + "     Reduces while validator gives a particular error.\n"
                 + "   " + ReductionKind.ALWAYS_REDUCE
-                + "       Always reduces (useful for testing)\n")
-          .setDefault("CUSTOM")
+                + "       Always reduces (useful for testing).\n")
+          .setDefault(ReductionKind.CUSTOM.toString())
           .type(String.class);
 
     parser.addArgument("--output")
@@ -310,7 +317,7 @@ public class GlslReduce {
 
       final File referenceResultFile = ns.get("reference");
 
-      final File customJudgeScript = ns.get("interestingness_test");
+      final List<String> customJudgeScript = ns.get("interestingness_test");
 
       if (reductionKind == ReductionKind.CUSTOM) {
         if (server != null) {
@@ -325,15 +332,21 @@ public class GlslReduce {
         if (referenceResultFile != null) {
           throwExceptionForCustomReduction("reference");
         }
-        if (customJudgeScript == null) {
+        if (customJudgeScript.isEmpty()) {
           throw new RuntimeException("A custom reduction requires an interestingness test to be "
               + "specified.");
         }
-        if (!customJudgeScript.canExecute()) {
+
+        // Sanity check that the custom judge script is executable. However, don't fail if the
+        // script can't be found, as the script/tool could be on the PATH.
+        File scriptFile = new File(customJudgeScript.get(0));
+        if (scriptFile.exists() && !scriptFile.canExecute()) {
           throw new RuntimeException("Custom judge script must be executable.");
         }
       } else {
-        if (customJudgeScript != null) {
+        // Not a custom reduction.
+
+        if (!customJudgeScript.isEmpty()) {
           throw new RuntimeException("An interestingness test is only supported when a custom "
               + "reduction is used.");
         }
@@ -380,7 +393,7 @@ public class GlslReduce {
       switch (reductionKind) {
         case CUSTOM:
           fileJudge =
-                new CustomFileJudge(customJudgeScript, workDir);
+                new CustomFileJudge(customJudgeScript);
           break;
         case NO_IMAGE:
           fileJudge =
