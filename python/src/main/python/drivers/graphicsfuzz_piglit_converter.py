@@ -187,7 +187,7 @@ def get_shader_from_job(shader_job: str) -> str:
     :param shader_job: the path of the shader job file.
     :return: the path of the fragment shader file.
     """
-    return remove_end(shader_job, '.json') + '.frag'
+    return runspv.remove_end(shader_job, '.json') + '.frag'
 
 
 def get_shader_test_from_job(shader_job: str) -> str:
@@ -196,7 +196,7 @@ def get_shader_test_from_job(shader_job: str) -> str:
     :param shader_job: the path of the shader job file.
     :return: the path of the shader_test file.
     """
-    return remove_end(shader_job, '.json') + '.shader_test'
+    return runspv.remove_end(shader_job, '.json') + '.shader_test'
 
 
 def main_helper(args: List[str]) -> None:
