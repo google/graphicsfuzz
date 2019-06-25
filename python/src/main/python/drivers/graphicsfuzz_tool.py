@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2019 The GraphicsFuzz Project Authors
+# Copyright 2018 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import graphicsfuzz_tool
+import os
+import subprocess
 import sys
 
-try:
-    sys.exit(graphicsfuzz_tool.main_helper(sys.argv[1:]))
-except ValueError as value_error:
-    sys.stderr.write(str(value_error))
-    sys.exit(1)
+HERE = os.path.abspath(__file__)
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))
+
+import cmd_helpers
+
+
+def main_helper(argv):
+    java_tool_path = cmd_helpers.get_tool_path()
+    print(java_tool_path)
+
+    # Run the tool
+
+    cmd = ["java", "-ea", "-cp", java_tool_path] + argv
+    print(cmd)
+
+    generate_proc = subprocess.Popen(cmd)
+    generate_proc.communicate()
+    return generate_proc.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main_helper(sys.argv[1:]))

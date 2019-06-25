@@ -327,21 +327,37 @@ def remove_end(str_in: str, str_end: str):
     return str_in[:-len(str_end)]
 
 
+# Runs spirv-opt on |spv_file| with arguments |spirv_opt_args|.  The optimized binary file is
+# |output|.
 def run_spirv_opt(
     spv_file: str,
-    spirv_opt_args: List[str]
-) -> str:
+    spirv_opt_args: List[str],
+    output: str
+) -> None:
 
     log('Running optimizer.')
 
-    result = spv_file + '.opt.spv'
-
-    cmd = [spirvopt_path(), spv_file, '-o', result]
+    cmd = [spirvopt_path(), spv_file, '-o', output]
     cmd += spirv_opt_args
 
     subprocess_helper(cmd, timeout=TIMEOUT_SPIRV_OPT_SECONDS)
 
-    return result
+
+# Runs glslangValidator on |glsl_shader| to convert it to SPIR-V.  The resulting SPIR-V file is
+# |output|.
+def convert_glsl_to_spv(
+    glsl_shader: str,
+    output: str
+) -> None:
+
+    log('Running glslangValidator.')
+
+    cmd = [
+        glslang_path(),
+        '-V', glsl_shader,
+        '-o', output
+    ]
+    subprocess_helper(cmd, timeout=TIMEOUT_RUN)
 
 
 def filename_extension_suggests_glsl(file: str):
@@ -408,7 +424,9 @@ def prepare_shader(
     assert len(result) > 0
 
     if spirv_opt_args:
-        result = run_spirv_opt(result, spirv_opt_args)
+        optimized_spv = result + '.opt.spv'
+        run_spirv_opt(result, spirv_opt_args, optimized_spv)
+        result = optimized_spv
 
     return result
 
@@ -430,7 +448,7 @@ TIMEOUT_APP = 30
 def adb_helper(
     adb_args: List[str],
     check: bool,
-    verbose: bool=False
+    verbose: bool = False
 ) -> subprocess.CompletedProcess:
 
     adb_cmd = [adb_path()] + adb_args
@@ -445,7 +463,7 @@ def adb_helper(
 
 def adb_check(
     adb_args: List[str],
-    verbose: bool=False
+    verbose: bool = False
 ) -> subprocess.CompletedProcess:
 
     return adb_helper(adb_args, check=True, verbose=verbose)
@@ -453,7 +471,7 @@ def adb_check(
 
 def adb_can_fail(
     adb_args: List[str],
-    verbose: bool=False
+    verbose: bool = False
 ) -> subprocess.CompletedProcess:
 
     return adb_helper(adb_args, check=False, verbose=verbose)

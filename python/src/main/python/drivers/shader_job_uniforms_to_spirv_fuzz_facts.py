@@ -16,8 +16,8 @@
 
 import argparse
 import json
-import os
 import struct
+import sys
 from typing import Any, Dict, List
 
 import runspv
@@ -25,7 +25,7 @@ import runspv
 
 # Turns a GraphicsFuzz .json file into a spirv-fuzz .facts file, with one fact per word of uniform
 # data.
-def main() -> None:
+def main_helper(args) -> None:
     parser = argparse.ArgumentParser()
 
     # Required arguments
@@ -33,7 +33,11 @@ def main() -> None:
         'shader_job',
         help='Shader job (.json) file.')
 
-    args = parser.parse_args()
+    parser.add_argument(
+        'output_file',
+        help='Output file for facts.')
+
+    args = parser.parse_args(args)
 
     # Generate uniform facts from .json file
     fact_list = []  # type: List[dict]
@@ -79,9 +83,9 @@ def main() -> None:
                 constantWord=[int_representation])
             fact_list.append(dict(constantUniformFact=fact_constant_uniform))
 
-    with open(os.path.splitext(args.shader_job)[0] + ".facts", "w") as f:
+    with open(args.output_file, "w") as f:
         f.write(json.dumps(dict(fact=fact_list), indent=1, sort_keys=True))
 
 
 if __name__ == '__main__':
-    main()
+    main_helper(sys.argv[1:])
