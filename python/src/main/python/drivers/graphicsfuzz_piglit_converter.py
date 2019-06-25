@@ -63,7 +63,7 @@ UNIFORM_DEC = 'uniform'
 def make_shader_test_string(shader_job: str) -> str:
     """
     Makes a piglit shader_test from a shader job and shader.
-    :param shader_job: The path to the shader job file
+    :param shader_job: The path to the shader job file.
     :return: the shader_test
     """
     shader_job_json_parsed = get_json_properties(shader_job)
@@ -131,38 +131,37 @@ def make_fragment_shader_header(fragment_shader: str) -> str:
 
 def make_test_header(shader_job_json_parsed: dict) -> str:
     """
-    Creates the [test] header. Loads uniforms based on the uniforms found in the shader.
-    Note that piglit really doesn't like it if you try to load a uniform that isn't actually
-    used in the shader - because of this, we actually have to parse the shader itself and
-    find out which uniforms are being used instead of blindly pasting from the shader job JSON file.
+    Creates the [test] header. Loads uniforms based on the uniforms found in the JSON file.
     :param shader_job_json_parsed: the parsed JSON properties.
     :return: the shader_test test header string.
     """
     test_header = TEST_HEADER + '\n'
-    for key, value in shader_job_json_parsed.items():
-        test_header += UNIFORM_DEC + ' '
-        uniform_type = value['func']
-        if uniform_type not in UNIFORM_TYPES.keys():
-            raise AssertionError('Unknown uniform type: ' + uniform_type)
-        test_header += UNIFORM_TYPES[uniform_type] + ' ' + str(key) + ' '
-        test_header += str(value['args'][0:]).strip('[]').replace(',', '') + '\n'
+    for uniform_name, value in shader_job_json_parsed.items():
+        test_header += UNIFORM_DEC + ' {type} {uniform_name} {args}\n'.format(
+            type=get_uniform_type_from_gl_func(value['func']),
+            uniform_name=uniform_name,
+            args=' '.join([str(arg) for arg in value['args']])
+        )
     test_header += DRAW_COMMAND
     return test_header
 
 
-def is_uniform(line: str) -> bool:
+def get_uniform_type_from_gl_func(func: str) -> str:
     """
-    Helper function to see if a given string is a GLSL uniform declaration.
-    :param line: the line to check
-    :return: True if the line is a uniform declaration, False otherwise.
+    Helper function to traverse the dict of JSON funcs to determine a uniform's type.
+    Throws AssertionError if the uniform type is not known.
+    :param func: the function to check.
+    :return: the GLSL type of the uniform.
     """
-    return 'uniform' in line
+    if func not in UNIFORM_TYPES.keys():
+        raise AssertionError('Unknown uniform type: ' + func)
+    return UNIFORM_TYPES[func]
 
 
 def is_version_header(line: str) -> bool:
     """
     Helper function to see if a given string is a GLSL preprocessor version string.
-    :param line: the line of code to check
+    :param line: the line of code to check.
     :return: True if the string is a GLSL preprocessor version string, False otherwise.
     """
     return SHADER_VERSION_FLAG in line
@@ -185,26 +184,37 @@ def get_json_properties(shader_job: str) -> List:
 def get_shader_from_job(shader_job: str) -> str:
     """
     Helper function to get the filename of a shader file from its corresponding shader job.
-    :param shader_job: the path of the shader job file
+    :param shader_job: the path of the shader job file.
     :return: the path of the fragment shader file.
     """
-    return shader_job.split('.')[0] + '.frag'
+    return remove_end(shader_job, '.json') + '.frag'
 
 
 def get_shader_test_from_job(shader_job: str) -> str:
     """
     Helper function to get the filename of the new shader test from the given shader job.
-    :param shader_job: the path of the shader job file
-    :return: the path of the shader_test file
+    :param shader_job: the path of the shader job file.
+    :return: the path of the shader_test file.
     """
-    return shader_job.split('.')[0] + '.shader_test'
+    return remove_end(shader_job, '.json') + '.shader_test'
+
+
+def remove_end(str_in: str, str_end: str) -> str:
+    """
+    Helper function to remove the file suffix of a path. Imported from runspv.py.
+    :param str_in: the string to remove the end from.
+    :param str_end: the end of the string.
+    :return: str_in with the end of the string removed.
+    """
+    assert str_in.endswith(str_end), 'Expected {} to end with {}'.format(str_in, str_end)
+    return str_in[:-len(str_end)]
 
 
 def main_helper(args: List[str]) -> None:
     """
     Main function. Parses arguments, delegates to other functions to write the shader_test string,
     and writes the string to file.
-    :param args: the command line arguments
+    :param args: the command line arguments.
     """
     description = (
         'Given a GraphicsFuzz shader job JSON file, produce a Mesa piglit shader_test file. '
