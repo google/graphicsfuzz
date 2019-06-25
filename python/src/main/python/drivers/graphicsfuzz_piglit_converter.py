@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import runspv
 import argparse
 import json
-import os
 from typing import List
 
 # Note: We define a 'shader job' as the JSON file of a GraphicsFuzz shader.
@@ -197,17 +197,6 @@ def get_shader_test_from_job(shader_job: str) -> str:
     :return: the path of the shader_test file.
     """
     return remove_end(shader_job, '.json') + '.shader_test'
-
-
-def remove_end(str_in: str, str_end: str) -> str:
-    """
-    Helper function to remove the file suffix of a path. Imported from runspv.py.
-    :param str_in: the string to remove the end from.
-    :param str_end: the end of the string.
-    :return: str_in with the end of the string removed.
-    """
-    assert str_in.endswith(str_end), 'Expected {} to end with {}'.format(str_in, str_end)
-    return str_in[:-len(str_end)]
 
 
 def main_helper(args: List[str]) -> None:
