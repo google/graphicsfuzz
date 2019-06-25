@@ -46,6 +46,18 @@ ES_SPECIFIER = ' es'
 # GLSL version headers specify a version without a decimal point, when piglit takes a version
 # string with a decimal point. The easiest way of getting this is by dividing by 100.
 SHADER_VERSION_FACTOR = 100
+# Uniform types to be found in the JSON.
+UNIFORM_TYPES = {
+    'glUniform1i': 'int',
+    'glUniform2i': 'ivec2',
+    'glUniform3i': 'ivec3',
+    'glUniform4i': 'ivec4',
+    'glUniform1f': 'float',
+    'glUniform2f': 'vec2',
+    'glUniform3f': 'vec3',
+    'glUniform4f': 'vec4',
+}
+UNIFORM_DEC = 'uniform'
 
 
 def make_shader_test_string(shader_job: str) -> str:
@@ -68,7 +80,7 @@ def make_shader_test_string(shader_job: str) -> str:
     shader_test_string += make_require_header(shader_version_header) + '\n'
     shader_test_string += make_vertex_shader_header() + '\n'
     shader_test_string += make_fragment_shader_header(shader_file_string) + '\n'
-    shader_test_string += make_test_header(shader_job_json_parsed, shader_lines)
+    shader_test_string += make_test_header(shader_job_json_parsed)
 
     return shader_test_string
 
@@ -117,36 +129,25 @@ def make_fragment_shader_header(fragment_shader: str) -> str:
     return frag_header
 
 
-def make_test_header(shader_job_json_parsed: List, shader_lines: List) -> str:
+def make_test_header(shader_job_json_parsed: dict) -> str:
     """
     Creates the [test] header. Loads uniforms based on the uniforms found in the shader.
     Note that piglit really doesn't like it if you try to load a uniform that isn't actually
     used in the shader - because of this, we actually have to parse the shader itself and
     find out which uniforms are being used instead of blindly pasting from the shader job JSON file.
     :param shader_job_json_parsed: the parsed JSON properties.
-    :param shader_lines: the shader code parsed into a list.
     :return: the shader_test test header string.
     """
     test_header = TEST_HEADER + '\n'
-    uniforms_in_shader = get_uniforms_from_shader(shader_lines)
-    for dec in uniforms_in_shader:
-        dec = dec.strip(';')
-        test_header += dec + ' '
-        variable_name = dec.split(' ')[-1]
-        if variable_name not in shader_job_json_parsed:
-            raise IOError('Malformed shader job - ' + dec + ' not found in job.')
-        uniform_args = shader_job_json_parsed.get(variable_name).get('args')
-        test_header += str(uniform_args[0:]).strip('[]').replace(',', '') + '\n'
+    for key, value in shader_job_json_parsed.items():
+        test_header += UNIFORM_DEC + ' '
+        uniform_type = value['func']
+        if uniform_type not in UNIFORM_TYPES.keys():
+            raise AssertionError('Unknown uniform type: ' + uniform_type)
+        test_header += UNIFORM_TYPES[uniform_type] + ' ' + str(key) + ' '
+        test_header += str(value['args'][0:]).strip('[]').replace(',', '') + '\n'
     test_header += DRAW_COMMAND
     return test_header
-
-
-def get_uniforms_from_shader(shader_lines: List) -> List:
-    """
-    :param shader_lines: the shader code parsed into a list
-    :return: a list of all uniform declarations in the shader
-    """
-    return (line for line in shader_lines if is_uniform(line))
 
 
 def is_uniform(line: str) -> bool:
