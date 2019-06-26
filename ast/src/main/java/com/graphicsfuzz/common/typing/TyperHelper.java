@@ -654,59 +654,7 @@ public final class TyperHelper {
 
     // 8.5: Geometric Functions
 
-    {
-      final String name = "length";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, t);
-      }
-    }
-
-    {
-      final String name = "distance";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, t, t);
-      }
-    }
-
-    {
-      final String name = "dot";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, t, t);
-      }
-    }
-
-    {
-      final String name = "cross";
-      addBuiltin(builtinsForVersion, name, BasicType.VEC3, BasicType.VEC3, BasicType.VEC3);
-    }
-
-    {
-      final String name = "normalize";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-
-    {
-      final String name = "faceforward";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t, t);
-      }
-    }
-
-    {
-      final String name = "reflect";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t);
-      }
-    }
-
-    {
-      final String name = "refract";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t, BasicType.FLOAT);
-      }
-    }
+    getBuiltinsForGlslVersionGeometric(builtinsForVersion);
 
     // 8.6: Matrix Functions
 
@@ -1270,6 +1218,69 @@ public final class TyperHelper {
       addBuiltin(builtinsForVersion, name, BasicType.MAT2X2, BasicType.MAT2X2);
       addBuiltin(builtinsForVersion, name, BasicType.MAT3X3, BasicType.MAT3X3);
       addBuiltin(builtinsForVersion, name, BasicType.MAT4X4, BasicType.MAT4X4);
+    }
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Geometric Functions,
+   * as specified in section 8.5 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   */
+  private static void getBuiltinsForGlslVersionGeometric(
+      Map<String, List<FunctionPrototype>> builtinsForVersion) {
+    {
+      final String name = "length";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, t);
+      }
+    }
+
+    {
+      final String name = "distance";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, t, t);
+      }
+    }
+
+    {
+      final String name = "dot";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, t, t);
+      }
+    }
+
+    {
+      final String name = "cross";
+      addBuiltin(builtinsForVersion, name, BasicType.VEC3, BasicType.VEC3, BasicType.VEC3);
+    }
+
+    {
+      final String name = "normalize";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "faceforward";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, t);
+      }
+    }
+
+    {
+      final String name = "reflect";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t);
+      }
+    }
+
+    {
+      final String name = "refract";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, BasicType.FLOAT);
+      }
     }
   }
 
