@@ -228,8 +228,6 @@ public final class OpaqueExpressionGenerator {
                   operator)));
     } else {
       // We're going to shift twice in opposite directions by the same value.
-      final Expr shiftBackValue = generator.nextBoolean() ? shiftValue.clone()
-          : makeClampedFuzzedExpr(type, constContext, depth, fuzzer, maxValue);
       return Optional.of(
           new ParenExpr(
               new BinaryExpr(
@@ -238,7 +236,7 @@ public final class OpaqueExpressionGenerator {
                           makeOpaqueOne(type, constContext, depth, fuzzer),
                           shiftValue,
                           BinOp.SHL)),
-                  shiftBackValue,
+                  shiftValue.clone(),
                   BinOp.SHR)));
     }
   }
