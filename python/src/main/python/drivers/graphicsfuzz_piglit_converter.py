@@ -36,6 +36,7 @@ DRAW_COMMAND = 'draw rect -1 -1 2 2'
 
 # Strings used to specify the GL version to use in a piglit test's
 # [require] header.
+GLES_VERSION_STRING = 'GL ES >= '
 GLSL_VERSION_STRING = 'GLSL >= '
 GLSLES_VERSION_STRING = 'GLSL ES >= '
 
@@ -97,14 +98,19 @@ def make_require_header(shader_version_header: str) -> str:
     require_header = REQUIRE_HEADER + '\n'
     # Piglit requires a version number with 1 digit of precision for the GL version, and
     # 2 digits of precision for the GLSL version.
-    require_header += GLSLES_VERSION_STRING if ES_SPECIFIER in shader_version_header \
-        else GLSL_VERSION_STRING
     try:
         shader_version = shader_version_header.split(' ')[1]
     except IndexError:
         raise IOError('Malformed shader - invalid GLSL version string.')
     if not shader_version.isdigit():
         raise IOError('Malformed shader - invalid GLSL version string.')
+    # Piglit requires GL version to be specified explicitly if ES is in use.
+    if ES_SPECIFIER in shader_version_header:
+        require_header += GLES_VERSION_STRING + \
+            format(float(shader_version) / SHADER_VERSION_FACTOR, '.1f') + '\n'
+        require_header += GLSLES_VERSION_STRING
+    else:
+        require_header += GLSL_VERSION_STRING
     require_header += format(float(shader_version) / SHADER_VERSION_FACTOR, '.2f') + '\n'
     return require_header
 
