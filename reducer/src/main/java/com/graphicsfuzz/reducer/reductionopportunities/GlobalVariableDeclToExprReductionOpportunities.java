@@ -52,11 +52,12 @@ import java.util.List;
 
 public class GlobalVariableDeclToExprReductionOpportunities
     extends ReductionOpportunitiesBase<GlobalVariableDeclToExprReductionOpportunity> {
-  private final List<VariablesDeclaration> globalVariableDecl = new ArrayList<>();
+  private final List<VariablesDeclaration> globalVariableDecl;
 
   public GlobalVariableDeclToExprReductionOpportunities(TranslationUnit tu,
                                                         ReducerContext context) {
     super(tu, context);
+    globalVariableDecl = new ArrayList<>();
   }
 
   /**
@@ -107,10 +108,8 @@ public class GlobalVariableDeclToExprReductionOpportunities
     // We consider only the global variable declarations with the initializer that have been
     // found before main function.
     if (functionDefinition.getPrototype().getName().equals("main")) {
-      for (int i = globalVariableDecl.size() - 1; i >= 0; i--) {
-        final VariablesDeclaration variablesDeclaration = globalVariableDecl.get(i);
-        for (int j = variablesDeclaration.getDeclInfos().size() - 1; j >= 0; j--) {
-          final VariableDeclInfo variableDeclInfo = variablesDeclaration.getDeclInfo(j);
+      for (VariablesDeclaration variablesDeclaration : globalVariableDecl) {
+        for (VariableDeclInfo variableDeclInfo : variablesDeclaration.getDeclInfos()) {
           if (variableDeclInfo.hasInitializer()
               && variableDeclInfo.getInitializer() instanceof ScalarInitializer) {
             addOpportunity(new GlobalVariableDeclToExprReductionOpportunity(
