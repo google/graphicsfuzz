@@ -602,55 +602,7 @@ public final class TyperHelper {
 
     // 8.4: Floating-Point Pack and Unpack Functions
 
-    if (shadingLanguageVersion.supportedPackUnorm2x16()) {
-      final String name = "packUnorm2x16";
-      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.VEC2);
-    }
-
-    if (shadingLanguageVersion.supportedPackSnorm2x16()) {
-      final String name = "packSnorm2x16";
-      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.VEC2);
-    }
-
-    if (shadingLanguageVersion.supportedPackUnorm4x8()) {
-      final String name = "packUnorm4x8";
-      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.VEC4);
-    }
-
-    if (shadingLanguageVersion.supportedPackSnorm4x8()) {
-      final String name = "packSnorm4x8";
-      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.VEC4);
-    }
-
-    if (shadingLanguageVersion.supportedUnpackUnorm2x16()) {
-      final String name = "unpackUnorm2x16";
-      addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.UINT);
-    }
-
-    if (shadingLanguageVersion.supportedUnpackSnorm2x16()) {
-      final String name = "unpackSnorm2x16";
-      addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.UINT);
-    }
-
-    if (shadingLanguageVersion.supportedUnpackUnorm4x8()) {
-      final String name = "unpackUnorm4x8";
-      addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.UINT);
-    }
-
-    if (shadingLanguageVersion.supportedUnpackSnorm4x8()) {
-      final String name = "unpackSnorm4x8";
-      addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.UINT);
-    }
-
-    if (shadingLanguageVersion.supportedPackHalf2x16()) {
-      final String name = "packHalf2x16";
-      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.VEC2);
-    }
-
-    if (shadingLanguageVersion.supportedUnpackHalf2x16()) {
-      final String name = "unpackHalf2x16";
-      addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.UINT);
-    }
+    getBuiltinsForGlslVersionFloatingPointPackAndUnpack(builtinsForVersion, shadingLanguageVersion);
 
     // 8.5: Geometric Functions
 
@@ -1281,6 +1233,68 @@ public final class TyperHelper {
       for (Type t : genType()) {
         addBuiltin(builtinsForVersion, name, t, t, t, BasicType.FLOAT);
       }
+    }
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Floating-Point Pack and
+   * Unpack Functions, as specified in section 8.4 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
+  private static void getBuiltinsForGlslVersionFloatingPointPackAndUnpack(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+
+    if (shadingLanguageVersion.supportedPackUnorm2x16()) {
+      final String name = "packUnorm2x16";
+      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.VEC2);
+    }
+
+    if (shadingLanguageVersion.supportedPackSnorm2x16()) {
+      final String name = "packSnorm2x16";
+      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.VEC2);
+    }
+
+    if (shadingLanguageVersion.supportedPackUnorm4x8()) {
+      final String name = "packUnorm4x8";
+      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.VEC4);
+    }
+
+    if (shadingLanguageVersion.supportedPackSnorm4x8()) {
+      final String name = "packSnorm4x8";
+      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.VEC4);
+    }
+
+    if (shadingLanguageVersion.supportedUnpackUnorm2x16()) {
+      final String name = "unpackUnorm2x16";
+      addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.UINT);
+    }
+
+    if (shadingLanguageVersion.supportedUnpackSnorm2x16()) {
+      final String name = "unpackSnorm2x16";
+      addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.UINT);
+    }
+
+    if (shadingLanguageVersion.supportedUnpackUnorm4x8()) {
+      final String name = "unpackUnorm4x8";
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.UINT);
+    }
+
+    if (shadingLanguageVersion.supportedUnpackSnorm4x8()) {
+      final String name = "unpackSnorm4x8";
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.UINT);
+    }
+
+    if (shadingLanguageVersion.supportedPackHalf2x16()) {
+      final String name = "packHalf2x16";
+      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.VEC2);
+    }
+
+    if (shadingLanguageVersion.supportedUnpackHalf2x16()) {
+      final String name = "unpackHalf2x16";
+      addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.UINT);
     }
   }
 
