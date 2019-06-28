@@ -198,25 +198,14 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
 
   @Test
   public void testGlobalVariableDeclAfterMain() throws Exception {
-    final String program = ""
-        + "int a = 1;"
-        + "void main() { }"
-        + "int b = 1;";
     // The global variable declarations that have found after main method will not be considered.
-    final String expected = ""
-        + "int a;"
-        + "void main() {"
-        + " a = 1;"
-        + "}"
-        + "int b = 1;";
-    final TranslationUnit tu = ParseHelper.parse(program);
+    final String original = "void main() { } int a = 1;";
+    final TranslationUnit tu = ParseHelper.parse(original);
     final List<GlobalVariableDeclToExprReductionOpportunity> ops =
         GlobalVariableDeclToExprReductionOpportunities
-            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
                 ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), null, true));
-    assertEquals(1, ops.size());
-    ops.forEach(GlobalVariableDeclToExprReductionOpportunity::applyReductionImpl);
-    CompareAsts.assertEqualAsts(expected, tu);
+    assertTrue(ops.isEmpty());
   }
 }
