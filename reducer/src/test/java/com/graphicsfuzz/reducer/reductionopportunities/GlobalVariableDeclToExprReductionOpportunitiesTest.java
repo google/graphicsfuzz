@@ -22,7 +22,6 @@ import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -193,6 +192,30 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
             ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), null, true));
     assertEquals(4, ops.size());
+    ops.forEach(GlobalVariableDeclToExprReductionOpportunity::applyReductionImpl);
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testGlobalVariableDeclAfterMain() throws Exception {
+    final String program = ""
+        + "int a = 1;"
+        + "void main() { }"
+        + "int b = 1;";
+    // The global variable declarations that have found after main method will not be considered.
+    final String expected = ""
+        + "int a;"
+        + "void main() {"
+        + " a = 1;"
+        + "}"
+        + "int b = 1;";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<GlobalVariableDeclToExprReductionOpportunity> ops =
+        GlobalVariableDeclToExprReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
+                ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0), null, true));
+    assertEquals(1, ops.size());
     ops.forEach(GlobalVariableDeclToExprReductionOpportunity::applyReductionImpl);
     CompareAsts.assertEqualAsts(expected, tu);
   }

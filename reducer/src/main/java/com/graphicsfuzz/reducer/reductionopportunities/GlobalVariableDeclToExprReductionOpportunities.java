@@ -17,15 +17,16 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /*
  * This class finds opportunities to remove initializers from global variable declarations and
@@ -51,6 +52,8 @@ import java.util.stream.Collectors;
 
 public class GlobalVariableDeclToExprReductionOpportunities
     extends ReductionOpportunitiesBase<GlobalVariableDeclToExprReductionOpportunity> {
+  private final List<VariablesDeclaration> globalVariableDecl = new ArrayList<>();
+
   public GlobalVariableDeclToExprReductionOpportunities(TranslationUnit tu,
                                                         ReducerContext context) {
     super(tu, context);
@@ -81,36 +84,38 @@ public class GlobalVariableDeclToExprReductionOpportunities
     return finder.getOpportunities();
   }
 
+
   @Override
-  public void visitTranslationUnit(TranslationUnit tu) {
-    super.visitTranslationUnit(tu);
+  public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+    super.visitVariablesDeclaration(variablesDeclaration);
     if (!context.reduceEverywhere()) {
-      // Replacing initializers with a new assignment statement might have a side-effect,
+      // Replacing initializers with a new assignment statement might change semantics,
       // do not consider these reduction opportunities if we are not reducing everywhere.
       return;
     }
 
     // As constant must always be initialized, we will not consider global variable declarations
-    // that have const qualifier (i.e., const int a = 1). Thus, constant global variable
-    // declarations will be filtered out.
-    final List<VariablesDeclaration> globalVariablesDeclarations =
-        tu.getGlobalVariablesDeclarations()
-            .stream()
-            .filter(item -> !item.getBaseType().hasQualifier(TypeQualifier.CONST))
-            .collect(Collectors.toList());
+    // that have const qualifier (i.e., const int a = 1).
+    if (atGlobalScope() && !variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.CONST)) {
+      globalVariableDecl.add(variablesDeclaration);
+    }
+  }
 
-    // To keep its original order, we have to iterate backwards. The reason is that when applying
-    // reduction the new assignment statement will be prepended at the beginning of
-    // the body of main function.
-    for (int i = globalVariablesDeclarations.size() - 1; i >= 0; i--) {
-      final List<VariableDeclInfo> declInfos = globalVariablesDeclarations.get(i).getDeclInfos();
-      for (int j = declInfos.size() - 1; j >= 0; j--) {
-        final VariableDeclInfo variableDeclInfo = declInfos.get(j);
-        if (variableDeclInfo.hasInitializer()
-            && variableDeclInfo.getInitializer() instanceof ScalarInitializer) {
-          addOpportunity(new GlobalVariableDeclToExprReductionOpportunity(getVistitationDepth(), tu,
-              variableDeclInfo)
-          );
+  @Override
+  public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
+    super.visitFunctionDefinition(functionDefinition);
+    // We consider only the global variable declarations with the initializer that have been
+    // found before main function.
+    if (functionDefinition.getPrototype().getName().equals("main")) {
+      for (int i = globalVariableDecl.size() - 1; i >= 0; i--) {
+        final VariablesDeclaration variablesDeclaration = globalVariableDecl.get(i);
+        for (int j = variablesDeclaration.getDeclInfos().size() - 1; j >= 0; j--) {
+          final VariableDeclInfo variableDeclInfo = variablesDeclaration.getDeclInfo(j);
+          if (variableDeclInfo.hasInitializer()
+              && variableDeclInfo.getInitializer() instanceof ScalarInitializer) {
+            addOpportunity(new GlobalVariableDeclToExprReductionOpportunity(
+                getVistitationDepth(), variableDeclInfo, functionDefinition));
+          }
         }
       }
     }

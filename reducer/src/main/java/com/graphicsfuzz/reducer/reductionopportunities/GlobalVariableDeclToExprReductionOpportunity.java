@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
@@ -28,16 +27,16 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public class GlobalVariableDeclToExprReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final TranslationUnit tu;
+  private final FunctionDefinition mainFunction;
   // The initialized global variable declaration info.
   private final VariableDeclInfo variableDeclInfo;
 
   GlobalVariableDeclToExprReductionOpportunity(VisitationDepth depth,
-                                               TranslationUnit tu,
-                                               VariableDeclInfo variableDeclInfo) {
+                                               VariableDeclInfo variableDeclInfo,
+                                               FunctionDefinition mainFunction) {
     super(depth);
-    this.tu = tu;
     this.variableDeclInfo = variableDeclInfo;
+    this.mainFunction = mainFunction;
   }
 
   @Override
@@ -46,7 +45,6 @@ public class GlobalVariableDeclToExprReductionOpportunity extends AbstractReduct
     // derive a new assignment statement which will be inserted as the first statement in
     // main function.
     assert variableDeclInfo.getInitializer() instanceof ScalarInitializer;
-    FunctionDefinition mainFunction = tu.getMainFunction();
     final BinaryExpr binaryExpr = new BinaryExpr(
         new VariableIdentifierExpr(variableDeclInfo.getName()),
         ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
@@ -58,7 +56,7 @@ public class GlobalVariableDeclToExprReductionOpportunity extends AbstractReduct
 
   @Override
   public boolean preconditionHolds() {
-    return tu.hasMainFunction()
+    return mainFunction.getPrototype().getName().equals("main")
         && variableDeclInfo.hasInitializer();
   }
 }
