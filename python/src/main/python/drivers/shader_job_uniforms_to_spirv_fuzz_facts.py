@@ -23,9 +23,15 @@ from typing import Any, Dict, List
 import runspv
 
 
-# Turns a GraphicsFuzz .json file into a spirv-fuzz .facts file, with one fact per word of uniform
-# data.
 def main_helper(args) -> None:
+    """
+    Turn a GraphicsFuzz .json file into a spirv-fuzz .facts file, with one fact per word of uniform
+    data.
+
+    :param args: command-line arguments
+    :return: None
+    """
+
     parser = argparse.ArgumentParser()
 
     # Required arguments

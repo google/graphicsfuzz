@@ -338,6 +338,7 @@ def run_spirv_opt(
     :param spv_file: name of SPIR-V file to be optimized
     :param spirv_opt_args: arguments to be passed to spirv-opt
     :param output: name of file into which optimized SPIR-V will be written
+    :return: None
     """
 
     log('Running optimizer.')
@@ -348,12 +349,18 @@ def run_spirv_opt(
     subprocess_helper(cmd, timeout=TIMEOUT_SPIRV_OPT_SECONDS)
 
 
-# Runs glslangValidator on |glsl_shader| to convert it to SPIR-V.  The resulting SPIR-V file is
-# |output|.
 def convert_glsl_to_spv(
     glsl_shader: str,
     output: str
 ) -> None:
+
+    """
+    Runs glslangValidator on a GLSL shader to convert it to SPIR-V.
+
+    :param glsl_shader: name of GLSL file on which to run glslangValidator
+    :param output: name of file into which generated SPIR-V will be written
+    :return: None
+    """
 
     log('Running glslangValidator.')
 
