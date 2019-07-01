@@ -83,7 +83,7 @@ def main_helper(args) -> None:
                 constantWord=[int_representation])
             fact_list.append(dict(constantUniformFact=fact_constant_uniform))
 
-    with open(args.output_file, "w") as f:
+    with runspv.open_helper(args.output_file, 'w') as f:
         f.write(json.dumps(dict(fact=fact_list), indent=1, sort_keys=True))
 
 

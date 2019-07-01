@@ -327,13 +327,18 @@ def remove_end(str_in: str, str_end: str):
     return str_in[:-len(str_end)]
 
 
-# Runs spirv-opt on |spv_file| with arguments |spirv_opt_args|.  The optimized binary file is
-# |output|.
 def run_spirv_opt(
     spv_file: str,
     spirv_opt_args: List[str],
     output: str
 ) -> None:
+    """
+    Optimizes a SPIR-V file.
+
+    :param spv_file: name of SPIR-V file to be optimized
+    :param spirv_opt_args: arguments to be passed to spirv-opt
+    :param output: name of file into which optimized SPIR-V will be written
+    """
 
     log('Running optimizer.')
 
