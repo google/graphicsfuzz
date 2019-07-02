@@ -57,7 +57,7 @@ public class GlobalVariableDeclToExprReductionOpportunities
   public GlobalVariableDeclToExprReductionOpportunities(TranslationUnit tu,
                                                         ReducerContext context) {
     super(tu, context);
-    globalVariableDecl = new ArrayList<>();
+    this.globalVariableDecl = new ArrayList<>();
   }
 
   /**
