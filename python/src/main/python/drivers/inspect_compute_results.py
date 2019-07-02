@@ -21,13 +21,15 @@ import os
 import sys
 from typing import Callable, List, Optional, Tuple
 
+import gfuzz_common
+
 
 DEFAULT_REL_TOL = '1e-9'
 DEFAULT_ABS_TOL = '1e-20'
 
 
 def get_ssbo(result_json_filename: str) -> List:
-    with open(result_json_filename, 'r', encoding='utf-8', errors='ignore') as f:
+    with gfuzz_common.open_helper(result_json_filename, 'r') as f:
         parsed = json.load(f)
     if not parsed or 'outputs' not in parsed or 'ssbo' not in parsed['outputs']:
         raise ValueError('No SSBO data found')
@@ -91,12 +93,6 @@ def fuzzydiff_ssbos(result_json_filename_1: str,
                                lambda x, y: math.isclose(x, y, rel_tol=rel_tol, abs_tol=abs_tol))
 
 
-def check_input_files_exist(filenames: List[str]) -> None:
-    for filename in filenames:
-        if not os.path.isfile(filename):
-            raise FileNotFoundError('Input file "' + filename + '" not found')
-
-
 def main_helper(args: List[str]) -> int:
     description = (
         'Inspect and compare compute shader outputs.')
@@ -154,7 +150,7 @@ def main_helper(args: List[str]) -> int:
         if len(args.inputs) != 1:
             raise ValueError(
                 'Command "show" requires exactly 1 input; ' + str(len(args.inputs)) + ' provided')
-        check_input_files_exist([args.inputs[0]])
+        gfuzz_common.check_input_files_exist([args.inputs[0]])
         show_ssbo(args.inputs[0])
         return 0
 
@@ -162,7 +158,7 @@ def main_helper(args: List[str]) -> int:
         if len(args.inputs) != 2:
             raise ValueError('Command "exactdiff" requires exactly 2 inputs; ' + str(
                 len(args.inputs)) + ' provided')
-        check_input_files_exist([args.inputs[0], args.inputs[1]])
+        gfuzz_common.check_input_files_exist([args.inputs[0], args.inputs[1]])
         result, msg = exactdiff_ssbos(args.inputs[0], args.inputs[1])
         if result:
             return 0
@@ -173,7 +169,7 @@ def main_helper(args: List[str]) -> int:
         if len(args.inputs) != 2:
             raise ValueError('Command "fuzzydiff" requires exactly 2 inputs; ' + str(
                 len(args.inputs)) + ' provided')
-        check_input_files_exist([args.inputs[0], args.inputs[1]])
+        gfuzz_common.check_input_files_exist([args.inputs[0], args.inputs[1]])
         result, msg = fuzzydiff_ssbos(args.inputs[0], args.inputs[1], abs_tol, rel_tol)
         if result:
             return 0
