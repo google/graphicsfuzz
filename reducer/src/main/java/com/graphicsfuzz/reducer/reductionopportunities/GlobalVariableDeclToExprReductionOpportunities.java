@@ -17,18 +17,56 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
+import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/*
+ * This class finds opportunities to remove initializers from global variable declarations and
+ * replace them with assignment statements which will be inserted as the first statement in main
+ * function. If main function is not found, do not consider finding this opportunities.
+ * For example, in:
+ * int a = 1;
+ * int b = foo();
+ * void main(){
+ *  int c = 1;
+ * }
+ *
+ * <p>Because each of a and b has an initializer, we can transform the code fragment
+ * into the following:
+ * int a;
+ * int b;
+ * void main(){
+ *  a = 1;
+ *  b = foo();
+ *  int c = 1;
+ * }
+ */
+
 public class GlobalVariableDeclToExprReductionOpportunities
     extends ReductionOpportunitiesBase<GlobalVariableDeclToExprReductionOpportunity> {
+  private final List<VariablesDeclaration> globalVariableDecl;
+
   public GlobalVariableDeclToExprReductionOpportunities(TranslationUnit tu,
                                                         ReducerContext context) {
     super(tu, context);
+    this.globalVariableDecl = new ArrayList<>();
   }
 
+  /**
+   * Find all initialized global variable declaration opportunities for the given translation unit.
+   *
+   * @param shaderJob The shader job to be searched.
+   * @param context   Includes info such as whether we reduce everywhere or only reduce injections
+   * @return The opportunities that can be reduced
+   */
   static List<GlobalVariableDeclToExprReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
       ReducerContext context) {
@@ -45,5 +83,40 @@ public class GlobalVariableDeclToExprReductionOpportunities
         new GlobalVariableDeclToExprReductionOpportunities(tu, context);
     finder.visit(tu);
     return finder.getOpportunities();
+  }
+
+
+  @Override
+  public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+    super.visitVariablesDeclaration(variablesDeclaration);
+    if (!context.reduceEverywhere()) {
+      // Replacing initializers with a new assignment statement might change semantics,
+      // do not consider these reduction opportunities if we are not reducing everywhere.
+      return;
+    }
+
+    // As constant must always be initialized, we will not consider global variable declarations
+    // that have const qualifier (i.e., const int a = 1).
+    if (atGlobalScope() && !variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.CONST)) {
+      globalVariableDecl.add(variablesDeclaration);
+    }
+  }
+
+  @Override
+  public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
+    super.visitFunctionDefinition(functionDefinition);
+    // We consider only the global variable declarations with the initializer that have been
+    // found before main function.
+    if (functionDefinition.getPrototype().getName().equals("main")) {
+      for (VariablesDeclaration variablesDeclaration : globalVariableDecl) {
+        for (VariableDeclInfo variableDeclInfo : variablesDeclaration.getDeclInfos()) {
+          if (variableDeclInfo.hasInitializer()
+              && variableDeclInfo.getInitializer() instanceof ScalarInitializer) {
+            addOpportunity(new GlobalVariableDeclToExprReductionOpportunity(
+                getVistitationDepth(), variableDeclInfo, functionDefinition));
+          }
+        }
+      }
+    }
   }
 }

@@ -16,20 +16,47 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
+import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public class GlobalVariableDeclToExprReductionOpportunity extends AbstractReductionOpportunity {
-  GlobalVariableDeclToExprReductionOpportunity(VisitationDepth depth) {
+
+  private final FunctionDefinition mainFunction;
+  // The initialized global variable declaration info.
+  private final VariableDeclInfo variableDeclInfo;
+
+  GlobalVariableDeclToExprReductionOpportunity(VisitationDepth depth,
+                                               VariableDeclInfo variableDeclInfo,
+                                               FunctionDefinition mainFunction) {
     super(depth);
+    this.variableDeclInfo = variableDeclInfo;
+    this.mainFunction = mainFunction;
   }
 
   @Override
   void applyReductionImpl() {
-    throw new RuntimeException("Not implemented yet.");
+    // Given the variable declaration info of global variable, we unset its initializer and
+    // derive a new assignment statement which will be inserted as the first statement in
+    // main function.
+    assert variableDeclInfo.getInitializer() instanceof ScalarInitializer;
+    final BinaryExpr binaryExpr = new BinaryExpr(
+        new VariableIdentifierExpr(variableDeclInfo.getName()),
+        ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
+        BinOp.ASSIGN
+    );
+    mainFunction.getBody().insertStmt(0, new ExprStmt(binaryExpr));
+    variableDeclInfo.setInitializer(null);
   }
 
   @Override
   public boolean preconditionHolds() {
-    throw new RuntimeException("Not implemented yet.");
+    return mainFunction.getPrototype().getName().equals("main")
+        && variableDeclInfo.hasInitializer();
   }
 }
