@@ -22,6 +22,8 @@ import re
 import typing
 import io
 import pprint
+
+import gfuzz_common
 glsl_generate = __import__("glsl-generate")
 
 # Types:
@@ -73,16 +75,6 @@ load_capture_id = re.compile('Loaded capture; id: ([a-z0-9]*)\n')
 def nz(s):
     assert len(s) > 0
     return s
-
-
-def remove_end(s: str, end: str):
-    assert s.endswith(end)
-    return s[:-len(end)]
-
-
-def remove_start(s: str, start: str):
-    assert s.startswith(start)
-    return s[len(start):]
 
 
 def call(args: List[str], cwd=None):
@@ -223,7 +215,7 @@ def create_traces(params: Params):
     handle_to_variant_list = {}  # type: typing.Dict[str, typing.List[str]]
     for family in Path(params.families_dir).iterdir():  # type: Path
         if family.name.startswith("family_"):
-            shader_handle = remove_start(family.name, "family_")
+            shader_handle = gfuzz_common.remove_start(family.name, "family_")
             if params.specific_handle is not None and params.specific_handle != shader_handle:
                 continue
             variant_shaders = sorted(list(family.glob("variant_*.frag")))

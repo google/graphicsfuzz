@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import runspv
 import argparse
 import json
 from typing import List
+
+import gfuzz_common
 
 # Note: We define a 'shader job' as the JSON file of a GraphicsFuzz shader.
 # Each shader job has a corresponding shader file that has the same base name
@@ -36,6 +37,7 @@ DRAW_COMMAND = 'draw rect -1 -1 2 2'
 
 # Strings used to specify the GL version to use in a piglit test's
 # [require] header.
+GLES_VERSION_STRING = 'GL ES >= '
 GLSL_VERSION_STRING = 'GLSL >= '
 GLSLES_VERSION_STRING = 'GLSL ES >= '
 
@@ -68,8 +70,7 @@ def make_shader_test_string(shader_job: str) -> str:
     """
     shader_job_json_parsed = get_json_properties(shader_job)
 
-    with open(get_shader_from_job(shader_job), 'r',
-              encoding='utf-8', errors='ignore') as shader:
+    with gfuzz_common.open_helper(get_shader_from_job(shader_job), 'r') as shader:
         shader_file_string = shader.read()
 
     shader_lines = shader_file_string.split('\n')
@@ -97,14 +98,19 @@ def make_require_header(shader_version_header: str) -> str:
     require_header = REQUIRE_HEADER + '\n'
     # Piglit requires a version number with 1 digit of precision for the GL version, and
     # 2 digits of precision for the GLSL version.
-    require_header += GLSLES_VERSION_STRING if ES_SPECIFIER in shader_version_header \
-        else GLSL_VERSION_STRING
     try:
         shader_version = shader_version_header.split(' ')[1]
     except IndexError:
         raise IOError('Malformed shader - invalid GLSL version string.')
     if not shader_version.isdigit():
         raise IOError('Malformed shader - invalid GLSL version string.')
+    # Piglit requires GL version to be specified explicitly if ES is in use.
+    if ES_SPECIFIER in shader_version_header:
+        require_header += GLES_VERSION_STRING + \
+            format(float(shader_version) / SHADER_VERSION_FACTOR, '.1f') + '\n'
+        require_header += GLSLES_VERSION_STRING
+    else:
+        require_header += GLSL_VERSION_STRING
     require_header += format(float(shader_version) / SHADER_VERSION_FACTOR, '.2f') + '\n'
     return require_header
 
@@ -174,7 +180,7 @@ def get_json_properties(shader_job: str) -> List:
     :param shader_job: the path to the shader job file.
     :return: a list of JSON properties.
     """
-    with open(shader_job, 'r', encoding='utf-8', errors='ignore') as job:
+    with gfuzz_common.open_helper(shader_job, 'r') as job:
         json_parsed = json.load(job)
     if not json_parsed:
         raise IOError('Malformed shader job file.')
@@ -187,7 +193,7 @@ def get_shader_from_job(shader_job: str) -> str:
     :param shader_job: the path of the shader job file.
     :return: the path of the fragment shader file.
     """
-    return runspv.remove_end(shader_job, '.json') + '.frag'
+    return gfuzz_common.remove_end(shader_job, '.json') + '.frag'
 
 
 def get_shader_test_from_job(shader_job: str) -> str:
@@ -196,7 +202,7 @@ def get_shader_test_from_job(shader_job: str) -> str:
     :param shader_job: the path of the shader job file.
     :return: the path of the shader_test file.
     """
-    return runspv.remove_end(shader_job, '.json') + '.shader_test'
+    return gfuzz_common.remove_end(shader_job, '.json') + '.shader_test'
 
 
 def main_helper(args: List[str]) -> None:
@@ -219,6 +225,5 @@ def main_helper(args: List[str]) -> None:
   
     test_string = make_shader_test_string(args.shader_job)
 
-    with open(get_shader_test_from_job(args.shader_job), 'w',
-              encoding='utf-8', errors='ignore') as shader_test:
+    with gfuzz_common.open_helper(get_shader_test_from_job(args.shader_job), 'w') as shader_test:
         shader_test.write(test_string)
