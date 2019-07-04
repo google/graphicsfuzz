@@ -101,7 +101,7 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
   @Override
   void adaptTranslationUnitForSpecificDonation(TranslationUnit tu, IRandom generator) {
     if (!allowLongLoops) {
-      new TruncateLoops(3 + generator.nextInt(5), addPrefix(""), tu, false);
+      new TruncateLoops(3 + generator.nextInt(5), addPrefix(""), tu);
     }
   }
 
