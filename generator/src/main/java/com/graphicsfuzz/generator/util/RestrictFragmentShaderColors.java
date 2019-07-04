@@ -40,6 +40,7 @@ import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.typing.TyperHelper;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
@@ -156,7 +157,7 @@ public class RestrictFragmentShaderColors {
 
   private boolean adaptExistingWrites() {
 
-    final Typer typer = new Typer(shaderJob.getFragmentShader().get(), shadingLanguageVersion);
+    final Typer typer = new Typer(shaderJob.getFragmentShader().get());
 
     return new ScopeTreeBuilder() {
 
@@ -164,7 +165,8 @@ public class RestrictFragmentShaderColors {
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
         super.visitFunctionCallExpr(functionCallExpr);
         Set<String> acceptableFunctionNames = new HashSet<>();
-        acceptableFunctionNames.addAll(TyperHelper.getBuiltins(shadingLanguageVersion).keySet());
+        acceptableFunctionNames.addAll(TyperHelper.getBuiltins(shadingLanguageVersion,
+            ShaderKind.FRAGMENT).keySet());
         acceptableFunctionNames.add(Constants.GLF_FUZZED);
         acceptableFunctionNames.add(Constants.GLF_IDENTITY);
         if (acceptableFunctionNames.contains(functionCallExpr.getCallee())

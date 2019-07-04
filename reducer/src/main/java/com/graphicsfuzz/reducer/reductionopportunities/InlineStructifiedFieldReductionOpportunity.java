@@ -64,8 +64,7 @@ public class InlineStructifiedFieldReductionOpportunity extends AbstractReductio
   @Override
   public void applyReductionImpl() {
 
-    // The GLSL version is irrelevant; really we want a Typer that doesn't require this.
-    final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_100);
+    final Typer typer = new Typer(tu);
 
     final int indexOfInlinedField = outerStruct.getFieldIndex(fieldToInline);
     outerStruct.removeField(fieldToInline);

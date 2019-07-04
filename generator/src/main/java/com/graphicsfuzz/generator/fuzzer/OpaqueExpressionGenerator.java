@@ -746,7 +746,8 @@ public final class OpaqueExpressionGenerator {
       if (!exprMustBeSideEffectFree) {
         return true;
       }
-      return SideEffectChecker.isSideEffectFree(expr, shadingLanguageVersion);
+      return SideEffectChecker.isSideEffectFree(expr, shadingLanguageVersion,
+          generationParams.getShaderKind());
 
     }
 

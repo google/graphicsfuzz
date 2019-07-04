@@ -112,7 +112,8 @@ public class CompoundToBlockReductionOpportunities
           || (StmtReductionOpportunities.isLiveCodeInjection(compoundStmt)
                && !isLoopLimiterCheck(compoundStmt))
           || enclosingFunctionIsDead()
-          || SideEffectChecker.isSideEffectFree(compoundStmt, context.getShadingLanguageVersion());
+          || SideEffectChecker.isSideEffectFree(compoundStmt, context.getShadingLanguageVersion(),
+        shaderKind);
   }
 
   private static boolean isLoopLimiterCheck(Stmt compoundStmt) {

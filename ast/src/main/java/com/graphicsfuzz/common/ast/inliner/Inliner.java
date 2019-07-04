@@ -71,7 +71,7 @@ public class Inliner {
     this.call = call;
     this.tu = tu;
     this.shadingLanguageVersion = shadingLanguageVersion;
-    this.typer = new Typer(tu, shadingLanguageVersion);
+    this.typer = new Typer(tu);
     this.parentMap = IParentMap.createParentMap(tu);
   }
 

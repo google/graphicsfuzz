@@ -41,7 +41,7 @@ abstract class SimplifyExprReductionOpportunities
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);
-    this.typer = new Typer(tu, context.getShadingLanguageVersion());
+    this.typer = new Typer(tu);
     this.inLiveInjectedStmtOrDeclaration = false;
   }
 

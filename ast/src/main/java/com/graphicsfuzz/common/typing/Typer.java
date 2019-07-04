@@ -43,6 +43,7 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.OpenGlConstants;
+import com.graphicsfuzz.common.util.ShaderKind;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,28 +55,24 @@ import java.util.Set;
 
 public class Typer extends ScopeTreeBuilder {
 
-  private Map<Expr, Type> types;
+  private final TranslationUnit tu;
 
-  private Map<String, Set<FunctionPrototype>> userDefinedFunctions;
+  private final Map<Expr, Type> types;
 
-  private Map<StructNameType, StructDefinitionType> structDeclarationMap;
+  private final Map<String, Set<FunctionPrototype>> userDefinedFunctions;
 
-  private ShadingLanguageVersion shadingLanguageVersion;
+  private final Map<StructNameType, StructDefinitionType> structDeclarationMap;
 
   public Map<String, Set<FunctionPrototype>> getUserDefinedFunctions() {
     return userDefinedFunctions;
   }
 
-  public Typer(IAstNode node, ShadingLanguageVersion shadingLanguageVersion) {
+  public Typer(TranslationUnit tu) {
+    this.tu = tu;
     this.types = new HashMap<>();
     this.userDefinedFunctions = new HashMap<>();
     this.structDeclarationMap = new HashMap<>();
-    this.shadingLanguageVersion = shadingLanguageVersion;
-    visit(node);
-  }
-
-  public Typer(TranslationUnit tu) {
-    this(tu, tu.getShadingLanguageVersion());
+    visit(tu);
   }
 
   @Override
@@ -111,7 +108,8 @@ public class Typer extends ScopeTreeBuilder {
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
     super.visitFunctionCallExpr(functionCallExpr);
 
-    List<FunctionPrototype> candidateBuiltins = TyperHelper.getBuiltins(shadingLanguageVersion)
+    List<FunctionPrototype> candidateBuiltins =
+        TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), tu.getShaderKind())
         .get(functionCallExpr.getCallee());
     if (candidateBuiltins != null) {
       for (FunctionPrototype prototype : candidateBuiltins) {
@@ -471,8 +469,10 @@ public class Typer extends ScopeTreeBuilder {
     if (userDefinedFunctions.containsKey(name)) {
       result.addAll(userDefinedFunctions.get(name));
     }
-    if (TyperHelper.getBuiltins(shadingLanguageVersion).containsKey(name)) {
-      result.addAll(TyperHelper.getBuiltins(shadingLanguageVersion).get(name));
+    final Map<String, List<FunctionPrototype>> builtins =
+        TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), tu.getShaderKind());
+    if (builtins.containsKey(name)) {
+      result.addAll(builtins.get(name));
     }
     return result;
   }

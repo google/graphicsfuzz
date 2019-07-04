@@ -50,7 +50,7 @@ public class SideEffectCheckerTest {
           new VariableIdentifierExpr("v"),
           new IntConstantExpr("12"),
           BinOp.ASSIGN
-    )), ShadingLanguageVersion.ESSL_310));
+    )), ShadingLanguageVersion.ESSL_310, ShaderKind.FRAGMENT));
   }
 
   @Test
@@ -69,7 +69,7 @@ public class SideEffectCheckerTest {
             new VariableIdentifierExpr("i"),
             UnOp.POST_INC
         ), new BlockStmt(Collections.emptyList(), false)),
-        ShadingLanguageVersion.ESSL_310));
+        ShadingLanguageVersion.ESSL_310, ShaderKind.FRAGMENT));
   }
 
   @Test
@@ -92,7 +92,7 @@ public class SideEffectCheckerTest {
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr expr) {
         assertTrue(expr.getCallee().equals("uaddCarry"));
-        assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310));
+        assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310, ShaderKind.FRAGMENT));
       }
     }.visit(tu);
   }

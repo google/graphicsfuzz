@@ -23,6 +23,7 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.ShaderKind;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,8 +40,11 @@ import java.util.stream.Collectors;
  */
 public final class TyperHelper {
 
+  // Maps a (shading language version, shader kind) pair to a mapping from builtin names to builtin
+  // function prototypes.
   private static ConcurrentMap<ShadingLanguageVersion,
-      Map<String, List<FunctionPrototype>>> builtins = new ConcurrentHashMap<>();
+      ConcurrentMap<ShaderKind, Map<String, List<FunctionPrototype>>>> builtins =
+      new ConcurrentHashMap<>();
 
   private TyperHelper() {
     // Utility class
@@ -284,17 +288,32 @@ public final class TyperHelper {
     return null;
   }
 
+  /**
+   * Yield the builtins available for the given shading language version and kind of shader.
+   *
+   * @param shadingLanguageVersion version of GLSL for which relevant builtins should be returned.
+   * @param shaderKind kind of shader (e.g. fragment or compute) for which relevant builtins
+   *                   should be returned.
+   * @return a mapping from name of builtin to sequence of function prototypes.
+   */
   public static Map<String, List<FunctionPrototype>> getBuiltins(ShadingLanguageVersion
-      shadingLanguageVersion) {
+      shadingLanguageVersion, ShaderKind shaderKind) {
+
+    assert shadingLanguageVersion != null;
+    assert shaderKind != null;
+
     if (!builtins.containsKey(shadingLanguageVersion)) {
-      builtins.putIfAbsent(shadingLanguageVersion,
-          getBuiltinsForGlslVersion(shadingLanguageVersion));
+      builtins.putIfAbsent(shadingLanguageVersion, new ConcurrentHashMap<>());
     }
-    return Collections.unmodifiableMap(builtins.get(shadingLanguageVersion));
+    if (!builtins.get(shadingLanguageVersion).containsKey(shaderKind)) {
+      builtins.get(shadingLanguageVersion).putIfAbsent(shaderKind,
+          getBuiltinsForGlslVersion(shadingLanguageVersion, shaderKind));
+    }
+    return Collections.unmodifiableMap(builtins.get(shadingLanguageVersion).get(shaderKind));
   }
 
   private static Map<String, List<FunctionPrototype>> getBuiltinsForGlslVersion(
-      ShadingLanguageVersion shadingLanguageVersion) {
+      ShadingLanguageVersion shadingLanguageVersion, ShaderKind shaderKind) {
     Map<String, List<FunctionPrototype>> builtinsForVersion = new HashMap<>();
 
     // 8.1: Angle and Trigonometric Functions
@@ -622,7 +641,9 @@ public final class TyperHelper {
 
     // 8.13: Fragment Processing Functions (only available in fragment shaders)
 
-    getBuiltinsForGlslVersionFragmentProcessing(builtinsForVersion, shadingLanguageVersion);
+    if (shaderKind == ShaderKind.FRAGMENT) {
+      getBuiltinsForGlslVersionFragmentProcessing(builtinsForVersion, shadingLanguageVersion);
+    }
 
     // 8.14: Noise Functions - deprecated, so we do not consider them
 

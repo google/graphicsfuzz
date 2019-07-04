@@ -75,6 +75,11 @@ final class Essl100 implements ShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedComputeShaders() {
+    return false;
+  }
+
+  @Override
   public boolean supportedDerivativeFunctions() {
     return false;
   }

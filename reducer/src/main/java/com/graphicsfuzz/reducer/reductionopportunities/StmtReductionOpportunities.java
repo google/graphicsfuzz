@@ -110,7 +110,7 @@ public class StmtReductionOpportunities
       return true;
     }
 
-    if (SideEffectChecker.isSideEffectFree(stmt, context.getShadingLanguageVersion())) {
+    if (SideEffectChecker.isSideEffectFree(stmt, context.getShadingLanguageVersion(), shaderKind)) {
       return true;
     }
 

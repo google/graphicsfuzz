@@ -46,7 +46,7 @@ public class FunctionReductionOpportunities extends StandardVisitor {
   private final List<FunctionPrototype> declaredFunctions; // All functions declared in the shader
 
   private FunctionReductionOpportunities(TranslationUnit tu, ReducerContext context) {
-    this.typer = new Typer(tu, context.getShadingLanguageVersion());
+    this.typer = new Typer(tu);
     this.opportunities = new ArrayList<>();
     this.calledFunctions = new HashSet<>();
     this.declaredFunctions = Collections
