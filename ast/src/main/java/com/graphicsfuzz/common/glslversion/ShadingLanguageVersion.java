@@ -164,6 +164,12 @@ public interface ShadingLanguageVersion {
   boolean supportedClampUint();
 
   /**
+   * GLSL versions 4.3+ and ESSL versions 3.1+ support compute shaders.
+   * @return true if the shading language version allows compute shaders - false otherwise.
+   */
+  boolean supportedComputeShaders();
+
+  /**
    * Derivative Functions are a subset of fragment processing functions that compute
    * the rate of change between pixels in a given fragment.
    * GLSL versions 1.1+ and ESSL versions 3.0+ support these functions.

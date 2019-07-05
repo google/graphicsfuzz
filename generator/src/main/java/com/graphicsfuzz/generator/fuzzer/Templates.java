@@ -24,6 +24,7 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.SupportedTypes;
 import com.graphicsfuzz.common.typing.TyperHelper;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.fuzzer.templates.BinaryExprTemplate;
 import com.graphicsfuzz.generator.fuzzer.templates.ConstantExprTemplate;
 import com.graphicsfuzz.generator.fuzzer.templates.FunctionCallExprTemplate;
@@ -46,21 +47,28 @@ import java.util.stream.Collectors;
 
 public class Templates {
 
-  private static ConcurrentMap<ShadingLanguageVersion, List<IExprTemplate>> templates
+  private static ConcurrentMap<ShadingLanguageVersion,
+      ConcurrentMap<ShaderKind, List<IExprTemplate>>> templates
         = new ConcurrentHashMap<>();
 
   private Templates() {
     // Utility class
   }
 
-  public static List<IExprTemplate> get(ShadingLanguageVersion shadingLanguageVersion) {
+  public static List<IExprTemplate> get(ShadingLanguageVersion shadingLanguageVersion,
+                                        ShaderKind shaderKind) {
     if (!templates.containsKey(shadingLanguageVersion)) {
-      templates.putIfAbsent(shadingLanguageVersion, makeTemplates(shadingLanguageVersion));
+      templates.putIfAbsent(shadingLanguageVersion, new ConcurrentHashMap<>());
     }
-    return Collections.unmodifiableList(templates.get(shadingLanguageVersion));
+    if (!templates.get(shadingLanguageVersion).containsKey(shaderKind)) {
+      templates.get(shadingLanguageVersion).putIfAbsent(shaderKind,
+          makeTemplates(shadingLanguageVersion, shaderKind));
+    }
+    return Collections.unmodifiableList(templates.get(shadingLanguageVersion).get(shaderKind));
   }
 
-  public static List<IExprTemplate> makeTemplates(ShadingLanguageVersion shadingLanguageVersion) {
+  private static List<IExprTemplate> makeTemplates(ShadingLanguageVersion shadingLanguageVersion,
+                                                  ShaderKind shaderKind) {
 
     // TODO: assignment operators, array, vector and matrix lookups
 
@@ -69,7 +77,7 @@ public class Templates {
     // Builtins
     {
       Map<String, List<FunctionPrototype>> builtins = TyperHelper.getBuiltins(
-          shadingLanguageVersion);
+          shadingLanguageVersion, shaderKind);
       List<String> keys = builtins.keySet().stream().collect(Collectors.toList());
       keys.sort(String::compareTo);
       for (String key : keys) {

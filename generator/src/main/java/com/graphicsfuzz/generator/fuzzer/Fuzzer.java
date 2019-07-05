@@ -220,45 +220,19 @@ public class Fuzzer {
 
   private Stream<IExprTemplate> availableTemplatesFromContext() {
     return Stream.concat(availableTemplatesFromScope(shadingLanguageVersion,
+        generationParams.getShaderKind(),
         fuzzingContext.getCurrentScope()),
       fuzzingContext.getFunctionPrototypes().stream().map(FunctionCallExprTemplate::new));
   }
 
   public static Stream<IExprTemplate> availableTemplatesFromScope(
       ShadingLanguageVersion shadingLanguageVersion,
+      ShaderKind shaderKind,
       Scope scope) {
-    return Stream.concat(Templates.get(shadingLanguageVersion).stream(),
+    return Stream.concat(Templates.get(shadingLanguageVersion, shaderKind).stream(),
         scope.namesOfAllVariablesInScope()
             .stream()
             .map(item -> new VariableIdentifierExprTemplate(item, scope.lookupType(item))));
-  }
-
-  public static void main(String[] args) {
-    try {
-      //testFuzzExpr(args);
-      showTemplates(args);
-
-    } catch (Throwable throwable) {
-      throwable.printStackTrace();
-      System.exit(1);
-    }
-
-  }
-
-  private static void showTemplates(String[] args) {
-    // Call this from main to produce a list of templates
-    List<IExprTemplate> templates = new ArrayList<>();
-    templates.addAll(Templates.get(ShadingLanguageVersion.fromVersionString(args[0])));
-    Collections.sort(templates, new Comparator<IExprTemplate>() {
-      @Override
-      public int compare(IExprTemplate t1, IExprTemplate t2) {
-        return t1.toString().compareTo(t2.toString());
-      }
-    });
-
-    for (IExprTemplate t : templates) {
-      System.out.println(t);
-    }
   }
 
   public TranslationUnit fuzzTranslationUnit() {
@@ -555,6 +529,35 @@ public class Fuzzer {
             ((ArrayType) type).getArrayInfo());
     }
     return type;
+  }
+
+  public static void main(String[] args) {
+    try {
+      //testFuzzExpr(args);
+      showTemplates(args);
+
+    } catch (Throwable throwable) {
+      throwable.printStackTrace();
+      System.exit(1);
+    }
+
+  }
+
+  private static void showTemplates(String[] args) {
+    // Call this from main to produce a list of templates
+    List<IExprTemplate> templates = new ArrayList<>();
+    templates.addAll(Templates.get(ShadingLanguageVersion.fromVersionString(args[0]),
+        ShaderKind.fromExtension(args[1])));
+    Collections.sort(templates, new Comparator<IExprTemplate>() {
+      @Override
+      public int compare(IExprTemplate t1, IExprTemplate t2) {
+        return t1.toString().compareTo(t2.toString());
+      }
+    });
+
+    for (IExprTemplate t : templates) {
+      System.out.println(t);
+    }
   }
 
 }

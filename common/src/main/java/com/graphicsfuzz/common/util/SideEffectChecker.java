@@ -38,18 +38,19 @@ import com.graphicsfuzz.common.typing.TyperHelper;
 public class SideEffectChecker {
 
   private static boolean isSideEffectFreeVisitor(IAstNode node,
-      ShadingLanguageVersion shadingLanguageVersion) {
+      ShadingLanguageVersion shadingLanguageVersion, ShaderKind shaderKind) {
     return !new CheckPredicateVisitor() {
 
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-        if (!TyperHelper.getBuiltins(shadingLanguageVersion)
+        if (!TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
             .containsKey(functionCallExpr.getCallee())) {
           // Assume that any call to a non-builtin might have a side-effect.
           predicateHolds();
         }
         for (FunctionPrototype p :
-            TyperHelper.getBuiltins(shadingLanguageVersion).get(functionCallExpr.getCallee())) {
+            TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
+                .get(functionCallExpr.getCallee())) {
           // We check each argument of the built-in's prototypes to see if they require lvalues -
           // if so, they can cause side effects.
           // We could be more precise here by finding the specific overload of the function rather
@@ -113,12 +114,14 @@ public class SideEffectChecker {
     }.test(node);
   }
 
-  public static boolean isSideEffectFree(Stmt stmt, ShadingLanguageVersion shadingLanguageVersion) {
-    return isSideEffectFreeVisitor(stmt, shadingLanguageVersion);
+  public static boolean isSideEffectFree(Stmt stmt, ShadingLanguageVersion shadingLanguageVersion,
+                                         ShaderKind shaderKind) {
+    return isSideEffectFreeVisitor(stmt, shadingLanguageVersion, shaderKind);
   }
 
-  public static boolean isSideEffectFree(Expr expr, ShadingLanguageVersion shadingLanguageVersion) {
-    return isSideEffectFreeVisitor(expr, shadingLanguageVersion);
+  public static boolean isSideEffectFree(Expr expr, ShadingLanguageVersion shadingLanguageVersion,
+                                         ShaderKind shaderKind) {
+    return isSideEffectFreeVisitor(expr, shadingLanguageVersion, shaderKind);
   }
 
 }

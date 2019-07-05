@@ -230,7 +230,7 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       // We could handle cases such as vec2(0.0).x resolving to 0.0; but for now we do not.
       return;
     }
-    if (!SideEffectChecker.isSideEffectFree(tce, context.getShadingLanguageVersion())) {
+    if (!SideEffectChecker.isSideEffectFree(tce, context.getShadingLanguageVersion(), shaderKind)) {
       // We mustn't eliminate side-effects from elements of the vector that we are not popping out.
       return;
     }

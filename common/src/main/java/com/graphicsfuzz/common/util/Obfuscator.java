@@ -107,7 +107,7 @@ public class Obfuscator {
 
     private void obfuscateTranslationUnit(TranslationUnit tu) {
 
-      this.typer = new Typer(tu, tu.getShadingLanguageVersion());
+      this.typer = new Typer(tu);
       visit(tu);
       for (VariableDeclInfo declInfo : varDeclMapping.keySet()) {
         assert varDeclMapping.containsKey(declInfo);

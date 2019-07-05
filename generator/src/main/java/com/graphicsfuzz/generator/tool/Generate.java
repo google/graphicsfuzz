@@ -453,7 +453,7 @@ public class Generate {
                                                     ShadingLanguageVersion shadingLanguageVersion) {
     // Debugging aid: fail early if we end up messing up the translation unit so that type checking
     // does not work.
-    new Typer(reference, shadingLanguageVersion);
+    new Typer(reference);
     return true;
   }
 

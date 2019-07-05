@@ -36,6 +36,7 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.SideEffectChecker;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
@@ -52,6 +53,8 @@ public abstract class ReductionOpportunitiesBase
 
   protected final ReducerContext context;
 
+  protected final ShaderKind shaderKind;
+
   protected String enclosingFunctionName;
 
   private int numEnclosingLValues;
@@ -66,9 +69,10 @@ public abstract class ReductionOpportunitiesBase
     this.opportunities = new ArrayList<>();
     this.injectionTracker = new InjectionTracker();
     this.notReferencedFromLiveContext = new NotReferencedFromLiveContext(tu);
-    this.context = context;
-    this.enclosingFunctionName = null;
     this.parentMap = IParentMap.createParentMap(tu);
+    this.context = context;
+    this.shaderKind = tu.getShaderKind();
+    this.enclosingFunctionName = null;
     this.numEnclosingLValues = 0;
   }
 
@@ -77,7 +81,7 @@ public abstract class ReductionOpportunitiesBase
     assert enclosingFunctionName == null;
     enclosingFunctionName = functionDefinition.getPrototype().getName();
     super.visitFunctionDefinition(functionDefinition);
-    assert enclosingFunctionName == functionDefinition.getPrototype().getName();
+    assert enclosingFunctionName.equals(functionDefinition.getPrototype().getName());
     enclosingFunctionName = null;
   }
 
@@ -212,7 +216,8 @@ public abstract class ReductionOpportunitiesBase
     }
     return SideEffectChecker.isSideEffectFree(
         ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
-        context.getShadingLanguageVersion());
+        context.getShadingLanguageVersion(),
+        shaderKind);
   }
 
   boolean typeIsReducibleToConst(Type type) {

@@ -29,10 +29,10 @@ public class MakeArrayAccessesInBoundsTest {
 
   @Test
   public void testBasic() throws Exception {
-    final String shader = "void main() { int A[5]; int x = 17; A[x] = 2; }";
-    final String expected = "void main() { int A[5]; int x = 17; A[(x) >= 0 && (x) < 5 ? x : 0] = 2; }";
+    final String shader = "#version 300 es\nvoid main() { int A[5]; int x = 17; A[x] = 2; }";
+    final String expected = "#version 300 es\nvoid main() { int A[5]; int x = 17; A[(x) >= 0 && (x) < 5 ? x : 0] = 2; }";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_300);
+    final Typer typer = new Typer(tu);
     MakeArrayAccessesInBounds.makeInBounds(tu, typer);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
@@ -40,13 +40,13 @@ public class MakeArrayAccessesInBoundsTest {
 
   @Test
   public void testMatrixVector() throws Exception {
-    final String shader = "void main() { mat4x2 As[5]; int x = 17; int y = -22; int z = 100; As[x][y][z] = 2.0; }";
-    final String expected = "void main() { mat4x2 As[5]; int x = 17; int y = -22; int z = 100;"
+    final String shader = "#version 300 es\nvoid main() { mat4x2 As[5]; int x = 17; int y = -22; int z = 100; As[x][y][z] = 2.0; }";
+    final String expected = "#version 300 es\nvoid main() { mat4x2 As[5]; int x = 17; int y = -22; int z = 100;"
           + "As[(x) >= 0 && (x) < 5 ? x : 0]"
           + "  /* column */ [(y) >= 0 && (y) < 4 ? y : 0]"
           + "  /* row */ [(z) >= 0 && (z) < 2 ? z : 0] = 2.0; }";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_300);
+    final Typer typer = new Typer(tu);
     MakeArrayAccessesInBounds.makeInBounds(tu, typer);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
@@ -54,7 +54,8 @@ public class MakeArrayAccessesInBoundsTest {
 
   @Test
   public void testMatrixVector2() throws Exception {
-    final String shader = "void main() { mat3x4 As[5];"
+    final String shader = "#version 300 es\n"
+          + "void main() { mat3x4 As[5];"
           + "  int x = 17;"
           + "  int y = -22;"
           + "  int z = 100;"
@@ -64,7 +65,8 @@ public class MakeArrayAccessesInBoundsTest {
           + "  float f;"
           + "  f = v[z];"
           + "}";
-    final String expected = "void main() { mat3x4 As[5];"
+    final String expected = "#version 300 es\n"
+          + "void main() { mat3x4 As[5];"
           + "  int x = 17;"
           + "  int y = -22;"
           + "  int z = 100;"
@@ -75,7 +77,7 @@ public class MakeArrayAccessesInBoundsTest {
           + "  f = v[(z) >= 0 && (z) < 4 ? z : 0];"
           + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    final Typer typer = new Typer(tu, ShadingLanguageVersion.ESSL_300);
+    final Typer typer = new Typer(tu);
     MakeArrayAccessesInBounds.makeInBounds(tu, typer);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));

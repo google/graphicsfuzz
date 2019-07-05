@@ -49,6 +49,7 @@ import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.GlslParserException;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.common.util.OpenGlConstants;
@@ -72,7 +73,8 @@ public class TyperTest {
   @Test
   public void visitMemberLookupExpr() throws Exception {
 
-    String prog = "struct S { float a; float b; };\n"
+    String prog = "#version 100\n"
+          + "struct S { float a; float b; };\n"
           + "struct T { S s; float c; };\n"
           + "void main() {\n"
           + "  T myT = T(S(1.0, 2.0), 3.0);\n"
@@ -82,7 +84,7 @@ public class TyperTest {
     TranslationUnit tu = ParseHelper.parse(prog);
 
     int actualCount =
-          new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_100) {
+          new NullCheckTyper(tu) {
 
             private int count;
 
@@ -105,7 +107,8 @@ public class TyperTest {
   @Test
   public void visitMemberLookupExprAnonymous() throws Exception {
 
-    String prog = "struct { float a; float b; } myStruct;\n"
+    String prog = "#version 100\n"
+        + "struct { float a; float b; } myStruct;\n"
         + "void main() {\n"
         + "  myStruct.a = 2.0;\n"
         + "  myStruct.b = 3.0;\n"
@@ -115,7 +118,7 @@ public class TyperTest {
     TranslationUnit tu = ParseHelper.parse(prog);
 
     int actualCount =
-        new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_100) {
+        new NullCheckTyper(tu) {
 
           private int count;
 
@@ -137,14 +140,15 @@ public class TyperTest {
 
   @Test
   public void testTypeOfScalarConstructors() throws Exception {
-    String program = "void main() { float(1); int(1); uint(1); bool(1); }";
+    String program = "#version 440\n"
+        + "void main() { float(1); int(1); uint(1); bool(1); }";
 
     for (BasicType b : Arrays.asList(BasicType.FLOAT, BasicType.INT, BasicType.UINT,
           BasicType.BOOL)) {
 
       try {
 
-        new NullCheckTyper(ParseHelper.parse(program), ShadingLanguageVersion.GLSL_440) {
+        new NullCheckTyper(ParseHelper.parse(program)) {
 
           @Override
           public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
@@ -171,14 +175,15 @@ public class TyperTest {
 
   @Test
   public void testMemberLookupTypeFloat() throws Exception {
-    final String program = "void main() { vec2 v2 = vec2(1.0);"
+    final String program = "#version 100\n"
+          + "void main() { vec2 v2 = vec2(1.0);"
           + " v2.x; v2.y;"
           + " vec3 v3 = vec3(1.0);"
           + " v3.x; v3.y; v3.z;"
           + " vec4 v4 = vec4(1.0);"
           + " v4.x; v4.y; v4.z; v4.w; }";
     final TranslationUnit tu = ParseHelper.parse(program);
-    new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_100) {
+    new NullCheckTyper(tu) {
       @Override
       public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
         super.visitMemberLookupExpr(memberLookupExpr);
@@ -190,14 +195,15 @@ public class TyperTest {
 
   @Test
   public void testMemberLookupTypeInt() throws Exception {
-    final String program = "void main() { ivec2 v2 = ivec2(1);"
+    final String program = "#version 440\n"
+          + "void main() { ivec2 v2 = ivec2(1);"
           + " v2.x; v2.y;"
           + " ivec3 v3 = ivec3(1);"
           + " v3.x; v3.y; v3.z;"
           + " ivec4 v4 = ivec4(1);"
           + " v4.x; v4.y; v4.z; v4.w; }";
     final TranslationUnit tu = ParseHelper.parse(program);
-    new NullCheckTyper(tu, ShadingLanguageVersion.GLSL_440) {
+    new NullCheckTyper(tu) {
       @Override
       public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
         super.visitMemberLookupExpr(memberLookupExpr);
@@ -209,14 +215,15 @@ public class TyperTest {
 
   @Test
   public void testMemberLookupTypeUint() throws Exception {
-    final String program = "void main() { uvec2 v2 = uvec2(1u);"
+    final String program = "#version 440\n"
+          + "void main() { uvec2 v2 = uvec2(1u);"
           + " v2.x; v2.y;"
           + " uvec3 v3 = uvec3(1u);"
           + " v3.x; v3.y; v3.z;"
           + " uvec4 v4 = uvec4(1u);"
           + " v4.x; v4.y; v4.z; v4.w; }";
     final TranslationUnit tu = ParseHelper.parse(program);
-    new NullCheckTyper(tu, ShadingLanguageVersion.GLSL_440) {
+    new NullCheckTyper(tu) {
       @Override
       public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
         super.visitMemberLookupExpr(memberLookupExpr);
@@ -229,14 +236,15 @@ public class TyperTest {
 
   @Test
   public void testMemberLookupTypeBool() throws Exception {
-    final String program = "void main() { bvec2 v2 = bvec2(true);"
+    final String program = "#version 440\n"
+          + "void main() { bvec2 v2 = bvec2(true);"
           + " v2.x; v2.y;"
           + " bvec3 v3 = bvec3(true);"
           + " v3.x; v3.y; v3.z;"
           + " bvec4 v4 = bvec4(true);"
           + " v4.x; v4.y; v4.z; v4.w; }";
     final TranslationUnit tu = ParseHelper.parse(program);
-    new NullCheckTyper(tu, ShadingLanguageVersion.GLSL_440) {
+    new NullCheckTyper(tu) {
       @Override
       public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
         super.visitMemberLookupExpr(memberLookupExpr);
@@ -248,9 +256,10 @@ public class TyperTest {
 
   @Test
   public void testBooleanVectorType() throws Exception {
-    final String program = "void main() { vec3(1.0) > vec3(2.0); }";
+    final String program = "#version 440\n"
+        + "void main() { vec3(1.0) > vec3(2.0); }";
     TranslationUnit tu = ParseHelper.parse(program);
-    new NullCheckTyper(tu, ShadingLanguageVersion.GLSL_440) {
+    new NullCheckTyper(tu) {
       @Override
       public void visitBinaryExpr(BinaryExpr binaryExpr) {
         super.visitBinaryExpr(binaryExpr);
@@ -261,9 +270,10 @@ public class TyperTest {
 
   @Test
   public void testBooleanVectorType2() throws Exception {
-    final String program = "void main() { vec3(1.0) > 2.0; }";
+    final String program = "#version 440\n"
+        + "void main() { vec3(1.0) > 2.0; }";
     TranslationUnit tu = ParseHelper.parse(program);
-    new NullCheckTyper(tu, ShadingLanguageVersion.GLSL_440) {
+    new NullCheckTyper(tu) {
       @Override
       public void visitBinaryExpr(BinaryExpr binaryExpr) {
         super.visitBinaryExpr(binaryExpr);
@@ -275,7 +285,7 @@ public class TyperTest {
   @Test
   public void testSwizzleTyped() throws Exception {
     TranslationUnit tu = ParseHelper.parse("void main() { vec2 v; v.xy = v.yx; }");
-    Typer typer = new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_100);
+    Typer typer = new NullCheckTyper(tu);
     new StandardVisitor() {
       @Override
       public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
@@ -287,7 +297,8 @@ public class TyperTest {
 
   @Test
   public void testAssignTyped() throws Exception {
-    TranslationUnit tu = ParseHelper.parse("void main() {"
+    TranslationUnit tu = ParseHelper.parse("#version 440\n"
+          + "void main() {"
           + "int x;"
           + "x = 2;"
           + "float f;"
@@ -298,7 +309,7 @@ public class TyperTest {
           + "v3 /= v3;"
           + "ivec2 i2;"
           + "i2 -= i2; }");
-    Typer typer = new NullCheckTyper(tu, ShadingLanguageVersion.GLSL_440);
+    Typer typer = new NullCheckTyper(tu);
     new StandardVisitor() {
       @Override
       public void visitBinaryExpr(BinaryExpr binaryExpr) {
@@ -328,11 +339,12 @@ public class TyperTest {
 
   @Test
   public void testCommaTyped() throws Exception {
-    TranslationUnit tu = ParseHelper.parse("void main() {"
+    TranslationUnit tu = ParseHelper.parse("#version 440\n"
+        + "void main() {"
         + "int x;"
         + "int y;"
         + "x, y; }");
-    Typer typer = new NullCheckTyper(tu, ShadingLanguageVersion.GLSL_440);
+    Typer typer = new NullCheckTyper(tu);
     new StandardVisitor() {
       @Override
       public void visitBinaryExpr(BinaryExpr binaryExpr) {
@@ -345,8 +357,10 @@ public class TyperTest {
 
   @Test
   public void testGlPositionTyped() throws Exception {
-    TranslationUnit tu = ParseHelper.parse("void main() { gl_Position = vec4(0.0); }");
-    Typer typer = new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300);
+    TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() { gl_Position = vec4(0.0)"
+        + "; }");
+    Typer typer = new NullCheckTyper(tu);
     new StandardVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
@@ -361,8 +375,9 @@ public class TyperTest {
 
   @Test
   public void testGlPointSizeTyped() throws Exception {
-    TranslationUnit tu = ParseHelper.parse("void main() { gl_PointSize = 1.0; }");
-    Typer typer = new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300);
+    TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() { gl_PointSize = 1.0; }");
+    Typer typer = new NullCheckTyper(tu);
     new StandardVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
@@ -434,7 +449,7 @@ public class TyperTest {
         + "void main() {"
         + "  int x = 031;"
         + "}");
-    new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300) {
+    new NullCheckTyper(tu) {
       @Override
       public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
         super.visitScalarInitializer(scalarInitializer);
@@ -449,7 +464,7 @@ public class TyperTest {
         + "void main() {"
         + "  int x = 0xA03B;"
         + "}");
-    new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300) {
+    new NullCheckTyper(tu) {
       @Override
       public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
         super.visitScalarInitializer(scalarInitializer);
@@ -464,7 +479,7 @@ public class TyperTest {
         + "void main() {"
         + "  int x = 031u;"
         + "}");
-    new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300) {
+    new NullCheckTyper(tu) {
       @Override
       public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
         super.visitScalarInitializer(scalarInitializer);
@@ -479,7 +494,7 @@ public class TyperTest {
         + "void main() {"
         + "  int x = 0xA03Bu;"
         + "}");
-    new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_300) {
+    new NullCheckTyper(tu) {
       @Override
       public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
         super.visitScalarInitializer(scalarInitializer);
@@ -491,8 +506,9 @@ public class TyperTest {
   private void checkComputeShaderBuiltin(String builtin, String builtinConstant, BasicType baseType,
       TypeQualifier qualifier) throws IOException, ParseTimeoutException, InterruptedException,
       GlslParserException {
-    TranslationUnit tu = ParseHelper.parse("void main() { " + builtin + "; }");
-    Typer typer = new NullCheckTyper(tu, ShadingLanguageVersion.ESSL_310);
+    TranslationUnit tu = ParseHelper.parse("#version 310 es\n"
+        + "void main() { " + builtin + "; }");
+    Typer typer = new NullCheckTyper(tu);
     new StandardVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
@@ -508,9 +524,8 @@ public class TyperTest {
 
   class NullCheckTyper extends Typer {
 
-    public NullCheckTyper(IAstNode node,
-          ShadingLanguageVersion shadingLanguageVersion) {
-      super(node, shadingLanguageVersion);
+    NullCheckTyper(TranslationUnit tu) {
+      super(tu);
     }
 
     @Override
@@ -684,24 +699,31 @@ public class TyperTest {
 
   private void testBuiltins(ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
-    final File tempFile = temporaryFolder.newFile("shader.frag");
-    FileUtils.writeStringToFile(
-        tempFile,
-        makeBuiltinsProgram(shadingLanguageVersion).toString(),
-        StandardCharsets.UTF_8);
-    final ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, tempFile);
-    assertEquals(0, result.res);
+    for (ShaderKind shaderKind : ShaderKind.values()) {
+      if (shaderKind == ShaderKind.COMPUTE && !shadingLanguageVersion.supportedComputeShaders()) {
+        // Compute shaders are not supported for older GLSL versions.
+        continue;
+      }
+      final File tempFile = temporaryFolder.newFile("shader." + shaderKind.getFileExtension());
+      FileUtils.writeStringToFile(
+          tempFile,
+          makeBuiltinsProgram(shadingLanguageVersion, shaderKind).toString(),
+          StandardCharsets.UTF_8);
+      final ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, tempFile);
+      assertEquals(0, result.res);
+    }
   }
 
-  private StringBuilder makeBuiltinsProgram(ShadingLanguageVersion shadingLanguageVersion) {
+  private StringBuilder makeBuiltinsProgram(ShadingLanguageVersion shadingLanguageVersion,
+                                            ShaderKind shaderKind) {
     StringBuilder result = new StringBuilder();
     result.append("#version " + shadingLanguageVersion.getVersionString() + "\n");
     result.append("#ifdef GL_ES\n");
     result.append("precision mediump float;\n");
     result.append("#endif\n");
     int counter = 0;
-    for (String name : TyperHelper.getBuiltins(shadingLanguageVersion).keySet()) {
-      for (FunctionPrototype fp : TyperHelper.getBuiltins(shadingLanguageVersion).get(name)) {
+    for (String name : TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind).keySet()) {
+      for (FunctionPrototype fp : TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind).get(name)) {
         counter++;
         result.append(fp.getReturnType() + " test" + counter + "_" + fp.getName() + "(");
         boolean first = true;

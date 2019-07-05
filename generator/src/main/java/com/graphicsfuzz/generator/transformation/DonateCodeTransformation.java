@@ -50,6 +50,7 @@ import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.StructUtils;
 import com.graphicsfuzz.generator.fuzzer.FuzzedIntoACornerException;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
@@ -250,7 +251,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
     }
     donateFunctionsAndGlobals(tu);
     eliminateUsedDonors();
-    makeInjectedArrayAccessesInBounds(tu, injectedStmts, tu.getShadingLanguageVersion());
+    makeInjectedArrayAccessesInBounds(tu, injectedStmts);
 
     return !injectionPoints.isEmpty();
 
@@ -266,9 +267,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
   }
 
   private void makeInjectedArrayAccessesInBounds(TranslationUnit tu,
-                                                 List<Stmt> injectedStmts,
-                                                 ShadingLanguageVersion shadingLanguageVersion) {
-    Typer typer = new Typer(tu, shadingLanguageVersion);
+                                                 List<Stmt> injectedStmts) {
+    Typer typer = new Typer(tu);
     for (Stmt stmt : injectedStmts) {
       MakeArrayAccessesInBounds.makeInBounds(stmt, typer);
     }
