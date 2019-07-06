@@ -1029,6 +1029,13 @@ public final class TyperHelper {
     }
   }
 
+  /**
+   * Helper function to register built-in function prototypes for Common Functions,
+   * as specified in section 8.3 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
   private static void getBuiltinsForGlslVersionCommon(
       ShadingLanguageVersion shadingLanguageVersion,
       Map<String, List<FunctionPrototype>> builtinsForVersion) {
