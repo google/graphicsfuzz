@@ -75,4 +75,13 @@ final class Glsl400 extends CompositeShadingLanguageVersion {
     return true;
   }
 
+  @Override
+  public boolean supportedFrexp() {
+    return true;
+  }
+
+  @Override
+  public boolean supportedLdexp() {
+    return true;
+  }
 }

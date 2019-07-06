@@ -327,297 +327,7 @@ public final class TyperHelper {
 
     // 8.3: Common Functions
 
-    {
-      final String name = "abs";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-      if (shadingLanguageVersion.supportedAbsInt()) {
-        for (Type t : igenType()) {
-          addBuiltin(builtinsForVersion, name, t, t);
-        }
-      }
-    }
-
-    {
-      final String name = "sign";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-      if (shadingLanguageVersion.supportedSignInt()) {
-        for (Type t : igenType()) {
-          addBuiltin(builtinsForVersion, name, t, t);
-        }
-      }
-    }
-
-    {
-      final String name = "floor";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-
-    if (shadingLanguageVersion.supportedTrunc()) {
-      final String name = "trunc";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-
-    if (shadingLanguageVersion.supportedRound()) {
-      final String name = "round";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-
-    if (shadingLanguageVersion.supportedRoundEven()) {
-      final String name = "roundEven";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-
-    {
-      final String name = "ceil";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-
-    {
-      final String name = "fract";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t);
-      }
-    }
-
-    {
-      final String name = "mod";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, BasicType.FLOAT);
-        if (t != BasicType.FLOAT) {
-          addBuiltin(builtinsForVersion, name, t, t, t);
-        }
-      }
-    }
-
-    // TODO: genType modf(genType, out genType)
-
-    {
-      final String name = "min";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, BasicType.FLOAT);
-        if (t != BasicType.FLOAT) {
-          addBuiltin(builtinsForVersion, name, t, t, t);
-        }
-      }
-      if (shadingLanguageVersion.supportedMinInt()) {
-        for (Type t : igenType()) {
-          addBuiltin(builtinsForVersion, name, t, t, BasicType.INT);
-          if (t != BasicType.INT) {
-            addBuiltin(builtinsForVersion, name, t, t, t);
-          }
-        }
-      }
-      if (shadingLanguageVersion.supportedMinUint()) {
-        for (Type t : ugenType()) {
-          addBuiltin(builtinsForVersion, name, t, t, BasicType.UINT);
-          if (t != BasicType.UINT) {
-            addBuiltin(builtinsForVersion, name, t, t, t);
-          }
-        }
-      }
-    }
-
-    {
-      final String name = "max";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, BasicType.FLOAT);
-        if (t != BasicType.FLOAT) {
-          addBuiltin(builtinsForVersion, name, t, t, t);
-        }
-      }
-      if (shadingLanguageVersion.supportedMaxInt()) {
-        for (Type t : igenType()) {
-          addBuiltin(builtinsForVersion, name, t, t, BasicType.INT);
-          if (t != BasicType.INT) {
-            addBuiltin(builtinsForVersion, name, t, t, t);
-          }
-        }
-      }
-      if (shadingLanguageVersion.supportedMaxUint()) {
-        for (Type t : ugenType()) {
-          addBuiltin(builtinsForVersion, name, t, t, BasicType.UINT);
-          if (t != BasicType.UINT) {
-            addBuiltin(builtinsForVersion, name, t, t, t);
-          }
-        }
-      }
-    }
-
-    {
-      final String name = "clamp";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, BasicType.FLOAT, BasicType.FLOAT);
-        if (t != BasicType.FLOAT) {
-          addBuiltin(builtinsForVersion, name, t, t, t, t);
-        }
-      }
-      if (shadingLanguageVersion.supportedClampInt()) {
-        for (Type t : igenType()) {
-          addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
-          if (t != BasicType.INT) {
-            addBuiltin(builtinsForVersion, name, t, t, t, t);
-          }
-        }
-      }
-      if (shadingLanguageVersion.supportedClampUint()) {
-        for (Type t : ugenType()) {
-          addBuiltin(builtinsForVersion, name, t, t, BasicType.UINT, BasicType.UINT);
-          if (t != BasicType.UINT) {
-            addBuiltin(builtinsForVersion, name, t, t, t, t);
-          }
-        }
-      }
-    }
-
-    {
-      final String name = "mix";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t, BasicType.FLOAT);
-        if (t != BasicType.FLOAT) {
-          addBuiltin(builtinsForVersion, name, t, t, t, t);
-        }
-      }
-      if (shadingLanguageVersion.supportedMixFloatBool()) {
-        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.FLOAT, BasicType.FLOAT,
-            BasicType.BOOL);
-        addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.VEC2, BasicType.VEC2,
-            BasicType.BVEC2);
-        addBuiltin(builtinsForVersion, name, BasicType.VEC3, BasicType.VEC3, BasicType.VEC3,
-            BasicType.BVEC3);
-        addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.VEC4, BasicType.VEC4,
-            BasicType.BVEC4);
-      }
-
-      if (shadingLanguageVersion.supportedMixNonfloatBool()) {
-        addBuiltin(builtinsForVersion, name, BasicType.INT, BasicType.INT, BasicType.INT,
-            BasicType.BOOL);
-        addBuiltin(builtinsForVersion, name, BasicType.IVEC2, BasicType.IVEC2, BasicType.IVEC2,
-            BasicType.BVEC2);
-        addBuiltin(builtinsForVersion, name, BasicType.IVEC3, BasicType.IVEC3, BasicType.IVEC3,
-            BasicType.BVEC3);
-        addBuiltin(builtinsForVersion, name, BasicType.IVEC4, BasicType.IVEC4, BasicType.IVEC4,
-            BasicType.BVEC4);
-
-        addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.UINT, BasicType.UINT,
-            BasicType.BOOL);
-        addBuiltin(builtinsForVersion, name, BasicType.UVEC2, BasicType.UVEC2, BasicType.UVEC2,
-            BasicType.BVEC2);
-        addBuiltin(builtinsForVersion, name, BasicType.UVEC3, BasicType.UVEC3, BasicType.UVEC3,
-            BasicType.BVEC3);
-        addBuiltin(builtinsForVersion, name, BasicType.UVEC4, BasicType.UVEC4, BasicType.UVEC4,
-            BasicType.BVEC4);
-
-        addBuiltin(builtinsForVersion, name, BasicType.BOOL, BasicType.BOOL, BasicType.BOOL,
-            BasicType.BOOL);
-        addBuiltin(builtinsForVersion, name, BasicType.BVEC2, BasicType.BVEC2, BasicType.BVEC2,
-            BasicType.BVEC2);
-        addBuiltin(builtinsForVersion, name, BasicType.BVEC3, BasicType.BVEC3, BasicType.BVEC3,
-            BasicType.BVEC3);
-        addBuiltin(builtinsForVersion, name, BasicType.BVEC4, BasicType.BVEC4, BasicType.BVEC4,
-            BasicType.BVEC4);
-      }
-    }
-
-    {
-      final String name = "step";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, BasicType.FLOAT, t);
-        if (t != BasicType.FLOAT) {
-          addBuiltin(builtinsForVersion, name, t, t, t);
-        }
-      }
-    }
-
-    {
-      final String name = "smoothstep";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, BasicType.FLOAT, BasicType.FLOAT, t);
-        if (t != BasicType.FLOAT) {
-          addBuiltin(builtinsForVersion, name, t, t, t, t);
-        }
-      }
-    }
-
-    if (shadingLanguageVersion.supportedIsnan()) {
-      final String name = "isnan";
-      addBuiltin(builtinsForVersion, name, BasicType.BOOL, BasicType.FLOAT);
-      addBuiltin(builtinsForVersion, name, BasicType.BVEC2, BasicType.VEC2);
-      addBuiltin(builtinsForVersion, name, BasicType.BVEC3, BasicType.VEC3);
-      addBuiltin(builtinsForVersion, name, BasicType.BVEC4, BasicType.VEC4);
-    }
-
-    if (shadingLanguageVersion.supportedIsinf()) {
-      final String name = "isinf";
-      addBuiltin(builtinsForVersion, name, BasicType.BOOL, BasicType.FLOAT);
-      addBuiltin(builtinsForVersion, name, BasicType.BVEC2, BasicType.VEC2);
-      addBuiltin(builtinsForVersion, name, BasicType.BVEC3, BasicType.VEC3);
-      addBuiltin(builtinsForVersion, name, BasicType.BVEC4, BasicType.VEC4);
-    }
-
-    if (shadingLanguageVersion.supportedFloatBitsToInt()) {
-      final String name = "floatBitsToInt";
-      addBuiltin(builtinsForVersion, name, BasicType.INT, BasicType.FLOAT);
-      addBuiltin(builtinsForVersion, name, BasicType.IVEC2, BasicType.VEC2);
-      addBuiltin(builtinsForVersion, name, BasicType.IVEC3, BasicType.VEC3);
-      addBuiltin(builtinsForVersion, name, BasicType.IVEC4, BasicType.VEC4);
-    }
-
-    if (shadingLanguageVersion.supportedFloatBitsToUint()) {
-      final String name = "floatBitsToUint";
-      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.FLOAT);
-      addBuiltin(builtinsForVersion, name, BasicType.UVEC2, BasicType.VEC2);
-      addBuiltin(builtinsForVersion, name, BasicType.UVEC3, BasicType.VEC3);
-      addBuiltin(builtinsForVersion, name, BasicType.UVEC4, BasicType.VEC4);
-    }
-
-    if (shadingLanguageVersion.supportedIntBitsToFloat()) {
-      final String name = "intBitsToFloat";
-      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.INT);
-      addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.IVEC2);
-      addBuiltin(builtinsForVersion, name, BasicType.VEC3, BasicType.IVEC3);
-      addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.IVEC4);
-    }
-
-    if (shadingLanguageVersion.supportedUintBitsToFloat()) {
-      final String name = "uintBitsToFloat";
-      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.UINT);
-      addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.UVEC2);
-      addBuiltin(builtinsForVersion, name, BasicType.VEC3, BasicType.UVEC3);
-      addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.UVEC4);
-    }
-
-    if (shadingLanguageVersion.supportedFma()) {
-      final String name = "fma";
-      for (Type t : genType()) {
-        addBuiltin(builtinsForVersion, name, t, t, t, t);
-      }
-    }
-
-    {
-      @SuppressWarnings("unused")
-      final String name = "frexp";
-      // TODO: genType frexp(genType, out genIType)
-    }
-
-    {
-      @SuppressWarnings("unused")
-      final String name = "ldexp";
-      // TODO: genType frexp(genType, in genIType)
-    }
+    getBuiltinsForGlslVersionCommon(shadingLanguageVersion, builtinsForVersion);
 
     // 8.4: Floating-Point Pack and Unpack Functions
 
@@ -1316,6 +1026,322 @@ public final class TyperHelper {
     if (shadingLanguageVersion.supportedUnpackHalf2x16()) {
       final String name = "unpackHalf2x16";
       addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.UINT);
+    }
+  }
+
+  private static void getBuiltinsForGlslVersionCommon(
+      ShadingLanguageVersion shadingLanguageVersion,
+      Map<String, List<FunctionPrototype>> builtinsForVersion) {
+    {
+      final String name = "abs";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+      if (shadingLanguageVersion.supportedAbsInt()) {
+        for (Type t : igenType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+    }
+
+    {
+      final String name = "sign";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+      if (shadingLanguageVersion.supportedSignInt()) {
+        for (Type t : igenType()) {
+          addBuiltin(builtinsForVersion, name, t, t);
+        }
+      }
+    }
+
+    {
+      final String name = "floor";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    if (shadingLanguageVersion.supportedTrunc()) {
+      final String name = "trunc";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    if (shadingLanguageVersion.supportedRound()) {
+      final String name = "round";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    if (shadingLanguageVersion.supportedRoundEven()) {
+      final String name = "roundEven";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "ceil";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "fract";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t);
+      }
+    }
+
+    {
+      final String name = "mod";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t, BasicType.FLOAT);
+        if (t != BasicType.FLOAT) {
+          addBuiltin(builtinsForVersion, name, t, t, t);
+        }
+      }
+    }
+
+    if (shadingLanguageVersion.supportedModf()) {
+      {
+        final String name = "modf";
+        for (Type t : genType()) {
+          addBuiltin(builtinsForVersion, name, t, t, new QualifiedType(t,
+              Arrays.asList(TypeQualifier.OUT_PARAM)));
+        }
+      }
+    }
+
+    {
+      final String name = "min";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t, BasicType.FLOAT);
+        if (t != BasicType.FLOAT) {
+          addBuiltin(builtinsForVersion, name, t, t, t);
+        }
+      }
+      if (shadingLanguageVersion.supportedMinInt()) {
+        for (Type t : igenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, BasicType.INT);
+          if (t != BasicType.INT) {
+            addBuiltin(builtinsForVersion, name, t, t, t);
+          }
+        }
+      }
+      if (shadingLanguageVersion.supportedMinUint()) {
+        for (Type t : ugenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, BasicType.UINT);
+          if (t != BasicType.UINT) {
+            addBuiltin(builtinsForVersion, name, t, t, t);
+          }
+        }
+      }
+    }
+
+    {
+      final String name = "max";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t, BasicType.FLOAT);
+        if (t != BasicType.FLOAT) {
+          addBuiltin(builtinsForVersion, name, t, t, t);
+        }
+      }
+      if (shadingLanguageVersion.supportedMaxInt()) {
+        for (Type t : igenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, BasicType.INT);
+          if (t != BasicType.INT) {
+            addBuiltin(builtinsForVersion, name, t, t, t);
+          }
+        }
+      }
+      if (shadingLanguageVersion.supportedMaxUint()) {
+        for (Type t : ugenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, BasicType.UINT);
+          if (t != BasicType.UINT) {
+            addBuiltin(builtinsForVersion, name, t, t, t);
+          }
+        }
+      }
+    }
+
+    {
+      final String name = "clamp";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t, BasicType.FLOAT, BasicType.FLOAT);
+        if (t != BasicType.FLOAT) {
+          addBuiltin(builtinsForVersion, name, t, t, t, t);
+        }
+      }
+      if (shadingLanguageVersion.supportedClampInt()) {
+        for (Type t : igenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
+          if (t != BasicType.INT) {
+            addBuiltin(builtinsForVersion, name, t, t, t, t);
+          }
+        }
+      }
+      if (shadingLanguageVersion.supportedClampUint()) {
+        for (Type t : ugenType()) {
+          addBuiltin(builtinsForVersion, name, t, t, BasicType.UINT, BasicType.UINT);
+          if (t != BasicType.UINT) {
+            addBuiltin(builtinsForVersion, name, t, t, t, t);
+          }
+        }
+      }
+    }
+
+    {
+      final String name = "mix";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, BasicType.FLOAT);
+        if (t != BasicType.FLOAT) {
+          addBuiltin(builtinsForVersion, name, t, t, t, t);
+        }
+      }
+      if (shadingLanguageVersion.supportedMixFloatBool()) {
+        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.FLOAT, BasicType.FLOAT,
+            BasicType.BOOL);
+        addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.VEC2, BasicType.VEC2,
+            BasicType.BVEC2);
+        addBuiltin(builtinsForVersion, name, BasicType.VEC3, BasicType.VEC3, BasicType.VEC3,
+            BasicType.BVEC3);
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.VEC4, BasicType.VEC4,
+            BasicType.BVEC4);
+      }
+
+      if (shadingLanguageVersion.supportedMixNonfloatBool()) {
+        addBuiltin(builtinsForVersion, name, BasicType.INT, BasicType.INT, BasicType.INT,
+            BasicType.BOOL);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC2, BasicType.IVEC2, BasicType.IVEC2,
+            BasicType.BVEC2);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC3, BasicType.IVEC3, BasicType.IVEC3,
+            BasicType.BVEC3);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC4, BasicType.IVEC4, BasicType.IVEC4,
+            BasicType.BVEC4);
+
+        addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.UINT, BasicType.UINT,
+            BasicType.BOOL);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC2, BasicType.UVEC2, BasicType.UVEC2,
+            BasicType.BVEC2);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC3, BasicType.UVEC3, BasicType.UVEC3,
+            BasicType.BVEC3);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC4, BasicType.UVEC4, BasicType.UVEC4,
+            BasicType.BVEC4);
+
+        addBuiltin(builtinsForVersion, name, BasicType.BOOL, BasicType.BOOL, BasicType.BOOL,
+            BasicType.BOOL);
+        addBuiltin(builtinsForVersion, name, BasicType.BVEC2, BasicType.BVEC2, BasicType.BVEC2,
+            BasicType.BVEC2);
+        addBuiltin(builtinsForVersion, name, BasicType.BVEC3, BasicType.BVEC3, BasicType.BVEC3,
+            BasicType.BVEC3);
+        addBuiltin(builtinsForVersion, name, BasicType.BVEC4, BasicType.BVEC4, BasicType.BVEC4,
+            BasicType.BVEC4);
+      }
+    }
+
+    {
+      final String name = "step";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, BasicType.FLOAT, t);
+        if (t != BasicType.FLOAT) {
+          addBuiltin(builtinsForVersion, name, t, t, t);
+        }
+      }
+    }
+
+    {
+      final String name = "smoothstep";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, BasicType.FLOAT, BasicType.FLOAT, t);
+        if (t != BasicType.FLOAT) {
+          addBuiltin(builtinsForVersion, name, t, t, t, t);
+        }
+      }
+    }
+
+    if (shadingLanguageVersion.supportedIsnan()) {
+      final String name = "isnan";
+      addBuiltin(builtinsForVersion, name, BasicType.BOOL, BasicType.FLOAT);
+      addBuiltin(builtinsForVersion, name, BasicType.BVEC2, BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.BVEC3, BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.BVEC4, BasicType.VEC4);
+    }
+
+    if (shadingLanguageVersion.supportedIsinf()) {
+      final String name = "isinf";
+      addBuiltin(builtinsForVersion, name, BasicType.BOOL, BasicType.FLOAT);
+      addBuiltin(builtinsForVersion, name, BasicType.BVEC2, BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.BVEC3, BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.BVEC4, BasicType.VEC4);
+    }
+
+    if (shadingLanguageVersion.supportedFloatBitsToInt()) {
+      final String name = "floatBitsToInt";
+      addBuiltin(builtinsForVersion, name, BasicType.INT, BasicType.FLOAT);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC2, BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC3, BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC4, BasicType.VEC4);
+    }
+
+    if (shadingLanguageVersion.supportedFloatBitsToUint()) {
+      final String name = "floatBitsToUint";
+      addBuiltin(builtinsForVersion, name, BasicType.UINT, BasicType.FLOAT);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC2, BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC3, BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC4, BasicType.VEC4);
+    }
+
+    if (shadingLanguageVersion.supportedIntBitsToFloat()) {
+      final String name = "intBitsToFloat";
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.INT);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.IVEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC3, BasicType.IVEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.IVEC4);
+    }
+
+    if (shadingLanguageVersion.supportedUintBitsToFloat()) {
+      final String name = "uintBitsToFloat";
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.UINT);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.UVEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC3, BasicType.UVEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.UVEC4);
+    }
+
+    if (shadingLanguageVersion.supportedFma()) {
+      final String name = "fma";
+      for (Type t : genType()) {
+        addBuiltin(builtinsForVersion, name, t, t, t, t);
+      }
+    }
+
+    if (shadingLanguageVersion.supportedFrexp()) {
+      {
+        final String name = "frexp";
+        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.FLOAT,
+            new QualifiedType(BasicType.INT, Arrays.asList(TypeQualifier.OUT_PARAM)));
+        addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.VEC2,
+            new QualifiedType(BasicType.IVEC2, Arrays.asList(TypeQualifier.OUT_PARAM)));
+        addBuiltin(builtinsForVersion, name, BasicType.VEC3, BasicType.VEC3,
+            new QualifiedType(BasicType.IVEC3, Arrays.asList(TypeQualifier.OUT_PARAM)));
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.VEC4,
+            new QualifiedType(BasicType.IVEC4, Arrays.asList(TypeQualifier.OUT_PARAM)));
+      }
+    }
+
+    if (shadingLanguageVersion.supportedLdexp()) {
+      {
+        final String name = "ldexp";
+        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.FLOAT, BasicType.INT);
+        addBuiltin(builtinsForVersion, name, BasicType.VEC2, BasicType.VEC2, BasicType.IVEC2);
+        addBuiltin(builtinsForVersion, name, BasicType.VEC3, BasicType.VEC3, BasicType.IVEC3);
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, BasicType.VEC4, BasicType.IVEC4);
+      }
     }
   }
 

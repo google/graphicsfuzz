@@ -96,4 +96,54 @@ public class SideEffectCheckerTest {
       }
     }.visit(tu);
   }
+
+  @Test
+  public void testOutParamModfHasSideEffects() throws Exception {
+    final String shader = "void main() { "
+        + "  float out1;"
+        + "  vec2 out2;"
+        + "  vec3 out3;"
+        + "  vec4 out4;"
+        + "  modf(0.0, out1);"
+        + "  modf(vec2(0.0), out2);"
+        + "  modf(vec3(0.0), out3);"
+        + "  modf(vec4(0.0), out4);"
+        + "}";
+
+    final TranslationUnit tu = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
+    tu.setShadingLanguageVersion(ShadingLanguageVersion.ESSL_310);
+
+    new StandardVisitor() {
+      @Override
+      public void visitFunctionCallExpr(FunctionCallExpr expr) {
+        assertTrue(expr.getCallee().equals("modf"));
+        assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310, ShaderKind.FRAGMENT));
+      }
+    }.visit(tu);
+  }
+
+  @Test
+  public void testOutParamFrexpHasSideEffects() throws Exception {
+    final String shader = "void main() { "
+        + "  int out1;"
+        + "  ivec2 out2;"
+        + "  ivec3 out3;"
+        + "  ivec4 out4;"
+        + "  frexp(0.0, out1);"
+        + "  frexp(vec2(0.0), out2);"
+        + "  frexp(vec3(0.0), out3);"
+        + "  frexp(vec4(0.0), out4);"
+        + "}";
+
+    final TranslationUnit tu = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
+    tu.setShadingLanguageVersion(ShadingLanguageVersion.ESSL_310);
+
+    new StandardVisitor() {
+      @Override
+      public void visitFunctionCallExpr(FunctionCallExpr expr) {
+        assertTrue(expr.getCallee().equals("frexp"));
+        assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310, ShaderKind.FRAGMENT));
+      }
+    }.visit(tu);
+  }
 }

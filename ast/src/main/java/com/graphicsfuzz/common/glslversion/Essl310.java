@@ -65,4 +65,14 @@ final class Essl310 extends CompositeShadingLanguageVersion {
     return true;
   }
 
+  @Override
+  public boolean supportedFrexp() {
+    return true;
+  }
+
+  @Override
+  public boolean supportedLdexp() {
+    return true;
+  }
+
 }
