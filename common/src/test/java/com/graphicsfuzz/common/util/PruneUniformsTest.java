@@ -16,16 +16,10 @@
 
 package com.graphicsfuzz.common.util;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.util.ToolHelper;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -183,39 +177,27 @@ public class PruneUniformsTest {
         String expectedUniforms, List<String> prefixList, int limit)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
 
-    final File uniformsFile = temporaryFolder.newFile("uniforms.json");
-    FileUtils.writeStringToFile(uniformsFile, uniforms, StandardCharsets.UTF_8);
-    final PipelineInfo pipelineInfo = new PipelineInfo(uniformsFile);
-    final TranslationUnit tu = ParseHelper.parse(program);
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), new PipelineInfo(uniforms),
+        ParseHelper.parse(program));
 
     assertTrue(PruneUniforms.prune(
-        new GlslShaderJob(Optional.empty(), pipelineInfo, tu),
+        shaderJob,
         limit,
         prefixList));
 
-    final File shaderFile = temporaryFolder.newFile("shader.frag");
+    final File shaderJobFile = temporaryFolder.newFile("shader.json");
 
-    try (PrintStream stream = new PrintStream(new FileOutputStream(shaderFile))) {
-      PrettyPrinterVisitor.emitShader(
-          tu,
-          Optional.empty(),
-          stream,
-          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-          true
-      );
-    }
-    final ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, shaderFile);
-    assertEquals(0, execResult.res);
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+    fileOps.writeShaderJobFile(shaderJob, shaderJobFile);
+    assertTrue(fileOps.areShadersValid(shaderJobFile, false));
 
     final File expectedUniformsFile = temporaryFolder.newFile("expecteduniforms.json");
     FileUtils.writeStringToFile(expectedUniformsFile, expectedUniforms, StandardCharsets.UTF_8);
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-          ParseHelper.parse(expectedProgram)),
-          PrettyPrinterVisitor.prettyPrintAsString(tu));
-    assertEquals(new PipelineInfo(expectedUniformsFile).toString(),
-          pipelineInfo.toString());
+    CompareAsts.assertEqualAsts(expectedProgram, shaderJob.getFragmentShader().get());
+    assertEquals(new PipelineInfo(expectedUniforms).toString(),
+          shaderJob.getPipelineInfo().toString());
   }
 
 }
