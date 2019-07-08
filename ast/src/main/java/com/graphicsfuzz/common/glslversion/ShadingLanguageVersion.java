@@ -305,6 +305,12 @@ public interface ShadingLanguageVersion {
 
   boolean supportedUnsigned();
 
+  boolean supportedModf();
+
+  boolean supportedFrexp();
+
+  boolean supportedLdexp();
+
   /**
    * Angle and Trigonometric Functions are a set of built-in functions related to the calculation
    * of an angle. For example, sin(angle) - computes the sine value of the angle provided.

@@ -292,4 +292,19 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   public boolean supportedHyperbolicAngleAndTrigonometricFunctions() {
     return prototype.supportedHyperbolicAngleAndTrigonometricFunctions();
   }
+
+  @Override
+  public boolean supportedModf() {
+    return prototype.supportedModf();
+  }
+
+  @Override
+  public boolean supportedFrexp() {
+    return prototype.supportedFrexp();
+  }
+
+  @Override
+  public boolean supportedLdexp() {
+    return prototype.supportedLdexp();
+  }
 }
