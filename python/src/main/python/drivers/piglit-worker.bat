@@ -1,7 +1,7 @@
 @echo off
 
 @REM
-@REM  Copyright 2018 The GraphicsFuzz Project Authors
+@REM  Copyright 2019 The GraphicsFuzz Project Authors
 @REM
 @REM  Licensed under the Apache License, Version 2.0 (the "License");
 @REM  you may not use this file except in compliance with the License.
