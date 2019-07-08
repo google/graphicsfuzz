@@ -539,7 +539,7 @@ def main():
 
             assert os.path.isfile(args.local_shader_job), \
                 'Shader job {} does not exist'.format(args.local_shader_job)
-            with gfuzz_common.open_helper(args.local_shader_job) as f:
+            with gfuzz_common.open_helper(args.local_shader_job, 'r') as f:
                 fake_job.uniformsInfo = f.read()
             if os.path.isfile(shader_job_prefix + '.frag'):
                 with gfuzz_common.open_helper(shader_job_prefix + '.frag', 'r') as f:
