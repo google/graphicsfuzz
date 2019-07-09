@@ -32,6 +32,7 @@ from gfauto import (
     shader_job_util,
     test_util,
     util,
+    gflogging,
 )
 from gfauto.device_pb2 import Device
 from gfauto.gflogging import log
@@ -136,9 +137,17 @@ class NoSettingsFile(Exception):
     pass
 
 
-def main() -> None:  # pylint: disable=too-many-locals
-    # TODO: Use sys.argv[1:].
+def main() -> None:
+    with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
+        gflogging.push_stream_for_logging(log_file)
+        try:
+            main_helper()
+        finally:
+            gflogging.pop_stream_for_logging()
 
+
+def main_helper() -> None:  # pylint: disable=too-many-locals
+    # TODO: Use sys.argv[1:].
     try:
         settings = settings_util.read()
     except FileNotFoundError as exception:
