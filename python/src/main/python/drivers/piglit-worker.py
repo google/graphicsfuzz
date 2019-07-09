@@ -158,6 +158,15 @@ def check_working_glxinfo() -> None:
 
 
 def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
+    """
+    Does an image job. Sets up directories and some files, then delegates to run_image_job to
+    convert the job to a shader_test and run it. Sets a global logfile to log to for the lifetime
+    of the function. Gets the status of the shader job from a file that is written to by
+    run_image_job.
+    :param image_job: the image job containing the shader/uniforms.
+    :param work_dir: the directory to work in.
+    :return: the result of the image job, including the log, PNG and status.
+    """
     # Output directory is based on the name of job.
     output_dir = os.path.join(work_dir, image_job.name)
 
@@ -230,6 +239,15 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
 
 def run_image_job(frag_file: str, json_file: str, status_file: str,
                   output_dir: str, skip_render: bool):
+    """
+    Runs an image job. Converts the shader job to a piglit shader_test file, then delegates to
+    run_shader_test to render with shader_runner. Writes the status of the job to file.
+    :param frag_file: The fragment shader to convert and run.
+    :param json_file: The JSON uniforms to use with the shader.
+    :param status_file: The status file to write to.
+    :param output_dir: The directory to use for the job.
+    :param skip_render: whether to skip rendering or not.
+    """
 
     assert os.path.isdir(output_dir)
     assert os.path.isfile(frag_file)
@@ -265,6 +283,12 @@ def run_image_job(frag_file: str, json_file: str, status_file: str,
 
 
 def run_shader_test(shader_test_file: str, skip_render: bool):
+    """
+    Runs a shader_test file and logs the output. If the shader runner errors out, the error is
+    logged and then raised to the caller.
+    :param shader_test_file: the shader_test file to run.
+    :param skip_render: whether to skip rendering or not.
+    """
     shader_runner_cmd = SHADERRUNNER_CMD + [shader_test_file, SHADERRUNNER_ARG_AUTO]
     if not skip_render:
         shader_runner_cmd.append(SHADERRUNNER_ARG_PNG)
