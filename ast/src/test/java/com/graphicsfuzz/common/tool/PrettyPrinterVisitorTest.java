@@ -364,6 +364,10 @@ public class PrettyPrinterVisitorTest {
     )));
   }
 
+  /**
+   * To allow testing of the 'emitShader' method, this parses a shader from the given string,
+   * invokes 'emitShader' on the resulting parsed shader, and returns the result as a string.
+   */
   private String getStringViaEmitShader(String shader) throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     PrettyPrinterVisitor.emitShader(ParseHelper.parse(shader), Optional.empty(),
