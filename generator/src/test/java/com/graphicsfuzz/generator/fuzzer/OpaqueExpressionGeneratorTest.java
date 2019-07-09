@@ -33,23 +33,17 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.SupportedTypes;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.generator.fuzzer.Fuzzer;
-import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
-import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.tool.Generate;
 import com.graphicsfuzz.generator.util.GenerationParams;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -58,7 +52,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class OpaqueExpressionGeneratorTest {
 
@@ -83,20 +77,12 @@ public class OpaqueExpressionGeneratorTest {
                         shadingLanguageVersion, 1000),
                         false))));
         Generate.addInjectionSwitchIfNotPresent(tu);
-        final File file = temporaryFolder.newFile("ex.frag");
-        try (PrintStream stream = new PrintStream(new FileOutputStream(file))) {
-          PrettyPrinterVisitor.emitShader(
-              tu,
-              Optional.empty(),
-              stream,
-              PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-              PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-              true
-          );
-        }
-        ExecResult execResult = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, file);
-        assertEquals(0, execResult.res);
-        file.delete();
+        final File shaderJobFile = temporaryFolder.newFile("ex.json");
+        final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+        fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo("{}"),
+            tu), shaderJobFile);
+        assertTrue(fileOps.areShadersValid(shaderJobFile, false));
+        fileOps.deleteShaderJobFile(shaderJobFile);
       }
     }
   }

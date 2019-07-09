@@ -42,14 +42,13 @@ public class ObfuscatorUnitTest {
     final IRandom generator = new RandomWrapper(0);
     for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es(fileOps)) {
       final File originalImage =
-          Util.renderShader(
-              originalShaderJobFile, temporaryFolder, fileOps);
+          Util.validateAndGetImage(originalShaderJobFile, temporaryFolder, fileOps);
       final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShaderJobFile);
       final ShaderJob obfuscated = Obfuscator.obfuscate(shaderJob, generator);
       final File obfuscatedImage =
           Util.validateAndGetImage(
               obfuscated,
-              originalShaderJobFile.getName() + ".obfuscated.frag",
+              originalShaderJobFile.getName() + ".obfuscated.json",
               temporaryFolder,
               fileOps);
       assertTrue(FileUtils.contentEquals(originalImage, obfuscatedImage));

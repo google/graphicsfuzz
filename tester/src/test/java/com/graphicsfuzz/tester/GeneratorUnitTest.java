@@ -17,9 +17,12 @@
 package com.graphicsfuzz.tester;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.GlslParserException;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -38,9 +41,7 @@ import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
@@ -48,17 +49,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacpp.opencv_imgcodecs;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class GeneratorUnitTest {
 
@@ -77,18 +78,19 @@ public class GeneratorUnitTest {
 
   @Test
   public void testRenderBlackImage() throws Exception {
-    File shaderFile = temporaryFolder.newFile("shader.frag");
-
+    final File shaderJobFile = temporaryFolder.newFile("shader.json");
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     final String shader = "#version 100\n"
         + "precision mediump float;\n"
         + "void main() {\n"
         + "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
         + "}\n";
-    BufferedWriter bw = new BufferedWriter(new FileWriter(shaderFile));
-    bw.write(shader);
-    bw.close();
+    fileOps.writeShaderJobFile(
+        new GlslShaderJob(Optional.empty(), new PipelineInfo(), ParseHelper.parse(shader)),
+        shaderJobFile,
+        false);
 
-    final File image = Util.getImageUsingSwiftshader(shaderFile, temporaryFolder);
+    final File image = Util.getImage(shaderJobFile, temporaryFolder, fileOps);
     final Mat mat = opencv_imgcodecs.imread(image.getAbsolutePath());
 
     final UByteIndexer sI = mat.createIndexer();
@@ -106,32 +108,32 @@ public class GeneratorUnitTest {
   @Test
   public void testStructify() throws Exception {
     testTransformationMultiVersions(() -> new StructificationTransformation(), TransformationProbabilities.DEFAULT_PROBABILITIES,
-        "structs.frag");
+        "structs");
   }
 
   @Test
   public void testDeadJumps() throws Exception {
     testTransformationMultiVersions(() -> new AddJumpTransformation(), TransformationProbabilities.onlyAddJumps(),
-        "jumps.frag");
+        "jumps");
   }
 
   @Test
   public void testIdentity() throws Exception {
     testTransformationMultiVersions(() -> new IdentityTransformation(), TransformationProbabilities
-        .onlyMutateExpressions(), "mutate.frag");
+        .onlyMutateExpressions(), "mutate");
   }
 
   @Test
   public void testOutlineStatements() throws Exception {
     testTransformationMultiVersions(() -> new OutlineStatementTransformation(),
         TransformationProbabilities.onlyOutlineStatements(),
-        "outline.frag");
+        "outline");
   }
 
   @Test
   public void testSplitForLoops() throws Exception {
     testTransformationMultiVersions(() -> new SplitForLoopTransformation(), TransformationProbabilities
-        .onlySplitLoops(), "split.frag");
+        .onlySplitLoops(), "split");
   }
 
   @Test
@@ -140,7 +142,7 @@ public class GeneratorUnitTest {
         TransformationProbabilities.likelyDonateDeadCode()::donateDeadCodeAtStmt,
             Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
-        "donatedead.frag",
+        "donatedead",
         Arrays.asList("bubblesort_flag.json", "squares.json"),
         Arrays.asList("bubblesort_flag.json", "squares.json"));
     // Reason for blacklisting^: slow.
@@ -153,7 +155,7 @@ public class GeneratorUnitTest {
             Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true),
         false), TransformationProbabilities.likelyDonateLiveCode(),
-        "donatelive.frag",
+        "donatelive",
         Arrays.asList("squares.json"),
         Arrays.asList("squares.json"));
     // Reason for blacklisting^: slow.
@@ -162,27 +164,27 @@ public class GeneratorUnitTest {
   @Test
   public void testAddDeadFragColorWrites() throws Exception {
     testTransformationMultiVersions(() -> new AddDeadOutputWriteTransformation(), TransformationProbabilities
-        .onlyAddDeadFragColorWrites(), "deadfragcolor.frag", Arrays.asList(), Arrays.asList());
+        .onlyAddDeadFragColorWrites(), "deadfragcolor", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void testAddLiveOutputVariableWrites() throws Exception {
     testTransformationMultiVersions(() -> new AddLiveOutputWriteTransformation(), TransformationProbabilities
-        .onlyAddLiveFragColorWrites(), "liveoutvar.frag", Arrays.asList(), Arrays.asList());
+        .onlyAddLiveFragColorWrites(), "liveoutvar", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void testVectorize() throws Exception {
     testTransformationMultiVersions(() -> new VectorizeTransformation(),
         TransformationProbabilities.onlyVectorize(),
-        "vectorize.frag", Arrays.asList(), Arrays.asList());
+        "vectorize", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void mutateAndVectorize() throws Exception {
     testTransformationMultiVersions(Arrays.asList(() -> new IdentityTransformation(), () -> new VectorizeTransformation()),
         TransformationProbabilities.onlyVectorizeAndMutate(),
-        "mutate_and_vectorize.frag",
+        "mutate_and_vectorize",
         Arrays.asList(), Arrays.asList());
   }
 
@@ -190,14 +192,14 @@ public class GeneratorUnitTest {
   public void testStructification() throws Exception {
     testTransformationMultiVersions(() -> new StructificationTransformation(),
         TransformationProbabilities.onlyStructify(),
-        "structify.frag", Arrays.asList(), Arrays.asList());
+        "structify", Arrays.asList(), Arrays.asList());
   }
 
   @Test
   public void testWrap() throws Exception {
     testTransformationMultiVersions(() -> new AddWrappingConditionalTransformation(),
         TransformationProbabilities.onlyWrap(),
-        "wrap.frag",
+        "wrap",
         Arrays.asList("bubblesort_flag.json"),
         Arrays.asList("bubblesort_flag.json"));
     // Reason for blacklisting^: slow.
@@ -242,8 +244,7 @@ public class GeneratorUnitTest {
       }
       File referenceImage = null;
       if (!skipRender) {
-        referenceImage = Util.renderShader(
-            originalShaderJobFile,
+        referenceImage = Util.validateAndGetImage(originalShaderJobFile,
             temporaryFolder,
             fileOps);
       }
@@ -331,29 +332,21 @@ public class GeneratorUnitTest {
     Generate.setInjectionSwitch(shaderJob.getPipelineInfo());
     Generate.randomiseUnsetUniforms(tu, shaderJob.getPipelineInfo(), generator);
 
-    // Using fileOps, even though the rest of the code here does not use it yet.
     // Write shaders to shader job file and validate.
-
-    Assert.assertTrue(suffix.endsWith(".frag"));
-    // e.g. "_matrix_mult"
-    final String suffixNoExtension = FilenameUtils.removeExtension(suffix);
-    // e.g. "temp/orig_matrix_mult.json"
     final File shaderJobFile =
         Paths.get(
             temporaryFolder.getRoot().getAbsolutePath(),
-            originalShaderJobFile.getName() + suffixNoExtension + ".json"
+            originalShaderJobFile.getName() + suffix + ".json"
         ).toFile();
 
     fileOps.writeShaderJobFile(
         shaderJob,
         shaderJobFile
     );
-    fileOps.areShadersValid(shaderJobFile, true);
+    assertTrue(fileOps.areShadersValid(shaderJobFile, false));
 
     if (!skipRender) {
-      File underlyingFragFile = fileOps.getUnderlyingShaderFile(shaderJobFile, ShaderKind.FRAGMENT);
-      // TODO: Use fileOps.
-      final File variantImage = Util.getImage(underlyingFragFile, temporaryFolder, fileOps);
+      final File variantImage = Util.getImage(shaderJobFile, temporaryFolder, fileOps);
       Util.assertImagesSimilar(referenceImage, variantImage);
     }
 
