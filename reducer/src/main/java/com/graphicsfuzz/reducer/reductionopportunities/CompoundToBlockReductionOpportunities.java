@@ -27,6 +27,7 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.ContainsTopLevelContinue;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.common.util.SideEffectChecker;
 import java.util.Arrays;
 import java.util.List;

@@ -40,7 +40,7 @@ public class VariableDeclReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), null, true));
+            new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(reducedProgram, tu);
@@ -53,7 +53,7 @@ public class VariableDeclReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), null, true));
+            new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(reducedProgram, tu);
@@ -66,7 +66,7 @@ public class VariableDeclReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), null, true));
+            new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(reducedProgram, tu);
@@ -86,8 +86,7 @@ public class VariableDeclReductionOpportunitiesTest {
                 false,
                 ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0),
-                new IdGenerator(),
-                true)
+                new IdGenerator())
         );
     assertEquals(0, ops.size());
   }

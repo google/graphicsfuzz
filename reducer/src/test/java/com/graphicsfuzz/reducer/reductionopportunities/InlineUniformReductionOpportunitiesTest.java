@@ -203,7 +203,7 @@ public class InlineUniformReductionOpportunitiesTest {
       List<SimplifyExprReductionOpportunity> ops =
           InlineUniformReductionOpportunities.findOpportunities(temp,
               new ReducerContext(false,
-                  ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null, true));
+                  ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null));
       assertEquals(expectedSize, ops.size());
       ops.get(i).applyReduction();
       if (CompareAsts.isEqualAsts(target, temp.getShaders().get(0))) {

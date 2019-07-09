@@ -163,8 +163,7 @@ public class IdentityMutationReductionOpportunitiesTest {
     return new ReducerContext(false,
         ShadingLanguageVersion.ESSL_310,
         new RandomWrapper(),
-        new IdGenerator(),
-        true);
+        new IdGenerator());
   }
 
   private void checkOneReductionOpportunity(String program, String afterReduction) throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {

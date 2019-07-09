@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.CompareAsts;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
@@ -35,7 +36,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(prog);
     List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(true, ShadingLanguageVersion.ESSL_100,
-        new RandomWrapper(0), null, true));
+        new RandomWrapper(0), new IdGenerator()));
     for (SimplifyExprReductionOpportunity op : ops) {
       op.applyReduction();
     }
@@ -48,7 +49,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(prog);
     List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(true, ShadingLanguageVersion.ESSL_100,
-        new RandomWrapper(0), null, true));
+        new RandomWrapper(0), new IdGenerator()));
     for (SimplifyExprReductionOpportunity op : ops) {
       op.applyReduction();
     }
@@ -62,7 +63,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(prog);
     List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(true, ShadingLanguageVersion.ESSL_100,
-        new RandomWrapper(0), null, true));
+        new RandomWrapper(0), new IdGenerator()));
     for (SimplifyExprReductionOpportunity op : ops) {
       op.applyReduction();
     }
@@ -74,7 +75,8 @@ public class ExprToConstantReductionOpportunitiesTest {
     final String program = "void main() { int GLF_live3_a; GLF_live3_a; }";
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, null, null, true));
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+              new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts("void main() { int GLF_live3_a; 1; }", tu);

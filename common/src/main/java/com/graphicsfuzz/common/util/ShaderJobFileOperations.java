@@ -702,8 +702,7 @@ public class ShaderJobFileOperations {
 
   public void writeShaderJobFile(
       final ShaderJob shaderJob,
-      final File outputShaderJobFile,
-      final boolean emitGraphicsFuzzDefines) throws FileNotFoundException {
+      final File outputShaderJobFile) throws FileNotFoundException {
 
     assertIsShaderJobFile(outputShaderJobFile);
 
@@ -713,8 +712,7 @@ public class ShaderJobFileOperations {
       writeShader(
           tu,
           shaderJob.getLicense(),
-          new File(outputFileNoExtension + "." + tu.getShaderKind().getFileExtension()),
-          emitGraphicsFuzzDefines
+          new File(outputFileNoExtension + "." + tu.getShaderKind().getFileExtension())
       );
     }
 
@@ -723,12 +721,6 @@ public class ShaderJobFileOperations {
         outputShaderJobFile,
         ".json",
         shaderJob.getPipelineInfo().toString());
-  }
-
-  public void writeShaderJobFile(
-      final ShaderJob shaderJob,
-      final File outputShaderJobFile) throws FileNotFoundException {
-    writeShaderJobFile(shaderJob, outputShaderJobFile, true);
   }
 
   public void writeShaderJobFileFromImageJob(
@@ -873,8 +865,7 @@ public class ShaderJobFileOperations {
   private static void writeShader(
       TranslationUnit tu,
       Optional<String> license,
-      File outputFile,
-      boolean emitGraphicsFuzzDefines
+      File outputFile
   ) throws FileNotFoundException {
     try (PrintStream stream = ps(outputFile)) {
       PrettyPrinterVisitor.emitShader(
@@ -882,8 +873,7 @@ public class ShaderJobFileOperations {
           license,
           stream,
           PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-          emitGraphicsFuzzDefines
+          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER
       );
     }
   }

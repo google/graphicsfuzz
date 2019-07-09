@@ -40,6 +40,7 @@ import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.common.util.SideEffectChecker;
 import com.graphicsfuzz.common.util.StructUtils;
 import com.graphicsfuzz.util.Constants;

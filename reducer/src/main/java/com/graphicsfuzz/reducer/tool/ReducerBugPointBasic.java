@@ -140,7 +140,7 @@ public class ReducerBugPointBasic {
                   reduceEverywhere,
                   shadingLanguageVersion,
                   generator,
-                  idGenerator, true),
+                  idGenerator),
               fileOps);
 
         } catch (Exception exception) {

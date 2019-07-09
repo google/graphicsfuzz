@@ -14,13 +14,32 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.reducer.reductionopportunities;
+package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.util.Constants;
 
 public class MacroNames {
+
+  /**
+   * Determines whether the given expression is an invocation of a GraphicsFuzz macro.
+   * @param expr an expression to be tested.
+   * @return true if and only if the expression is an invocation of a GraphicsFuzz macro.
+   */
+  public static boolean isGraphicsFuzzMacro(Expr expr) {
+    return isIdentity(expr)
+        || isZero(expr)
+        || isOne(expr)
+        || isFalse(expr)
+        || isTrue(expr)
+        || isFuzzed(expr)
+        || isDeadByConstruction(expr)
+        || isLoopWrapper(expr)
+        || isIfWrapperTrue(expr)
+        || isIfWrapperFalse(expr)
+        || isSwitch(expr);
+  }
 
   public static boolean isIdentity(Expr expr) {
     return isCallToNamedFunction(expr, Constants.GLF_IDENTITY);

@@ -18,17 +18,28 @@ package com.graphicsfuzz.common.tool;
 
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.util.GlslParserException;
+import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ToolHelper;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import org.apache.commons.io.FileUtils;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class PrettyPrinterVisitorTest {
 
@@ -351,6 +362,94 @@ public class PrettyPrinterVisitorTest {
         shaderFile).res);
     assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
     )));
+  }
+
+  /**
+   * To allow testing of the 'emitShader' method, this parses a shader from the given string,
+   * invokes 'emitShader' on the resulting parsed shader, and returns the result as a string.
+   */
+  private String getStringViaEmitShader(String shader) throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
+    final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    PrettyPrinterVisitor.emitShader(ParseHelper.parse(shader), Optional.empty(),
+        new PrintStream(bytes), PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+        PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER);
+    return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+  }
+
+  @Test
+  public void testNoMacrosUsedSoNoGraphicsFuzzHeader() throws Exception {
+    assertFalse(getStringViaEmitShader("void main() { }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testNoMacrosUsedSoNoGraphicsFuzzHeader2() throws Exception {
+    // Even though this uses a macro name, it doesn't use it as a function invocation.
+    assertFalse(getStringViaEmitShader("void main() { int " + Constants.GLF_FUZZED + "; }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToIdentityMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_IDENTITY + "(1, 1); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToZeroMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_ZERO + "(0); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToOneMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_ONE + "(1); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToFalseMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_FALSE + "(false); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToTrueMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_TRUE + "(true); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToFuzzedMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_FUZZED + "(1234); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToDeadByConstructionMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { if(" + Constants.GLF_DEAD + "(false)) { } "
+        + "}").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToLoopWrapperMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { while(" + Constants.GLF_WRAPPED_LOOP +
+        "(false))"
+        + " {"
+        + " } "
+        + "}").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToIfFalseWrapperMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { if(" + Constants.GLF_WRAPPED_IF_FALSE + "(false)) { } "
+        + "}").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToIfTrueWrapperMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { if(" + Constants.GLF_WRAPPED_IF_TRUE +
+        "(true)) { } "
+        + "}").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+  }
+
+  @Test
+  public void testGraphicsFuzzMacrosDueToSwitchMacro() throws Exception {
+    assertTrue(getStringViaEmitShader("void main() { switch(" + Constants.GLF_SWITCH +
+        "(0)) { case 0: break; default: break; } "
+        + "}").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
 }
