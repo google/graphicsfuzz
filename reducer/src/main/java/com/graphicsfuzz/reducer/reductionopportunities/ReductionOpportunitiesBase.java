@@ -117,13 +117,7 @@ public abstract class ReductionOpportunitiesBase
         injectionTracker.notifySwitchBreak();
       }
 
-      if (isDeadCodeInjection(child)) {
-        injectionTracker.enterDeadCodeInjection();
-      }
       visit(child);
-      if (isDeadCodeInjection(child)) {
-        injectionTracker.exitDeadCodeInjection();
-      }
     }
     leaveBlockStmt(block);
   }
@@ -171,15 +165,33 @@ public abstract class ReductionOpportunitiesBase
     if (MacroNames.isFuzzed(functionCallExpr)) {
       injectionTracker.enterFuzzedMacro();
     }
-    if (MacroNames.isDeadByConstruction(functionCallExpr)) {
-      injectionTracker.enterDeadMacro();
-    }
     super.visitFunctionCallExpr(functionCallExpr);
-    if (MacroNames.isDeadByConstruction(functionCallExpr)) {
-      injectionTracker.exitDeadMacro();
-    }
     if (MacroNames.isFuzzed(functionCallExpr)) {
       injectionTracker.exitFuzzedMacro();
+    }
+  }
+
+  @Override
+  public void visitIfStmt(IfStmt ifStmt) {
+    // This method is overridden in order to allow tracking of when we are inside a dead code
+    // injection.
+
+    // Even for an "if(_GLF_DEAD(...))", the condition itself is not inside the dead code injection,
+    // so we visit it as usual first.
+    visitChildFromParent(ifStmt.getCondition(), ifStmt);
+
+    if (isDeadCodeInjection(ifStmt)) {
+      // This is a dead code injection, so update the injection tracker appropriately before
+      // visiting the 'then' and (possibly) 'else' branches.
+      injectionTracker.enterDeadCodeInjection();
+    }
+    visit(ifStmt.getThenStmt());
+    if (ifStmt.hasElseStmt()) {
+      visit(ifStmt.getElseStmt());
+    }
+    if (isDeadCodeInjection(ifStmt)) {
+      // Update the injection tracker to indicate that we have left this dead code injection.
+      injectionTracker.exitDeadCodeInjection();
     }
   }
 
