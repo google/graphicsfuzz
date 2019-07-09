@@ -499,8 +499,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
                 reduceEverywhere,
                 ShadingLanguageVersion.GLSL_440,
                 new RandomWrapper(0),
-                new IdGenerator(),
-                true),
+                new IdGenerator()),
             fileOps
         ).stream()
         .filter(item -> item instanceof CompoundToBlockReductionOpportunity)
@@ -531,7 +530,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
     final List<CompoundToBlockReductionOpportunity> ops =
         CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
-                new RandomWrapper(0), new IdGenerator(), true));
+                new RandomWrapper(0), new IdGenerator()));
     assertEquals(0, ops.size());
   }
 

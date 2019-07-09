@@ -26,6 +26,7 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.CompareAsts;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.util.Constants;
@@ -76,7 +77,7 @@ public class StmtReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(prog);
     List<StmtReductionOpportunity> ops = StmtReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.GLSL_130,
-        new RandomWrapper(), null, true));
+        new RandomWrapper(), new IdGenerator()));
 
     for (StmtReductionOpportunity op : ops) {
       op.applyReduction();
@@ -102,7 +103,7 @@ public class StmtReductionOpportunitiesTest {
     List<StmtReductionOpportunity> ops = StmtReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
             ShadingLanguageVersion.ESSL_310,
-            new RandomWrapper(), null, false));
+            new RandomWrapper(), new IdGenerator()));
 
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -122,7 +123,7 @@ public class StmtReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops =
           StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, null, null, null, true));
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     assertTrue(ops.get(0) instanceof StmtReductionOpportunity);
     ops.get(0).applyReduction();
@@ -136,7 +137,7 @@ public class StmtReductionOpportunitiesTest {
     final String reducedProgram = "void main() { }";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops =
-          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
+          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     assertTrue(ops.get(0) instanceof StmtReductionOpportunity);
     ops.get(0).applyReduction();
@@ -149,7 +150,9 @@ public class StmtReductionOpportunitiesTest {
     final String program = "void main() { for(int i = 0; i < 100; i++) ; }";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops =
-          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, null, null, true));
+          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+              new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                  new IdGenerator()));
     assertEquals(0, ops.size());
   }
 
@@ -158,7 +161,9 @@ public class StmtReductionOpportunitiesTest {
     final String program = "int x; void foo() { x = 42; } void main() { if (foo()) ; else ; }";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops =
-          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, null, null, true));
+          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+              new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                  new IdGenerator()));
     assertEquals(0, ops.size());
   }
 
@@ -173,7 +178,7 @@ public class StmtReductionOpportunitiesTest {
           + "}";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops =
-          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, null, null, true));
+          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     assertTrue(ops.get(0) instanceof StmtReductionOpportunity);
     ops.get(0).applyReduction();
@@ -195,7 +200,7 @@ public class StmtReductionOpportunitiesTest {
           + "}";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops =
-          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, null, null, true));
+          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(4, ops.size());
     for (int i = 0; i < ops.size(); i++) {
       assertTrue(ops.get(i) instanceof StmtReductionOpportunity);
@@ -211,7 +216,7 @@ public class StmtReductionOpportunitiesTest {
     final String reducedProgram = "void main() { }";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops =
-          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, null, null, true));
+          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     assertTrue(ops.get(0) instanceof StmtReductionOpportunity);
     ops.get(0).applyReduction();
@@ -224,7 +229,7 @@ public class StmtReductionOpportunitiesTest {
     final String program = "void main() { float x; vec4(0.0, x++, 0.0, 0.0); }";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops =
-          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, null, null, true));
+          StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(0, ops.size());
   }
 
@@ -250,8 +255,8 @@ public class StmtReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
           MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), null,
-              true));
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0),
+              new IdGenerator()));
     assertEquals(4, ops.size());
   }
 
@@ -271,7 +276,7 @@ public class StmtReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
           MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), null, true));
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), new IdGenerator()));
     assertEquals(3, ops.size());
   }
 
@@ -282,8 +287,8 @@ public class StmtReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
         MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), null,
-            true));
+        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0),
+            new IdGenerator()));
     assertEquals(3, ops.size());
     ops.get(0).applyReduction();
     ops.get(1).applyReduction();
@@ -299,8 +304,8 @@ public class StmtReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
         MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), null,
-            true));
+        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0),
+            new IdGenerator()));
     assertEquals(5, ops.size());
     ops.get(0).applyReduction();
     ops.get(1).applyReduction();
@@ -317,8 +322,7 @@ public class StmtReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
         MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), null,
-            true));
+        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), new IdGenerator()));
     assertEquals(5, ops.size());
   }
 

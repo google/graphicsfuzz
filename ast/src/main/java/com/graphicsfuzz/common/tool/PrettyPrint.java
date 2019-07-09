@@ -44,11 +44,6 @@ class PrettyPrint {
         .help("Target file name.")
         .type(String.class);
 
-    // Optional arguments
-    parser.addArgument("--glsl_version")
-        .help("Version of GLSL to target.")
-        .type(String.class);
-
     return parser.parseArgs(args);
 
   }
@@ -75,18 +70,9 @@ class PrettyPrint {
       throws FileNotFoundException {
     try (PrintStream stream =
              new PrintStream(new FileOutputStream(new File(ns.getString("output"))))) {
-      if (getGlslVersion(ns) != null) {
-        throw new RuntimeException();
-        //Helper.emitDefines(stream, new ShadingLanguageVersion(getGlslVersion(ns), false),
-        //    false);
-      }
       PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(stream);
       ppv.visit(tu);
     }
-  }
-
-  private static String getGlslVersion(Namespace ns) {
-    return ns.getString("glsl_version");
   }
 
 }

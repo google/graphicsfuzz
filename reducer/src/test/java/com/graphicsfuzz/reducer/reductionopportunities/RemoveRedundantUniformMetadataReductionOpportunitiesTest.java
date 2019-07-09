@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -50,8 +51,8 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
         RemoveRedundantUniformMetadataReductionOpportunities
         .findOpportunities(shaderJob,
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null,
-                true));
+            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
 
@@ -81,8 +82,7 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
         RemoveRedundantUniformMetadataReductionOpportunities
             .findOpportunities(shaderJob,
                 new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
-                null,
-                true));
+                new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
 
@@ -109,8 +109,8 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
         RemoveRedundantUniformMetadataReductionOpportunities
         .findOpportunities(shaderJob,
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null,
-                true));
+            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new IdGenerator()));
     assertEquals(0, ops.size());
   }
 
@@ -140,7 +140,7 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
         RemoveRedundantUniformMetadataReductionOpportunities
             .findOpportunities(shaderJob,
                 new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
-                null, true));
+                new IdGenerator()));
     assertEquals(0, ops.size());
   }
 

@@ -294,8 +294,7 @@ public class ReductionDriver {
     }
     fileOps.writeShaderJobFile(
         state,
-        shaderJobFileOutput,
-        context.getEmitGraphicsFuzzDefines()
+        shaderJobFileOutput
     );
     if (requiresUniformBindings) {
       assert state.getPipelineInfo().getNumUniforms() == 0 || state.hasUniformBindings();

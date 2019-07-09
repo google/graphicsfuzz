@@ -142,7 +142,7 @@ public class ReducerBugPoint {
                 generator,
                 null,
                 10,
-                1, true),
+                1),
             verbose,
             fileOps,
             new RandomFileJudge(

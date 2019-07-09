@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
+import com.graphicsfuzz.common.util.MacroNames;
 
 public final class IdentityMutationReductionOpportunity extends AbstractReductionOpportunity {
 

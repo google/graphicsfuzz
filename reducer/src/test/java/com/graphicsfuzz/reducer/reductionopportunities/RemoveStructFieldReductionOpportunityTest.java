@@ -73,7 +73,7 @@ public class RemoveStructFieldReductionOpportunityTest {
             declarationStmt), false);
 
     assertEquals("foo v1 = foo(1.0, bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0))), v2 = foo(1.0, bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)));\n",
-        getString(declarationStmt));
+        declarationStmt.getText());
 
     IReductionOpportunity ro1 = new RemoveStructFieldReductionOpportunity(foo, "a", b,
         new VisitationDepth(0));
@@ -87,31 +87,25 @@ public class RemoveStructFieldReductionOpportunityTest {
 
     ro1.applyReduction();
     assertEquals("foo v1 = foo(bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0))), v2 = foo(bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)));\n",
-        getString(declarationStmt));
+        declarationStmt.getText());
 
     assertEquals(2, bar.getNumFields());
     assertEquals(2, foo.getNumFields());
 
     ro2.applyReduction();
     assertEquals("foo v1 = foo(bar(vec3(0.0, 0.0, 0.0)), bar(vec3(0.0, 0.0, 0.0))), v2 = foo(bar(vec3(0.0, 0.0, 0.0)), bar(vec3(0.0, 0.0, 0.0)));\n",
-        getString(declarationStmt));
+        declarationStmt.getText());
 
     assertEquals(1, bar.getNumFields());
     assertEquals(2, foo.getNumFields());
 
     ro3.applyReduction();
     assertEquals("foo v1 = foo(bar(vec3(0.0, 0.0, 0.0))), v2 = foo(bar(vec3(0.0, 0.0, 0.0)));\n",
-        getString(declarationStmt));
+        declarationStmt.getText());
 
     assertEquals(1, bar.getNumFields());
     assertEquals(1, foo.getNumFields());
 
-  }
-
-  private String getString(DeclarationStmt declarationStmt) {
-    ByteArrayOutputStream output = new ByteArrayOutputStream();
-    new PrettyPrinterVisitor(new PrintStream(output)).visit(declarationStmt);
-    return new String(output.toByteArray(), StandardCharsets.UTF_8);
   }
 
 }

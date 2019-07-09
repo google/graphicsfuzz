@@ -25,7 +25,7 @@ import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.reducer.reductionopportunities.MacroNames;
+import com.graphicsfuzz.common.util.MacroNames;
 
 public class EliminateInjectionMacrosVisitor extends StandardVisitor {
 

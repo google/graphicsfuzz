@@ -111,7 +111,7 @@ public class ReductionDriverTest {
         ReductionOpportunities.
             getReductionOpportunities(
                 MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, version, generator, new IdGenerator(), true),
+                new ReducerContext(false, version, generator, new IdGenerator()),
                 fileOps);
     assertEquals(3, ops.size());
 
@@ -120,8 +120,7 @@ public class ReductionDriverTest {
             false,
             version,
             generator,
-            null,
-            true),
+            new IdGenerator()),
         false,
         fileOps, pessimist, testFolder.getRoot())
         .doReduction(state, getPrefix(tempFile), 0, -1);
@@ -231,7 +230,7 @@ public class ReductionDriverTest {
         translationUnits);
 
     return new ReductionDriver(new ReducerContext(reduceEverywhere, version,
-        generator, new IdGenerator(), true), false, fileOps,
+        generator, new IdGenerator()), false, fileOps,
         judge, testFolder.getRoot())
         .doReduction(state, getPrefix(tempFragmentShaderFile), 0, stepLimit);
   }
@@ -278,8 +277,8 @@ public class ReductionDriverTest {
       };
 
     final String reducedFilesPrefix = new ReductionDriver(
-        new ReducerContext(false, version, generator, null,
-            true), false, fileOps,
+        new ReducerContext(false, version, generator, new IdGenerator()),
+        false, fileOps,
         referencesSinCosAnd3, testFolder.getRoot())
         .doReduction(state, getPrefix(tempFile), 0,-1);
 
@@ -553,7 +552,7 @@ public class ReductionDriverTest {
     final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
         ShadingLanguageVersion.ESSL_300,
         new RandomWrapper(0),
-        new IdGenerator(), true),
+        new IdGenerator()),
         false,
         fileOps,
         (unused, item) -> true, workDir)
@@ -585,7 +584,7 @@ public class ReductionDriverTest {
     final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
         ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0),
-        new IdGenerator(), true),
+        new IdGenerator()),
         false,
         fileOps,
         (unused, item) -> true, workDir)

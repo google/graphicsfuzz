@@ -70,7 +70,9 @@ import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
+import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.util.Constants;
 import java.io.ByteArrayOutputStream;
@@ -128,10 +130,19 @@ public class PrettyPrinterVisitor extends StandardVisitor {
                                 Optional<String> license,
                                 PrintStream stream,
                                 int indentationWidth,
-                                Supplier<String> newlineSupplier,
-                                boolean emitGraphicsFuzzDefines) {
+                                Supplier<String> newlineSupplier) {
+    final boolean usesGraphicsFuzzDefines = new CheckPredicateVisitor() {
+      @Override
+      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        if (MacroNames.isGraphicsFuzzMacro(functionCallExpr)) {
+          predicateHolds();
+        }
+        super.visitFunctionCallExpr(functionCallExpr);
+      }
+    }.test(shader);
+
     new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier,
-        emitGraphicsFuzzDefines, license).visit(shader);
+        usesGraphicsFuzzDefines, license).visit(shader);
   }
 
   private String newLine() {

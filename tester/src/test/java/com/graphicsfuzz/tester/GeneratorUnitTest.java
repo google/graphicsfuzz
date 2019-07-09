@@ -87,8 +87,7 @@ public class GeneratorUnitTest {
         + "}\n";
     fileOps.writeShaderJobFile(
         new GlslShaderJob(Optional.empty(), new PipelineInfo(), ParseHelper.parse(shader)),
-        shaderJobFile,
-        false);
+        shaderJobFile);
 
     final File image = Util.getImage(shaderJobFile, temporaryFolder, fileOps);
     final Mat mat = opencv_imgcodecs.imread(image.getAbsolutePath());

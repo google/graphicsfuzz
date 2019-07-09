@@ -129,7 +129,7 @@ public class ReducerUnitTest {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
           new GlslShaderJob(Optional.empty(), pipelineInfo,
               fragmentShader),
-          new ReducerContext(false, fragmentShader.getShadingLanguageVersion(), generator, idGenerator, true),
+          new ReducerContext(false, fragmentShader.getShadingLanguageVersion(), generator, idGenerator),
           fileOps);
       if (ops.isEmpty()) {
         break;
@@ -220,7 +220,7 @@ public class ReducerUnitTest {
 
       new ReductionDriver(new ReducerContext(false,
           shadingLanguageVersion, generator,
-            new IdGenerator(), true), false, fileOps,
+            new IdGenerator()), false, fileOps,
           new RandomFileJudge(generator, threshold, throwExceptionOnInvalid, fileOps),
           workDir)
             .doReduction(initialState, shaderJobShortName, 0,
@@ -384,7 +384,7 @@ public class ReducerUnitTest {
     fileOps.copyShaderJobFileTo(shaderJobFile, new File(temporaryFolder.getRoot(),
         shaderJobFile.getName()), false);
     return new ReductionDriver(new ReducerContext(false, version, generator,
-        new IdGenerator(), true), false, fileOps,
+        new IdGenerator()), false, fileOps,
         fileJudge, temporaryFolder.getRoot())
         .doReduction(state, shaderJobShortName, 0, -1);
   }

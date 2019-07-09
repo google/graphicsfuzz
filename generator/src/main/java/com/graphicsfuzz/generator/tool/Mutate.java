@@ -140,7 +140,7 @@ public class Mutate {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
     fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo("{}"),
-        tu), shaderJobFile, false);
+        tu), shaderJobFile);
 
   }
 
