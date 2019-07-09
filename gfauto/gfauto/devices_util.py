@@ -25,6 +25,8 @@ from gfauto.device_pb2 import (
     DevicePreprocess,
     DeviceSwiftShader,
 )
+from gfauto.gflogging import log
+from gfauto.util import ToolNotOnPathError
 
 
 def swift_shader_device() -> Device:
@@ -68,10 +70,16 @@ def get_device_list(device_list: Optional[DeviceList] = None) -> DeviceList:
     device_list.devices.extend([device])
     device_list.active_device_names.append(device.name)
 
-    # Android devices.
-    android_devices = android_device.get_all_android_devices()
-    device_list.devices.extend(android_devices)
-    device_list.active_device_names.extend([d.name for d in android_devices])
+    try:
+        # Android devices.
+        android_devices = android_device.get_all_android_devices()
+        device_list.devices.extend(android_devices)
+        device_list.active_device_names.extend([d.name for d in android_devices])
+    except ToolNotOnPathError:
+        log(
+            "WARNING: adb was not found on PATH nor was ANDROID_HOME set; "
+            "Android devices will not be added to settings.json"
+        )
 
     return device_list
 
