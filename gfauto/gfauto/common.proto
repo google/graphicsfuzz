@@ -1,0 +1,53 @@
+// Copyright 2019 The GraphicsFuzz Project Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package gfauto;
+
+
+// Defines a binary (or really, any file).
+message Binary {
+
+  // E.g. glslangValidator.
+  string name = 1;
+
+  // This should be a list of strings (tags) containing the platform and other details.
+  // E.g. "Linux", "x64", "Debug", "malloc", "msan".
+  // When being used to specify how to *find* a binary, the tags must be found in the binary definition.
+  // E.g. "Debug", "msan".
+  // Typically, the current platform will also need to be found (e.g. "Linux") before the Binary can be chosen for use.
+  repeated string tags = 2;
+
+  // Used when defining a binary within a recipe or artifact. Gives the path (always using '/' as the directory
+  // separator) relative from the artifact.json and recipe.json file to the binary, after the ArchiveSet has been
+  // extracted.
+  // Should be empty in Settings.
+  // Also used internally (but never written to disk) to store the resolved path of a binary.
+  string path = 3;
+
+  // This should typically be a hash of some kind.
+  string version = 4;
+}
+
+message Archive {
+  string url = 1;
+  string output_file = 2;
+  string output_directory = 3;
+}
+
+message ArchiveSet {
+  repeated Archive archives = 1;
+  repeated Binary binaries = 2;
+}

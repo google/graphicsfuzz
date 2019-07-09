@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="python_files" pattern="file[gfauto]:gfauto//*&amp;&amp;!file:gfauto/*_pb2.py*" />
+</component>
