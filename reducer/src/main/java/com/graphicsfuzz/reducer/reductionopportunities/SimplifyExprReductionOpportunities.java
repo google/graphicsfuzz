@@ -110,8 +110,7 @@ abstract class SimplifyExprReductionOpportunities
       return true;
     }
 
-    if (injectionTracker.enclosedByDeadCodeInjection() && !injectionTracker.underDeadMacro()) {
-      // We want to reduce expressions in dead code blocks, but not inside the dead macro itself
+    if (injectionTracker.enclosedByDeadCodeInjection()) {
       return true;
     }
 

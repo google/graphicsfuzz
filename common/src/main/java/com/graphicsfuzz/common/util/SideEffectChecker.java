@@ -43,24 +43,26 @@ public class SideEffectChecker {
 
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-        if (!TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
+        if (TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
             .containsKey(functionCallExpr.getCallee())) {
-          // Assume that any call to a non-builtin might have a side-effect.
-          predicateHolds();
-        }
-        for (FunctionPrototype p :
-            TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
-                .get(functionCallExpr.getCallee())) {
-          // We check each argument of the built-in's prototypes to see if they require lvalues -
-          // if so, they can cause side effects.
-          // We could be more precise here by finding the specific overload of the function rather
-          // than checking every possible prototype for lvalue parameters.
-          for (ParameterDecl param : p.getParameters()) {
-            if (param.getType().hasQualifier(TypeQualifier.OUT_PARAM)
-                || param.getType().hasQualifier(TypeQualifier.INOUT_PARAM)) {
-              predicateHolds();
+          for (FunctionPrototype p :
+              TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
+                  .get(functionCallExpr.getCallee())) {
+            // We check each argument of the built-in's prototypes to see if they require lvalues -
+            // if so, they can cause side effects.
+            // We could be more precise here by finding the specific overload of the function rather
+            // than checking every possible prototype for lvalue parameters.
+            for (ParameterDecl param : p.getParameters()) {
+              if (param.getType().hasQualifier(TypeQualifier.OUT_PARAM)
+                  || param.getType().hasQualifier(TypeQualifier.INOUT_PARAM)) {
+                predicateHolds();
+              }
             }
           }
+        } else if (!MacroNames.isGraphicsFuzzMacro(functionCallExpr)) {
+          // Assume that any call to a function that is not a GraphicsFuzz macro or builtin
+          // might have a side-effect.
+          predicateHolds();
         }
         super.visitFunctionCallExpr(functionCallExpr);
       }

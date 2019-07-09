@@ -125,22 +125,20 @@ public class CompoundToBlockReductionOpportunitiesTest {
   }
 
   @Test
-  public void testDoRemoveDeadIf() throws Exception {
+  public void testDoNotRemoveDeadIf() throws Exception {
     final String original = ""
           + "void main() {"
+          + "  int a = 2;"
           + "  if (" + Constants.GLF_DEAD + "(false)) {"
-          + "    int a = 2;"
           + "    a = a + 1;"
           + "  }"
           + "}";
-    final String expected = ""
-        + "void main() {"
-        + "  {"
-        + "    int a = 2;"
-        + "    a = a + 1;"
-        + "  }"
-        + "}";
-    check(false, original, expected);
+    final List<CompoundToBlockReductionOpportunity> opportunities =
+        CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(ParseHelper.parse(original)),
+            new ReducerContext(false,
+                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new IdGenerator()));
+    assertEquals(0, opportunities.size());
   }
 
   @Test
@@ -154,7 +152,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "    }"
           + "  }"
           + "}";
-    final String expected1 = ""
+    final String expected = ""
           + "void main() {"
           + "  if (" + Constants.GLF_DEAD + "(false)) {"
           + "    {"
@@ -163,16 +161,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "    }"
           + "  }"
           + "}";
-    final String expected2 = ""
-        + "void main() {"
-        + "  {"
-        + "    if (false) {"
-        + "      int a = 2;"
-        + "      a = a + 1;"
-        + "    }"
-        + "  }"
-        + "}";
-    check(false, original, expected1, expected2);
+    check(false, original, expected);
   }
 
   @Test
@@ -256,20 +245,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "    }"
           + "  }"
           + "}";
-    final String expected4 = ""
-        + "void main() {"
-        + "  int a = 4;"
-        + "  {"
-        + "    if (a) {"
-        + "      if (a > 0) {"
-        + "        int a = 2;"
-        + "        a = a + 1;"
-        + "      } else"
-        + "        a++;"
-        + "    }"
-        + "  }"
-        + "}";
-    check(false, original, expected1, expected2, expected3, expected4);
+    check(false, original, expected1, expected2, expected3);
   }
 
   @Test
@@ -532,6 +508,21 @@ public class CompoundToBlockReductionOpportunitiesTest {
             new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
                 new RandomWrapper(0), new IdGenerator()));
     assertEquals(0, ops.size());
+  }
+
+  @Test
+  public void doNotReplaceDeadCodeInjectionWithBody() throws Exception {
+    final String original = "void main() {"
+        + "  if (" + Constants.GLF_DEAD + "(" + Constants.GLF_FALSE + "(false))) {"
+        + "    discard;"
+        + "  }"
+        + "}";
+    final List<CompoundToBlockReductionOpportunity> opportunities =
+        CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(ParseHelper.parse(original)),
+            new ReducerContext(false,
+                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new IdGenerator()));
+    assertEquals(0, opportunities.size());
   }
 
 }

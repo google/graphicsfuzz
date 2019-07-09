@@ -26,23 +26,17 @@ class InjectionTracker {
 
   private int numEnclosingFuzzedMacros;
   private int numEnclosingDeadCodeInjections;
-  private boolean underDeadMacro;
 
   private Deque<Optional<SwitchCaseStatus>> switchStmts;
 
   InjectionTracker() {
     this.numEnclosingFuzzedMacros = 0;
     this.numEnclosingDeadCodeInjections = 0;
-    this.underDeadMacro = false;
     this.switchStmts = new LinkedList<>();
   }
 
   boolean underFuzzedMacro() {
     return numEnclosingFuzzedMacros > 0;
-  }
-
-  boolean underDeadMacro() {
-    return underDeadMacro;
   }
 
   void enterFuzzedMacro() {
@@ -52,16 +46,6 @@ class InjectionTracker {
   void exitFuzzedMacro() {
     assert numEnclosingFuzzedMacros > 0;
     numEnclosingFuzzedMacros--;
-  }
-
-  void enterDeadMacro() {
-    assert !underDeadMacro;
-    underDeadMacro = true;
-  }
-
-  void exitDeadMacro() {
-    assert underDeadMacro;
-    underDeadMacro = false;
   }
 
   void enterDeadCodeInjection() {
