@@ -12,16 +12,14 @@ GraphicsFuzz auto (this project) provides scripts for running these tools with m
 
 ## Development setup
 
-> Optional: delete `.venv/` to remove old packages; this is important when 
-> flake8 packages have been removed from the Pipfile, as old flake8 packages will 
-> continue to be installed and used when running `./check_all.sh` until you
-> delete `.venv/`.
+> Optional: if you have just done `git pull` to get a more recent version of GraphicsFuzz auto, consider deleting `.venv/` to start from a fresh virtual environment. This is rarely needed.
 
-Execute `./dev_shell.sh.template` (or, copy to `./dev_shell.sh` and modify as needed before executing).
-This generates and activates a Python virtual environment (located at `.venv/`) with all dependencies installed. 
+Execute `./dev_shell.sh.template`. If the default settings don't work, make a copy of the file called `dev_shell.sh` and modify according to the comments before executing. `pip` must be installed for the version of Python you wish to use.
+
+The script generates and activates a Python virtual environment (located at `.venv/`) with all dependencies installed.
 
 * Execute `./check_all.sh` to run various presubmit checks, linters, etc.
-* Execute `./fix_all.sh` automatically fix certain issues, such as formatting.
+* Execute `./fix_all.sh` to automatically fix certain issues, such as formatting.
 
 
 ### PyCharm
@@ -35,10 +33,8 @@ Install and configure plugins:
 
 * Protobuf Support
 * File Watchers (may already be installed)
-  * The watcher task should already be under version control with the following settings:
-    * File type: Python
-    * Program: `$ProjectFileDir$/fix_all.sh`
-* Mypy: the built-in PyCharm type checking actually use Mypy behinds the scenes, but this plugin enhances it by using the latest version and strict settings used by the `./check_all.sh` script.
+  * The watcher task should already be under version control.
+* Mypy: the built-in PyCharm type checking uses Mypy behinds the scenes, but this plugin enhances it by using the latest version and allowing the use of stricter settings, matching the settings used by the `./check_all.sh` script.
 
 Add `whitelist.dic` as a custom dictionary (search for "Spelling" in Actions). Do not add words via PyCharm's "Quick Fixes" feature, as the word will only be added to your personal dictionary. Instead, manually add the word to `whitelist.dic`.
 
@@ -58,6 +54,31 @@ You can execute scripts in this repository by opening a Terminal in PyCharm.
 
 ## Terminal
 
-To reiterate, the `Terminal` tab in PyCharm is useful and will use the project's Python virtual environment. In any other terminal, you can execute the `./dev_shell.sh` script, but this is fairly slow as it checks and reinstalls all dependencies; a quicker alternative is: `source .venv/activate`.
+To reiterate, the `Terminal` tab in PyCharm is useful and will use the project's Python virtual environment. In any other terminal, you can execute the `./dev_shell.sh` script, but this is fairly slow as it checks and reinstalls all dependencies; a quicker alternative is: `source .venv/bin/activate`.
+
+## Fuzzing
+
+To start fuzzing, create and change to a directory outside the `gfauto/` directory. E.g. `/data/temp/gfauto_fuzzing/2019_06_24`. From here, create a `donors/` directory containing GLSL shader jobs as used by GraphicsFuzz.
+You can get some samples from the GraphicsFuzz project.
+
+```sh
+mkdir donors/
+cp /data/graphicsfuzz_zip/samples/310es/* donors/
+cp /data/graphicsfuzz_zip/samples/compute/310es/* donors/
+```
+
+Now run the fuzzer.
+
+```sh
+gfauto_fuzz
+```
+
+It will fail because there is no settings file, but a default `settings.json` file will be created for you.
+Review this file.
+All plugged Android devices should have been added to the list of devices.
+The `active_device_names` list should be modified to include only the unique devices that you care about:
+
+* Including multiple devices with the same GPU and drivers will currently result in redundant testing.
+* `host_preprocessor` should always be included first, as this virtual device detects failures in tools such as `glslangValidator` and `spirv-opt`, and will ensure such failures will not be logged for real devices.
 
 

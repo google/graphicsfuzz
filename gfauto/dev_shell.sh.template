@@ -22,7 +22,7 @@ set -u
 # E.g. python, python3, python3.6.
 PYTHON=${PYTHON-python3.6}
 
-# Install pip, pipenv, and upgrade if needed.
+# Upgrade/install pip and pipenv if needed.
 "${PYTHON}" -m pip install --upgrade --user 'pip>=19.1.1' 'pipenv>=2018.11.26'
 
 # The following (optional) line causes the virtual environment to be placed at
