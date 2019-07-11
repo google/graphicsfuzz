@@ -28,15 +28,15 @@ from gfauto import subprocess_util, util
 
 # .* does not match newlines
 
+HEX_LIKE = r"(0x)?[0-9a-fA-F]"
+
 # 06-15 21:17:00.039  7517  7517 F DEBUG   :     #00 pc 00000000009d9c34  /my/library.so ((anonymous namespace)::Bar::Baz(aaa::MyInstr*, void* (*)(unsigned int))+456)
 # Another example of the function signature: /my/library.so (myFunction+372)
 # Another example of the function signature: /my/library.so (myFunction(...)+372)
 
-HEX_LIKE = r"(0x)?[0-9a-fA-F]"
-
 # Just look for anything that contains "word(" or "word+" from after the (hex-like) PC address.
 PATTERN_ANDROID_BACKTRACE_FUNCTION = re.compile(
-    r"^.*#00 pc " + HEX_LIKE + r"+ (.*(\w+)([(+]).*)"
+    r"\n.*#00 pc " + HEX_LIKE + r"+ (.*(\w+)([(+]).*)"
 )
 
 ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE = re.compile(
@@ -45,7 +45,7 @@ ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE = re.compile(
     r")"
 )
 
-PATTERN_ANDROID_BACKTRACE_CATCHALL = re.compile(r"^.*#00 pc " + HEX_LIKE + r"+ (.*)")
+PATTERN_ANDROID_BACKTRACE_CATCHALL = re.compile(r"\n.*#00 pc " + HEX_LIKE + r"+ (.*)")
 
 # E.g. ERROR: temp/.../variant/shader.frag:549: 'variable indexing fragment shader output array' : not supported with this profile: es
 #                                                variable indexing fragment shader output array   <-- group 1
@@ -55,13 +55,13 @@ PATTERN_GLSLANG_ERROR = re.compile(r"ERROR: .*?: '(.*?)'")
 # E.g.
 # glslangValidator: ../glslang/MachineIndependent/ParseHelper.cpp:2212: void glslang::TParseContext::nonOpBuiltInCheck(const glslang::TSourceLoc&, const glslang::TFunction&, glslang::TIntermAggregate&): Assertion `PureOperatorBuiltins == false' failed.
 
-PATTERN_ASSERTION_FAILURE = re.compile(r"^.*?:\d+: (.*? [Aa]ssert(ion)?)")
+PATTERN_ASSERTION_FAILURE = re.compile(r"\n.*?:\d+: (.*? [Aa]ssert(ion)?)")
 
 
 # Only used if "0 pass, 1 fail" is found.
 # E.g. /data/local/tmp/graphicsfuzz/test.amber: 256: probe ssbo format does not match buffer format
 #                                                    probe ssbo format does not match buffer format
-PATTERN_AMBER_ERROR = re.compile(r"^.*?\w: \d+: (.*)")
+PATTERN_AMBER_ERROR = re.compile(r"\n.*?\w: \d+: (.*)")
 
 # E.g. error: line 0: Module contains unreachable blocks during merge return.  Run dead branch elimination before merge return.
 #      error: line 0: Module contains unreachable blocks during merge return.  Run dead branch elimination before merge return.
@@ -158,32 +158,31 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
 
             if "/amber_ndk" in line:
                 return "amber_ndk"
-
-            match = re.search(PATTERN_ANDROID_BACKTRACE_FUNCTION, log_contents)
-            if match:
-                group = match.group(1)
-                # Remove common text.
-                group = re.sub(ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE, "", group)
-                group = clean_up(group)
-                group = reduce_length(group)
-                return group
-
-            # TODO: Maybe more.
-
-            # If we get here, we found #00 pc, but nothing else.
-            # This regex essentially matches the entire line after the hex-like PC address.
-            match = re.search(PATTERN_ANDROID_BACKTRACE_CATCHALL, log_contents)
-            if match:
-                group = match.group(1)
-                # Remove common text.
-                group = re.sub(ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE, "", group)
-                # Remove hex-like chunks.
-                group = remove_hex_like(group)
-                group = clean_up(group)
-                group = reduce_length(group)
-                return group
-
             break
+
+        match = re.search(PATTERN_ANDROID_BACKTRACE_FUNCTION, log_contents)
+        if match:
+            group = match.group(1)
+            # Remove common text.
+            group = re.sub(ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE, "", group)
+            group = clean_up(group)
+            group = reduce_length(group)
+            return group
+
+        # TODO: Maybe more.
+
+        # If we get here, we found #00 pc, but nothing else.
+        # This regex essentially matches the entire line after the hex-like PC address.
+        match = re.search(PATTERN_ANDROID_BACKTRACE_CATCHALL, log_contents)
+        if match:
+            group = match.group(1)
+            # Remove common text.
+            group = re.sub(ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE, "", group)
+            # Remove hex-like chunks.
+            group = remove_hex_like(group)
+            group = clean_up(group)
+            group = reduce_length(group)
+            return group
 
     # catchsegv "Backtrace:" with source code info.
     group = basic_match(PATTERN_CATCHSEGV_STACK_FRAME, log_contents)
