@@ -24,7 +24,7 @@ uniform vec2 injectionSwitch;
 
 uniform vec2 resolution;
 
-vec2 mosaic( in vec2 x )
+vec2 pattern( in vec2 x )
 {
     vec2 n = floor( x );
 	vec3 m = vec3( 1. );
@@ -68,7 +68,7 @@ void main() {
 		}
 	}
 
-	vec2 c = mosaic( (15.0 + tan(0.2)) * uv);
+	vec2 c = pattern( (15.0 + tan(0.2)) * uv);
 	vec3 col;
  	if (int(gl_FragCoord.y) < 20) {
 		col = .5 + cos( c.y  + vec3(resolution.x, A[4]/resolution.x + 50., 22.0) );	
