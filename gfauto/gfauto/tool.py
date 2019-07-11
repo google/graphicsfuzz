@@ -35,6 +35,8 @@ from gfauto.util import check
 
 AMBER_COMMAND_PROBE_TOP_LEFT_RED = "probe rgba (0, 0) (1, 0, 0, 1)\n"
 
+AMBER_COMMAND_PROBE_TOP_LEFT_WHITE = "probe rgba (0, 0) (1, 1, 1, 1)\n"
+
 
 class PathAndVersion:
     def __init__(self, path: Optional[Path] = None, version: Optional[str] = None):
