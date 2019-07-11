@@ -124,18 +124,18 @@ DESCRIPTOR.message_types_by_name['Test'] = _TEST
 DESCRIPTOR.message_types_by_name['TestGlsl'] = _TESTGLSL
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Test = _reflection.GeneratedProtocolMessageType('Test', (_message.Message,), dict(
-  DESCRIPTOR = _TEST,
-  __module__ = 'gfauto.test_pb2'
+Test = _reflection.GeneratedProtocolMessageType('Test', (_message.Message,), {
+  'DESCRIPTOR' : _TEST,
+  '__module__' : 'gfauto.test_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.Test)
-  ))
+  })
 _sym_db.RegisterMessage(Test)
 
-TestGlsl = _reflection.GeneratedProtocolMessageType('TestGlsl', (_message.Message,), dict(
-  DESCRIPTOR = _TESTGLSL,
-  __module__ = 'gfauto.test_pb2'
+TestGlsl = _reflection.GeneratedProtocolMessageType('TestGlsl', (_message.Message,), {
+  'DESCRIPTOR' : _TESTGLSL,
+  '__module__' : 'gfauto.test_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.TestGlsl)
-  ))
+  })
 _sym_db.RegisterMessage(TestGlsl)
 
 

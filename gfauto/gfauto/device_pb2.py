@@ -270,46 +270,46 @@ DESCRIPTOR.message_types_by_name['DeviceHost'] = _DEVICEHOST
 DESCRIPTOR.message_types_by_name['DeviceAndroid'] = _DEVICEANDROID
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-DeviceList = _reflection.GeneratedProtocolMessageType('DeviceList', (_message.Message,), dict(
-  DESCRIPTOR = _DEVICELIST,
-  __module__ = 'gfauto.device_pb2'
+DeviceList = _reflection.GeneratedProtocolMessageType('DeviceList', (_message.Message,), {
+  'DESCRIPTOR' : _DEVICELIST,
+  '__module__' : 'gfauto.device_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.DeviceList)
-  ))
+  })
 _sym_db.RegisterMessage(DeviceList)
 
-Device = _reflection.GeneratedProtocolMessageType('Device', (_message.Message,), dict(
-  DESCRIPTOR = _DEVICE,
-  __module__ = 'gfauto.device_pb2'
+Device = _reflection.GeneratedProtocolMessageType('Device', (_message.Message,), {
+  'DESCRIPTOR' : _DEVICE,
+  '__module__' : 'gfauto.device_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.Device)
-  ))
+  })
 _sym_db.RegisterMessage(Device)
 
-DeviceSwiftShader = _reflection.GeneratedProtocolMessageType('DeviceSwiftShader', (_message.Message,), dict(
-  DESCRIPTOR = _DEVICESWIFTSHADER,
-  __module__ = 'gfauto.device_pb2'
+DeviceSwiftShader = _reflection.GeneratedProtocolMessageType('DeviceSwiftShader', (_message.Message,), {
+  'DESCRIPTOR' : _DEVICESWIFTSHADER,
+  '__module__' : 'gfauto.device_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.DeviceSwiftShader)
-  ))
+  })
 _sym_db.RegisterMessage(DeviceSwiftShader)
 
-DevicePreprocess = _reflection.GeneratedProtocolMessageType('DevicePreprocess', (_message.Message,), dict(
-  DESCRIPTOR = _DEVICEPREPROCESS,
-  __module__ = 'gfauto.device_pb2'
+DevicePreprocess = _reflection.GeneratedProtocolMessageType('DevicePreprocess', (_message.Message,), {
+  'DESCRIPTOR' : _DEVICEPREPROCESS,
+  '__module__' : 'gfauto.device_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.DevicePreprocess)
-  ))
+  })
 _sym_db.RegisterMessage(DevicePreprocess)
 
-DeviceHost = _reflection.GeneratedProtocolMessageType('DeviceHost', (_message.Message,), dict(
-  DESCRIPTOR = _DEVICEHOST,
-  __module__ = 'gfauto.device_pb2'
+DeviceHost = _reflection.GeneratedProtocolMessageType('DeviceHost', (_message.Message,), {
+  'DESCRIPTOR' : _DEVICEHOST,
+  '__module__' : 'gfauto.device_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.DeviceHost)
-  ))
+  })
 _sym_db.RegisterMessage(DeviceHost)
 
-DeviceAndroid = _reflection.GeneratedProtocolMessageType('DeviceAndroid', (_message.Message,), dict(
-  DESCRIPTOR = _DEVICEANDROID,
-  __module__ = 'gfauto.device_pb2'
+DeviceAndroid = _reflection.GeneratedProtocolMessageType('DeviceAndroid', (_message.Message,), {
+  'DESCRIPTOR' : _DEVICEANDROID,
+  '__module__' : 'gfauto.device_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.DeviceAndroid)
-  ))
+  })
 _sym_db.RegisterMessage(DeviceAndroid)
 
 

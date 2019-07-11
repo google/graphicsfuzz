@@ -167,25 +167,25 @@ DESCRIPTOR.message_types_by_name['Archive'] = _ARCHIVE
 DESCRIPTOR.message_types_by_name['ArchiveSet'] = _ARCHIVESET
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Binary = _reflection.GeneratedProtocolMessageType('Binary', (_message.Message,), dict(
-  DESCRIPTOR = _BINARY,
-  __module__ = 'gfauto.common_pb2'
+Binary = _reflection.GeneratedProtocolMessageType('Binary', (_message.Message,), {
+  'DESCRIPTOR' : _BINARY,
+  '__module__' : 'gfauto.common_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.Binary)
-  ))
+  })
 _sym_db.RegisterMessage(Binary)
 
-Archive = _reflection.GeneratedProtocolMessageType('Archive', (_message.Message,), dict(
-  DESCRIPTOR = _ARCHIVE,
-  __module__ = 'gfauto.common_pb2'
+Archive = _reflection.GeneratedProtocolMessageType('Archive', (_message.Message,), {
+  'DESCRIPTOR' : _ARCHIVE,
+  '__module__' : 'gfauto.common_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.Archive)
-  ))
+  })
 _sym_db.RegisterMessage(Archive)
 
-ArchiveSet = _reflection.GeneratedProtocolMessageType('ArchiveSet', (_message.Message,), dict(
-  DESCRIPTOR = _ARCHIVESET,
-  __module__ = 'gfauto.common_pb2'
+ArchiveSet = _reflection.GeneratedProtocolMessageType('ArchiveSet', (_message.Message,), {
+  'DESCRIPTOR' : _ARCHIVESET,
+  '__module__' : 'gfauto.common_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.ArchiveSet)
-  ))
+  })
 _sym_db.RegisterMessage(ArchiveSet)
 
 

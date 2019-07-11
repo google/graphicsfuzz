@@ -78,11 +78,11 @@ _SETTINGS.fields_by_name['custom_binaries'].message_type = gfauto_dot_common__pb
 DESCRIPTOR.message_types_by_name['Settings'] = _SETTINGS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Settings = _reflection.GeneratedProtocolMessageType('Settings', (_message.Message,), dict(
-  DESCRIPTOR = _SETTINGS,
-  __module__ = 'gfauto.settings_pb2'
+Settings = _reflection.GeneratedProtocolMessageType('Settings', (_message.Message,), {
+  'DESCRIPTOR' : _SETTINGS,
+  '__module__' : 'gfauto.settings_pb2'
   # @@protoc_insertion_point(class_scope:gfauto.Settings)
-  ))
+  })
 _sym_db.RegisterMessage(Settings)
 
 
