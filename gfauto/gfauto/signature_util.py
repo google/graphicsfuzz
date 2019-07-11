@@ -40,7 +40,9 @@ PATTERN_ANDROID_BACKTRACE_FUNCTION = re.compile(
 )
 
 ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE = re.compile(
-    r"(/vendor/lib(64)?/(hw/)?|/data/local/(tmp/)?|/system/(lib(64)?/)?|anonymous namespace)"
+    r"(/vendor/lib(64)?/(hw/)?|/data/local/(tmp/)?|/system/(lib(64)?/)?|anonymous namespace|"
+    r"\(BuildId: " + HEX_LIKE + r"+\)"
+    r")"
 )
 
 PATTERN_ANDROID_BACKTRACE_CATCHALL = re.compile(r"^.*#00 pc " + HEX_LIKE + r"+ (.*)")
