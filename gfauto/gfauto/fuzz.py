@@ -18,7 +18,7 @@
 
 The main entry point to GraphicsFuzz Auto.
 """
-
+import argparse
 import random
 import shutil
 import sys
@@ -120,32 +120,45 @@ class NoSettingsFile(Exception):
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Fuzz")
+
+    parser.add_argument(
+        "--settings",
+        help="Path to the settings JSON file for this fuzzing instance.",
+        default=str(settings_util.DEFAULT_SETTINGS_FILE_PATH),
+    )
+
+    parsed_args = parser.parse_args(sys.argv[1:])
+
+    settings_path = Path(parsed_args.settings)
+
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
         try:
-            main_helper()
+            main_helper(settings_path)
         finally:
             gflogging.pop_stream_for_logging()
 
 
-def main_helper() -> None:  # pylint: disable=too-many-locals
-    # TODO: Use sys.argv[1:].
+def main_helper(settings_path: Path) -> None:  # pylint: disable=too-many-locals
+
     try:
-        settings = settings_util.read()
+        settings = settings_util.read(settings_path)
     except FileNotFoundError as exception:
-        settings_util.write_default()
-        raise NoSettingsFile(
-            f"Could not find {settings_util.SETTINGS_FILE_PATH}. "
-            "A default settings file has been created for you. "
-            "Please review it and then run fuzz again. "
-        ) from exception
+        message = f"Could not find settings file at: {settings_path}"
+        if not settings_util.DEFAULT_SETTINGS_FILE_PATH.exists():
+            settings_util.write_default(settings_util.DEFAULT_SETTINGS_FILE_PATH)
+            message += (
+                f"; a default settings file has been created for you at {str(settings_util.DEFAULT_SETTINGS_FILE_PATH)}. "
+                f"Please review it and then run fuzz again. "
+            )
+        raise NoSettingsFile(message) from exception
 
     active_devices = devices_util.get_active_devices(settings.device_list)
 
     reports_dir = Path() / "reports"
     temp_dir = Path() / "temp"
     donors_dir = Path() / "donors"
-    references = sorted(donors_dir.rglob("*.json"))
 
     if donors_dir.exists():
         try:
@@ -160,6 +173,7 @@ def main_helper() -> None:  # pylint: disable=too-many-locals
     artifact_util.recipes_write_built_in()
 
     # TODO: make GraphicsFuzz find donors recursively.
+    references = sorted(donors_dir.rglob("*.json"))
 
     # Filter to only include .json files that have at least one shader (.frag, .vert, .comp) file.
     references = [ref for ref in references if shader_job_util.get_related_files(ref)]

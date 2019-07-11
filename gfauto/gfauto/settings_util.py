@@ -25,21 +25,21 @@ from pathlib import Path
 from gfauto import devices_util, proto_util
 from gfauto.settings_pb2 import Settings
 
-SETTINGS_FILE_PATH = Path("settings.json")
+DEFAULT_SETTINGS_FILE_PATH = Path("settings.json")
 
 DEFAULT_SETTINGS = Settings(maximum_duplicate_crashes=3)
 
 
-def read() -> Settings:
-    return proto_util.file_to_message(SETTINGS_FILE_PATH, Settings())
+def read(settings_path: Path) -> Settings:
+    return proto_util.file_to_message(settings_path, Settings())
 
 
-def write(settings: Settings) -> Path:
-    return proto_util.message_to_file(settings, SETTINGS_FILE_PATH)
+def write(settings: Settings, settings_path: Path) -> Path:
+    return proto_util.message_to_file(settings, settings_path)
 
 
-def write_default() -> Path:
+def write_default(settings_path: Path) -> Path:
     settings = Settings()
     settings.CopyFrom(DEFAULT_SETTINGS)
     devices_util.get_device_list(settings.device_list)
-    return write(settings)
+    return write(settings, settings_path)
