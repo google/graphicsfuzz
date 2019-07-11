@@ -17,7 +17,6 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
@@ -106,9 +105,9 @@ public class LoopMergeReductionOpportunities extends ScopeTreeBuilder {
 
     final BinOp firstLoopOp = ((BinaryExpr) firstLoop.getCondition()).getOp();
 
-    final Integer secondLoopStart = new Integer(((IntConstantExpr) ((ScalarInitializer)
-          ((DeclarationStmt) secondLoop.getInit()).getVariablesDeclaration().getDeclInfo(0)
-                .getInitializer()).getExpr()).getValue());
+    final Integer secondLoopStart = new Integer(((IntConstantExpr) (
+          (DeclarationStmt) secondLoop.getInit()).getVariablesDeclaration().getDeclInfo(0)
+                .getInitializer().getExpr()).getValue());
 
     assert firstLoopOp == BinOp.LT || firstLoopOp == BinOp.GT
           : "Unexpected operator in split loops.";

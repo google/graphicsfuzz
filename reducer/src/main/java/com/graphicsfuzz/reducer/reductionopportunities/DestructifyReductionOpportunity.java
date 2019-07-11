@@ -19,7 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
@@ -84,22 +84,22 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
     return findOriginalVariableInfo(
         (StructNameType) declaration.getVariablesDeclaration().getBaseType()
             .getWithoutQualifiers(),
-        Optional.ofNullable((ScalarInitializer) declaration.getVariablesDeclaration()
+        Optional.ofNullable(declaration.getVariablesDeclaration()
             .getDeclInfo(0).getInitializer()))
         .get();
   }
 
   private Optional<StructifiedVariableInfo> findOriginalVariableInfo(
       StructNameType type,
-      Optional<ScalarInitializer> initializer) {
+      Optional<Initializer> initializer) {
 
     final StructDefinitionType structDefinitionType = tu.getStructDefinition(type);
 
     for (int i = 0; i < structDefinitionType.getNumFields(); i++) {
 
       final int currentIndex = i;
-      final Optional<ScalarInitializer> componentInitializer = initializer.map(item ->
-          new ScalarInitializer(((TypeConstructorExpr) item.getExpr())
+      final Optional<Initializer> componentInitializer = initializer.map(item ->
+          new Initializer(((TypeConstructorExpr) item.getExpr())
               .getArg(currentIndex)));
 
       if (structDefinitionType.getFieldName(i).startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {

@@ -18,7 +18,7 @@ package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
@@ -97,7 +97,7 @@ public class DonateDeadCodeTransformation extends DonateCodeTransformation {
         String newName = "donor_replacement" + name;
         substitution.put(name, newName);
 
-        final ScalarInitializer initializer = getScalarInitializer(
+        final Initializer initializer = getInitializer(
             injectionPoint,
             donationContext,
             type,

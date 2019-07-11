@@ -26,7 +26,6 @@ import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -835,7 +834,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       return null;
     }
     if (ctx.assignment_expression() != null) {
-      return new ScalarInitializer(visitAssignment_expression(ctx.assignment_expression()));
+      return new Initializer(visitAssignment_expression(ctx.assignment_expression()));
     }
     throw new RuntimeException();
   }

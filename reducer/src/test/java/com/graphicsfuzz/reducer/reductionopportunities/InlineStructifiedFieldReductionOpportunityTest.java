@@ -21,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -41,8 +41,6 @@ import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.util.Constants;
-import com.graphicsfuzz.common.util.ParseTimeoutException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
@@ -86,7 +84,7 @@ public class InlineStructifiedFieldReductionOpportunityTest {
         Arrays.asList(
             new DeclarationStmt(new VariablesDeclaration(outerStructDefinitionType.getStructNameType(),
                 new VariableDeclInfo("myOuter", null,
-                    new ScalarInitializer(
+                    new Initializer(
                         new TypeConstructorExpr(outerStructTypeName,
                             Arrays.asList(
                                 new TypeConstructorExpr(innerStructTypeName,

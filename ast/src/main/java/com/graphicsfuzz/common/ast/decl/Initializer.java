@@ -17,10 +17,46 @@
 package com.graphicsfuzz.common.ast.decl;
 
 import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
-public abstract class Initializer implements IAstNode {
+public class Initializer implements IAstNode {
+
+  private Expr expr;
+
+  public Initializer(Expr expr) {
+    this.expr = expr;
+  }
+
+  public Expr getExpr() {
+    return expr;
+  }
+
+  public void setExpr(Expr expr) {
+    this.expr = expr;
+  }
 
   @Override
-  public abstract Initializer clone();
+  public void accept(IAstVisitor visitor) {
+    visitor.visitInitializer(this);
+  }
+
+  @Override
+  public Initializer clone() {
+    return new Initializer(expr.clone());
+  }
+
+  @Override
+  public void replaceChild(IAstNode child, IAstNode newChild) {
+    if (!(child == expr && newChild instanceof Expr)) {
+      throw new IllegalArgumentException();
+    }
+    setExpr((Expr) newChild);
+  }
+
+  @Override
+  public boolean hasChild(IAstNode candidateChild) {
+    return candidateChild == expr;
+  }
 
 }

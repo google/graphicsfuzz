@@ -18,7 +18,7 @@ package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -84,7 +84,7 @@ public class TruncateLoops extends StandardVisitor {
     final DeclarationStmt limiterDeclaration = new DeclarationStmt(
           new VariablesDeclaration(BasicType.INT,
                 new VariableDeclInfo(limiterName, null,
-                      new ScalarInitializer(new IntConstantExpr("0")))));
+                      new Initializer(new IntConstantExpr("0")))));
 
     final List<Stmt> limitCheckAndIncrement = Arrays.asList(
           new IfStmt(

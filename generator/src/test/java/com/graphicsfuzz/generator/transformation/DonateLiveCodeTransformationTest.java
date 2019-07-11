@@ -20,7 +20,7 @@ import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
@@ -138,7 +138,7 @@ public class DonateLiveCodeTransformationTest {
             new VariablesDeclaration(
                   BasicType.INT,
                   new VariableDeclInfo("a", null,
-                        new ScalarInitializer(
+                        new Initializer(
                               new BinaryExpr(
                                     new BinaryExpr(
                                           new BinaryExpr(
@@ -429,7 +429,7 @@ public class DonateLiveCodeTransformationTest {
                 ((VariableIdentifierExpr) arrayIndexExpr.getIndex()).getName());
             assertTrue(scopeEntry.hasVariableDeclInfo());
             assertNotNull(scopeEntry.getVariableDeclInfo().getInitializer());
-            assertFalse(((ScalarInitializer) scopeEntry.getVariableDeclInfo().getInitializer())
+            assertFalse((scopeEntry.getVariableDeclInfo().getInitializer())
                 .getExpr() instanceof FunctionCallExpr);
           }
         }

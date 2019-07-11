@@ -18,7 +18,6 @@ package com.graphicsfuzz.generator.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -33,7 +32,6 @@ import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Attempts to minimally remove const qualifiers and move global declaration initializers into
@@ -111,12 +109,9 @@ class ConstCleaner extends ScopeTreeBuilder {
     for (int i = globalsToBeReInitialized.size() - 1; i >= 0; i--) {
       for (int j = globalsToBeReInitialized.get(i).getNumDecls() - 1; j >= 0; j--) {
         final VariableDeclInfo vdi = globalsToBeReInitialized.get(i).getDeclInfo(j);
-        if (!(vdi.getInitializer() instanceof ScalarInitializer)) {
-          throw new RuntimeException("Only know how to deal with scalar initializers at present.");
-        }
         mainFunction.getBody().insertStmt(0,
             new ExprStmt(new BinaryExpr(new VariableIdentifierExpr(vdi.getName()),
-                ((ScalarInitializer) vdi.getInitializer()).getExpr(), BinOp.ASSIGN)));
+                (vdi.getInitializer()).getExpr(), BinOp.ASSIGN)));
         vdi.setInitializer(null);
       }
     }

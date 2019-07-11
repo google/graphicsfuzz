@@ -18,7 +18,7 @@ package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.Expr;
@@ -177,9 +177,9 @@ public class StructificationMutation implements Mutation {
     declInfo.setName(enclosingStructVariableName);
     if (declInfo.hasInitializer()) {
       declInfo.setInitializer(
-            new ScalarInitializer(
+            new Initializer(
                   makeInitializationExpr(enclosingStructType,
-                        ((ScalarInitializer) declInfo.getInitializer()).getExpr())
+                        (declInfo.getInitializer()).getExpr())
             )
       );
     }
