@@ -208,7 +208,7 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
             logfile = None
 
     if os.path.isfile(log_file):
-        with gfuzz_common.open_helper(log_file, 'r'):
+        with gfuzz_common.open_helper(log_file, 'r') as f:
             res.log += f.read()
 
     if os.path.isfile(png_file):
@@ -278,6 +278,13 @@ def run_image_job(frag_file: str, json_file: str, status_file: str,
     except subprocess.CalledProcessError:
         status = STATUS_CRASH
 
+    # Piglit throws the output PNG render into whatever the current working directory is
+    # (and there's no way to specify a location to write to) - we need to move it to wherever our
+    # output is.
+
+    if os.path.isfile(os.getcwd() + PNG_FILENAME):
+        shutil.move(os.getcwd() + PNG_FILENAME, output_dir + PNG_FILENAME)
+
     with gfuzz_common.open_helper(status_file, 'w') as f:
         f.write(status)
 
@@ -308,8 +315,10 @@ def run_shader_test(shader_test_file: str, skip_render: bool):
             log(STDERR_STR + ex.stderr.decode(encoding='utf-8', errors='ignore'))
         log(RETURNCODE_STR + str(ex.returncode))
         raise ex
-    log(STDOUT_STR + results.stdout.decode(encoding='utf-8', errors='ignore'))
-    log(STDERR_STR + results.stderr.decode(encoding='utf-8', errors='ignore'))
+    if results.stdout is not None:
+        log(STDOUT_STR + results.stdout.decode(encoding='utf-8', errors='ignore'))
+    if results.stderr is not None:
+        log(STDERR_STR + results.stderr.decode(encoding='utf-8', errors='ignore'))
     log(RETURNCODE_STR + str(results.returncode))
 
 
