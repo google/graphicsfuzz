@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""spirv-opt module.
+"""spirv-opt utility module.
 
 Runs spirv-opt on a SPIR-V shader job to get a new SPIR-V shader job where the shaders have been optimized.
 """

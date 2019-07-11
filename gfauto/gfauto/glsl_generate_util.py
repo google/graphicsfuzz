@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""glsl-generate module.
+"""glsl-generate utility module.
 
 Generates GLSL shaders using GraphicsFuzz.
 """

@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""glslangValidator module.
+"""glslangValidator utility module.
 
 Runs glslangValidator on GLSL shader jobs to get SPIR-V shader jobs.
 """

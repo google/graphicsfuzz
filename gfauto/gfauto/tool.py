@@ -23,13 +23,13 @@ from pathlib import Path
 from typing import List, Optional
 
 from gfauto import (
+    amber_converter,
     artifact_util,
     binaries_util,
-    recipe_glsl_shader_job_to_spirv_shader_job,
-    recipe_spirv_asm_shader_job_to_amber_script,
-    recipe_spirv_shader_job_to_spirv_asm_shader_job,
-    recipe_spirv_shader_job_to_spirv_shader_job_opt,
+    glslang_validator_util,
     shader_job_util,
+    spirv_dis_util,
+    spirv_opt_util,
     subprocess_util,
     test_util,
     util,
@@ -74,10 +74,10 @@ def get_binary_paths_using_artifact_system(
 def amberfy(
     input_json: Path,
     output_amber: Path,
-    amberfy_settings: recipe_spirv_asm_shader_job_to_amber_script.AmberfySettings,
+    amberfy_settings: amber_converter.AmberfySettings,
     input_glsl_source_json_path: Optional[Path] = None,
 ) -> Path:
-    return recipe_spirv_asm_shader_job_to_amber_script.run_spirv_asm_shader_job_to_amber_script(
+    return amber_converter.run_spirv_asm_shader_job_to_amber_script(
         input_json, output_amber, amberfy_settings, input_glsl_source_json_path
     )
 
@@ -85,7 +85,7 @@ def amberfy(
 def spirv_dis_shader_job(
     input_json: Path, output_json: Path, binary_paths: binaries_util.BinaryGetter
 ) -> Path:
-    return recipe_spirv_shader_job_to_spirv_asm_shader_job.run_spirv_shader_job_to_spirv_asm_shader_job(
+    return spirv_dis_util.run_spirv_shader_job_to_spirv_asm_shader_job(
         input_json,
         output_json,
         binary_paths.get_binary_path_by_name(binaries_util.SPIRV_DIS_NAME).path,
@@ -101,7 +101,7 @@ def spirv_opt_shader_job(
     spirv_opt_binary = binary_paths.get_binary_path_by_name(
         binaries_util.SPIRV_OPT_NAME
     )
-    return recipe_spirv_shader_job_to_spirv_shader_job_opt.run_spirv_opt_on_spirv_shader_job(
+    return spirv_opt_util.run_spirv_opt_on_spirv_shader_job(
         input_json,
         output_json,
         spirv_opt_args,
@@ -114,7 +114,7 @@ def spirv_opt_shader_job(
 def glslang_glsl_shader_job_to_spirv(
     input_json: Path, output_json: Path, binary_paths: binaries_util.BinaryGetter
 ) -> Path:
-    return recipe_glsl_shader_job_to_spirv_shader_job.run_glslang_glsl_to_spirv_job(
+    return glslang_validator_util.run_glslang_glsl_to_spirv_job(
         input_json,
         output_json,
         binary_paths.get_binary_path_by_name(binaries_util.GLSLANG_VALIDATOR_NAME).path,
@@ -149,7 +149,7 @@ def glsl_shader_job_to_amber_script(
     output_amber: Path,
     work_dir: Path,
     binary_paths: binaries_util.BinaryGetter,
-    amberfy_settings: recipe_spirv_asm_shader_job_to_amber_script.AmberfySettings,
+    amberfy_settings: amber_converter.AmberfySettings,
     spirv_opt_args: Optional[List[str]] = None,
 ) -> Path:
 
@@ -247,7 +247,7 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
         output_amber,
         work_dir,
         binary_paths,
-        recipe_spirv_asm_shader_job_to_amber_script.AmberfySettings(
+        amber_converter.AmberfySettings(
             copyright_header_text=get_copyright_header_google(copyright_year),
             add_graphics_fuzz_comment=True,
             short_description=short_description,

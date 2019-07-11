@@ -25,17 +25,17 @@ from pathlib import Path
 from typing import List, Optional
 
 from gfauto import (
+    amber_converter,
     android_device,
     binaries_util,
     fuzz,
     gflogging,
+    glsl_generate_util,
     host_device_util,
-    recipe_glsl_reference_shader_job_to_glsl_variant_shader_job,
-    recipe_spirv_asm_shader_job_to_amber_script,
-    recipe_spirv_shader_job_to_spirv_shader_job_opt,
     result_util,
     shader_job_util,
     signature_util,
+    spirv_opt_util,
     subprocess_util,
     test_util,
     tool,
@@ -116,7 +116,7 @@ def create_staging_tests(
     # Pick a seed.
     seed = random.randint(-pow(2, 31), pow(2, 31) - 1)
 
-    recipe_glsl_reference_shader_job_to_glsl_variant_shader_job.run_generate(
+    glsl_generate_util.run_generate(
         util.tool_on_path("graphicsfuzz-tool"),
         reference_glsl_shader_job,
         donors_dir,
@@ -146,19 +146,19 @@ def create_staging_tests(
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_rand1_test",
-            spirv_opt_args=recipe_spirv_shader_job_to_spirv_shader_job_opt.random_spirv_opt_args(),
+            spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
             binary_manager=binary_manager,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_rand2_test",
-            spirv_opt_args=recipe_spirv_shader_job_to_spirv_shader_job_opt.random_spirv_opt_args(),
+            spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
             binary_manager=binary_manager,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_rand3_test",
-            spirv_opt_args=recipe_spirv_shader_job_to_spirv_shader_job_opt.random_spirv_opt_args(),
+            spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
             binary_manager=binary_manager,
         ),
     ]
@@ -360,7 +360,7 @@ def run_shader_job(
                     output_dir / "test.amber",
                     output_dir,
                     binary_paths,
-                    recipe_spirv_asm_shader_job_to_amber_script.AmberfySettings(
+                    amber_converter.AmberfySettings(
                         spirv_opt_args=list(test.glsl.spirv_opt_args),
                         spirv_opt_hash=spirv_opt_hash,
                     ),

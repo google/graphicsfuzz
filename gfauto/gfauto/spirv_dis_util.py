@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""SPIR-V shader job to SPIR-V assembly shader job module.
+"""spirv-dis utility module.
 
 Converts a SPIR-V shader job to a SPIR-V assembly shader job (the shaders are disassembled).
 """
