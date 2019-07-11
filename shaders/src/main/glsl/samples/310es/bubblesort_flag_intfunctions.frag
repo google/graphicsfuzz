@@ -57,11 +57,11 @@ void main()
     } while(i < findMSB(512));
     if(gl_FragCoord.x < resolution.x / 2.0)
     {
-        _GLF_color = vec4(data[0] / 10.0, data[5] / 10.0, data[9] / 10.0, 1.0);
+        _GLF_color = vec4(data[findMSB(0)] / 10.0, data[findLSB(32)] / 10.0, data[findMSB(512)] / 10.0, 1.0);
     }
     else
     {
-        _GLF_color = vec4(data[5] / 10.0, data[9] / 10.0, data[0] / 10.0, 1.0);
+        _GLF_color = vec4(data[findLSB(32)] / 10.0, data[findMSB(512)] / 10.0, data[findMSB(0)] / 10.0, 1.0);
     }
 }
 
