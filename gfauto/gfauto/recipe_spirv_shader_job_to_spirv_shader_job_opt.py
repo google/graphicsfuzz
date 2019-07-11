@@ -14,11 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""spirv-opt module.
+
+Runs spirv-opt on a SPIR-V shader job to get a new SPIR-V shader job where the shaders have been optimized.
+"""
+
 import pathlib
 import random
 from typing import List, Optional
 
-from gfauto import built_in_binaries, shader_job_util, subprocess_util, util
+from gfauto import binaries_util, shader_job_util, subprocess_util, util
 
 SPIRV_OPT_DEFAULT_TIME_LIMIT = 120
 
@@ -69,7 +74,7 @@ def run_spirv_opt_on_spirv_shader(
 ) -> pathlib.Path:
 
     if not spirv_opt_file_path:
-        spirv_opt_file_path = util.tool_on_path(built_in_binaries.SPIRV_OPT_NAME)
+        spirv_opt_file_path = util.tool_on_path(binaries_util.SPIRV_OPT_NAME)
 
     output_spirv_file_path = output_dir_path / input_spirv_file_path.name
 
@@ -103,7 +108,7 @@ def run_spirv_opt_on_spirv_shader_job(
 ) -> pathlib.Path:
 
     if not spirv_opt_file_path:
-        spirv_opt_file_path = util.tool_on_path(built_in_binaries.SPIRV_OPT_NAME)
+        spirv_opt_file_path = util.tool_on_path(binaries_util.SPIRV_OPT_NAME)
 
     shader_files = shader_job_util.get_related_files(
         input_spirv_shader_job_json_file_path,

@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Android devices.
+
+Provides functions for interacting with Android devices.
+"""
+
 import os
 import shutil
 import subprocess

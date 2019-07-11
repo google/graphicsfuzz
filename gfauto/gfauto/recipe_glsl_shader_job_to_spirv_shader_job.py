@@ -14,10 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""glslangValidator module.
+
+Runs glslangValidator on GLSL shader jobs to get SPIR-V shader jobs.
+"""
+
 import pathlib
 from typing import Optional
 
-from gfauto import built_in_binaries, shader_job_util, subprocess_util, util
+from gfauto import binaries_util, shader_job_util, subprocess_util, util
 
 GLSLANG_DEFAULT_TIME_LIMIT = 120
 
@@ -31,7 +36,7 @@ def run_glslang_glsl_shader_to_spirv_shader(
 
     if not glslang_validator_file_path:
         glslang_validator_file_path = util.tool_on_path(
-            built_in_binaries.GLSLANG_VALIDATOR_NAME
+            binaries_util.GLSLANG_VALIDATOR_NAME
         )
 
     output_spirv_file_path = output_dir_path / (glsl_shader_path.name + ".spv")
@@ -62,7 +67,7 @@ def run_glslang_glsl_to_spirv_job(
 
     if not glslang_validator_file_path:
         glslang_validator_file_path = util.tool_on_path(
-            built_in_binaries.GLSLANG_VALIDATOR_NAME
+            binaries_util.GLSLANG_VALIDATOR_NAME
         )
 
     glsl_shader_files = shader_job_util.get_related_files(

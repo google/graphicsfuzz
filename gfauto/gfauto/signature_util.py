@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Bug signature module.
+
+Used to compute the "signature" of a bug, typically using the error message or the function name from the top of the
+stack trace.
+"""
+
 import re
 from pathlib import Path
 from typing import Match, Optional, Pattern

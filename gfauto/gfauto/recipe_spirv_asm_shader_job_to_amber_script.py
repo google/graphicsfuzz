@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Amber shader job converter module.
+
+Converts a SPIR-V assembly shader job (all shaders are already disassembled) to an Amber script file.
+"""
+
 import json
 import pathlib
 from copy import copy

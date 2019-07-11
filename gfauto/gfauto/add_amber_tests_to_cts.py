@@ -15,13 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Add amber tests to CTS.
+
+This module/script adds Amber test files to the VK-GL-CTS project.
+This file is self-contained so it can be provided alongside Amber test files.
+"""
+
 import argparse
 import os
 import shutil
 import sys
 from typing import TextIO, cast
-
-# This file is self-contained so it can be provided alongside Amber test files.
 
 SHORT_DESCRIPTION_LINE_PREFIX = "# Short description: "
 

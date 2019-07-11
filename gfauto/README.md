@@ -1,4 +1,3 @@
-
 # GraphicsFuzz auto
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -38,6 +37,28 @@ Install and configure plugins:
 
 Add `whitelist.dic` as a custom dictionary (search for "Spelling" in Actions). Do not add words via PyCharm's "Quick Fixes" feature, as the word will only be added to your personal dictionary. Instead, manually add the word to `whitelist.dic`.
 
+## Imports
+
+We use the `black` Python code formatter and `isort` for sorting imports. 
+
+When importing things from gfauto, use the `gfauto` package name and only import modules, not functions:
+
+```python
+# Do this:
+from gfauto import result_util
+
+# Don't do this:
+
+# Using ".".
+from . import result_util
+
+# Importing a function.
+from gfauto.result_util import get_status_path
+
+# Using "." AND importing a function!
+from .result_util import get_status_path
+
+```
 
 ## Symlinking other scripts
 

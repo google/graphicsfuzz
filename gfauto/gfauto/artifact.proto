@@ -19,7 +19,17 @@ package gfauto;
 import "gfauto/common.proto";
 
 
-// Artifact metadata.
+// An artifact is a directory containing an ArtifactMetadata proto stored in "artifact.json" and/or a Recipe proto
+// stored in "recipe.json", plus any other files and directories within. The recipe can be executed to produce the files
+// that make up the artifact, which must include the "artifact.json" file. An artifact is referred to via an
+// "artifact path" that starts from a directory containing a file named "ROOT" (the contents is not used), written
+// as "//", followed by the path to the directory, using "/" as the directory separator. E.g.
+//
+// //binaries/my_binary
+//
+// Artifacts were planned to be used more frequently, but are now mainly used just for downloading and extracting
+// binaries.
+// See recipe.proto.
 message ArtifactMetadata {
 
   // The artifact's type-specific data.
@@ -34,62 +44,9 @@ message ArtifactMetadata {
 
   message Data {
     oneof data {
-      ArtifactMetadataGlslShaderJob glsl_shader_job = 1;
-      ArtifactMetadataGlslReduction glsl_shader_job_reduction = 2;
-      ArtifactMetadataSpirvShaderJob spirv_shader_job = 3;
-      ArtifactMetadataSpirvAsmShaderJob spirv_asm_shader_job = 4;
-      ArtifactMetadataAmberScript amber_script = 5;
-      ArtifactMetadataTextFile text_file = 6;
-      ArtifactMetadataExtractedArchiveSet extracted_archive_set = 7;
+      ArtifactMetadataExtractedArchiveSet extracted_archive_set = 1;
     }
   }
-}
-
-
-message ArtifactMetadataGlslShaderJob {
-  string shader_job_file = 1;
-  string reference_glsl_shader_job_artifact = 2;
-  bool red_pixel_at_top_left = 3;
-  // TODO: Consider having nested message for ImageOutput (reference info, red pixel info, etc.) and
-  //  BufferOutput.
-}
-
-message ArtifactMetadataGlslReduction {
-  string final_shader = 1;
-}
-
-// Common metadata about a spirv shader job, be it binary spirv or spirv assembly.
-message MetadataSpirvJob {
-  string shader_job_file = 1;
-  string glsl_shader_job_source_artifact = 2;
-
-  // Indicates the spirv-opt args that were used when processing this shader. The recipe gives the
-  // the full story.
-  repeated string spirv_opt_args = 3;
-
-  // Is the top-left pixel guaranteed to be a red pixel?
-  bool red_pixel_at_top_left = 4;
-
-  // Flag to indicate that the SPIR-V was generated but then manually modified.
-  bool manually_modified = 5;
-}
-
-message ArtifactMetadataSpirvShaderJob {
-  MetadataSpirvJob spirv_job = 1;
-}
-
-message ArtifactMetadataSpirvAsmShaderJob {
-  MetadataSpirvJob spirv_job = 1;
-}
-
-message ArtifactMetadataAmberScript {
-  string amber_script_file = 1;
-  bool self_contained_test = 2;
-  string glsl_shader_job_source_artifact = 3;
-}
-
-message ArtifactMetadataTextFile {
-  string text_file = 1;
 }
 
 message ArtifactMetadataExtractedArchiveSet {

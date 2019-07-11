@@ -14,12 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Interestingness test for gfauto.
+
+When running a reducer, this module is used as the interestingness test.
+An interestingness test runs a test on a device and returns 0 if the test
+still exposes the behavior of interest (e.g. a crash, an incorrectly rendered image).
+
+See |setup.py| to see how this module is added to the entry_points/console_scripts.
+"""
+
 import argparse
 import sys
 from pathlib import Path
 
 from gfauto import (
-    built_in_binaries,
+    binaries_util,
     fuzz,
     fuzz_glsl_test,
     result_util,
@@ -37,6 +46,8 @@ from gfauto.util import check, check_file_exists
 #  no crash signature nor device (we can get that from the test_json), although perhaps these could be overridden?
 #  A device (or test?) could then even specify a custom interestingness command, although the default one would probably
 #  be the same for all devices and it would look at the device info in the test_json?
+
+# TODO: Support more than just GLSL crash tests.
 
 
 def main() -> None:
@@ -69,8 +80,8 @@ def main() -> None:
         ),
     )
 
-    binary_manager = built_in_binaries.BinaryManager(
-        [], util.get_platform(), built_in_binaries.BUILT_IN_BINARY_RECIPES_PATH_PREFIX
+    binary_manager = binaries_util.BinaryManager(
+        [], util.get_platform(), binaries_util.BUILT_IN_BINARY_RECIPES_PATH_PREFIX
     )
 
     output_dir = fuzz_glsl_test.run_shader_job(

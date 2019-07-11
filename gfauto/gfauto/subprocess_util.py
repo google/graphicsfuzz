@@ -13,14 +13,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Subprocess utility module.
+
+Used to execute a process. In particular, the stdout and stderr are captured, and logged on failure.
+The entire process group is killed on timeout, when this feature is available; this can prevent hangs,
+especially when using catchsegv.
+"""
+
 import os
 import signal
 import subprocess
 import time
 from typing import Dict, List, Optional, Union
 
-from .gflogging import log
-from .util import check
+from gfauto.gflogging import log
+from gfauto.util import check
 
 LOG_COMMAND_FAILED_PREFIX = "Command failed: "
 LOG_COMMAND_TIMED_OUT_PREFIX = "Command timed out: "

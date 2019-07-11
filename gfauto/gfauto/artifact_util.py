@@ -14,11 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Artifacts utility module.
+
+See artifact.proto for information about artifacts.
+"""
+
 import pathlib
 from typing import List, Optional, Tuple
 
 from gfauto import (
-    built_in_binaries,
+    binaries_util,
     gflogging,
     proto_util,
     recipe_download_and_extract_archive_set,
@@ -44,7 +49,7 @@ class ArtifactWrap:
 
 
 def recipes_write_built_in() -> None:
-    for recipe_wrap in built_in_binaries.BUILT_IN_BINARY_RECIPES:
+    for recipe_wrap in binaries_util.BUILT_IN_BINARY_RECIPES:
         if not artifact_get_metadata_file_path(recipe_wrap.path).exists():
             recipe_wrap.write()
 

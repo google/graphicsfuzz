@@ -19,109 +19,18 @@ package gfauto;
 import "gfauto/common.proto";
 
 
+// An artifact is a directory containing an ArtifactMetadata proto stored in "artifact.json" and/or a Recipe proto
+// stored in "recipe.json", plus any other files and directories within. The recipe is executed to produce the files
+// that make up the artifact, which must include the "artifact.json" file.
+// See artifact.proto.
 message Recipe {
 
   oneof recipe {
-    RecipeCommand command = 1;
-    RecipeGlslShaderJobToSpirvShaderJob glsl_shader_job_to_spirv_shader_job = 2;
-    RecipeSpirvShaderJobToSpirvShaderJobOpt spirv_shader_job_to_spirv_shader_job_opt = 3;
-    RecipeGlslShaderJobAddRedPixels glsl_shader_job_add_red_pixels = 4;
-    RecipeSpirvAsmShaderJobToAmberScript spirv_asm_shader_job_to_amber_script = 5;
-    RecipeSpirvShaderJobToSpirvAsmShaderJob spirv_shader_job_to_spirv_asm_shader_job = 6;
-    RecipeGlslReferenceShaderJobToGlslVariantShaderJob glsl_reference_shader_job_to_glsl_variant_shader_job = 7;
-    RecipeDownloadAndExtractArchiveSet download_and_extract_archive_set = 8;
+    RecipeDownloadAndExtractArchiveSet download_and_extract_archive_set = 1;
   }
 }
 
-
-
+// Downloads and extracts one or more archives and makes the binaries available.
 message RecipeDownloadAndExtractArchiveSet {
   ArchiveSet archive_set = 1;
 }
-
-
-// Old recipes.
-
-message RecipeCommand {
-  repeated string command = 1;
-}
-
-message RecipeGlslShaderJobToSpirvShaderJob {
-  string glsl_shader_job_artifact = 1; // [(artifact_type).glsl_shader_job = {}]
-  string glslang_validator_artifact = 2;
-}
-
-message RecipeSpirvShaderJobToSpirvShaderJobOpt {
-  string spirv_shader_job_artifact = 1;
-  repeated string spirv_opt_args = 2;
-  string spirv_opt_artifact = 3;
-}
-
-message RecipeGlslShaderJobAddRedPixels {
-
-  string glsl_shader_job_artifact = 1; // [(artifact_type).glsl_shader_job = {}]
-  string graphics_fuzz_artifact = 2; // [(artifact_type).graphics_fuzz_binary_artifact = {}]
-}
-
-message RecipeSpirvShaderJobToSpirvAsmShaderJob {
-  string spirv_shader_job_artifact = 1;
-  string spirv_dis_artifact = 2;
-}
-
-message RecipeSpirvAsmShaderJobToAmberScript {
-  string spirv_asm_shader_job_artifact = 1; // [(artifact_type).spirv_shader_job = {}]
-
-  // Whether we should add e.g. probe commands so that the test is self-contained. This is only
-  // possible if we have enough information, such as if we know the test renders red pixels at the
-  // top left corner.
-  bool make_self_contained_test = 2;
-
-  // The name of the amber script file. If empty, the name will be the same as the input shader job
-  // json file name, without the .json extension, plus the .amber_script extension.
-  string amber_script_output_file = 3;
-
-  // If present, add a copyright header comment using the text in the given artifact.
-  string copyright_header_text_artifact = 4; // [(artifact_type).text_file = {}]
-
-  // Add a "Generated" comment so it is clear the file was generated.
-  bool add_generated_comment = 5;
-
-  // Add "A test for a bug found by GraphicsFuzz" comment.
-  bool add_graphics_fuzz_comment = 6;
-
-  // If present, add the text as a comment.
-  string comment_text = 7;
-
-  // Add the GLSL source as a comment.
-  bool add_glsl_source_as_comment = 8;
-
-  // If true, use Amber's default fence timeout value; otherwise, a large timeout value will be
-  // used to allow large, fuzzed, variant shaders to run.
-  bool use_default_fence_timeout = 9;
-
-  // Extra text to add to the list of commands, such as probe commands.
-  string extra_commands = 10;
-
-  // Short description of the test. One sentence, 58 characters max., no period.
-  string short_description = 11;
-
-}
-
-message RecipeGlslReferenceShaderJobToGlslVariantShaderJob {
-
-  // Reference shader job. Will be passed to the GraphicsFuzz generate command.
-  string glsl_reference_shader_job_artifact = 1;
-  string graphicsfuzz_artifact = 2;
-
-  // TODO: Should perhaps change to a list of shader job artifacts?
-  // Artifact containing a number of donor shader jobs. Will be passed to the GraphicsFuzz generate command.
-  string glsl_donors_artifact = 3;
-
-  // The shader job output .json file. E.g. variant.json.
-  string output_shader_job_file = 4;
-
-  // The optional arguments to the GraphicsFuzz generate command.
-  repeated string other_generate_arguments = 5;
-}
-
-

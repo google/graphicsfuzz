@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""General utility module.
+
+Used for accessing files, file system operations like creating directories, copying, moving, etc., getting the full path
+of a tool on the PATH, removing the beginning and/or end of string, and custom assert functions like check,
+check_check_field_truthy, check_file_exists, etc.
+"""
+
 import os
 import pathlib
 import platform

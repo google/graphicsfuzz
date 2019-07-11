@@ -19,6 +19,9 @@ package gfauto;
 import "gfauto/common.proto";
 import "gfauto/device.proto";
 
+// A test directory (test_dir) contains a Test proto in "test.json", plus the reference and variant shader jobs.
+// A Test proto contains all the information needed to execute a test on a specific device, plus the crash signature
+// for detecting if the result is interesting (i.e. the bug reproduces).
 message Test {
   oneof test {
     TestGlsl glsl = 1;

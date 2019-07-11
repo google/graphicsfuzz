@@ -15,22 +15,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Generate a CTS test.
+
+This module/script is copied next to a specific test in your repository of bugs
+to generate an Amber script test suitable for adding to the CTS.
+In particular, the Amber script test is suitable for use with |add_amber_tests_to_cts.py|.
+"""
+
 import sys
 from pathlib import Path
 
-from gfauto import artifacts, tool
+from gfauto import artifact_util, tool
 
 
 def main() -> None:
 
     # Checklist:
-    # output_amber
-    # short_description
-    # comment_text
-    # copyright_year
-    # extra_commands
+    # - check output_amber
+    # - check short_description
+    # - check comment_text
+    # - check copyright_year
+    # - check extra_commands
 
-    artifacts.recipes_write_built_in()
+    artifact_util.recipes_write_built_in()
 
     tool.glsl_shader_job_crash_to_amber_script_for_google_cts(
         input_json=Path() / "reduced_glsl" / "variant" / "shader.json",

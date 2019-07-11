@@ -14,10 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Logging utility for gfauto.
+
+Use to log to stdout and/or to a file. Print statements are banned in gfauto.
+"""
+
 from pathlib import Path
 from typing import List, TextIO
 
-from .util import file_read_text
+from gfauto import util
+
 
 _LOG_TO_STDOUT = True
 _LOG_TO_STREAM: List[TextIO] = []
@@ -43,6 +49,6 @@ def log(message: str) -> None:
 def log_a_file(log_file: Path) -> None:
     log(f"Logging the contents of {str(log_file)}")
     try:
-        log(file_read_text(log_file))
+        log(util.file_read_text(log_file))
     except IOError:
         log(f"Failed to read {str(log_file)}")

@@ -18,11 +18,15 @@ package gfauto;
 
 import "gfauto/common.proto";
 
+
+// A list of devices. Also includes the |active_device_names|, which are the ones that will be used when fuzzing
+// (so this is really more than just a list).
 message DeviceList {
   repeated string active_device_names = 1;
   repeated Device devices = 2;
 }
 
+// A device, such as an Android device or the host machine with its GPU and drivers.
 message Device {
   string name = 1;
   oneof device {
@@ -45,6 +49,7 @@ message DevicePreprocess {
 
 }
 
+// The host machine on which we are running gfauto.
 message DeviceHost {
 
 }

@@ -14,14 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tool module.
+
+Used to convert shader jobs to Amber script tests that are suitable for adding to the VK-GL-CTS project.
+"""
+
 from pathlib import Path
 from typing import List, Optional
 
-import attr
-
 from gfauto import (
-    artifacts,
-    built_in_binaries,
+    artifact_util,
+    binaries_util,
     recipe_glsl_shader_job_to_spirv_shader_job,
     recipe_spirv_asm_shader_job_to_amber_script,
     recipe_spirv_shader_job_to_spirv_asm_shader_job,
@@ -34,27 +37,6 @@ from gfauto import (
 from gfauto.util import check
 
 AMBER_COMMAND_PROBE_TOP_LEFT_RED = "probe rgba (0, 0) (1, 0, 0, 1)\n"
-
-
-class PathAndVersion:
-    def __init__(self, path: Optional[Path] = None, version: Optional[str] = None):
-        self.path = path
-        self.version = version
-
-
-# The following is similar to a Python "dataclass".
-# The first few members are fields, with a default value and some metadata.
-# The constructor is generated automatically.
-
-
-@attr.s
-class BinaryPaths:
-    glslang_binary: Optional[Path] = None
-    spirv_opt_binary: Optional[Path] = None
-    spirv_opt_no_validate_after_all: bool = False
-    spirv_dis_binary: Optional[Path] = None
-    spirv_val_binary: Optional[Path] = None
-    swift_shader_icd: Optional[Path] = None
 
 
 def get_copyright_header_google(year: str) -> str:
@@ -76,15 +58,15 @@ limitations under the License.
 
 def get_binary_paths_using_artifact_system(
     artifact_path: str
-) -> built_in_binaries.BinaryManager:
+) -> binaries_util.BinaryManager:
 
     # Deprecated.
 
-    artifacts.recipes_write_built_in()
-    artifacts.artifact_execute_recipe_if_needed(artifact_path)
-    artifact_metadata = artifacts.artifact_read_metadata(artifact_path)
+    artifact_util.recipes_write_built_in()
+    artifact_util.artifact_execute_recipe_if_needed(artifact_path)
+    artifact_metadata = artifact_util.artifact_read_metadata(artifact_path)
 
-    return built_in_binaries.BinaryManager(
+    return binaries_util.BinaryManager(
         list(artifact_metadata.data.extracted_archive_set.archive_set.binaries)
     )
 
@@ -101,12 +83,12 @@ def amberfy(
 
 
 def spirv_dis_shader_job(
-    input_json: Path, output_json: Path, binary_paths: built_in_binaries.BinaryGetter
+    input_json: Path, output_json: Path, binary_paths: binaries_util.BinaryGetter
 ) -> Path:
     return recipe_spirv_shader_job_to_spirv_asm_shader_job.run_spirv_shader_job_to_spirv_asm_shader_job(
         input_json,
         output_json,
-        binary_paths.get_binary_path_by_name(built_in_binaries.SPIRV_DIS_NAME).path,
+        binary_paths.get_binary_path_by_name(binaries_util.SPIRV_DIS_NAME).path,
     )
 
 
@@ -114,30 +96,28 @@ def spirv_opt_shader_job(
     input_json: Path,
     spirv_opt_args: List[str],
     output_json: Path,
-    binary_paths: built_in_binaries.BinaryGetter,
+    binary_paths: binaries_util.BinaryGetter,
 ) -> Path:
     spirv_opt_binary = binary_paths.get_binary_path_by_name(
-        built_in_binaries.SPIRV_OPT_NAME
+        binaries_util.SPIRV_OPT_NAME
     )
     return recipe_spirv_shader_job_to_spirv_shader_job_opt.run_spirv_opt_on_spirv_shader_job(
         input_json,
         output_json,
         spirv_opt_args,
         spirv_opt_binary.path,
-        built_in_binaries.SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG
+        binaries_util.SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG
         in spirv_opt_binary.binary.tags,
     )
 
 
 def glslang_glsl_shader_job_to_spirv(
-    input_json: Path, output_json: Path, binary_paths: built_in_binaries.BinaryGetter
+    input_json: Path, output_json: Path, binary_paths: binaries_util.BinaryGetter
 ) -> Path:
     return recipe_glsl_shader_job_to_spirv_shader_job.run_glslang_glsl_to_spirv_job(
         input_json,
         output_json,
-        binary_paths.get_binary_path_by_name(
-            built_in_binaries.GLSLANG_VALIDATOR_NAME
-        ).path,
+        binary_paths.get_binary_path_by_name(binaries_util.GLSLANG_VALIDATOR_NAME).path,
     )
 
 
@@ -156,11 +136,11 @@ def validate_spirv_shader_job_helper(input_json: Path, spirv_val_path: Path) -> 
 
 
 def validate_spirv_shader_job(
-    input_json: Path, binary_paths: built_in_binaries.BinaryGetter
+    input_json: Path, binary_paths: binaries_util.BinaryGetter
 ) -> None:
     validate_spirv_shader_job_helper(
         input_json,
-        binary_paths.get_binary_path_by_name(built_in_binaries.SPIRV_VAL_NAME).path,
+        binary_paths.get_binary_path_by_name(binaries_util.SPIRV_VAL_NAME).path,
     )
 
 
@@ -168,7 +148,7 @@ def glsl_shader_job_to_amber_script(
     input_json: Path,
     output_amber: Path,
     work_dir: Path,
-    binary_paths: built_in_binaries.BinaryGetter,
+    binary_paths: binaries_util.BinaryGetter,
     amberfy_settings: recipe_spirv_asm_shader_job_to_amber_script.AmberfySettings,
     spirv_opt_args: Optional[List[str]] = None,
 ) -> Path:
@@ -214,7 +194,7 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
     comment_text: str,
     copyright_year: str,
     extra_commands: str,
-    binary_paths: Optional[built_in_binaries.BinaryGetter] = None,
+    binary_paths: Optional[binaries_util.BinaryGetter] = None,
     spirv_opt_args: Optional[List[str]] = None,
     spirv_opt_hash: Optional[str] = None,
     test_metadata_path: Optional[Path] = None,
@@ -241,8 +221,8 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
             AssertionError("Must have test_metadata_path or binary_paths"),
         )
         assert test_metadata_path  # noqa
-        binary_paths = built_in_binaries.BinaryManager(
-            built_in_binaries.BinaryManager.get_binary_list_from_test_metadata(
+        binary_paths = binaries_util.BinaryManager(
+            binaries_util.BinaryManager.get_binary_list_from_test_metadata(
                 test_metadata_path
             )
         )
@@ -259,7 +239,7 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
 
     if spirv_opt_args and not spirv_opt_hash:
         spirv_opt_hash = binary_paths.get_binary_path_by_name(
-            built_in_binaries.SPIRV_OPT_NAME
+            binaries_util.SPIRV_OPT_NAME
         ).binary.version
 
     return glsl_shader_job_to_amber_script(

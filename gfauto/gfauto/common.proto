@@ -30,9 +30,8 @@ message Binary {
   // Typically, the current platform will also need to be found (e.g. "Linux") before the Binary can be chosen for use.
   repeated string tags = 2;
 
-  // Used when defining a binary within a recipe or artifact. Gives the path (always using '/' as the directory
-  // separator) relative from the artifact.json and recipe.json file to the binary, after the ArchiveSet has been
-  // extracted.
+  // Used when defining a binary within a recipe or artifact. Gives the path (always using "/" as the directory
+  // separator) relative from the artifact.json/recipe.json file to the binary, after the ArchiveSet has been extracted.
   // Should be empty in Settings.
   // Also used internally (but never written to disk) to store the resolved path of a binary.
   string path = 3;
@@ -42,12 +41,21 @@ message Binary {
 }
 
 message Archive {
+  // The URL from which to download the archive.
   string url = 1;
+
+  // The output location for the downloaded archive.
   string output_file = 2;
+
+  // The directory in which the archive will be extracted.
   string output_directory = 3;
 }
 
 message ArchiveSet {
+  // A list of Archives; all of these will be downloaded and extracted when used in a recipe.
+  // See RecipeDownloadAndExtractArchiveSet proto.
   repeated Archive archives = 1;
+
+  // A list of Binaries that can be found in the artifact. See ArtifactMetadataExtractedArchiveSet proto.
   repeated Binary binaries = 2;
 }

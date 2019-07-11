@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Shader job utility module.
+
+Used to copy shader jobs and get the related files of a shader job.
+"""
+
 import pathlib
 from typing import List, Optional, Tuple, Union
 

@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test utility module.
+
+A test directory contains a Test proto stored in "source/test.json", the reference and variant shader jobs, and various
+other files, including results.
+This module is used to read Test proto files and get various paths that exist in test directories.
+"""
+
 from pathlib import Path
 
 from gfauto import proto_util, util

@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""glsl-generate module.
+
+Generates GLSL shaders using GraphicsFuzz.
+"""
+
 import pathlib
 from pathlib import Path
 from typing import List, Optional

@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Protobuf utility module.
+
+Used to read/write protobuf data structures from/to JSON text and from/to JSON files.
+"""
+
 from pathlib import Path
 from typing import TypeVar
 

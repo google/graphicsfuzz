@@ -14,10 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
+"""Devices utility module.
+
+Used to enumerate the available devices and work with device lists.
+"""
+
 from typing import Dict, List, Optional
 
-from gfauto import android_device, proto_util, util
+from gfauto import android_device
 from gfauto.device_pb2 import (
     Device,
     DeviceHost,
@@ -84,24 +88,8 @@ def get_device_list(device_list: Optional[DeviceList] = None) -> DeviceList:
     return device_list
 
 
-DEVICE_LIST_FILE_PATH = Path("device_list.json")
-
-
-def read_device_list() -> DeviceList:
-    json_contents = util.file_read_text(DEVICE_LIST_FILE_PATH)
-    device_list = DeviceList()
-    proto_util.json_to_message(json_contents, device_list)
-    return device_list
-
-
 def get_active_devices(device_list: DeviceList) -> List[Device]:
     device_map: Dict[str, Device] = {}
     for device in device_list.devices:
         device_map[device.name] = device
     return [device_map[device] for device in device_list.active_device_names]
-
-
-def write_device_file() -> None:
-    device_list = get_device_list()
-    json_contents = proto_util.message_to_json(device_list)
-    util.file_write_text(DEVICE_LIST_FILE_PATH, json_contents)

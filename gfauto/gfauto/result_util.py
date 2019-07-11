@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Result utility module.
+
+When we run Amber, we write certain files to indicate the result.
+This module contains functions for getting the paths of these files.
+"""
+
 from pathlib import Path
 
 from gfauto import util

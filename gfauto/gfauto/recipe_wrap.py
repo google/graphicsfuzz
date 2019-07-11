@@ -13,18 +13,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Optional
 
-from gfauto import artifacts
+"""RecipeWrap class."""
+
+import attr
+
+from gfauto import artifact_util
 from gfauto.recipe_pb2 import Recipe
 
 
+@attr.dataclass
 class RecipeWrap:
+    """
+    Wraps a Recipe proto with its path for convenience.
+    """
+
+    path: str
     recipe: Recipe
 
-    def __init__(self, path: str, recipe: Optional[Recipe] = None):
-        self.path = path
-        self.recipe = recipe or artifacts.artifact_read_recipe(path)
-
     def write(self) -> str:
-        return artifacts.artifact_write_recipe(self.recipe, self.path)
+        return artifact_util.artifact_write_recipe(self.recipe, self.path)

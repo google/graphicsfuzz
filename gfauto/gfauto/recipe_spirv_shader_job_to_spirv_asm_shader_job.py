@@ -14,10 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""SPIR-V shader job to SPIR-V assembly shader job module.
+
+Converts a SPIR-V shader job to a SPIR-V assembly shader job (the shaders are disassembled).
+"""
+
 import pathlib
 from typing import Optional
 
-from gfauto import built_in_binaries, shader_job_util, subprocess_util, util
+from gfauto import binaries_util, shader_job_util, subprocess_util, util
 
 
 def run_spirv_dis_on_spirv_shader(
@@ -26,7 +31,7 @@ def run_spirv_dis_on_spirv_shader(
     spirv_dis_file_path: Optional[pathlib.Path] = None,
 ) -> pathlib.Path:
     if not spirv_dis_file_path:
-        spirv_dis_file_path = util.tool_on_path(built_in_binaries.SPIRV_DIS_NAME)
+        spirv_dis_file_path = util.tool_on_path(binaries_util.SPIRV_DIS_NAME)
 
     output_spirv_file_path = output_dir_path / (
         util.remove_end(input_spirv_file_path.name, ".spv") + ".asm"
@@ -56,7 +61,7 @@ def run_spirv_shader_job_to_spirv_asm_shader_job(
 ) -> pathlib.Path:
 
     if not spirv_dis_file_path:
-        spirv_dis_file_path = util.tool_on_path(built_in_binaries.SPIRV_DIS_NAME)
+        spirv_dis_file_path = util.tool_on_path(binaries_util.SPIRV_DIS_NAME)
 
     shader_files = shader_job_util.get_related_files(
         input_spirv_job_json_file_path, language_suffix=shader_job_util.SUFFIX_SPIRV

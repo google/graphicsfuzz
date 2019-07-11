@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Settings utility module.
+
+Used to read and write the Settings proto.
+See settings.proto.
+"""
+
 from pathlib import Path
 
 from gfauto import devices_util, proto_util

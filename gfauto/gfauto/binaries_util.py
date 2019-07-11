@@ -14,13 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+""" Binary utilities module.
+
+Defines the latest binaries (name and version) that will be used by default for new fuzzing sessions.
+Defines the recipes (see recipe.proto) for all built-in binaries, including old versions of binaries.
+Defines BinaryManager; see below.
+"""
+
 import abc
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import attr
 
-from gfauto import artifacts, recipe_wrap, test_util, util
+from gfauto import artifact_util, recipe_wrap, test_util, util
 from gfauto.common_pb2 import Archive, ArchiveSet, Binary
 from gfauto.gflogging import log
 from gfauto.recipe_pb2 import Recipe, RecipeDownloadAndExtractArchiveSet
@@ -102,8 +109,15 @@ class BinaryManager(BinaryGetter):
     """
     Implements BinaryGetter.
 
+    An instance of BinaryManager is the main way that code accesses binaries. BinaryManger allows certain tests and/or
+    devices to override binaries by passing a list of binary versions that take priority, so the correct versions are
+    always used. Plus, the current platform will used when deciding which binary to download and return.
+
+    See the Binary proto.
+
     _binary_list: A list of Binary with name, version, configuration. This is used to map a binary name to a Binary.
     _resolved_paths: Binary (serialized) -> Path
+    _binary_artifacts: A list of all available binary artifacts/recipes.
     """
 
     _binary_list: List[Binary]
@@ -123,7 +137,7 @@ class BinaryManager(BinaryGetter):
 
         if binary_artifacts_prefix:
             self._binary_artifacts.extend(
-                artifacts.binary_artifacts_find(binary_artifacts_prefix)
+                artifact_util.binary_artifacts_find(binary_artifacts_prefix)
             )
 
     @staticmethod
@@ -151,8 +165,8 @@ class BinaryManager(BinaryGetter):
                 recipe_binary_tags = set(artifact_binary.tags)
                 if not binary_tags.issubset(recipe_binary_tags):
                     continue
-                artifacts.artifact_execute_recipe_if_needed(artifact_path)
-                result = artifacts.artifact_get_inner_file_path(
+                artifact_util.artifact_execute_recipe_if_needed(artifact_path)
+                result = artifact_util.artifact_get_inner_file_path(
                     artifact_binary.path, artifact_path
                 )
                 self._resolved_paths[binary.SerializePartialToString()] = result

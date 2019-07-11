@@ -14,13 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Download and extract archive set recipe.
+
+Implements the RecipeDownloadAndExtractArchiveSet recipe.
+See recipe.proto.
+"""
+
 import os
 import shutil
 import stat
 import urllib.request
 from zipfile import ZipFile, ZipInfo
 
-from gfauto import artifacts, util
+from gfauto import artifact_util, util
 from gfauto.artifact_pb2 import ArtifactMetadata
 from gfauto.common_pb2 import Archive
 from gfauto.gflogging import log
@@ -38,11 +44,11 @@ def recipe_download_and_extract_archive_set(
         util.check_field_truthy(archive.output_file, "output_file")
         util.check_field_truthy(archive.output_directory, "output_directory")
 
-        output_file_path = artifacts.artifact_get_inner_file_path(
+        output_file_path = artifact_util.artifact_get_inner_file_path(
             archive.output_file, output_artifact_path
         )
 
-        output_directory_path = artifacts.artifact_get_inner_file_path(
+        output_directory_path = artifact_util.artifact_get_inner_file_path(
             archive.output_directory, output_artifact_path
         )
 
@@ -75,4 +81,4 @@ def recipe_download_and_extract_archive_set(
     output_metadata = ArtifactMetadata()
     output_metadata.data.extracted_archive_set.archive_set.CopyFrom(recipe.archive_set)
 
-    artifacts.artifact_write_metadata(output_metadata, output_artifact_path)
+    artifact_util.artifact_write_metadata(output_metadata, output_artifact_path)
