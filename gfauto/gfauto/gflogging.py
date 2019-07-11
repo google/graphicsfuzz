@@ -24,7 +24,6 @@ from typing import List, TextIO
 
 from gfauto import util
 
-
 _LOG_TO_STDOUT = True
 _LOG_TO_STREAM: List[TextIO] = []
 

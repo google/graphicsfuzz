@@ -24,9 +24,7 @@ from gfauto.recipe_pb2 import Recipe
 
 @attr.dataclass
 class RecipeWrap:
-    """
-    Wraps a Recipe proto with its path for convenience.
-    """
+    """Wraps a Recipe proto with its path for convenience."""
 
     path: str
     recipe: Recipe

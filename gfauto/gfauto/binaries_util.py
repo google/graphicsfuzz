@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Binary utilities module.
+"""Binary utilities module.
 
 Defines the latest binaries (name and version) that will be used by default for new fuzzing sessions.
 Defines the recipes (see recipe.proto) for all built-in binaries, including old versions of binaries.
