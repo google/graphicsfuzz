@@ -277,6 +277,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     if (ctx.interface_block() != null) {
       return visitInterface_block(ctx.interface_block());
     }
+    // The above captures all the declaration kinds, so this indicates a bad input
+    // rather than lack of support.
     throw new RuntimeException("Unknown declaration at line " + ctx.start.getLine() + ": "
         + getOriginalSourceText(ctx));
   }
@@ -314,8 +316,9 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       case "buffer":
         return TypeQualifier.BUFFER;
       default:
-        throw new RuntimeException("Interface qualifier: " + ctx.getText()
-            + " unknown or not yet supported.");
+        // The above is supposed to capture all the interface qualifiers, so this
+        // indicates that the input is bad (rather than lack of support).
+        throw new RuntimeException("Unknown interface qualifier: " + ctx.getText());
     }
   }
 
@@ -357,7 +360,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   private Type getType(Type_specifierContext typeSpecifier,
                                List<TypeQualifier> qualifiers) {
     if (typeSpecifier.array_specifier() != null) {
-      throw new RuntimeException();
+      throw new UnsupportedLanguageFeatureException("Array information specified at the base type"
+          + ", e.g. 'int[3] v', is not currently supported; use e.g. 'int A[3]' instead");
     }
     if (typeSpecifier.type_specifier_nonarray().builtin_type_specifier_nonarray() != null) {
       return new QualifiedType(getBuiltinType(typeSpecifier.type_specifier_nonarray()
@@ -415,7 +419,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
 
   private ArrayInfo getArrayInfo(Array_specifierContext arraySpecifierContext) {
     if (arraySpecifierContext.array_specifier() != null) {
-      throw new RuntimeException("Not yet supporting multi-dimmensional arrays");
+      throw new UnsupportedLanguageFeatureException("Not yet supporting multi-dimensional arrays");
     }
     if (arraySpecifierContext.constant_expression() == null) {
       // An array with unspecified length.
@@ -425,7 +429,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     if (expr instanceof IntConstantExpr) {
       return new ArrayInfo(Integer.parseInt(((IntConstantExpr) expr).getValue()));
     }
-    throw new RuntimeException("Unable to construct array info for array with size "
+    throw new UnsupportedLanguageFeatureException("Unable to construct array info for array with size "
         + expr.getText());
   }
 
@@ -836,7 +840,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     if (ctx.assignment_expression() != null) {
       return new Initializer(visitAssignment_expression(ctx.assignment_expression()));
     }
-    throw new RuntimeException();
+    throw new RuntimeException("Initializer lists are not currently supported.");
   }
 
   @Override
@@ -969,7 +973,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       return visitExpression(ctx.expression());
     }
     assert ctx.ASSIGN_OP() != null;
-    throw new RuntimeException(
+    throw new UnsupportedLanguageFeatureException(
         "We do not yet support the case where the condition of a 'for' or 'while' introduces a "
         + "new variable: " + getOriginalSourceText(ctx));
   }
