@@ -105,7 +105,10 @@ public final class OpaqueExpressionGenerator {
     );
   }
 
-  private List<OpaqueZeroOneFactory> waysToMakeZero() {
+  /**
+   * This method has non-private visibility for purposes of testing only.
+   */
+  List<OpaqueZeroOneFactory> waysToMakeZero() {
     List<OpaqueZeroOneFactory> opaqueZeroFactories = new ArrayList<>();
     opaqueZeroFactories.addAll(waysToMakeZeroOrOne());
     opaqueZeroFactories.add(this::opaqueZeroSin);
@@ -115,7 +118,10 @@ public final class OpaqueExpressionGenerator {
     return opaqueZeroFactories;
   }
 
-  private List<OpaqueZeroOneFactory> waysToMakeOne() {
+  /**
+   * This method has non-private visibility for purposes of testing only.
+   */
+  List<OpaqueZeroOneFactory> waysToMakeOne() {
     List<OpaqueZeroOneFactory> opaqueOneFactories = new ArrayList<>();
     opaqueOneFactories.addAll(waysToMakeZeroOrOne());
     opaqueOneFactories.add(this::opaqueOneExponential);
@@ -402,10 +408,17 @@ public final class OpaqueExpressionGenerator {
                                                 Fuzzer fuzzer, boolean isZero) {
     // represent 0 as the length of zero vector, e.g. length(opaqueZero).
     assert isZero;
-    if (!BasicType.allGenTypes().contains(type)) {
+    if (type != BasicType.FLOAT) {
+      // 'length' has return type 'float', so we can only create a scalar floating-point zero.
       return Optional.empty();
     }
-    return Optional.of(new FunctionCallExpr("length", makeOpaqueZero(type, constContext, depth,
+
+    // We can choose any vector size we wish for the vector whose length will be computed.
+    final BasicType vectorType =
+        BasicType.allGenTypes().get(generator.nextInt(BasicType.allGenTypes().size()));
+
+    return Optional.of(new FunctionCallExpr("length", makeOpaqueZero(vectorType, constContext,
+        depth,
         fuzzer)));
   }
 
@@ -434,13 +447,21 @@ public final class OpaqueExpressionGenerator {
   private Optional<Expr> opaqueOneNormalizedVectorLength(BasicType type, boolean constContext,
                                                          final int depth,
                                                          Fuzzer fuzzer, boolean isZero) {
-    // represent 1 as the length of normalized vector
+    // represent 1 as the length of a normalized vector
     assert !isZero;
-    if (!BasicType.allGenTypes().contains(type)) {
+    if (type != BasicType.FLOAT) {
+      // 'length' has return type 'float', so we can only create a scalar floating-point zero.
       return Optional.empty();
     }
-    Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(isZero,
-        type, constContext, depth, fuzzer));
+
+    // We can choose any vector size we wish for the vector whose length will be computed.
+    final BasicType vectorType =
+        BasicType.allGenTypes().get(generator.nextInt(BasicType.allGenTypes().size()));
+
+    // We create a vector of ones and normalize it.  Note that we could be more general and create
+    // any non-zero vector and normalize it.
+    Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(false,
+        vectorType, constContext, depth, fuzzer));
     return Optional.of(new FunctionCallExpr("length", normalizedExpr));
   }
 
