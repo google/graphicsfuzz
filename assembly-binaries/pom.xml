@@ -58,7 +58,7 @@ limitations under the License.
   </repositories>
 
   <properties>
-    <spirv-tools-version>422f2fe0f0f32494fa687a12ba343d24863b330a</spirv-tools-version>
+    <spirv-tools-version>f2170cc791d0eaa5789ec7528862ae00b984b3b8</spirv-tools-version>
     <angle-version>9d3202492d78aae5ced08ff14679b81c98d71c15</angle-version>
     <swiftshader-version>803082da4f73920729938905cb1727e11ff79530</swiftshader-version>
     <glslang-version>1586e566f4949b1957e7c32454cbf27e501ed632</glslang-version>
