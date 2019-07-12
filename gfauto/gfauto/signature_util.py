@@ -82,6 +82,10 @@ PATTERN_CATCHSEGV_STACK_FRAME_ADDRESS = re.compile(
     r"Backtrace:\n(.*)\(\+([x\da-fA-F]+)+\)\["
 )
 
+PATTERN_SWIFT_SHADER_ABORT = re.compile(r":\d+ ABORT:(.*)")
+
+PATTERN_SWIFT_SHADER_WARNING = re.compile(r":\d+ WARNING:(.*)")
+
 
 def remove_hex_like(string: str) -> str:
     temp = string
@@ -138,6 +142,16 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
 
     # Spirv-opt error.
     group = basic_match(PATTERN_SPIRV_OPT_ERROR, log_contents)
+    if group:
+        return group
+
+    # ABORT message from SwiftShader.
+    group = basic_match(PATTERN_SWIFT_SHADER_ABORT, log_contents)
+    if group:
+        return group
+
+    # WARNING message from SwiftShader.
+    group = basic_match(PATTERN_SWIFT_SHADER_WARNING, log_contents)
     if group:
         return group
 
