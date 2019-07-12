@@ -24,9 +24,8 @@ uniform vec2 injectionSwitch;
 
 uniform vec2 resolution;
 
-vec2 pattern( in vec2 x )
-{
-    vec2 n = floor( x );
+vec2 pattern( in vec2 x ){
+	vec2 n = floor( x );
 	vec3 m = vec3( 1. );
     for( int j=-1; j<= int(injectionSwitch.y); j++ ){
 		for( int i=-1; i<= int(injectionSwitch.y); i++ )
@@ -46,7 +45,7 @@ vec2 pattern( in vec2 x )
 		}
 	}
 	return vec2( m.x , m.y - m.z );
-} 
+}
 
 void main() {
 	vec2 uv = gl_FragCoord.xy / (resolution.y);
@@ -71,28 +70,29 @@ void main() {
 	vec2 c = pattern( (15.0 + tan(0.2)) * uv);
 	vec3 col;
  	if (int(gl_FragCoord.y) < 20) {
-		col = .5 + cos( c.y  + vec3(resolution.x, A[4]/resolution.x + 50., 22.0) );	
+		col = .5 + cos(c.y + vec3(esolution.x, A[4]/resolution.x + 50., 22.0));
 	} else if (int(gl_FragCoord.y) < 40) {
-	  	col = .5 + cos( c.y  + vec3(resolution.x, A[9]/resolution.x + 50., 22.0) );	
+	  	col = .5 + cos(c.y + vec3(esolution.x, A[9]/resolution.x + 50., 22.0));	
   	} else if (int(gl_FragCoord.y) < 60) {
-	  	col = .5 + cos( c.y  + vec3( resolution.x, A[14]/resolution.x + 50., 22.0) );	
+	  	col = .5 + cos(c.y + vec3(resolution.x, A[14]/resolution.x + 50., 22.0));
   	} else if (int(gl_FragCoord.y) < 80) {
-		col = .5 + cos( c.y  + vec3( resolution.x, A[39]/resolution.x + 50., 22.0) );	
+		col = .5 + cos(c.y + vec3(resolution.x, A[39]/resolution.x + 50., 22.0));
   	} else if (int(gl_FragCoord.y) < 100) {
-	 	col = .5 + cos( c.y  + vec3( resolution.x, A[39]/resolution.x + 50., 22.0) );	
+	 	col = .5 + cos(c.y + vec3(resolution.x, A[39]/resolution.x + 50., 22.0));	
   	} else if (int(gl_FragCoord.y) < 120) {
-		col = .5 + cos( c.y  + vec3( resolution.x, A[39]/resolution.x + 50., 22.0) );	
+		col = .5 + cos(c.y + vec3(resolution.x, A[39]/resolution.x + 50., 22.0));
   	} else if (int(gl_FragCoord.y) < 140) {
-		col = .5 + cos( c.y  + vec3( resolution.x, A[39]/resolution.x + 50., 22.0) );	
+		col = .5 + cos(c.y + vec3(resolution.x, A[39]/resolution.x + 50., 22.0));
  	} else if (int(gl_FragCoord.y) < 160) {
-	 	col = .5 + cos( c.y  + vec3( resolution.x, A[39]/resolution.x + 50., 22.0) );	
+	 	col = .5 + cos(c.y + vec3(resolution.x, A[39]/resolution.x + 50., 22.0));
 	} else if (int(gl_FragCoord.y) < 180) {
-	  	col = .5 + cos( c.y  + vec3( resolution.x, A[44]/resolution.x + 50., 22.0) );	
+	  	col = .5 + cos(c.y + vec3(resolution.x, A[44]/resolution.x + 50., 22.0));
   	} else if (int(gl_FragCoord.y) < 200) {
-      	col = .5 + cos( c.y  + vec3( resolution.x, A[49]/resolution.x + 50., 22.0) );		  
+      	col = .5 + cos(c.y + vec3(resolution.x, A[49]/resolution.x + 50., 22.0));
   	} else {
 		discard;
   	}
 	
 	_GLF_color = vec4(col, 1.0);
+		
 }
