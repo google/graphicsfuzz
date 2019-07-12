@@ -57,11 +57,11 @@ void main()
     } while(i < findMSB(512));
     if(gl_FragCoord.x < resolution.x / 2.0)
     {
-        _GLF_color = vec4(data[findMSB(0)] / 10.0, data[findLSB(32)] / 10.0, data[findMSB(512)] / 10.0, 1.0);
+        _GLF_color = vec4(data[findMSB(int(injectionSwitch.y))] / 10.0, data[findLSB(int(injectionSwitch.y * 32.0))] / 10.0, data[findMSB(int(injectionSwitch.y * 512.0))] / 10.0, 1.0);
     }
     else
     {
-        _GLF_color = vec4(data[findLSB(32)] / 10.0, data[findMSB(512)] / 10.0, data[findMSB(0)] / 10.0, 1.0);
+        _GLF_color = vec4(data[findLSB(int(injectionSwitch.y * 32.0))] / 10.0, data[findMSB(int(injectionSwitch.y * 512.0))] / 10.0, data[findMSB(int(injectionSwitch.y))] / 10.0, 1.0);
     }
 }
 

@@ -20,51 +20,53 @@ precision highp float;
 
 layout(location = 0) out vec4 _GLF_color;
 
+uniform vec2 injectionSwitch;
+
 uniform vec2 resolution;
 
 void main(void) {
   uint uselessOutVariable;
-  float A[bitfieldInsert(50, 0, 0, 0)];
-  int i = bitfieldExtract(0, bitCount(0), 0);
+  float A[50];
+  int i = bitfieldExtract(0, bitCount(int(injectionSwitch.x)), int(injectionSwitch.x));
   do {
     if (i >= int(resolution.x)) {
       break;
     }
-    if (findLSB(16) * (i/findMSB(16)) == i) {
-      A[i/findLSB(16)] = float(i);
+    if (findLSB(16 * int(injectionSwitch.y)) * (i/findMSB(16 * int(injectionSwitch.y))) == i) {
+      A[i/findLSB(16 * int(injectionSwitch.y))] = float(i);
     }
     i++;
-  } while(i < bitfieldInsert(200, 0, 0, 0));
-  i = findLSB(0);
+  } while(i < bitfieldInsert(200 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x)));
+  i = findLSB(int(injectionSwitch.x));
   do {
     if (i < int(gl_FragCoord.x)) {
       break;
     }
-    if (i > findMSB(0)) {
-      A[i] += A[usubBorrow(uint(i), uint(1), uselessOutVariable)];
+    if (i > findMSB(int(injectionSwitch.x))) {
+      A[i] += A[usubBorrow(uint(i), uint(injectionSwitch.y), uselessOutVariable)];
     }
     i++;
-  } while(i < bitfieldInsert(50, 0, 0, 0));
+  } while(i < bitfieldInsert(50 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x)));
   if (int(gl_FragCoord.x) < findLSB(1048576)) {
-    _GLF_color = vec4(A[bitfieldReverse(0)]/resolution.x, A[findMSB(16)]/resolution.y, 1.0, 1.0);
-  } else if (int(gl_FragCoord.x) < bitfieldInsert(40, 0, 0, 0)) {
-    _GLF_color = vec4(A[findLSB(32)]/resolution.x, A[findMSB(512)]/resolution.y, 1.0, 1.0);
-  } else if (int(gl_FragCoord.x) < bitfieldInsert(60, 0, 0, 0)) {
-    _GLF_color = vec4(A[findMSB(1024)]/resolution.x, A[findLSB(16384)]/resolution.y, 1.0, 1.0);
-  } else if (int(gl_FragCoord.x) < bitfieldInsert(80, 0, 0, 0)) {
-    _GLF_color = vec4(A[findLSB(32768)]/resolution.x, A[findMSB(524288)]/resolution.y, 1.0, 1.0);
-  } else if (int(gl_FragCoord.x) < bitfieldInsert(100, 0, 0, 0)) {
-    _GLF_color = vec4(A[findMSB(1048576)]/resolution.x, A[findLSB(16777216)]/resolution.y, 1.0, 1.0);
-  } else if (int(gl_FragCoord.x) < bitfieldInsert(120, 0, 0, 0)) {
-    _GLF_color = vec4(A[findLSB(33554432)]/resolution.x, A[findMSB(536870912)]/resolution.y, 1.0, 1.0);
-  } else if (int(gl_FragCoord.x) < bitfieldInsert(140, 0, 0, 0)) {
+    _GLF_color = vec4(A[bitfieldReverse(int(injectionSwitch.x))]/resolution.x, A[findMSB(16)]/resolution.y, 1.0, 1.0);
+  } else if (int(gl_FragCoord.x) < bitfieldInsert(40 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x))) {
+    _GLF_color = vec4(A[findLSB(32 * int(injectionSwitch.y))]/resolution.x, A[findMSB(512)]/resolution.y, 1.0, 1.0);
+  } else if (int(gl_FragCoord.x) < bitfieldInsert(60 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x))) {
+    _GLF_color = vec4(A[findMSB(1024 * int(injectionSwitch.y))]/resolution.x, A[findLSB(16384)]/resolution.y, 1.0, 1.0);
+  } else if (int(gl_FragCoord.x) < bitfieldInsert(80 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x))) {
+    _GLF_color = vec4(A[findLSB(32768 * int(injectionSwitch.y))]/resolution.x, A[findMSB(524288)]/resolution.y, 1.0, 1.0);
+  } else if (int(gl_FragCoord.x) < bitfieldInsert(100 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x))) {
+    _GLF_color = vec4(A[findMSB(1048576)]/resolution.x, A[findLSB(16777216 * int(injectionSwitch.y))]/resolution.y, 1.0, 1.0);
+  } else if (int(gl_FragCoord.x) < bitfieldInsert(120 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x))) {
+    _GLF_color = vec4(A[findLSB(33554432)]/resolution.x, A[findMSB(536870912 * int(injectionSwitch.y))]/resolution.y, 1.0, 1.0);
+  } else if (int(gl_FragCoord.x) < bitfieldInsert(140 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x))) {
     _GLF_color = vec4(A[findMSB(1073741824)]/resolution.x, A[bitfieldInsert(34, 0, 0, 0)]/resolution.y, 1.0, 1.0);
-  } else if (int(gl_FragCoord.x) < bitfieldInsert(160, 0, 0, 0)) {
-    _GLF_color = vec4(A[bitfieldInsert(35, 0, 0, 0)]/resolution.x, A[bitfieldInsert(39, 0, 0, 0)]/resolution.y, 1.0, 1.0);
-  } else if (int(gl_FragCoord.x) < bitfieldInsert(180, 0, 0, 0)) {
-    _GLF_color = vec4(A[bitfieldInsert(40, 0, 0, 0)]/resolution.x, A[bitfieldInsert(44, 0, 0, 0)]/resolution.y, 1.0, 1.0);
-  } else if (int(gl_FragCoord.x) < bitfieldInsert(180, 0, 0, 0)) {
-    _GLF_color = vec4(A[bitfieldInsert(45, 0, 0, 0)]/resolution.x, A[bitfieldInsert(49, 0, 0, 0)]/resolution.y, 1.0, 1.0);
+  } else if (int(gl_FragCoord.x) < bitfieldInsert(160 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x))) {
+    _GLF_color = vec4(A[bitfieldInsert(35, 0, 0, int(injectionSwitch.x))]/resolution.x, A[bitfieldInsert(39, 0, 0, int(injectionSwitch.x))]/resolution.y, 1.0, 1.0);
+  } else if (int(gl_FragCoord.x) < bitfieldInsert(180 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x))) {
+    _GLF_color = vec4(A[bitfieldInsert(40, 0, 0, int(injectionSwitch.x))]/resolution.x, A[bitfieldInsert(44, 0, 0, int(injectionSwitch.x))]/resolution.y, 1.0, 1.0);
+  } else if (int(gl_FragCoord.x) < bitfieldInsert(180 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x))) {
+    _GLF_color = vec4(A[bitfieldInsert(45, 0, 0, int(injectionSwitch.x))]/resolution.x, A[bitfieldInsert(49, 0, 0, int(injectionSwitch.x))]/resolution.y, 1.0, 1.0);
   } else {
     discard;
   }

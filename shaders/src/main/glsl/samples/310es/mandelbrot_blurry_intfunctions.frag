@@ -33,8 +33,14 @@ vec3 mand(float xCoord, float yCoord) {
   float c_re = 0.8*(xCoord - width/2.0)*4.0/width - 0.4;
   float c_im = 0.8*(yCoord - height/2.0)*4.0/width;
   float x = 0.0, y = 0.0;
-  int iteration = bitfieldReverse(0);
-  int k = bitfieldExtract(0, bitCount(0), 0);
+  if (0.0 > resolution.x)
+  {
+    x = 1.0;
+    y = 1.0;
+  }
+  int iteration = bitfieldReverse(int(x));
+  int k = bitfieldExtract(int(y), bitCount(int(x)), int(y));
+  int iterationCap = 1000;
   do {
     if (x*x+y*y > 4.0) {
       break;
@@ -44,8 +50,12 @@ vec3 mand(float xCoord, float yCoord) {
     x = x_new;
     iteration++;
     k++;
-  } while(k < bitfieldInsert(1001, 0, 0, 0));
-  if (iteration < bitfieldInsert(1000, 0, 0, 0)) {
+  } while(k < bitfieldInsert(iterationCap + (257.0 > resolution.y ? 1 : 0), 0, 0, 0));
+  if (0.0 > resolution.y)
+  {
+    iterationCap += 1;
+  }
+  if (iteration < bitfieldInsert(iterationCap, 0, 0, 0)) {
     return pickColor(iteration);
   } else {
     return vec3(0.0);
