@@ -905,6 +905,19 @@ public class WebUi extends HttpServlet {
     response.getWriter().println(html);
   }
 
+  private static String posixPath(String path, String... otherParts) {
+    StringBuilder result = new StringBuilder(path);
+    for (String part : otherParts) {
+      result.append("/");
+      result.append(part);
+    }
+    return result.toString();
+  }
+
+  private static File posixPathToFile(String path, String... otherParts) {
+    return new File(FilenameUtils.separatorsToSystem(posixPath(path, otherParts)));
+  }
+
   // Page to view the result from a single shader by a worker - /webui/result/<result-filepath>
   private void viewResult(HttpServletRequest request, HttpServletResponse response)
       throws IOException, ServletException, TException {
@@ -919,18 +932,17 @@ public class WebUi extends HttpServlet {
     final String worker = path[3];
     final String shaderFamily = path[4];
     final String variant = path[5];
-    final Path variantDir =
-        Paths.get(WebUiConstants.WORKER_DIR, worker, shaderFamily);
-    final Path variantFullPathNoExtension = Paths.get(variantDir.toString(), variant);
-
-    File infoFile = new File(variantDir.toString(), variant + ".info.json");
+    final String variantDir =
+        posixPath(WebUiConstants.WORKER_DIR, worker, shaderFamily);
+    final String variantFullPathNoExtension = posixPath(variantDir, variant);
+    File infoFile = posixPathToFile(variantDir, variant + ".info.json");
     if (!infoFile.isFile()) {
       err404(request, response, "Invalid result path: cannot find corresponding info file");
       return;
     }
 
     final boolean isCompute =
-        new File(Paths.get("shaderfamilies", shaderFamily, variant + ".comp").toString())
+        posixPathToFile("shaderfamilies", shaderFamily, variant + ".comp")
             .isFile();
 
     JsonObject info = accessFileInfo.getResultInfo(infoFile);
@@ -952,7 +964,7 @@ public class WebUi extends HttpServlet {
         "<input type='hidden' name='num_back' value='2'/>\n",
         "<div class='ui button'",
         " onclick=\"checkAndSubmit('Confirm deletion of ",
-        variantFullPathNoExtension.toString(),
+        variantFullPathNoExtension,
         "', deleteForm)\">",
         "Delete this result</div>\n",
         "</form>",
@@ -1013,14 +1025,13 @@ public class WebUi extends HttpServlet {
       }
 
     } else {
-      final String referencePngPath =
-          Paths.get(variantDir.toString(), "reference.png").toString();
+      final String referencePngPath = posixPath(variantDir, "reference.png");
 
       htmlAppendLn("<p>Reference image:</p>",
           "<img src='/webui/file/", referencePngPath, "'>");
 
-      String pngPath = variantDir + variant + ".png";
-      File pngFile = new File(pngPath);
+      String pngPath = posixPath(variantDir, variant + ".png");
+      File pngFile = posixPathToFile(pngPath);
 
       if (!variant.equals("reference")) {
         if (pngFile.exists()) {
@@ -1029,8 +1040,8 @@ public class WebUi extends HttpServlet {
         }
       }
 
-      String gifPath = variantDir + variant + ".gif";
-      File gifFile = new File(gifPath);
+      String gifPath = posixPath(variantDir, variant + ".gif");
+      File gifFile = posixPathToFile(gifPath);
       if (gifFile.exists()) {
         htmlAppendLn("<p>Results non-deterministic animation:</p>",
             "<img src='/webui/file/", gifPath, "'>",
@@ -1043,7 +1054,7 @@ public class WebUi extends HttpServlet {
             "'> ");
       }
 
-      if (!(pngFile.exists()) && !(gifFile.exists())) {
+      if (!pngFile.exists() && !gifFile.exists()) {
         htmlAppendLn("<p>No image to display for this result status</p>");
       }
 
@@ -1098,13 +1109,12 @@ public class WebUi extends HttpServlet {
         "<div class='ui segment'>\n",
         "<h3>Run log</h3>\n",
         "<textarea readonly rows='25' cols='160'>");
-    htmlAppendLn(getFileContents(new File(Paths.get(variantDir.toString(),
-        variant + ".txt").toString())));
+    htmlAppendLn(getFileContents(posixPathToFile(variantDir, variant + ".txt")));
     htmlAppendLn("</textarea>\n",
         "</div>");
 
     // Get result file
-    File result = variantFullPathNoExtension.toFile();
+    File result = posixPathToFile(variantFullPathNoExtension);
 
     // Information/links for result
     File referenceRes = new File(result.getParentFile(), "reference.info.json");
