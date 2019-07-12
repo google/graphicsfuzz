@@ -65,17 +65,17 @@ DEFAULT_BINARIES = [
     Binary(
         name="spirv-opt",
         tags=["Debug"],
-        version="4a00a80c40484a6f6f72f48c9d34943cf8f180d4",
+        version="55adf4cf707bb12c29fc12f784ebeaa29a819e9b",
     ),
     Binary(
         name="spirv-dis",
         tags=["Debug"],
-        version="4a00a80c40484a6f6f72f48c9d34943cf8f180d4",
+        version="55adf4cf707bb12c29fc12f784ebeaa29a819e9b",
     ),
     Binary(
         name="spirv-val",
         tags=["Debug"],
-        version="4a00a80c40484a6f6f72f48c9d34943cf8f180d4",
+        version="55adf4cf707bb12c29fc12f784ebeaa29a819e9b",
     ),
     Binary(
         name="swift_shader_icd",
@@ -480,5 +480,9 @@ BUILT_IN_BINARY_RECIPES: List[recipe_wrap.RecipeWrap] = (
     + _get_built_in_spirv_tools_version(
         version_hash="1c1e749f0b51603032ed573acb5ee4cd6fee8d01",
         build_version_hash="7663d620a7fbdccb330d2baec138d0e3e096457c",
+    )
+    + _get_built_in_spirv_tools_version(
+        version_hash="55adf4cf707bb12c29fc12f784ebeaa29a819e9b",
+        build_version_hash="f2170cc791d0eaa5789ec7528862ae00b984b3b8",
     )
 )
