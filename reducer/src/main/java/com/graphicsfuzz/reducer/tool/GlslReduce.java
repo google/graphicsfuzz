@@ -146,9 +146,9 @@ public class GlslReduce {
         .action(Arguments.storeTrue());
 
     parser.addArgument("--seed")
-        .help("Seed with which to initialize the random number generator that is used to control "
-            + "reduction decisions.")
-        .type(Integer.class);
+        .help("Seed (unsigned 64 bit long integer) with which to initialize the random number "
+            + "generator that is used to control reduction decisions.")
+        .type(Long.class);
 
     parser.addArgument("--timeout")
         .help(
@@ -287,7 +287,7 @@ public class GlslReduce {
       final Integer retryLimit = ns.get("retry_limit");
       final Boolean verbose = ns.get("verbose");
       final boolean skipRender = ns.get("skip_render");
-      final int seed = ArgsUtil.getSeedArgument(ns);
+      final IRandom random = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
       final String errorString = ns.get("error_string");
       final boolean reduceEverywhere = !ns.getBoolean("preserve_semantics");
       final boolean stopOnError = ns.get("stop_on_error");
@@ -453,7 +453,7 @@ public class GlslReduce {
       doReductionHelper(
           inputShaderJobFile,
           shaderJobShortName,
-          seed,
+          random,
           fileJudge,
           workDir,
           maxSteps,
@@ -479,7 +479,7 @@ public class GlslReduce {
   public static void doReductionHelper(
       File initialShaderJobFile,
       String outputShortName,
-      int seed,
+      IRandom random,
       IFileJudge fileJudge,
       File workDir,
       int stepLimit,
@@ -490,7 +490,6 @@ public class GlslReduce {
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final ShadingLanguageVersion shadingLanguageVersion =
         getGlslVersionForShaderJob(initialShaderJobFile, fileOps);
-    final IRandom random = new RandomWrapper(seed);
     final IdGenerator idGenerator = new IdGenerator();
 
     final int fileCountOffset = getFileCountOffset(

@@ -1619,7 +1619,7 @@ public class WebUi extends HttpServlet {
       args.add(retryLimit);
     }
     final String seed = request.getParameter("seed");
-    if (seed != null) {
+    if (seed != null && seed.length() > 0) {
       args.add("--seed");
       args.add(seed);
     }

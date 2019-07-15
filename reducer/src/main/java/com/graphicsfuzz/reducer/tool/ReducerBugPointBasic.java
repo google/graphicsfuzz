@@ -60,8 +60,8 @@ public class ReducerBugPointBasic {
           .type(Integer.class);
 
     parser.addArgument("--seed")
-          .help("Seed to initialize random number generator with.")
-          .type(Integer.class);
+          .help("Seed (unsigned 64 bit long integer) to initialize random number generator with.")
+          .type(Long.class);
 
     parser.addArgument("--preserve-semantics")
           .help("Only perform semantics-preserving reductions.")
@@ -95,9 +95,7 @@ public class ReducerBugPointBasic {
             .getGlslVersionFromFirstTwoLines(
                 fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
 
-    final int seed = ArgsUtil.getSeedArgument(ns);
-
-    final IRandom generator = new RandomWrapper(seed);
+    IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
 
     final ShaderJob originalShaderJob = fileOps.readShaderJobFile(shaderJobFile);
 
@@ -180,7 +178,7 @@ public class ReducerBugPointBasic {
           }
           continue;
         }
-        if (invalid(current, shadingLanguageVersion, fileOps)) {
+        if (invalid(current, fileOps)) {
           System.err.println("Invalid shader after reduction step.");
           if (ignoreInvalid) {
             System.err.println("Ignoring it and backtracking.");
@@ -227,7 +225,6 @@ public class ReducerBugPointBasic {
 
   private static boolean invalid(
       ShaderJob shaderJob,
-      ShadingLanguageVersion shadingLanguageVersion,
       ShaderJobFileOperations fileOps)
         throws IOException, InterruptedException {
     File tempShaderJobFile = new File("temp_to_validate.json");

@@ -88,8 +88,8 @@ public class Mutate {
         .type(File.class);
 
     parser.addArgument("--seed")
-        .help("Seed to initialize random number generator with.")
-        .type(Integer.class);
+        .help("Seed (unsigned 64 bit long integer) for the random number generator.")
+        .type(Long.class);
 
     return parser.parseArgs(args);
   }
@@ -127,13 +127,14 @@ public class Mutate {
 
     final File input = ns.get("input");
     final File output = ns.get("output");
-    final int seed = ArgsUtil.getSeedArgument(ns);
+    IRandom random = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
 
     final TranslationUnit tu = ParseHelper.parse(input);
 
-    LOGGER.info("Mutating from " + input + " to " + output + " with seed " + seed);
+    LOGGER.info("Mutating from " + input + " to " + output + " with RNG "
+        + random.getDescription());
 
-    mutate(tu, new RandomWrapper(seed));
+    mutate(tu, random);
 
     final File shaderJobFile = new File(FilenameUtils.removeExtension(output.getName()) + ".json");
 

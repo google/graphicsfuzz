@@ -96,6 +96,11 @@ public class Expr2BinaryMutationFinderTest {
       public IRandom spawnChild() {
         throw new UnsupportedOperationException();
       }
+
+      @Override
+      public String getDescription() {
+        return "Just 2";
+      }
     };
   }
 

@@ -128,7 +128,7 @@ public class GenerateShaderFamily {
     final boolean writeProbabilities = ns.getBoolean("write_probabilities");
     final boolean keepBadVariants = ns.getBoolean("keep_bad_variants");
     final boolean stopOnFail = ns.getBoolean("stop_on_fail");
-    final int seed = ArgsUtil.getSeedArgument(ns);
+    final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
     final int numVariants = ns.getInt("num_variants");
     Optional<Integer> maxBytes = ns.get("max_bytes") == null ? Optional.empty() :
         Optional.of(ns.getInt("max_bytes"));
@@ -137,7 +137,7 @@ public class GenerateShaderFamily {
     final GeneratorArguments generatorArguments = Generate.getGeneratorArguments(ns);
 
     if (verbose) {
-      LOGGER.info("Using seed " + seed);
+      LOGGER.info("Using random: " + generator.getDescription());
     }
 
     if (!referenceShaderJob.isFile()) {
@@ -207,8 +207,6 @@ public class GenerateShaderFamily {
     int generatedVariants = 0;
     int triedVariants = 0;
 
-    final IRandom generator = new RandomWrapper(seed);
-
     // Main variant generation loop
     while (generatedVariants < numVariants) {
       if (verbose) {
@@ -216,29 +214,28 @@ public class GenerateShaderFamily {
             + " of " + numVariants + ")");
       }
       // Generate a variant
-      final int innerSeed = generator.nextInt(Integer.MAX_VALUE);
-      if (verbose) {
-        LOGGER.info("Generating variant with inner seed " + innerSeed);
-      }
       final File variantShaderJobFile = new File(outputDir, "variant_" + String.format("%03d",
           generatedVariants) + ".json");
+      final IRandom childRandom = generator.spawnChild();
+      if (verbose) {
+        LOGGER.info("Generating variant with inner random: " + childRandom.getDescription());
+      }
 
       triedVariants++;
       try {
         Generate.generateVariant(fileOps, referenceShaderJob, variantShaderJobFile,
-            generatorArguments, innerSeed, writeProbabilities);
+            generatorArguments, childRandom, writeProbabilities);
       } catch (Exception exception) {
         if (verbose) {
-          LOGGER.error("Failed generating variant: " + exception.getMessage()
-              + exception.getStackTrace()
+          LOGGER.error("Failed generating variant: "
               + "\nGenerator arguments: " + generatorArguments
               + "\nReference shader job: " + referenceShaderJob
-              + "\nSeed: " + innerSeed);
+              + "\nRandom: " + childRandom.getDescription(), exception);
         }
         if (stopOnFail) {
           final String message = "Failed generating a variant, stopping.";
           LOGGER.info(message);
-          throw new RuntimeException(message);
+          throw new RuntimeException(message, exception);
         }
         continue;
       }
@@ -283,7 +280,7 @@ public class GenerateShaderFamily {
         StandardCharsets.UTF_8) : "none";
     infoLog.addProperty("git_hash", hashContents);
     infoLog.addProperty("args", String.join(" ", args));
-    infoLog.addProperty("seed", seed);
+    infoLog.addProperty("seed", generator.getDescription());
 
     // Pretty-print the info log.
     FileUtils.writeStringToFile(new File(outputDir,"infolog.json"),
