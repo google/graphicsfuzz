@@ -27,8 +27,9 @@ from typing import Match, Optional, Pattern
 from gfauto import subprocess_util, util
 
 # .* does not match newlines
+# (?:   ) non-group parentheses
 
-HEX_LIKE = r"(0x)?[0-9a-fA-F]"
+HEX_LIKE = r"(?:0x)?[0-9a-fA-F]"
 
 # 06-15 21:17:00.039  7517  7517 F DEBUG   :     #00 pc 00000000009d9c34  /my/library.so ((anonymous namespace)::Bar::Baz(aaa::MyInstr*, void* (*)(unsigned int))+456)
 # Another example of the function signature: /my/library.so (myFunction+372)
@@ -36,12 +37,21 @@ HEX_LIKE = r"(0x)?[0-9a-fA-F]"
 
 # Just look for anything that contains "word(" or "word+" from after the (hex-like) PC address.
 PATTERN_ANDROID_BACKTRACE_FUNCTION = re.compile(
-    r"\n.*#00 pc " + HEX_LIKE + r"+ (.*(\w+)([(+]).*)"
+    r"\n.*#00 pc " + HEX_LIKE + r"+ (.*[\w\d_]+[(+].*)"
 )
 
 ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE = re.compile(
-    r"(/vendor/lib(64)?/(hw/)?|/data/local/(tmp/)?|/system/(lib(64)?/)?|anonymous namespace|"
-    r"\(BuildId: " + HEX_LIKE + r"+\)"
+    r"(?:"
+    r"vendor/"
+    r"|hw/"
+    r"|data/local/(?:tmp/)?"
+    r"|system/(?:lib(?:64)?/)?"
+    r"|lib(?:64)?/"
+    r"|apex/"
+    r"|bionic/"
+    r"|com.android.runtime(?:/lib(?:64)?)?/"
+    r"|anonymous namespace"
+    r"|\(BuildId: " + HEX_LIKE + r"+\)"
     r")"
 )
 
@@ -55,7 +65,7 @@ PATTERN_GLSLANG_ERROR = re.compile(r"ERROR: .*?: '(.*?)'")
 # E.g.
 # glslangValidator: ../glslang/MachineIndependent/ParseHelper.cpp:2212: void glslang::TParseContext::nonOpBuiltInCheck(const glslang::TSourceLoc&, const glslang::TFunction&, glslang::TIntermAggregate&): Assertion `PureOperatorBuiltins == false' failed.
 
-PATTERN_ASSERTION_FAILURE = re.compile(r"\n.*?:\d+: (.*? [Aa]ssert(ion)?)")
+PATTERN_ASSERTION_FAILURE = re.compile(r"\n.*?:\d+: (.*? [Aa]ssert(?:ion)?)")
 
 
 # Only used if "0 pass, 1 fail" is found.
@@ -95,7 +105,7 @@ def remove_hex_like(string: str) -> str:
 
 
 def clean_up(string: str) -> str:
-    temp = string
+    temp: str = string
     # Remove numbers.
     temp = re.sub(r"\d+", "", temp)
     # Replace spaces with _.
@@ -104,6 +114,8 @@ def clean_up(string: str) -> str:
     temp = re.sub(r"[^\w_]", "", temp)
     # Replace multiple _ with _.
     temp = re.sub(r"__+", "_", temp)
+    # Strip _
+    temp = temp.strip("_")
     return temp
 
 
@@ -173,6 +185,22 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
             if "/amber_ndk" in line:
                 return "amber_ndk"
             break
+
+        # Check for stack line with libc alloc.
+        if re.search(r"\n.*#\d+ pc .*libc\.so \(\w?alloc", log_contents):
+            # Find the first stack frame without libc.so and replace the log_contents with that frame.
+            # We do this because the error is better identified by this line and because out of memory errors
+            # often occur at a nondeterministic location within libc.
+            for line in lines:
+                if (
+                    re.search(r" #\d+ pc ", line)
+                    and "libc.so" not in line
+                    and "operator new" not in line
+                ):
+                    # Replace the stack frame number so it looks like the 0th frame.
+                    line = re.sub(r" #\d+ ", " #00 ", line)
+                    log_contents = f"\n{line}\n"
+                    break
 
         match = re.search(PATTERN_ANDROID_BACKTRACE_FUNCTION, log_contents)
         if match:
