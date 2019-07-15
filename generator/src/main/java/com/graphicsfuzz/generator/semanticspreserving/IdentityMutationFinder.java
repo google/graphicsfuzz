@@ -17,9 +17,8 @@
 package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ArrayInitializer;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -228,18 +227,10 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
   }
 
   @Override
-  public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
+  public void visitInitializer(Initializer initializer) {
     assert !inInitializer;
     inInitializer = true;
-    super.visitScalarInitializer(scalarInitializer);
-    inInitializer = false;
-  }
-
-  @Override
-  public void visitArrayInitializer(ArrayInitializer arrayInitializer) {
-    assert !inInitializer;
-    inInitializer = true;
-    super.visitArrayInitializer(arrayInitializer);
+    super.visitInitializer(initializer);
     inInitializer = false;
   }
 

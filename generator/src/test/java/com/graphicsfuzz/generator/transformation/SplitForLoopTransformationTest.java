@@ -19,8 +19,8 @@ package com.graphicsfuzz.generator.transformation;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -38,13 +38,11 @@ import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.semanticspreserving.SplitForLoopMutation;
-import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -135,7 +133,7 @@ public class SplitForLoopTransformationTest {
                         new DeclarationStmt(
                             new VariablesDeclaration(
                                 new QualifiedType(BasicType.INT,
-                                    new ArrayList<TypeQualifier>()), new VariableDeclInfo("i", null, new ScalarInitializer(new IntConstantExpr("0"))))),
+                                    new ArrayList<TypeQualifier>()), new VariableDeclInfo("i", null, new Initializer(new IntConstantExpr("0"))))),
                         new BinaryExpr(
                             new VariableIdentifierExpr("i"),
                             new IntConstantExpr("10"),

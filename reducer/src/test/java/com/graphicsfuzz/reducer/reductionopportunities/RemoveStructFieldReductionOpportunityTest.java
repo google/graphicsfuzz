@@ -18,7 +18,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import static org.junit.Assert.assertEquals;
 
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -30,10 +30,6 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.junit.Test;
 
@@ -61,9 +57,9 @@ public class RemoveStructFieldReductionOpportunityTest {
             barConstructor.clone(), barConstructor.clone()));
 
     VariableDeclInfo v1 = new VariableDeclInfo("v1", null,
-        new ScalarInitializer(fooConstructor.clone()));
+        new Initializer(fooConstructor.clone()));
     VariableDeclInfo v2 = new VariableDeclInfo("v2", null,
-        new ScalarInitializer(fooConstructor.clone()));
+        new Initializer(fooConstructor.clone()));
 
     DeclarationStmt declarationStmt = new DeclarationStmt(new VariablesDeclaration(foo.getStructNameType(),
         Arrays.asList(v1, v2)));

@@ -20,8 +20,8 @@ import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -186,7 +186,7 @@ public class Inliner {
             new VariablesDeclaration(
                   pd.getType().getWithoutQualifiers(),
                   new VariableDeclInfo(pd.getName(), null,
-                        new ScalarInitializer(call.getArg(i).clone())))));
+                        new Initializer(call.getArg(i).clone())))));
     }
     for (Stmt stmt : functionDefinition.getBody().getStmts()) {
       if (stmt instanceof ReturnStmt) {

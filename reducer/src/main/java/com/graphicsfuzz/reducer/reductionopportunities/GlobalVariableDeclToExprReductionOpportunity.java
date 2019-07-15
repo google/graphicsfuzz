@@ -17,7 +17,6 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -44,10 +43,10 @@ public class GlobalVariableDeclToExprReductionOpportunity extends AbstractReduct
     // Given the variable declaration info of global variable, we unset its initializer and
     // derive a new assignment statement which will be inserted as the first statement in
     // main function.
-    assert variableDeclInfo.getInitializer() instanceof ScalarInitializer;
+    assert variableDeclInfo.hasInitializer();
     final BinaryExpr binaryExpr = new BinaryExpr(
         new VariableIdentifierExpr(variableDeclInfo.getName()),
-        ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
+        (variableDeclInfo.getInitializer()).getExpr(),
         BinOp.ASSIGN
     );
     mainFunction.getBody().insertStmt(0, new ExprStmt(binaryExpr));

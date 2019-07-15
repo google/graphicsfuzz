@@ -18,7 +18,6 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Initializer;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
@@ -79,7 +78,7 @@ public class InlineInitializerReductionOpportunities
       if (!blackList.contains(pair.getLeft())) {
         addOpportunity(new SimplifyExprReductionOpportunity(
             parentMap.getParent(pair.getRight()),
-            new ParenExpr(((ScalarInitializer) pair.getLeft().getInitializer()).getExpr().clone()),
+            new ParenExpr((pair.getLeft().getInitializer()).getExpr().clone()),
             pair.getRight(),
             getVistitationDepth()));
       }

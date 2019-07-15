@@ -21,7 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -37,7 +37,6 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.generator.semanticspreserving.StructificationMutation;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.CannedRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -72,7 +71,7 @@ public class StructificationMutationTest {
                 new VariableDeclInfo(
                     "v",
                     null,
-                    new ScalarInitializer(
+                    new Initializer(
                         new FloatConstantExpr("3.0")))));
 
     // float v = 3.0;

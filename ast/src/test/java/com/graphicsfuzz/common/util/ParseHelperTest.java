@@ -21,7 +21,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
@@ -381,10 +381,10 @@ public class ParseHelperTest {
     assertTrue(
       new CheckPredicateVisitor() {
         @Override
-        public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-          super.visitScalarInitializer(scalarInitializer);
-          if (scalarInitializer.getExpr() instanceof IntConstantExpr
-            && ((IntConstantExpr) scalarInitializer.getExpr()).getValue().equals("031")) {
+        public void visitInitializer(Initializer initializer) {
+          super.visitInitializer(initializer);
+          if (initializer.getExpr() instanceof IntConstantExpr
+            && ((IntConstantExpr) initializer.getExpr()).getValue().equals("031")) {
             predicateHolds();
           }
         }
@@ -401,10 +401,10 @@ public class ParseHelperTest {
     assertTrue(
         new CheckPredicateVisitor() {
           @Override
-          public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-            super.visitScalarInitializer(scalarInitializer);
-            if (scalarInitializer.getExpr() instanceof IntConstantExpr
-                && ((IntConstantExpr) scalarInitializer.getExpr()).getValue().equals("0xa03b")) {
+          public void visitInitializer(Initializer initializer) {
+            super.visitInitializer(initializer);
+            if (initializer.getExpr() instanceof IntConstantExpr
+                && ((IntConstantExpr) initializer.getExpr()).getValue().equals("0xa03b")) {
               predicateHolds();
             }
           }
@@ -421,10 +421,10 @@ public class ParseHelperTest {
     assertTrue(
         new CheckPredicateVisitor() {
           @Override
-          public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-            super.visitScalarInitializer(scalarInitializer);
-            if (scalarInitializer.getExpr() instanceof UIntConstantExpr
-                && ((UIntConstantExpr) scalarInitializer.getExpr()).getValue().equals("031u")) {
+          public void visitInitializer(Initializer initializer) {
+            super.visitInitializer(initializer);
+            if (initializer.getExpr() instanceof UIntConstantExpr
+                && ((UIntConstantExpr) initializer.getExpr()).getValue().equals("031u")) {
               predicateHolds();
             }
           }
@@ -441,10 +441,10 @@ public class ParseHelperTest {
     assertTrue(
         new CheckPredicateVisitor() {
           @Override
-          public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-            super.visitScalarInitializer(scalarInitializer);
-            if (scalarInitializer.getExpr() instanceof UIntConstantExpr
-                && ((UIntConstantExpr) scalarInitializer.getExpr()).getValue().equals("0xA03Bu")) {
+          public void visitInitializer(Initializer initializer) {
+            super.visitInitializer(initializer);
+            if (initializer.getExpr() instanceof UIntConstantExpr
+                && ((UIntConstantExpr) initializer.getExpr()).getValue().equals("0xA03Bu")) {
               predicateHolds();
             }
           }
@@ -517,8 +517,8 @@ public class ParseHelperTest {
         variablesDeclaration.getBaseType();
     assertTrue(baseType.hasQualifier(TypeQualifier.MEDIUMP));
     assertEquals("1.00f",
-        ((FloatConstantExpr) ((ScalarInitializer) variablesDeclaration.getDeclInfo(0)
-            .getInitializer()).getExpr()).getValue());
+        ((FloatConstantExpr) variablesDeclaration.getDeclInfo(0)
+            .getInitializer().getExpr()).getValue());
   }
 
   @Test

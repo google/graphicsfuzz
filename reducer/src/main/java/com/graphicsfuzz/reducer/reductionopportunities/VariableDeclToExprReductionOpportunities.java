@@ -17,7 +17,6 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
@@ -94,8 +93,7 @@ public class VariableDeclToExprReductionOpportunities
     // correct order with respect to its original order in the variable declaration info list.
     for (int i = declInfos.size() - 1; i >= 0; i--) {
       final VariableDeclInfo variableDeclInfo = declInfos.get(i);
-      if (variableDeclInfo.hasInitializer()
-          && variableDeclInfo.getInitializer() instanceof ScalarInitializer) {
+      if (variableDeclInfo.hasInitializer()) {
         addOpportunity(new VariableDeclToExprReductionOpportunity(
             variableDeclInfo,
             currentBlock(),

@@ -20,7 +20,6 @@ import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.ConstantExpr;
@@ -224,11 +223,8 @@ public abstract class ReductionOpportunitiesBase
     if (!variableDeclInfo.hasInitializer()) {
       return false;
     }
-    if (!(variableDeclInfo.getInitializer() instanceof ScalarInitializer)) {
-      return false;
-    }
     return SideEffectChecker.isSideEffectFree(
-        ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
+        (variableDeclInfo.getInitializer()).getExpr(),
         context.getShadingLanguageVersion(),
         shaderKind);
   }

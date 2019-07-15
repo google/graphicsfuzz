@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.generator.semanticspreserving;
 
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -38,7 +38,6 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.ContainsTopLevelContinue;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
@@ -167,7 +166,7 @@ public class AddWrappingConditionalMutation implements Mutation {
         : opaqueExpressionGenerator
         .makeOpaqueOne(BasicType.INT, loopBoundsMustBeConst, 0, fuzzer);
     DeclarationStmt init = new DeclarationStmt(new VariablesDeclaration(BasicType.INT,
-        new VariableDeclInfo(loopVariableName, null, new ScalarInitializer(start))));
+        new VariableDeclInfo(loopVariableName, null, new Initializer(start))));
 
     Expr end = up ? opaqueExpressionGenerator
         .makeOpaqueOne(BasicType.INT, loopBoundsMustBeConst, 0, fuzzer)
