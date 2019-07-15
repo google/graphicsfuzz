@@ -548,7 +548,9 @@ def create_summary_and_reproduce_glsl(
         test_dir, test_metadata.device.name, fuzz.BEST_REDUCTION_NAME
     )
     reduced_source_dir = test_util.get_source_dir(reduced_test_dir)
-    reduced_glsl = util.copy_dir(reduced_source_dir, summary_dir / "reduced_glsl")
+    reduced_glsl: Optional[Path] = None
+    if reduced_source_dir.exists():
+        reduced_glsl = util.copy_dir(reduced_source_dir, summary_dir / "reduced_glsl")
 
     run_shader_job(
         unreduced_glsl / test_util.VARIANT_DIR / test_util.SHADER_JOB,
@@ -558,25 +560,28 @@ def create_summary_and_reproduce_glsl(
         binary_manager,
     )
 
-    variant_reduced_glsl_result = run_shader_job(
-        reduced_glsl / test_util.VARIANT_DIR / test_util.SHADER_JOB,
-        summary_dir / "reduced_glsl_result" / test_util.VARIANT_DIR,
-        test_metadata,
-        device,
-        binary_manager,
-    )
+    variant_reduced_glsl_result: Optional[Path] = None
+    if reduced_glsl:
+        variant_reduced_glsl_result = run_shader_job(
+            reduced_glsl / test_util.VARIANT_DIR / test_util.SHADER_JOB,
+            summary_dir / "reduced_glsl_result" / test_util.VARIANT_DIR,
+            test_metadata,
+            device,
+            binary_manager,
+        )
 
     # Some post-processing for common error types.
 
-    status = result_util.get_status(variant_reduced_glsl_result)
-    if status == fuzz.STATUS_TOOL_CRASH:
-        tool_crash_summary_bug_report_dir(
-            reduced_source_dir,
-            variant_reduced_glsl_result,
-            summary_dir,
-            binary_manager,
-            test_metadata,
-        )
+    if variant_reduced_glsl_result:
+        status = result_util.get_status(variant_reduced_glsl_result)
+        if status == fuzz.STATUS_TOOL_CRASH:
+            tool_crash_summary_bug_report_dir(
+                reduced_source_dir,
+                variant_reduced_glsl_result,
+                summary_dir,
+                binary_manager,
+                test_metadata,
+            )
 
 
 def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
