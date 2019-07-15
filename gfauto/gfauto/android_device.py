@@ -173,11 +173,16 @@ def prepare_device(wait_for_screen: bool, serial: Optional[str] = None) -> None:
         stay_awake_warning(serial)
         # We cannot reliably know if the screen is on, but this function definitely knows if it is
         # off or locked. So we wait here while we definitely know there is an issue.
-        while is_screen_off_or_locked():
+        count = 0
+        while is_screen_off_or_locked(serial):
             log(
                 "\nWARNING: The screen appears to be off or locked. Please unlock the device and ensure 'Stay Awake' is enabled in developer settings.\n"
             )
             time.sleep(BUSY_WAIT_SLEEP_SLOW)
+            count += 1
+            if count > 1 and (count % 10) == 0:
+                log("Pressing the menu key.")
+                adb_can_fail(serial, ["shell", "input keyevent 82"], verbose=True)
 
 
 def run_amber_on_device(
