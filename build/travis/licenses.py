@@ -622,7 +622,7 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': '',
         },
-        'org.apache.commons:commons-rng-simple': {
+        'org.apache.commons:commons-rng-core': {
             'comment': '',
             'name': 'Apache Commons RNG',
             'url': 'https://github.com/apache/commons-rng',
@@ -635,13 +635,21 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': '',
         },
+        'org.apache.commons:commons-rng-simple': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'Same project as commons-rng-core.',
+        },
         'org.apache.commons:commons-rng-sampling': {
             'comment': '',
             'name': '',
             'url': '',
             'license_url': '',
             'license_file': '',
-            'skipped': 'Same project as commons-rng-simple.',
+            'skipped': 'Same project as commons-rng-core.',
         },
         'org.apache.commons:commons-rng-client-api': {
             'comment': '',
@@ -649,7 +657,7 @@ def get_maven_dependencies_populated():
             'url': '',
             'license_url': '',
             'license_file': '',
-            'skipped': 'Same project as commons-rng-simple.',
+            'skipped': 'Same project as commons-rng-core.',
         },
         'commons-logging:commons-logging': {
             'comment': '',
