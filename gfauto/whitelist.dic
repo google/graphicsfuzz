@@ -154,3 +154,10 @@ iterdir
 unreduced
 Pseudocode
 ssert
+nondeterministic
+keyevent
+libc
+alloc
+0th
+getrandbits
+

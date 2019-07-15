@@ -113,15 +113,12 @@ def create_staging_tests(
         template_source_dir / test_util.REFERENCE_DIR / test_util.SHADER_JOB,
     )
 
-    # Pick a seed.
-    seed = random.randint(-pow(2, 31), pow(2, 31) - 1)
-
     glsl_generate_util.run_generate(
         util.tool_on_path("graphicsfuzz-tool"),
         reference_glsl_shader_job,
         donors_dir,
         template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
-        str(seed),
+        seed=str(random.getrandbits(glsl_generate_util.GENERATE_SEED_BITS)),
     )
 
     test_dirs = [

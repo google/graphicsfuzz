@@ -133,7 +133,7 @@ def basic_match(pattern: Pattern[str], log_contents: str) -> Optional[str]:
     return group
 
 
-def get_signature_from_log_contents(  # pylint: disable=too-many-return-statements, too-many-branches
+def get_signature_from_log_contents(  # pylint: disable=too-many-return-statements, too-many-branches, too-many-statements;
     log_contents: str
 ) -> str:
 

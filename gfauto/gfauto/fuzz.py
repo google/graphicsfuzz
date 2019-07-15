@@ -20,6 +20,7 @@ The main entry point to GraphicsFuzz Auto.
 """
 import argparse
 import random
+import secrets
 import shutil
 import sys
 import uuid
@@ -109,6 +110,9 @@ STATUS_TOOL_TIMEOUT = "TOOL_TIMEOUT"
 STATUS_TIMEOUT = "TIMEOUT"
 STATUS_SUCCESS = "SUCCESS"
 
+# Python normally uses this many bits internally when seeding its RNG.
+ITERATION_SEED_BITS = 256
+
 
 def get_random_name() -> str:
     # TODO: could change to human-readable random name or the date.
@@ -128,19 +132,29 @@ def main() -> None:
         default=str(settings_util.DEFAULT_SETTINGS_FILE_PATH),
     )
 
+    parser.add_argument(
+        "--iteration_seed",
+        help="The seed to use for one fuzzing iteration (useful for reproducing an issue).",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     settings_path = Path(parsed_args.settings)
+    iteration_seed: Optional[int] = int(
+        parsed_args.iteration_seed
+    ) if parsed_args.iteration_seed else None
 
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
         try:
-            main_helper(settings_path)
+            main_helper(settings_path, iteration_seed)
         finally:
             gflogging.pop_stream_for_logging()
 
 
-def main_helper(settings_path: Path) -> None:  # pylint: disable=too-many-locals
+def main_helper(  # pylint: disable=too-many-locals
+    settings_path: Path, iteration_seed_override: Optional[int]
+) -> None:
 
     try:
         settings = settings_util.read(settings_path)
@@ -200,7 +214,11 @@ def main_helper(settings_path: Path) -> None:  # pylint: disable=too-many-locals
                 )
 
     while True:
-        iteration_seed = random.randint(util.MIN_SIGNED_INT_32, util.MAX_SIGNED_INT_32)
+
+        if iteration_seed_override:
+            iteration_seed = iteration_seed_override
+        else:
+            iteration_seed = secrets.randbits(ITERATION_SEED_BITS)
 
         log(f"Iteration seed: {iteration_seed}")
         random.seed(iteration_seed)
@@ -228,6 +246,10 @@ def main_helper(settings_path: Path) -> None:  # pylint: disable=too-many-locals
         )
 
         shutil.rmtree(staging_dir)
+
+        if iteration_seed_override:
+            log("Stopping due to iteration_seed")
+            break
 
 
 def create_summary_and_reproduce(

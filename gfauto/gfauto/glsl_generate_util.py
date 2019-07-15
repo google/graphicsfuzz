@@ -25,6 +25,8 @@ from typing import List, Optional
 
 from gfauto import subprocess_util, util
 
+GENERATE_SEED_BITS = 64
+
 
 def run_generate(
     graphicsfuzz_tool_path: Path,
