@@ -101,7 +101,7 @@ public class Fragment2Compute {
 
     parser.addArgument("--seed")
         .help("Seed (unsigned 64 bit long integer) for random number generator.")
-        .type(Long.class);
+        .type(String.class);
 
     parser.addArgument("--generate-uniform-bindings")
         .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "

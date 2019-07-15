@@ -61,7 +61,7 @@ public class ReducerBugPointBasic {
 
     parser.addArgument("--seed")
           .help("Seed (unsigned 64 bit long integer) to initialize random number generator with.")
-          .type(Long.class);
+          .type(String.class);
 
     parser.addArgument("--preserve-semantics")
           .help("Only perform semantics-preserving reductions.")

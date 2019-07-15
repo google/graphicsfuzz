@@ -108,7 +108,7 @@ public class Generate {
   public static void addGeneratorCommonArguments(ArgumentParser parser) {
     parser.addArgument("--seed")
         .help("Seed (unsigned 64 bit long integer) for the random number generator.")
-        .type(Long.class);
+        .type(String.class);
 
     parser.addArgument("--small")
         .help("Try to generate small shaders.")

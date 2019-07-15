@@ -89,7 +89,7 @@ public class Mutate {
 
     parser.addArgument("--seed")
         .help("Seed (unsigned 64 bit long integer) for the random number generator.")
-        .type(Long.class);
+        .type(String.class);
 
     return parser.parseArgs(args);
   }

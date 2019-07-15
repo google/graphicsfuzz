@@ -148,7 +148,7 @@ public class GlslReduce {
     parser.addArgument("--seed")
         .help("Seed (unsigned 64 bit long integer) with which to initialize the random number "
             + "generator that is used to control reduction decisions.")
-        .type(Long.class);
+        .type(String.class);
 
     parser.addArgument("--timeout")
         .help(

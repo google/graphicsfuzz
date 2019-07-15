@@ -2292,7 +2292,7 @@ public class WebUi extends HttpServlet {
         "<p class='no_space'>Random Seed:</p>",
         "</td>",
         "<td>",
-        "<input size='15' name='seed' value='-136936935'/>",
+        "<input size='15' name='seed' value='154872652838'/>",
         "</td>",
         "</tr>",
         "<tr>",
