@@ -387,7 +387,7 @@ public class DonateLiveCodeTransformationTest {
       );
     }
 
-    int failCount = 0;
+    int noCodeDonatedCount = 0;
 
     // Try the following a few times, so that there is a good chance of triggering the issue
     // this test was used to catch, should it return:
@@ -410,7 +410,7 @@ public class DonateLiveCodeTransformationTest {
       );
 
       if (!result) {
-        ++failCount;
+        ++noCodeDonatedCount;
         continue;
       }
 
@@ -442,8 +442,13 @@ public class DonateLiveCodeTransformationTest {
       }.visit(referenceShaderJob.getFragmentShader().get());
 
     }
-
-    Assert.assertTrue("Donation failure count should be < 10, " + failCount, failCount < 10);
+    // The above code tests donation of live code, but there is still a chance that no code will
+    // be donated. We assert that this happens < 10 times to ensure that we get some test
+    // coverage, but this could fail due to bad luck.
+    Assert.assertTrue(
+        "Donation failure count should be < 10, " + noCodeDonatedCount,
+        noCodeDonatedCount < 10
+    );
 
   }
 
