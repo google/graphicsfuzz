@@ -43,6 +43,10 @@ limitations under the License.
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-rng-simple</artifactId>
+    </dependency>
   </dependencies>
 
 </project>

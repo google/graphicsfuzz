@@ -16,15 +16,15 @@
 
 package com.graphicsfuzz.util;
 
-import java.util.Random;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.commons.rng.simple.internal.SeedFactory;
 
 public final class ArgsUtil {
-  public static int getSeedArgument(Namespace ns) {
-    Integer seed = ns.get("seed");
+  public static long getSeedArgument(Namespace ns) {
+    String seed = ns.getString("seed");
     if (seed == null) {
-      seed = new Random().nextInt();
+      return SeedFactory.createLong();
     }
-    return seed;
+    return Long.parseUnsignedLong(seed);
   }
 }

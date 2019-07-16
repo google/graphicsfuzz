@@ -46,4 +46,9 @@ public class SameValueRandom implements IRandom {
   public IRandom spawnChild() {
     throw new UnsupportedOperationException("Child spawning not available");
   }
+
+  @Override
+  public String getDescription() {
+    return "SameValueRandom: " + intValue + " " + boolValue;
+  }
 }

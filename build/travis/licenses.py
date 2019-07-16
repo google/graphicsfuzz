@@ -622,6 +622,43 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': '',
         },
+        'org.apache.commons:commons-rng-core': {
+            'comment': '',
+            'name': 'Apache Commons RNG',
+            'url': 'https://github.com/apache/commons-rng',
+            'license_url': [
+                'https://raw.githubusercontent.com/apache/commons-rng'
+                '/838f60e09ce458ced96ea05bf09e576c4283136f/NOTICE.txt',
+                'https://raw.githubusercontent.com/apache/commons-rng'
+                '/838f60e09ce458ced96ea05bf09e576c4283136f/LICENSE.txt'
+            ],
+            'license_file': '',
+            'skipped': '',
+        },
+        'org.apache.commons:commons-rng-simple': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'Same project as commons-rng-core.',
+        },
+        'org.apache.commons:commons-rng-sampling': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'Same project as commons-rng-core.',
+        },
+        'org.apache.commons:commons-rng-client-api': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'Same project as commons-rng-core.',
+        },
         'commons-logging:commons-logging': {
             'comment': '',
             'name': 'Apache Commons Logging',

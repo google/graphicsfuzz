@@ -83,7 +83,7 @@ public class GlslGenerate {
     final String prefix = ns.get("prefix");
     final int numVariants = ns.getInt("num_variants");
     final boolean verbose = ns.getBoolean("verbose");
-    final int seed = ArgsUtil.getSeedArgument(ns);
+    final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
 
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
@@ -100,7 +100,6 @@ public class GlslGenerate {
           + " variant" + (numVariants == 1 ? "" : "s") + ".");
     }
 
-    final IRandom generator = new RandomWrapper(seed);
     int referenceCount = 0;
     for (File shaderJobFile : referenceShaderJobFiles) {
       LOGGER.info("Generating family " + referenceCount + " from reference "

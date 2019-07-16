@@ -1619,7 +1619,7 @@ public class WebUi extends HttpServlet {
       args.add(retryLimit);
     }
     final String seed = request.getParameter("seed");
-    if (seed != null) {
+    if (seed != null && seed.length() > 0) {
       args.add("--seed");
       args.add(seed);
     }
@@ -2292,7 +2292,7 @@ public class WebUi extends HttpServlet {
         "<p class='no_space'>Random Seed:</p>",
         "</td>",
         "<td>",
-        "<input size='15' name='seed' value='-136936935'/>",
+        "<input size='15' name='seed' value='154872652838'/>",
         "</td>",
         "</tr>",
         "<tr>",

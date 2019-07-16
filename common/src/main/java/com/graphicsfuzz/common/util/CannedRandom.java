@@ -70,6 +70,11 @@ public class CannedRandom implements IRandom {
     return this;
   }
 
+  @Override
+  public String getDescription() {
+    return "CannedRandom";
+  }
+
   public boolean isExhausted() {
     return !items.hasNext();
   }

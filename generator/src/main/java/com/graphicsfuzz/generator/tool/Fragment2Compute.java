@@ -56,6 +56,7 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.SsboFieldData;
 import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
+import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -99,8 +100,8 @@ public class Fragment2Compute {
         .type(File.class);
 
     parser.addArgument("--seed")
-        .help("Seed for random number generator.")
-        .type(Integer.class);
+        .help("Seed (unsigned 64 bit long integer) for random number generator.")
+        .type(String.class);
 
     parser.addArgument("--generate-uniform-bindings")
         .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
@@ -307,8 +308,7 @@ new MemberLookupExpr(new VariableIdentifierExpr(OpenGlConstants.GL_NUM_WORK_GROU
       InterruptedException, GlslParserException, ParseTimeoutException, IOException {
     final Namespace ns = parse(args);
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    final IRandom generator = new RandomWrapper(ns.getInt("seed") == null
-        ? new Random().nextInt() : ns.getInt("seed"));
+    final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
 
     final ShaderJob transformedShaderJob = transform(
         fileOps.readShaderJobFile(ns.get("fragment_json")), generator);

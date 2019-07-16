@@ -115,7 +115,7 @@ public class SplitForLoopTransformationTest {
 
     TranslationUnit tu = makeExampleTranslationUnit();
 
-    List<IInjectionPoint> ips = new InjectionPoints(tu, new RandomWrapper(),
+    List<IInjectionPoint> ips = new InjectionPoints(tu, new RandomWrapper(0),
         SplitForLoopMutation::suitableForSplitting).getInjectionPoints(
         TransformationProbabilities.onlySplitLoops()::splitLoops);
 

@@ -387,9 +387,11 @@ public class DonateLiveCodeTransformationTest {
       );
     }
 
+    int noCodeDonatedCount = 0;
+
     // Try the following a few times, so that there is a good chance of triggering the issue
     // this test was used to catch, should it return:
-    for (int seed = 0; seed < 5; seed++) {
+    for (int seed = 0; seed < 15; seed++) {
 
       final ShaderJob referenceShaderJob = fileOps.readShaderJobFile(referenceFile);
 
@@ -407,7 +409,10 @@ public class DonateLiveCodeTransformationTest {
           GenerationParams.normal(ShaderKind.FRAGMENT, true)
       );
 
-      Assert.assertTrue(result);
+      if (!result) {
+        ++noCodeDonatedCount;
+        continue;
+      }
 
       // An array access injected into the shader must either be (1) already in bounds, or
       // (2) made in bounds.  Only in the former case can the array index be a variable identifier
@@ -437,6 +442,13 @@ public class DonateLiveCodeTransformationTest {
       }.visit(referenceShaderJob.getFragmentShader().get());
 
     }
+    // The above code tests donation of live code, but there is still a chance that no code will
+    // be donated. We assert that this happens < 10 times to ensure that we get some test
+    // coverage, but this could fail due to bad luck.
+    Assert.assertTrue(
+        "Donation failure count should be < 10, " + noCodeDonatedCount,
+        noCodeDonatedCount < 10
+    );
 
   }
 

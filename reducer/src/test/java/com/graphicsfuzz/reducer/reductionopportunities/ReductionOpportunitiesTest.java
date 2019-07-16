@@ -60,7 +60,7 @@ public class ReductionOpportunitiesTest {
     List<IReductionOpportunity> opportunities =
         ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
               new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(), new IdGenerator()), fileOps);
+            new RandomWrapper(0), new IdGenerator()), fileOps);
     // There should be no ExprToConstant reduction opportunity, because the expressions do not occur
     // under dead code, and the fuzzed expression is too simple to be reduced.
     assertFalse(opportunities.stream().anyMatch(item -> item instanceof SimplifyExprReductionOpportunity));
@@ -74,13 +74,13 @@ public class ReductionOpportunitiesTest {
     ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(false,
         ShadingLanguageVersion.ESSL_100,
-        new RandomWrapper(), new IdGenerator()), fileOps);
+        new RandomWrapper(0), new IdGenerator()), fileOps);
   }
 
   private void stressTestStructification(String variantProgram, String reducedProgram) throws Exception{
 
     TranslationUnit tu = ParseHelper.parse(variantProgram);
-    IRandom generator = new RandomWrapper();
+    IRandom generator = new RandomWrapper(0);
     while (true) {
       List<InlineStructifiedFieldReductionOpportunity> ops
           = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
@@ -104,7 +104,7 @@ public class ReductionOpportunitiesTest {
       List<IReductionOpportunity> ops
           = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-                new RandomWrapper(), new IdGenerator()), fileOps);
+                new RandomWrapper(0), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
         break;
       }
@@ -579,7 +579,7 @@ public class ReductionOpportunitiesTest {
     while (true) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReducerContext(false,
-            ShadingLanguageVersion.GLSL_440, new RandomWrapper(), new IdGenerator()), fileOps);
+            ShadingLanguageVersion.GLSL_440, new RandomWrapper(0), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
         break;
       }
