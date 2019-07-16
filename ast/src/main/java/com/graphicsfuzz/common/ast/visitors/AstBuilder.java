@@ -291,9 +291,9 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     final Basic_interface_blockContext basicCtx = ctx.basic_interface_block();
     final TypeQualifier interfaceQualifier =
         visitInterface_qualifier(basicCtx.interface_qualifier());
-    final Optional<String> maybeInstanceName = basicCtx.instance_name_opt() == null
+    final Optional<String> maybeInstanceName = basicCtx.instance_name() == null
         ? Optional.empty()
-        : Optional.of(basicCtx.instance_name_opt().getText());
+        : Optional.of(basicCtx.instance_name().getText());
     final Pair<List<String>, List<Type>> members = getMembers(basicCtx.member_list());
     return new InterfaceBlock(
         maybeLayoutQualifier,
@@ -429,8 +429,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     if (expr instanceof IntConstantExpr) {
       return new ArrayInfo(Integer.parseInt(((IntConstantExpr) expr).getValue()));
     }
-    throw new UnsupportedLanguageFeatureException("Unable to construct array info for array with size "
-        + expr.getText());
+    throw new UnsupportedLanguageFeatureException("Unable to construct array info for array with "
+        + "size " + expr.getText());
   }
 
   private BuiltinType getBuiltinType(Builtin_type_specifier_nonarrayContext ctx) {
@@ -795,10 +795,6 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
 
   @Override
   public DeclarationStmt visitDeclaration_statement(Declaration_statementContext ctx) {
-    if (ctx.declaration().init_declarator_list() == null) {
-      throw new RuntimeException("Error at line " + ctx.start.getLine()
-          + ": Only variable declarations are supported in declaration statements");
-    }
     return new DeclarationStmt(
         visitInit_declarator_list(ctx.declaration().init_declarator_list()));
   }
@@ -840,7 +836,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     if (ctx.assignment_expression() != null) {
       return new Initializer(visitAssignment_expression(ctx.assignment_expression()));
     }
-    throw new RuntimeException("Initializer lists are not currently supported.");
+    throw new UnsupportedLanguageFeatureException("Initializer lists are not currently supported.");
   }
 
   @Override
@@ -960,8 +956,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     }
     assert ctx.FOR() != null;
     return new ForStmt(visitFor_init_statement(ctx.for_init_statement()),
-        ctx.for_rest_statement().conditionopt().condition() == null ? null :
-            visitCondition(ctx.for_rest_statement().conditionopt().condition()),
+        ctx.for_rest_statement().condition() == null ? null :
+            visitCondition(ctx.for_rest_statement().condition()),
         ctx.for_rest_statement().expression() == null ? null :
             visitExpression(ctx.for_rest_statement().expression()),
             visitStatement_no_new_scope(ctx.statement_no_new_scope()));
@@ -980,7 +976,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
 
   @Override
   public Stmt visitFor_rest_statement(For_rest_statementContext ctx) {
-    throw new RuntimeException();
+    throw new RuntimeException("By construction, this visitor method should never get executed.");
   }
 
   @Override
@@ -1040,6 +1036,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     if (ctx.PRAGMA_INVARIANT_ALL() != null) {
       return PragmaStatement.INVARIANT_ALL;
     }
+    // The above captures all the possibilities for a pragma statement, so reaching the following
+    // line indicates that the shader is invalid, rather than that support is missing.
     throw new RuntimeException("Unknown pragma statement " + ctx.getText());
   }
 
@@ -1101,8 +1099,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
           visitExpression(ctx.integer_expression().expression()));
     }
     if (ctx.method_call_generic() != null) {
-      // TODO: check grammar
-      throw new RuntimeException("Not yet supported: " + getOriginalSourceText(ctx));
+      throw new UnsupportedLanguageFeatureException("Method calls are not currently supported: "
+          + getOriginalSourceText(ctx));
     }
     if (ctx.IDENTIFIER() != null) {
       return new MemberLookupExpr(visitPostfix_expression(ctx.postfix_expression()),
@@ -1134,6 +1132,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       Function_call_header_no_parametersContext ctx) {
     if (isBuiltinTypeConstructor(ctx.function_call_header().function_identifier())
         || isStructTypeConstructor(ctx.function_call_header().function_identifier())) {
+      // This is illegal, so indicates an invalid shader rather than lack of support.
       throw new RuntimeException(
           "Found type constructor with no arguments at line " + ctx.start.getLine() + ": "
               + getOriginalSourceText(ctx));
@@ -1142,6 +1141,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       return new FunctionCallExpr(getCallee(ctx.function_call_header().function_identifier()),
           new ArrayList<>());
     }
+    // The above logic is intended to capture all cases, so the following indicates an invalid
+    // shader, rather than lack of support.
     throw new RuntimeException("Unsupported function call at line " + ctx.start.getLine() + ": "
         + getOriginalSourceText(ctx));
   }
@@ -1179,6 +1180,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     if (isRegularFunction(header.function_identifier())) {
       return new FunctionCallExpr(getCallee(header.function_identifier()), params);
     }
+    // The above logic is intended to capture all cases, so the following indicates an invalid
+    // shader, rather than lack of support.
     throw new RuntimeException("Unsupported function call: " + getOriginalSourceText(ctx));
   }
 
@@ -1415,6 +1418,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         return op;
       }
     }
+    // The BinOp class includes all binary operators, so the following indicates an invalid shader,
+    // rather than lack of support.
     throw new RuntimeException("Unknown binary operator: " + token.getText());
   }
 
