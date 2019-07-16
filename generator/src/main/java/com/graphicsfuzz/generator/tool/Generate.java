@@ -54,6 +54,7 @@ import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
 import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import com.graphicsfuzz.util.ArgsUtil;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
@@ -106,8 +107,8 @@ public class Generate {
 
   public static void addGeneratorCommonArguments(ArgumentParser parser) {
     parser.addArgument("--seed")
-        .help("Seed to initialize random number generator with.")
-        .type(Integer.class);
+        .help("Seed (unsigned 64 bit long integer) for the random number generator.")
+        .type(String.class);
 
     parser.addArgument("--small")
         .help("Try to generate small shaders.")
@@ -169,9 +170,8 @@ public class Generate {
    */
   public static StringBuilder generateVariant(ShaderJob shaderJob,
                                               GeneratorArguments args,
-                                              int seed) {
+                                              IRandom random) {
     final StringBuilder result = new StringBuilder();
-    final IRandom random = new RandomWrapper(seed);
 
     if (args.getAddInjectionSwitch()) {
       for (TranslationUnit shader : shaderJob.getShaders()) {
@@ -224,7 +224,7 @@ public class Generate {
                                      File referenceShaderJobFile,
                                      File outputShaderJobFile,
                                      GeneratorArguments generatorArguments,
-                                     int seed,
+                                     IRandom random,
                                      boolean writeProbabilities)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     // This is mutated into the variant.
@@ -233,7 +233,7 @@ public class Generate {
     final StringBuilder generationInfo = generateVariant(
         variantShaderJob,
         generatorArguments,
-        seed);
+        random);
 
     fileOps.writeShaderJobFile(
         variantShaderJob,
@@ -325,17 +325,14 @@ public class Generate {
       GlslParserException {
     final Namespace ns = parse(args);
 
-    Integer seed = ns.get("seed");
-    if (seed == null) {
-      seed = new Random().nextInt();
-    }
+    final IRandom random = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
 
     generateVariant(
         new ShaderJobFileOperations(),
         ns.get("reference_json"),
         ns.get("output"),
         getGeneratorArguments(ns),
-        seed,
+        random,
         ns.getBoolean("write_probabilities"));
   }
 

@@ -135,7 +135,7 @@ public class PrettyPrinterVisitorTest {
     final String program = ""
         + "layout(std430, binding = 2) buffer abuf {\n"
         + " int data[];\n"
-        + "} ;\n"
+        + "};\n"
         + "layout(local_size_x = 128, local_size_y = 1) in;\n"
         + "void main()\n"
         + "{\n"

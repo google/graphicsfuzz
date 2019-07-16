@@ -17,7 +17,7 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
@@ -72,13 +72,13 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
       }
       type = dropQualifiersThatCannotBeUsedForLocalVariable(type);
 
-      ScalarInitializer initializer;
+      Initializer initializer;
       // We fuzz a const expression because we need to ensure we don't generate side-effects to
       // non-injected code
       if (isLoopLimiter(vars.getKey(), type.getWithoutQualifiers())) {
-        initializer = new ScalarInitializer(new IntConstantExpr("0"));
+        initializer = new Initializer(new IntConstantExpr("0"));
       } else {
-        initializer = getScalarInitializer(injectionPoint, donationContext, type, true,
+        initializer = getInitializer(injectionPoint, donationContext, type, true,
             generator, shadingLanguageVersion);
       }
       donatedStmts.add(new DeclarationStmt(

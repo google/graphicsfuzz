@@ -19,8 +19,8 @@ package com.graphicsfuzz.generator.fuzzer;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -196,7 +196,7 @@ public class OpaqueExpressionGeneratorTest {
                 new VariableDeclInfo(
                     "v" + idGenerator.freshId(),
                     null,
-                    new ScalarInitializer(expr.get())
+                    new Initializer(expr.get())
                 )
             )
         ));

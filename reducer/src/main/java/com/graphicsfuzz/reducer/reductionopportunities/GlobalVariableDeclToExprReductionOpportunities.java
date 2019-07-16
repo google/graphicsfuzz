@@ -18,7 +18,6 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
@@ -110,8 +109,7 @@ public class GlobalVariableDeclToExprReductionOpportunities
     if (functionDefinition.getPrototype().getName().equals("main")) {
       for (VariablesDeclaration variablesDeclaration : globalVariableDecl) {
         for (VariableDeclInfo variableDeclInfo : variablesDeclaration.getDeclInfos()) {
-          if (variableDeclInfo.hasInitializer()
-              && variableDeclInfo.getInitializer() instanceof ScalarInitializer) {
+          if (variableDeclInfo.hasInitializer()) {
             addOpportunity(new GlobalVariableDeclToExprReductionOpportunity(
                 getVistitationDepth(), variableDeclInfo, functionDefinition));
           }

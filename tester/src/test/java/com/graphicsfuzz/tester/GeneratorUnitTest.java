@@ -142,8 +142,8 @@ public class GeneratorUnitTest {
             Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
         "donatedead",
-        Arrays.asList("bubblesort_flag.json", "squares.json"),
-        Arrays.asList("bubblesort_flag.json", "squares.json"));
+        Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_blurry.json"),
+        Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_blurry.json"));
     // Reason for blacklisting^: slow.
   }
 
@@ -199,8 +199,8 @@ public class GeneratorUnitTest {
     testTransformationMultiVersions(() -> new AddWrappingConditionalTransformation(),
         TransformationProbabilities.onlyWrap(),
         "wrap",
-        Arrays.asList("bubblesort_flag.json"),
-        Arrays.asList("bubblesort_flag.json"));
+        Arrays.asList("bubblesort_flag.json", "colorgrid_modulo.json"),
+        Arrays.asList("bubblesort_flag.json", "colorgrid_modulo.json"));
     // Reason for blacklisting^: slow.
   }
 

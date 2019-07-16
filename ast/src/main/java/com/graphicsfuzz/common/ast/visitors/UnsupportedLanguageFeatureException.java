@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The GraphicsFuzz Project Authors
+ * Copyright 2019 The GraphicsFuzz Project Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.common.ast.decl;
+package com.graphicsfuzz.common.ast.visitors;
 
-import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+/**
+ * A RuntimeException to identify cases where AST building fails due to known unsupported
+ * language features.
+ */
+public class UnsupportedLanguageFeatureException extends RuntimeException {
 
-public class ArrayInitializer extends Initializer {
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitArrayInitializer(this);
-  }
-
-  @Override
-  public ArrayInitializer clone() {
-    return new ArrayInitializer();
+  public UnsupportedLanguageFeatureException(String message) {
+    super(message);
   }
 
 }

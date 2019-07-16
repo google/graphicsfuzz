@@ -22,11 +22,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -38,14 +37,12 @@ import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TernaryExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
-import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
-import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.GlslParserException;
@@ -451,9 +448,9 @@ public class TyperTest {
         + "}");
     new NullCheckTyper(tu) {
       @Override
-      public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-        super.visitScalarInitializer(scalarInitializer);
-        assertSame(lookupType(scalarInitializer.getExpr()), BasicType.INT);
+      public void visitInitializer(Initializer initializer) {
+        super.visitInitializer(initializer);
+        assertSame(lookupType(initializer.getExpr()), BasicType.INT);
       }
     }.visit(tu);
   }
@@ -466,9 +463,9 @@ public class TyperTest {
         + "}");
     new NullCheckTyper(tu) {
       @Override
-      public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-        super.visitScalarInitializer(scalarInitializer);
-        assertSame(lookupType(scalarInitializer.getExpr()), BasicType.INT);
+      public void visitInitializer(Initializer initializer) {
+        super.visitInitializer(initializer);
+        assertSame(lookupType(initializer.getExpr()), BasicType.INT);
       }
     }.visit(tu);
   }
@@ -481,9 +478,9 @@ public class TyperTest {
         + "}");
     new NullCheckTyper(tu) {
       @Override
-      public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-        super.visitScalarInitializer(scalarInitializer);
-        assertSame(lookupType(scalarInitializer.getExpr()), BasicType.UINT);
+      public void visitInitializer(Initializer initializer) {
+        super.visitInitializer(initializer);
+        assertSame(lookupType(initializer.getExpr()), BasicType.UINT);
       }
     }.visit(tu);
   }
@@ -496,9 +493,9 @@ public class TyperTest {
         + "}");
     new NullCheckTyper(tu) {
       @Override
-      public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-        super.visitScalarInitializer(scalarInitializer);
-        assertSame(lookupType(scalarInitializer.getExpr()), BasicType.UINT);
+      public void visitInitializer(Initializer initializer) {
+        super.visitInitializer(initializer);
+        assertSame(lookupType(initializer.getExpr()), BasicType.UINT);
       }
     }.visit(tu);
   }

@@ -22,9 +22,9 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
@@ -50,7 +50,6 @@ import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
-import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.StructUtils;
 import com.graphicsfuzz.generator.fuzzer.FuzzedIntoACornerException;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
@@ -304,12 +303,12 @@ public abstract class DonateCodeTransformation implements ITransformation {
     }.getGlobalsFromShader(shader);
   }
 
-  final ScalarInitializer getScalarInitializer(IInjectionPoint injectionPoint,
-                                               DonationContext donationContext,
-                                               Type type,
-                                               boolean restrictToConst,
-                                               IRandom generator,
-                                               ShadingLanguageVersion shadingLanguageVersion) {
+  final Initializer getInitializer(IInjectionPoint injectionPoint,
+                                   DonationContext donationContext,
+                                   Type type,
+                                   boolean restrictToConst,
+                                   IRandom generator,
+                                   ShadingLanguageVersion shadingLanguageVersion) {
     final boolean isConst = type.hasQualifier(TypeQualifier.CONST);
     try {
 
@@ -322,7 +321,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
         scopeForFuzzing.addStructDefinition(sdt);
       }
 
-      return new ScalarInitializer(
+      return new Initializer(
           new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
               .fuzzedConstructor(
                   new Fuzzer(new FuzzingContext(scopeForFuzzing),

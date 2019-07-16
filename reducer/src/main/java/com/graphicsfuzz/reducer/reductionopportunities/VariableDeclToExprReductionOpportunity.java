@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -48,10 +47,10 @@ public class VariableDeclToExprReductionOpportunity extends AbstractReductionOpp
   void applyReductionImpl() {
     // Given the variable declaration info, we unset its initializer and derive a new assignment
     // statement which will be inserted right after the declaration in the block statement.
-    assert variableDeclInfo.getInitializer() instanceof ScalarInitializer;
+    assert variableDeclInfo.hasInitializer();
     final BinaryExpr binaryExpr = new BinaryExpr(
         new VariableIdentifierExpr(variableDeclInfo.getName()),
-        ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
+        (variableDeclInfo.getInitializer()).getExpr(),
         BinOp.ASSIGN
     );
     enclosingBlock.insertAfter(declarationStmt, new ExprStmt(binaryExpr));

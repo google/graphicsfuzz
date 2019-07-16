@@ -66,8 +66,8 @@ public class ReducerBugPoint {
           .type(Integer.class);
 
     parser.addArgument("--seed")
-          .help("Seed to initialize random number generator with.")
-          .type(Integer.class);
+          .help("Seed (unsigned 64 bit long integer) to initialize random number generator with.")
+          .type(String.class);
 
     parser.addArgument("--preserve-semantics")
           .help("Only perform semantics-preserving reductions.")
@@ -95,7 +95,7 @@ public class ReducerBugPoint {
 
     final Namespace ns = parse(args);
 
-    final int seed = ArgsUtil.getSeedArgument(ns);
+    IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
 
     final int maxIterations = ns.get("max_iterations");
 
@@ -106,8 +106,6 @@ public class ReducerBugPoint {
     final String expectedString = ns.getString("expected_string") == null
           ? ""
           : ns.getString("expected_string");
-
-    final IRandom generator = new RandomWrapper(seed);
 
     ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 

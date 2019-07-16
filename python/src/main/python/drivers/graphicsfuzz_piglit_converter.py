@@ -182,8 +182,6 @@ def get_json_properties(shader_job: str) -> List:
     """
     with gfuzz_common.open_helper(shader_job, 'r') as job:
         json_parsed = json.load(job)
-    if not json_parsed:
-        raise IOError('Malformed shader job file.')
     return json_parsed
 
 
