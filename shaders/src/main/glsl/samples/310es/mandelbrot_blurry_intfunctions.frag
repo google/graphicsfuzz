@@ -64,7 +64,7 @@ vec3 mand(float xCoord, float yCoord) {
 
 void main() {
   uint uselessOutVariable;
-  vec3 data[findMSB(65536)];
+  vec3 data[16];
   for (int i = 0; i < findMSB(16); i++) {
     for (int j = 0; j < findLSB(16); j++) {
       data[uaddCarry(uint(4*j), uint(i), uselessOutVariable)] = mand(gl_FragCoord.x + float(i - bitCount(1)), gl_FragCoord.y + float(j - bitCount(1)));
