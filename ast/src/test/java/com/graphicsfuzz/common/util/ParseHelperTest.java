@@ -31,6 +31,7 @@ import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
+import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import java.io.BufferedWriter;
@@ -562,6 +563,155 @@ public class ParseHelperTest {
     StringWriter writer = new StringWriter();
     IOUtils.copy(strippedIs, writer, StandardCharsets.UTF_8);
     return writer.toString();
+  }
+
+  @Test
+  public void testUnsupportedArrayLength() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 + 4];\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Unable to construct array info"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedMultiDimensionalArrays() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3][4];\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Not yet supporting multi-dimensional arrays"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedArrayInBaseType() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("void main() {\n"
+          + "  int[2] A, B[3];\n"
+          + "  B[2][1] = 3;\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Array information specified at the base type"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedDeclarationInCondition() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("void main() {\n"
+          + "  while(bool b = true) {\n"
+          + "    if(b) {\n"
+          + "      break;\n"
+          + "    }\n"
+          + "  }\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("We do not yet support the case where the "
+          + "condition of a 'for' or 'while' introduces a new variable"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedInitializerList() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("#version 440\n"
+          + "\n"
+          + "void main() {\n"
+          + "\n"
+          + "  int A[4] = { 1, 2, 3, 4 };\n"
+          + "\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Initializer lists are not currently supported"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedMethodCall1() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("#version 310 es\n"
+          + "\n"
+          + "void main() {\n"
+          + "\n"
+          + "  int A[4];\n"
+          + "  A.length();\n"
+          + "\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Method calls are not currently supported"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedMethodCall2() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("#version 310 es\n"
+          + "\n"
+          + "void main() {\n"
+          + "\n"
+          + "  int A[4];\n"
+          + "  A.length(void);\n"
+          + "\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Method calls are not currently supported"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedMethodCall3() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("#version 320 es\n"
+          + "\n"
+          + "precision highp float;\n"
+          + "\n"
+          + "struct S { int A[4]; };\n"
+          + "\n"
+          + "void main() {\n"
+          + "\n"
+          + "  S s = S(int[4](1,2,3,4));\n"
+          + "  s.A.length();\n"
+          + "\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Method calls are not currently supported"));
+    }
   }
 
 }
