@@ -53,7 +53,7 @@ void main() {
   for (int i = 0; i < 9; i++) {
     int index = i;
     for (int j = i + 1; j < 10; j++) {
-        if (obj.even_numbers[j] < obj.even_numbers[index]){  
+        if (obj.even_numbers[j] < obj.even_numbers[index]) {
             index = j;
         }
     }
@@ -63,7 +63,7 @@ void main() {
   }
 
   vec2 uv = gl_FragCoord.xy/resolution.xy;
-  vec3 col =  tan(pow(uv.xxx, uv.yyy) + 
+  vec3 col =  tan(pow(uv.xxx, uv.yyy) +
   vec3(
     obj.odd_numbers[int(floor(gl_FragCoord.x/1000.0))],
     obj.even_numbers[int(floor(gl_FragCoord.y/1000.0))],
@@ -72,5 +72,4 @@ void main() {
 
   _GLF_color.rgb = col;
   _GLF_color.a = 1.0;
-
 }

@@ -92,5 +92,4 @@ void main() {
   	}
 
 	_GLF_color = vec4(col, 1.0);
-
 }
