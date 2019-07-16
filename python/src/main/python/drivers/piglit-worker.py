@@ -19,6 +19,7 @@ import json
 import os
 import sys
 import subprocess
+import shutil
 from subprocess import CalledProcessError
 import time
 
@@ -44,6 +45,7 @@ from thrift.protocol import TBinaryProtocol
 
 FRAG_SUFFIX = '.frag'
 JSON_SUFFIX = '.json'
+PNG_SUFFIX = '.png'
 SHADERTEST_SUFFIX = '.shader_test'
 PNG_FILENAME = 'shader_runner_gles3000.png'
 LOGFILE_NAME = 'piglit_log.txt'
@@ -53,6 +55,7 @@ GLXINFO_CMD = ['glxinfo', '-B']
 SHADERRUNNER_CMD = ['shader_runner_gles3']
 SHADERRUNNER_ARG_PNG = '-png'
 SHADERRUNNER_ARG_AUTO = '-auto'
+SHADERRUNNER_ARG_UNIFORMS = '-ignore-missing-uniforms'
 WORKER_INFO_FILE = 'worker_info.json'
 
 NODRAW_ARG = '--nodraw'
@@ -182,7 +185,7 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
     json_file = os.path.join(output_dir, name + JSON_SUFFIX)
     log_file = os.path.join(output_dir, LOGFILE_NAME)
     status_file = os.path.join(output_dir, STATUS_FILENAME)
-    png_file = os.path.join(output_dir, PNG_FILENAME)
+    png_file = os.path.join(output_dir, name + PNG_SUFFIX)
 
     gfuzz_common.write_to_file(image_job.fragmentSource, frag_file)
     gfuzz_common.write_to_file(image_job.uniformsInfo, json_file)
@@ -199,7 +202,8 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
     with gfuzz_common.open_helper(log_file, 'w') as f:
         try:
             logfile = f
-            run_image_job(frag_file, json_file, status_file, output_dir, image_job.skipRender)
+            run_image_job(frag_file, json_file, status_file, png_file,
+                          output_dir, image_job.skipRender)
         except Exception as ex:
             log(str(ex))
             log('Removing status file and continuing...')
@@ -238,13 +242,14 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
 
 
 def run_image_job(frag_file: str, json_file: str, status_file: str,
-                  output_dir: str, skip_render: bool):
+                  png_file: str, output_dir: str, skip_render: bool):
     """
     Runs an image job. Converts the shader job to a piglit shader_test file, then delegates to
     run_shader_test to render with shader_runner. Writes the status of the job to file.
     :param frag_file: The fragment shader to convert and run.
     :param json_file: The JSON uniforms to use with the shader.
     :param status_file: The status file to write to.
+    :param png_file: The PNG file to write to.
     :param output_dir: The directory to use for the job.
     :param skip_render: whether to skip rendering or not.
     """
@@ -282,8 +287,10 @@ def run_image_job(frag_file: str, json_file: str, status_file: str,
     # (and there's no way to specify a location to write to) - we need to move it to wherever our
     # output is.
 
-    if os.path.isfile(os.getcwd() + PNG_FILENAME):
-        shutil.move(os.getcwd() + PNG_FILENAME, output_dir + PNG_FILENAME)
+    time.sleep(2)
+
+    if os.path.isfile(os.getcwd() + '/' + PNG_FILENAME):
+        shutil.move(os.getcwd() + '/' + PNG_FILENAME, os.getcwd() + '/' + png_file)
 
     with gfuzz_common.open_helper(status_file, 'w') as f:
         f.write(status)
@@ -296,7 +303,8 @@ def run_shader_test(shader_test_file: str, skip_render: bool):
     :param shader_test_file: the shader_test file to run.
     :param skip_render: whether to skip rendering or not.
     """
-    shader_runner_cmd = SHADERRUNNER_CMD + [shader_test_file, SHADERRUNNER_ARG_AUTO]
+    shader_runner_cmd = SHADERRUNNER_CMD + [shader_test_file, SHADERRUNNER_ARG_AUTO,
+                                            SHADERRUNNER_ARG_UNIFORMS]
     if not skip_render:
         shader_runner_cmd.append(SHADERRUNNER_ARG_PNG)
     try:
