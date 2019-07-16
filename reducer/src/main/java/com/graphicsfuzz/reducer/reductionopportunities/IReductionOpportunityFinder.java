@@ -500,4 +500,23 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
+  static IReductionOpportunityFinder<SwitchToLoopReductionOpportunity>
+      switchToLoopFinder() {
+    return new IReductionOpportunityFinder<SwitchToLoopReductionOpportunity>() {
+      @Override
+      public List<SwitchToLoopReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        return SwitchToLoopReductionOpportunities.findOpportunities(
+            shaderJob,
+            context);
+      }
+
+      @Override
+      public String getName() {
+        return "switchToLoop";
+      }
+    };
+  }
+
 }

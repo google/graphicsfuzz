@@ -44,7 +44,7 @@ import java.util.List;
 public class VariableDeclToExprReductionOpportunities
     extends ReductionOpportunitiesBase<VariableDeclToExprReductionOpportunity> {
 
-  public VariableDeclToExprReductionOpportunities(TranslationUnit tu, ReducerContext context) {
+  private VariableDeclToExprReductionOpportunities(TranslationUnit tu, ReducerContext context) {
     super(tu, context);
   }
 

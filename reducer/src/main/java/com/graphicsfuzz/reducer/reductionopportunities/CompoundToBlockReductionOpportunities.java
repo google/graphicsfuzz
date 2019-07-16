@@ -35,7 +35,7 @@ import java.util.List;
 public class CompoundToBlockReductionOpportunities
       extends ReductionOpportunitiesBase<CompoundToBlockReductionOpportunity> {
 
-  public CompoundToBlockReductionOpportunities(
+  private CompoundToBlockReductionOpportunities(
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);
