@@ -32,7 +32,7 @@ struct Obj {
 void main() {
   Obj obj;
 
-  // Initialize first 10 odd numbers to the array
+  // Initialize first 10 odd numbers to the array.
   int odd_index = 0;
   float odd_number = 1.0;
   while (odd_index <= 9) {
@@ -40,7 +40,7 @@ void main() {
     odd_number += 2.0;
     odd_index++;
   }
-  // similar but for even number and iterate backward
+  // Similarly, initizlie even numbers and iterate backward.
   int even_index = 9;
   float even_number = 0.0;
   while (even_index >= 0) {
@@ -49,7 +49,7 @@ void main() {
     even_index--;
   }
 
-  // perform the selection sort
+  // Perform the selection sort.
   for (int i = 0; i < 9; i++) {
     int index = i;
     for (int j = i + 1; j < 10; j++) {
