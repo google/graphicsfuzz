@@ -40,7 +40,7 @@ void main() {
     odd_number += 2.0;
     odd_index++;
   }
-  // Similarly, initizlie even numbers and iterate backward.
+  // Similarly, initialize even numbers and iterate backward.
   int even_index = 9;
   float even_number = 0.0;
   while (even_index >= 0) {
@@ -53,9 +53,9 @@ void main() {
   for (int i = 0; i < 9; i++) {
     int index = i;
     for (int j = i + 1; j < 10; j++) {
-        if (obj.even_numbers[j] < obj.even_numbers[index]) {
-            index = j;
-        }
+      if (obj.even_numbers[j] < obj.even_numbers[index]) {
+        index = j;
+      }
     }
     float smaller_number = obj.even_numbers[index];
     obj.even_numbers[index] = obj.even_numbers[i];
