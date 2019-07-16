@@ -310,29 +310,6 @@ public class ShaderJobFileOperations {
   }
 
   /**
-   * Determines whether the underlying shader files for the shader jobs use GraphicsFuzz defines.
-   * Assumes that if one shader does, they all do.
-   */
-  public boolean doesShaderJobUseGraphicsFuzzDefines(File shaderJobFile) throws IOException {
-    for (ShaderKind shaderKind : ShaderKind.values()) {
-      //noinspection deprecation: fine inside this class.
-      final File shaderFile = getUnderlyingShaderFile(shaderJobFile, shaderKind);
-      if (!shaderFile.isFile()) {
-        continue;
-      }
-      try (BufferedReader br = new BufferedReader(new FileReader(shaderFile))) {
-        String line;
-        while ((line = br.readLine()) != null) {
-          if (line.trim().startsWith(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES)) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }
-
-  /**
    * Does this shaderJobResultFile have an associated image result?
    *
    * <p>Perhaps we should be able to check this by reading the result file,
