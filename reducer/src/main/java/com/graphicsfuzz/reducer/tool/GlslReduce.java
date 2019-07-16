@@ -514,9 +514,6 @@ public class GlslReduce {
             shaderJobFile
         );
 
-    final boolean emitGraphicsFuzzDefines =
-        fileOps.doesShaderJobUseGraphicsFuzzDefines(shaderJobFile);
-
     new ReductionDriver(
         new ReducerContext(
             reduceEverywhere,
