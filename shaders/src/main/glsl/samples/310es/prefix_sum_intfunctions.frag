@@ -43,7 +43,7 @@ void main(void) {
       break;
     }
     if (i > findMSB(int(injectionSwitch.x))) {
-      A[i] += A[usubBorrow(uint(i), uint(injectionSwitch.y), uselessOutVariable)];
+      A[i] += A[int(usubBorrow(uint(i), uint(injectionSwitch.y), uselessOutVariable))];
     }
     i++;
   } while(i < bitfieldInsert(50 * int(injectionSwitch.y), 0, 0, int(injectionSwitch.x)));
