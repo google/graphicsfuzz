@@ -56,27 +56,17 @@ PLATFORM_SUFFIXES_RELWITHDEBINFO = [
     "Mac_x64_RelWithDebInfo",
 ]
 
+DEFAULT_SPIRV_TOOLS_VERSION = "230c9e437146e48ec58adb4433890403c23c98fa"
+
 DEFAULT_BINARIES = [
     Binary(
         name="glslangValidator",
         tags=["Debug"],
-        version="9866ad9195cec8f266f16191fb4ec2ce4896e5c0",
+        version="e383c5f55defdb884a77820483d3360617391d78",
     ),
-    Binary(
-        name="spirv-opt",
-        tags=["Debug"],
-        version="55adf4cf707bb12c29fc12f784ebeaa29a819e9b",
-    ),
-    Binary(
-        name="spirv-dis",
-        tags=["Debug"],
-        version="55adf4cf707bb12c29fc12f784ebeaa29a819e9b",
-    ),
-    Binary(
-        name="spirv-val",
-        tags=["Debug"],
-        version="55adf4cf707bb12c29fc12f784ebeaa29a819e9b",
-    ),
+    Binary(name="spirv-opt", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
+    Binary(name="spirv-dis", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
+    Binary(name="spirv-val", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(
         name="swift_shader_icd",
         tags=["Debug"],
@@ -484,5 +474,13 @@ BUILT_IN_BINARY_RECIPES: List[recipe_wrap.RecipeWrap] = (
     + _get_built_in_spirv_tools_version(
         version_hash="55adf4cf707bb12c29fc12f784ebeaa29a819e9b",
         build_version_hash="f2170cc791d0eaa5789ec7528862ae00b984b3b8",
+    )
+    + _get_built_in_glslang_version(
+        version_hash="e383c5f55defdb884a77820483d3360617391d78",
+        build_version_hash="f3df04d4f582af6b54989d7da86f58f8f38423ba",
+    )
+    + _get_built_in_spirv_tools_version(
+        version_hash="230c9e437146e48ec58adb4433890403c23c98fa",
+        build_version_hash="288b0f57443e221df530b705085df59f2da93843",
     )
 )
