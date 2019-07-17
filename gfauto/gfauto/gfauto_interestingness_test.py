@@ -28,6 +28,7 @@ import sys
 from pathlib import Path
 
 from gfauto import (
+    artifact_util,
     binaries_util,
     fuzz,
     fuzz_glsl_test,
@@ -35,7 +36,6 @@ from gfauto import (
     signature_util,
     test_util,
     util,
-    artifact_util,
 )
 from gfauto.gflogging import log
 from gfauto.util import check, check_file_exists
