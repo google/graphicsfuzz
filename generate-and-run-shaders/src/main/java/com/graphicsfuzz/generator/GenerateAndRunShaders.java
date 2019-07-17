@@ -16,12 +16,9 @@
 
 package com.graphicsfuzz.generator;
 
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.generator.tool.Generate;
-import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -29,7 +26,6 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -63,10 +59,6 @@ public class GenerateAndRunShaders {
 
     parser.addArgument("worker")
           .help("Worker name.")
-          .type(String.class);
-
-    parser.addArgument("glsl-version")
-          .help("Version of GLSL to target.")
           .type(String.class);
 
     // Optional arguments
