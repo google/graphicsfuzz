@@ -520,7 +520,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
   }
 
   static IReductionOpportunityFinder<GlobalVariableDeclToExprReductionOpportunity>
-  globalVariableDeclToExprFinder() {
+      globalVariableDeclToExprFinder() {
     return new IReductionOpportunityFinder<GlobalVariableDeclToExprReductionOpportunity>() {
       @Override
       public List<GlobalVariableDeclToExprReductionOpportunity> findOpportunities(
