@@ -42,7 +42,6 @@ def run_generate(
         "com.graphicsfuzz.generator.tool.Generate",
         str(reference_shader_json),
         str(donors_path),
-        "100",  # TODO(215): remove once #215 is closed again.
         str(output_shader_json),
         "--generate-uniform-bindings",
         "--max-uniforms",
