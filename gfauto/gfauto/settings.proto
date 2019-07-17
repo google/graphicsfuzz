@@ -31,5 +31,6 @@ message Settings {
   repeated Binary custom_binaries = 2;
 
   // Allow at most this many duplicate crashes per device.
+  // If 0 (the protobuf default value), a different default value will actually be used, as determined by gfauto.
   uint32 maximum_duplicate_crashes = 3;
 }
