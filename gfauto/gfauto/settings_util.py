@@ -31,7 +31,10 @@ DEFAULT_SETTINGS = Settings(maximum_duplicate_crashes=3)
 
 
 def read(settings_path: Path) -> Settings:
-    return proto_util.file_to_message(settings_path, Settings())
+    result = proto_util.file_to_message(settings_path, Settings())
+    if not result.maximum_duplicate_crashes:
+        result.maximum_duplicate_crashes = DEFAULT_SETTINGS.maximum_duplicate_crashes
+    return result
 
 
 def write(settings: Settings, settings_path: Path) -> Path:
