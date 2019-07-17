@@ -35,6 +35,7 @@ from gfauto import (
     signature_util,
     test_util,
     util,
+    artifact_util,
 )
 from gfauto.gflogging import log
 from gfauto.util import check, check_file_exists
@@ -63,13 +64,27 @@ def main() -> None:
     )
     parser.add_argument("shader_job_json", help="The .json shader job file path.")
 
+    parser.add_argument(
+        "--fallback_binaries",
+        help="Fallback to the latest binaries if they are not defined in the test.json.",
+        action="store_true",
+    )
+
+    parser.add_argument("--output", help="Output directory.", default=None)
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     test_json: Path = Path(parsed_args.test_json)
     shader_job_json: Path = Path(parsed_args.shader_job_json)
+    fallback_binaries: bool = parsed_args.fallback_binaries
+    output: Path = Path(
+        parsed_args.output
+    ) if parsed_args.output else shader_job_json.with_suffix("")
 
     check_file_exists(test_json)
     check_file_exists(shader_job_json)
+
+    artifact_util.recipes_write_built_in()
 
     test = test_util.metadata_read_from_path(test_json)
 
@@ -81,12 +96,14 @@ def main() -> None:
     )
 
     binary_manager = binaries_util.BinaryManager(
-        [], util.get_platform(), binaries_util.BUILT_IN_BINARY_RECIPES_PATH_PREFIX
+        binaries_util.DEFAULT_BINARIES if fallback_binaries else [],
+        util.get_platform(),
+        binaries_util.BUILT_IN_BINARY_RECIPES_PATH_PREFIX,
     )
 
     output_dir = fuzz_glsl_test.run_shader_job(
         shader_job_json,
-        output_dir=shader_job_json.with_suffix(""),
+        output_dir=output,
         test=test,
         device=test.device,
         binary_manager=binary_manager,
