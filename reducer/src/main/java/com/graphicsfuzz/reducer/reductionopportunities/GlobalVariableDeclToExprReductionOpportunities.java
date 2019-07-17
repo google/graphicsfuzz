@@ -53,7 +53,7 @@ public class GlobalVariableDeclToExprReductionOpportunities
     extends ReductionOpportunitiesBase<GlobalVariableDeclToExprReductionOpportunity> {
   private final List<VariablesDeclaration> globalVariableDecl;
 
-  public GlobalVariableDeclToExprReductionOpportunities(TranslationUnit tu,
+  private GlobalVariableDeclToExprReductionOpportunities(TranslationUnit tu,
                                                         ReducerContext context) {
     super(tu, context);
     this.globalVariableDecl = new ArrayList<>();

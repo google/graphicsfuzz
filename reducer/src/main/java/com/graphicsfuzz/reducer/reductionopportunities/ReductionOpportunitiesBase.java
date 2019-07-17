@@ -47,15 +47,15 @@ public abstract class ReductionOpportunitiesBase
       extends ScopeTreeBuilder {
 
   private final List<ReductionOpportunityT> opportunities;
-  protected final InjectionTracker injectionTracker;
-  protected final NotReferencedFromLiveContext notReferencedFromLiveContext;
+  final InjectionTracker injectionTracker;
+  final NotReferencedFromLiveContext notReferencedFromLiveContext;
   protected final IParentMap parentMap;
 
   protected final ReducerContext context;
 
-  protected final ShaderKind shaderKind;
+  final ShaderKind shaderKind;
 
-  protected String enclosingFunctionName;
+  private String enclosingFunctionName;
 
   private int numEnclosingLValues;
 

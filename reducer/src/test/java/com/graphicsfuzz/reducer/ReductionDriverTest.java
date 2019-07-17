@@ -599,6 +599,59 @@ public class ReductionDriverTest {
 
   }
 
+  @Test
+  public void testSimplificationOfSwitch() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "void main() {\n"
+        + "  switch(0) {\n"
+        + "    case 0:\n"
+        + "      mix(0.0, 1.0, 0.0);\n"
+        + "      break;\n"
+        + "    default:\n"
+        + "      1;\n"
+        + "  }\n"
+        + "}\n";
+
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  mix(0.0, 1.0, 0.0);\n"
+        + "}\n";
+
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        new PipelineInfo(),
+        ParseHelper.parse(shader));
+
+    final File workDir = testFolder.getRoot();
+    final File tempShaderJobFile = new File(workDir, "temp.json");
+    fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
+
+    final IFileJudge usesMixFileJudge =
+        new CheckAstFeaturesFileJudge(Collections.singletonList(() -> new CheckAstFeatureVisitor() {
+          @Override
+          public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+            super.visitFunctionCallExpr(functionCallExpr);
+            if (functionCallExpr.getCallee().equals("mix")) {
+              trigger();
+            }
+          }
+        }),
+            ShaderKind.FRAGMENT,
+            fileOps);
+
+    final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+        ShadingLanguageVersion.ESSL_310,
+        new RandomWrapper(0),
+        new IdGenerator()),
+        false,
+        fileOps,
+        usesMixFileJudge,
+        workDir)
+        .doReduction(shaderJob, "temp", 0, 100);
+
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+
+  }
+
   private String getPrefix(File tempFile) {
     return FilenameUtils.removeExtension(tempFile.getName());
   }

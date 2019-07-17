@@ -29,6 +29,11 @@ import java.util.stream.Collectors;
 
 public class RemoveRedundantUniformMetadataReductionOpportunities {
 
+  private RemoveRedundantUniformMetadataReductionOpportunities() {
+    // This class just provides a static method; there is no cause to create an instance of the
+    // class.
+  }
+
   static List<RemoveRedundantUniformMetadataReductionOpportunity> findOpportunities(
       ShaderJob shaderJob,
       ReducerContext context) {
