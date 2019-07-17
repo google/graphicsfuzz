@@ -39,7 +39,7 @@ void main()
     int i = bitfieldExtract(int(injectionSwitch.x), bitCount(0), int(injectionSwitch.x));
     do
     {
-        for(int j = bitfieldExtract(int(injectionSwitch.x), 0, int(injectionSwitch.x)); j < findLSB(1024); j++)
+        for(int j = bitfieldExtract(int(injectionSwitch.x), 0, 0); j < findLSB(1024); j++)
         {
             if(uint(j) < uaddCarry(uint(i), 1u, uselessOutVariable))
             {
@@ -57,11 +57,11 @@ void main()
     } while(i < findMSB(512));
     if(gl_FragCoord.x < resolution.x / 2.0)
     {
-        _GLF_color = vec4(data[findMSB(int(injectionSwitch.y))] / 10.0, data[findLSB(int(injectionSwitch.y * 32.0))] / 10.0, data[findMSB(int(injectionSwitch.y * 512.0))] / 10.0, 1.0);
+        _GLF_color = vec4(data[findMSB(1)] / 10.0, data[findLSB(32)] / 10.0, data[findMSB(512)] / 10.0, 1.0);
     }
     else
     {
-        _GLF_color = vec4(data[findLSB(int(injectionSwitch.y * 32.0))] / 10.0, data[findMSB(int(injectionSwitch.y * 512.0))] / 10.0, data[findMSB(int(injectionSwitch.y))] / 10.0, 1.0);
+        _GLF_color = vec4(data[findLSB(32)] / 10.0, data[findMSB(512)] / 10.0, data[findMSB(1)] / 10.0, 1.0);
     }
 }
 

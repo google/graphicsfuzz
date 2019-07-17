@@ -25,7 +25,7 @@ uniform vec2 resolution;
 float nb_mod(float limit, float ref) {
     float s = float(bitfieldExtract(int(resolution.x), 0, 0));
     int i = bitCount(int(resolution.y));
-    while(i < bitfieldInsert(800, i, int(resolution.x), 0)) {
+    while(i < bitfieldInsert(800, i, 0, 0)) {
         if (mod(float(i), ref) <= 0.01) {
             s += 0.2;
         }
@@ -39,22 +39,22 @@ float nb_mod(float limit, float ref) {
 
 void main()
 {
-    vec4 c = vec4(bitfieldExtract(int(resolution.x), 0, 0), 0.0, 0.0, bitCount(int(resolution.x)));
+    vec4 c = vec4(bitfieldExtract(0, 0, 0), 0.0, 0.0, bitCount(int(resolution.x)));
     float ref = floor(resolution.x / float(findLSB(int(resolution.y))));
 
     c.x = nb_mod(gl_FragCoord.x, ref);
     c.y = nb_mod(gl_FragCoord.y, ref);
     c.z = c.x + c.y;
-    int i = bitfieldReverse(bitfieldExtract(int(resolution.x), 0, 0));
+    int i = bitfieldReverse(bitfieldExtract(0, 0, 0));
     do {
-        if (c[i] >= float(bitCount(int(resolution.y)))) {
+        if (c[i] >= 1.0) {
             c[i] = c[i] * c[i];
         }
         i++;
     } while (i < findMSB(findLSB(int(resolution.y))));
-    c.x = mod(c.x, float(bitCount(int(resolution.x))));
-    c.y = mod(c.y, float(bitCount(int(resolution.y))));
-    c.z = mod(c.z, float(bitCount(int(resolution.x))));
+    c.x = mod(c.x, 1.0);
+    c.y = mod(c.y, 1.0);
+    c.z = mod(c.z, 1.0);
     _GLF_color = c;
 }
 
