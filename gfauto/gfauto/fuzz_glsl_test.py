@@ -577,20 +577,22 @@ def create_summary_and_reproduce_glsl(
                 variant_reduced_glsl_result,
                 summary_dir,
                 binary_manager,
-                test_metadata,
             )
 
 
 def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
     reduced_glsl_source_dir: Path,
     variant_reduced_glsl_result_dir: Path,
-    summary_dir: Path,
+    output_dir: Path,
     binary_manager: binaries_util.BinaryManager,
-    test_metadata: Test,
 ) -> Path:
     # Create a simple script and README.
 
     shader_job = reduced_glsl_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
+
+    test_metadata: Test = test_util.metadata_read_from_path(
+        reduced_glsl_source_dir / test_util.TEST_METADATA
+    )
 
     shader_files = shader_job_util.get_related_files(
         shader_job, shader_job_util.EXT_ALL
@@ -603,7 +605,7 @@ def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
     shader_extension = shader_files[0].suffix
 
     bug_report_dir = util.copy_dir(
-        variant_reduced_glsl_result_dir, summary_dir / "bug_report"
+        variant_reduced_glsl_result_dir, output_dir / "bug_report"
     )
 
     shader_files = sorted(bug_report_dir.rglob("shader.*"))
@@ -666,6 +668,6 @@ def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
         readme += f"\n{short_path}:\n\n"
         readme += f"```\n{file_contents}\n```\n"
 
-    util.file_write_text(summary_dir / "README.md", readme)
+    util.file_write_text(output_dir / "README.md", readme)
 
     return bug_report_dir

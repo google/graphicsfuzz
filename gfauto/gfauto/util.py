@@ -180,7 +180,11 @@ def check_field_truthy(field: Any, field_name: str) -> None:
 
 
 def check_file_exists(path: Path) -> None:
-    check(path.exists(), FileNotFoundError(f"Could not find {str(path)}"))
+    check(path.is_file(), FileNotFoundError(f"Could not find file {str(path)}"))
+
+
+def check_dir_exists(path: Path) -> None:
+    check(path.is_dir(), FileNotFoundError(f"Could not find directory {str(path)}"))
 
 
 def get_platform() -> str:

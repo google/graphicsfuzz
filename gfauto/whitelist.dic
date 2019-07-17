@@ -160,4 +160,5 @@ libc
 alloc
 0th
 getrandbits
-
+randbits
+jsons

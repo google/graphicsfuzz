@@ -48,5 +48,7 @@ setup(
         "gfauto_interestingness_test = gfauto.gfauto_interestingness_test:main",
         "gfauto_write_device_file = gfauto.devices_util:write_device_file",
         "add_amber_tests_to_cts = gfauto.add_amber_tests_to_cts:main",
+        "gfauto_test_update_binaries = gfauto.test_update_binaries:main",
+        "gfauto_test_create_readme = gfauto.test_create_readme:main",
     ]},
 )
