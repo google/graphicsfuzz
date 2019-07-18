@@ -34,6 +34,8 @@ TEST_HEADER = '[test]'
 
 # Draw command for piglit to draw the shader's output. Required in the test header.
 DRAW_COMMAND = 'draw rect -1 -1 2 2'
+# Command to clear the screen to black before drawing, for the test header.
+CLEAR_COMMAND = 'clear color 0.0 0.0 0.0 1.0'
 
 # Strings used to specify the GL version to use in a piglit test's
 # [require] header.
@@ -75,7 +77,7 @@ def make_shader_test_string(shader_job: str, nodraw: bool) -> str:
         shader_file_string = shader.read()
 
     shader_lines = shader_file_string.split('\n')
-    shader_test_string = str('')
+    shader_test_string = ''
     # The version header always has to be on the first line of the shader.
     shader_version_header = shader_lines[0]
 
@@ -150,6 +152,7 @@ def make_test_header(shader_job_json_parsed: dict, nodraw: bool) -> str:
             uniform_name=uniform_name,
             args=' '.join([str(arg) for arg in value['args']])
         )
+    test_header += CLEAR_COMMAND + '\n'
     if not nodraw:
         test_header += DRAW_COMMAND
     return test_header

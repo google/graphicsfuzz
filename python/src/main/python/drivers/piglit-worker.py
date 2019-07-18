@@ -46,19 +46,18 @@ from thrift.protocol import TBinaryProtocol
 FRAG_SUFFIX = '.frag'
 JSON_SUFFIX = '.json'
 PNG_SUFFIX = '.png'
-SHADERTEST_SUFFIX = '.shader_test'
+SHADER_TEST_SUFFIX = '.shader_test'
 PNG_FILENAME = 'shader_runner_gles3000.png'
 LOGFILE_NAME = 'piglit_log.txt'
 STATUS_FILENAME = 'STATUS'
 
-GLXINFO_CMD = ['glxinfo', '-B']
-SHADERRUNNER_CMD = ['shader_runner_gles3']
-SHADERRUNNER_ARG_PNG = '-png'
-SHADERRUNNER_ARG_AUTO = '-auto'
-SHADERRUNNER_ARG_UNIFORMS = '-ignore-missing-uniforms'
+SHADER_RUNNER_ARG_PNG = '-png'
+SHADER_RUNNER_ARG_AUTO = '-auto'
+SHADER_RUNNER_ARG_UNIFORMS = '-ignore-missing-uniforms'
+SHADER_RUNNER_ARG_SUBTESTS = '-report-subtests'
 WORKER_INFO_FILE = 'worker_info.json'
 
-NODRAW_ARG = '--nodraw'
+NO_DRAW_ARG = '--nodraw'
 
 RETURNCODE_STR = 'Returncode: '
 STDOUT_STR = 'STDOUT: '
@@ -80,6 +79,14 @@ def log(message: str):
     print(message)
     if logfile is not None:
         logfile.write(message + '\n')
+
+
+def glxinfo_cmd():
+    return [gfuzz_common.tool_on_path('glxinfo'), '-B']
+
+
+def shader_runner_cmd():
+    return [gfuzz_common.tool_on_path('shader_runner_gles3')]
 
 
 def thrift_connect(server: str, worker_name: str, worker_info: str) -> (FuzzerService, str):
@@ -125,15 +132,15 @@ def thrift_connect(server: str, worker_name: str, worker_info: str) -> (FuzzerSe
 def dump_glxinfo(filename: str) -> None:
     """
     Helper function that dumps the stable results of 'glxinfo -B' to a JSON file. Removes any
-    file with the same name as filename before writing.
+    file with the same name as filename before writing. Will throw an exception if 'glxinfo'
+    fails or the JSON file can't be written.
     :param filename: the filename to write to.
     """
-    check_working_glxinfo()
     # There are some useless or unstable lines in glxinfo we need to remove before trying to parse
     # into JSON.
     glxinfo_lines = filter(
         lambda glx_line: 'OpenGL' in glx_line,
-        subprocess.check_output(GLXINFO_CMD).decode(sys.stdout.encoding).split('\n'))
+        subprocess.check_output(glxinfo_cmd()).decode(sys.stdout.encoding).split('\n'))
     # We form keys out of the OpenGL info descriptors and values out of the hardware dependent
     # strings. For example, "OpenGL version string: 4.6.0 NVIDIA 430.14" would become
     # { "OpenGL version string": "4.6.0 NVIDIA 430.14" }.
@@ -142,22 +149,8 @@ def dump_glxinfo(filename: str) -> None:
         prop = line.split(': ')
         assert len(prop) is 2
         glx_dict.update({prop[0]: prop[1]})
-    gfuzz_common.remove(filename)
     with gfuzz_common.open_helper(filename, 'w') as info_file:
         info_file.write(json.JSONEncoder().encode(glx_dict))
-
-
-def check_working_glxinfo() -> None:
-    """
-    Helper function to determine if glxinfo works properly on the system. Throws CalledProcessError
-    if glxinfo encounters an error.
-    """
-    try:
-        subprocess.check_call(GLXINFO_CMD)
-    except CalledProcessError as ex:
-        log('glxinfo errored out - something is wrong with your setup.\n'
-            'Check your graphics drivers configuration and try again.')
-        raise ex
 
 
 def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
@@ -258,12 +251,9 @@ def run_image_job(frag_file: str, json_file: str, status_file: str,
     assert os.path.isfile(frag_file)
     assert os.path.isfile(json_file)
 
-    # graphicsfuzz_piglit_converter has to skip the first argument since it's meant to be a
-    # standalone script taking arguments from a command line.
-    arglist = list('')
-    arglist.append(str(json_file))
+    arglist = [json_file]
     if skip_render:
-        arglist.append(NODRAW_ARG)
+        arglist.append(NO_DRAW_ARG)
 
     shader_test_file = graphicsfuzz_piglit_converter.get_shader_test_from_job(json_file)
 
@@ -287,10 +277,8 @@ def run_image_job(frag_file: str, json_file: str, status_file: str,
     # (and there's no way to specify a location to write to) - we need to move it to wherever our
     # output is.
 
-    time.sleep(2)
-
-    if os.path.isfile(os.getcwd() + '/' + PNG_FILENAME):
-        shutil.move(os.getcwd() + '/' + PNG_FILENAME, os.getcwd() + '/' + png_file)
+    if os.path.isfile(PNG_FILENAME):
+        shutil.move(PNG_FILENAME, png_file)
 
     with gfuzz_common.open_helper(status_file, 'w') as f:
         f.write(status)
@@ -303,13 +291,14 @@ def run_shader_test(shader_test_file: str, skip_render: bool):
     :param shader_test_file: the shader_test file to run.
     :param skip_render: whether to skip rendering or not.
     """
-    shader_runner_cmd = SHADERRUNNER_CMD + [shader_test_file, SHADERRUNNER_ARG_AUTO,
-                                            SHADERRUNNER_ARG_UNIFORMS]
+    shader_runner_cmd_list = shader_runner_cmd() + [shader_test_file, SHADER_RUNNER_ARG_AUTO,
+                                                    SHADER_RUNNER_ARG_UNIFORMS,
+                                                    SHADER_RUNNER_ARG_SUBTESTS]
     if not skip_render:
-        shader_runner_cmd.append(SHADERRUNNER_ARG_PNG)
+        shader_runner_cmd_list.append(SHADER_RUNNER_ARG_PNG)
     try:
-        log('Exec: ' + shader_test_file + ' with ' + SHADERRUNNER_CMD[0])
-        results = subprocess.run(shader_runner_cmd, timeout=TIMEOUT, check=True)
+        log('Exec: ' + shader_test_file)
+        results = subprocess.run(shader_runner_cmd_list, timeout=TIMEOUT, check=True)
     except subprocess.TimeoutExpired as ex:
         if ex.stdout is not None:
             log(STDOUT_STR + ex.stdout.decode(encoding='utf-8', errors='ignore'))
@@ -364,11 +353,6 @@ def main():
 
     try:
         dump_glxinfo(WORKER_INFO_FILE)
-        if not os.path.isfile(WORKER_INFO_FILE):
-            raise FileNotFoundError(
-                'Could not create worker info file - make sure you have permissions to write '
-                'in the same folder as the script.'
-            )
         with gfuzz_common.open_helper(WORKER_INFO_FILE, 'r') as info_file:
             worker_info_json_string = info_file.read()
     except Exception as ex:
@@ -386,7 +370,7 @@ def main():
                 time.sleep(1)
                 continue
 
-        assert worker is not None
+        assert worker
 
         os.makedirs(worker, exist_ok=True)
 
@@ -398,9 +382,10 @@ def main():
                 log("Skip job")
                 service.jobDone(worker, job)
             else:
-                assert job.imageJob is not None
+                assert job.imageJob
                 if job.imageJob.computeSource:
-                    log("Got a compute job, but Piglit doesn't support compute shaders.")
+                    log("Got a compute job, but this worker doesn't support compute shaders.")
+                    job.imageJob.result = tt.ImageJobResult()
                     job.imageJob.result.status = tt.JobStatus.UNEXPECTED_ERROR
                 else:
                     log("#### Image job: " + job.imageJob.name)
