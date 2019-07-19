@@ -152,8 +152,8 @@ def make_test_header(shader_job_json_parsed: dict, nodraw: bool) -> str:
             uniform_name=uniform_name,
             args=' '.join([str(arg) for arg in value['args']])
         )
-    test_header += CLEAR_COMMAND + '\n'
     if not nodraw:
+        test_header += CLEAR_COMMAND + '\n'
         test_header += DRAW_COMMAND
     return test_header
 
@@ -179,12 +179,12 @@ def is_version_header(line: str) -> bool:
     return SHADER_VERSION_FLAG in line
 
 
-def get_json_properties(shader_job: str) -> List:
+def get_json_properties(shader_job: str) -> dict:
     """
-    Helper function to parse a shader job JSON file into a list of properties.
+    Helper function to parse a shader job JSON file into a dict of properties.
     Throws IOError if the file can't be parsed.
     :param shader_job: the path to the shader job file.
-    :return: a list of JSON properties.
+    :return: a dict of JSON properties.
     """
     with gfuzz_common.open_helper(shader_job, 'r') as job:
         json_parsed = json.load(job)

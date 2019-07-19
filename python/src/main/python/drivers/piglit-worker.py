@@ -24,6 +24,7 @@ from subprocess import CalledProcessError
 import time
 
 import gfuzz_common
+import runspv
 import graphicsfuzz_piglit_converter
 
 HERE = os.path.abspath(__file__)
@@ -72,14 +73,6 @@ STATUS_NONDET = 'NONDET'
 
 TIMEOUT = 30
 
-logfile = None
-
-
-def log(message: str):
-    print(message)
-    if logfile is not None:
-        logfile.write(message + '\n')
-
 
 def glxinfo_cmd():
     return [gfuzz_common.tool_on_path('glxinfo'), '-B']
@@ -109,18 +102,18 @@ def thrift_connect(server: str, worker_name: str, worker_info: str) -> (FuzzerSe
         transport.open()
 
         # Get worker name
-        log("Call getWorkerName()")
+        runspv.log("Call getWorkerName()")
         worker_res = service.getWorkerName(worker_info, worker_name)
         assert type(worker_res) is not None
 
         if worker_res.workerName is None:
             # noinspection PyProtectedMember
-            log('Worker error: ' + tt.WorkerNameError._VALUES_TO_NAMES[worker_res.error])
+            runspv.log('Worker error: ' + tt.WorkerNameError._VALUES_TO_NAMES[worker_res.error])
             exit(1)
 
         worker = worker_res.workerName
 
-        log("Got worker: " + worker)
+        runspv.log("Got worker: " + worker)
         assert (worker == worker_name)
 
         return service, worker
@@ -140,7 +133,7 @@ def dump_glxinfo(filename: str) -> None:
     # into JSON.
     glxinfo_lines = filter(
         lambda glx_line: 'OpenGL' in glx_line,
-        subprocess.check_output(glxinfo_cmd()).decode(sys.stdout.encoding).split('\n'))
+        runspv.subprocess_helper(glxinfo_cmd()).stdout.split('\n'))
     # We form keys out of the OpenGL info descriptors and values out of the hardware dependent
     # strings. For example, "OpenGL version string: 4.6.0 NVIDIA 430.14" would become
     # { "OpenGL version string": "4.6.0 NVIDIA 430.14" }.
@@ -189,20 +182,17 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
     res.passSanityCheck = True
     res.log = 'Start: ' + name + '\n'
 
-    # Set a global logfile so our log function knows it can write to file as well as stdout.
-    global logfile
-
     with gfuzz_common.open_helper(log_file, 'w') as f:
         try:
-            logfile = f
+            runspv.log_to_file = f
             run_image_job(frag_file, json_file, status_file, png_file,
                           output_dir, image_job.skipRender)
         except Exception as ex:
-            log(str(ex))
-            log('Removing status file and continuing...')
+            runspv.log(str(ex))
+            runspv.log('Removing status file and continuing...')
             gfuzz_common.remove(status_file)
         finally:
-            logfile = None
+            runspv.log_to_file = None
 
     if os.path.isfile(log_file):
         with gfuzz_common.open_helper(log_file, 'r') as f:
@@ -258,20 +248,27 @@ def run_image_job(frag_file: str, json_file: str, status_file: str,
     shader_test_file = graphicsfuzz_piglit_converter.get_shader_test_from_job(json_file)
 
     try:
-        log('Creating shader_test file...')
+        runspv.log('Creating shader_test file...')
         graphicsfuzz_piglit_converter.main_helper(arglist)
     except Exception as ex:
-        log('Could not create shader_test from the given job.')
+        runspv.log('Could not create shader_test from the given job.')
         raise ex
 
     status = STATUS_SUCCESS
 
+    shader_runner_cmd_list = shader_runner_cmd() + [shader_test_file, SHADER_RUNNER_ARG_AUTO,
+                                                    SHADER_RUNNER_ARG_UNIFORMS,
+                                                    SHADER_RUNNER_ARG_SUBTESTS]
+    if not skip_render:
+        shader_runner_cmd_list.append(SHADER_RUNNER_ARG_PNG)
     try:
-        run_shader_test(shader_test_file, skip_render)
+        runspv.subprocess_helper(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
     except subprocess.TimeoutExpired:
         status = STATUS_TIMEOUT
     except subprocess.CalledProcessError:
         status = STATUS_CRASH
+
+    runspv.log('STATUS: ' + status)
 
     # Piglit throws the output PNG render into whatever the current working directory is
     # (and there's no way to specify a location to write to) - we need to move it to wherever our
@@ -282,41 +279,6 @@ def run_image_job(frag_file: str, json_file: str, status_file: str,
 
     with gfuzz_common.open_helper(status_file, 'w') as f:
         f.write(status)
-
-
-def run_shader_test(shader_test_file: str, skip_render: bool):
-    """
-    Runs a shader_test file and logs the output. If the shader runner errors out, the error is
-    logged and then raised to the caller.
-    :param shader_test_file: the shader_test file to run.
-    :param skip_render: whether to skip rendering or not.
-    """
-    shader_runner_cmd_list = shader_runner_cmd() + [shader_test_file, SHADER_RUNNER_ARG_AUTO,
-                                                    SHADER_RUNNER_ARG_UNIFORMS,
-                                                    SHADER_RUNNER_ARG_SUBTESTS]
-    if not skip_render:
-        shader_runner_cmd_list.append(SHADER_RUNNER_ARG_PNG)
-    try:
-        log('Exec: ' + shader_test_file)
-        results = subprocess.run(shader_runner_cmd_list, timeout=TIMEOUT, check=True)
-    except subprocess.TimeoutExpired as ex:
-        if ex.stdout is not None:
-            log(STDOUT_STR + ex.stdout.decode(encoding='utf-8', errors='ignore'))
-        if ex.stderr is not None:
-            log(STDERR_STR + ex.stderr.decode(encoding='utf-8', errors='ignore'))
-        raise ex
-    except subprocess.CalledProcessError as ex:
-        if ex.stdout is not None:
-            log(STDOUT_STR + ex.stdout.decode(encoding='utf-8', errors='ignore'))
-        if ex.stderr is not None:
-            log(STDERR_STR + ex.stderr.decode(encoding='utf-8', errors='ignore'))
-        log(RETURNCODE_STR + str(ex.returncode))
-        raise ex
-    if results.stdout is not None:
-        log(STDOUT_STR + results.stdout.decode(encoding='utf-8', errors='ignore'))
-    if results.stderr is not None:
-        log(STDERR_STR + results.stderr.decode(encoding='utf-8', errors='ignore'))
-    log(RETURNCODE_STR + str(results.returncode))
 
 
 def main():
@@ -344,29 +306,31 @@ def main():
     gfuzz_common.tool_on_path('shader_runner_gles3')
     gfuzz_common.tool_on_path('glxinfo')
 
-    log('Worker: ' + args.worker_name)
+    runspv.log('Worker: ' + args.worker_name)
     server = args.server + '/request'
-    log('server: ' + server)
+    runspv.log('server: ' + server)
 
     # Get worker info
     worker_info_json_string = '{}'
 
+    runspv.log('Dumping glxinfo to file for worker info string...')
     try:
         dump_glxinfo(WORKER_INFO_FILE)
         with gfuzz_common.open_helper(WORKER_INFO_FILE, 'r') as info_file:
             worker_info_json_string = info_file.read()
     except Exception as ex:
-        log(str(ex))
-        log('Could not get worker info, continuing without it.')
+        runspv.log(str(ex))
+        runspv.log('Could not get worker info, continuing without it.')
 
     service = None
     worker = None
 
     while True:
         if not service:
+            runspv.log('Connecting to server...')
             service, worker = thrift_connect(server, args.worker_name, worker_info_json_string)
             if not service:
-                log('Failed to connect, retrying...')
+                runspv.log('Failed to connect, retrying...')
                 time.sleep(1)
                 continue
 
@@ -377,24 +341,25 @@ def main():
         try:
             job = service.getJob(worker)
             if job.noJob is not None:
-                log("No job")
+                runspv.log("No job")
             elif job.skipJob is not None:
-                log("Skip job")
+                runspv.log("Skip job")
                 service.jobDone(worker, job)
             else:
                 assert job.imageJob
                 if job.imageJob.computeSource:
-                    log("Got a compute job, but this worker doesn't support compute shaders.")
+                    runspv.log("Got a compute job, but this worker "
+                               "doesn't support compute shaders.")
                     job.imageJob.result = tt.ImageJobResult()
                     job.imageJob.result.status = tt.JobStatus.UNEXPECTED_ERROR
                 else:
-                    log("#### Image job: " + job.imageJob.name)
+                    runspv.log("#### Image job: " + job.imageJob.name)
                     job.imageJob.result = do_image_job(job.imageJob, work_dir=worker)
-                log("Sending back, results status: {}".format(job.imageJob.result.status))
+                runspv.log("Sending back, results status: {}".format(job.imageJob.result.status))
                 service.jobDone(worker, job)
                 continue
         except (TApplicationException, ConnectionError):
-            log("Connection to server lost. Re-initialising client.")
+            runspv.log("Connection to server lost. Re-initialising client.")
             service = None
         time.sleep(1)
 
