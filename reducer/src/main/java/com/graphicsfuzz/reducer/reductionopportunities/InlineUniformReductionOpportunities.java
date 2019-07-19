@@ -60,7 +60,7 @@ public class InlineUniformReductionOpportunities extends SimplifyExprReductionOp
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
     final String name = variableIdentifierExpr.getName();
-    final ScopeEntry se = currentScope.lookupScopeEntry(name);
+    final ScopeEntry se = getCurrentScope().lookupScopeEntry(name);
     if (se == null) {
       return;
     }

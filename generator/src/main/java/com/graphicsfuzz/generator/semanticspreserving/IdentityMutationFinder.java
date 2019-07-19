@@ -76,7 +76,7 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
     }
     final BasicType basicType = (BasicType) type;
 
-    final Scope clonedScope = currentScope.shallowClone();
+    final Scope clonedScope = getCurrentScope().shallowClone();
     if (getTranslationUnit().getShadingLanguageVersion().restrictedForLoops()) {
       for (Set<String> iterators : forLoopIterators) {
         iterators.forEach(clonedScope::remove);

@@ -36,7 +36,7 @@ import com.graphicsfuzz.common.ast.visitors.AbortVisitationException;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.Scope;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.typing.TyperHelper;
 import com.graphicsfuzz.common.util.IRandom;
@@ -50,7 +50,6 @@ import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public class RestrictFragmentShaderColors {
@@ -159,7 +158,7 @@ public class RestrictFragmentShaderColors {
 
     final Typer typer = new Typer(shaderJob.getFragmentShader().get());
 
-    return new ScopeTreeBuilder() {
+    return new ScopeTrackingVisitor() {
 
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
@@ -174,7 +173,7 @@ public class RestrictFragmentShaderColors {
           return;
         }
         for (Expr expr : functionCallExpr.getArgs()) {
-          if (isPartOfOutputVariable(expr, currentScope)) {
+          if (isPartOfOutputVariable(expr, getCurrentScope())) {
             throw new AbortVisitationException("We do not yet handle components of the output "
                 + "variable being passed to functions, in case they are out parameters.");
           }
@@ -188,7 +187,7 @@ public class RestrictFragmentShaderColors {
           // Do nothing: the binary operator is not side-effecting.
           return;
         }
-        if (!isPartOfOutputVariable(binaryExpr.getLhs(), currentScope)) {
+        if (!isPartOfOutputVariable(binaryExpr.getLhs(), getCurrentScope())) {
           return;
         }
         final BasicType basicType = getBasicType(binaryExpr.getLhs());
@@ -198,9 +197,9 @@ public class RestrictFragmentShaderColors {
             // Replace RHS by
             //   (1.0 + 0.0 * (is_nan_or_inf(original_rhs) ? 0.0 : original_rhs))
             binaryExpr.setRhs(
-                new ParenExpr(new BinaryExpr(opaqueOne(currentScope, basicType),
-                 new BinaryExpr(opaqueZero(currentScope, basicType),
-                     ifNanOrInfThenZeroElse(basicType, binaryExpr.getRhs(), currentScope),
+                new ParenExpr(new BinaryExpr(opaqueOne(getCurrentScope(), basicType),
+                 new BinaryExpr(opaqueZero(getCurrentScope(), basicType),
+                     ifNanOrInfThenZeroElse(basicType, binaryExpr.getRhs(), getCurrentScope()),
                       BinOp.MUL),
                 BinOp.ADD))
             );
@@ -211,8 +210,8 @@ public class RestrictFragmentShaderColors {
             binaryExpr.setRhs(
                 new ParenExpr(
                     new BinaryExpr(
-                        opaqueZero(currentScope, basicType),
-                        ifNanOrInfThenZeroElse(basicType, binaryExpr.getRhs(), currentScope),
+                        opaqueZero(getCurrentScope(), basicType),
+                        ifNanOrInfThenZeroElse(basicType, binaryExpr.getRhs(), getCurrentScope()),
                         BinOp.MUL)
                 )
             );
@@ -222,9 +221,10 @@ public class RestrictFragmentShaderColors {
             binaryExpr.setRhs(
                 new ParenExpr(
                     new BinaryExpr(
-                        makeColorVector(basicType, currentScope),
-                        new BinaryExpr(opaqueZero(currentScope, basicType),
-                            ifNanOrInfThenZeroElse(basicType, binaryExpr.getRhs(), currentScope),
+                        makeColorVector(basicType, getCurrentScope()),
+                        new BinaryExpr(opaqueZero(getCurrentScope(), basicType),
+                            ifNanOrInfThenZeroElse(basicType, binaryExpr.getRhs(),
+                                getCurrentScope()),
                             BinOp.MUL),
                         BinOp.ADD
                     )

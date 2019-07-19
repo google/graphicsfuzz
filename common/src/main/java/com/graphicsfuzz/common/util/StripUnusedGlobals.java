@@ -26,14 +26,14 @@ import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class StripUnusedGlobals extends ScopeTreeBuilder {
+public class StripUnusedGlobals extends ScopeTrackingVisitor {
 
   public static void strip(TranslationUnit tu) {
     new StripUnusedGlobals(tu);
@@ -65,7 +65,7 @@ public class StripUnusedGlobals extends ScopeTreeBuilder {
   @Override
   public void visitStructNameType(StructNameType structNameType) {
     super.visitStructNameType(structNameType);
-    unusedStructs.remove(currentScope.lookupStructName(structNameType.getName()));
+    unusedStructs.remove(getCurrentScope().lookupStructName(structNameType.getName()));
   }
 
   @Override
@@ -74,7 +74,7 @@ public class StripUnusedGlobals extends ScopeTreeBuilder {
     // If a struct name is used in a type constructor, the struct counts as being used.
     // The type constructor here might not be a struct type, e.g. it could be "float" or "vec2".
     // That's OK: lookupStructName will just return null so nothing will be removed.
-    unusedStructs.remove(currentScope.lookupStructName(typeConstructorExpr.getTypename()));
+    unusedStructs.remove(getCurrentScope().lookupStructName(typeConstructorExpr.getTypename()));
   }
 
   @Override
@@ -89,7 +89,8 @@ public class StripUnusedGlobals extends ScopeTreeBuilder {
   @Override
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    final ScopeEntry scopeEntry = currentScope.lookupScopeEntry(variableIdentifierExpr.getName());
+    final ScopeEntry scopeEntry = getCurrentScope().lookupScopeEntry(variableIdentifierExpr
+        .getName());
     if (scopeEntry != null && scopeEntry.hasVariableDeclInfo()) {
       // If this is a global, mark it as used.
       unusedGlobals.remove(scopeEntry.getVariableDeclInfo());

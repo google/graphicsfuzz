@@ -25,7 +25,7 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -88,7 +88,7 @@ public class DonationContext {
     // Note: we don't use the freeVariables member here, because we want to account for
     // name shadowing.
 
-    return new ScopeTreeBuilder() {
+    return new ScopeTrackingVisitor() {
 
       private boolean found = false;
 
@@ -105,7 +105,7 @@ public class DonationContext {
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
         if (arrayIndexDepth > 0
-            && currentScope.lookupScopeEntry(variableIdentifierExpr.getName()) == null) {
+            && getCurrentScope().lookupScopeEntry(variableIdentifierExpr.getName()) == null) {
           // A free variable that appears under an array index
           found = true;
         }

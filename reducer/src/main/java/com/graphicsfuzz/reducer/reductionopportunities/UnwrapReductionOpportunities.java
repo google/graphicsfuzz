@@ -118,7 +118,8 @@ public class UnwrapReductionOpportunities
     final Set<String> namesDeclaredDirectlyByParentOrInScopeAlready = new HashSet<>();
     namesDeclaredDirectlyByParentOrInScopeAlready.addAll(
         UnwrapReductionOpportunity.getNamesDeclaredDirectlyByBlock(block));
-    namesDeclaredDirectlyByParentOrInScopeAlready.addAll(currentScope.namesOfAllVariablesInScope());
+    namesDeclaredDirectlyByParentOrInScopeAlready.addAll(getCurrentScope()
+        .namesOfAllVariablesInScope());
     final Set<String> namesDeclaredDirectlyByChild =
         UnwrapReductionOpportunity.getNamesDeclaredDirectlyByBlock(childAsBlock);
     if (Collections.disjoint(namesDeclaredDirectlyByParentOrInScopeAlready,

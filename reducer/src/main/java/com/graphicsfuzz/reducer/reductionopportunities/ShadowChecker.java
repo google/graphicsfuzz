@@ -20,9 +20,9 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 
-class ShadowChecker extends ScopeTreeBuilder {
+class ShadowChecker extends ScopeTrackingVisitor {
 
   private final BlockStmt blockOfInterest;
   private final String nameOfInterest;
@@ -40,7 +40,7 @@ class ShadowChecker extends ScopeTreeBuilder {
   public void visitBlockStmt(BlockStmt stmt) {
     if (stmt == blockOfInterest) {
       inBlock = true;
-      possiblyShadowedScopeEntry = currentScope.lookupScopeEntry(nameOfInterest);
+      possiblyShadowedScopeEntry = getCurrentScope().lookupScopeEntry(nameOfInterest);
     }
     super.visitBlockStmt(stmt);
     if (stmt == blockOfInterest) {
@@ -53,7 +53,7 @@ class ShadowChecker extends ScopeTreeBuilder {
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
     if (inBlock && possiblyShadowedScopeEntry != null
-          && currentScope.lookupScopeEntry(variableIdentifierExpr.getName())
+          && getCurrentScope().lookupScopeEntry(variableIdentifierExpr.getName())
           == possiblyShadowedScopeEntry) {
       ok = false;
     }

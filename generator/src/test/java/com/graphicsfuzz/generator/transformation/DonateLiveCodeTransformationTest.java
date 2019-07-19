@@ -39,7 +39,7 @@ import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
@@ -115,7 +115,7 @@ public class DonateLiveCodeTransformationTest {
 
       BlockInjectionPoint blockInjectionPoint =
 
-            new ScopeTreeBuilder() {
+            new ScopeTrackingVisitor() {
 
               BlockInjectionPoint blockInjectionPoint;
 
@@ -123,8 +123,8 @@ public class DonateLiveCodeTransformationTest {
               public void visitBlockStmt(BlockStmt stmt) {
                 super.visitBlockStmt(stmt);
                 if (stmt.getNumStmts() == 0) {
-                  blockInjectionPoint = new BlockInjectionPoint(stmt, null, enclosingFunction,
-                        false, currentScope);
+                  blockInjectionPoint = new BlockInjectionPoint(stmt, null, getEnclosingFunction(),
+                        false, getCurrentScope());
                 }
               }
 
@@ -424,13 +424,13 @@ public class DonateLiveCodeTransformationTest {
       //
       // The following thus checks that if an array is indexed directly by a variable reference,
       // the initializer for that variable is not a function call expression.
-      new ScopeTreeBuilder() {
+      new ScopeTrackingVisitor() {
 
         @Override
         public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
           super.visitArrayIndexExpr(arrayIndexExpr);
           if (arrayIndexExpr.getIndex() instanceof VariableIdentifierExpr) {
-            final ScopeEntry scopeEntry = currentScope.lookupScopeEntry(
+            final ScopeEntry scopeEntry = getCurrentScope().lookupScopeEntry(
                 ((VariableIdentifierExpr) arrayIndexExpr.getIndex()).getName());
             assertTrue(scopeEntry.hasVariableDeclInfo());
             assertNotNull(scopeEntry.getVariableDeclInfo().getInitializer());
