@@ -34,6 +34,8 @@ TEST_HEADER = '[test]'
 
 # Draw command for piglit to draw the shader's output. Required in the test header.
 DRAW_COMMAND = 'draw rect -1 -1 2 2'
+# Command to clear the screen to black before drawing, for the test header.
+CLEAR_COMMAND = 'clear color 0.0 0.0 0.0 1.0'
 
 # Strings used to specify the GL version to use in a piglit test's
 # [require] header.
@@ -62,10 +64,11 @@ UNIFORM_TYPES = {
 UNIFORM_DEC = 'uniform'
 
 
-def make_shader_test_string(shader_job: str) -> str:
+def make_shader_test_string(shader_job: str, nodraw: bool) -> str:
     """
     Makes a piglit shader_test from a shader job and shader.
     :param shader_job: The path to the shader job file.
+    :param nodraw: determines if the draw command is added to draw the shader.
     :return: the shader_test
     """
     shader_job_json_parsed = get_json_properties(shader_job)
@@ -74,14 +77,14 @@ def make_shader_test_string(shader_job: str) -> str:
         shader_file_string = shader.read()
 
     shader_lines = shader_file_string.split('\n')
-    shader_test_string = str('')
+    shader_test_string = ''
     # The version header always has to be on the first line of the shader.
     shader_version_header = shader_lines[0]
 
     shader_test_string += make_require_header(shader_version_header) + '\n'
     shader_test_string += make_vertex_shader_header() + '\n'
     shader_test_string += make_fragment_shader_header(shader_file_string) + '\n'
-    shader_test_string += make_test_header(shader_job_json_parsed)
+    shader_test_string += make_test_header(shader_job_json_parsed, nodraw)
 
     return shader_test_string
 
@@ -135,10 +138,11 @@ def make_fragment_shader_header(fragment_shader: str) -> str:
     return frag_header
 
 
-def make_test_header(shader_job_json_parsed: dict) -> str:
+def make_test_header(shader_job_json_parsed: dict, nodraw: bool) -> str:
     """
     Creates the [test] header. Loads uniforms based on the uniforms found in the JSON file.
     :param shader_job_json_parsed: the parsed JSON properties.
+    :param nodraw: determines if the draw command is added to draw the shader.
     :return: the shader_test test header string.
     """
     test_header = TEST_HEADER + '\n'
@@ -148,7 +152,9 @@ def make_test_header(shader_job_json_parsed: dict) -> str:
             uniform_name=uniform_name,
             args=' '.join([str(arg) for arg in value['args']])
         )
-    test_header += DRAW_COMMAND
+    if not nodraw:
+        test_header += CLEAR_COMMAND + '\n'
+        test_header += DRAW_COMMAND
     return test_header
 
 
@@ -173,12 +179,12 @@ def is_version_header(line: str) -> bool:
     return SHADER_VERSION_FLAG in line
 
 
-def get_json_properties(shader_job: str) -> List:
+def get_json_properties(shader_job: str) -> dict:
     """
-    Helper function to parse a shader job JSON file into a list of properties.
+    Helper function to parse a shader job JSON file into a dict of properties.
     Throws IOError if the file can't be parsed.
     :param shader_job: the path to the shader job file.
-    :return: a list of JSON properties.
+    :return: a dict of JSON properties.
     """
     with gfuzz_common.open_helper(shader_job, 'r') as job:
         json_parsed = json.load(job)
@@ -218,10 +224,16 @@ def main_helper(args: List[str]) -> None:
     argparser.add_argument(
         'shader_job', 
         help='Path to the GraphicsFuzz shader job JSON file.')
+
+    argparser.add_argument(
+        '--nodraw',
+        action='store_true',
+        help='Do not draw the shader output when running the test. Useful for crash testing.'
+    )
     
     args = argparser.parse_args(args)
   
-    test_string = make_shader_test_string(args.shader_job)
+    test_string = make_shader_test_string(args.shader_job, args.nodraw)
 
     with gfuzz_common.open_helper(get_shader_test_from_job(args.shader_job), 'w') as shader_test:
         shader_test.write(test_string)
