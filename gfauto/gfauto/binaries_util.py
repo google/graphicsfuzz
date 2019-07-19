@@ -56,7 +56,7 @@ PLATFORM_SUFFIXES_RELWITHDEBINFO = [
     "Mac_x64_RelWithDebInfo",
 ]
 
-DEFAULT_SPIRV_TOOLS_VERSION = "230c9e437146e48ec58adb4433890403c23c98fa"
+DEFAULT_SPIRV_TOOLS_VERSION = "76b75c40a1e27939957e6a598292e9f32b4e98d4"
 
 DEFAULT_BINARIES = [
     Binary(
@@ -67,6 +67,7 @@ DEFAULT_BINARIES = [
     Binary(name="spirv-opt", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-dis", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-val", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
+    Binary(name="spirv-fuzz", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(
         name="swift_shader_icd",
         tags=["Debug"],
@@ -285,7 +286,7 @@ def _get_built_in_swift_shader_version(
 
 
 def _get_built_in_spirv_tools_version(
-    version_hash: str, build_version_hash: str
+    version_hash: str, build_version_hash: str, includes_spirv_fuzz=True
 ) -> List[recipe_wrap.RecipeWrap]:
     return _get_built_in_binary_recipe_from_build_github_repo(
         project_name="SPIRV-Tools",
@@ -297,7 +298,12 @@ def _get_built_in_spirv_tools_version(
             ToolNameAndPath(name="spirv-dis", subpath="bin/spirv-dis"),
             ToolNameAndPath(name="spirv-opt", subpath="bin/spirv-opt"),
             ToolNameAndPath(name="spirv-val", subpath="bin/spirv-val"),
-        ],
+        ]
+        + (
+            [ToolNameAndPath(name="spirv-fuzz", subpath="bin/spirv-fuzz")]
+            if includes_spirv_fuzz
+            else []
+        ),
     )
 
 
@@ -457,6 +463,7 @@ BUILT_IN_BINARY_RECIPES: List[recipe_wrap.RecipeWrap] = (
     _get_built_in_spirv_tools_version(
         version_hash="4a00a80c40484a6f6f72f48c9d34943cf8f180d4",
         build_version_hash="422f2fe0f0f32494fa687a12ba343d24863b330a",
+        includes_spirv_fuzz=False,
     )
     + _get_built_in_glslang_version(
         version_hash="9866ad9195cec8f266f16191fb4ec2ce4896e5c0",
@@ -470,10 +477,12 @@ BUILT_IN_BINARY_RECIPES: List[recipe_wrap.RecipeWrap] = (
     + _get_built_in_spirv_tools_version(
         version_hash="1c1e749f0b51603032ed573acb5ee4cd6fee8d01",
         build_version_hash="7663d620a7fbdccb330d2baec138d0e3e096457c",
+        includes_spirv_fuzz=False,
     )
     + _get_built_in_spirv_tools_version(
         version_hash="55adf4cf707bb12c29fc12f784ebeaa29a819e9b",
         build_version_hash="f2170cc791d0eaa5789ec7528862ae00b984b3b8",
+        includes_spirv_fuzz=False,
     )
     + _get_built_in_glslang_version(
         version_hash="e383c5f55defdb884a77820483d3360617391d78",
@@ -482,5 +491,11 @@ BUILT_IN_BINARY_RECIPES: List[recipe_wrap.RecipeWrap] = (
     + _get_built_in_spirv_tools_version(
         version_hash="230c9e437146e48ec58adb4433890403c23c98fa",
         build_version_hash="288b0f57443e221df530b705085df59f2da93843",
+        includes_spirv_fuzz=False,
+    )
+    + _get_built_in_spirv_tools_version(
+        version_hash="76b75c40a1e27939957e6a598292e9f32b4e98d4",
+        build_version_hash="9debf645007ef2807ba68f4497d50638c4c57878",
+        includes_spirv_fuzz=False,
     )
 )
