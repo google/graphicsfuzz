@@ -31,7 +31,7 @@ float b_b;
 void doConvert()
 {
     vec3 temp;
-    temp = b_b * (float(bitCount(int(resolution.x))) - s_g) + (b_b - b_b * (float(bitCount(int(resolution.y))) - s_g)) * clamp(abs(abs(6.0 * (h_r - vec3(bitfieldReverse(0), findMSB(bitCount(int(resolution.x))), findLSB(2)) / 3.0)) - 3.0) - float(bitCount(int(resolution.y))), float(bitfieldExtract(int(resolution.x), 0, 0)), float(bitCount(int(resolution.x))));
+    temp = b_b * (float(bitCount(int(resolution.x))) - s_g) + (b_b - b_b * (float(bitCount(int(resolution.y))) - s_g)) * clamp(abs(abs(6.0 * (h_r - vec3(bitfieldReverse(0), bitCount(int(resolution.x)), 2) / 3.0)) - 3.0) - float(bitCount(int(resolution.y))), float(bitfieldExtract(int(resolution.x), 0, 0)), float(bitCount(int(resolution.x))));
     h_r = temp.x;
     s_g = temp.y;
     b_b = temp.z;
