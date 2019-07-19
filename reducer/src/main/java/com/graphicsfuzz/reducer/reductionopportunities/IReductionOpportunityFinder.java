@@ -519,4 +519,23 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
+  static IReductionOpportunityFinder<GlobalVariableDeclToExprReductionOpportunity>
+      globalVariableDeclToExprFinder() {
+    return new IReductionOpportunityFinder<GlobalVariableDeclToExprReductionOpportunity>() {
+      @Override
+      public List<GlobalVariableDeclToExprReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        return GlobalVariableDeclToExprReductionOpportunities.findOpportunities(
+            shaderJob,
+            context);
+      }
+
+      @Override
+      public String getName() {
+        return "globalVariableDeclToExpr";
+      }
+    };
+  }
+
 }
