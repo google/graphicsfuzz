@@ -34,7 +34,6 @@ import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.LoopStmt;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
-import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
@@ -80,7 +79,8 @@ public class StmtReductionOpportunities
     final Stmt child = block.getStmt(index);
     if (isEmptyBlockStmt(child) || isDeadCodeInjection(child)
           || allowedToReduceStmt(block, index)) {
-      addOpportunity(new StmtReductionOpportunity(block, child, getVistitationDepth()));
+      addOpportunity(new StmtReductionOpportunity(enclosingFunction, block, child,
+          getVistitationDepth()));
     }
   }
 
@@ -127,35 +127,17 @@ public class StmtReductionOpportunities
       return true;
     }
 
-    // We cannot remove non-void return statements without special care, unless we are inside an
-    // injected block
-    if (containsNonVoidReturn(stmt)) {
-      if (!isReturnFollowedBySubsequentReturn(block, childIndex)) {
-        return false;
-      }
+    // Unless we are in an injected dead code block, we need to be careful about removing
+    // non-void return statements, so as to avoid making the shader invalid.
+    if (StmtReductionOpportunity
+        .removalCouldLeadToLackOfReturnFromNonVoidFunction(enclosingFunction, block, stmt)) {
+      return false;
     }
 
     return context.reduceEverywhere()
           || (isLiveCodeInjection(stmt) && !referencesLoopLimiter(stmt))
           || enclosingFunctionIsDead();
 
-  }
-
-  /**
-   * Returns true if and only if the statement at childIndex is a return statement, and the block
-   * has another return statement at a later index.
-   */
-  private boolean isReturnFollowedBySubsequentReturn(BlockStmt block, int childIndex) {
-    if (!(block.getStmt(childIndex) instanceof ReturnStmt)) {
-      return false;
-    }
-    for (int subsequentChildIndex = childIndex + 1; subsequentChildIndex < block.getNumStmts();
-         subsequentChildIndex++) {
-      if (block.getStmt(subsequentChildIndex) instanceof ReturnStmt) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private boolean isLoopLimiterBlock(Stmt stmt) {
@@ -322,17 +304,6 @@ public class StmtReductionOpportunities
       return false;
     }
     return isLiveInjectedVariableName(((VariableIdentifierExpr) lhs).getName());
-  }
-
-  private boolean containsNonVoidReturn(Stmt stmt) {
-    return new CheckPredicateVisitor() {
-      @Override
-      public void visitReturnStmt(ReturnStmt returnStmt) {
-        if (returnStmt.hasExpr()) {
-          predicateHolds();
-        }
-      }
-    }.test(stmt);
   }
 
   private boolean isRedundantCopy(Stmt stmt) {
