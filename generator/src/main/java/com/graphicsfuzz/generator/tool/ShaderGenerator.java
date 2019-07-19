@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019 The GraphicsFuzz Project Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
@@ -46,11 +62,11 @@ public class ShaderGenerator {
 
     final PipelineInfo pipelineInfo = new PipelineInfo();
     final IRandom generator = new RandomWrapper(0);
-    FactManager factManager = new FactManager(null);
+    final FactManager factManager = new FactManager(null);
 
     ExprStmt colorAssignment = new ExprStmt(null);
 
-    Expr rValue = FactManager.generateExpr(tu,
+    Expr rvalue = FactManager.generateExpr(tu,
         pipelineInfo,
         factManager,
         tu.getMainFunction(),
@@ -58,7 +74,7 @@ public class ShaderGenerator {
         new PrimitiveValue(BasicType.FLOAT, Arrays.asList(Optional.of(0.5))),
         generator);
 
-    Expr gValue = FactManager.generateExpr(tu,
+    Expr gvalue = FactManager.generateExpr(tu,
         pipelineInfo,
         factManager,
         tu.getMainFunction(),
@@ -66,25 +82,17 @@ public class ShaderGenerator {
         new PrimitiveValue(BasicType.FLOAT, Arrays.asList(Optional.of(0.2))),
         generator);
 
-    colorAssignment.setExpr(new BinaryExpr(new VariableIdentifierExpr("_GLF_color")
-        , new TypeConstructorExpr("vec4",
-        rValue,
-        gValue,
-        new FloatConstantExpr("0.0"),
-        new FloatConstantExpr("1.0")),
+    colorAssignment.setExpr(new BinaryExpr(new VariableIdentifierExpr("_GLF_color"),
+        new TypeConstructorExpr("vec4",
+            rvalue ,
+            gvalue,
+            new FloatConstantExpr("0.0"),
+            new FloatConstantExpr("1.0")),
         BinOp.ASSIGN));
 
     tu.getMainFunction().getBody().addStmt(colorAssignment);
     System.out.println(PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
-
-
-  private static Expr generateExpr(TranslationUnit tu, PipelineInfo pipelineInfo,
-                                   FunctionDefinition mainFunction, Float rValue) {
-
-    return new FloatConstantExpr("0.0");
-  }
-
 
   public static void main(String[] args) {
     try {
