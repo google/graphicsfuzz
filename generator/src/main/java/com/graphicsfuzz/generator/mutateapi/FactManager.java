@@ -49,7 +49,7 @@ public class FactManager {
                                   IRandom generator) {
 
     String primitiveValueString = value.getData().get(0).get().toString();
-    
+
     switch (generator.nextInt(2)) {
       // variableFact
       case 0:
