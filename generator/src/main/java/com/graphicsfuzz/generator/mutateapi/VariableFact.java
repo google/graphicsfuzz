@@ -31,4 +31,8 @@ public class VariableFact {
     this.variableDeclInfo = variableDeclInfo;
     this.value = value;
   }
+
+  public Value getValue() {
+    return value;
+  }
 }

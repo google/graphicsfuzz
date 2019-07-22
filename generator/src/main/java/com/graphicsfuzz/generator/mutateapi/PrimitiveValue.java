@@ -22,8 +22,8 @@ import java.util.Optional;
 
 public class PrimitiveValue implements Value {
 
-  BasicType basicType;
-  List<Optional<Number>> data;
+  private final BasicType basicType;
+  private final List<Optional<Number>> data;
 
   public PrimitiveValue(BasicType basicType, List<Optional<Number>> data) {
     this.basicType = basicType;

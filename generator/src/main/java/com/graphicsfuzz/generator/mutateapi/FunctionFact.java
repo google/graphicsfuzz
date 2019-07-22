@@ -21,14 +21,19 @@ import java.util.List;
 import java.util.Optional;
 
 public class FunctionFact {
-  FunctionPrototype function;
-  List<Optional<Value>> arguments;
-  Value result;
+  final private FunctionPrototype function;
+  final private List<Value> arguments;
+  final private Value value;
 
 
-  public FunctionFact(FunctionPrototype function, List<Optional<Value>> arguments, Value result) {
+  public FunctionFact(FunctionPrototype function, List<Value> arguments, Value value) {
     this.function = function;
     this.arguments = arguments;
-    this.result = result;
+    this.value = value;
   }
+
+  public Value getValue() {
+    return value;
+  }
+
 }

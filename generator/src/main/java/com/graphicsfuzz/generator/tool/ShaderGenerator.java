@@ -39,6 +39,7 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.generator.mutateapi.ExpressionGenerator;
 import com.graphicsfuzz.generator.mutateapi.FactManager;
 import com.graphicsfuzz.generator.mutateapi.PrimitiveValue;
 import java.io.IOException;
@@ -65,29 +66,45 @@ public class ShaderGenerator {
     final FactManager factManager = new FactManager(null);
 
     ExprStmt colorAssignment = new ExprStmt(null);
+    ExpressionGenerator expressionGenerator = new ExpressionGenerator(tu, pipelineInfo);
 
-    Expr rvalue = FactManager.generateExpr(tu,
-        pipelineInfo,
+
+    Expr rvalue = expressionGenerator.generateExpr(
         factManager,
         tu.getMainFunction(),
         colorAssignment,
-        new PrimitiveValue(BasicType.FLOAT, Arrays.asList(Optional.of(0.5))),
+        new PrimitiveValue(BasicType.FLOAT, Arrays.asList(Optional.of(0.46))),
         generator);
 
-    Expr gvalue = FactManager.generateExpr(tu,
-        pipelineInfo,
+    Expr gvalue = expressionGenerator.generateExpr(
         factManager,
         tu.getMainFunction(),
         colorAssignment,
-        new PrimitiveValue(BasicType.FLOAT, Arrays.asList(Optional.of(0.2))),
+        new PrimitiveValue(BasicType.FLOAT, Arrays.asList(Optional.of(0.82))),
+        generator);
+
+
+    Expr bvalue = expressionGenerator.generateExpr(
+        factManager,
+        tu.getMainFunction(),
+        colorAssignment,
+        new PrimitiveValue(BasicType.FLOAT, Arrays.asList(Optional.of(0.15))),
+        generator);
+
+    Expr avalue = expressionGenerator.generateExpr(
+        factManager,
+        tu.getMainFunction(),
+        colorAssignment,
+        new PrimitiveValue(BasicType.FLOAT, Arrays.asList(Optional.of(1.0))),
         generator);
 
     colorAssignment.setExpr(new BinaryExpr(new VariableIdentifierExpr("_GLF_color"),
         new TypeConstructorExpr("vec4",
-            rvalue ,
+            rvalue,
             gvalue,
-            new FloatConstantExpr("0.0"),
-            new FloatConstantExpr("1.0")),
+            bvalue,
+            avalue
+        ),
         BinOp.ASSIGN));
 
     tu.getMainFunction().getBody().addStmt(colorAssignment);
