@@ -48,7 +48,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class ExpressionGenerator {
 
@@ -247,16 +248,16 @@ public class ExpressionGenerator {
   // Pair object is used here since we are going to store the newly generated Expression
   // as well as its associated Value.
   public Optional<Pair<Expr, Value>> generateFuzzedExpr(BasicType type, IRandom generator) {
+
+
     if (type == BasicType.INT) {
       final String randomInt = String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN);
-      return Optional.of(new Pair<>(
-          new IntConstantExpr(randomInt),
-          new PrimitiveValue(type, Arrays.asList(numberFromName(randomInt)))
-      ));
+      return Optional.of(new ImmutablePair<>(new IntConstantExpr(randomInt),
+          new PrimitiveValue(type, Arrays.asList(numberFromName(randomInt)))));
     }
     if (type == BasicType.FLOAT) {
       final String randomFloat = randomFloatString(generator);
-      return Optional.of(new Pair<>(
+      return Optional.of(new ImmutablePair<>(
           new FloatConstantExpr(randomFloat),
           new PrimitiveValue(type, Arrays.asList(numberFromName(randomFloat)))
       ));
@@ -277,7 +278,7 @@ public class ExpressionGenerator {
               Optional.of(item.getValue().getData().get(0).get())
           ).collect(Collectors.toList());
 
-      return Optional.of(new Pair<>(
+      return Optional.of(new ImmutablePair<>(
               new TypeConstructorExpr(type.toString(), args),
               new PrimitiveValue(type, data)
           )
