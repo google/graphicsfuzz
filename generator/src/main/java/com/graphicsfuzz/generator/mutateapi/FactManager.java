@@ -42,6 +42,7 @@ public class FactManager {
     return new FactManager(this);
   }
 
+  // TODO: Retrieve and return the fact if found
   public Optional<Expr> getFact(Value value) {
     new RuntimeException("Not yet implemented");
     for (VariableDeclInfo key : variableFacts.keySet()) {

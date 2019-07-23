@@ -98,24 +98,28 @@ public class ExpressionGenerator {
     while (true) {
       switch (generator.nextInt(2)) {
         case 0:
+          // Generate variable fact
           return generateVariableFact(factManager,
               functionDefinition,
               stmt,
               value,
               generator);
         case 1:
+          // Generate function fact
           return generateFunction(factManager,
               functionDefinition,
               stmt,
               value,
               generator);
         case 2:
+          // Retrieving and return the existing fact from the Fact manager
           final Optional<Expr> expr = factManager.getFact(value);
           if (expr.isPresent()) {
             return expr.get();
           } else {
             continue;
           }
+          // Generate ConstantExpr (Float, Int)
         case 3:
           return generateLiteralNumber(value);
         default:
@@ -124,12 +128,15 @@ public class ExpressionGenerator {
     }
   }
 
+  // TODO: Handle the cases of vectors (vec4, vec3, vec2).
   private String genVarName(Value value) {
     return Constants.GLF_PRIMITIVE_VAR + "_"
         + value.getType().toString() + "_"
         + value.getData().get(0).get().toString().replace(".", "_");
   }
 
+  // TODO: Requires further implementation in the case of the negative number, i.e., -0.75 could be
+  // converted to _GLF_FLOAT_NEGATIVE_0_75.
   private String nameFromNumber(Number number) {
     return number.toString();
   }
@@ -139,9 +146,9 @@ public class ExpressionGenerator {
         + value.getType().toString().toUpperCase() + "_"
         + nameFromNumber(value.getData().get(0).get()).replace(".", "_")
         + "_ID_" + idGenerator.freshId();
-
   }
 
+  // TODO: Handles the case of boolean value.
   private Optional<Number> numberFromName(String string) {
     try {
       return Optional.of(NumberFormat.getInstance().parse(string));
@@ -150,24 +157,22 @@ public class ExpressionGenerator {
     }
   }
 
-
   private Expr generateVariableFact(FactManager factManager,
                                     FunctionDefinition functionDefinition,
                                     Stmt stmt,
                                     Value value,
                                     IRandom generator) {
-    String variableName = genVarName(value);
-    VariableDeclInfo declInfo =
+    final String variableName = genVarName(value);
+    final VariableDeclInfo declInfo =
         new VariableDeclInfo(variableName, null,
             new Initializer(new FloatConstantExpr(value.getData().get(0).get().toString())));
-    VariablesDeclaration variablesDecl = new VariablesDeclaration(value.getType(), declInfo);
+    final VariablesDeclaration variablesDecl = new VariablesDeclaration(value.getType(), declInfo);
     functionDefinition.getBody().addStmt(new DeclarationStmt(variablesDecl));
 
     // Store variable fact in FactManager
     factManager.addVariableFact(declInfo, new VariableFact(variablesDecl, declInfo, value));
     return new VariableIdentifierExpr(variableName);
   }
-
 
   private Expr generateFunction(FactManager factManager,
                                 FunctionDefinition functionDefinition,
@@ -177,6 +182,7 @@ public class ExpressionGenerator {
 
     final String functionName = getFunctionName(targetValue);
     final FactManager childFactManager = factManager.clone();
+    // Randomly generate a number of the function parameters
     final List<ParameterDecl> params = generateParams(generator, functionDefinition,
         childFactManager);
     final FunctionPrototype prototype = new FunctionPrototype(functionName,
@@ -205,24 +211,29 @@ public class ExpressionGenerator {
           BasicType.allBasicTypes().get(generator.nextInt(BasicType.allScalarTypes().size()));
       final String name = Constants.GLF_PARAM + "_" + idGenerator.freshId();
       final ParameterDecl parameterDecl = new ParameterDecl(name, type, null);
+      // Generate random expression to be the parameter of the function, this is inspired by
+      // the LiteralFuzzer.fuzz() method.
       final Optional<Pair<Expr, Value>> fuzzedExpr = generateFuzzedExpr(type, generator);
 
       final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(name, null,
           new Initializer(fuzzedExpr.get().getKey()));
       final VariablesDeclaration variablesDeclaration = new VariablesDeclaration(type,
           variableDeclInfo);
-
+      // Store the newly created expressions to the new FactManager.
       factManager.addVariableFact(variableDeclInfo, new VariableFact(
           variablesDeclaration,
           variableDeclInfo,
           fuzzedExpr.get().getValue()
       ));
+      // Add the declaration statements to the given function definition.
       fd.getBody().addStmt(new DeclarationStmt(variablesDeclaration));
       params.add(parameterDecl);
     }
     return params;
   }
 
+  // Need to be discussed further with the ideas to generate random primitive value.
+  // Currently inspired by the method LiteralFuzzer.randomFloatString()
   private String randomFloatString(IRandom generator) {
     final int maxDigitsEitherSide = 2;
     StringBuilder sb = new StringBuilder();
@@ -245,11 +256,9 @@ public class ExpressionGenerator {
     return sb.toString();
   }
 
-  // Pair object is used here since we are going to store the newly generated Expression
-  // as well as its associated Value.
+  // Pair object is used here because we are going to store the newly generated Expression
+  // as well as its associated Value which will be added as the new fact for the FactManager.
   public Optional<Pair<Expr, Value>> generateFuzzedExpr(BasicType type, IRandom generator) {
-
-
     if (type == BasicType.INT) {
       final String randomInt = String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN);
       return Optional.of(new ImmutablePair<>(new IntConstantExpr(randomInt),
