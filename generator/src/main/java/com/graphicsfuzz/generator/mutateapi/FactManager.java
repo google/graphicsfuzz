@@ -46,13 +46,9 @@ public class FactManager {
     new RuntimeException("Not yet implemented");
     for (VariableDeclInfo key : variableFacts.keySet()) {
       VariableFact variableFact = variableFacts.get(key);
-      if (variableFact.getValue().getType().equals(value.getType())) {
-      }
     }
     for (FunctionPrototype key : functionFacts.keySet()) {
       FunctionFact functionFact = functionFacts.get(key);
-      if (functionFact.getValue().getType().equals(value.getType())) {
-      }
     }
     // Looks up for the facts in the parent FactManager.
     if (prototype != null) {

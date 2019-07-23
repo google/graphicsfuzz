@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Optional;
 
 public class FunctionFact {
-  final private FunctionPrototype function;
-  final private List<Value> arguments;
-  final private Value value;
+  private final FunctionPrototype function;
+  private final List<Value> arguments;
+  private final Value value;
 
 
   public FunctionFact(FunctionPrototype function, List<Value> arguments, Value value) {
