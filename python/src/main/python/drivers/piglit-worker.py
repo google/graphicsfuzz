@@ -20,11 +20,9 @@ import os
 import sys
 import subprocess
 import shutil
-from subprocess import CalledProcessError
 import time
 
 import gfuzz_common
-import runspv
 import graphicsfuzz_piglit_converter
 
 HERE = os.path.abspath(__file__)
@@ -60,10 +58,6 @@ WORKER_INFO_FILE = 'worker_info.json'
 
 NO_DRAW_ARG = '--nodraw'
 
-RETURNCODE_STR = 'Returncode: '
-STDOUT_STR = 'STDOUT: '
-STDERR_STR = 'STDERR: '
-
 STATUS_SUCCESS = 'SUCCESS'
 STATUS_CRASH = 'CRASH'
 STATUS_TIMEOUT = 'TIMEOUT'
@@ -74,12 +68,16 @@ STATUS_NONDET = 'NONDET'
 TIMEOUT = 30
 
 
-def glxinfo_cmd():
+def glxinfo_cmd() -> list:
     return [gfuzz_common.tool_on_path('glxinfo'), '-B']
 
 
-def shader_runner_cmd():
+def shader_runner_cmd() -> list:
     return [gfuzz_common.tool_on_path('shader_runner_gles3')]
+
+
+def catchsegv_cmd() -> list:
+    return [gfuzz_common.tool_on_path('catchsegv')]
 
 
 def thrift_connect(server: str, worker_name: str, worker_info: str) -> (FuzzerService, str):
@@ -102,18 +100,18 @@ def thrift_connect(server: str, worker_name: str, worker_info: str) -> (FuzzerSe
         transport.open()
 
         # Get worker name
-        runspv.log("Call getWorkerName()")
+        gfuzz_common.log("Call getWorkerName()")
         worker_res = service.getWorkerName(worker_info, worker_name)
         assert type(worker_res) is not None
 
         if worker_res.workerName is None:
             # noinspection PyProtectedMember
-            runspv.log('Worker error: ' + tt.WorkerNameError._VALUES_TO_NAMES[worker_res.error])
+            gfuzz_common.log('Worker error: ' + tt.WorkerNameError._VALUES_TO_NAMES[worker_res.error])
             exit(1)
 
         worker = worker_res.workerName
 
-        runspv.log("Got worker: " + worker)
+        gfuzz_common.log("Got worker: " + worker)
         assert (worker == worker_name)
 
         return service, worker
@@ -133,7 +131,7 @@ def dump_glxinfo(filename: str) -> None:
     # into JSON.
     glxinfo_lines = filter(
         lambda glx_line: 'OpenGL' in glx_line,
-        runspv.subprocess_helper(glxinfo_cmd()).stdout.split('\n'))
+        gfuzz_common.subprocess_helper(glxinfo_cmd()).stdout.split('\n'))
     # We form keys out of the OpenGL info descriptors and values out of the hardware dependent
     # strings. For example, "OpenGL version string: 4.6.0 NVIDIA 430.14" would become
     # { "OpenGL version string": "4.6.0 NVIDIA 430.14" }.
@@ -184,15 +182,15 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
 
     with gfuzz_common.open_helper(log_file, 'w') as f:
         try:
-            runspv.log_to_file = f
+            gfuzz_common.set_logfile(f)
             run_image_job(frag_file, json_file, status_file, png_file,
                           output_dir, image_job.skipRender)
         except Exception as ex:
-            runspv.log(str(ex))
-            runspv.log('Removing status file and continuing...')
+            gfuzz_common.log(str(ex))
+            gfuzz_common.log('Removing status file and continuing...')
             gfuzz_common.remove(status_file)
         finally:
-            runspv.log_to_file = None
+            gfuzz_common.unset_logfile()
 
     if os.path.isfile(log_file):
         with gfuzz_common.open_helper(log_file, 'r') as f:
@@ -248,27 +246,22 @@ def run_image_job(frag_file: str, json_file: str, status_file: str,
     shader_test_file = graphicsfuzz_piglit_converter.get_shader_test_from_job(json_file)
 
     try:
-        runspv.log('Creating shader_test file...')
+        gfuzz_common.log('Creating shader_test file...')
         graphicsfuzz_piglit_converter.main_helper(arglist)
     except Exception as ex:
-        runspv.log('Could not create shader_test from the given job.')
+        gfuzz_common.log('Could not create shader_test from the given job.')
         raise ex
 
-    status = STATUS_SUCCESS
+    shader_runner_cmd_list = catchsegv_cmd() + shader_runner_cmd() + \
+        [shader_test_file, SHADER_RUNNER_ARG_AUTO,
+         SHADER_RUNNER_ARG_UNIFORMS, SHADER_RUNNER_ARG_SUBTESTS]
 
-    shader_runner_cmd_list = shader_runner_cmd() + [shader_test_file, SHADER_RUNNER_ARG_AUTO,
-                                                    SHADER_RUNNER_ARG_UNIFORMS,
-                                                    SHADER_RUNNER_ARG_SUBTESTS]
     if not skip_render:
         shader_runner_cmd_list.append(SHADER_RUNNER_ARG_PNG)
-    try:
-        runspv.subprocess_helper(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
-    except subprocess.TimeoutExpired:
-        status = STATUS_TIMEOUT
-    except subprocess.CalledProcessError:
-        status = STATUS_CRASH
 
-    runspv.log('STATUS: ' + status)
+    status = gfuzz_common.run_catchsegv(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
+
+    gfuzz_common.log('STATUS: ' + status)
 
     # Piglit throws the output PNG render into whatever the current working directory is
     # (and there's no way to specify a location to write to) - we need to move it to wherever our
@@ -305,32 +298,33 @@ def main():
 
     gfuzz_common.tool_on_path('shader_runner_gles3')
     gfuzz_common.tool_on_path('glxinfo')
+    gfuzz_common.tool_on_path('catchsegv')
 
-    runspv.log('Worker: ' + args.worker_name)
+    gfuzz_common.log('Worker: ' + args.worker_name)
     server = args.server + '/request'
-    runspv.log('server: ' + server)
+    gfuzz_common.log('server: ' + server)
 
     # Get worker info
     worker_info_json_string = '{}'
 
-    runspv.log('Dumping glxinfo to file for worker info string...')
+    gfuzz_common.log('Dumping glxinfo to file for worker info string...')
     try:
         dump_glxinfo(WORKER_INFO_FILE)
         with gfuzz_common.open_helper(WORKER_INFO_FILE, 'r') as info_file:
             worker_info_json_string = info_file.read()
     except Exception as ex:
-        runspv.log(str(ex))
-        runspv.log('Could not get worker info, continuing without it.')
+        gfuzz_common.log(str(ex))
+        gfuzz_common.log('Could not get worker info, continuing without it.')
 
     service = None
     worker = None
 
     while True:
         if not service:
-            runspv.log('Connecting to server...')
+            gfuzz_common.log('Connecting to server...')
             service, worker = thrift_connect(server, args.worker_name, worker_info_json_string)
             if not service:
-                runspv.log('Failed to connect, retrying...')
+                gfuzz_common.log('Failed to connect, retrying...')
                 time.sleep(1)
                 continue
 
@@ -341,25 +335,25 @@ def main():
         try:
             job = service.getJob(worker)
             if job.noJob is not None:
-                runspv.log("No job")
+                gfuzz_common.log("No job")
             elif job.skipJob is not None:
-                runspv.log("Skip job")
+                gfuzz_common.log("Skip job")
                 service.jobDone(worker, job)
             else:
                 assert job.imageJob
                 if job.imageJob.computeSource:
-                    runspv.log("Got a compute job, but this worker "
-                               "doesn't support compute shaders.")
+                    gfuzz_common.log("Got a compute job, but this worker "
+                                     "doesn't support compute shaders.")
                     job.imageJob.result = tt.ImageJobResult()
                     job.imageJob.result.status = tt.JobStatus.UNEXPECTED_ERROR
                 else:
-                    runspv.log("#### Image job: " + job.imageJob.name)
+                    gfuzz_common.log("#### Image job: " + job.imageJob.name)
                     job.imageJob.result = do_image_job(job.imageJob, work_dir=worker)
-                runspv.log("Sending back, results status: {}".format(job.imageJob.result.status))
+                gfuzz_common.log("Sending back, results status: {}".format(job.imageJob.result.status))
                 service.jobDone(worker, job)
                 continue
         except (TApplicationException, ConnectionError):
-            runspv.log("Connection to server lost. Re-initialising client.")
+            gfuzz_common.log("Connection to server lost. Re-initialising client.")
             service = None
         time.sleep(1)
 
