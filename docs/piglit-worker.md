@@ -11,16 +11,51 @@ the rendered image/crash logs, and sends the results back to the GraphicsFuzz we
 
 To run the worker, you will first need to build the GraphicsFuzz project - see 
 [GraphicsFuzz: developer documentation](https://github.com/google/graphicsfuzz/blob/master/docs/glsl-fuzz-develop.md)
-for more details. Ensure that `graphicfuzz/target/graphicsfuzz/python/drivers`
+for more details. Ensure that `graphicsfuzz/target/graphicsfuzz/python/drivers`
 is on your PATH environment variable - this is the final extraction directory of GraphicsFuzz's
 Python scripts after building.
 
 Additionally, you will need to clone and build Piglit - see [Piglit's README.md](https://gitlab.freedesktop.org/mesa/piglit/blob/master/README.md)
-for build instructions. Once Piglit is built, you **must also** add the build directory, `/piglit/bin`,
-to your PATH environment variable. To check this, you can run `$ shader_runner_gles3` in your terminal.
+for build instructions. Once Piglit is built, you **must also** add the build directory, 
+`/path/to/piglit/bin`, to your PATH environment variable. To check this, you can run
 
-To start the worker, simply use `$ piglit-worker (worker name)`. A server IP/URL can be specified
-with an optional --server argument: `$ piglit-worker --server (IP:PORT) (worker name)`.
+```sh
+$ shader_runner_gles3
+```
+
+in your terminal - if you get 
+```sh
+PIGLIT: {"result": "skip" }
+```
+in the output, your PATH is set up properly.
+
+To start the worker, simply use
+ ```sh
+$ piglit-worker (worker name)
+ ```
+  
+A server IP/URL can be specified with an optional --server argument:
+ ```sh
+$ piglit-worker --server (IP:PORT) (worker name)
+ ```
+
+## piglit-worker shader_runner arguments
+
+These are the arguments that piglit-worker runs `shader_runner_gles3` with:
+
+`-png`: Dumps the rendered image of the shader to the current working directory,
+ named `shader_runner_gles3000.png`.
+
+`-ignore-missing-uniforms`: Piglit prefers to fail quickly in the event of a potentially malformed
+`.shader_test` file, causing a test to fail if it tries to load uniform data into a uniform variable
+that has been optimized away by the compiler (e.g. if the uniform was an unused variable). This
+argument makes `shader_runner_gles3` ignore loading a uniform if it can't be found in the shader, instead of failing.
+
+`-report_subtests`: Forces `shader_runner_gles3` to render out of screen VRAM, preventing issues
+where garbage would be rendered whenever _GLF_color is undefined or a fragment is discarded.
+
+`-auto`: Prevents `shader_runner_gles3` from rendering to a window, to speed up rendering
+ and mass processing.
 
 ## graphicsfuzz-piglit-converter
 
@@ -35,6 +70,15 @@ To convert a GraphicsFuzz shader job to a `.shader_test` file for use with `shad
 into a working `.shader_test` file. 
 
 `graphicsfuzz-piglit-converter` can be used standalone as well - once you have GraphicsFuzz built
-and the Python scripts on your PATH, you can just use `$ graphicsfuzz-piglit-converter
-(GraphicsFuzz shader job JSON file)` and the `.shader_test` file will be output in the same
- directory as the JSON file.
+and the Python scripts on your PATH, you can just use 
+```sh
+$ graphicsfuzz-piglit-converter (GraphicsFuzz shader job JSON file)
+```
+and the `.shader_test` file will be output in the same directory as the JSON file.
+ 
+To run the `.shader_test` file through shader_runner yourself: 
+```sh
+$ shader_runner_gles3 (.shader_test file) -png
+```
+ The output will be dumped to a PNG file named
+`shader_runner_gles3000.png` in the current working directory.
