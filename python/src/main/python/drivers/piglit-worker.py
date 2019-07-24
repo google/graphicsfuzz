@@ -371,8 +371,10 @@ def main():
                 else:
                     gfuzz_common.log("#### Image job: " + job.imageJob.name)
                     job.imageJob.result = do_image_job(job.imageJob, work_dir=worker)
-                gfuzz_common.log("Sending back, results status: {}".format(job.imageJob.result.status))
+                gfuzz_common.log("Sending back, results status: {}"
+                                 .format(job.imageJob.result.status))
                 service.jobDone(worker, job)
+                gfuzz_common.remove(worker)
                 continue
         except (TApplicationException, ConnectionError):
             gfuzz_common.log("Connection to server lost. Re-initialising client.")
