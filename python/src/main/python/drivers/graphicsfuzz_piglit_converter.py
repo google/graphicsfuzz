@@ -23,7 +23,7 @@ import gfuzz_common
 # Note: We define a 'shader job' as the JSON file of a GraphicsFuzz shader.
 # Each shader job has a corresponding shader file that has the same base name
 # as the shader job - for example, a shader job file named 'variant_005.json' will
-# have a corresponding shader file 'variant_005.frag' or 'variant_005.comp' in 
+# have a corresponding shader file 'variant_005.frag' or 'variant_005.comp' in
 # the same directory.
 
 # Piglit test section headers
@@ -56,10 +56,23 @@ UNIFORM_TYPES = {
     'glUniform2i': 'ivec2',
     'glUniform3i': 'ivec3',
     'glUniform4i': 'ivec4',
+    'glUniform1ui': 'uint',
+    'glUniform2ui': 'uvec2',
+    'glUniform3ui': 'uvec3',
+    'glUniform4ui': 'uvec4',
     'glUniform1f': 'float',
     'glUniform2f': 'vec2',
     'glUniform3f': 'vec3',
     'glUniform4f': 'vec4',
+    'glUniformMatrix2fv': 'mat2',
+    'glUniformMatrix3fv': 'mat3',
+    'glUniformMatrix4fv': 'mat4',
+    'glUniformMatrix2x3fv': 'mat2x3',
+    'glUniformMatrix3x2fv': 'mat3x2',
+    'glUniformMatrix2x4fv': 'mat2x4',
+    'glUniformMatrix4x2fv': 'mat4x2',
+    'glUniformMatrix3x4fv': 'mat3x4',
+    'glUniformMatrix4x3fv': 'mat4x3'
 }
 UNIFORM_DEC = 'uniform'
 
@@ -222,7 +235,7 @@ def main_helper(args: List[str]) -> None:
     argparser = argparse.ArgumentParser(description=description)
 
     argparser.add_argument(
-        'shader_job', 
+        'shader_job',
         help='Path to the GraphicsFuzz shader job JSON file.')
 
     argparser.add_argument(
@@ -230,9 +243,9 @@ def main_helper(args: List[str]) -> None:
         action='store_true',
         help='Do not draw the shader output when running the test. Useful for crash testing.'
     )
-    
+
     args = argparser.parse_args(args)
-  
+
     test_string = make_shader_test_string(args.shader_job, args.nodraw)
 
     with gfuzz_common.open_helper(get_shader_test_from_job(args.shader_job), 'w') as shader_test:
