@@ -17,6 +17,7 @@
  */
 
 precision highp float;
+precision highp int;
 
 layout(location = 0) out vec4 _GLF_color;
 
@@ -63,6 +64,7 @@ vec3 mand(float xCoord, float yCoord) {
 }
 
 void main() {
+  int msb16 = 65536;
   uint uselessOutVariable;
   vec3 data[16];
   for (int i = 0; i < findMSB(16); i++) {
@@ -71,7 +73,7 @@ void main() {
     }
   }
   vec3 sum = vec3(0.0);
-  for (int i = bitfieldReverse(0); i < findMSB(65536); i++) {
+  for (int i = bitfieldReverse(0); i < findMSB(msb16); i++) {
     sum += data[i];
   }
   sum /= vec3(16.0);

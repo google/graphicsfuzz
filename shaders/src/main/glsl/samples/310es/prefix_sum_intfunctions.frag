@@ -17,12 +17,23 @@
  */
 
 precision highp float;
+precision highp int;
 
 layout(location = 0) out vec4 _GLF_color;
 
 uniform vec2 resolution;
 
 void main(void) {
+  int msb9 = 512;
+  int msb10 = 1024;
+  int msb14 = 16384;
+  int msb15 = 32768;
+  int msb19 = 524288;
+  int msb20 = 1048576;
+  int msb24 = 16777216;
+  int msb25 = 33554432;
+  int msb29 = 536870912;
+  int msb30 = 1073741824;
   uint uselessOutVariable;
   float A[50];
   int i = bitfieldExtract(0, 0, 0);
@@ -45,20 +56,20 @@ void main(void) {
     }
     i++;
   } while(i < bitfieldInsert(50, 0, 0, 0));
-  if (int(gl_FragCoord.x) < findLSB(1048576)) {
+  if (int(gl_FragCoord.x) < findLSB(msb20)) {
     _GLF_color = vec4(A[bitfieldReverse(0)]/resolution.x, A[findMSB(16)]/resolution.y, 1.0, 1.0);
   } else if (int(gl_FragCoord.x) < bitfieldInsert(40, 0, 0, 0)) {
-    _GLF_color = vec4(A[findLSB(32)]/resolution.x, A[findMSB(512)]/resolution.y, 1.0, 1.0);
+    _GLF_color = vec4(A[findLSB(32)]/resolution.x, A[findMSB(msb9)]/resolution.y, 1.0, 1.0);
   } else if (int(gl_FragCoord.x) < bitfieldInsert(60, 0, 0, 0)) {
-    _GLF_color = vec4(A[findMSB(1024)]/resolution.x, A[findLSB(16384)]/resolution.y, 1.0, 1.0);
+    _GLF_color = vec4(A[findMSB(msb10)]/resolution.x, A[findLSB(msb14)]/resolution.y, 1.0, 1.0);
   } else if (int(gl_FragCoord.x) < bitfieldInsert(80, 0, 0, 0)) {
-    _GLF_color = vec4(A[findLSB(32768)]/resolution.x, A[findMSB(524288)]/resolution.y, 1.0, 1.0);
+    _GLF_color = vec4(A[findLSB(msb15)]/resolution.x, A[findMSB(msb19)]/resolution.y, 1.0, 1.0);
   } else if (int(gl_FragCoord.x) < bitfieldInsert(100, 0, 0, 0)) {
-    _GLF_color = vec4(A[findMSB(1048576)]/resolution.x, A[findLSB(16777216)]/resolution.y, 1.0, 1.0);
+    _GLF_color = vec4(A[findMSB(msb20)]/resolution.x, A[findLSB(msb24)]/resolution.y, 1.0, 1.0);
   } else if (int(gl_FragCoord.x) < bitfieldInsert(120, 0, 0, 0)) {
-    _GLF_color = vec4(A[findLSB(33554432)]/resolution.x, A[findMSB(536870912)]/resolution.y, 1.0, 1.0);
+    _GLF_color = vec4(A[findLSB(msb25)]/resolution.x, A[findMSB(msb29)]/resolution.y, 1.0, 1.0);
   } else if (int(gl_FragCoord.x) < bitfieldInsert(140, 0, 0, 0)) {
-    _GLF_color = vec4(A[findMSB(1073741824)]/resolution.x, A[bitfieldInsert(34, 0, 0, 0)]/resolution.y, 1.0, 1.0);
+    _GLF_color = vec4(A[findMSB(msb30)]/resolution.x, A[bitfieldInsert(34, 0, 0, 0)]/resolution.y, 1.0, 1.0);
   } else if (int(gl_FragCoord.x) < bitfieldInsert(160, 0, 0, 0)) {
     _GLF_color = vec4(A[bitfieldInsert(35, 0, 0, 0)]/resolution.x, A[bitfieldInsert(39, 0, 0, 0)]/resolution.y, 1.0, 1.0);
   } else if (int(gl_FragCoord.x) < bitfieldInsert(180, 0, 0, 0)) {

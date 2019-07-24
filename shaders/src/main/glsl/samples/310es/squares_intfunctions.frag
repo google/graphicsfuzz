@@ -30,8 +30,9 @@ float b_b;
 
 void doConvert()
 {
+    int msb8 = 256;
     vec3 temp;
-    temp = b_b * (float(bitCount(int(resolution.x))) - s_g) + (b_b - b_b * (float(bitCount(int(resolution.y))) - s_g)) * clamp(abs(abs(6.0 * (h_r - vec3(bitfieldReverse(0), bitCount(int(resolution.x)), 2) / 3.0)) - 3.0) - float(bitCount(int(resolution.y))), float(bitfieldExtract(int(resolution.x), 0, 0)), float(bitCount(int(resolution.x))));
+    temp = b_b * (float(bitCount(msb8)) - s_g) + (b_b - b_b * (float(bitCount(msb8)) - s_g)) * clamp(abs(abs(6.0 * (h_r - vec3(bitfieldReverse(0), bitCount(msb8), 2) / 3.0)) - 3.0) - float(bitCount(msb8)), float(bitfieldExtract(int(resolution.x), 0, 0)), float(bitCount(int(resolution.x))));
     h_r = temp.x;
     s_g = temp.y;
     b_b = temp.z;
@@ -39,14 +40,15 @@ void doConvert()
 
 vec3 computeColor(float c, vec2 position)
 {
+    int msb8 = 256;
     h_r = fract(c);
-    s_g = float(bitCount(int(resolution.y)));
+    s_g = float(bitCount(msb8));
     b_b = (0.5 + (sin(time) * 0.5 + 0.5));
     doConvert();
-    s_g *= float(bitCount(int(resolution.x))) / position.y;
-    h_r *= float(bitCount(int(resolution.y))) / position.x;
+    s_g *= float(bitCount(msb8)) / position.y;
+    h_r *= float(bitCount(msb8)) / position.x;
     if (abs(position.y - position.x) < 0.5) {
-      b_b = clamp(float(bitfieldExtract(int(resolution.x), 0, 0)), float(bitCount(int(resolution.x))), b_b * float(bitCount(int(resolution.x))) * 3.0);
+      b_b = clamp(float(bitfieldExtract(int(resolution.x), 0, 0)), float(bitCount(msb8)), b_b * float(bitCount(msb8)) * 3.0);
     }
     return vec3(h_r, s_g, b_b);
 }
@@ -57,6 +59,7 @@ vec3 defaultColor() {
 
 vec3 drawShape(vec2 pos, vec2 square, vec3 setting)
 {
+    int msb8 = 256;
     bool c1 = pos.x - setting.x < square.x;
     if (!c1) {
       return defaultColor();
@@ -73,28 +76,29 @@ vec3 drawShape(vec2 pos, vec2 square, vec3 setting)
     if (!c4) {
       return defaultColor();
     }
-    
+
     bool c5 = pos.x - (setting.x - setting.y) < square.x;
     if (!c5) {
-      return computeColor(setting.z / (5.0 * float(findMSB(int(resolution.x)))), pos);
+      return computeColor(setting.z / (5.0 * float(findMSB(msb8))), pos);
     }
     bool c6 = pos.x + (setting.x - setting.y) > square.x;
     if (!c6) {
-      return computeColor(setting.z / (5.0 * float(findMSB(int(resolution.x)))), pos);
+      return computeColor(setting.z / (5.0 * float(findMSB(msb8))), pos);
     }
     bool c7 = pos.y - (setting.x - setting.y) < square.y;
     if (!c7) {
-      return computeColor(setting.z / (5.0 * float(findMSB(int(resolution.x)))), pos);
+      return computeColor(setting.z / (5.0 * float(findMSB(msb8))), pos);
     }
     bool c8 = pos.y + (setting.x - setting.y) > square.y;
     if (!c8) {
-      return computeColor(setting.z / (5.0 * float(findMSB(int(resolution.x)))), pos);
+      return computeColor(setting.z / (5.0 * float(findMSB(msb8))), pos);
     }
     return defaultColor();
 }
 
 vec3 computePoint(mat2 rotationMatrix)
 {
+    int msb8 = 256;
     vec2 aspect;
     aspect = resolution.xy / min(resolution.x, resolution.y);
     vec2 position;
@@ -107,7 +111,7 @@ vec3 computePoint(mat2 rotationMatrix)
     for(int i = bitfieldInsert(35, 0, 0, bitfieldExtract(int(resolution.x), 0, 0)); i >= bitfieldReverse(bitfieldExtract(int(resolution.x), 0, 0)); i --)
         {
             vec3 d;
-            d = drawShape(position, center + vec2(sin(float(i) / (float(bitCount(int(resolution.x))) * 10.0) + time) / 4.0 * float(bitCount(int(resolution.x))), float(bitfieldExtract(int(resolution.x), 0, 0))), vec3(0.01 + sin(float(i) / 100.0 * float(bitCount(int(resolution.x)))), 0.01, float(i)));
+            d = drawShape(position, center + vec2(sin(float(i) / (float(bitCount(msb8)) * 10.0) + time) / 4.0 * float(bitCount(msb8)), float(bitfieldExtract(int(resolution.x), 0, 0))), vec3(0.01 + sin(float(i) / 100.0 * float(bitCount(msb8))), 0.01, float(i)));
             if(length(d) <= float(bitfieldExtract(int(resolution.x), 0, 0))) {
               continue;
             }
@@ -117,6 +121,7 @@ vec3 computePoint(mat2 rotationMatrix)
 }
 
 void main() {
+    int msb8 = 256;
     float angle;
     angle = sin(time) * 0.1;
     mat2 rotationMatrix;
@@ -134,6 +139,6 @@ void main() {
     vec3 mixed;
     mixed = mix(point1, point2, vec3(0.3));
     mixed = mix(mixed, point3, vec3(0.3));
-    _GLF_color = vec4(mixed, float(bitCount(int(resolution.x))));
+    _GLF_color = vec4(mixed, float(bitCount(msb8)));
 }
 
