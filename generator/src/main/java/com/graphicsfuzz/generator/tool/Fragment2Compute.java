@@ -45,7 +45,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.OpenGlConstants;
@@ -64,7 +64,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -180,7 +179,7 @@ public class Fragment2Compute {
    * Replace all references to gl_FragCoord with gl_GlobalInvocationID.
    */
   private static void replaceFragCoordWithIdLookup(TranslationUnit computeTu) {
-    new ScopeTreeBuilder() {
+    new ScopeTrackingVisitor() {
 
       private IParentMap parentMap = IParentMap.createParentMap(computeTu);
 
@@ -189,7 +188,7 @@ public class Fragment2Compute {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
         if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_COORD)) {
           // It has the right name.
-          if (currentScope.lookupScopeEntry(OpenGlConstants.GL_FRAG_COORD) == null) {
+          if (getCurrentScope().lookupScopeEntry(OpenGlConstants.GL_FRAG_COORD) == null) {
             // It has no scope; i.e., it is built-in - so it is the real gl_FragCoord.
             // Replace it with something made from gl_GlobalInvocationID.
             parentMap.getParent(variableIdentifierExpr).replaceChild(variableIdentifierExpr,

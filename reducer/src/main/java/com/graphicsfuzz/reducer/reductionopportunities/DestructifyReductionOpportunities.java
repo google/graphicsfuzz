@@ -19,13 +19,13 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-public class DestructifyReductionOpportunities extends ScopeTreeBuilder {
+public class DestructifyReductionOpportunities extends ScopeTrackingVisitor {
 
   private final TranslationUnit tu;
   private final List<DestructifyReductionOpportunity> opportunities;

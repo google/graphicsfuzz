@@ -21,14 +21,14 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-public class InlineStructifiedFieldReductionOpportunities extends ScopeTreeBuilder {
+public class InlineStructifiedFieldReductionOpportunities extends ScopeTrackingVisitor {
 
   private final List<InlineStructifiedFieldReductionOpportunity> opportunities;
   private final TranslationUnit tu;
@@ -71,7 +71,7 @@ public class InlineStructifiedFieldReductionOpportunities extends ScopeTreeBuild
   public void findInliningOpportunities(StructNameType structType) {
     assert structType.getName().startsWith(Constants.STRUCTIFICATION_STRUCT_PREFIX);
     final StructDefinitionType structDefinitionType =
-        currentScope.lookupStructName(structType.getName());
+        getCurrentScope().lookupStructName(structType.getName());
     for (String f : structDefinitionType.getFieldNames()) {
       if (!f.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
         continue;
@@ -81,7 +81,8 @@ public class InlineStructifiedFieldReductionOpportunities extends ScopeTreeBuild
         final StructNameType innerStructType =
             (StructNameType) structDefinitionType.getFieldType(f).getWithoutQualifiers();
         opportunities.add(new InlineStructifiedFieldReductionOpportunity(
-            structDefinitionType, currentScope.lookupStructName(innerStructType.getName()), f, tu,
+            structDefinitionType, getCurrentScope().lookupStructName(innerStructType.getName()), f,
+            tu,
             getVistitationDepth()));
         findInliningOpportunities(innerStructType);
       }

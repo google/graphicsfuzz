@@ -125,7 +125,8 @@ public class RemoveUnusedParameterReductionOpportunities
   @Override
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    final ScopeEntry scopeEntry = currentScope.lookupScopeEntry(variableIdentifierExpr.getName());
+    final ScopeEntry scopeEntry = getCurrentScope().lookupScopeEntry(variableIdentifierExpr
+        .getName());
     if (scopeEntry != null && scopeEntry.hasParameterDecl()) {
       unusedParametersForCurrentFunction.remove(scopeEntry.getParameterDecl());
     }

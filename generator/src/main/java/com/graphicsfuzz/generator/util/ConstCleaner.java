@@ -28,7 +28,7 @@ import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +37,7 @@ import java.util.Optional;
  * Attempts to minimally remove const qualifiers and move global declaration initializers into
  * main, to make a shader valid.
  */
-class ConstCleaner extends ScopeTreeBuilder {
+class ConstCleaner extends ScopeTrackingVisitor {
 
   private boolean atGlobalScope;
   private Optional<VariablesDeclaration> currentVariablesDeclaration;
@@ -91,7 +91,7 @@ class ConstCleaner extends ScopeTreeBuilder {
   }
 
   private boolean nonConst(VariableIdentifierExpr variableIdentifierExpr) {
-    final ScopeEntry se = currentScope.lookupScopeEntry(variableIdentifierExpr.getName());
+    final ScopeEntry se = getCurrentScope().lookupScopeEntry(variableIdentifierExpr.getName());
     return se != null && se.hasVariablesDeclaration() && !se.getVariablesDeclaration().getBaseType()
         .hasQualifier(TypeQualifier.CONST);
   }

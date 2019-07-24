@@ -34,15 +34,13 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
-import com.graphicsfuzz.generator.mutateapi.Mutation;
-import com.graphicsfuzz.generator.mutateapi.MutationFinder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public abstract class MutationFinderBase<MutationT extends Mutation>
-      extends ScopeTreeBuilder implements MutationFinder<MutationT> {
+      extends ScopeTrackingVisitor implements MutationFinder<MutationT> {
 
   private final TranslationUnit tu;
   private final List<MutationT> mutations;

@@ -25,7 +25,7 @@ import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,7 +34,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class InjectionPoints extends ScopeTreeBuilder {
+public class InjectionPoints extends ScopeTrackingVisitor {
 
   private final List<IInjectionPoint> injectionPoints;
   private FunctionDefinition currentFunction;
@@ -64,7 +64,8 @@ public class InjectionPoints extends ScopeTreeBuilder {
     enterBlockStmt(stmt);
     // This setup ensures that variables declared inside the block are in scope by the time we
     // consider each statement as an injection point.
-    // It is a bit ugly because it has to mimic the "enter ... leave" structure of ScopeTreeBuilder
+    // It is a bit ugly because it has to mimic the "enter ... leave" structure of
+    // ScopeTrackingVisitor
     for (int i = 0; i < stmt.getNumStmts(); i++) {
       Stmt innerStmt = stmt.getStmt(i);
       if (i == 0 && innerStmt instanceof CaseLabel) {
@@ -72,11 +73,11 @@ public class InjectionPoints extends ScopeTreeBuilder {
         continue;
       }
       maybeAddInjectionPoint(new BlockInjectionPoint(stmt, innerStmt, currentFunction, inLoop(),
-            currentScope));
+          getCurrentScope()));
       visit(innerStmt);
     }
     maybeAddInjectionPoint(new BlockInjectionPoint(stmt, null, currentFunction, inLoop(),
-          currentScope));
+        getCurrentScope()));
     leaveBlockStmt(stmt);
   }
 
@@ -88,7 +89,7 @@ public class InjectionPoints extends ScopeTreeBuilder {
   public void visitDoStmt(DoStmt doStmt) {
     if (!(doStmt.getBody() instanceof BlockStmt)) {
       maybeAddInjectionPoint(new LoopInjectionPoint(doStmt, currentFunction,
-            currentScope));
+          getCurrentScope()));
     }
     loopNestingDepth++;
     super.visitDoStmt(doStmt);
@@ -99,7 +100,7 @@ public class InjectionPoints extends ScopeTreeBuilder {
   public void visitForStmt(ForStmt forStmt) {
     if (!(forStmt.getBody() instanceof BlockStmt)) {
       maybeAddInjectionPoint(new LoopInjectionPoint(forStmt, currentFunction,
-            currentScope));
+          getCurrentScope()));
     }
     loopNestingDepth++;
     super.visitForStmt(forStmt);
@@ -110,12 +111,12 @@ public class InjectionPoints extends ScopeTreeBuilder {
   public void visitIfStmt(IfStmt ifStmt) {
     if (!(ifStmt.getThenStmt() instanceof BlockStmt)) {
       maybeAddInjectionPoint(new IfInjectionPoint(ifStmt, true, currentFunction, inLoop(),
-            currentScope));
+          getCurrentScope()));
     }
     if (ifStmt.hasElseStmt()) {
       if (!(ifStmt.getElseStmt() instanceof BlockStmt)) {
         maybeAddInjectionPoint(new IfInjectionPoint(ifStmt, false, currentFunction, inLoop(),
-              currentScope));
+            getCurrentScope()));
       }
     }
     super.visitIfStmt(ifStmt);
@@ -125,7 +126,7 @@ public class InjectionPoints extends ScopeTreeBuilder {
   public void visitWhileStmt(WhileStmt whileStmt) {
     if (!(whileStmt.getBody() instanceof BlockStmt)) {
       maybeAddInjectionPoint(new LoopInjectionPoint(whileStmt, currentFunction,
-            currentScope));
+          getCurrentScope()));
     }
     loopNestingDepth++;
     super.visitWhileStmt(whileStmt);

@@ -88,7 +88,7 @@ public class InlineInitializerReductionOpportunities
   @Override
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    final ScopeEntry se = currentScope.lookupScopeEntry(variableIdentifierExpr.getName());
+    final ScopeEntry se = getCurrentScope().lookupScopeEntry(variableIdentifierExpr.getName());
     if (se == null || !se.hasVariableDeclInfo()) {
       return;
     }
@@ -103,7 +103,7 @@ public class InlineInitializerReductionOpportunities
     if (new CheckPredicateVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
-        if (currentScope.isShadowed(variableIdentifierExpr.getName())) {
+        if (getCurrentScope().isShadowed(variableIdentifierExpr.getName())) {
           predicateHolds();
         }
       }

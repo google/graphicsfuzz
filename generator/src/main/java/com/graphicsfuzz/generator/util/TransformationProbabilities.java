@@ -61,7 +61,7 @@ public class TransformationProbabilities {
     this.probInjectDeadBarrierAtStmt = probInjectDeadBarrierAtStmt;
   }
 
-  public static final TransformationProbabilities DEFAULT_PROBABILITIES =
+  public static TransformationProbabilities DEFAULT_PROBABILITIES =
       new TransformationProbabilities(
           80,
           20,
@@ -79,7 +79,7 @@ public class TransformationProbabilities {
           20
           );
 
-  public static final TransformationProbabilities SMALL_PROBABILITIES =
+  public static TransformationProbabilities SMALL_PROBABILITIES =
       new TransformationProbabilities(
           80,
           5,
@@ -96,7 +96,7 @@ public class TransformationProbabilities {
           5,
           5);
 
-  public static final TransformationProbabilities AGGRESSIVE_CONTROL_FLOW =
+  public static TransformationProbabilities AGGRESSIVE_CONTROL_FLOW =
       new TransformationProbabilities(DEFAULT_PROBABILITIES.probSubstituteFreeVariable,
           DEFAULT_PROBABILITIES.probDonateDeadCodeAtStmt,
           DEFAULT_PROBABILITIES.probDonateLiveCodeAtStmt,
@@ -113,7 +113,7 @@ public class TransformationProbabilities {
           70);
 
   // Useful for testing; add similar for others when needed
-  public static final TransformationProbabilities ZERO =
+  public static TransformationProbabilities ZERO =
       new TransformationProbabilities(
           0,
           0,
@@ -130,68 +130,68 @@ public class TransformationProbabilities {
           0,
           0);
 
-  public static final TransformationProbabilities onlySplitLoops() {
+  public static TransformationProbabilities onlySplitLoops() {
     TransformationProbabilities result = ZERO;
     result.probSplitLoops = 100;
     return result;
   }
 
-  public static final TransformationProbabilities onlyStructify() {
+  public static TransformationProbabilities onlyStructify() {
     TransformationProbabilities result = ZERO;
     result.probStructify = 100;
     return result;
   }
 
-  public static final TransformationProbabilities onlyVectorize() {
+  public static TransformationProbabilities onlyVectorize() {
     TransformationProbabilities result = ZERO;
     result.probVectorizeStmts = 100;
     return result;
   }
 
-  public static final TransformationProbabilities onlyVectorizeAndMutate() {
+  public static TransformationProbabilities onlyVectorizeAndMutate() {
     TransformationProbabilities result = ZERO;
     result.probVectorizeStmts = 100;
     result.probMutatePoint = 100;
     return result;
   }
 
-  public static final TransformationProbabilities onlyOutlineStatements() {
+  public static TransformationProbabilities onlyOutlineStatements() {
     TransformationProbabilities result = ZERO;
     result.probOutline = 100;
     return result;
   }
 
-  public static final TransformationProbabilities onlyMutateExpressions() {
+  public static TransformationProbabilities onlyMutateExpressions() {
     TransformationProbabilities result = ZERO;
     result.probMutatePoint = 100;
     return result;
   }
 
-  public static final TransformationProbabilities onlyWrap() {
+  public static TransformationProbabilities onlyWrap() {
     TransformationProbabilities result = ZERO;
     result.probWrapStmtInConditional = 100;
     return result;
   }
 
-  public static final TransformationProbabilities onlyAddJumps() {
+  public static TransformationProbabilities onlyAddJumps() {
     TransformationProbabilities result = ZERO;
     result.probInjectJumpAtStmt = 100;
     return result;
   }
 
-  public static final TransformationProbabilities onlyAddDeadFragColorWrites() {
+  public static TransformationProbabilities onlyAddDeadFragColorWrites() {
     TransformationProbabilities result = ZERO;
     result.probAddDeadFragColorWrites = 100;
     return result;
   }
 
-  public static final TransformationProbabilities onlyAddLiveFragColorWrites() {
+  public static TransformationProbabilities onlyAddLiveFragColorWrites() {
     TransformationProbabilities result = ZERO;
     result.probAddLiveFragColorWrites = 100;
     return result;
   }
 
-  public static final TransformationProbabilities onlyLiveCodeAlwaysSubstitute() {
+  public static TransformationProbabilities onlyLiveCodeAlwaysSubstitute() {
     TransformationProbabilities result = ZERO;
     result.probDonateLiveCodeAtStmt = 100;
     result.probSubstituteFreeVariable = 100;
@@ -202,14 +202,14 @@ public class TransformationProbabilities {
     return closeTo(generator, DEFAULT_PROBABILITIES);
   }
 
-  public static final TransformationProbabilities likelyDonateDeadCode() {
+  public static TransformationProbabilities likelyDonateDeadCode() {
     TransformationProbabilities result = ZERO;
     result.probSubstituteFreeVariable = 50;
     result.probDonateDeadCodeAtStmt = 60;
     return result;
   }
 
-  public static final TransformationProbabilities likelyDonateLiveCode() {
+  public static TransformationProbabilities likelyDonateLiveCode() {
     TransformationProbabilities result = ZERO;
     result.probSubstituteFreeVariable = 50;
     result.probDonateLiveCodeAtStmt = 60;

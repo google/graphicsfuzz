@@ -28,7 +28,7 @@ import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
@@ -93,12 +93,12 @@ public class LiveOutputVariableWriteReductionOpportunity extends AbstractReducti
     final VariableDeclInfo backupVdi =
           ((DeclarationStmt) block.getStmt(indexOfBackupDeclaration().get()))
           .getVariablesDeclaration().getDeclInfo(0);
-    return new ScopeTreeBuilder() {
+    return new ScopeTrackingVisitor() {
       private boolean found = false;
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
-        final ScopeEntry se = currentScope.lookupScopeEntry(variableIdentifierExpr.getName());
+        final ScopeEntry se = getCurrentScope().lookupScopeEntry(variableIdentifierExpr.getName());
         if (se != null && se.hasVariableDeclInfo() && se.getVariableDeclInfo() == backupVdi) {
           found = true;
         }

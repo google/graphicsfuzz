@@ -26,12 +26,9 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.transformreduce.MergeSet;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.generator.mutateapi.MutationFinder;
 import com.graphicsfuzz.generator.mutateapi.MutationFinderBase;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,8 +57,8 @@ public class VectorizeMutationFinder extends MutationFinderBase<VectorizeMutatio
     assert lastExitedBlock != null;
     if (!(parentMap.getParent(lastExitedBlock) instanceof SwitchStmt)) {
       List<MergeSet> mergeSetsForThisScope = new ArrayList<>();
-      for (String v : currentScope.keys()) {
-        ScopeEntry entry = currentScope.lookupScopeEntry(v);
+      for (String v : getCurrentScope().keys()) {
+        ScopeEntry entry = getCurrentScope().lookupScopeEntry(v);
         if (!isCandidateForMerging(entry)) {
           continue;
         }

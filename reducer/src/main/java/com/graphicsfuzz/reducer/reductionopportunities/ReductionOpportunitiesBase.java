@@ -34,7 +34,7 @@ import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.SideEffectChecker;
@@ -44,7 +44,7 @@ import java.util.List;
 
 public abstract class ReductionOpportunitiesBase
       <ReductionOpportunityT extends IReductionOpportunity>
-      extends ScopeTreeBuilder {
+      extends ScopeTrackingVisitor {
 
   private final List<ReductionOpportunityT> opportunities;
   final InjectionTracker injectionTracker;

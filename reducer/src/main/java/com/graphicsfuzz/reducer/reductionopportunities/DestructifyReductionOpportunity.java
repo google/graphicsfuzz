@@ -33,7 +33,7 @@ import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;
@@ -133,7 +133,7 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
 
     final IParentMap parentMap = IParentMap.createParentMap(tu);
 
-    new ScopeTreeBuilder() {
+    new ScopeTrackingVisitor() {
 
       @Override
       public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
@@ -170,7 +170,7 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
         }
         VariableIdentifierExpr structVariable = ((VariableIdentifierExpr) memberLookupExpr
             .getStructure());
-        ScopeEntry se = currentScope.lookupScopeEntry(structVariable.getName());
+        ScopeEntry se = getCurrentScope().lookupScopeEntry(structVariable.getName());
         if (se == null) {
           return;
         }

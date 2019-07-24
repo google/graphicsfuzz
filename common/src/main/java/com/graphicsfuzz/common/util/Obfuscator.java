@@ -33,7 +33,7 @@ import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
@@ -84,7 +84,7 @@ public class Obfuscator {
         clonedTus);
   }
 
-  private class TranslationUnitObfuscator extends ScopeTreeBuilder {
+  private class TranslationUnitObfuscator extends ScopeTrackingVisitor {
     private final Map<String, String> functionRenaming;
     private final Map<String, String> namedStructRenaming;
     private final List<StructDefinitionType> structDefinitionTypes;
@@ -241,7 +241,7 @@ public class Obfuscator {
     }
 
     private String applyVariableNameMapping(String name) {
-      ScopeEntry scopeEntry = currentScope.lookupScopeEntry(name);
+      ScopeEntry scopeEntry = getCurrentScope().lookupScopeEntry(name);
       if (scopeEntry == null) {
         return name;
       }

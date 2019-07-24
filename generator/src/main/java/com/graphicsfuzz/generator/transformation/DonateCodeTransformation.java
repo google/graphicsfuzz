@@ -42,7 +42,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
@@ -291,12 +291,12 @@ public abstract class DonateCodeTransformation implements ITransformation {
   }
 
   private Map<String, Type> getGlobalVariablesFromShader(TranslationUnit shader) {
-    return new ScopeTreeBuilder() {
+    return new ScopeTrackingVisitor() {
       Map<String, Type> getGlobalsFromShader(TranslationUnit shader) {
         visit(shader);
         Map<String, Type> result = new HashMap<>();
-        for (String globalName : currentScope.keys()) {
-          result.put(globalName, currentScope.lookupType(globalName));
+        for (String globalName : getCurrentScope().keys()) {
+          result.put(globalName, getCurrentScope().lookupType(globalName));
         }
         return result;
       }

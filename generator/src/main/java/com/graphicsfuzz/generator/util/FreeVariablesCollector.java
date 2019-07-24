@@ -20,15 +20,14 @@ import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.typing.Scope;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import java.util.HashMap;
 import java.util.Map;
 
-public class FreeVariablesCollector extends ScopeTreeBuilder {
+public class FreeVariablesCollector extends ScopeTrackingVisitor {
 
   private final Stmt donorFragment;
   private Scope enclosingScope;
@@ -48,14 +47,12 @@ public class FreeVariablesCollector extends ScopeTreeBuilder {
   @Override
   public void visit(IAstNode node) {
     if (node == donorFragment) {
-      enclosingScope = currentScope;
-      currentScope = new Scope(null);
-      super.visit(node);
-      // early exit now, if we implement that
-      currentScope = enclosingScope;
+      enclosingScope = swapCurrentScope(new Scope(null));
+    }
+    super.visit(node);
+    if (node == donorFragment) {
+      swapCurrentScope(enclosingScope);
       enclosingScope = null;
-    } else {
-      super.visit(node);
     }
   }
 
@@ -65,7 +62,7 @@ public class FreeVariablesCollector extends ScopeTreeBuilder {
     if (isBuiltinVariable(name)) {
       return;
     }
-    if (enclosingScope != null && currentScope.lookupType(name) == null) {
+    if (enclosingScope != null && getCurrentScope().lookupType(name) == null) {
       Type type = enclosingScope.lookupType(name);
       if (type == null) {
         throw new RuntimeException(

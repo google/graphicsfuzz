@@ -80,7 +80,7 @@ public class VectorizationReductionOpportunities
     String name = variableDeclInfo.getName();
     if (MergeSet.isMergedVariable(name)) {
       List<MergedVariablesComponentData> componentsData = MergeSet.getComponentData(name);
-      assert inBlock();
+      assert inSomeBlock();
       for (MergedVariablesComponentData data : componentsData) {
         assert enclosingVariablesDeclaration != null;
         final VectorizationReductionOpportunity potentialOpportunity

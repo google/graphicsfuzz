@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.common.typing;
 
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -41,10 +40,7 @@ import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.OpenGlConstants;
-import com.graphicsfuzz.common.util.ShaderKind;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,7 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class Typer extends ScopeTreeBuilder {
+public class Typer extends ScopeTrackingVisitor {
 
   private final TranslationUnit tu;
 
@@ -166,7 +162,7 @@ public class Typer extends ScopeTreeBuilder {
   @Override
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    Type type = currentScope.lookupType(variableIdentifierExpr.getName());
+    Type type = getCurrentScope().lookupType(variableIdentifierExpr.getName());
     if (type != null) {
       types.put(variableIdentifierExpr, type);
       return;

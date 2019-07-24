@@ -20,7 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.ParseHelper;
 import org.junit.Test;
 
-public class ScopeTreeBuilderTest {
+public class ScopeTrackingVisitorTest {
 
   @Test
   public void testSwitch() throws Exception {
@@ -35,7 +35,7 @@ public class ScopeTreeBuilderTest {
         + "  }"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(program);
-    new ScopeTreeBuilder() {
+    new ScopeTrackingVisitor() {
     }.visit(tu);
 
   }
