@@ -18,7 +18,7 @@ import argparse
 import json
 import os
 import sys
-import subprocess
+import filecmp
 import shutil
 import time
 
@@ -46,22 +46,25 @@ FRAG_SUFFIX = '.frag'
 JSON_SUFFIX = '.json'
 PNG_SUFFIX = '.png'
 SHADER_TEST_SUFFIX = '.shader_test'
-PNG_FILENAME = 'shader_runner_gles3000.png'
-LOGFILE_NAME = 'piglit_log.txt'
-STATUS_FILENAME = 'STATUS'
 
 SHADER_RUNNER_ARG_PNG = '-png'
 SHADER_RUNNER_ARG_AUTO = '-auto'
 SHADER_RUNNER_ARG_UNIFORMS = '-ignore-missing-uniforms'
 SHADER_RUNNER_ARG_SUBTESTS = '-report-subtests'
+
 WORKER_INFO_FILE = 'worker_info.json'
+PNG_FILENAME = 'shader_runner_gles3000.png'
+COMPARE_PNG_FILENAME = 'shader_runner_gles3001.png'
+NONDET0_PNG = 'nondet0.png'
+NONDET1_PNG = 'nondet1.png'
+LOGFILE_NAME = 'piglit_log.txt'
+STATUS_FILENAME = 'STATUS'
 
 NO_DRAW_ARG = '--nodraw'
 
 STATUS_SUCCESS = 'SUCCESS'
 STATUS_CRASH = 'CRASH'
 STATUS_TIMEOUT = 'TIMEOUT'
-STATUS_SANITYERROR = 'SANITY_ERROR'
 STATUS_UNEXPECTED = 'UNEXPECTED_ERROR'
 STATUS_NONDET = 'NONDET'
 
@@ -170,6 +173,8 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
     log_file = os.path.join(output_dir, LOGFILE_NAME)
     status_file = os.path.join(output_dir, STATUS_FILENAME)
     png_file = os.path.join(output_dir, name + PNG_SUFFIX)
+    nondet_0 = os.path.join(output_dir, NONDET0_PNG)
+    nondet_1 = os.path.join(output_dir, NONDET1_PNG)
 
     gfuzz_common.write_to_file(image_job.fragmentSource, frag_file)
     gfuzz_common.write_to_file(image_job.uniformsInfo, json_file)
@@ -183,8 +188,7 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
     with gfuzz_common.open_helper(log_file, 'w') as f:
         try:
             gfuzz_common.set_logfile(f)
-            run_image_job(frag_file, json_file, status_file, png_file,
-                          output_dir, image_job.skipRender)
+            run_image_job(json_file, status_file, png_file, output_dir, image_job.skipRender)
         except Exception as ex:
             gfuzz_common.log(str(ex))
             gfuzz_common.log('Removing status file and continuing...')
@@ -203,14 +207,20 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
     if os.path.isfile(status_file):
         with gfuzz_common.open_helper(status_file, 'r') as f:
             status = f.read().rstrip()
-        if status == 'SUCCESS':
+        if status == STATUS_SUCCESS:
             res.status = tt.JobStatus.SUCCESS
-        elif status == 'CRASH':
+        elif status == STATUS_CRASH:
             res.status = tt.JobStatus.CRASH
-        elif status == 'TIMEOUT':
+        elif status == STATUS_TIMEOUT:
             res.status = tt.JobStatus.TIMEOUT
-        elif status == 'UNEXPECTED_ERROR':
+        elif status == STATUS_UNEXPECTED:
             res.status = tt.JobStatus.UNEXPECTED_ERROR
+        elif status == STATUS_NONDET:
+            res.status = tt.JobStatus.NONDET
+            with gfuzz_common.open_bin_helper(nondet_0, 'rb') as f:
+                res.PNG = f.read()
+            with gfuzz_common.open_bin_helper(nondet_1, 'rb') as f:
+                res.PNG2 = f.read()
         else:
             res.log += '\nUnknown status value: ' + status + '\n'
             res.status = tt.JobStatus.UNEXPECTED_ERROR
@@ -222,12 +232,11 @@ def do_image_job(image_job: tt.ImageJob, work_dir: str) -> tt.ImageJobResult:
     return res
 
 
-def run_image_job(frag_file: str, json_file: str, status_file: str,
+def run_image_job(json_file: str, status_file: str,
                   png_file: str, output_dir: str, skip_render: bool):
     """
     Runs an image job. Converts the shader job to a piglit shader_test file, then delegates to
     run_shader_test to render with shader_runner. Writes the status of the job to file.
-    :param frag_file: The fragment shader to convert and run.
     :param json_file: The JSON uniforms to use with the shader.
     :param status_file: The status file to write to.
     :param png_file: The PNG file to write to.
@@ -236,7 +245,6 @@ def run_image_job(frag_file: str, json_file: str, status_file: str,
     """
 
     assert os.path.isdir(output_dir)
-    assert os.path.isfile(frag_file)
     assert os.path.isfile(json_file)
 
     arglist = [json_file]
@@ -261,14 +269,28 @@ def run_image_job(frag_file: str, json_file: str, status_file: str,
 
     status = gfuzz_common.run_catchsegv(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
 
-    gfuzz_common.log('STATUS: ' + status)
-
     # Piglit throws the output PNG render into whatever the current working directory is
     # (and there's no way to specify a location to write to) - we need to move it to wherever our
     # output is.
 
-    if os.path.isfile(PNG_FILENAME):
-        shutil.move(PNG_FILENAME, png_file)
+    if not skip_render and status == STATUS_SUCCESS:
+        # An image was rendered, so we need to check for nondet. We do this by renaming the
+        # rendered image, rendering a second image, and using filecmp to compare the files.
+        assert os.path.isfile(PNG_FILENAME)
+        os.rename(PNG_FILENAME, COMPARE_PNG_FILENAME)
+        status = gfuzz_common.run_catchsegv(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
+        # Something is horribly wrong if shader crashes/timeouts are inconsistent per shader.
+        if not status == STATUS_SUCCESS:
+            raise AssertionError("Shader inconsistently fails - check your graphics drivers?")
+        assert os.path.isfile(PNG_FILENAME)
+        if filecmp.cmp(PNG_FILENAME, COMPARE_PNG_FILENAME):
+            shutil.move(PNG_FILENAME, png_file)
+        else:
+            status = STATUS_NONDET
+            shutil.move(COMPARE_PNG_FILENAME, os.path.join(output_dir, NONDET0_PNG))
+            shutil.move(PNG_FILENAME, os.path.join(output_dir, NONDET1_PNG))
+
+    gfuzz_common.log('STATUS: ' + status)
 
     with gfuzz_common.open_helper(status_file, 'w') as f:
         f.write(status)
