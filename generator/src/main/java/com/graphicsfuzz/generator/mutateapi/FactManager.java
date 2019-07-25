@@ -54,6 +54,7 @@ public class FactManager {
   }
 
   public Optional<List<FunctionFact>> getFunctionFacts(Value value) {
+    // TODO: Needs to retrieve parent fact manager function facts
     return functionFacts.entrySet()
         .stream()
         .filter(item -> item.getKey().equals(value))
@@ -62,6 +63,7 @@ public class FactManager {
   }
 
   public Optional<List<VariableFact>> getVariableFacts(Value value) {
+    // TODO: Needs to retrieve parent fact manager variable facts
     return variableFacts.entrySet()
         .stream()
         .filter(item -> item.getKey().equals(value))
