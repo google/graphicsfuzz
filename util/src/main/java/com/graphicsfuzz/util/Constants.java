@@ -48,6 +48,7 @@ public final class Constants {
   public static final String GLF_PRIMITIVE_VAR = "_GLF_PRIMITIVE_VAR";
   public static final String GLF_COMPUTE = "_GLF_COMPUTE";
   public static final String GLF_PARAM = "_GLF_PARAM";
+  public static final String GLF_PARAM_UNKNOWN_VALUE = "_GLF_PARAM_UNKNOWN_VALUE";
 
 
   public static final String INJECTED_LOOP_COUNTER = "_injected_loop_counter";

@@ -35,4 +35,8 @@ public class VariableFact {
   public Value getValue() {
     return value;
   }
+
+  public String getVariableName(){
+    return variableDeclInfo.getName();
+  }
 }

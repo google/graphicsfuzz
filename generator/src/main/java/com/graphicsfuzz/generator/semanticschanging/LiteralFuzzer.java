@@ -20,13 +20,20 @@ import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.Op;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.generator.mutateapi.BooleanValue;
+import com.graphicsfuzz.generator.mutateapi.CompositeValue;
+import com.graphicsfuzz.generator.mutateapi.NumericValue;
+import com.graphicsfuzz.generator.mutateapi.Value;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class LiteralFuzzer {
 
@@ -47,20 +54,36 @@ public class LiteralFuzzer {
     }
     if (type == BasicType.INT) {
       return Optional.of(new IntConstantExpr(
-            String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN)));
+          String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN)));
     }
     if (type == BasicType.FLOAT) {
       return Optional.of(new FloatConstantExpr(
-            randomFloatString()));
+          randomFloatString()));
     }
     if (type == BasicType.VEC2 || type == BasicType.VEC3 || type == BasicType.VEC4
-          || BasicType.allMatrixTypes().contains(type)) {
+        || BasicType.allMatrixTypes().contains(type)) {
       final List<Expr> args = new ArrayList<>();
       for (int i = 0; i < ((BasicType) type).getNumElements(); i++) {
         args.add(fuzz(((BasicType) type).getElementType()).get());
       }
       return Optional.of(new TypeConstructorExpr(type.toString(), args));
     }
+    return Optional.empty();
+  }
+
+  public Optional<Value> fuzzValue(Type type) {
+    if (type == BasicType.BOOL) {
+      return Optional.of(new BooleanValue(generator.nextBoolean()));
+    }
+    if (type == BasicType.INT) {
+      String intString = String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN);
+      return Optional.of(new NumericValue(BasicType.INT, Integer.valueOf(intString)));
+    }
+    if (type == BasicType.FLOAT) {
+      String floatString = randomFloatString();
+      return Optional.of(new NumericValue(BasicType.FLOAT, Float.valueOf(floatString)));
+    }
+
     return Optional.empty();
   }
 

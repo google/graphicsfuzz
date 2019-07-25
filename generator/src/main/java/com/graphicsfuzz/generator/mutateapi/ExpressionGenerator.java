@@ -23,276 +23,367 @@ import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
-import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.PipelineInfo;
+import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.generator.fuzzer.Fuzzer;
+import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
+import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
-import com.sun.org.apache.xpath.internal.operations.Bool;
-import java.text.NumberFormat;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class ExpressionGenerator {
 
   private static final int MAX_FUNCTION_PARAMS = 5;
-  private static final int INT_MIN = -(1 << 17);
-  private static final int INT_MAX = 1 << 17;
+  private static final int NUM_WAYS_TO_GENERATE_EXPR = 5;
+  private static final int MAX_DEPT = 5;
 
   private final TranslationUnit translationUnit;
   private final PipelineInfo pipelineInfo;
   private final IdGenerator idGenerator;
+  private final IRandom generator;
+  private int currentDepth;
+  private final LiteralFuzzer literalFuzzer;
 
-  public ExpressionGenerator(TranslationUnit translationUnit, PipelineInfo pipelineInfo) {
+  public ExpressionGenerator(TranslationUnit translationUnit, PipelineInfo pipelineInfo,
+                             IRandom generator) {
     this.translationUnit = translationUnit;
     this.pipelineInfo = pipelineInfo;
-    idGenerator = new IdGenerator();
+    this.idGenerator = new IdGenerator();
+    this.generator = generator;
+    this.currentDepth = 0;
+    this.literalFuzzer = new LiteralFuzzer(this.generator);
   }
 
-  private Expr generateLiteralNumber(Value value) {
-    assert BasicType.allScalarTypes().contains(value.getType());
+  private Expr generateLiteralValue(Value value) {
+    assert getSupportedType().contains(value.getType());
 
     if (value.getType() == BasicType.FLOAT) {
-      return new FloatConstantExpr(nameFromNumber(value.getData().get(0).get()));
+      return new FloatConstantExpr(value.toString());
     }
     if (value.getType() == BasicType.INT) {
-      return new IntConstantExpr(nameFromNumber(value.getData().get(0).get()));
+      return new IntConstantExpr(value.toString());
+    }
+    if (value.getType() == BasicType.BOOL) {
+      return new BoolConstantExpr(Boolean.valueOf(value.toString()));
     }
     if (value.getType() == BasicType.UINT) {
-      return new UIntConstantExpr(nameFromNumber(value.getData().get(0).get()) + "u");
+      return new UIntConstantExpr(value.toString() + "u");
     }
-    List<Expr> args = new ArrayList<>();
-    for (int i = 0; i < value.getType().getNumElements(); i++) {
-      assert value.getType().getElementType() != value.getType();
-      args.add(generateLiteralNumber(
-          new PrimitiveValue(value.getType().getElementType(),
-              Arrays.asList(Optional.of(value.getData().get(i).get()))
-          )));
+    throw new RuntimeException("The value given is not supported");
+  }
+
+  private Expr getFuzzedExpr(Type type) {
+    final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT, true);
+    final FuzzingContext fuzzingContext = new FuzzingContext();
+    final Fuzzer fuzzer = new Fuzzer(fuzzingContext,
+        translationUnit.getShadingLanguageVersion(),
+        generator,
+        generationParams
+    );
+    return fuzzer.fuzzExpr(type, false, false, 0);
+  }
+
+  /**
+   * Given the desired value, this function will recursively generate functions, variables and
+   * fact managers that store and provide the fact of the value given.
+   *
+   * @param factManager         manager class holding the value and its associated expression that
+   *                            guarantees to compute such value.
+   * @param functionDefinition  a function into which the new expression will be injected.
+   * @param stmt                statement in the body of the given function where the generated
+   *                            expression will
+   *                            be inserted before.
+   * @param value               the value that will be computed by the expression generated by
+   *                            this method.
+   * @param requiredGlobalScope if enable, the variable fact generated will be declared at the
+   *                            global scope.
+   * @return the expression whose value is known by the fact manager.
+   */
+  public Expr generateExpr(FactManager factManager,
+                           FunctionDefinition functionDefinition,
+                           Stmt stmt,
+                           Value value,
+                           boolean requiredGlobalScope) {
+
+    if (currentDepth > MAX_DEPT) {
+      return generateLiteralValue(value);
     }
-    return new TypeConstructorExpr(value.getType().toString(), args);
+
+    currentDepth++;
+    Expr result;
+    while (true) {
+      switch (generator.nextInt(NUM_WAYS_TO_GENERATE_EXPR)) {
+        case 0:
+          result = generateLiteralValue(value);
+          break;
+        case 1:
+          result = generateVariableFact(factManager, functionDefinition, stmt, value,
+              requiredGlobalScope);
+          break;
+        case 2:
+          result = generateKnownVariableFact(factManager, value);
+          break;
+        case 3:
+          result = generateFunctionFact(factManager, functionDefinition, stmt, value);
+          break;
+        case 4:
+          result = generateKnownFunctionFact(factManager, value, functionDefinition, stmt);
+          break;
+        default:
+          throw new RuntimeException("Should be unreachable as switch cases cover all cases");
+      }
+      if (result != null) {
+        break;
+      }
+    }
+    currentDepth--;
+    return result;
+  }
+
+  private Expr generateKnownFunctionFact(FactManager factManager,
+                                         Value value,
+                                         FunctionDefinition functionDefinition,
+                                         Stmt stmt) {
+    Expr result = null;
+    final Optional<List<FunctionFact>> functionFacts = factManager.getFunctionFacts(value);
+    if (functionFacts.isPresent()) {
+      final FunctionFact functionFact =
+          functionFacts.get().get(generator.nextInt(functionFacts.get().size()));
+      final List<Value> argValues = functionFact.getArguments();
+      final List<Expr> params = genParams(factManager, functionDefinition, stmt,
+          argValues);
+      result = new FunctionCallExpr(functionFact.getFunctionName(), params);
+    }
+    return result;
+  }
+
+  private Expr generateKnownVariableFact(FactManager factManager, Value value) {
+    Expr result = null;
+    final Optional<List<VariableFact>> variableFacts = factManager.getVariableFacts(value);
+    if (variableFacts.isPresent()) {
+      final VariableFact variableFact =
+          variableFacts.get().get(generator.nextInt(variableFacts.get().size()));
+      result = new VariableIdentifierExpr(variableFact.getVariableName());
+    }
+    return result;
+  }
+
+  private List<Expr> genParams(FactManager factManager,
+                               FunctionDefinition functionDefinition,
+                               Stmt stmt,
+                               List<Value> argValues) {
+    final List<Expr> args = new ArrayList<>();
+    for (int i = 0; i < argValues.size(); i++) {
+      final Value requiredValue = argValues.get(i);
+      if (requiredValue.valueIsKnown()) {
+        args.add(generateExpr(factManager, functionDefinition, stmt, requiredValue));
+      } else {
+        args.add(getFuzzedExpr(requiredValue.getType()));
+      }
+    }
+    return args;
   }
 
   public Expr generateExpr(FactManager factManager,
                            FunctionDefinition functionDefinition,
                            Stmt stmt,
-                           Value value,
-                           IRandom generator) {
-    while (true) {
-      switch (generator.nextInt(2)) {
-        case 0:
-          // Generate variable fact
-          return generateVariableFact(factManager,
-              functionDefinition,
-              stmt,
-              value,
-              generator);
-        case 1:
-          // Generate function fact
-          return generateFunction(factManager,
-              functionDefinition,
-              stmt,
-              value,
-              generator);
-        case 2:
-          // Retrieving and return the existing fact from the Fact manager
-          final Optional<Expr> expr = factManager.getFact(value);
-          if (expr.isPresent()) {
-            return expr.get();
-          } else {
-            continue;
-          }
-          // Generate ConstantExpr (Float, Int)
-        case 3:
-          return generateLiteralNumber(value);
-        default:
-          return null;
-      }
-    }
+                           Value value) {
+    return generateExpr(
+        factManager,
+        functionDefinition,
+        stmt,
+        value,
+        generator.nextBoolean()
+    );
   }
 
-  // TODO: Handle the cases of vectors (vec4, vec3, vec2).
-  private String genVarName(Value value) {
-    return Constants.GLF_PRIMITIVE_VAR + "_"
-        + value.getType().toString() + "_"
-        + value.getData().get(0).get().toString().replace(".", "_");
+  // TODO: Handle the cases of UNIT and add detailed documentation.
+  private String genVarName(Value value, boolean isGlobal) {
+    // Generate globally unique variable name from the given value. For example,
+    //  1         -> _GLF_PRIMITIVE_VAR_INT_1_id_1
+    // 3.0        -> _GLF_PRIMITIVE_VAR_FLOAT_3_0_id_1
+    // - 12.85    -> _GLF_PRIMITIVE_VAR_FLOAT_NEGATIVE_12_8_id_2
+
+    return Constants.GLF_PRIMITIVE_VAR                    // Prefix constant
+        + (isGlobal ? "_GLOBAL" : "")                     // Determine whether variable is global
+        + "_" + value.getType().toString().toUpperCase()  // Type
+        + "_" + parseNameFromValue(value)                 // Value
+        + "_ID_" + idGenerator.freshId();                 // ID
   }
 
-  // TODO: Requires further implementation in the case of the negative number, i.e., -0.75 could be
-  // converted to _GLF_FLOAT_NEGATIVE_0_75.
-  private String nameFromNumber(Number number) {
-    return number.toString();
+  private String genFunctionName(Value value) {
+    return Constants.GLF_COMPUTE                          // Prefix constant
+        + "_" + value.getType().toString().toUpperCase()  // Type
+        + "_" + parseNameFromValue(value)                 // Value
+        + "_ID_" + idGenerator.freshId();                 // ID
   }
 
-  private String getFunctionName(Value value) {
-    return Constants.GLF_COMPUTE + "_"
-        + value.getType().toString().toUpperCase() + "_"
-        + nameFromNumber(value.getData().get(0).get()).replace(".", "_")
+  private String genParamName(Type type, boolean unknownValue) {
+    return (unknownValue ? Constants.GLF_PARAM_UNKNOWN_VALUE : Constants.GLF_PARAM) + "_"
+        + type.toString().toUpperCase()
         + "_ID_" + idGenerator.freshId();
   }
 
-  // TODO: Handles the case of boolean value.
-  private Optional<Number> numberFromName(String string) {
-    try {
-      return Optional.of(NumberFormat.getInstance().parse(string));
-    } catch (ParseException parseException) {
-      return Optional.empty();
+  private String parseNameFromValue(Value value) {
+    final StringBuilder name = new StringBuilder();
+    // Append "_NEGATIVE_" string if the given value is less than zero.
+    if (value instanceof NumericValue) {
+      final NumericValue numericValue = (NumericValue) value;
+      float floatValue = numericValue.getValue().get().floatValue();
+      if (floatValue < 0.0) {
+        name.append("NEGATIVE_");
+        floatValue = Math.abs(floatValue);
+      }
+      name.append(Float.toString(floatValue).replace(".", "_"));
     }
+
+    if (value instanceof BooleanValue) {
+      name.append(value.toString());
+    }
+
+    return name.toString();
   }
 
   private Expr generateVariableFact(FactManager factManager,
-                                    FunctionDefinition functionDefinition,
+                                    FunctionDefinition currentFunction,
                                     Stmt stmt,
                                     Value value,
-                                    IRandom generator) {
-    final String variableName = genVarName(value);
-    final VariableDeclInfo declInfo =
-        new VariableDeclInfo(variableName, null,
-            new Initializer(new FloatConstantExpr(value.getData().get(0).get().toString())));
-    final VariablesDeclaration variablesDecl = new VariablesDeclaration(value.getType(), declInfo);
-    functionDefinition.getBody().addStmt(new DeclarationStmt(variablesDecl));
+                                    boolean atGlobalScope) {
 
-    // Store variable fact in FactManager
-    factManager.addVariableFact(declInfo, new VariableFact(variablesDecl, declInfo, value));
-    return new VariableIdentifierExpr(variableName);
+    final String varName = genVarName(value, atGlobalScope);
+    final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(varName, null,
+        new Initializer(generateExpr(factManager,
+            currentFunction,
+            stmt,
+            value,
+            atGlobalScope
+        )));
+    final VariablesDeclaration variablesDecl = new VariablesDeclaration(value.getType(),
+        variableDeclInfo);
+    factManager.addVariableFact(value, new VariableFact(variablesDecl, variableDeclInfo, value),
+        atGlobalScope);
+
+    // If the generated variable is global, it will be injected before the given
+    // function definition. Otherwise, it will be add inside the given function right before the given statement.
+    if (atGlobalScope) {
+      translationUnit.addDeclarationBefore(variablesDecl, currentFunction);
+    } else {
+      currentFunction.getBody().insertBefore(stmt, new DeclarationStmt(variablesDecl));
+    }
+    return new VariableIdentifierExpr(varName);
   }
 
-  private Expr generateFunction(FactManager factManager,
-                                FunctionDefinition functionDefinition,
-                                Stmt stmt,
-                                Value targetValue,
-                                IRandom generator) {
+  private Expr generateFunctionFact(FactManager factManager,
+                                    FunctionDefinition currentFunction,
+                                    Stmt stmt,
+                                    Value value) {
 
-    final String functionName = getFunctionName(targetValue);
+    final String functionName = genFunctionName(value);
+    // A new fact manager(child) that will extend the global values from the current
+    // fact manager(parent).
     final FactManager childFactManager = factManager.clone();
-    // Randomly generate a number of the function parameters
-    final List<ParameterDecl> params = generateParams(generator, functionDefinition,
-        childFactManager);
-    final FunctionPrototype prototype = new FunctionPrototype(functionName,
-        targetValue.getType(),
-        params);
-    final FunctionDefinition newFunctionDef = new FunctionDefinition(prototype,
-        new BlockStmt(new ArrayList<>(), false)
-    );
-    newFunctionDef.getBody().addStmt(new ReturnStmt(
-        generateExpr(childFactManager, newFunctionDef, stmt, targetValue, generator)));
-    translationUnit.addDeclaration(newFunctionDef);
-    return new FunctionCallExpr(functionName,
-        params
-            .stream()
-            .map(ParameterDecl::getName)
-            .map(VariableIdentifierExpr::new)
-            .collect(Collectors.toList())
-    );
-  }
+    // A set of values hold for each parameter for the new function.
+    final List<Value> paramValues = new ArrayList<>();
+    final List<ParameterDecl> paramDecl = new ArrayList<>();
 
-  private List<ParameterDecl> generateParams(IRandom generator, FunctionDefinition fd,
-                                             FactManager factManager) {
-    List<ParameterDecl> params = new ArrayList<>();
     for (int i = 0; i < generator.nextInt(MAX_FUNCTION_PARAMS); i++) {
-      final BasicType type =
-          BasicType.allBasicTypes().get(generator.nextInt(BasicType.allScalarTypes().size()));
-      final String name = Constants.GLF_PARAM + "_" + idGenerator.freshId();
-      final ParameterDecl parameterDecl = new ParameterDecl(name, type, null);
-      // Generate random expression to be the parameter of the function, this is inspired by
-      // the LiteralFuzzer.fuzz() method.
-      final Optional<Pair<Expr, Value>> fuzzedExpr = generateFuzzedExpr(type, generator);
 
-      final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(name, null,
-          new Initializer(fuzzedExpr.get().getKey()));
-      final VariablesDeclaration variablesDeclaration = new VariablesDeclaration(type,
-          variableDeclInfo);
-      // Store the newly created expressions to the new FactManager.
-      factManager.addVariableFact(variableDeclInfo, new VariableFact(
-          variablesDeclaration,
-          variableDeclInfo,
-          fuzzedExpr.get().getValue()
-      ));
-      // Add the declaration statements to the given function definition.
-      fd.getBody().addStmt(new DeclarationStmt(variablesDeclaration));
-      params.add(parameterDecl);
-    }
-    return params;
-  }
+      final Type paramType = getSupportedType().get(generator.nextInt(getSupportedType().size()));
 
-  // Need to be discussed further with the ideas to generate random primitive value.
-  // Currently inspired by the method LiteralFuzzer.randomFloatString()
-  private String randomFloatString(IRandom generator) {
-    final int maxDigitsEitherSide = 2;
-    StringBuilder sb = new StringBuilder();
-    int digitsBefore = Math.max(1, generator.nextInt(maxDigitsEitherSide));
-    for (int i = 0; i < digitsBefore; i++) {
-      int candidate;
-      while (true) {
-        candidate = generator.nextInt(10);
-        if (candidate == 0 && i == 0 && digitsBefore > 1) {
-          continue;
-        }
-        break;
+      // Decide whether the value generated should be known by the fact manager.
+      // If the fact manager is generating an unknown parameter(value is Optional.empty),
+      // when calling this new function the fact manager will generate any arbitrary value that
+      // matches the parameter type.
+      final boolean generateUnknownValue = generator.nextBoolean();
+      final String paramName = genParamName(paramType, generateUnknownValue);
+      if (generateUnknownValue) {
+        final Optional<Value> fuzzedValue = literalFuzzer.fuzzValue(paramType);
+        paramValues.add(fuzzedValue.orElseGet(this::genUnknownValue));
+      } else {
+        paramValues.add(genUnknownValue(paramType));
       }
-      sb.append(String.valueOf(candidate));
-    }
-    sb.append(".");
-    for (int i = 0; i < digitsBefore; i++) {
-      sb.append(String.valueOf(generator.nextInt(10)));
-    }
-    return sb.toString();
-  }
 
-  // Pair object is used here because we are going to store the newly generated Expression
-  // as well as its associated Value which will be added as the new fact for the FactManager.
-  public Optional<Pair<Expr, Value>> generateFuzzedExpr(BasicType type, IRandom generator) {
-    if (type == BasicType.INT) {
-      final String randomInt = String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN);
-      return Optional.of(new ImmutablePair<>(new IntConstantExpr(randomInt),
-          new PrimitiveValue(type, Arrays.asList(numberFromName(randomInt)))));
-    }
-    if (type == BasicType.FLOAT) {
-      final String randomFloat = randomFloatString(generator);
-      return Optional.of(new ImmutablePair<>(
-          new FloatConstantExpr(randomFloat),
-          new PrimitiveValue(type, Arrays.asList(numberFromName(randomFloat)))
+      paramDecl.add(new ParameterDecl(
+          paramName,
+          paramType,
+          null
       ));
     }
 
-    if (type == BasicType.VEC2 || type == BasicType.VEC3 || type == BasicType.VEC4) {
-      final List<Expr> args = new ArrayList<>();
-      final List<Pair<Expr, Value>> pairs = new ArrayList<>();
-      for (int i = 0; i < type.getNumElements(); i++) {
-        //Recursively call fuzz method to get the fuzzed expr for the arguments.
-        Pair pair = generateFuzzedExpr(type.getElementType(), generator).get();
-        args.add((Expr) pair.getKey());
-        pairs.add(pair);
-      }
-      final List<Optional<Number>> data = pairs
-          .stream()
-          .map(item ->
-              Optional.of(item.getValue().getData().get(0).get())
-          ).collect(Collectors.toList());
+    final FunctionPrototype functionPrototype = new FunctionPrototype(functionName,
+        value.getType(), paramDecl);
+    final FunctionDefinition newFunction = new FunctionDefinition(functionPrototype,
+        new BlockStmt(new ArrayList<>(), false));
+    // We have to ensure that a generated function is injected before any existing
+    // functions and all parent fact managers in the chain will hold the value of the new
+    // function.
+    translationUnit.addDeclarationBefore(newFunction, currentFunction);
 
-      return Optional.of(new ImmutablePair<>(
-              new TypeConstructorExpr(type.toString(), args),
-              new PrimitiveValue(type, data)
-          )
-      );
+    // Since the created function has an empty body at the beginning, we first need to add the
+    // temporary statement required when injecting the new expression.
+    final ExprStmt tmpStmt = new ExprStmt(null);
+    newFunction.getBody().addStmt(tmpStmt);
+    final ReturnStmt returnStmt = new ReturnStmt(
+        generateExpr(
+            childFactManager,
+            newFunction,
+            tmpStmt,
+            value
+        )
+    );
+    newFunction.getBody().removeStmt(tmpStmt);
+    newFunction.getBody().addStmt(returnStmt);
+
+    final List<Expr> params = genParams(childFactManager, currentFunction, stmt, paramValues);
+    childFactManager.addFunctionFact(value, new FunctionFact(
+        functionPrototype,
+        paramValues,
+        value
+    ));
+    return new FunctionCallExpr(functionName, params);
+  }
+
+  private List<Type> getSupportedType() {
+    return Arrays.asList(
+        BasicType.INT,
+        BasicType.FLOAT,
+        BasicType.BOOL
+    );
+  }
+
+  private Value genUnknownValue() {
+    final Type randomType = getSupportedType().get(generator.nextInt(getSupportedType().size()));
+    return genUnknownValue(randomType);
+  }
+
+  private Value genUnknownValue(Type type) {
+    if (type == BasicType.FLOAT || type == BasicType.INT) {
+      return new NumericValue((BasicType) type, Optional.empty());
     }
-    return Optional.empty();
+    if (type == BasicType.BOOL) {
+      return new BooleanValue(Optional.empty());
+    }
+
+    throw new RuntimeException("Type not found");
   }
 }

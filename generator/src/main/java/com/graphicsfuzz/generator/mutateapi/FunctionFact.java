@@ -22,15 +22,27 @@ import java.util.Optional;
 
 public class FunctionFact {
 
-  private final FunctionPrototype function;
+  private final FunctionPrototype prototype;
   private final List<Value> arguments;
   private final Value value;
 
 
-  public FunctionFact(FunctionPrototype function, List<Value> arguments, Value value) {
-    this.function = function;
+  public FunctionFact(FunctionPrototype prototype, List<Value> arguments, Value value) {
+    this.prototype = prototype;
     this.arguments = arguments;
     this.value = value;
+  }
+
+  public String getFunctionName() {
+    return prototype.getName();
+  }
+
+  public List<Value> getArguments() {
+    return arguments;
+  }
+
+  public int getNumArgs() {
+    return arguments.size();
   }
 
   public Value getValue() {
