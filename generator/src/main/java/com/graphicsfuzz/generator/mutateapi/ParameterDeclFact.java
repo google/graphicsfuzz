@@ -16,18 +16,19 @@
 
 package com.graphicsfuzz.generator.mutateapi;
 
-public abstract class VariableFact {
-  private final Value value;
+import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 
-  VariableFact(Value value) {
-    this.value = value;
+public class ParameterDeclFact extends VariableFact {
+  private final ParameterDecl parameterDecl;
+
+  public ParameterDeclFact(ParameterDecl parameterDecl,
+                           Value value) {
+    super(value);
+    this.parameterDecl = parameterDecl;
   }
 
-  public Value getValue() {
-    return value;
+  @Override
+  public String getVariableName() {
+    return parameterDecl.getName();
   }
-
-  public abstract String getVariableName();
-
-
 }

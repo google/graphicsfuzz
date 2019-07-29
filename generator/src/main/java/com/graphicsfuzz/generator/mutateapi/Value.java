@@ -16,8 +16,11 @@
 
 package com.graphicsfuzz.generator.mutateapi;
 
+import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.generator.fuzzer.Fuzzer;
+import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,5 +29,15 @@ public interface Value{
   Type getType();
 
   boolean valueIsKnown();
+
+  boolean atGlobalScope();
+
+  void setGlobalScope(boolean atGlobalScope);
+
+  Expr generateLiteral(LiteralFuzzer literalFuzzer);
+
+
+
+
 
 }

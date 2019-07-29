@@ -63,7 +63,7 @@ public class ShaderGenerator {
   public static void mainHelper(String[] args) throws ArgumentParserException, IOException,
       ParseTimeoutException, InterruptedException, GlslParserException {
 
-    final TranslationUnit tu = new TranslationUnit(Optional.of(ShadingLanguageVersion.ESSL_310),
+    final TranslationUnit tu = new TranslationUnit(Optional.of(ShadingLanguageVersion.GLSL_420),
         Arrays.asList(
             new PrecisionDeclaration("precision mediump float;"),
             new FunctionDefinition(
@@ -72,11 +72,12 @@ public class ShaderGenerator {
 
     final PipelineInfo pipelineInfo = new PipelineInfo();
     final IRandom generator = new RandomWrapper(0);
-    final FactManager factManager = new FactManager(null);
+    final FactManager globalFactManager = new FactManager(null);
 
     final ExprStmt colorAssignment = new ExprStmt(null);
 
-    ExpressionGenerator expressionGenerator = new ExpressionGenerator(tu, pipelineInfo, generator);
+    ExpressionGenerator expressionGenerator = new
+        ExpressionGenerator(tu, pipelineInfo, generator, globalFactManager);
     tu.getMainFunction().getBody().addStmt(new DeclarationStmt(
         new VariablesDeclaration(BasicType.VEC4,
             new VariableDeclInfo(
@@ -87,32 +88,31 @@ public class ShaderGenerator {
         )
     ));
     tu.getMainFunction().getBody().addStmt(colorAssignment);
-
-    Expr rvalue = expressionGenerator.generateExpr(
-        factManager,
+    final FactManager mainFactManager = globalFactManager.newScope();
+    final Expr rvalue = expressionGenerator.generateExpr(
+        mainFactManager,
         tu.getMainFunction(),
         colorAssignment,
         new NumericValue(BasicType.FLOAT, Optional.of(1.0)));
 
-    Expr gvalue = expressionGenerator.generateExpr(
-        factManager,
+    final Expr gvalue = expressionGenerator.generateExpr(
+        mainFactManager,
         tu.getMainFunction(),
         colorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(0.43)));
+        new NumericValue(BasicType.FLOAT, Optional.of(0.0)));
 
-    Expr bvalue = expressionGenerator.generateExpr(
-        factManager,
+    final Expr bvalue = expressionGenerator.generateExpr(
+        mainFactManager,
         tu.getMainFunction(),
         colorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(0.9)));
+        new NumericValue(BasicType.FLOAT, Optional.of(0.0)));
 
-    Expr avalue = expressionGenerator.generateExpr(
-        factManager,
+    final Expr avalue = expressionGenerator.generateExpr(
+        mainFactManager,
         tu.getMainFunction(),
         colorAssignment,
         new NumericValue(BasicType.FLOAT, Optional.of(1.0))
     );
-
 
     colorAssignment.setExpr(new BinaryExpr(new VariableIdentifierExpr("_GLF_color"),
         new TypeConstructorExpr("vec4",

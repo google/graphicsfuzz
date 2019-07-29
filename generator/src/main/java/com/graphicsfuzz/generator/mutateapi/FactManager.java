@@ -41,20 +41,20 @@ public class FactManager {
     this.prototype = prototype;
     variableFacts = new HashMap<Value, List<VariableFact>>();
     functionFacts = new HashMap<Value, List<FunctionFact>>();
-
   }
 
-  public FactManager clone() {
+  public FactManager newScope() {
     return new FactManager(this);
   }
-
 
   public Map<Value, List<VariableFact>> getVariableFacts() {
     return Collections.unmodifiableMap(variableFacts);
   }
 
   public Optional<List<FunctionFact>> getFunctionFacts(Value value) {
-    // TODO: Needs to retrieve parent fact manager function facts
+    if (!functionFacts.containsKey(value)) {
+      return Optional.empty();
+    }
     return functionFacts.entrySet()
         .stream()
         .filter(item -> item.getKey().equals(value))
@@ -63,7 +63,6 @@ public class FactManager {
   }
 
   public Optional<List<VariableFact>> getVariableFacts(Value value) {
-    // TODO: Needs to retrieve parent fact manager variable facts
     return variableFacts.entrySet()
         .stream()
         .filter(item -> item.getKey().equals(value))
@@ -75,17 +74,10 @@ public class FactManager {
     return Collections.unmodifiableMap(functionFacts);
   }
 
-  public void addVariableFact(Value value, VariableFact variableFact, boolean globalScope) {
+  public void addVariableFact(Value value, VariableFact variableFact) {
     final List<VariableFact> newFacts = variableFacts.getOrDefault(value, new ArrayList<>());
     newFacts.add(variableFact);
     variableFacts.put(value, newFacts);
-
-    // If globalScope is true, we recursively add variable fact to its ancestors.
-    // By doing so, all fact managers in the chain will have access to the new global
-    // variable given and its associated fact.
-    if (prototype != null && globalScope) {
-      prototype.addVariableFact(value, variableFact, globalScope);
-    }
   }
 
   public void addFunctionFact(Value value, FunctionFact functionFact) {

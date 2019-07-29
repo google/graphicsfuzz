@@ -71,22 +71,6 @@ public class LiteralFuzzer {
     return Optional.empty();
   }
 
-  public Optional<Value> fuzzValue(Type type) {
-    if (type == BasicType.BOOL) {
-      return Optional.of(new BooleanValue(generator.nextBoolean()));
-    }
-    if (type == BasicType.INT) {
-      String intString = String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN);
-      return Optional.of(new NumericValue(BasicType.INT, Integer.valueOf(intString)));
-    }
-    if (type == BasicType.FLOAT) {
-      String floatString = randomFloatString();
-      return Optional.of(new NumericValue(BasicType.FLOAT, Float.valueOf(floatString)));
-    }
-
-    return Optional.empty();
-  }
-
   private String randomFloatString() {
     final int maxDigitsEitherSide = 5;
     StringBuilder sb = new StringBuilder();

@@ -46,6 +46,7 @@ public final class Constants {
   public static final String GLF_SWITCH = "_GLF_SWITCH";
 
   public static final String GLF_PRIMITIVE_VAR = "_GLF_PRIMITIVE_VAR";
+  public static final String GLF_PRIMITIVE_GLOBAL_VAR = "_GLF_PRIMITIVE_GLOBAL_VAR";
   public static final String GLF_COMPUTE = "_GLF_COMPUTE";
   public static final String GLF_PARAM = "_GLF_PARAM";
   public static final String GLF_PARAM_UNKNOWN_VALUE = "_GLF_PARAM_UNKNOWN_VALUE";

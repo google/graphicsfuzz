@@ -36,6 +36,10 @@ public class ReturnStmt extends Stmt {
     return expr;
   }
 
+  public void setExpr(Expr expr) {
+    this.expr = expr;
+  }
+
   public boolean hasExpr() {
     return getExpr() != null;
   }
