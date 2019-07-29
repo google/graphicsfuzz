@@ -100,6 +100,7 @@ public final class OpaqueExpressionGenerator {
         this::opaqueZeroOrOneFromInjectionSwitch,
         this::opaqueZeroOrOneSquareRoot,
         this::opaqueZeroOrOneAbsolute,
+        this::opaqueZeroOrOneDot,
         this::opaqueZeroOrOneBitwiseShift,
         this::opaqueZeroOrOneBitwiseOp
     );
@@ -170,6 +171,74 @@ public final class OpaqueExpressionGenerator {
     }
     return Optional.of(new FunctionCallExpr("abs", makeOpaqueZeroOrOne(isZero, type, constContext,
         depth, fuzzer)));
+  }
+
+  /**
+   * Function to generate an opaque zero or one by taking the dot product of two vectors. This
+   * function depends on two rules of the dot product. Let u and v be vectors of the same size,
+   * and let i be a valid index into those vectors.
+   *     If u[i] != 0 <==> v[i] = 0, then dot(u, v) = 0. Example: u = (0, 1), v = (1, 0), then
+   *     dot(u, v) = 1 * 0 + 0 * 1 = 0.
+   *     If u[i] = v[i] = 0 for all i except for a single index, j, and if u[j] = v[j] = 1, then
+   *     dot(u, v) = 0. Example: u = (0, 1), v = (0, 1), then dot(u, v) = 0 * 0 + 1 * 1 = 1.
+   * Because fuzzed expressions are not always well defined, we forgo those in favor of simply
+   * using opaque ones and zeroes when generating vectors for this function.
+   * @param type - the base type of the opaque value being created.
+   * @param constContext - true if we're in a constant expression context, false otherwise.
+   * @param depth - how deep we are in the expression.
+   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
+   * @param isZero - true if we are making an opaque zero, false otherwise.
+   * @return Optional.empty() if an opaque value can't be generated, otherwise an opaque value
+   *     made from the dot product of two vectors.
+   */
+  private Optional<Expr> opaqueZeroOrOneDot(BasicType type, boolean constContext,
+                                            final int depth, Fuzzer fuzzer, boolean isZero) {
+    if (type != BasicType.FLOAT) {
+      return Optional.empty();
+    }
+    // Vector sizes need to be in [2, 4].
+    final int vectorSize = generator.nextInt(3) + 2;
+    final Expr dotProductExpr;
+    if (isZero) {
+      // We're basically producing inverse vectors: u[i] = 0 <==> v[i] != 0.
+      // To do that, we need to store which values will be zero and which will not.
+      final List<Boolean> isZeroDeterminants = new ArrayList<Boolean>();
+      for (int i = 0; i < vectorSize; i++) {
+        isZeroDeterminants.add(generator.nextBoolean());
+      }
+      final List<Expr> firstVectorArgs = new ArrayList<Expr>();
+      final List<Expr> secondVectorArgs = new ArrayList<Expr>();
+      for (int i = 0; i < vectorSize; i++) {
+        firstVectorArgs.add(makeOpaqueZeroOrOne(
+            isZeroDeterminants.get(i), type, constContext, depth, fuzzer));
+        secondVectorArgs.add(makeOpaqueZeroOrOne(
+            !isZeroDeterminants.get(i), type, constContext, depth, fuzzer));
+      }
+      assert firstVectorArgs.size() == vectorSize && secondVectorArgs.size() == vectorSize;
+      dotProductExpr = new FunctionCallExpr("dot",
+          new TypeConstructorExpr(
+              BasicType.makeVectorType(type, vectorSize).toString(), firstVectorArgs),
+          new TypeConstructorExpr(
+              BasicType.makeVectorType(type, vectorSize).toString(), secondVectorArgs));
+    } else {
+      // The two vectors will be exactly the same - all 0 except for one value, which will be 1.
+      final int nonZeroIndex = generator.nextInt(vectorSize);
+      final List<Expr> vectorArguments = new ArrayList<Expr>();
+      for (int i = 0; i < vectorSize; i++) {
+        vectorArguments.add(
+            i == nonZeroIndex
+            ? makeOpaqueOne(type, constContext, depth, fuzzer)
+            : makeOpaqueZero(type, constContext, depth, fuzzer));
+      }
+      assert vectorArguments.size() == vectorSize;
+      final Expr vectorExpr = new TypeConstructorExpr(
+          BasicType.makeVectorType(type, vectorSize).toString(), vectorArguments);
+      dotProductExpr = new FunctionCallExpr("dot", vectorExpr, vectorExpr.clone());
+    }
+    return Optional.of(
+        identityConstructor(
+            dotProductExpr,
+            applyIdentityFunction(dotProductExpr.clone(), type, constContext, depth, fuzzer)));
   }
 
   /**
