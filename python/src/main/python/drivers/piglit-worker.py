@@ -70,8 +70,6 @@ STATUS_NONDET = 'NONDET'
 
 TIMEOUT = 30
 
-use_catchsegv = True
-
 
 def glxinfo_cmd() -> list:
     return [gfuzz_common.tool_on_path('glxinfo'), '-B']
@@ -81,7 +79,7 @@ def shader_runner_cmd() -> list:
     return [gfuzz_common.tool_on_path('shader_runner_gles3')]
 
 
-def catchsegv_cmd() -> list:
+def catchsegv_cmd() -> str:
     return gfuzz_common.tool_on_path('catchsegv')
 
 
@@ -246,6 +244,13 @@ def run_image_job(json_file: str, status_file: str,
     :param skip_render: whether to skip rendering or not.
     """
 
+    use_catchsegv = True
+    # noinspection PyBroadException
+    try:
+        gfuzz_common.tool_on_path('catchsegv')
+    except BaseException:
+        use_catchsegv = False
+
     assert os.path.isdir(output_dir)
     assert os.path.isfile(json_file)
 
@@ -282,22 +287,23 @@ def run_image_job(json_file: str, status_file: str,
     # output is.
 
     if not skip_render and status == STATUS_SUCCESS:
-        # An image was rendered, so we need to check for nondet. We do this by renaming the
-        # rendered image, rendering a second image, and using filecmp to compare the files.
-        if not os.path.isfile(PNG_FILENAME):
-            raise Exception("Shader runner successfully rendered, but no image was dumped?")
-        gfuzz_common.log('An image was rendered - rendering again to check for nondet.')
-        os.rename(PNG_FILENAME, COMPARE_PNG_FILENAME)
-        status = \
-            gfuzz_common.run_catchsegv(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True) \
-            if use_catchsegv else \
-            gfuzz_common.subprocess_helper(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
-        # Something is horribly wrong if shader crashes/timeouts are inconsistent per shader.
-        if not status == STATUS_SUCCESS:
-            raise Exception("Shader inconsistently fails - check your graphics drivers?")
-        if not os.path.isfile(PNG_FILENAME):
-            raise Exception("Shader runner successfully rendered, but no image was dumped?")
         try:
+            # An image was rendered, so we need to check for nondet. We do this by renaming the
+            # rendered image, rendering a second image, and using filecmp to compare the files.
+            assert os.path.isfile(PNG_FILENAME), \
+                "Shader runner successfully rendered, but no image was dumped?"
+            gfuzz_common.log('An image was rendered - rendering again to check for nondet.')
+            os.rename(PNG_FILENAME, COMPARE_PNG_FILENAME)
+            status = \
+                gfuzz_common.run_catchsegv(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True) \
+                if use_catchsegv else \
+                gfuzz_common.subprocess_helper(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
+            # Something is horribly wrong if shader crashes/timeouts are inconsistent per shader.
+            assert status == STATUS_SUCCESS, \
+                "Shader inconsistently fails - check your graphics drivers?"
+            assert os.path.isfile(PNG_FILENAME), \
+                "Shader runner successfully rendered, but no image was dumped?"
+
             gfuzz_common.log('Comparing dumped PNG images...')
             if filecmp.cmp(PNG_FILENAME, COMPARE_PNG_FILENAME):
                 gfuzz_common.log('Images are identical.')
@@ -341,12 +347,6 @@ def main():
     args = parser.parse_args()
 
     gfuzz_common.tool_on_path('shader_runner_gles3')
-    # noinspection PyBroadException
-    try:
-        global use_catchsegv
-        gfuzz_common.tool_on_path('catchsegv')
-    except BaseException:
-        use_catchsegv = False
     gfuzz_common.log('Worker: ' + args.worker_name)
     server = args.server + '/request'
     gfuzz_common.log('server: ' + server)
