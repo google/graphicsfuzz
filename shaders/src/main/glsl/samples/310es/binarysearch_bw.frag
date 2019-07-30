@@ -94,7 +94,6 @@ int binarySearch(Obj obj, int x) {
 void main() {
     Obj obj;
     for (int i = 0; i < 10; i++) {
-        int x;
         if (i == 0) {
             obj.prime_numbers[i] = 2;
         } else if (i == 1) {

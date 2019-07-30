@@ -31,7 +31,7 @@ void mergeSort() {
     int i, j, k, size, l1, h1, l2, h2, temp[10];
     for (size = 1; size < n; size = size * 2 ) {
         l1 = 0;
-		k = 0;
+        k = 0;
 		while (l1 + size < n) {
 			h1 = l1 + size - 1;
 			l2 = h1 + 1;

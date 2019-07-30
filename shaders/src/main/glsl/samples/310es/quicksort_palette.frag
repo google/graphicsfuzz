@@ -83,9 +83,8 @@ void main() {
     for (int i = 0; i < 10; i ++) {
         obj.numbers[i] = (10 - i) * int(injectionSwitch.y);
     }
-    
     quicksort();
-	vec2 uv = gl_FragCoord.xy / resolution;
+    vec2 uv = gl_FragCoord.xy / resolution;
 
 	vec3 color = palette(uv.x, vec3( float(obj.numbers[4]) * 0.1 ), vec3(0.5, float(obj.numbers[4]) * 0.1, 0.8), vec3(injectionSwitch.y), vec3(0., 0.33, 0.67));
     if (uv.x > (1.0/4.0)) {
