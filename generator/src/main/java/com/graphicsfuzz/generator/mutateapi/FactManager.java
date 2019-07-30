@@ -51,17 +51,6 @@ public class FactManager {
     return Collections.unmodifiableMap(variableFacts);
   }
 
-  public Optional<List<FunctionFact>> getFunctionFacts(Value value) {
-    if (!functionFacts.containsKey(value)) {
-      return Optional.empty();
-    }
-    return functionFacts.entrySet()
-        .stream()
-        .filter(item -> item.getKey().equals(value))
-        .map(Map.Entry::getValue)
-        .findFirst();
-  }
-
   public Optional<List<VariableFact>> getVariableFacts(Value value) {
     return variableFacts.entrySet()
         .stream()
@@ -72,6 +61,17 @@ public class FactManager {
 
   public Map<Value, List<FunctionFact>> getFunctionFacts() {
     return Collections.unmodifiableMap(functionFacts);
+  }
+
+  public Optional<List<FunctionFact>> getFunctionFacts(Value value) {
+    if (!functionFacts.containsKey(value)) {
+      return Optional.empty();
+    }
+    return functionFacts.entrySet()
+        .stream()
+        .filter(item -> item.getKey().equals(value))
+        .map(Map.Entry::getValue)
+        .findFirst();
   }
 
   public void addVariableFact(Value value, VariableFact variableFact) {

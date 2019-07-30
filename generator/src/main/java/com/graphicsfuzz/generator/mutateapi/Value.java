@@ -24,7 +24,7 @@ import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
 import java.util.List;
 import java.util.Optional;
 
-public interface Value{
+public interface Value {
 
   Type getType();
 

@@ -35,13 +35,8 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.PipelineInfo;
-import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.generator.fuzzer.Fuzzer;
-import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
-import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
-import com.sun.jdi.FloatValue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -412,8 +407,8 @@ public class ExpressionGenerator {
       }
       if (type == BasicType.UINT) {
         final String intString = String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN);
-        return new NumericValue(BasicType.UINT, Optional.of(Math.abs(Integer.valueOf(intString)))
-            , atGlobalScope);
+        return new NumericValue(BasicType.UINT, Optional.of(Math.abs(Integer.valueOf(intString))), 
+        atGlobalScope);
       }
       throw new RuntimeException("Not implemented yet!");
     }
