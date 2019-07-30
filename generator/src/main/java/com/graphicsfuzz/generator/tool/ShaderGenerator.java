@@ -63,7 +63,7 @@ public class ShaderGenerator {
   public static void mainHelper(String[] args) throws ArgumentParserException, IOException,
       ParseTimeoutException, InterruptedException, GlslParserException {
 
-    final TranslationUnit tu = new TranslationUnit(Optional.of(ShadingLanguageVersion.GLSL_420),
+    final TranslationUnit tu = new TranslationUnit(Optional.of(ShadingLanguageVersion.ESSL_310),
         Arrays.asList(
             new PrecisionDeclaration("precision mediump float;"),
             new FunctionDefinition(

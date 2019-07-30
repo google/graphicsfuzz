@@ -41,6 +41,7 @@ import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
+import com.sun.jdi.FloatValue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -278,10 +279,8 @@ public class ExpressionGenerator {
         floatValue = Math.abs(floatValue);
       }
       name.append("_");
-      // If the value is float, replaces dot with underscore, i.e., 0.45 will be converted to 0_45.
-      name.append(value.getType() == BasicType.FLOAT ?
-          Float.toString(floatValue).replace(".", "_")
-          : floatValue);
+      // Replace dot with underscore, i.e., 0.45 will be converted to 0_45.
+      name.append(Float.toString(floatValue).replace(".", "_"));
 
     }
     if (value instanceof BooleanValue) {
