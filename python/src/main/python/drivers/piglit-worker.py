@@ -70,6 +70,8 @@ STATUS_NONDET = 'NONDET'
 
 TIMEOUT = 30
 
+use_catchsegv = True
+
 
 def glxinfo_cmd() -> list:
     return [gfuzz_common.tool_on_path('glxinfo'), '-B']
@@ -80,7 +82,7 @@ def shader_runner_cmd() -> list:
 
 
 def catchsegv_cmd() -> list:
-    return [gfuzz_common.tool_on_path('catchsegv')]
+    return gfuzz_common.tool_on_path('catchsegv')
 
 
 def thrift_connect(server: str, worker_name: str, worker_info: str) -> (FuzzerService, str):
@@ -259,15 +261,21 @@ def run_image_job(json_file: str, status_file: str,
     except Exception as ex:
         gfuzz_common.log('Could not create shader_test from the given job.')
         raise ex
-
-    shader_runner_cmd_list = catchsegv_cmd() + shader_runner_cmd() + \
+    shader_runner_cmd_list = shader_runner_cmd() + \
         [shader_test_file, SHADER_RUNNER_ARG_AUTO,
          SHADER_RUNNER_ARG_UNIFORMS, SHADER_RUNNER_ARG_SUBTESTS]
-
+    if use_catchsegv:
+        shader_runner_cmd_list.insert(0, catchsegv_cmd())
     if not skip_render:
         shader_runner_cmd_list.append(SHADER_RUNNER_ARG_PNG)
 
-    status = gfuzz_common.run_catchsegv(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
+    gfuzz_common.remove(PNG_FILENAME)
+    gfuzz_common.remove(COMPARE_PNG_FILENAME)
+
+    status = \
+        gfuzz_common.run_catchsegv(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True) \
+        if use_catchsegv else \
+        gfuzz_common.subprocess_helper(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
 
     # Piglit throws the output PNG render into whatever the current working directory is
     # (and there's no way to specify a location to write to) - we need to move it to wherever our
@@ -276,19 +284,33 @@ def run_image_job(json_file: str, status_file: str,
     if not skip_render and status == STATUS_SUCCESS:
         # An image was rendered, so we need to check for nondet. We do this by renaming the
         # rendered image, rendering a second image, and using filecmp to compare the files.
-        assert os.path.isfile(PNG_FILENAME)
+        if not os.path.isfile(PNG_FILENAME):
+            raise Exception("Shader runner successfully rendered, but no image was dumped?")
+        gfuzz_common.log('An image was rendered - rendering again to check for nondet.')
         os.rename(PNG_FILENAME, COMPARE_PNG_FILENAME)
-        status = gfuzz_common.run_catchsegv(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
+        status = \
+            gfuzz_common.run_catchsegv(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True) \
+            if use_catchsegv else \
+            gfuzz_common.subprocess_helper(shader_runner_cmd_list, timeout=TIMEOUT, verbose=True)
         # Something is horribly wrong if shader crashes/timeouts are inconsistent per shader.
         if not status == STATUS_SUCCESS:
-            raise AssertionError("Shader inconsistently fails - check your graphics drivers?")
-        assert os.path.isfile(PNG_FILENAME)
-        if filecmp.cmp(PNG_FILENAME, COMPARE_PNG_FILENAME):
-            shutil.move(PNG_FILENAME, png_file)
-        else:
-            status = STATUS_NONDET
-            shutil.move(COMPARE_PNG_FILENAME, os.path.join(output_dir, NONDET0_PNG))
-            shutil.move(PNG_FILENAME, os.path.join(output_dir, NONDET1_PNG))
+            raise Exception("Shader inconsistently fails - check your graphics drivers?")
+        if not os.path.isfile(PNG_FILENAME):
+            raise Exception("Shader runner successfully rendered, but no image was dumped?")
+        try:
+            gfuzz_common.log('Comparing dumped PNG images...')
+            if filecmp.cmp(PNG_FILENAME, COMPARE_PNG_FILENAME):
+                gfuzz_common.log('Images are identical.')
+                shutil.move(PNG_FILENAME, png_file)
+            else:
+                gfuzz_common.log('Images are different.')
+                status = STATUS_NONDET
+                shutil.move(COMPARE_PNG_FILENAME, os.path.join(output_dir, NONDET0_PNG))
+                shutil.move(PNG_FILENAME, os.path.join(output_dir, NONDET1_PNG))
+        finally:
+            gfuzz_common.log('Removing dumped images...')
+            gfuzz_common.remove(PNG_FILENAME)
+            gfuzz_common.remove(COMPARE_PNG_FILENAME)
 
     gfuzz_common.log('STATUS: ' + status)
 
@@ -319,9 +341,12 @@ def main():
     args = parser.parse_args()
 
     gfuzz_common.tool_on_path('shader_runner_gles3')
-    gfuzz_common.tool_on_path('glxinfo')
-    gfuzz_common.tool_on_path('catchsegv')
-
+    # noinspection PyBroadException
+    try:
+        global use_catchsegv
+        gfuzz_common.tool_on_path('catchsegv')
+    except BaseException:
+        use_catchsegv = False
     gfuzz_common.log('Worker: ' + args.worker_name)
     server = args.server + '/request'
     gfuzz_common.log('server: ' + server)
