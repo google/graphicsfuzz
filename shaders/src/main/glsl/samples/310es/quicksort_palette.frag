@@ -85,8 +85,8 @@ void main() {
     }
     quicksort();
     vec2 uv = gl_FragCoord.xy / resolution;
-
-	vec3 color = palette(uv.x, vec3( float(obj.numbers[4]) * 0.1 ), vec3(0.5, float(obj.numbers[4]) * 0.1, 0.8), vec3(injectionSwitch.y), vec3(0., 0.33, 0.67));
+    
+    vec3 color = palette(uv.x, vec3( float(obj.numbers[4]) * 0.1 ), vec3(0.5, float(obj.numbers[4]) * 0.1, 0.8), vec3(injectionSwitch.y), vec3(0., 0.33, 0.67));
     if (uv.x > (1.0/4.0)) {
         int count = 0;
         do {
