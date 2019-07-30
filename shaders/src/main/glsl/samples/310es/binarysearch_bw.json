@@ -1,0 +1,16 @@
+{
+    "injectionSwitch": {
+        "func":  "glUniform2f",
+        "args": [
+            0.0,
+            1.0
+        ]
+    },
+    "resolution": {
+        "func":  "glUniform2f",
+        "args": [
+            256.0,
+            256.0
+        ]
+    }
+}
