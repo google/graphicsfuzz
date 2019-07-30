@@ -135,6 +135,6 @@ void main() {
         }
     }
 
-	_GLF_color = vec4(color, injectionSwitch.y);
+    _GLF_color = vec4(color, injectionSwitch.y);
 
 }

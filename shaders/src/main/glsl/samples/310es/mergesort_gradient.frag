@@ -29,41 +29,44 @@ int data[10];
 void mergeSort() {
     const int n = 10;
     int i, j, k, size, l1, h1, l2, h2, temp[10];
+
     for (size = 1; size < n; size = size * 2 ) {
         l1 = 0;
         k = 0;
-		while (l1 + size < n) {
-			h1 = l1 + size - 1;
-			l2 = h1 + 1;
-			h2 = l2 + size - 1;
+        while (l1 + size < n) {
+            h1 = l1 + size - 1;
+            l2 = h1 + 1;
+            h2 = l2 + size - 1;
 
-			if (h2 >= n) {
+            if (h2 >= n) {
                 h2 = n-1;
             }
 
-			i = l1;
-			j = l2;
+            i = l1;
+            j = l2;
 
-			while (i <= h1 && j <= h2) {
-				if (data[i] <= data[j]) {
+            while (i <= h1 && j <= h2) {
+                if (data[i] <= data[j]) {
                     temp[k++] = data[i++];
                 } else {
                     temp[k++] = data[j++];
                 }
-			}
-			while (i <= h1) {
+            }
+
+            while (i <= h1) {
                 temp[k++] = data[i++];
             }
-			while (j <= h2) {
+            while (j <= h2) {
                 temp[k++] = data[j++];
             }
-			l1 = h2 + 1; 
-		}
-		for (i = l1; k < n; i++) {
+            l1 = h2 + 1;
+        }
+
+        for (i = l1; k < n; i++) {
             temp[k++] = data[i];
         }
-			
-		for (i = 0; i < n; i++) {
+
+        for (i = 0; i < n; i++) {
             data[i] = temp[i];
         }
     }
@@ -72,7 +75,7 @@ void mergeSort() {
 void main() {    
     int i = int(injectionSwitch.x);
     do{
-         switch(i) {
+        switch(i) {
             case 0:
                 data[i] = 4;
             break;
