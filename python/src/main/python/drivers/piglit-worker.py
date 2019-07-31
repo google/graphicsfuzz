@@ -246,10 +246,10 @@ def run_image_job(json_file: str, status_file: str,
     """
 
     use_catchsegv = True
-    # noinspection PyBroadException
+
     try:
         gfuzz_common.tool_on_path('catchsegv')
-    except Exception:
+    except gfuzz_common.ToolNotOnPathError:
         use_catchsegv = False
 
     assert os.path.isdir(output_dir)

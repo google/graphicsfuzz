@@ -71,6 +71,9 @@ def tool_on_path(tool: str) -> str:
     return runspv.tool_on_path(tool)
 
 
+ToolNotOnPathError = runspv.ToolNotOnPathError
+
+
 def remove_end(str_in: str, str_end: str) -> str:
     """
     Helper function to remove the end of a string. Useful for removing file extensions if you
