@@ -16,6 +16,7 @@
 
 import os
 import shutil
+import subprocess
 from typing import List
 
 import runspv
@@ -68,6 +69,9 @@ def tool_on_path(tool: str) -> str:
     :return: the path of the tool, else ToolNotOnPathError if the tool isn't on the PATH.
     """
     return runspv.tool_on_path(tool)
+
+
+ToolNotOnPathError = runspv.ToolNotOnPathError
 
 
 def remove_end(str_in: str, str_end: str) -> str:
@@ -133,3 +137,59 @@ def remove_start(s: str, start: str):
     """
     assert s.startswith(start)
     return s[len(start):]
+
+
+def subprocess_helper(cmd: List[str], check=True, timeout=None, verbose=False) \
+                   -> subprocess.CompletedProcess:
+    """
+    Helper function to execute a command in the shell. Wraps around runspv.subprocess_helper().
+    :param cmd: the command (and its arguments) to execute.
+    :param check: whether to throw CalledProcessError if a non-zero returncode is issued from the
+                  process. Defaults to True.
+    :param timeout: time to wait in seconds before killing process and throwing TimeoutExpired.
+                    Defaults to None.
+    :param verbose: whether to log process stdout/stderr more extensively. Defaults to False.
+    :return: a subprocess.CompletedProcess object.
+    """
+    return runspv.subprocess_helper(cmd, check, timeout, verbose)
+
+
+def run_catchsegv(cmd: List[str], timeout=None, verbose=False) -> str:
+    """
+    Helper function similar to subprocess_helper, but is able to handle the killing of child
+    processes as well. This is most useful when trying to capture segmentation faults, as you can
+    run 'catchsegv (command)' in shell to ensure that the segfault is logged. Wraps around
+    runspv.run_catchsegv().
+    :param cmd: the command (and its arguments) to execute.
+    :param timeout: time to wait in seconds before killing process and throwing TimeoutExpired.
+                    Defaults to None.
+    :param verbose: whether to log process stdout/stderr more extensively. Defaults to False.
+    :return: the status of the process after running - 'SUCCESS', 'TIMEOUT', or 'CRASH'.
+    """
+    return runspv.run_catchsegv(cmd, timeout, verbose)
+
+
+def log(message: str):
+    """
+    Helper function to output a message to stdout, and optionally log to a file if set_logfile()
+    was used previously to set a global logfile. Wraps around runspv.log().
+    :param message: the message to log to stdout/file.
+    """
+    runspv.log(message)
+
+
+def set_logfile(file):
+    """
+    Helper function to set the global logfile. Wraps around runspv.log_to_file. Workaround for
+    runspv.log() using a global logfile.
+    :param file: the file to log to - must be opened already.
+    """
+    runspv.log_to_file = file
+
+
+def unset_logfile():
+    """
+    Helper function to unset the global logfile. Wraps around runspv.log_to_file. Workaround for
+    runspv.log() using a global logfile.
+    """
+    runspv.log_to_file = None
