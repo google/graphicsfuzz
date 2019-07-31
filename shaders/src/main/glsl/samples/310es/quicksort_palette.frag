@@ -101,15 +101,18 @@ void main() {
         do {
             color -= palette(trunc(uv.x), vec3(float(obj.numbers[4]) * 0.1), trunc(vec3(0.1)), vec3(float(obj.numbers[int(injectionSwitch.y)]) * 0.1), vec3(injectionSwitch.x, float(obj.numbers[2]) * 0.1 , float(obj.numbers[8]) * 0.1));
             color.x *= fwidth(color[1]) * ldexp(gl_FragCoord.x, count) + (isinf(color.y) ? asinh(color.y): fwidth(gl_FragCoord[0]));
-            color[0] += (isnan(color[0]) ? tanh(color.x): trunc(color.y));
+            color[1] += (isnan(color[0]) ? tanh(color.x): trunc(color.y));
+
             count++;
         } while (count != obj.numbers[1]);
     }
-    if (uv.x > (3.0/4.0)) {
+    if(uv.x > (3.0/4.0)) {
         int count = int(injectionSwitch.x);
         do {
-            color -= palette(uv.x, vec3(float(obj.numbers[int(injectionSwitch.x)]) * 0.1), vec3(0.6), trunc(vec3(0.1)), vec3(injectionSwitch.x, 0.2, float(obj.numbers[int(injectionSwitch.x)]) * 0.1));
+            color /= palette(uv.x, vec3(float(obj.numbers[int(injectionSwitch.x)]) * 0.1), vec3(0.6), trunc(vec3(0.1)), vec3(injectionSwitch.x, 0.2, float(obj.numbers[int(injectionSwitch.x)]) * 0.1));
             color[0] += fwidth(color.x) * fwidth(color.y);
+            color.z /= trunc(atanh(color.y)) * tanh(color[0]) / cosh(color[1]) ;
+            color.y -= ldexp(injectionSwitch.x, isnan(color.x) ? findMSB(count) : findMSB(count));
             count++;
         } while (count != obj.numbers[2]);
     }
