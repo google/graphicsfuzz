@@ -102,13 +102,13 @@ class BinaryManager(BinaryGetter):
 
     An instance of BinaryManager is the main way that code accesses binaries. BinaryManger allows certain tests and/or
     devices to override binaries by passing a list of binary versions that take priority, so the correct versions are
-    always used. Plus, the current platform will used when deciding which binary to download and return.
+    always used. Plus, the current platform will be used when deciding which binary to download and return.
 
     See the Binary proto.
 
     _binary_list: A list of Binary with name, version, configuration. This is used to map a binary name to a Binary.
-    _resolved_paths: Binary (serialized) -> Path
-    _binary_artifacts: A list of all available binary artifacts/recipes.
+    _resolved_paths: A map containing: Binary (serialized bytes) -> Path
+    _binary_artifacts: A list of all available binary artifacts/recipes stored as tuples: (ArchiveSet, artifact_path).
     """
 
     _binary_list: List[Binary]
