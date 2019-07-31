@@ -21,6 +21,7 @@ import sys
 import filecmp
 import shutil
 import time
+from typing import List
 
 import gfuzz_common
 import graphicsfuzz_piglit_converter
@@ -71,11 +72,11 @@ STATUS_NONDET = 'NONDET'
 TIMEOUT = 30
 
 
-def glxinfo_cmd() -> list:
+def glxinfo_cmd() -> List[str]:
     return [gfuzz_common.tool_on_path('glxinfo'), '-B']
 
 
-def shader_runner_cmd() -> list:
+def shader_runner_cmd() -> List[str]:
     return [gfuzz_common.tool_on_path('shader_runner_gles3')]
 
 
@@ -248,7 +249,7 @@ def run_image_job(json_file: str, status_file: str,
     # noinspection PyBroadException
     try:
         gfuzz_common.tool_on_path('catchsegv')
-    except BaseException:
+    except Exception:
         use_catchsegv = False
 
     assert os.path.isdir(output_dir)
