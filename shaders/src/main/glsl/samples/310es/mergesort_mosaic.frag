@@ -109,60 +109,57 @@ void main() {
             }
             data[i] *= int(dFdx(fwidth(float(data[i]))) + ldexp(injectionSwitch.y, i));
             i++;
-        } while (i < 10);
+    } while (i < 10);
 
-        mergeSort();
+    mergeSort();
 
-        mat3 pos = mat3(
-            vec3(4, 0, int(injectionSwitch.y)) * ldexp(0.5, 2),
-            vec3(0, -5, int(injectionSwitch.y)) * ldexp(0.1, 5),
-            fwidth(vec3(1, 8, int(injectionSwitch.y))* dFdy(ldexp(injectionSwitch.y, 0))));
+    mat3 pos = mat3(vec3(4, 0, int(injectionSwitch.y)) * ldexp(0.5, 2), vec3(0, -5, int(injectionSwitch.y)) * ldexp(0.1, 5), fwidth(vec3(1, 8, int(injectionSwitch.y))* dFdy(ldexp(injectionSwitch.y, 0))));
 
-        vec3 vecCoor = pos * vec3(gl_FragCoord.xx / resolution.yx, 1);
-        vecCoor = roundEven(vecCoor);
-        vec2 color;
+    vec3 vecCoor = pos * vec3(gl_FragCoord.xx / resolution.yx, 1);
+    vecCoor = roundEven(vecCoor);
+    vec2 color;
 
-        do {
-            if (int(gl_FragCoord[1]) < 30) {
-                color = fract(sin(vecCoor.yx - trunc(float(data[0]))));
-                color[1] += dFdy(vecCoor[1] * vecCoor[0]);
-                break;
-            } else if (int(gl_FragCoord[1]) < 60) {
-                color = fract(sin(vecCoor.yx - trunc(float(data[1]))));
-                color.y -= dFdx(color.x) * dFdy(color.y) + (isinf(color.y) ? asinh(color.y): fwidth(color.y));
-                break;
-            } else if (int(gl_FragCoord[1]) < 90) {
-                color = fract(sin(vecCoor.yx - trunc(float(data[2]))));
-                color.x += atanh(color.x) * cosh(injectionSwitch.y);
-                break;
-            } else if (int(gl_FragCoord[1]) < 120) {
-                color = fract(sin(vecCoor.yx - trunc(float(data[3]))));
-                color.y -= cosh(color[0] + dFdy(gl_FragCoord.y));
-                break;
-            } else if (int(gl_FragCoord[1]) < 150) {
-                discard;
-                break;
-            } else if (int(gl_FragCoord[1]) < 180) {
-                color = fract(sin(vecCoor.yx - trunc(float(data[4]))));
-                color[1] -= asinh(gl_FragCoord.y * dFdy(color.y));
-                break;
-            } else if (int(gl_FragCoord[1]) < 210) {
-                color = fract(sin(vecCoor.yx - trunc(float(data[5]))));
-                color.y -= tanh(color.x) / cosh(color.y);
-                break;
-            } else if (int(gl_FragCoord[1]) < 240) {
-                color = fract(sin(vecCoor.yx - trunc(float(data[6]))));
-                color.y -= tanh(color.x) / cosh(color.y) + (isnan(color[0]) ? tanh(color.x): trunc(color.x));
-                break;
-            } else if (int(gl_FragCoord[1]) < 270) {
-                color = fract(sin(vecCoor.yx - trunc(float(data[7]))));
-                color.y -= degrees(color.x) - ldexp(color.y, 5);
-                break;
-            } else{
-                discard;
-            }
-        } while(0 == int(injectionSwitch.x));
+    do {
+        if (int(gl_FragCoord[1]) < 30) {
+            color = fract(sin(vecCoor.yx - trunc(float(data[0]))));
+            color[1] += dFdy(vecCoor[1] * vecCoor[0]);
+            break;
+        } else if (int(gl_FragCoord[1]) < 60) {
+            color = fract(sin(vecCoor.yx - trunc(float(data[1]))));
+            color.y -= dFdx(color.x) * dFdy(color.y) + (isinf(color.y) ? asinh(color.y): fwidth(color.y));
+            break;
+        } else if (int(gl_FragCoord[1]) < 90) {
+            color = fract(sin(vecCoor.yx - trunc(float(data[2]))));
+            color.x += atanh(color.x) * cosh(injectionSwitch.y);
+            break;
+        } else if (int(gl_FragCoord[1]) < 120) {
+            color = fract(sin(vecCoor.yx - trunc(float(data[3]))));
+            color.y -= cosh(color[0] + dFdy(gl_FragCoord.y));
+            break;
+        } else if (int(gl_FragCoord[1]) < 150) {
+            discard;
+            break;
+        } else if (int(gl_FragCoord[1]) < 180) {
+            color = fract(sin(vecCoor.yx - trunc(float(data[4]))));
+            color[1] -= asinh(gl_FragCoord.y * dFdy(color.y));
+            break;
+        } else if (int(gl_FragCoord[1]) < 210) {
+            color = fract(sin(vecCoor.yx - trunc(float(data[5]))));
+            color.y -= tanh(color.x) / cosh(color.y);
+            break;
+        } else if (int(gl_FragCoord[1]) < 240) {
+            color = fract(sin(vecCoor.yx - trunc(float(data[6]))));
+            color.y -= tanh(color.x) / cosh(color.y) + (isnan(color[0]) ? tanh(color.x): trunc(color.x));
+            break;
+        } else if (int(gl_FragCoord[1]) < 270) {
+            color = fract(sin(vecCoor.yx - trunc(float(data[7]))));
+            color.y -= degrees(color.x) - ldexp(color.y, 5);
+            break;
+        } else{
+            discard;
+        }
+    } while(0 == int(injectionSwitch.x));
 
-        _GLF_color = vec4(vec3(color, trunc(injectionSwitch.y)), injectionSwitch.y);
+    _GLF_color = vec4(vec3(color, trunc(injectionSwitch.y)), injectionSwitch.y);
 
 }
