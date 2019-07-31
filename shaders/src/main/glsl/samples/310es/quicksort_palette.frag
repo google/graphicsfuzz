@@ -80,35 +80,40 @@ vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
 }
 
 void main() {
-    for (int i = 0; i < 10; i ++) {
+    for (int i = int(injectionSwitch.x); i < 10; i ++) {
         obj.numbers[i] = (10 - i) * int(injectionSwitch.y);
     }
     quicksort();
     vec2 uv = gl_FragCoord.xy / resolution;
-    
-    vec3 color = palette(uv.x, vec3( float(obj.numbers[4]) * 0.1 ), vec3(0.5, float(obj.numbers[4]) * 0.1, 0.8), vec3(injectionSwitch.y), vec3(0., 0.33, 0.67));
+
+    vec3 color = palette(tanh(uv.x), vec3( float(obj.numbers[6]) * 0.1 ), vec3(0.5, float(obj.numbers[4]) * 0.1, 0.8), trunc(vec3(injectionSwitch.y)), vec3(injectionSwitch.x, 0.33, 0.67));
     if (uv.x > (1.0/4.0)) {
-        int count = 0;
+        int count = int(injectionSwitch.x);
         do {
-            color += palette(uv.x, vec3(0.5, float(obj.numbers[8]) * 0.1, 0.2), vec3(0.5), vec3(1.0), vec3(float(obj.numbers[4]) * 0.1, 0.33, 0.67));
+            color += palette(uv.x, vec3(0.5, float(obj.numbers[8]) * 0.1, 0.2), vec3(0.5), trunc(vec3(injectionSwitch.y)), vec3(float(obj.numbers[4]) * 0.1, 0.33, 0.67));
+            color[0] *= fwidth(color.y) * ldexp(color.x, count);
+            color.y /= tanh(color[0]) / cosh(color[1]);
             count++;
-        } while (count != obj.numbers[0]);
+        } while (count != obj.numbers[int(injectionSwitch.x)]);
     }
     if (uv.x > (2.0/4.0)) {
-        int count = 0;
+        int count = int(injectionSwitch.x);
         do {
-            color -= palette(uv.x, vec3(float(obj.numbers[4]) * 0.1), vec3(0.1), vec3(float(obj.numbers[int(injectionSwitch.y)]) * 0.1), vec3(0., float(obj.numbers[9]) * 0.1 , float(obj.numbers[8]) * 0.1));
+            color -= palette(trunc(uv.x), vec3(float(obj.numbers[4]) * 0.1), trunc(vec3(0.1)), vec3(float(obj.numbers[int(injectionSwitch.y)]) * 0.1), vec3(injectionSwitch.x, float(obj.numbers[2]) * 0.1 , float(obj.numbers[8]) * 0.1));
+            color.x *= fwidth(color[1]) * ldexp(gl_FragCoord.x, count) + (isinf(color.y) ? asinh(color.y): fwidth(gl_FragCoord[0]));
+            color[0] += (isnan(color[0]) ? tanh(color.x): trunc(color.y));
             count++;
         } while (count != obj.numbers[1]);
     }
-    if(uv.x > (3.0/4.0)) {
-        int count = 0;
+    if (uv.x > (3.0/4.0)) {
+        int count = int(injectionSwitch.x);
         do {
-            color -= palette(uv.x, vec3(float(obj.numbers[int(injectionSwitch.x)]) * 0.1), vec3(0.6), vec3(0.1), vec3(0.0, 0.2, float(obj.numbers[0]) * 0.1));
+            color -= palette(uv.x, vec3(float(obj.numbers[int(injectionSwitch.x)]) * 0.1), vec3(0.6), trunc(vec3(0.1)), vec3(injectionSwitch.x, 0.2, float(obj.numbers[int(injectionSwitch.x)]) * 0.1));
+            color[0] += fwidth(color.x) * fwidth(color.y);
             count++;
         } while (count != obj.numbers[2]);
     }
 
     _GLF_color = vec4(color, injectionSwitch.y);
-    
+
 }

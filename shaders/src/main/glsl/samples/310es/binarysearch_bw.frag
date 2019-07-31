@@ -32,16 +32,19 @@ vec2 brick(vec2 uv) {
     int a = 4;
     do {
         uv.y -= step(injectionSwitch.y, uv.x);
+        uv.x -= fract(tanh(uv.x)) / ldexp(injectionSwitch.y, findMSB(a));
         a--;
     } while (a > int(injectionSwitch.x));
     int b = 3;
     do {
         uv.y -= step(injectionSwitch.y, uv.x) + float(a);
+        uv.x *= (isnan(uv.y) ? cosh(gl_FragCoord.y) : tanh(gl_FragCoord.x));
         b--;
     } while (b > int(injectionSwitch.x));
     int c = 2;
     do {
         uv.y -= step(injectionSwitch.y, uv.x) + float(a) + float(b);
+        uv.x += ldexp(injectionSwitch.y, isinf(uv.y + uv.x) ? findMSB(b) : findMSB(a));
         c--;
     } while (c > int(injectionSwitch.x));
     int d = 1;
