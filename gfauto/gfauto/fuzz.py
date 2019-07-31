@@ -18,6 +18,7 @@
 
 The main entry point to GraphicsFuzz Auto.
 """
+
 import argparse
 import random
 import secrets

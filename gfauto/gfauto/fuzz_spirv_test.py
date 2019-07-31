@@ -18,6 +18,7 @@
 
 Functions for handling spirv-fuzz generated tests.
 """
+
 import random
 from pathlib import Path
 from typing import List, Optional
