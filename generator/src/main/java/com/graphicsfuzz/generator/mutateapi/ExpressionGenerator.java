@@ -178,15 +178,16 @@ public class ExpressionGenerator {
       );
     }
 
-    // From the equation X = A + B.
+    // Following the equation X = A + B.
     //
-    // Given the original value X, we randomly generate number A, later used as the left
-    // expression, and subtract it with the number X resulting in the final number B which will
-    // be applied as the left expression. Finally, adding up these two numbers A and B will give
+    // Given the original value X, we randomly generate number A, which will be used as the
+    // left expression, and subtract it with the original number X. Then we use the outcome as
+    // the right expression. Finally, the result of adding two numbers A and B would be equal to
     // the original value X.
+    //
     // For example: If number 5 is an input and we generate a random number 3, we then subtract 5
-    // with 3. The result is 2 and these number will be make left and right expressions
-    // when generating a binary expression.
+    // with 3 which will give 2 as the result. Next we derive left and right expressions from
+    // these two numbers and use them when generating a binary expression.
 
     Number left = null;
     Number right = null;
