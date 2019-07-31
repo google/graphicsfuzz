@@ -27,20 +27,10 @@ public class BooleanValue implements Value {
 
   private final Optional<Boolean> value;
   private final BasicType type;
-  private boolean atGlobalScope;
 
   public BooleanValue(Optional<Boolean> value) {
-    this(value, false);
-  }
-
-  public BooleanValue(Optional<Boolean> value, boolean atGlobalScope) {
     this.value = value;
     this.type = BasicType.BOOL;
-    this.atGlobalScope = atGlobalScope;
-  }
-
-  public BooleanValue(boolean isTrue) {
-    this(Optional.of(isTrue));
   }
 
   @Override
@@ -52,6 +42,11 @@ public class BooleanValue implements Value {
     if (this == that) {
       return true;
     }
+
+    if (!this.valueIsKnown() && !that.valueIsKnown()) {
+      return true;
+    }
+
     return this.getValue() == that.getValue();
   }
 
@@ -70,22 +65,13 @@ public class BooleanValue implements Value {
   }
 
   @Override
-  public boolean atGlobalScope() {
-    return atGlobalScope;
-  }
-
-  @Override
-  public void setGlobalScope(boolean atGlobalScope) {
-    this.atGlobalScope = atGlobalScope;
-  }
-
-  @Override
   public Expr generateLiteral(LiteralFuzzer literalFuzzer) {
     if (!valueIsKnown()) {
       return literalFuzzer.fuzz(type).orElse(null);
     }
     return new BoolConstantExpr(value.get());
   }
+
 
   @Override
   public String toString() {

@@ -19,32 +19,35 @@ package com.graphicsfuzz.generator.mutateapi;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.Op;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class NumericValue implements Value {
 
   private final BasicType basicType;
   private final Optional<Number> value;
-  private boolean atGlobalScope;
-
-
-  public NumericValue(BasicType basicType, Optional<Number> value, boolean atGlobalScope) {
-    this.basicType = basicType;
-    this.value = value;
-    this.atGlobalScope = atGlobalScope;
-  }
 
   public NumericValue(BasicType basicType, Optional<Number> value) {
-    this(basicType, value, false);
+    this.basicType = basicType;
+    this.value = value;
   }
 
-  public NumericValue(BasicType basicType, Number value) {
-    this(basicType, Optional.of(value));
+  /**
+   * An empty value constructor.
+   *
+   * @param basicType of Value
+   */
+  public NumericValue(BasicType basicType) {
+    this(basicType, Optional.empty());
   }
+
 
   @Override
   public Type getType() {
@@ -54,16 +57,6 @@ public class NumericValue implements Value {
   @Override
   public boolean valueIsKnown() {
     return value.isPresent();
-  }
-
-  @Override
-  public boolean atGlobalScope() {
-    return atGlobalScope;
-  }
-
-  @Override
-  public void setGlobalScope(boolean atGlobalScope) {
-    this.atGlobalScope = atGlobalScope;
   }
 
   @Override
@@ -86,7 +79,6 @@ public class NumericValue implements Value {
     return value;
   }
 
-
   @Override
   public boolean equals(Object that) {
     return that instanceof NumericValue && equals((NumericValue) that);
@@ -99,8 +91,9 @@ public class NumericValue implements Value {
     if (this.getType() != that.getType()) {
       return false;
     }
-
-    if (!valueIsKnown()) {
+    // If the given value(that) is empty we have to tell a program that any value with the correct
+    // type is equal to that value.
+    if (!that.valueIsKnown()) {
       return true;
     }
 

@@ -28,16 +28,10 @@ import java.util.stream.Collectors;
 public class CompositeValue implements Value {
   private final Type type;
   private final Optional<List<Value>> valueList;
-  private boolean atGlobalScope;
 
   public CompositeValue(Type type, Optional<List<Value>> valueList) {
-    this(type, valueList, false);
-  }
-
-  public CompositeValue(Type type, Optional<List<Value>> valueList, boolean atGlobalScope) {
     this.type = type;
     this.valueList = valueList;
-    this.atGlobalScope = atGlobalScope;
   }
 
   @Override
@@ -51,13 +45,24 @@ public class CompositeValue implements Value {
   }
 
   @Override
-  public boolean atGlobalScope() {
-    return atGlobalScope;
+  public boolean equals(Object obj) {
+    return super.equals(obj);
   }
 
-  @Override
-  public void setGlobalScope(boolean atGlobalScope) {
-    this.atGlobalScope = atGlobalScope;
+  public boolean equals(CompositeValue that) {
+    if (this == that) {
+      return true;
+    }
+
+    if (this.getType() != that.getType()) {
+      return false;
+    }
+
+    if (!this.valueIsKnown() && !that.valueIsKnown()) {
+      return true;
+    }
+
+    return false;
   }
 
   @Override

@@ -30,14 +30,7 @@ public interface Value {
 
   boolean valueIsKnown();
 
-  boolean atGlobalScope();
-
-  void setGlobalScope(boolean atGlobalScope);
-
   Expr generateLiteral(LiteralFuzzer literalFuzzer);
-
-
-
 
 
 }

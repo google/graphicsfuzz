@@ -23,6 +23,8 @@ import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
@@ -37,6 +39,7 @@ import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
 import com.graphicsfuzz.util.Constants;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,11 +52,11 @@ import java.util.stream.Collectors;
 public class ExpressionGenerator {
 
   private static final int MAX_FUNCTION_PARAMS = 5;
-  private static final int NUM_WAYS_TO_GENERATE_EXPR = 5;
+  private static final int NUM_WAYS_TO_GENERATE_EXPR = 6;
   private static final int MAX_DEPTH = 5;
   // Theses MIN and Max are taken from the LiteralFuzzer, we may want to consider
   // modifying these values.
-  private static final int INT_MIN = -(1 << 17);
+  private static final int INT_MIN = 0;
   private static final int INT_MAX = 1 << 17;
 
   private static final String UNKNOWN_VALUE = "_UNKNOWN_VALUE";
@@ -140,6 +143,9 @@ public class ExpressionGenerator {
         case 4:
           result = generateKnownFunctionFact(factManager, value, functionDefinition, stmt);
           break;
+        case 5:
+          result = generateAdditionExpression(factManager, functionDefinition, stmt, value);
+          break;
         default:
           throw new RuntimeException("Should be unreachable as switch cases cover all cases");
       }
@@ -149,6 +155,61 @@ public class ExpressionGenerator {
     }
     currentDepth--;
     return result;
+  }
+
+  private Expr generateAdditionExpression(FactManager factManager,
+                                          FunctionDefinition functionDefinition,
+                                          Stmt stmt, Value value) {
+    if (!(value instanceof NumericValue)) {
+      return null;
+    }
+
+    if (value.getType() != BasicType.INT && value.getType() != BasicType.FLOAT) {
+      return null;
+    }
+
+    if (!value.valueIsKnown()) {
+      return new BinaryExpr(
+          generateExpr(factManager, functionDefinition, stmt,
+              new NumericValue((BasicType) value.getType())),
+          generateExpr(factManager, functionDefinition, stmt,
+              new NumericValue((BasicType) value.getType())),
+          BinOp.ADD
+      );
+    }
+
+    // From the equation X = A + B.
+    //
+    // Given the original value X, we randomly generate number A, later used as the left
+    // expression, and subtract it with the number X resulting in the final number B which will
+    // be applied as the left expression. Finally, adding up these two numbers A and B will give
+    // the original value X.
+    // For example: If number 5 is an input and we generate a random number 3, we then subtract 5
+    // with 3. The result is 2 and these number will be make left and right expressions
+    // when generating a binary expression.
+
+    Number left = null;
+    Number right = null;
+
+    if (value.getType() == BasicType.FLOAT) {
+      float original = ((NumericValue) value).getValue().get().floatValue();
+      left = generator.nextFloat();
+      right = original - left.floatValue();
+    }
+
+    if (value.getType() == BasicType.INT) {
+      int original = ((NumericValue) value).getValue().get().intValue();
+      left = generator.nextInt(original);
+      right = original - left.intValue();
+    }
+
+    return new BinaryExpr(
+        generateExpr(factManager, functionDefinition, stmt,
+            new NumericValue((BasicType) value.getType(), Optional.of(left))),
+        generateExpr(factManager, functionDefinition, stmt,
+            new NumericValue((BasicType) value.getType(), Optional.of(right))),
+        BinOp.ADD
+    );
   }
 
   private Expr generateKnownFunctionFact(FactManager factManager,
@@ -289,14 +350,9 @@ public class ExpressionGenerator {
                                     Stmt stmt,
                                     Value value) {
 
-    boolean atGlobalScope = value.atGlobalScope() || generator.nextBoolean();
+    boolean atGlobalScope = factManager == globalFactManager || generator.nextBoolean();
     final String varName = genVarName(value, atGlobalScope);
 
-    // If we are going to generate a global scope fact, we have to tell a program that from now we
-    // are interested only in global-scope expressions by updating atGlobalScope attribute of the
-    // given Value. By doing so, when a program is recursively generating a sub expression it will
-    // consider generating or calling only a global-scope expression.
-    value.setGlobalScope(atGlobalScope);
     final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(varName, null,
         new Initializer(generateExpr(atGlobalScope ? globalFactManager : factManager,
             currentFunction,
@@ -315,6 +371,7 @@ public class ExpressionGenerator {
       currentFunction.getBody().insertBefore(stmt, new DeclarationStmt(variablesDecl));
       factManager.addVariableFact(value, variableDeclFact);
     }
+
 
     return new VariableIdentifierExpr(varName);
   }
@@ -337,10 +394,9 @@ public class ExpressionGenerator {
       // If the fact manager is generating an unknown parameter(value is Optional.empty),
       // when calling this function the fact manager will generate any arbitrary value that
       // matches the parameter type.
-      final Value paramValue = fuzzValue(paramType, value.atGlobalScope());
+      final Value paramValue = fuzzValue(paramType);
       final String paramName = genParamName(paramType, paramValue.valueIsKnown());
 
-      paramValue.setGlobalScope(value.atGlobalScope());
       argumentValues.add(paramValue);
       final ParameterDecl parameterDecl = new ParameterDecl(
           paramName,
@@ -378,37 +434,33 @@ public class ExpressionGenerator {
   }
 
   private List<? extends Type> getAvailableTypes() {
-    return Arrays.asList(BasicType.BOOL, BasicType.FLOAT, BasicType.INT, BasicType.VEC2,
+    return Arrays.asList(BasicType.BOOL, BasicType.INT, BasicType.FLOAT, BasicType.VEC2,
         BasicType.VEC3, BasicType.VEC4);
   }
 
-  private Value fuzzValue(Type type, boolean atGlobalScope) {
-    // An UnKnown value variable is the variable whose value could be anything. The fact manager
+  private Value fuzzValue(Type type) {
+    // An Unknown value variable is the variable whose value could be anything. The fact manager
     // could generate any arbitrary value but with the correct type.
     final boolean isUnknown = generator.nextBoolean();
     if (type == BasicType.BOOL) {
       return new BooleanValue(
-          isUnknown ? Optional.empty() : Optional.of(generator.nextBoolean()),
-          atGlobalScope);
+          isUnknown ? Optional.empty() : Optional.of(generator.nextBoolean()));
     }
     if (BasicType.allScalarTypes().contains(type)) {
       if (isUnknown) {
-        return new NumericValue((BasicType) type, Optional.empty(), atGlobalScope);
+        return new NumericValue((BasicType) type, Optional.empty());
       }
       if (type == BasicType.INT) {
         final String intString = String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN);
-        return new NumericValue(BasicType.INT, Optional.of(Integer.valueOf(intString)),
-            atGlobalScope);
+        return new NumericValue(BasicType.INT, Optional.of(Integer.valueOf(intString)));
       }
       if (type == BasicType.FLOAT) {
         final String floatString = randomFloatString();
-        return new NumericValue(BasicType.FLOAT, Optional.of(Float.valueOf(floatString)),
-            atGlobalScope);
+        return new NumericValue(BasicType.FLOAT, Optional.of(Float.valueOf(floatString)));
       }
       if (type == BasicType.UINT) {
         final String intString = String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN);
-        return new NumericValue(BasicType.UINT, Optional.of(Math.abs(Integer.valueOf(intString))), 
-        atGlobalScope);
+        return new NumericValue(BasicType.UINT, Optional.of(Math.abs(Integer.valueOf(intString))));
       }
       throw new RuntimeException("Not implemented yet!");
     }
@@ -419,7 +471,7 @@ public class ExpressionGenerator {
     if (BasicType.allBasicTypes().contains(type)) {
       final List<Value> values = new ArrayList<>();
       for (int i = 0; i < ((BasicType) type).getNumElements(); i++) {
-        values.add(fuzzValue(((BasicType) type).getElementType(), atGlobalScope));
+        values.add(fuzzValue(((BasicType) type).getElementType()));
       }
       return new CompositeValue(type, Optional.of(values));
     }
