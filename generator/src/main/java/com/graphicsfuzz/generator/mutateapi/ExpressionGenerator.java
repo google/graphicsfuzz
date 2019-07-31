@@ -181,9 +181,9 @@ public class ExpressionGenerator {
     // Following the equation X = A + B.
     //
     // Given the original value X, we randomly generate number A, which will be used as the
-    // left expression, and subtract it with the original number X. Then we use the outcome as
-    // the right expression. Finally, the result of adding two numbers A and B would be equal to
-    // the original value X.
+    // left expression, and subtract it with the original number X. As B = X - A, we then use the
+    // outcome as the right expression. Finally, the result of adding two numbers A and B would
+    // be equal to the original value X.
     //
     // For example: If number 5 is an input and we generate a random number 3, we then subtract 5
     // with 3 which will give 2 as the result. Next we derive left and right expressions from
