@@ -112,7 +112,7 @@ def run_spirv_opt_on_spirv_shader_job(
 
     shader_files = shader_job_util.get_related_files(
         input_spirv_shader_job_json_file_path,
-        language_suffix=shader_job_util.SUFFIX_SPIRV,
+        language_suffix=[shader_job_util.SUFFIX_SPIRV],
     )
 
     util.copy_file(

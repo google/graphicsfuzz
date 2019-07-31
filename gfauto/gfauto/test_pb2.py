@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='gfauto',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x11gfauto/test.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\x8b\x01\n\x04Test\x12 \n\x04glsl\x18\x01 \x01(\x0b\x32\x10.gfauto.TestGlslH\x00\x12\x17\n\x0f\x63rash_signature\x18\x02 \x01(\t\x12\x1e\n\x06\x64\x65vice\x18\x03 \x01(\x0b\x32\x0e.gfauto.Device\x12 \n\x08\x62inaries\x18\x04 \x03(\x0b\x32\x0e.gfauto.BinaryB\x06\n\x04test\"\"\n\x08TestGlsl\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\tb\x06proto3')
+  serialized_pb=_b('\n\x11gfauto/test.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\xb8\x01\n\x04Test\x12 \n\x04glsl\x18\x01 \x01(\x0b\x32\x10.gfauto.TestGlslH\x00\x12+\n\nspirv_fuzz\x18\x05 \x01(\x0b\x32\x15.gfauto.TestSpirvFuzzH\x00\x12\x17\n\x0f\x63rash_signature\x18\x02 \x01(\t\x12\x1e\n\x06\x64\x65vice\x18\x03 \x01(\x0b\x32\x0e.gfauto.Device\x12 \n\x08\x62inaries\x18\x04 \x03(\x0b\x32\x0e.gfauto.BinaryB\x06\n\x04test\"\"\n\x08TestGlsl\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\t\"\x0f\n\rTestSpirvFuzzb\x06proto3')
   ,
   dependencies=[gfauto_dot_common__pb2.DESCRIPTOR,gfauto_dot_device__pb2.DESCRIPTOR,])
 
@@ -44,21 +44,28 @@ _TEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='crash_signature', full_name='gfauto.Test.crash_signature', index=1,
+      name='spirv_fuzz', full_name='gfauto.Test.spirv_fuzz', index=1,
+      number=5, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='crash_signature', full_name='gfauto.Test.crash_signature', index=2,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='device', full_name='gfauto.Test.device', index=2,
+      name='device', full_name='gfauto.Test.device', index=3,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='binaries', full_name='gfauto.Test.binaries', index=3,
+      name='binaries', full_name='gfauto.Test.binaries', index=4,
       number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -80,7 +87,7 @@ _TEST = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=72,
-  serialized_end=211,
+  serialized_end=256,
 )
 
 
@@ -110,18 +117,47 @@ _TESTGLSL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=213,
-  serialized_end=247,
+  serialized_start=258,
+  serialized_end=292,
+)
+
+
+_TESTSPIRVFUZZ = _descriptor.Descriptor(
+  name='TestSpirvFuzz',
+  full_name='gfauto.TestSpirvFuzz',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=294,
+  serialized_end=309,
 )
 
 _TEST.fields_by_name['glsl'].message_type = _TESTGLSL
+_TEST.fields_by_name['spirv_fuzz'].message_type = _TESTSPIRVFUZZ
 _TEST.fields_by_name['device'].message_type = gfauto_dot_device__pb2._DEVICE
 _TEST.fields_by_name['binaries'].message_type = gfauto_dot_common__pb2._BINARY
 _TEST.oneofs_by_name['test'].fields.append(
   _TEST.fields_by_name['glsl'])
 _TEST.fields_by_name['glsl'].containing_oneof = _TEST.oneofs_by_name['test']
+_TEST.oneofs_by_name['test'].fields.append(
+  _TEST.fields_by_name['spirv_fuzz'])
+_TEST.fields_by_name['spirv_fuzz'].containing_oneof = _TEST.oneofs_by_name['test']
 DESCRIPTOR.message_types_by_name['Test'] = _TEST
 DESCRIPTOR.message_types_by_name['TestGlsl'] = _TESTGLSL
+DESCRIPTOR.message_types_by_name['TestSpirvFuzz'] = _TESTSPIRVFUZZ
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Test = _reflection.GeneratedProtocolMessageType('Test', (_message.Message,), {
@@ -137,6 +173,13 @@ TestGlsl = _reflection.GeneratedProtocolMessageType('TestGlsl', (_message.Messag
   # @@protoc_insertion_point(class_scope:gfauto.TestGlsl)
   })
 _sym_db.RegisterMessage(TestGlsl)
+
+TestSpirvFuzz = _reflection.GeneratedProtocolMessageType('TestSpirvFuzz', (_message.Message,), {
+  'DESCRIPTOR' : _TESTSPIRVFUZZ,
+  '__module__' : 'gfauto.test_pb2'
+  # @@protoc_insertion_point(class_scope:gfauto.TestSpirvFuzz)
+  })
+_sym_db.RegisterMessage(TestSpirvFuzz)
 
 
 # @@protoc_insertion_point(module_scope)

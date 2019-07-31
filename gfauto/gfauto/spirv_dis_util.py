@@ -64,7 +64,7 @@ def run_spirv_shader_job_to_spirv_asm_shader_job(
         spirv_dis_file_path = util.tool_on_path(binaries_util.SPIRV_DIS_NAME)
 
     shader_files = shader_job_util.get_related_files(
-        input_spirv_job_json_file_path, language_suffix=shader_job_util.SUFFIX_SPIRV
+        input_spirv_job_json_file_path, language_suffix=[shader_job_util.SUFFIX_SPIRV]
     )
 
     util.copy_file(input_spirv_job_json_file_path, output_spirv_job_json_file_path)

@@ -113,6 +113,8 @@ def create_staging_tests(
         template_source_dir / test_util.REFERENCE_DIR / test_util.SHADER_JOB,
     )
 
+    # TODO: Allow GraphicsFuzz to be downloaded.
+
     glsl_generate_util.run_generate(
         util.tool_on_path("graphicsfuzz-tool"),
         reference_glsl_shader_job,
@@ -306,7 +308,6 @@ def handle_test(
 
     # For each device that saw a crash, copy the test to reports_dir, adding the signature and device info to the test
     # metadata.
-    # TODO: Consider moving the device binaries list into test.binaries?
     for device in active_devices:
         report_dir = maybe_add_report(test_dir, reports_dir, device, settings)
         if report_dir:

@@ -18,8 +18,9 @@
 
 Used to copy shader jobs and get the related files of a shader job.
 """
-
+import itertools
 import pathlib
+from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
 from gfauto import util
@@ -28,16 +29,26 @@ EXT_FRAG = ".frag"
 EXT_VERT = ".vert"
 EXT_COMP = ".comp"
 
-EXT_ALL = (EXT_FRAG, EXT_COMP, EXT_VERT)
+EXT_ALL = (EXT_FRAG, EXT_VERT, EXT_COMP)
 
 SUFFIX_GLSL = ""
 SUFFIX_SPIRV = ".spv"
 SUFFIX_ASM_SPIRV = ".asm"
+SUFFIX_FACTS = ".facts"
+SUFFIX_TRANSFORMATIONS = ".transformations"
+SUFFIX_TRANSFORMATIONS_JSON = ".transformations_json"
 
+SUFFIX_SPIRV_ORIG = ".spv_orig"
 
-EXTENSIONS_GLSL_SHADER_JOB_RELATED_FILES = [".frag", ".vert", ".comp"]
-EXTENSIONS_SPIRV_SHADER_JOB_RELATED_FILES = [".frag.spv", ".vert.spv", ".comp.spv"]
-EXTENSIONS_ASM_SPIRV_SHADER_JOB_RELATED_FILES = [".frag.asm", ".vert.asm", ".comp.asm"]
+SUFFIXES_SPIRV_FUZZ_INPUT = (SUFFIX_SPIRV, SUFFIX_FACTS)
+
+SUFFIXES_SPIRV_FUZZ = (
+    SUFFIX_SPIRV,
+    SUFFIX_SPIRV_ORIG,
+    SUFFIX_FACTS,
+    SUFFIX_TRANSFORMATIONS,
+    SUFFIX_TRANSFORMATIONS_JSON,
+)
 
 
 def get_shader_contents(
@@ -55,54 +66,59 @@ def get_shader_contents(
     return None
 
 
-# Get related files.
+def get_related_suffixes_that_exist(
+    shader_job_file_path: Path,
+    extensions: Union[Tuple[str, ...], List[str]] = EXT_ALL,
+    language_suffix: Union[Tuple[str, ...], List[str]] = (SUFFIX_GLSL,),
+) -> List[str]:
+    # Cross product of extensions and suffixes as tuples.
+    # (".frag", ".comp", ...) x (".facts", ".spv")
+    suffixes_as_tuples = itertools.product(extensions, language_suffix)
+
+    # Same as above but as str. E.g. ".frag.facts", ".frag.spv"
+    suffixes = [file_parts[0] + file_parts[1] for file_parts in suffixes_as_tuples]
+
+    # Filter
+    suffixes_that_exist = [
+        s for s in suffixes if shader_job_file_path.with_suffix(s).is_file()
+    ]
+
+    return suffixes_that_exist
 
 
 def get_related_files(
     shader_job_file_path: pathlib.Path,
     extensions: Union[Tuple[str, ...], List[str]] = EXT_ALL,
-    language_suffix: str = SUFFIX_GLSL,
+    language_suffix: Union[Tuple[str, ...], List[str]] = (SUFFIX_GLSL,),
 ) -> List[pathlib.Path]:
-    # .frag, .comp, ...
-    files = extensions
 
-    # .frag.spv, .comp.spv
-    files = [(f + language_suffix) for f in files]
-
-    # variant_001.frag.spv, variant_001.comp.spv (does not exist), ...
-    paths = [shader_job_file_path.with_suffix(f) for f in files]
+    suffixes_that_exist = get_related_suffixes_that_exist(
+        shader_job_file_path, extensions, language_suffix
+    )
 
     # variant_001.frag.spv, ...
-    paths = [p for p in paths if p.exists()]
+    paths = [shader_job_file_path.with_suffix(s) for s in suffixes_that_exist]
+
     return paths
-
-
-# Copy files.
 
 
 def copy(
     shader_job_file_path: pathlib.Path,
     output_shader_job_file_path: pathlib.Path,
     extensions: Union[Tuple[str, ...], List[str]] = EXT_ALL,
-    language_suffix: str = SUFFIX_GLSL,
+    language_suffix: Union[Tuple[str, ...], List[str]] = (SUFFIX_GLSL,),
 ) -> pathlib.Path:
 
     util.copy_file(shader_job_file_path, output_shader_job_file_path)
 
-    # = [source/variant.frag, source/variant.vert, ...]
-    other_paths = get_related_files(shader_job_file_path, extensions, language_suffix)
+    suffixes_that_exist = get_related_suffixes_that_exist(
+        shader_job_file_path, extensions, language_suffix
+    )
 
-    # = [variant.frag, variant.vert, ...]
-    dest_other_files = [f for f in other_paths]
-
-    # = [dest/variant.frag, dest/variant.vert, ...]
-    dest_other_paths = [
-        output_shader_job_file_path.with_suffix(f.suffix) for f in dest_other_files
-    ]
-
-    for (source, dest) in zip(
-        other_paths, dest_other_paths
-    ):  # type: (pathlib.Path, pathlib.Path)
-        util.copy_file(source, dest)
+    for suffix in suffixes_that_exist:
+        util.copy_file(
+            shader_job_file_path.with_suffix(suffix),
+            output_shader_job_file_path.with_suffix(suffix),
+        )
 
     return output_shader_job_file_path

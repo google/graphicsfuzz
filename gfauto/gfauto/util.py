@@ -29,6 +29,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, BinaryIO, Iterator, List, TextIO, cast
 
+from gfauto import gflogging
+
 MIN_SIGNED_INT_32 = -pow(2, 31)
 MAX_SIGNED_INT_32 = pow(2, 31) - 1
 
@@ -119,6 +121,20 @@ def copy_dir(
     file_mkdirs_parent(dest_dir_path)
     shutil.copytree(source_dir_path, dest_dir_path)
     return dest_dir_path
+
+
+def move_file(source_path: Path, dest_path: Path) -> Path:
+    check_file_exists(source_path)
+    check(
+        not dest_path.is_dir(),
+        AssertionError(
+            f"Tried to move {str(source_path)} to a directory {str(dest_path)}"
+        ),
+    )
+    file_mkdirs_parent(dest_path)
+    gflogging.log(f"Move file {str(source_path)} to {str(dest_path)}")
+    source_path.replace(dest_path)
+    return dest_path
 
 
 def move_dir(

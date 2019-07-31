@@ -307,7 +307,7 @@ def is_compute_job(input_asm_spirv_job_json_path: pathlib.Path) -> bool:
     comp_files = shader_job_util.get_related_files(
         input_asm_spirv_job_json_path,
         [shader_job_util.EXT_COMP],
-        shader_job_util.SUFFIX_ASM_SPIRV,
+        [shader_job_util.SUFFIX_ASM_SPIRV],
     )
     check(
         len(comp_files) <= 1,

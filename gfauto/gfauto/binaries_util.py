@@ -286,7 +286,7 @@ def _get_built_in_swift_shader_version(
 
 
 def _get_built_in_spirv_tools_version(
-    version_hash: str, build_version_hash: str, includes_spirv_fuzz=True
+    version_hash: str, build_version_hash: str, includes_spirv_fuzz: bool = True
 ) -> List[recipe_wrap.RecipeWrap]:
     return _get_built_in_binary_recipe_from_build_github_repo(
         project_name="SPIRV-Tools",

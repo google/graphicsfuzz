@@ -131,7 +131,7 @@ def run_spirv_val_on_shader(shader_path: Path, spirv_val_path: Path) -> None:
 
 def validate_spirv_shader_job_helper(input_json: Path, spirv_val_path: Path) -> None:
     shader_paths = shader_job_util.get_related_files(
-        input_json, shader_job_util.EXT_ALL, shader_job_util.SUFFIX_SPIRV
+        input_json, shader_job_util.EXT_ALL, [shader_job_util.SUFFIX_SPIRV]
     )
     for shader_path in shader_paths:
         run_spirv_val_on_shader(shader_path, spirv_val_path)
@@ -157,11 +157,27 @@ def glsl_shader_job_to_amber_script(
 
     result = input_json
 
-    result = shader_job_util.copy(result, work_dir / "0_glsl" / result.name)
+    # If GLSL:
+    if shader_job_util.get_related_suffixes_that_exist(input_json):
 
-    result = glslang_glsl_shader_job_to_spirv(
-        result, work_dir / "1_spirv" / result.name, binary_paths
-    )
+        result = shader_job_util.copy(result, work_dir / "0_glsl" / result.name)
+
+        result = glslang_glsl_shader_job_to_spirv(
+            result, work_dir / "1_spirv" / result.name, binary_paths
+        )
+
+    # If SPIR-V:
+    elif shader_job_util.get_related_suffixes_that_exist(
+        input_json, language_suffix=[shader_job_util.SUFFIX_SPIRV]
+    ):
+        result = shader_job_util.copy(
+            result,
+            work_dir / "1_spirv" / result.name,
+            # Copy all spirv-fuzz related files too:
+            language_suffix=shader_job_util.SUFFIXES_SPIRV_FUZZ,
+        )
+    else:
+        raise AssertionError(f"Unrecognized shader job type: {str(input_json)}")
 
     result_spirv = result
 

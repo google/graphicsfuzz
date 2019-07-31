@@ -32,6 +32,7 @@ from gfauto import (
     binaries_util,
     devices_util,
     fuzz_glsl_test,
+    fuzz_spirv_test,
     gflogging,
     settings_util,
     shader_job_util,
@@ -110,8 +111,11 @@ STATUS_TOOL_TIMEOUT = "TOOL_TIMEOUT"
 STATUS_TIMEOUT = "TIMEOUT"
 STATUS_SUCCESS = "SUCCESS"
 
-# Python normally uses this many bits internally when seeding its RNG.
+# Number of bits for seeding the RNG.
+# Python normally uses 256 bits internally when seeding its RNG, hence this choice.
 ITERATION_SEED_BITS = 256
+
+SPIRV_FUZZ = False
 
 
 def get_random_name() -> str:
@@ -152,7 +156,7 @@ def main() -> None:
             gflogging.pop_stream_for_logging()
 
 
-def main_helper(  # pylint: disable=too-many-locals
+def main_helper(  # pylint: disable=too-many-locals, too-many-branches;
     settings_path: Path, iteration_seed_override: Optional[int]
 ) -> None:
 
@@ -173,6 +177,7 @@ def main_helper(  # pylint: disable=too-many-locals
     reports_dir = Path() / "reports"
     temp_dir = Path() / "temp"
     donors_dir = Path() / "donors"
+    spirv_fuzz_shaders_dir = Path() / "spirv_fuzz_shaders"
 
     if donors_dir.exists():
         try:
@@ -191,6 +196,8 @@ def main_helper(  # pylint: disable=too-many-locals
 
     # Filter to only include .json files that have at least one shader (.frag, .vert, .comp) file.
     references = [ref for ref in references if shader_job_util.get_related_files(ref)]
+
+    spirv_fuzz_shaders = sorted(spirv_fuzz_shaders_dir.rglob("*.json"))
 
     binary_manager = binaries_util.BinaryManager(
         list(settings.custom_binaries) + binaries_util.DEFAULT_BINARIES,
@@ -235,15 +242,25 @@ def main_helper(  # pylint: disable=too-many-locals
         #  - Reduce each report (on the given device).
         #  - Produce a summary for each report.
 
-        fuzz_glsl_test.fuzz_glsl(
-            staging_dir,
-            reports_dir,
-            active_devices,
-            references,
-            donors_dir,
-            settings,
-            binary_manager,
-        )
+        if SPIRV_FUZZ:
+            fuzz_spirv_test.fuzz_spirv(
+                staging_dir,
+                reports_dir,
+                active_devices,
+                spirv_fuzz_shaders,
+                settings,
+                binary_manager,
+            )
+        else:
+            fuzz_glsl_test.fuzz_glsl(
+                staging_dir,
+                reports_dir,
+                active_devices,
+                references,
+                donors_dir,
+                settings,
+                binary_manager,
+            )
 
         shutil.rmtree(staging_dir)
 

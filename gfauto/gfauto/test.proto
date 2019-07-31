@@ -25,6 +25,7 @@ import "gfauto/device.proto";
 message Test {
   oneof test {
     TestGlsl glsl = 1;
+    TestSpirvFuzz spirv_fuzz = 5;
   }
   string crash_signature = 2;
   Device device = 3;
@@ -33,4 +34,9 @@ message Test {
 
 message TestGlsl {
   repeated string spirv_opt_args = 1;
+}
+
+// Spirv-fuzz generated spirv test.
+message TestSpirvFuzz {
+
 }
