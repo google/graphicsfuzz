@@ -51,6 +51,7 @@ SHADER_TEST_SUFFIX = '.shader_test'
 SHADER_RUNNER_ARG_PNG = '-png'
 SHADER_RUNNER_ARG_AUTO = '-auto'
 SHADER_RUNNER_ARG_UNIFORMS = '-ignore-missing-uniforms'
+SHADER_RUNNER_ARG_FBO = '-fbo'
 SHADER_RUNNER_ARG_SUBTESTS = '-report-subtests'
 
 WORKER_INFO_FILE = 'worker_info.json'
@@ -269,7 +270,7 @@ def run_image_job(json_file: str, status_file: str,
         raise ex
     shader_runner_cmd_list = shader_runner_cmd() + \
         [shader_test_file, SHADER_RUNNER_ARG_AUTO,
-         SHADER_RUNNER_ARG_UNIFORMS, SHADER_RUNNER_ARG_SUBTESTS]
+         SHADER_RUNNER_ARG_UNIFORMS, SHADER_RUNNER_ARG_FBO, SHADER_RUNNER_ARG_SUBTESTS]
     if use_catchsegv:
         shader_runner_cmd_list.insert(0, catchsegv_cmd())
     if not skip_render:
