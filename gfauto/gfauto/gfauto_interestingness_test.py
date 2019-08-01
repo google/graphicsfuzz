@@ -65,6 +65,13 @@ def main() -> None:
     parser.add_argument("shader_job_json", help="The .json shader job file path.")
 
     parser.add_argument(
+        "--use_default_binaries",
+        help="Use the latest binaries, ignoring those defined in the test.json. "
+        "Implies --fallback_binaries.",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--fallback_binaries",
         help="Fallback to the latest binaries if they are not defined in the test.json.",
         action="store_true",
@@ -76,7 +83,8 @@ def main() -> None:
 
     test_json: Path = Path(parsed_args.test_json)
     shader_job_json: Path = Path(parsed_args.shader_job_json)
-    fallback_binaries: bool = parsed_args.fallback_binaries
+    use_default_binaries: bool = parsed_args.use_default_binaries
+    fallback_binaries: bool = parsed_args.fallback_binaries or use_default_binaries
     output: Path = Path(
         parsed_args.output
     ) if parsed_args.output else shader_job_json.with_suffix("")
@@ -107,6 +115,7 @@ def main() -> None:
         test=test,
         device=test.device,
         binary_manager=binary_manager,
+        use_default_binaries=use_default_binaries,
     )
 
     log(

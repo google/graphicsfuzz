@@ -330,15 +330,18 @@ def run_shader_job(
     test: Test,
     device: Device,
     binary_manager: binaries_util.BinaryManager,
+    use_default_binaries: bool = False,
 ) -> Path:
 
     with util.file_open_text(output_dir / "log.txt", "w") as log_file:
         try:
             gflogging.push_stream_for_logging(log_file)
 
-            binary_paths = binary_manager.get_child_binary_manager(
-                list(device.binaries) + list(test.binaries)
-            )
+            child_binary_manager = binary_manager
+            if not use_default_binaries:
+                child_binary_manager = child_binary_manager.get_child_binary_manager(
+                    list(device.binaries) + list(test.binaries)
+                )
 
             # TODO: Find amber path. NDK or host.
 
@@ -349,7 +352,7 @@ def run_shader_job(
 
                 spirv_opt_hash: Optional[str] = None
                 if test.glsl.spirv_opt_args:
-                    spirv_opt_hash = binary_paths.get_binary_by_name(
+                    spirv_opt_hash = child_binary_manager.get_binary_by_name(
                         binaries_util.SPIRV_OPT_NAME
                     ).version
 
@@ -357,7 +360,7 @@ def run_shader_job(
                     shader_job,
                     output_dir / "test.amber",
                     output_dir,
-                    binary_paths,
+                    child_binary_manager,
                     amber_converter.AmberfySettings(
                         spirv_opt_args=list(test.glsl.spirv_opt_args),
                         spirv_opt_hash=spirv_opt_hash,
@@ -394,7 +397,7 @@ def run_shader_job(
                 icd: Optional[Path] = None
 
                 if device.HasField("swift_shader"):
-                    icd = binary_paths.get_binary_path_by_name(
+                    icd = child_binary_manager.get_binary_path_by_name(
                         binaries_util.SWIFT_SHADER_NAME
                     ).path
 
