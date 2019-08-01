@@ -92,11 +92,11 @@ public class NumericValue implements Value {
       return new ImmutablePair<>(Optional.empty(), Optional.empty());
     }
 
-    // If we want to find two numbers whose sum is equal to the given value X. We first need to
-    // randomly generate a number A which will be used as the left expression, and subtract it
-    // with the original value X. Next, as B = X - A, we use the outcome of such subtraction as
-    // the right expression. Finally, the result of adding two numbers A and B would be equal to
-    // the original value X.
+    // To find two numbers whose sum is equal to the given value X. Following the
+    // equation X = A + B, we first need to randomly generate a number A which will be used as
+    // the left expression, and subtract it with the original value X. Next, as B = X - A, we use
+    // the outcome of such subtraction as the right expression. Finally, the result of adding two
+    // numbers A and B would be equal to the original value X.
     //
     // For example, if a number 5 is an input and we generate a random number 3, we then subtract 5
     // with 3 which will give 2 as the result. Next we derive left and right expressions from
@@ -111,7 +111,7 @@ public class NumericValue implements Value {
 
     if (getType() == BasicType.INT) {
       int original = value.get().intValue();
-      int left = generator.nextInt(original);
+      int left = generator.nextInt(original + 1);
       int right = original - left;
       return new ImmutablePair<>(Optional.of(left), Optional.of(right));
     }

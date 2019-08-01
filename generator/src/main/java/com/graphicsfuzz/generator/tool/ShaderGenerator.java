@@ -93,19 +93,19 @@ public class ShaderGenerator {
         mainFactManager,
         tu.getMainFunction(),
         colorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(1.0)));
+        new NumericValue(BasicType.FLOAT, Optional.of(0.0)));
 
     final Expr gvalue = expressionGenerator.generateExpr(
         mainFactManager,
         tu.getMainFunction(),
         colorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(0.0)));
+        new NumericValue(BasicType.FLOAT, Optional.of(1.0)));
 
     final Expr bvalue = expressionGenerator.generateExpr(
         mainFactManager,
         tu.getMainFunction(),
         colorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(0.0)));
+        new NumericValue(BasicType.FLOAT, Optional.of(0.3)));
 
     final Expr avalue = expressionGenerator.generateExpr(
         mainFactManager,
