@@ -39,7 +39,6 @@ import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
 import com.graphicsfuzz.util.Constants;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class ExpressionGenerator {
 
@@ -168,47 +168,12 @@ public class ExpressionGenerator {
       return null;
     }
 
-    if (!value.valueIsKnown()) {
-      return new BinaryExpr(
-          generateExpr(factManager, functionDefinition, stmt,
-              new NumericValue((BasicType) value.getType())),
-          generateExpr(factManager, functionDefinition, stmt,
-              new NumericValue((BasicType) value.getType())),
-          BinOp.ADD
-      );
-    }
-
-    // Following the equation X = A + B.
-    //
-    // Given the original value X, we randomly generate number A, which will be used as the
-    // left expression, and subtract it with the original number X. As B = X - A, we then use the
-    // outcome as the right expression. Finally, the result of adding two numbers A and B would
-    // be equal to the original value X.
-    //
-    // For example: If number 5 is an input and we generate a random number 3, we then subtract 5
-    // with 3 which will give 2 as the result. Next we derive left and right expressions from
-    // these two numbers and use them when generating a binary expression.
-
-    Number left = null;
-    Number right = null;
-
-    if (value.getType() == BasicType.FLOAT) {
-      float original = ((NumericValue) value).getValue().get().floatValue();
-      left = generator.nextFloat();
-      right = original - left.floatValue();
-    }
-
-    if (value.getType() == BasicType.INT) {
-      int original = ((NumericValue) value).getValue().get().intValue();
-      left = generator.nextInt(original);
-      right = original - left.intValue();
-    }
-
+    final Pair<Optional<Number>, Optional<Number>> pair = ((NumericValue) value).getPairSum(generator);
     return new BinaryExpr(
         generateExpr(factManager, functionDefinition, stmt,
-            new NumericValue((BasicType) value.getType(), Optional.of(left))),
+            new NumericValue((BasicType) value.getType(), pair.getLeft())),
         generateExpr(factManager, functionDefinition, stmt,
-            new NumericValue((BasicType) value.getType(), Optional.of(right))),
+            new NumericValue((BasicType) value.getType(), pair.getRight())),
         BinOp.ADD
     );
   }
@@ -230,10 +195,11 @@ public class ExpressionGenerator {
   }
 
   private Expr generateKnownVariableFact(FactManager factManager, Value value) {
+
     final Map<Value, List<VariableFact>> availableVarFacts = new HashMap<>();
     // As we have global fact manager holding the global variable facts and the current function
-    // fact manager holding the local scope variable facts, we have to retrieve the available facts
-    // from both scopes.
+    // fact manager holding the local scope variable facts, we have to ensure that we retrieve all
+    // available facts from both scopes.
     availableVarFacts.putAll(globalFactManager.getVariableFacts());
     availableVarFacts.putAll(factManager.getVariableFacts());
 
@@ -351,7 +317,7 @@ public class ExpressionGenerator {
                                     Stmt stmt,
                                     Value value) {
 
-    boolean atGlobalScope = factManager == globalFactManager || generator.nextBoolean();
+    boolean atGlobalScope = factManager.isGlobalManager() || generator.nextBoolean();
     final String varName = genVarName(value, atGlobalScope);
 
     final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(varName, null,

@@ -51,6 +51,10 @@ public class FactManager {
     return Collections.unmodifiableMap(variableFacts);
   }
 
+  public boolean isGlobalManager() {
+    return prototype == null;
+  }
+
   public Optional<List<VariableFact>> getVariableFacts(Value value) {
     return variableFacts.entrySet()
         .stream()
