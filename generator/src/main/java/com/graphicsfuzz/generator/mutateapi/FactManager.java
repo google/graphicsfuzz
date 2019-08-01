@@ -47,12 +47,12 @@ public class FactManager {
     return new FactManager(this);
   }
 
-  public Map<Value, List<VariableFact>> getVariableFacts() {
-    return Collections.unmodifiableMap(variableFacts);
-  }
-
   public boolean isGlobalManager() {
     return prototype == null;
+  }
+
+  public Map<Value, List<VariableFact>> getVariableFacts() {
+    return Collections.unmodifiableMap(variableFacts);
   }
 
   public Optional<List<VariableFact>> getVariableFacts(Value value) {

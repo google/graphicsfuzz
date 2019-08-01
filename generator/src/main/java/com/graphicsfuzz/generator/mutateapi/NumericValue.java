@@ -81,11 +81,6 @@ public class NumericValue implements Value {
     return value;
   }
 
-  @Override
-  public boolean equals(Object that) {
-    return that instanceof NumericValue && equals((NumericValue) that);
-  }
-
   public Pair<Optional<Number>, Optional<Number>> getPairSum(IRandom generator) {
 
     if (!valueIsKnown()) {
@@ -117,6 +112,11 @@ public class NumericValue implements Value {
     }
 
     throw new RuntimeException("Should be unreachable");
+  }
+
+  @Override
+  public boolean equals(Object that) {
+    return that instanceof NumericValue && equals((NumericValue) that);
   }
 
   public boolean equals(NumericValue that) {
