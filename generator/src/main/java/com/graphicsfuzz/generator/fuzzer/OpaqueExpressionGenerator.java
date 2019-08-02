@@ -174,6 +174,46 @@ public final class OpaqueExpressionGenerator {
         depth, fuzzer)));
   }
 
+  /**
+   * Function to generate an opaque zero or one from the determinant of a generated matrix.
+   * This function heavily relies on the fact that a triangular matrix - a matrix that only has
+   * values below the diagonal (lower triangular) or above the diagonal (upper triangular) - always
+   * has a determinant that is the product of its diagonal values. For example,
+   * [1 0 0]    This is a lower triangular 3x3 matrix. Its determinant is the product of its
+   * [0 1 0]    diagonals, so det(mat3) = 1 * 1 * 1 = 1.
+   * [1 0 1]
+   * --------------------------------------
+   * [0 1 0 1]    This is an upper triangular 4x4 matrix. Its determinant is the product of its
+   * [0 0 1 1]    diagonals, so det(mat4) = 0 * 0 * 0 * 0 = 0.
+   * [0 0 0 1]
+   * [0 0 0 0]
+   * --------------------------------------
+   * In general, a triangular matrix is of these forms for our purpose:
+   * [t x] [t 0] [t x x] [t 0 0] [t x x x] [t 0 0 0]
+   * [0 t] [x t] [0 t x] [x t 0] [0 t x x] [x t 0 0]
+   *             [0 0 t] [x x t] [0 0 t x] [x x t 0]
+   *                             [0 0 0 t] [x x x t]
+   * where x is a "modifiable index" whose value is totally irrelevant for the determinant,
+   * and t is a "diagonal" that is zero if we're making an opaque zero, otherwise an opaque one.
+   * For simplicity, we choose not to consider the case where the diagonal has one zero and
+   * the rest ones (which would produce a determinant of zero).
+   * -------------------------------------
+   * There are some other things to know about this algorithm:
+   * [0  1  2  3 ]     - When constructing a square matrix in GLSL, the mat constructor takes
+   * [4  5  6  7 ]       matrixDimension * matrixDimension number of arguments - this diagram shows
+   * [8  9  10 11]       how the matrix is constructed from those arguments.
+   * [12 13 14 15]
+   *  -  Notice how in the above diagram, the diagonals for a 4x4 matrix are arguments 0, 5, 10, 15.
+   *     This occurs similarly for 3x3 (0, 4, 8) and 2x2 (0, 3). The sequence of constructor indices
+   *     that are diagonals: [0, (matrixDim + 1), 2 * (matrixDim + 1), 3 * (matrixDim + 1)...].
+   * @param type - the base type of the opaque value being created.
+   * @param constContext - true if we're in a constant expression context, false otherwise.
+   * @param depth - how deep we are in the expression.
+   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
+   * @param isZero - true if we are making an opaque zero, false otherwise.
+   * @return Optional.empty() if an opaque value can't be generated, otherwise an opaque value
+   *     made from the determinant of a triangular matrix.
+   */
   private Optional<Expr> opaqueZeroOrOneMatrixDet(BasicType type, boolean constContext,
                                                      final int depth, Fuzzer fuzzer,
                                                      boolean isZero) {
@@ -188,7 +228,7 @@ public final class OpaqueExpressionGenerator {
     // Matrices sent to determinant() must be 2x2, 3x3, or 4x4.
     final int matrixDimension = generator.nextInt(3) + 2;
     // Indices of arguments in a matrix constructor that can be nonzero for triangular matrix,
-    // excluding the diagonal of the matrix.
+    // excluding the diagonal of the matrix. Zero-indexed.
     final List<List<Integer>> triangularModifiableArgs =
         isUpperTriangular
         ? Arrays.asList(
