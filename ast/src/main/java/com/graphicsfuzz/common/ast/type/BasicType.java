@@ -435,6 +435,45 @@ public class BasicType extends BuiltinType {
     return null;
   }
 
+  public static BasicType makeMatrixType(int numColumns, int numRows) {
+    if (numColumns < 2 || numColumns > 4 || numRows < 2 || numRows > 4) {
+      throw new UnsupportedOperationException(
+          "Cannot make matrix type with " + numColumns + " columns and " + numRows + " rows.");
+    }
+    switch (numColumns) {
+      case 2:
+        switch (numRows) {
+          case 2:
+            return MAT2X2;
+          case 3:
+            return MAT2X3;
+          default:
+            return MAT2X4;
+        }
+      case 3:
+        switch (numRows) {
+          case 2:
+            return MAT3X2;
+          case 3:
+            return MAT3X3;
+          default:
+            return MAT3X4;
+        }
+      case 4:
+        switch (numRows) {
+          case 2:
+            return MAT4X2;
+          case 3:
+            return MAT4X3;
+          default:
+            return MAT4X4;
+        }
+      default:
+        assert false;
+        return null;
+    }
+  }
+
   public boolean isScalar() {
     return allScalarTypes().contains(this);
   }
