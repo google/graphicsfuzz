@@ -448,6 +448,40 @@ public class BasicType extends BuiltinType {
   }
 
   /**
+   * Creates a matrix type that is the transpose of a given matrix type.
+   *
+   * @return the type that is the transpose of the given matrix type.
+   * @throws UnsupportedOperationException if the type this method is called on is not a matrix
+   *     type (and thus has no transpose).
+   */
+  public BasicType transposedMatrixType() {
+    if (!this.isMatrix()) {
+      throw new UnsupportedOperationException(
+          "Cannot transpose non-matrix type " + this);
+    }
+    if (BasicType.allSquareMatrixTypes().contains(this)) {
+      return this; // transpose of a square matrix is a square matrix.
+    }
+    if (this == MAT2X3) {
+      return MAT3X2;
+    }
+    if (this == MAT2X4) {
+      return MAT4X2;
+    }
+    if (this == MAT3X2) {
+      return MAT2X3;
+    }
+    if (this == MAT3X4) {
+      return MAT4X3;
+    }
+    if (this == MAT4X2) {
+      return MAT2X4;
+    }
+    assert this == MAT4X3;
+    return MAT3X4;
+  }
+
+  /**
    * Determines the vector type of the columns in the matrix. For example, accessing a column of a
    * mat2x2 would give you a variable of type vec2. Can only be invoked on a matrix type.
    *

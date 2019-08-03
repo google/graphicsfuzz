@@ -87,9 +87,11 @@ public final class OpaqueExpressionGenerator {
     expressionIdentities.add(new IdentityClamp());
 
     expressionIdentities.add(new IdentityRewriteComposite());
-
     if (shadingLanguageVersion.supportedMixNonfloatBool()) {
       expressionIdentities.add(new IdentityMixBvec());
+    }
+    if (shadingLanguageVersion.supportedTranspose()) {
+      expressionIdentities.add(new IdentityDoubleTranspose());
     }
 
   }
@@ -1250,6 +1252,29 @@ public final class OpaqueExpressionGenerator {
     @Override
     public boolean preconditionHolds(Expr expr, BasicType basicType) {
       return super.preconditionHolds(expr, basicType) && expr instanceof VariableIdentifierExpr;
+    }
+  }
+
+  /**
+   * Identity function to transpose a matrix twice. When performed, transforms an expression of a
+   * matrix m -> transpose(identity(transpose(identity(m)))).
+   */
+  private class IdentityDoubleTranspose extends AbstractIdentityTransformation {
+    private IdentityDoubleTranspose() {
+      super(BasicType.allMatrixTypes(), true);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      assert type.isMatrix();
+      return identityConstructor(
+          expr,
+          new FunctionCallExpr("transpose",
+              applyIdentityFunction(
+                  new FunctionCallExpr("transpose",
+                      applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
+                  type.transposedMatrixType(), constContext, depth, fuzzer)));
     }
   }
 }
