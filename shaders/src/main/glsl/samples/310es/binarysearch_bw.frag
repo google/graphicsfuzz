@@ -91,11 +91,13 @@ int binarySearch(Obj obj, int x) {
             r = m - 1; 
         }
     }
+    // If an element is not present in the array we return -1.
     return -1;
 }  
 
 void main() {
     Obj obj;
+    // Initialize first 10 prime numbers to the array.
     for (int i = 0; i < 10; i++) {
         if (i == 0) {
             obj.prime_numbers[i] = 2;
@@ -125,12 +127,14 @@ void main() {
     vec3 color = vec3(patternize(b));
 
     if (gl_FragCoord.y < resolution.y / 1.1) {
+        // We are going to search the item in array by giving the value of the item index 4 and 0 in an array.
         if (binarySearch(obj, obj.prime_numbers[4]) != -(int(resolution.y)) && binarySearch(obj, obj.prime_numbers[0]) >= -(int(resolution.x))) {
             color.yz -= dot(float(binarySearch(obj, obj.prime_numbers[4])), float(binarySearch(obj, obj.prime_numbers[0])));
         } else {
             discard;
         }
     } else {
+        // The following condition is true as there is no value 1 in the array.
         if (binarySearch(obj, 1) == -1) {
             discard;
         } else {
