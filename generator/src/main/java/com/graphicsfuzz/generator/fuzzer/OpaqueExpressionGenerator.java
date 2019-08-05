@@ -185,14 +185,10 @@ public final class OpaqueExpressionGenerator {
    *     This limits our maximum shift value to 7 bits (more on how we shift an opaque one below).
    * Possibilities for generating an opaque zero include:
    *     Shifting an opaque zero by m bits: (opaque zero) >> n or (opaque zero) << n, where n is
-   *     an expression of a clamped value between 0 and m, inclusive:
-   *     n = clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(m)), and m is an integer
-   *     between 0 and 8, inclusive.
+   *     an integer in [0, 8].
    * Possibilities for generating an opaque zero include:
    *     Shifting an opaque one to the left by n bits, then shifting it to the right by n bits:
-   *     ((opaque one) << n) >> n, where n is an expression of a clamped value between 0 and m,
-   *     inclusive: n = clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(m)), and m is an
-   *     integer between 0 and 7, inclusive.
+   *     ((opaque one) << n) >> n, where n is an integer in [0, 7].
    *
    * @param type - the base type of the opaque value being created.
    * @param constContext - true if we're in a constant expression context, false otherwise.
@@ -220,60 +216,40 @@ public final class OpaqueExpressionGenerator {
     // that, we make sure not to shift our 1 bit out of the integer by limiting our maximum shift
     // to 7 bits.
     final int minBitsForLowpUnsignedInt = minBitsForLowpInt - 1;
-    final int maxValue = generator.nextInt(isZero ? minBitsForLowpInt : minBitsForLowpUnsignedInt);
-    // We pass true as constContext when fuzzing here because the expression will be evaluated,
-    // so we don't want any side effects.
-    final Expr shiftValue = makeClampedFuzzedExpr(type, constContext, depth, fuzzer, maxValue);
+    final int shiftValueConstant = generator.nextInt(
+        isZero ? minBitsForLowpInt : minBitsForLowpUnsignedInt);
+    final Expr shiftValueConstructor =
+        new TypeConstructorExpr(type.toString(),
+            BasicType.allUnsignedTypes().contains(type)
+            ? new UIntConstantExpr(String.valueOf(shiftValueConstant) + 'u')
+            : new IntConstantExpr(String.valueOf(shiftValueConstant)));
+    final Expr shiftValueWithIdentityApplied = identityConstructor(
+        shiftValueConstructor,
+        applyIdentityFunction(shiftValueConstructor, type, constContext, depth, fuzzer));
     if (isZero) {
       final BinOp operator = generator.nextBoolean() ? BinOp.SHL : BinOp.SHR;
       return Optional.of(
           new ParenExpr(
               new BinaryExpr(
                   makeOpaqueZero(type, constContext, depth, fuzzer),
-                  shiftValue,
+                  shiftValueWithIdentityApplied,
                   operator)));
     } else {
       // We're going to shift twice in opposite directions by the same value.
+      final Expr backShiftValueWithIdentityApplied = identityConstructor(
+          shiftValueConstructor.clone(),
+          applyIdentityFunction(shiftValueConstructor.clone(), type, constContext, depth, fuzzer));
       return Optional.of(
           new ParenExpr(
               new BinaryExpr(
                   new ParenExpr(
                       new BinaryExpr(
                           makeOpaqueOne(type, constContext, depth, fuzzer),
-                          shiftValue,
+                          shiftValueWithIdentityApplied,
                           BinOp.SHL)),
-                  shiftValue.clone(),
+                  backShiftValueWithIdentityApplied,
                   BinOp.SHR)));
     }
-  }
-
-  /**
-   * Utility function to clamp a fuzzed expression between an opaque zero and the identity of a
-   * type constructor of the given type, with the value of the bound argument. Note that this
-   * function only supports integer types currently - it could be extended to support floating
-   * point numbers as well if needed. Another note is that this function does not check its bound
-   * for validity - specifying a bound larger than 256 or a negative value could cause invalid GLSL
-   * to be generated depending on the precision and type of the integer.
-   *
-   * @param type - the type to make a clamped expression from.
-   * @param bound - the upper bound for the clamped expression.
-   * @return an expression of a clamped value between 0 and bound, inclusive:
-   *     clamp(fuzzedexpr, (opaque zero), identity(typeconstructor(bound)),
-   */
-  private Expr makeClampedFuzzedExpr(BasicType type, boolean constContext,
-                                     final int depth, Fuzzer fuzzer, int bound) {
-    assert BasicType.allIntegerTypes().contains(type);
-    return new FunctionCallExpr(
-        "clamp",
-        fuzzer.fuzzExpr(type, false, true, depth),
-        makeOpaqueZero(type, constContext, depth, fuzzer),
-        applyIdentityFunction(
-            new TypeConstructorExpr(
-                type.toString(),
-                type.getElementType() == BasicType.INT
-                    ? new IntConstantExpr(String.valueOf(bound))
-                    : new UIntConstantExpr(bound + "u")),
-            type, constContext, depth, fuzzer));
   }
 
   /**
@@ -971,7 +947,7 @@ public final class OpaqueExpressionGenerator {
                   BinOp.BOR));
     }
   }
-  
+
   /**
    * Identity transformation for integer types (both unsigned and signed, and their vectors) that
    * ORs an integer with zero, producing the same integer as output.
