@@ -38,7 +38,7 @@ void swap(int i, int j) {
 
 // Since "partition" is the preserved word, we add prefix to this function name to prevent an error.
 int performPartition(int l, int h) {
-    // The rightmost element would be chosen as a pivot.
+    // The rightmost element is chosen as a pivot.
     int pivot = obj.numbers[h];
     int i = (l - 1); 
   
