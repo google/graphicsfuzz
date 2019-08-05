@@ -519,7 +519,7 @@ public final class OpaqueExpressionGenerator {
     }
     final List<ExpressionIdentity> availableTransformations =
         expressionIdentities.stream()
-            .filter(item -> item.preconditionHolds(expr, type))
+            .filter(item -> item.preconditionHolds(expr, type, constContext))
             .collect(Collectors.toList());
     return availableTransformations.isEmpty() ? expr :
         availableTransformations.get(generator.nextInt(availableTransformations.size()))
@@ -798,7 +798,7 @@ public final class OpaqueExpressionGenerator {
     }
 
     @Override
-    public boolean preconditionHolds(Expr expr, BasicType basicType) {
+    public boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext) {
       if (!acceptableTypes.contains(basicType)) {
         return false;
       }
@@ -1250,8 +1250,9 @@ public final class OpaqueExpressionGenerator {
     }
 
     @Override
-    public boolean preconditionHolds(Expr expr, BasicType basicType) {
-      return super.preconditionHolds(expr, basicType) && expr instanceof VariableIdentifierExpr;
+    public boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext) {
+      return super.preconditionHolds(expr, basicType, constContext)
+          && expr instanceof VariableIdentifierExpr;
     }
   }
 
@@ -1275,6 +1276,13 @@ public final class OpaqueExpressionGenerator {
                   new FunctionCallExpr("transpose",
                       applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
                   type.transposedMatrixType(), constContext, depth, fuzzer)));
+    }
+
+    @Override
+    public boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext) {
+      // TODO(653): Workaround for glslangvalidator issue, remove constContext check when fixed.
+      return super.preconditionHolds(expr, basicType, constContext)
+          && !constContext;
     }
   }
 }
