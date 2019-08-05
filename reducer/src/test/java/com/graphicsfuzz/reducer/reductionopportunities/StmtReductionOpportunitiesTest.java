@@ -25,6 +25,7 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
@@ -283,35 +284,54 @@ public class StmtReductionOpportunitiesTest {
   @Test
   public void testRemoveDuplicateReturn1() throws Exception {
     final String program = "int foo() { return 0; return 1; return 2; return 3; }";
-    final String expected = "int foo() { return 3; }";
+    final String expected = "int foo() { return 1; }";
     final TranslationUnit tu = ParseHelper.parse(program);
-    final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
-        MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0),
-            new IdGenerator()));
-    assertEquals(3, ops.size());
+    final ReducerContext context = new ReducerContext(true, ShadingLanguageVersion.ESSL_300,
+        new RandomWrapper(0),
+        new IdGenerator());
+    final ShaderJob shaderJob = MakeShaderJobFromFragmentShader.make(tu);
+    List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
+        shaderJob,
+        context);
+    assertEquals(4, ops.size());
     ops.get(0).applyReduction();
-    ops.get(1).applyReduction();
+    ops.get(3).applyReduction();
     ops.get(2).applyReduction();
+    assertFalse(ops.get(1).preconditionHolds());
     CompareAsts.assertEqualAsts(expected, tu);
+    ops = StmtReductionOpportunities.findOpportunities(
+        shaderJob,
+        context);
+    assertTrue(ops.isEmpty());
   }
 
   @Test
   public void testRemoveDuplicateReturn2() throws Exception {
-    final String program = "int foo() { int x; return 0; x = 1; return 1; x = 2; return 2; return "
-        + "3; }";
-    final String expected = "int foo() { int x; return 3; }";
+    final String program = "int foo() {\n"
+        + " int x;\n"
+        + " return 0;\n"
+        + " x = 1;\n"
+        + " return 1;\n"
+        + " x = 2;\n"
+        + " return 2;\n"
+        + " return 3;\n"
+        + "}\n";
+    final String expected = "int foo() {\n"
+        + " int x;\n"
+        + " return 3;\n"
+        + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
         MakeShaderJobFromFragmentShader.make(tu),
         new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0),
             new IdGenerator()));
-    assertEquals(5, ops.size());
+    assertEquals(6, ops.size());
     ops.get(0).applyReduction();
     ops.get(1).applyReduction();
     ops.get(2).applyReduction();
     ops.get(3).applyReduction();
     ops.get(4).applyReduction();
+    assertFalse(ops.get(5).preconditionHolds());
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -324,6 +344,66 @@ public class StmtReductionOpportunitiesTest {
         MakeShaderJobFromFragmentShader.make(tu),
         new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0), new IdGenerator()));
     assertEquals(5, ops.size());
+  }
+
+  @Test
+  public void testRemoveNonVoidReturn() throws Exception {
+    // Both return statements are candidates for removal, but removing one disables removing the
+    // other.
+    final String program = "int foo() { return 1; return 0; }";
+    final String expected = "int foo() { return 0; }";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final ReducerContext context = new ReducerContext(true, ShadingLanguageVersion.ESSL_300,
+        new RandomWrapper(0), new IdGenerator());
+    final ShaderJob shaderJob = MakeShaderJobFromFragmentShader.make(tu);
+    List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
+        shaderJob,
+        context);
+    assertEquals(2, ops.size());
+    ops.get(0).applyReduction();
+    CompareAsts.assertEqualAsts(expected, tu);
+    assertFalse(ops.get(1).preconditionHolds());
+    ops = StmtReductionOpportunities.findOpportunities(
+        shaderJob,
+        context);
+    assertTrue(ops.isEmpty());
+  }
+
+  @Test
+  public void testDoNotRemoveReturnThatWouldChangeSemantics() throws Exception {
+    final String program = "layout(location = 0) out vec4 color;\n"
+        + "void main() {\n"
+        + "  return;\n"
+        + "  color = vec4(1.0);\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0),
+            new IdGenerator()));
+    // We cannot remove the return, as this would make the write to 'color' reachable.
+    // We could in principle remove the color write itself, since it is unreachable.  Right now we
+    // do not, so this test would have to be re-thought if we decided to add that facility.
+    assertEquals(0, ops.size());
+  }
+
+  @Test
+  public void testRemoveReturnsInIf() throws Exception {
+    final String program = "layout(location = 0) out vec4 color;\n"
+        + "int foo() {\n"
+        + "  if (true) {\n"
+        + "    return 1;\n"
+        + "  } else {\n"
+        + "    return 2;\n"
+        + "  }\n"
+        + "  return 0;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(true, ShadingLanguageVersion.ESSL_300, new RandomWrapper(0),
+            new IdGenerator()));
+    assertTrue(ops.size() > 0);
   }
 
   @Test

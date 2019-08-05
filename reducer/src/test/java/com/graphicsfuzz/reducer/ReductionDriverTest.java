@@ -24,6 +24,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
@@ -645,6 +647,79 @@ public class ReductionDriverTest {
         false,
         fileOps,
         usesMixFileJudge,
+        workDir)
+        .doReduction(shaderJob, "temp", 0, 100);
+
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+
+  }
+
+  @Test
+  public void testEliminationOfReturns() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "int foo() {\n"
+        + "  if (false) {\n"
+        + "    return 1;\n"
+        + "  }\n"
+        + "  return 0;\n"
+        + "}\n"
+        + "void main() {\n"
+        + "  if (true) {\n"
+        + "    foo();\n"
+        + "    return;\n"
+        + "  } else {\n"
+        + "    return;\n"
+        + "  }\n"
+        + "  return;\n"
+        + "}\n";
+
+    final String expected = "#version 310 es\n"
+        + "int foo() {\n"
+        + "  return 1;\n"
+        + "}\n"
+        + "void main() {\n"
+        + "  foo();\n"
+        + "}\n";
+
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        new PipelineInfo(),
+        ParseHelper.parse(shader));
+
+    final File workDir = testFolder.getRoot();
+    final File tempShaderJobFile = new File(workDir, "temp.json");
+    fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
+
+    final IFileJudge usesFooFileJudge =
+        new CheckAstFeaturesFileJudge(Arrays.asList(
+            () -> new CheckAstFeatureVisitor() {
+          @Override
+          public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+                super.visitFunctionCallExpr(functionCallExpr);
+                if (functionCallExpr.getCallee().equals("foo")) {
+                  trigger();
+                }
+              }
+            },
+            () -> new CheckAstFeatureVisitor() {
+              @Override
+              public void visitReturnStmt(ReturnStmt returnStmt) {
+                super.visitReturnStmt(returnStmt);
+                if (returnStmt.hasExpr() && returnStmt.getExpr() instanceof IntConstantExpr &&
+                    ((IntConstantExpr) returnStmt.getExpr()).getNumericValue() == 1) {
+                  trigger();
+                }
+              }
+            }),
+            ShaderKind.FRAGMENT,
+            fileOps);
+
+    final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+        ShadingLanguageVersion.ESSL_310,
+        new RandomWrapper(0),
+        new IdGenerator()),
+        false,
+        fileOps,
+        usesFooFileJudge,
         workDir)
         .doReduction(shaderJob, "temp", 0, 100);
 
