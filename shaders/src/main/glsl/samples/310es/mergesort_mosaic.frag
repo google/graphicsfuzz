@@ -27,7 +27,7 @@ uniform vec2 resolution;
 // Size of an array.
 const int N = 10;
 // An array and its temperary array whose elements will be sorted.
-int data[N], temp[N];
+int data[10], temp[10];
 
 // Merge two sorted subarrays data[from ... mid] and data[mid+1 ... to].
 void merge(int from, int mid, int to) {
