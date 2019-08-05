@@ -63,11 +63,11 @@ void mergeSort() {
         // For m = 2, i = [0, 4, 8].
         // For m = 4, i = [0, 8].
         for (int i = low; i< high; i += 2*m) {
-            int from = i;
-            int mid = i + m - 1;
-            int to = min (i + 2*m - 1, high);
+             int from = i;
+             int mid = i + m - 1;
+             int to = min (i + 2*m - 1, high);
 
-            merge(from, mid, to);
+             merge(from, mid, to);
         }
     }
 }

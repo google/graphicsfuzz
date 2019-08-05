@@ -24,7 +24,7 @@ uniform vec2 injectionSwitch;
 
 uniform vec2 resolution;
 
-struct Obj{
+struct BinarySearchObject{
     int prime_numbers[10];
 };
 
@@ -77,7 +77,7 @@ float patternize(vec2 uv) {
      }
 }
 
-int binarySearch(Obj obj, int x) {
+int binarySearch(BinarySearchObject obj, int x) {
     int l = 0, r = 9;
     while (l <= r) {
         int m = (l + r) / 2;
@@ -96,7 +96,7 @@ int binarySearch(Obj obj, int x) {
 }  
 
 void main() {
-    Obj obj;
+    BinarySearchObject obj;
     // Initialize first 10 prime numbers to the array.
     for (int i = 0; i < 10; i++) {
         if (i == 0) {

@@ -24,65 +24,65 @@ uniform vec2 injectionSwitch;
 
 uniform vec2 resolution;
 
-struct Obj{
+struct QuicksortObject{
     int numbers[10];
 };
 
-Obj obj;
+QuicksortObject obj;
 
-void swap(int i, int j) { 
-    int temp = obj.numbers[i];
-    obj.numbers[i] = obj.numbers[j];
-    obj.numbers[j] = temp;
-} 
+ void swap(int i, int j) {
+     int temp = obj.numbers[i];
+     obj.numbers[i] = obj.numbers[j];
+     obj.numbers[j] = temp;
+ }
 
-// Since "partition" is the preserved word, we add prefix to this function name to prevent an error.
-int performPartition(int l, int h) {
-    // The rightmost element is chosen as a pivot.
-    int pivot = obj.numbers[h];
-    int i = (l - 1); 
+ // Since "partition" is the preserved word, we add prefix to this function name to prevent an error.
+ int performPartition(int l, int h) {
+     // The rightmost element is chosen as a pivot.
+     int pivot = obj.numbers[h];
+     int i = (l - 1);
   
-    for (int j = l; j <= h - 1; j++) { 
-        if (obj.numbers[j] <= pivot) {
-            i++; 
-            swap(i, j);
-        } 
-    } 
-    swap(i + 1, h);
-    return (i + 1); 
-} 
+     for (int j = l; j <= h - 1; j++) {
+         if (obj.numbers[j] <= pivot) {
+             i++;
+             swap(i, j);
+         }
+     }
+     swap(i + 1, h);
+     return (i + 1);
+ }
 
-void quicksort() {   
-    int l = 0, h = 9;
-    int stack[10]; 
-    int top = -1; 
+ void quicksort() {
+     int l = 0, h = 9;
+     int stack[10];
+     int top = -1;
   
-    stack[++top] = l; 
-    stack[++top] = h; 
+     stack[++top] = l;
+     stack[++top] = h;
   
-    while (top >= 0) { 
-        h = stack[top--]; 
-        l = stack[top--]; 
+     while (top >= 0) {
+         h = stack[top--];
+         l = stack[top--];
   
-        int p = performPartition(l, h); 
+         int p = performPartition(l, h);
   
-        if (p - 1 > l) { 
-            stack[++top] = l; 
-            stack[++top] = p - 1; 
-        } 
-        if (p + 1 < h) { 
-            stack[++top] = p + 1; 
-            stack[++top] = h; 
-        } 
-    } 
-} 
+         if (p - 1 > l) {
+             stack[++top] = l;
+             stack[++top] = p - 1;
+         }
+         if (p + 1 < h) {
+             stack[++top] = p + 1;
+             stack[++top] = h;
+         }
+     }
+ }
 
 vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
     return mix(c, d + d, a - b);
 }
 
 void main() {
-    // Initialize decreasing values to an array starting from 10.
+    // Initialize decreasing values to an array item starting from 10.
     for (int i = int(injectionSwitch.x); i < 10; i ++) {
       obj.numbers[i] = (10 - i) * int(injectionSwitch.y);
     }
