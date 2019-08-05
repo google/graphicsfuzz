@@ -175,10 +175,10 @@ public final class OpaqueExpressionGenerator {
 
   /**
    * Function to generate an opaque zero or one by taking the dot product of two vectors. This
-   * function depends on two rules of the dot product. Let u and v be vectors of the same size,
+   * function depends on two rules of the dot product. Let u and v be vectors of the same width,
    * and let i be a valid index into those vectors.
-   *     If u[i] != 0 <==> v[i] = 0, then dot(u, v) = 0. Example: u = (0, 1), v = (1, 0), then
-   *     dot(u, v) = 1 * 0 + 0 * 1 = 0.
+   *     If u[i] != 0 <==> v[i] = 0 for all i, then dot(u, v) = 0. Example: u = (0, 1), v = (1, 0),
+   *     then dot(u, v) = 1 * 0 + 0 * 1 = 0.
    *     If u[i] = v[i] = 0 for all i except for a single index, j, and if u[j] = v[j] = 1, then
    *     dot(u, v) = 0. Example: u = (0, 1), v = (0, 1), then dot(u, v) = 0 * 0 + 1 * 1 = 1.
    * Because fuzzed expressions are not always well defined, we forgo those in favor of simply
@@ -196,45 +196,36 @@ public final class OpaqueExpressionGenerator {
     if (type != BasicType.FLOAT) {
       return Optional.empty();
     }
-    // Vector sizes need to be in [2, 4].
-    final int vectorSize = generator.nextInt(3) + 2;
+    // If width is 1, type will be float - otherwise the type will be the corresponding vector type.
+    final int vectorWidth = generator.nextPositiveInt(BasicType.VEC4.getNumElements()) + 1;
     final Expr dotProductExpr;
+    final List<Expr> firstVectorArgs = new ArrayList<Expr>();
+    final List<Expr> secondVectorArgs = new ArrayList<Expr>();
     if (isZero) {
       // We're basically producing inverse vectors: u[i] = 0 <==> v[i] != 0.
-      // To do that, we need to store which values will be zero and which will not.
-      final List<Boolean> isZeroDeterminants = new ArrayList<Boolean>();
-      for (int i = 0; i < vectorSize; i++) {
-        isZeroDeterminants.add(generator.nextBoolean());
-      }
-      final List<Expr> firstVectorArgs = new ArrayList<Expr>();
-      final List<Expr> secondVectorArgs = new ArrayList<Expr>();
-      for (int i = 0; i < vectorSize; i++) {
+      for (int i = 0; i < vectorWidth; i++) {
+        final boolean firstVectorArgIsZero = generator.nextBoolean();
         firstVectorArgs.add(makeOpaqueZeroOrOne(
-            isZeroDeterminants.get(i), type, constContext, depth, fuzzer));
+            firstVectorArgIsZero, type, constContext, depth, fuzzer));
         secondVectorArgs.add(makeOpaqueZeroOrOne(
-            !isZeroDeterminants.get(i), type, constContext, depth, fuzzer));
+            !firstVectorArgIsZero, type, constContext, depth, fuzzer));
       }
-      assert firstVectorArgs.size() == vectorSize && secondVectorArgs.size() == vectorSize;
-      dotProductExpr = new FunctionCallExpr("dot",
-          new TypeConstructorExpr(
-              BasicType.makeVectorType(type, vectorSize).toString(), firstVectorArgs),
-          new TypeConstructorExpr(
-              BasicType.makeVectorType(type, vectorSize).toString(), secondVectorArgs));
     } else {
       // The two vectors will be exactly the same - all 0 except for one value, which will be 1.
-      final int nonZeroIndex = generator.nextInt(vectorSize);
-      final List<Expr> vectorArguments = new ArrayList<Expr>();
-      for (int i = 0; i < vectorSize; i++) {
-        vectorArguments.add(
-            i == nonZeroIndex
-            ? makeOpaqueOne(type, constContext, depth, fuzzer)
-            : makeOpaqueZero(type, constContext, depth, fuzzer));
+      final int nonZeroIndex = generator.nextInt(vectorWidth);
+      for (int i = 0; i < vectorWidth; i++) {
+        firstVectorArgs.add(
+            makeOpaqueZeroOrOne(i == nonZeroIndex, type, constContext, depth, fuzzer));
+        secondVectorArgs.add(
+            makeOpaqueZeroOrOne(i == nonZeroIndex, type, constContext, depth, fuzzer));
       }
-      assert vectorArguments.size() == vectorSize;
-      final Expr vectorExpr = new TypeConstructorExpr(
-          BasicType.makeVectorType(type, vectorSize).toString(), vectorArguments);
-      dotProductExpr = new FunctionCallExpr("dot", vectorExpr, vectorExpr.clone());
     }
+    assert firstVectorArgs.size() == vectorWidth && secondVectorArgs.size() == vectorWidth;
+    dotProductExpr = new FunctionCallExpr("dot",
+        new TypeConstructorExpr(
+            BasicType.makeVectorType(type, vectorWidth).toString(), firstVectorArgs),
+        new TypeConstructorExpr(
+            BasicType.makeVectorType(type, vectorWidth).toString(), secondVectorArgs));
     return Optional.of(
         identityConstructor(
             dotProductExpr,
