@@ -217,6 +217,10 @@ public final class OpaqueExpressionGenerator {
   private Optional<Expr> opaqueZeroOrOneMatrixDet(BasicType type, boolean constContext,
                                                      final int depth, Fuzzer fuzzer,
                                                      boolean isZero) {
+    // TODO(653): Workaround for glslangvalidator. Remove when #653 is fixed.
+    if (constContext) {
+      return Optional.empty();
+    }
     if (type != BasicType.FLOAT) {
       return Optional.empty();
     }
@@ -242,6 +246,7 @@ public final class OpaqueExpressionGenerator {
     // Index of the corresponding triangularModifiableArgs for the given matrix dimension.
     final int modifiableArgsListIndex = matrixDimension - 2;
     final List<Expr> matrixConstructorArgs = new ArrayList<Expr>();
+    // Diagonal indices are spaced by (matrixDimension + 1) - e.g. mat4 diagonals: 0, 5, 10, 15
     int nextDiagonalMatrixIndex = 0;
     for (int i = 0; i < matrixDimension * matrixDimension; i++) {
       if (i == nextDiagonalMatrixIndex) {
