@@ -1,7 +1,7 @@
 # glsl-reduce manual
 
 For instructions on how to run glsl-reduce in conjunction with glsl-fuzz,
-see the [glsl-reduce manual for reducing fuzzed shaders](docs/glsl-fuzz-reduce.md).
+see the [glsl-reduce manual for reducing fuzzed shaders](glsl-fuzz-reduce.md).
 
 ## Synopsis
 
