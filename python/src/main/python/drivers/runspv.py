@@ -1027,6 +1027,15 @@ def amberscript_uniform_buffer_decl(uniform_json):
         'glUniform2f': 'vec2<float>',
         'glUniform3f': 'vec3<float>',
         'glUniform4f': 'vec4<float>',
+        'glUniformMatrix2fv': 'mat2x2<float>',
+        'glUniformMatrix2x3fv': 'mat2x3<float>',
+        'glUniformMatrix2x4fv': 'mat2x4<float>',
+        'glUniformMatrix3x2fv': 'mat3x2<float>',
+        'glUniformMatrix3fv': 'mat3x3<float>',
+        'glUniformMatrix3x4fv': 'mat3x4<float>',
+        'glUniformMatrix4x2fv': 'mat4x2<float>',
+        'glUniformMatrix4x3fv': 'mat4x3<float>',
+        'glUniformMatrix4fv': 'mat4x4<float>',
     }
 
     result = ''
