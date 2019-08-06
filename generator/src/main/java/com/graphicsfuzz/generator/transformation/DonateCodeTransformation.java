@@ -72,6 +72,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -208,11 +209,19 @@ public abstract class DonateCodeTransformation implements ITransformation {
     final int maxTries = 10;
     int tries = 0;
     while (true) {
-      DonationContext donationContext = new DonationContextFinder(chooseDonor(generator), generator)
+      final Optional<TranslationUnit> maybeDonor = chooseDonor(generator);
+      if (!maybeDonor.isPresent()) {
+        // No compatible donors were found, thus we cannot do serious code donation here;
+        // we return a null statement instead.
+        return new NullStmt();
+      }
+      DonationContext donationContext = new DonationContextFinder(maybeDonor.get(), generator)
           .getDonationContext();
       if (incompatible(injectionPoint, donationContext, shadingLanguageVersion)) {
         tries++;
         if (tries == maxTries) {
+          // We have tried and tried to find something compatible to inject but not managed;
+          // return a null statement instead of a real piece of code to inject.
           return new NullStmt();
         }
       } else {
@@ -580,10 +589,10 @@ public abstract class DonateCodeTransformation implements ITransformation {
     return !fs.stream().filter(item -> fp.matches(item)).collect(Collectors.toList()).isEmpty();
   }
 
-  TranslationUnit chooseDonor(IRandom generator) {
+  Optional<TranslationUnit> chooseDonor(IRandom generator) {
     while (!donorFiles.isEmpty()) {
-      int index = generator.nextInt(donorFiles.size());
-      File donorFile = donorFiles.get(index);
+      final int index = generator.nextInt(donorFiles.size());
+      final File donorFile = donorFiles.get(index);
       try {
         if (donorsToTranslationUnits.keySet().size() >= generationParams.getMaxDonors()
             && !donorsToTranslationUnits.containsKey(donorFile)) {
@@ -591,14 +600,14 @@ public abstract class DonateCodeTransformation implements ITransformation {
           // already used
           throw new IncompatibleDonorException();
         }
-        return getDonorTranslationUnit(donorFile, generator);
+        return Optional.of(getDonorTranslationUnit(donorFile, generator));
       } catch (IncompatibleDonorException exception) {
-        assert index >= 0;
         assert index < donorFiles.size();
         donorFiles.remove(index);
       }
     }
-    throw new RuntimeException("Could not find any compatible donors.");
+    // We did not manage to find a compatible donor.
+    return Optional.empty();
   }
 
   private TranslationUnit getDonorTranslationUnit(File donorFile, IRandom generator)
@@ -622,10 +631,11 @@ public abstract class DonateCodeTransformation implements ITransformation {
   }
 
   private boolean compatibleDonor(TranslationUnit donor) {
-    List<String> usedFunctionNames = functionPrototypes.stream().map(item -> item.getName())
+    final List<String> usedFunctionNames = functionPrototypes.stream()
+        .map(FunctionPrototype::getName)
         .collect(Collectors.toList());
-    Set<String> usedGlobalVariableNames = globalVariables.keySet();
-    Set<String> usedStructNames = structNames;
+    final Set<String> usedGlobalVariableNames = globalVariables.keySet();
+    final Set<String> usedStructNames = structNames;
 
     for (FunctionPrototype donorPrototype : AstUtil.getFunctionPrototypesFromShader(donor)) {
       if (usedGlobalVariableNames.contains(donorPrototype.getName())
@@ -637,8 +647,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
       }
     }
     for (Map.Entry<String, Type> global : getGlobalVariablesFromShader(donor).entrySet()) {
-      String name = global.getKey();
-      Type type = global.getValue();
+      final String name = global.getKey();
+      final Type type = global.getValue();
       if (usedFunctionNames.contains(name) || usedStructNames.contains(name)) {
         return false;
       }

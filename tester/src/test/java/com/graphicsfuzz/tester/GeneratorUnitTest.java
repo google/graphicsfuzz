@@ -364,5 +364,36 @@ public class GeneratorUnitTest {
         new File[] { referenceJson });
   }
 
+  @Test
+  public void testDonateDeadCodeNoCompatibleDonors() throws Exception {
+    // By design, we set up a situation where the reference and donors are all identical
+    // and all declare a struct, which makes them incompatible (because at the moment we
+    // conservatively say that a donor and reference are incompatible if they declare structs
+    // with the same name).
+    //
+    // Dead code donation will not be able to succeed, but should have no effect rather than
+    // aborting.
+    final File donors = temporaryFolder.newFolder();
+    final ShaderJob declaresSingleStruct = new GlslShaderJob(Optional.empty(),
+      new PipelineInfo(), ParseHelper.parse("#version 300 es\n"
+        + "precision highp float;\n"
+        + "struct S {\n"
+        + "  int x;\n"
+        + "};\n"
+        + "void main() {\n"
+        + "}\n"));
+    for (int i = 0; i < 3; i++) {
+      fileOps.writeShaderJobFile(declaresSingleStruct, new File(donors, "donor_" + i + ".json"));
+    }
+    final File reference = temporaryFolder.newFile("reference.json");
+    fileOps.writeShaderJobFile(declaresSingleStruct, reference);
+    testTransformation(Collections.singletonList(() -> new DonateDeadCodeTransformation(
+            TransformationProbabilities.likelyDonateDeadCode()::donateDeadCodeAtStmt,
+            donors,
+            GenerationParams.normal(ShaderKind.FRAGMENT, true))),
+        TransformationProbabilities.likelyDonateDeadCode(),
+        "donatedead", Collections.emptyList(),
+        new File[] { reference });
+  }
 
 }
