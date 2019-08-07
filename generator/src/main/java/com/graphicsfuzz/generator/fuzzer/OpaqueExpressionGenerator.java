@@ -1280,7 +1280,8 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext) {
-      // TODO(653): Workaround for glslangvalidator issue, remove constContext check when fixed.
+      // TODO(https://github.com/KhronosGroup/glslang/issues/1865): Workaround for glslangValidator
+      //     issue, remove constContext check when fixed.
       return super.preconditionHolds(expr, basicType, constContext)
           && !constContext;
     }
