@@ -43,7 +43,7 @@ public class BooleanValue implements Value {
       return true;
     }
 
-    if (!this.valueIsKnown() && !that.valueIsKnown()) {
+    if (this.valueIsUnknown() && that.valueIsUnknown()) {
       return true;
     }
 
@@ -55,18 +55,18 @@ public class BooleanValue implements Value {
     return type;
   }
 
+  @Override
+  public boolean valueIsUnknown() {
+    return !value.isPresent();
+  }
+
   public Optional<Boolean> getValue() {
     return value;
   }
 
   @Override
-  public boolean valueIsKnown() {
-    return value.isPresent();
-  }
-
-  @Override
   public Expr generateLiteral(LiteralFuzzer literalFuzzer) {
-    if (!valueIsKnown()) {
+    if (valueIsUnknown()) {
       return literalFuzzer.fuzz(type).orElse(null);
     }
     return new BoolConstantExpr(value.get());

@@ -40,8 +40,8 @@ public class CompositeValue implements Value {
   }
 
   @Override
-  public boolean valueIsKnown() {
-    return valueList.isPresent();
+  public boolean valueIsUnknown() {
+    return !valueList.isPresent();
   }
 
   @Override
@@ -58,7 +58,7 @@ public class CompositeValue implements Value {
       return false;
     }
 
-    if (!this.valueIsKnown() && !that.valueIsKnown()) {
+    if (this.valueIsUnknown() && that.valueIsUnknown()) {
       return true;
     }
 
@@ -67,7 +67,7 @@ public class CompositeValue implements Value {
 
   @Override
   public Expr generateLiteral(LiteralFuzzer literalFuzzer) {
-    if (!valueIsKnown()) {
+    if (valueIsUnknown()) {
       return literalFuzzer.fuzz(type).orElse(null);
     }
 
@@ -83,6 +83,5 @@ public class CompositeValue implements Value {
     //TODO: implement other types (Struct and Array)
     throw new RuntimeException("The given type is not supported");
   }
-
 
 }

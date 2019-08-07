@@ -57,24 +57,25 @@ public class NumericValue implements Value {
   }
 
   @Override
-  public boolean valueIsKnown() {
-    return value.isPresent();
+  public boolean valueIsUnknown() {
+    return !value.isPresent();
   }
 
   @Override
   public Expr generateLiteral(LiteralFuzzer literalFuzzer) {
-    if (valueIsKnown()) {
-      if (basicType == BasicType.FLOAT) {
-        return new FloatConstantExpr(value.get().toString());
-      }
-      if (basicType == BasicType.INT) {
-        return new IntConstantExpr(value.get().toString());
-      }
-      if (basicType == BasicType.UINT) {
-        return new UIntConstantExpr(value.get().toString() + "u");
-      }
+    if (valueIsUnknown()) {
+      return literalFuzzer.fuzz(basicType).orElse(null);
     }
-    return literalFuzzer.fuzz(basicType).orElse(null);
+    if (basicType == BasicType.FLOAT) {
+      return new FloatConstantExpr(value.get().toString());
+    }
+    if (basicType == BasicType.INT) {
+      return new IntConstantExpr(value.get().toString());
+    }
+    if (basicType == BasicType.UINT) {
+      return new UIntConstantExpr(value.get().toString() + "u");
+    }
+    throw new RuntimeException("Numeric value does not support the given type");
   }
 
   public Optional<Number> getValue() {
@@ -83,7 +84,7 @@ public class NumericValue implements Value {
 
   public Pair<Optional<Number>, Optional<Number>> getPairSum(IRandom generator) {
 
-    if (!valueIsKnown()) {
+    if (valueIsUnknown()) {
       return new ImmutablePair<>(Optional.empty(), Optional.empty());
     }
 
@@ -128,7 +129,7 @@ public class NumericValue implements Value {
     }
     // If the given value(that) is empty we have to tell a program that any value with the correct
     // type is equal to that value.
-    if (!that.valueIsKnown()) {
+    if (that.valueIsUnknown()) {
       return true;
     }
 

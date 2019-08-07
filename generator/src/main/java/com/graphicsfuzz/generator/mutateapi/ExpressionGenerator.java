@@ -404,12 +404,12 @@ public class ExpressionGenerator {
         + freshId();
   }
 
-  private String genParamName(Type type, boolean knownValue) {
+  private String genParamName(Type type, boolean unknownValue) {
     // Provides a parameter name required when making a paramater of a newly generated function.
     // For example:
     //  _GLF_PARAM_UNKNOWN_VALUE_VEC4_ID_1: a parameter of unknown value of vec4 type.
     //  _GLF_PARAM_INT_ID_62: a parameter of integer type.
-    return (knownValue ? Constants.GLF_PARAM : Constants.GLF_PARAM_UNKNOWN_VALUE)
+    return (unknownValue ? Constants.GLF_PARAM_UNKNOWN_VALUE: Constants.GLF_PARAM )
         + "_" + type.toString().toUpperCase()
         + freshId();
   }
@@ -422,7 +422,7 @@ public class ExpressionGenerator {
    * @return a string derived from the given value which will be used as function or variable names.
    */
   private String parseNameFromValue(Value value) {
-    if (!value.valueIsKnown()) {
+    if (value.valueIsUnknown()) {
       return UNKNOWN_VALUE;
     }
     final StringBuilder name = new StringBuilder();
@@ -494,7 +494,7 @@ public class ExpressionGenerator {
       // when calling this function the fact manager will generate any arbitrary value that
       // matches the parameter type.
       final Value paramValue = fuzzValue(paramType);
-      final String paramName = genParamName(paramType, paramValue.valueIsKnown());
+      final String paramName = genParamName(paramType, paramValue.valueIsUnknown());
 
       argumentValues.add(paramValue);
       final ParameterDecl parameterDecl = new ParameterDecl(
