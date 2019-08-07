@@ -104,7 +104,8 @@ public final class OpaqueExpressionGenerator {
         this::opaqueZeroOrOneAbsolute,
         this::opaqueZeroOrOneDot,
         this::opaqueZeroOrOneBitwiseShift,
-        this::opaqueZeroOrOneBitwiseOp
+        this::opaqueZeroOrOneBitwiseOp,
+        this::opaqueZeroOrOneMatrixDet
     );
   }
 
@@ -173,6 +174,114 @@ public final class OpaqueExpressionGenerator {
     }
     return Optional.of(new FunctionCallExpr("abs", makeOpaqueZeroOrOne(isZero, type, constContext,
         depth, fuzzer)));
+  }
+
+  /**
+   * Function to generate an opaque zero or one from the determinant of a generated matrix.
+   * This function heavily relies on the fact that a triangular matrix - a matrix that only has
+   * values below the diagonal (lower triangular) or above the diagonal (upper triangular) - always
+   * has a determinant that is the product of its diagonal values. For example,
+   * [1 0 0]    This is a lower triangular 3x3 matrix. Its determinant is the product of its
+   * [0 1 0]    diagonals, so det(mat3) = 1 * 1 * 1 = 1.
+   * [1 0 1]
+   * --------------------------------------
+   * [0 1 0 1]    This is an upper triangular 4x4 matrix. Its determinant is the product of its
+   * [0 0 1 1]    diagonals, so det(mat4) = 0 * 0 * 0 * 0 = 0.
+   * [0 0 0 1]
+   * [0 0 0 0]
+   * --------------------------------------
+   * In general, a triangular matrix is of these forms for our purpose:
+   * [t x] [t 0] [t x x] [t 0 0] [t x x x] [t 0 0 0]
+   * [0 t] [x t] [0 t x] [x t 0] [0 t x x] [x t 0 0]
+   *             [0 0 t] [x x t] [0 0 t x] [x x t 0]
+   *                             [0 0 0 t] [x x x t]
+   * where x is a "modifiable index" whose value is totally irrelevant for the determinant,
+   * and t is a "diagonal" that is zero if we're making an opaque zero, otherwise an opaque one.
+   * For simplicity, we choose not to consider the case where the diagonal has one zero and
+   * the rest ones (which would produce a determinant of zero).
+   * -------------------------------------
+   * There are some other things to know about this algorithm:
+   * [0  1  2  3 ]     - When constructing a square matrix in GLSL, the mat constructor takes
+   * [4  5  6  7 ]       matrixDimension * matrixDimension number of arguments - this diagram shows
+   * [8  9  10 11]       how the matrix is constructed from those arguments.
+   * [12 13 14 15]
+   *  -  Notice how in the above diagram, the diagonals for a 4x4 matrix are arguments 0, 5, 10, 15.
+   *     This occurs similarly for 3x3 (0, 4, 8) and 2x2 (0, 3). The sequence of constructor indices
+   *     that are diagonals: [0, (matrixDim + 1), 2 * (matrixDim + 1), 3 * (matrixDim + 1)...].
+   * @param type - the base type of the opaque value being created.
+   * @param constContext - true if we're in a constant expression context, false otherwise.
+   * @param depth - how deep we are in the expression.
+   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
+   * @param isZero - true if we are making an opaque zero, false otherwise.
+   * @return Optional.empty() if an opaque value can't be generated, otherwise an opaque value
+   *     made from the determinant of a triangular matrix.
+   */
+  private Optional<Expr> opaqueZeroOrOneMatrixDet(BasicType type, boolean constContext,
+                                                     final int depth, Fuzzer fuzzer,
+                                                     boolean isZero) {
+    // TODO(https://github.com/KhronosGroup/glslang/issues/1865): Workaround for glslangvalidator.
+    //     Remove when #653 is fixed.
+    if (constContext) {
+      return Optional.empty();
+    }
+    if (type != BasicType.FLOAT) {
+      return Optional.empty();
+    }
+    if (!shadingLanguageVersion.supportedDeterminant()) {
+      return Optional.empty();
+    }
+    // If true, we will make an upper triangular matrix - otherwise it will be lower triangular.
+    final boolean isUpperTriangular = generator.nextBoolean();
+    // Matrices sent to determinant() must be 2x2, 3x3, or 4x4.
+    final int matrixDimension = generator.nextInt(3) + 2;
+    // Indices of arguments in a matrix constructor that can be nonzero for triangular matrix,
+    // excluding the diagonal of the matrix. Zero-indexed.
+    List<Integer> modifiableArgs;
+    switch (matrixDimension) {
+      case 2:
+        modifiableArgs = isUpperTriangular
+            ? Arrays.asList(1)                       // mat2, upper triangular
+            : Arrays.asList(2);                      // mat2, lower triangular
+        break;
+      case 3:
+        modifiableArgs = isUpperTriangular
+            ? Arrays.asList(1, 2, 5)                 // mat3, upper triangular
+            : Arrays.asList(3, 6, 7);                // mat3, lower triangular
+        break;
+      case 4:
+        modifiableArgs = isUpperTriangular
+            ? Arrays.asList(1, 2, 3, 6, 7, 11)       // mat4, upper triangular
+            : Arrays.asList(4, 8, 9, 12, 13, 14);    // mat4, lower triangular
+        break;
+      default:
+        // Should not be reachable.
+        throw new UnsupportedOperationException("Generated matrix dimension was out of bounds?");
+    }
+    final List<Expr> matrixConstructorArgs = new ArrayList<Expr>();
+    // Diagonal indices are spaced by (matrixDimension + 1) - e.g. mat4 diagonals: 0, 5, 10, 15
+    int nextDiagonalMatrixIndex = 0;
+    for (int i = 0; i < matrixDimension * matrixDimension; i++) {
+      if (i == nextDiagonalMatrixIndex) {
+        // We're in a diagonal, so the value depends on if we're making an opaque zero or one.
+        assert !modifiableArgs.contains(i);
+        matrixConstructorArgs.add(makeOpaqueZeroOrOne(isZero, type, constContext, depth, fuzzer));
+        nextDiagonalMatrixIndex += matrixDimension + 1;
+      } else if (modifiableArgs.contains(i)) {
+        // We're in a modifiable index - the value doesn't matter for the determinant.
+        matrixConstructorArgs.add(makeOpaqueZeroOrOne(
+            generator.nextBoolean(), type, constContext, depth, fuzzer));
+      } else {
+        // We're in a non-modifiable index - we need zero or we'll violate the triangular
+        // property of the matrix.
+        matrixConstructorArgs.add(makeOpaqueZero(type, constContext, depth, fuzzer));
+      }
+    }
+    assert matrixConstructorArgs.size() == matrixDimension * matrixDimension;
+    return Optional.of(
+        new FunctionCallExpr("determinant",
+            new TypeConstructorExpr(
+                BasicType.makeMatrixType(matrixDimension, matrixDimension).toString(),
+                matrixConstructorArgs)));
   }
 
   /**
