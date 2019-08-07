@@ -26,33 +26,40 @@ import java.util.Optional;
 public class BooleanValue implements Value {
 
   private final Optional<Boolean> value;
-  private final BasicType type;
 
   public BooleanValue(Optional<Boolean> value) {
     this.value = value;
-    this.type = BasicType.BOOL;
+  }
+
+  @Override
+  public int hashCode() {
+    int hashCode = 17;
+
+    hashCode = 37 * hashCode + BasicType.BOOL.hashCode();
+
+    if (!valueIsUnknown()) {
+      hashCode = 37 * hashCode + value.hashCode();
+    }
+    return hashCode;
   }
 
   @Override
   public boolean equals(Object that) {
-    return that instanceof BooleanValue && equals((BooleanValue) that);
-  }
-
-  public boolean equals(BooleanValue that) {
     if (this == that) {
       return true;
     }
 
-    if (this.valueIsUnknown() && that.valueIsUnknown()) {
-      return true;
+    if (!(that instanceof BooleanValue)) {
+      return false;
     }
 
-    return this.getValue() == that.getValue();
+    final BooleanValue thatBooleanValue = (BooleanValue) that;
+    return !this.valueIsUnknown() == !thatBooleanValue.valueIsUnknown() && this.value == ((BooleanValue) that).value;
   }
 
   @Override
   public Type getType() {
-    return type;
+    return BasicType.BOOL;
   }
 
   @Override
@@ -67,7 +74,7 @@ public class BooleanValue implements Value {
   @Override
   public Expr generateLiteral(LiteralFuzzer literalFuzzer) {
     if (valueIsUnknown()) {
-      return literalFuzzer.fuzz(type).orElse(null);
+      return literalFuzzer.fuzz(BasicType.BOOL).orElse(null);
     }
     return new BoolConstantExpr(value.get());
   }
@@ -75,6 +82,6 @@ public class BooleanValue implements Value {
 
   @Override
   public String toString() {
-    return value.get() ? "true" : "false";
+    return valueIsUnknown() ? "unknown_bool" : value.toString();
   }
 }
