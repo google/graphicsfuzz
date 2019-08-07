@@ -217,7 +217,8 @@ public final class OpaqueExpressionGenerator {
   private Optional<Expr> opaqueZeroOrOneMatrixDet(BasicType type, boolean constContext,
                                                      final int depth, Fuzzer fuzzer,
                                                      boolean isZero) {
-    // TODO(653): Workaround for glslangvalidator. Remove when #653 is fixed.
+    // TODO(https://github.com/KhronosGroup/glslang/issues/1865): Workaround for glslangvalidator.
+    //     Remove when #653 is fixed.
     if (constContext) {
       return Optional.empty();
     }
@@ -233,36 +234,47 @@ public final class OpaqueExpressionGenerator {
     final int matrixDimension = generator.nextInt(3) + 2;
     // Indices of arguments in a matrix constructor that can be nonzero for triangular matrix,
     // excluding the diagonal of the matrix. Zero-indexed.
-    final List<List<Integer>> triangularModifiableArgs =
-        isUpperTriangular
-        ? Arrays.asList(
-            Arrays.asList(1),                     // mat2, upper triangular
-            Arrays.asList(1, 2, 5),               // mat3, upper triangular
-            Arrays.asList(1, 2, 3, 6, 7, 11))     // mat4, upper triangular
-        : Arrays.asList(
-            Arrays.asList(2),                     // mat2, lower triangular
-            Arrays.asList(3, 6, 7),               // mat3, lower triangular
-            Arrays.asList(4, 8, 9, 12, 13, 14));  // mat4, lower triangular
-    // Index of the corresponding triangularModifiableArgs for the given matrix dimension.
-    final int modifiableArgsListIndex = matrixDimension - 2;
+    List<Integer> modifiableArgs;
+    switch (matrixDimension) {
+      case 2:
+        modifiableArgs = isUpperTriangular
+            ? Arrays.asList(1)                       // mat2, upper triangular
+            : Arrays.asList(2);                      // mat2, lower triangular
+        break;
+      case 3:
+        modifiableArgs = isUpperTriangular
+            ? Arrays.asList(1, 2, 5)                 // mat3, upper triangular
+            : Arrays.asList(3, 6, 7);                // mat3, lower triangular
+        break;
+      case 4:
+        modifiableArgs = isUpperTriangular
+            ? Arrays.asList(1, 2, 3, 6, 7, 11)       // mat4, upper triangular
+            : Arrays.asList(4, 8, 9, 12, 13, 14);    // mat4, lower triangular
+        break;
+      default:
+        // Should not be reachable.
+        throw new UnsupportedOperationException("Generated matrix dimension was out of bounds?");
+    }
     final List<Expr> matrixConstructorArgs = new ArrayList<Expr>();
     // Diagonal indices are spaced by (matrixDimension + 1) - e.g. mat4 diagonals: 0, 5, 10, 15
     int nextDiagonalMatrixIndex = 0;
     for (int i = 0; i < matrixDimension * matrixDimension; i++) {
       if (i == nextDiagonalMatrixIndex) {
         // We're in a diagonal, so the value depends on if we're making an opaque zero or one.
+        assert !modifiableArgs.contains(i);
         matrixConstructorArgs.add(makeOpaqueZeroOrOne(isZero, type, constContext, depth, fuzzer));
         nextDiagonalMatrixIndex += matrixDimension + 1;
-      } else if (triangularModifiableArgs.get(modifiableArgsListIndex).contains(i)) {
+      } else if (modifiableArgs.contains(i)) {
         // We're in a modifiable index - the value doesn't matter for the determinant.
         matrixConstructorArgs.add(makeOpaqueZeroOrOne(
             generator.nextBoolean(), type, constContext, depth, fuzzer));
       } else {
-        // We're in a non-modifiable index - we need zero or we'll violate the triangular matrix.
+        // We're in a non-modifiable index - we need zero or we'll violate the triangular
+        // property of the matrix.
         matrixConstructorArgs.add(makeOpaqueZero(type, constContext, depth, fuzzer));
       }
     }
-    assert matrixConstructorArgs.size() == (matrixDimension * matrixDimension);
+    assert matrixConstructorArgs.size() == matrixDimension * matrixDimension;
     return Optional.of(
         new FunctionCallExpr("determinant",
             new TypeConstructorExpr(

@@ -431,10 +431,18 @@ public class BasicType extends BuiltinType {
           return BVEC4;
       }
     }
+    // Should not be reachable.
     assert false;
     return null;
   }
 
+  /**
+   * Creates a matrix type of a specified size from the given dimensions.
+   *
+   * @return a matrix type of numColumns columns and numRows rows.
+   * @throws UnsupportedOperationException if numColumns or numRows are outside the bounds of
+   * possible GLSL matrix dimensions (numColumns < 2, numColumns > 4, numRows < 2, numRows > 4)
+   */
   public static BasicType makeMatrixType(int numColumns, int numRows) {
     if (numColumns < 2 || numColumns > 4 || numRows < 2 || numRows > 4) {
       throw new UnsupportedOperationException(
@@ -469,6 +477,7 @@ public class BasicType extends BuiltinType {
             return MAT4X4;
         }
       default:
+        // Should not be reachable.
         assert false;
         return null;
     }
