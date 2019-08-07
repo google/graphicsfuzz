@@ -441,7 +441,7 @@ public class BasicType extends BuiltinType {
    *
    * @return a matrix type of numColumns columns and numRows rows.
    * @throws UnsupportedOperationException if numColumns or numRows are outside the bounds of
-   * possible GLSL matrix dimensions (numColumns < 2, numColumns > 4, numRows < 2, numRows > 4)
+   *     possible GLSL matrix dimensions (numColumns < 2, numColumns > 4, numRows < 2, numRows > 4)
    */
   public static BasicType makeMatrixType(int numColumns, int numRows) {
     if (numColumns < 2 || numColumns > 4 || numRows < 2 || numRows > 4) {
