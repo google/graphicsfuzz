@@ -87,9 +87,11 @@ public final class OpaqueExpressionGenerator {
     expressionIdentities.add(new IdentityClamp());
 
     expressionIdentities.add(new IdentityRewriteComposite());
-
     if (shadingLanguageVersion.supportedMixNonfloatBool()) {
       expressionIdentities.add(new IdentityMixBvec());
+    }
+    if (shadingLanguageVersion.supportedTranspose()) {
+      expressionIdentities.add(new IdentityDoubleTranspose());
     }
 
   }
@@ -517,7 +519,7 @@ public final class OpaqueExpressionGenerator {
     }
     final List<ExpressionIdentity> availableTransformations =
         expressionIdentities.stream()
-            .filter(item -> item.preconditionHolds(expr, type))
+            .filter(item -> item.preconditionHolds(expr, type, constContext))
             .collect(Collectors.toList());
     return availableTransformations.isEmpty() ? expr :
         availableTransformations.get(generator.nextInt(availableTransformations.size()))
@@ -796,7 +798,7 @@ public final class OpaqueExpressionGenerator {
     }
 
     @Override
-    public boolean preconditionHolds(Expr expr, BasicType basicType) {
+    public boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext) {
       if (!acceptableTypes.contains(basicType)) {
         return false;
       }
@@ -1248,8 +1250,40 @@ public final class OpaqueExpressionGenerator {
     }
 
     @Override
-    public boolean preconditionHolds(Expr expr, BasicType basicType) {
-      return super.preconditionHolds(expr, basicType) && expr instanceof VariableIdentifierExpr;
+    public boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext) {
+      return super.preconditionHolds(expr, basicType, constContext)
+          && expr instanceof VariableIdentifierExpr;
+    }
+  }
+
+  /**
+   * Identity function to transpose a matrix twice. When performed, transforms an expression of a
+   * matrix m -> transpose(identity(transpose(identity(m)))).
+   */
+  private class IdentityDoubleTranspose extends AbstractIdentityTransformation {
+    private IdentityDoubleTranspose() {
+      super(BasicType.allMatrixTypes(), true);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      assert type.isMatrix();
+      return identityConstructor(
+          expr,
+          new FunctionCallExpr("transpose",
+              applyIdentityFunction(
+                  new FunctionCallExpr("transpose",
+                      applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)),
+                  type.transposedMatrixType(), constContext, depth, fuzzer)));
+    }
+
+    @Override
+    public boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext) {
+      // TODO(https://github.com/KhronosGroup/glslang/issues/1865): Workaround for glslangValidator
+      //     issue, remove constContext check when fixed.
+      return super.preconditionHolds(expr, basicType, constContext)
+          && !constContext;
     }
   }
 }
