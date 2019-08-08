@@ -34,6 +34,10 @@ public class CompositeValue implements Value {
     this.valueList = valueList;
   }
 
+  public Optional<List<Value>> getValueList() {
+    return valueList;
+  }
+
   @Override
   public Type getType() {
     return type;
@@ -45,24 +49,29 @@ public class CompositeValue implements Value {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    return super.equals(obj);
-  }
-
-  public boolean equals(CompositeValue that) {
+  public boolean equals(Object that) {
     if (this == that) {
       return true;
     }
 
-    if (this.getType() != that.getType()) {
+    if (!(that instanceof CompositeValue)) {
       return false;
     }
 
-    if (this.valueIsUnknown() && that.valueIsUnknown()) {
-      return true;
-    }
+    final CompositeValue thatCompositeValue = (CompositeValue) that;
+    return this.getType() == thatCompositeValue.getType() && this.getValueList() == ((CompositeValue) that).getValueList();
+  }
 
-    return false;
+  @Override
+  public int hashCode() {
+    int hashCode = 17;
+
+    hashCode = 37 * hashCode + getType().hashCode();
+
+    if (!valueIsUnknown()) {
+      hashCode = 37 * hashCode + getValueList().hashCode();
+    }
+    return hashCode;
   }
 
   @Override
@@ -80,8 +89,12 @@ public class CompositeValue implements Value {
       return new TypeConstructorExpr(type.toString(), args);
     }
 
-    //TODO: implement other types (Struct and Array)
+    // TODO: implement other types (Struct and Array)
     throw new RuntimeException("The given type is not supported");
   }
 
+  @Override
+  public String toString() {
+    return valueIsUnknown() ? "unknown_composite" : valueList.get().toString();
+  }
 }

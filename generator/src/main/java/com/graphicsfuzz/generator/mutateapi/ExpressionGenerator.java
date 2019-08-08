@@ -65,9 +65,8 @@ public class ExpressionGenerator {
   private static final int INT_MIN = 0;
   private static final int INT_MAX = 1 << 17;
 
-  private static final String UNKNOWN_VALUE = "_UNKNOWN_VALUE";
   private static final String NEGATIVE = "_NEGATIVE";
-  private static final String ID = "_ID";
+  private static final String ID = "_id";
 
   private final TranslationUnit translationUnit;
   private final PipelineInfo pipelineInfo;
@@ -179,12 +178,12 @@ public class ExpressionGenerator {
    * equation x = (divisor * iterations) + remainder.
    *
    * <p>The code fragment below is an example result obtained by this method which returns an int 7.
-   * int _GLF_PRIMITIVE_VAR_INT_7 = 0;
+   * int _GLF_PRIMITIVE_int_7 = 0;
    * for(int i = 0; i < 3; i ++) {    // 3 is the number of iterations obtained by dividing the
    * // given value 7 by the random divisor 2.
-   * _GLF_PRIMITIVE_VAR_INT_7 += 2;   // 2 is a divisor which is randomly generated.
+   * _GLF_PRIMITIVE_int_7 += 2;   // 2 is a divisor which is randomly generated.
    * }
-   * _GLF_PRIMITIVE_VAR_INT_7 += 1;     // 1 is a remainder after dividing 7 by 2.
+   * _GLF_PRIMITIVE_int_7 += 1;     // 1 is a remainder after dividing 7 by 2.
    *
    * @param factManager        manager class holding the value and its associated expression that
    *                           guarantees to compute the given value.
@@ -384,10 +383,10 @@ public class ExpressionGenerator {
     // Provides a variable name used when generating a new variable declaration from the given
     // value.
     // For example:
-    // _GLF_PRIMITIVE_VAR_INT_NEGATIVE_103_0_ID_18: a variable of a value -103.
-    // _GLF_PRIMITIVE_VAR_FLOAT_UNKNOWN_ID_69: a variable that can be any value of float type.
-    return (isGlobal ? Constants.GLF_PRIMITIVE_GLOBAL_VAR : Constants.GLF_PRIMITIVE_VAR)
-        + "_" + value.getType().toString().toUpperCase()
+    // _GLF_PRIMITIVE_int_NEGATIVE_103_0_id_18: a variable of a value -103.
+    // _GLF_PRIMITIVE_float_UNKNOWN_id_69: a variable that can be any value of float type.
+    return (isGlobal ? Constants.GLF_PRIMITIVE_GLOBAL : Constants.GLF_PRIMITIVE)
+        + "_" + value.getType().toString()
         + parseNameFromValue(value)
         + freshId();
   }
@@ -395,11 +394,11 @@ public class ExpressionGenerator {
   private String genFunctionName(Value value) {
     // Provides a function name used when generating a new function fact from the given value.
     // For example:
-    // _GLF_COMPUTE_FLOAT_1_0_ID_0: a function that returns a value 1.0 of float type.
-    // _GLF_COMPUTE_VEC4_UNKNOWN_ID_1: a function that returns randomly generated value of vec4
+    // _GLF_COMPUTE_float_1_0_id_0: a function that returns a value 1.0 of float type.
+    // _GLF_COMPUTE_vec4_UNKNOWN_id_1: a function that returns randomly generated value of vec4
     // type.
     return Constants.GLF_COMPUTE
-        + "_" + value.getType().toString().toUpperCase()
+        + "_" + value.getType().toString()
         + parseNameFromValue(value)
         + freshId();
   }
@@ -407,9 +406,9 @@ public class ExpressionGenerator {
   private String genParamName(Type type, boolean unknownValue) {
     // Provides a parameter name required when making a paramater of a newly generated function.
     // For example:
-    //  _GLF_PARAM_UNKNOWN_VALUE_VEC4_ID_1: a parameter of unknown value of vec4 type.
-    //  _GLF_PARAM_INT_ID_62: a parameter of integer type.
-    return (unknownValue ? Constants.GLF_PARAM_UNKNOWN_VALUE: Constants.GLF_PARAM )
+    //  _GLF_PARAM_UNKNOWN_VALUE_VEC4_id_1: a parameter of unknown value of vec4 type.
+    //  _GLF_PARAM_INT_id_62: a parameter of integer type.
+    return (unknownValue ? Constants.GLF_PARAM_UNKNOWN_VALUE : Constants.GLF_PARAM)
         + "_" + type.toString().toUpperCase()
         + freshId();
   }
@@ -423,7 +422,7 @@ public class ExpressionGenerator {
    */
   private String parseNameFromValue(Value value) {
     if (value.valueIsUnknown()) {
-      return UNKNOWN_VALUE;
+      return "_" + value.toString();
     }
     final StringBuilder name = new StringBuilder();
     if (value instanceof NumericValue) {

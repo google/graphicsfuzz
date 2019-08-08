@@ -52,7 +52,7 @@ public class BooleanValue implements Value {
     hashCode = 37 * hashCode + getType().hashCode();
 
     if (!valueIsUnknown()) {
-      hashCode = 37 * hashCode + value.hashCode();
+      hashCode = 37 * hashCode + getValue().hashCode();
     }
     return hashCode;
   }
@@ -81,6 +81,6 @@ public class BooleanValue implements Value {
 
   @Override
   public String toString() {
-    return valueIsUnknown() ? "unknown_bool" : value.toString();
+    return valueIsUnknown() ? "unknown_bool" : value.get().toString();
   }
 }

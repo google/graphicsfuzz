@@ -86,14 +86,14 @@ public class NumericValue implements Value {
     hashCode = 37 * hashCode + getType().hashCode();
 
     if (!valueIsUnknown()) {
-      hashCode = 37 * hashCode + value.hashCode();
+      hashCode = 37 * hashCode + getValue().hashCode();
     }
     return hashCode;
   }
 
   @Override
   public String toString() {
-    return valueIsUnknown() ? "unknown_numeric" : value.toString();
+    return valueIsUnknown() ? "unknown_numeric" : value.get().toString();
   }
 
 }
