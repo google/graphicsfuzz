@@ -57,16 +57,15 @@ void mergeSort() {
 
     // Devide the array into blocks of size m.
     // m = [1, 2, 4 ,8, 16...].
-    for (int m = 1; m <= high; m = 2*m) {
+    for (int m = 1; m <= high; m = 2 * m) {
 
         // For m = 1, i = [0, 2, 4, 6, 8].
         // For m = 2, i = [0, 4, 8].
         // For m = 4, i = [0, 8].
-        for (int i = low; i< high; i += 2*m) {
+        for (int i = low; i< high; i += 2 * m) {
              int from = i;
              int mid = i + m - 1;
-             int to = min (i + 2*m - 1, high);
-
+             int to = min (i + 2 * m - 1, high);
              merge(from, mid, to);
         }
     }
@@ -120,7 +119,6 @@ void main() {
         vec3(0, -5, int(injectionSwitch.y)) * ldexp(0.2, 5),
         vec3(1, 8, int(injectionSwitch.y)) * ldexp(injectionSwitch.y, 0)
     );
-
     vec3 vecCoor = roundEven(pos * vec3(gl_FragCoord.xx / resolution.yx, 1));
     vec2 color;
 
@@ -131,7 +129,7 @@ void main() {
             break;
         } else if (int(gl_FragCoord[1]) < 60) {
             color = fract(sin(vecCoor.yx - trunc(float(data[1]))));
-            color[1] *= atan(faceforward(injectionSwitch, color.xx,  vecCoor.yx).y);
+            color[1] *= atan(faceforward(injectionSwitch, color.xx, vecCoor.yx).y);
             break;
         } else if (int(gl_FragCoord[1]) < 90) {
             color = fract(sin(vecCoor.yx - trunc(float(data[2]))));
@@ -139,7 +137,7 @@ void main() {
             break;
         } else if (int(gl_FragCoord[1]) < 120) {
             color = fract(acosh(vecCoor.yx - trunc(float(data[3]))));
-            color.x += (isnan(gl_FragCoord.x)? log2(gl_FragCoord.x) : log2(gl_FragCoord.y));
+            color.x += (isnan(gl_FragCoord.x) ? log2(gl_FragCoord.x) : log2(gl_FragCoord.y));
             break;
         } else if (int(gl_FragCoord[1]) < 150) {
             discard;
@@ -157,7 +155,7 @@ void main() {
             break;
         } else if (int(gl_FragCoord[1]) < 270) {
             color = fract(sin(vecCoor.yx - trunc(float(data[7]))));
-            color.y *= mix(normalize(vecCoor),  normalize(vec3(color, degrees(color.x))), injectionSwitch.x ).y;
+            color.y *= mix(normalize(vecCoor), normalize(vec3(color, degrees(color.x))), injectionSwitch.x).y;
             break;
         } else {
             discard;
