@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class ExpressionGenerator {
@@ -299,8 +300,7 @@ public class ExpressionGenerator {
       return null;
     }
 
-    final Pair<Optional<Number>, Optional<Number>> pair =
-        ((NumericValue) value).getPairSum(generator);
+    final Pair<Optional<Number>, Optional<Number>> pair = getPairSum(value);
     return new BinaryExpr(
         generateExpr(factManager, functionDefinition, stmt,
             new NumericValue((BasicType) value.getType(), pair.getLeft())),
@@ -580,6 +580,42 @@ public class ExpressionGenerator {
 
     // struct and array
     throw new RuntimeException("Not implemented yet!");
+  }
+
+  public Pair<Optional<Number>, Optional<Number>> getPairSum(Value value) {
+
+    assert value instanceof NumericValue;
+    NumericValue numericValue = (NumericValue) value;
+
+    if (numericValue.valueIsUnknown()) {
+      return new ImmutablePair<>(Optional.empty(), Optional.empty());
+    }
+
+    // To find two numbers whose sum is equal to the given value X. Following the
+    // equation X = A + B, we first need to randomly generate a number A which will be used as
+    // the left expression, and subtract it with the original value X. Next, as B = X - A, we use
+    // the outcome of such subtraction as the right expression. Finally, the result of adding two
+    // numbers A and B would be equal to the original value X.
+    //
+    // For example, if a number 5 is an input and we generate a random number 3, we then subtract 5
+    // with 3 which will give 2 as the result. Next we derive left and right expressions from
+    // these two numbers and use them when generating a binary expression.
+
+    if (numericValue.getType() == BasicType.FLOAT) {
+      float original = numericValue.getValue().get().floatValue();
+      float left = generator.nextFloat();
+      float right = original - left;
+      return new ImmutablePair<>(Optional.of(left), Optional.of(right));
+    }
+
+    if (numericValue.getType() == BasicType.INT) {
+      int original = numericValue.getValue().get().intValue();
+      int left = generator.nextInt(original + 1);
+      int right = original - left;
+      return new ImmutablePair<>(Optional.of(left), Optional.of(right));
+    }
+
+    throw new RuntimeException("Should be unreachable");
   }
 
   private String randomFloatString() {

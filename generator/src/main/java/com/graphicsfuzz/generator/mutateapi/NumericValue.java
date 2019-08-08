@@ -16,20 +16,14 @@
 
 package com.graphicsfuzz.generator.mutateapi;
 
-import com.graphicsfuzz.common.ast.expr.BinOp;
-import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
-import com.graphicsfuzz.common.ast.expr.Op;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class NumericValue implements Value {
 
@@ -40,16 +34,6 @@ public class NumericValue implements Value {
     this.basicType = basicType;
     this.value = value;
   }
-
-  /**
-   * An empty value constructor.
-   *
-   * @param basicType of Value
-   */
-  public NumericValue(BasicType basicType) {
-    this(basicType, Optional.empty());
-  }
-
 
   @Override
   public Type getType() {
@@ -82,70 +66,34 @@ public class NumericValue implements Value {
     return value;
   }
 
-  public Pair<Optional<Number>, Optional<Number>> getPairSum(IRandom generator) {
-
-    if (valueIsUnknown()) {
-      return new ImmutablePair<>(Optional.empty(), Optional.empty());
-    }
-
-    // To find two numbers whose sum is equal to the given value X. Following the
-    // equation X = A + B, we first need to randomly generate a number A which will be used as
-    // the left expression, and subtract it with the original value X. Next, as B = X - A, we use
-    // the outcome of such subtraction as the right expression. Finally, the result of adding two
-    // numbers A and B would be equal to the original value X.
-    //
-    // For example, if a number 5 is an input and we generate a random number 3, we then subtract 5
-    // with 3 which will give 2 as the result. Next we derive left and right expressions from
-    // these two numbers and use them when generating a binary expression.
-
-    if (getType() == BasicType.FLOAT) {
-      float original = value.get().floatValue();
-      float left = generator.nextFloat();
-      float right = original - left;
-      return new ImmutablePair<>(Optional.of(left), Optional.of(right));
-    }
-
-    if (getType() == BasicType.INT) {
-      int original = value.get().intValue();
-      int left = generator.nextInt(original + 1);
-      int right = original - left;
-      return new ImmutablePair<>(Optional.of(left), Optional.of(right));
-    }
-
-    throw new RuntimeException("Should be unreachable");
-  }
-
   @Override
   public boolean equals(Object that) {
-    return that instanceof NumericValue && equals((NumericValue) that);
-  }
-
-  public boolean equals(NumericValue that) {
     if (this == that) {
       return true;
     }
-    if (this.getType() != that.getType()) {
+
+    if (!(that instanceof NumericValue)) {
       return false;
     }
-    // If the given value(that) is empty we have to tell a program that any value with the correct
-    // type is equal to that value.
-    if (that.valueIsUnknown()) {
-      return true;
-    }
-
-    if (this.getType() == BasicType.FLOAT || this.getType() == BasicType.INT) {
-      return this.getValue().equals(that.getValue());
-    }
-
-    // TODO: handle unit case
-
-    return false;
+    final NumericValue thatNumericValue = (NumericValue) that;
+    return this.basicType == thatNumericValue.basicType && this.value.equals(thatNumericValue.getValue());
   }
 
+  @Override
+  public int hashCode() {
+    int hashCode = 17;
+
+    hashCode = 37 * hashCode + getType().hashCode();
+
+    if (!valueIsUnknown()) {
+      hashCode = 37 * hashCode + value.hashCode();
+    }
+    return hashCode;
+  }
 
   @Override
   public String toString() {
-    return value.get().toString();
+    return valueIsUnknown() ? "unknown_numeric" : value.toString();
   }
 
 }

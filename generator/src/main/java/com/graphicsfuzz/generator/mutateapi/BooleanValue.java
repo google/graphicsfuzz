@@ -32,18 +32,6 @@ public class BooleanValue implements Value {
   }
 
   @Override
-  public int hashCode() {
-    int hashCode = 17;
-
-    hashCode = 37 * hashCode + BasicType.BOOL.hashCode();
-
-    if (!valueIsUnknown()) {
-      hashCode = 37 * hashCode + value.hashCode();
-    }
-    return hashCode;
-  }
-
-  @Override
   public boolean equals(Object that) {
     if (this == that) {
       return true;
@@ -54,7 +42,19 @@ public class BooleanValue implements Value {
     }
 
     final BooleanValue thatBooleanValue = (BooleanValue) that;
-    return !this.valueIsUnknown() == !thatBooleanValue.valueIsUnknown() && this.value == ((BooleanValue) that).value;
+    return this.value.equals(thatBooleanValue.value);
+  }
+
+  @Override
+  public int hashCode() {
+    int hashCode = 17;
+
+    hashCode = 37 * hashCode + getType().hashCode();
+
+    if (!valueIsUnknown()) {
+      hashCode = 37 * hashCode + value.hashCode();
+    }
+    return hashCode;
   }
 
   @Override
@@ -78,7 +78,6 @@ public class BooleanValue implements Value {
     }
     return new BoolConstantExpr(value.get());
   }
-
 
   @Override
   public String toString() {
