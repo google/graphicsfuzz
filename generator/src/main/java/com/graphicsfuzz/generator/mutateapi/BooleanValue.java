@@ -47,14 +47,7 @@ public class BooleanValue implements Value {
 
   @Override
   public int hashCode() {
-    int hashCode = 17;
-
-    hashCode = 37 * hashCode + getType().hashCode();
-
-    if (!valueIsUnknown()) {
-      hashCode = 37 * hashCode + getValue().hashCode();
-    }
-    return hashCode;
+    return value.hashCode();
   }
 
   @Override

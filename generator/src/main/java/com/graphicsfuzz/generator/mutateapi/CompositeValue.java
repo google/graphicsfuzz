@@ -22,6 +22,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -59,20 +60,13 @@ public class CompositeValue implements Value {
     }
 
     final CompositeValue thatCompositeValue = (CompositeValue) that;
-    return this.getType() == thatCompositeValue.getType()
-        && this.getValueList() == ((CompositeValue) that).getValueList();
+    return this.getType().equals(thatCompositeValue.getType())
+        && this.getValueList().equals(thatCompositeValue.getValueList());
   }
 
   @Override
   public int hashCode() {
-    int hashCode = 17;
-
-    hashCode = 37 * hashCode + getType().hashCode();
-
-    if (!valueIsUnknown()) {
-      hashCode = 37 * hashCode + getValueList().hashCode();
-    }
-    return hashCode;
+    return Objects.hash(type, valueList);
   }
 
   @Override

@@ -62,7 +62,7 @@ public class ExpressionGenerator {
   private static final int INT_MIN = 0;
   private static final int INT_MAX = 1 << 17;
 
-  private static final String NEGATIVE = "_NEGATIVE";
+  private static final String NEGATIVE = "_negative";
   private static final String ID = "_id";
 
   private final TranslationUnit translationUnit;
@@ -110,8 +110,8 @@ public class ExpressionGenerator {
                            Value value) {
 
     if (currentDepth > MAX_DEPTH) {
-      // When current depth has reached the maximum limitation, we don't want the program to go
-      // deeper. Thus, we consider generating a new expression from non-recursive approaches only.
+      // When current depth has reached the maximum limit, we don't want generation to go deeper.
+      // Thus, we consider generating a new expression from non-recursive approaches only.
       // To do so, we will choose to either generating the expression by making the literal
       // value or calling the already declared variables retrieved from the fact manager.
       Expr result;
@@ -167,11 +167,11 @@ public class ExpressionGenerator {
    *
    * <p>Given the expected value, this method will declare a new zero-initialized variable and a for
    * loop statement guarantee to make the variable value equals to the given value. To do so, it
-   * will generate a random number(divisor) that will be added to the variable for each iteration.
+   * will generate a random number (divisor) that will be added to the variable for each iteration.
    * The binary expression adding the remainder to the return value will also be
    * injected if there is a left over from a division of original value by the divisor.
    *
-   * <p>For example, given x value we can derive a for loop statement and a remainder from the
+   * <p>For example, given a value x we can derive a for loop statement and a remainder from the
    * equation x = (divisor * iterations) + remainder.
    *
    * <p>The code fragment below is an example result obtained by this method which returns an int 7.
@@ -196,6 +196,7 @@ public class ExpressionGenerator {
   private Expr generateForLoopValue(FactManager factManager,
                                     FunctionDefinition functionDefinition,
                                     Stmt stmt, Value value) {
+    // TODO: Support UINT Type.
     if (value.getType() != BasicType.INT) {
       return null;
     }
@@ -235,14 +236,14 @@ public class ExpressionGenerator {
     // We use max function here to prevent the division by zero error.
     int divisor = Math.max(1, generator.nextInt(original));
 
-
+    // TODO: #659 We should be able to set max limit of iterations.
     final int iterations = original / divisor;
     // A left over number that will be added after for loop is executed. The binary
     // expression responsible to add a remainder to the variable will be inserted after for
     // loop statement.
     final int remainder = original % divisor;
 
-    // Values of the numbers which will be used for the for loop.
+    // Values of numbers which will be used for the for loop.
     final Value divisorValue = new NumericValue(BasicType.INT, Optional.of(divisor));
     final Value iterationValue = new NumericValue(BasicType.INT,
         Optional.of(isIncrement ? 0 : iterations));
@@ -279,7 +280,10 @@ public class ExpressionGenerator {
           BinOp.ADD_ASSIGN
       )));
     }
-
+    ;
+    final VariableDeclFact variableDeclFact = new VariableDeclFact(variablesDecl,
+        variableDeclInfo, value);
+    factManager.addVariableFact(value, variableDeclFact);
     return new VariableIdentifierExpr(varName);
   }
 
@@ -360,10 +364,9 @@ public class ExpressionGenerator {
 
   private String genVarName(Value value, boolean isGlobal) {
     // Provides a variable name used when generating a new variable declaration from the given
-    // value.
-    // For example:
-    // _GLF_PRIMITIVE_int_NEGATIVE_103_0_id_18: a variable of a value -103.
-    // _GLF_PRIMITIVE_float_UNKNOWN_id_69: a variable that can be any value of float type.
+    // value. For example:
+    // _GLF_PRIMITIVE_int_negative_103_0_id_18: a variable of a value -103.
+    // _GLF_PRIMITIVE_float_unknown_numeric_id_69: a variable that can be any value of float type.
     return (isGlobal ? Constants.GLF_PRIMITIVE_GLOBAL : Constants.GLF_PRIMITIVE)
         + "_" + value.getType().toString()
         + parseNameFromValue(value)
@@ -385,16 +388,16 @@ public class ExpressionGenerator {
   private String genParamName(Type type, boolean unknownValue) {
     // Provides a parameter name required when making a paramater of a newly generated function.
     // For example:
-    //  _GLF_PARAM_UNKNOWN_VALUE_VEC4_id_1: a parameter of unknown value of vec4 type.
-    //  _GLF_PARAM_INT_id_62: a parameter of integer type.
+    //  _GLF_PARAM_UNKNOWN_VALUE_vec4_id_1: a parameter of unknown value of vec4 type.
+    //  _GLF_PARAM_int_id_62: a parameter of integer type.
     return (unknownValue ? Constants.GLF_PARAM_UNKNOWN_VALUE : Constants.GLF_PARAM)
-        + "_" + type.toString().toUpperCase()
+        + "_" + type.toString()
         + freshId();
   }
 
   /**
    * Utility function to parse name from the value given, if value is known, for example, -0.45
-   * will be parsed as NEGATIVE_0_45. If value is unknown, return the "UNKNOWN VALUE" string.
+   * will be parsed as negative_0_45. If value is unknown, return the "UNKNOWN VALUE" string.
    *
    * @param value value that will be converted to the name of variables or functions.
    * @return a string derived from the given value which will be used as function or variable names.
@@ -564,7 +567,7 @@ public class ExpressionGenerator {
    *
    * @param value the original value that will be split into two numbers.
    * @return if value is unknown, returns a pair of empty value. Otherwise find and return two
-   *     numbers that will add up to the given value.
+   * numbers that will add up to the given value.
    */
   public Pair<Optional<Number>, Optional<Number>> getPairSum(Value value) {
 
@@ -575,13 +578,13 @@ public class ExpressionGenerator {
       return new ImmutablePair<>(Optional.empty(), Optional.empty());
     }
 
-    // Following the equation a = (a/b) + (a - a/b), we first need to pick a random integer 'b'
-    // in range 1-10. We then derive the left number by dividing the original number 'a' with 'b'.
-    // We then generate the right number by subtracting the original value 'a' with the left number
-    // obtained from the previous step.
+    // Following the equation a = (a/b) + (a - a/b), we first need to pick a random integer b
+    // in range 1-10. We then derive the left number by dividing the original number a with the
+    // random number b. We then generate the right number by subtracting the original value a
+    // with the left number obtained from the previous step.
     //
     // For example, if a number 7 is an input and we pick a random integer 3. The left number
-    // is 7 divide by 3 which equals to 2. Next we subtract the original value with the left number
+    // is (7/3) which equals to 2. Next we subtract the original value with the left number
     // to find the right number: 7 - 2 = 5. We finally have two numbers 2 and 5 that can add
     // up to 7.
 

@@ -20,7 +20,6 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
 
-
 /**
  * This interface defines an expected Value used by {@link ExpressionGenerator} when
  * generating an expression. It represents a possibly unknown value of some type.
@@ -43,7 +42,7 @@ public interface Value {
    * Provides a literal with the same type as the Value's type, such that all parts of the value
    * that are known will have the expected values, and all other parts will be randomized.
    *
-   * @param literalFuzzer a util class used to generate literal value.
+   * @param literalFuzzer a util class used to generate fuzzed expressions.
    * @return the expression that represents the value.
    */
   Expr generateLiteral(LiteralFuzzer literalFuzzer);

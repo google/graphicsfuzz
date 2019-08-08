@@ -76,20 +76,13 @@ public class NumericValue implements Value {
       return false;
     }
     final NumericValue thatNumericValue = (NumericValue) that;
-    return this.basicType == thatNumericValue.basicType
+    return this.basicType.equals(thatNumericValue.basicType)
         && this.value.equals(thatNumericValue.getValue());
   }
 
   @Override
   public int hashCode() {
-    int hashCode = 17;
-
-    hashCode = 37 * hashCode + getType().hashCode();
-
-    if (!valueIsUnknown()) {
-      hashCode = 37 * hashCode + getValue().hashCode();
-    }
-    return hashCode;
+    return value.hashCode();
   }
 
   @Override
