@@ -76,7 +76,8 @@ public class NumericValue implements Value {
       return false;
     }
     final NumericValue thatNumericValue = (NumericValue) that;
-    return this.basicType == thatNumericValue.basicType && this.value.equals(thatNumericValue.getValue());
+    return this.basicType == thatNumericValue.basicType
+        && this.value.equals(thatNumericValue.getValue());
   }
 
   @Override

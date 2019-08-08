@@ -564,7 +564,7 @@ public class ExpressionGenerator {
    *
    * @param value the original value that will be split into two numbers.
    * @return if value is unknown, returns a pair of empty value. Otherwise find and return two
-   * numbers that will add up to the given value.
+   *     numbers that will add up to the given value.
    */
   public Pair<Optional<Number>, Optional<Number>> getPairSum(Value value) {
 

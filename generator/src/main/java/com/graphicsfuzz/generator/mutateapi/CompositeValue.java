@@ -59,7 +59,8 @@ public class CompositeValue implements Value {
     }
 
     final CompositeValue thatCompositeValue = (CompositeValue) that;
-    return this.getType() == thatCompositeValue.getType() && this.getValueList() == ((CompositeValue) that).getValueList();
+    return this.getType() == thatCompositeValue.getType()
+        && this.getValueList() == ((CompositeValue) that).getValueList();
   }
 
   @Override

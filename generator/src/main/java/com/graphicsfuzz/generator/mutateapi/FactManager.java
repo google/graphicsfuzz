@@ -88,7 +88,7 @@ public class FactManager {
    *
    * @param value a value which the fact manager is asked to search in the variable fact map.
    * @return if value does not exist in the variable fact map, an empty list is returned. Otherwise,
-   * returns a list of variable facts that guarantees to provide the given value.
+   *     returns a list of variable facts that guarantees to provide the given value.
    */
   public List<VariableFact> getVariableFacts(Value value) {
     final List<VariableFact> result = new ArrayList<>();
@@ -104,8 +104,8 @@ public class FactManager {
    * manager. If the value does not exist in the map, an empty list is returned.
    *
    * @param value a value which the fact manager is asked to search in the function fact map.
-   * @return if value does not exist in the function fact map, an empty list is returned. Otherwise,
-   * returns a list of function facts that guarantees to provide the given value.
+   * @return if value does not exist in the function fact map, an empty list is returned.
+   *     Otherwise, returns a list of function facts that guarantees to provide the given value.
    */
   public List<FunctionFact> getFunctionFacts(Value value) {
     if (globalScope()) {
