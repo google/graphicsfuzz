@@ -30,7 +30,6 @@ public class ReturnStmt extends Stmt {
   }
 
   public ReturnStmt() {
-    this(null);
     this.expr = null;
   }
 
