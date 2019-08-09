@@ -29,7 +29,7 @@ public class GenerationParams {
     result.maxDepthForGeneratedExpr = 2;
     result.maxStructNestingDepth = 1;
     result.maxStructFields = 3;
-    result.maxDonors = 2;
+    result.maxDonorsPerDonationPass = 2;
     return result;
   }
 
@@ -38,7 +38,7 @@ public class GenerationParams {
     result.maxDepthForGeneratedExpr = 3;
     result.maxStructNestingDepth = 2;
     result.maxStructFields = 5;
-    result.maxDonors = 4;
+    result.maxDonorsPerDonationPass = 4;
     return result;
   }
 
@@ -47,7 +47,7 @@ public class GenerationParams {
     result.maxDepthForGeneratedExpr = 5;
     result.maxStructNestingDepth = 4;
     result.maxStructFields = 7;
-    result.maxDonors = 6;
+    result.maxDonorsPerDonationPass = 6;
     return result;
   }
 
@@ -67,8 +67,8 @@ public class GenerationParams {
   private int maxStructNestingDepth = 3;
   private int maxStructFields = 8;
 
-  // Donors
-  private int maxDonors = 5;
+  // The maximum number of distinct donors that can be used during one donation pass.
+  private int maxDonorsPerDonationPass = 5;
 
   private final boolean injectionSwitchIsAvailable;
 
@@ -84,8 +84,8 @@ public class GenerationParams {
     return maxStructFields;
   }
 
-  public int getMaxDonors() {
-    return maxDonors;
+  public int getMaxDonorsPerDonationPass() {
+    return maxDonorsPerDonationPass;
   }
 
   public ShaderKind getShaderKind() {
