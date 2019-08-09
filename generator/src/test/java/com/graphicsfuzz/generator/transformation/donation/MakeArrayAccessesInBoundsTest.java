@@ -83,4 +83,44 @@ public class MakeArrayAccessesInBoundsTest {
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
+  @Test
+  public void testUIntConstantExprIndex() throws Exception {
+    final String shader = "#version 300 es\n"
+        + "void main() { vec3 stuff[16];"
+        + "  uint x = 19u;"
+        + "  vec3 f = stuff[x];"
+        + "}";
+    final String expected = "#version 300 es\n"
+        + "void main() { vec3 stuff[16];"
+        + "  uint x = 19u;"
+        + "  vec3 f = stuff[(x) < 16u ? x : 0u];"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    final Typer typer = new Typer(tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu, typer);
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
+        PrettyPrinterVisitor.prettyPrintAsString(tu));
+  }
+
+  @Test
+  public void testUIntFunctionCallReturnIndex() throws Exception {
+    final String shader = "#version 300 es\n"
+        + "void main() { vec3 stuff[16];"
+        + "  uint uselessOut;"
+        + "  uint x = uaddCarry(19u, 15u, uselessOut);"
+        + "  vec3 f = stuff[x];"
+        + "}";
+    final String expected = "#version 300 es\n"
+        + "void main() { vec3 stuff[16];"
+        + "  uint uselessOut;"
+        + "  uint x = uaddCarry(19u, 15u, uselessOut);"
+        + "  vec3 f = stuff[(x) < 16u ? x : 0u];"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    final Typer typer = new Typer(tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu, typer);
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
+        PrettyPrinterVisitor.prettyPrintAsString(tu));
+  }
+
 }

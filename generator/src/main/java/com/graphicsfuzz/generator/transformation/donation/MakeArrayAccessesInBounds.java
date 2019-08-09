@@ -24,6 +24,7 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TernaryExpr;
+import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
@@ -51,20 +52,37 @@ public class MakeArrayAccessesInBounds extends StandardVisitor {
     type = type.getWithoutQualifiers();
     assert isArrayVectorOrMatrix(type);
     if (!staticallyInBounds(arrayIndexExpr.getIndex(), type)) {
-      arrayIndexExpr.setIndex(new TernaryExpr(
+      Type indexType = typer.lookupType(arrayIndexExpr.getIndex());
+      if (indexType != null) {
+        indexType = indexType.getWithoutQualifiers();
+      }
+      if (indexType == BasicType.UINT) {
+        arrayIndexExpr.setIndex(new TernaryExpr(
             new BinaryExpr(
-                  new BinaryExpr(
-                        new ParenExpr(arrayIndexExpr.getIndex().clone()),
-                        new IntConstantExpr("0"),
-                        BinOp.GE),
-                  new BinaryExpr(
-                        new ParenExpr(arrayIndexExpr.getIndex().clone()),
-                        new IntConstantExpr(getSize(type).toString()),
-                        BinOp.LT),
-                  BinOp.LAND),
+                new ParenExpr(arrayIndexExpr.getIndex().clone()),
+                new UIntConstantExpr(getSize(type).toString() + "u"),
+                BinOp.LT),
+            arrayIndexExpr.getIndex(),
+            new UIntConstantExpr("0u"))
+        );
+      } else {
+        // If indexType ends up being null and the expression is still of type uint, it's better to
+        // generate a statement that will fail to validate rather than crash GraphicsFuzz.
+        arrayIndexExpr.setIndex(new TernaryExpr(
+            new BinaryExpr(
+                new BinaryExpr(
+                    new ParenExpr(arrayIndexExpr.getIndex().clone()),
+                    new IntConstantExpr("0"),
+                    BinOp.GE),
+                new BinaryExpr(
+                    new ParenExpr(arrayIndexExpr.getIndex().clone()),
+                    new IntConstantExpr(getSize(type).toString()),
+                    BinOp.LT),
+                BinOp.LAND),
             arrayIndexExpr.getIndex(),
             new IntConstantExpr("0"))
-      );
+        );
+      }
     }
     super.visitArrayIndexExpr(arrayIndexExpr);
   }
@@ -87,11 +105,17 @@ public class MakeArrayAccessesInBounds extends StandardVisitor {
   }
 
   private static boolean staticallyInBounds(Expr index, Type type) {
-    if (!(index instanceof IntConstantExpr)) {
+    if (!(index instanceof IntConstantExpr || index instanceof UIntConstantExpr)) {
       return false;
     }
-    Integer indexValue = Integer.parseInt(((IntConstantExpr) index).getValue());
-    return indexValue >= 0 && indexValue < getSize(type);
+    Integer indexValue;
+    if (index instanceof IntConstantExpr) {
+      indexValue = Integer.parseInt(((IntConstantExpr) index).getValue());
+      return indexValue >= 0 && indexValue < getSize(type);
+    } else { // index instanceof UIntConstantExpr
+      indexValue = Integer.parseInt(((UIntConstantExpr) index).getValue());
+      return indexValue < getSize(type);
+    }
   }
 
 }
