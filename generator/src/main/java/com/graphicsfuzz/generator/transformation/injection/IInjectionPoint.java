@@ -60,6 +60,13 @@ public interface IInjectionPoint {
   boolean inLoop();
 
   /**
+   * Determines whether the injection point is located inside a switch statement.
+   *
+   * @return true if and only if the injection point is inside a switch statement.
+   */
+  boolean inSwitch();
+
+  /**
    * Returns the function enclosing the injection point.
    *
    * @return the function enclosing the injection point

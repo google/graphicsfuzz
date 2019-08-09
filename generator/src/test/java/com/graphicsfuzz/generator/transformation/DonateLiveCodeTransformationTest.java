@@ -124,7 +124,7 @@ public class DonateLiveCodeTransformationTest {
                 super.visitBlockStmt(stmt);
                 if (stmt.getNumStmts() == 0) {
                   blockInjectionPoint = new BlockInjectionPoint(stmt, null, getEnclosingFunction(),
-                        false, getCurrentScope());
+                        false, false, getCurrentScope());
                 }
               }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The GraphicsFuzz Project Authors
+ * Copyright 2019 The GraphicsFuzz Project Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.graphicsfuzz.generator.util;
 
 import com.graphicsfuzz.common.ast.IAstNode;
-import com.graphicsfuzz.common.ast.stmt.BreakStmt;
 import com.graphicsfuzz.common.ast.stmt.ContinueStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
@@ -26,28 +25,28 @@ import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import java.util.Optional;
 
 /**
- * This class removes break and continue statements that are not nested inside loops.
+ * This class removes continue statements that are not nested inside loops.
  */
-public class RemoveImmediateBreakAndContinueStatements extends RemoveStatements {
+public class RemoveImmediateContinueStatements extends RemoveStatements {
 
-  public RemoveImmediateBreakAndContinueStatements(IAstNode node) {
-    super(item -> item instanceof BreakStmt || item instanceof ContinueStmt,
+  public RemoveImmediateContinueStatements(IAstNode node) {
+    super(item -> item instanceof ContinueStmt,
         item -> Optional.of(new NullStmt()), node);
   }
 
   @Override
   public void visitDoStmt(DoStmt doStmt) {
-    // Block visitation: we don't want to remove break and continue statements from inside a loop
+    // Block visitation: we don't want to remove continue statements from inside a loop
   }
 
   @Override
   public void visitForStmt(ForStmt forStmt) {
-    // Block visitation: we don't want to remove break and continue statements from inside a loop
+    // Block visitation: we don't want to remove continue statements from inside a loop
   }
 
   @Override
   public void visitWhileStmt(WhileStmt whileStmt) {
-    // Block visitation: we don't want to remove break and continue statements from inside a loop
+    // Block visitation: we don't want to remove continue statements from inside a loop
   }
 
 }

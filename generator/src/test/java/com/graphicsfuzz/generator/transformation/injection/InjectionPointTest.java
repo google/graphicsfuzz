@@ -34,7 +34,7 @@ public class InjectionPointTest {
 
     final Scope scope = new Scope(null);
     assertNotNull(
-      new InjectionPoint(null, false, scope) {
+      new InjectionPoint(null, false, false, scope) {
 
         @Override
         public void inject(Stmt stmt) {
@@ -64,7 +64,7 @@ public class InjectionPointTest {
   public void testThatScopeIsCloned() {
     Scope s = new Scope(null);
     s.add("v", BasicType.INT, Optional.empty());
-    IInjectionPoint injectionPoint = new InjectionPoint(null, false, s) {
+    IInjectionPoint injectionPoint = new InjectionPoint(null, false, false, s) {
       @Override
       public void inject(Stmt stmt) {
         throw new RuntimeException();
