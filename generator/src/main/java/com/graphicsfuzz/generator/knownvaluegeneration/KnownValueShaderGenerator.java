@@ -134,8 +134,8 @@ public class KnownValueShaderGenerator {
     tu.getMainFunction().getBody().addStmt(placeholderForColorAssignment);
 
     LOGGER.info("About to generate the known value fragment shader"
-        + "with the parameters R = " + rFloat + ", G = " + gFloat + ", B = " + bFloat+ " and"
-        + " A = " + aFloat+ ".");
+        + " with the parameters R =" +" "+ rFloat + ", G = " + gFloat + ", B = " + bFloat + " and"
+        + " A =" + " "+ aFloat+ ".");
 
     final ExpressionGenerator expressionGenerator = new
         ExpressionGenerator(tu, pipelineInfo, generator, globalFactManager);
