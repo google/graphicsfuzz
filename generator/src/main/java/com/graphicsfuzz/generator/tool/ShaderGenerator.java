@@ -112,7 +112,7 @@ public class ShaderGenerator {
     final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
     final File outputDir = ns.get("output_dir") == null ? new File(".") : ns.get("output_dir");
     final String version = ns.getString("version");
-    final File shaderJobFile = new File(".", "sample" + ".json");
+    final File shaderJobFile = new File(".", "knownvalue_shader" + ".json");
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     fileOps.forceMkdir(outputDir);
 
