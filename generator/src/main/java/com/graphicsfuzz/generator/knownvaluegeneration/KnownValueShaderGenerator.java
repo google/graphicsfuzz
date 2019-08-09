@@ -102,10 +102,10 @@ public class KnownValueShaderGenerator {
 
   public static void mainHelper(String[] args) throws ArgumentParserException, IOException {
     final Namespace ns = parse(args);
-    final float rValue = ns.getFloat("r");
-    final float gValue = ns.getFloat("g");
-    final float bValue = ns.getFloat("b");
-    final float aValue = ns.getFloat("a");
+    final float rFloat = ns.getFloat("r");
+    final float gFloat = ns.getFloat("g");
+    final float bFloat = ns.getFloat("b");
+    final float aFloat = ns.getFloat("a");
     final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
     final File outputDir = ns.get("output_dir") == null ? new File(".") : ns.get("output_dir");
     final String version = ns.getString("version");
@@ -133,45 +133,46 @@ public class KnownValueShaderGenerator {
     final Stmt placeholderForColorAssignment = new NullStmt();
     tu.getMainFunction().getBody().addStmt(placeholderForColorAssignment);
 
-    LOGGER.info("About to generate the known value fragment shader with the parameters R = " + rValue + ", G = " + gValue + ", B = " + bValue + " and A = " + aValue + ".");
+    LOGGER.info("About to generate the known value fragment shader"
+        + "with the parameters R = " + rFloat + ", G = " + gFloat + ", B = " + bFloat+ " and"
+        + " A = " + aFloat+ ".");
 
     final ExpressionGenerator expressionGenerator = new
         ExpressionGenerator(tu, pipelineInfo, generator, globalFactManager);
     final FactManager mainFactManager = globalFactManager.newScope();
-    final Expr rvalue = expressionGenerator.generateExpr(
+    final Expr rValue = expressionGenerator.generateExpr(
         mainFactManager,
         tu.getMainFunction(),
         placeholderForColorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(rValue)));
+        new NumericValue(BasicType.FLOAT, Optional.of(rFloat)));
 
-    final Expr gvalue = expressionGenerator.generateExpr(
+    final Expr gValue = expressionGenerator.generateExpr(
         mainFactManager,
         tu.getMainFunction(),
         placeholderForColorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(gValue)));
+        new NumericValue(BasicType.FLOAT, Optional.of(gFloat)));
 
-    final Expr bvalue = expressionGenerator.generateExpr(
+    final Expr bValue = expressionGenerator.generateExpr(
         mainFactManager,
         tu.getMainFunction(),
         placeholderForColorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(bValue)));
+        new NumericValue(BasicType.FLOAT, Optional.of(bFloat)));
 
-    final Expr avalue = expressionGenerator.generateExpr(
+    final Expr aValue = expressionGenerator.generateExpr(
         mainFactManager,
         tu.getMainFunction(),
         placeholderForColorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(aValue))
+        new NumericValue(BasicType.FLOAT, Optional.of(aFloat))
     );
 
     tu.getMainFunction().getBody().replaceChild(placeholderForColorAssignment,
         new ExprStmt(new BinaryExpr(new VariableIdentifierExpr("gl_FragColor"),
             new TypeConstructorExpr("vec4",
-                rvalue,
-                gvalue,
-                bvalue,
-                avalue
-            ),
-            BinOp.ASSIGN)));
+                rValue,
+                gValue,
+                bValue,
+                aValue
+            ), BinOp.ASSIGN)));
 
     final ShaderJob newShaderJob = new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu);
     fileOps.writeShaderJobFile(newShaderJob, shaderJobFile);
