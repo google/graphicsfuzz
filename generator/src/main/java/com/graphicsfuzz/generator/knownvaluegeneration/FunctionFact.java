@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.mutateapi;
+package com.graphicsfuzz.generator.knownvaluegeneration;
 
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import java.util.List;
-import java.util.Optional;
 
 public class FunctionFact {
 

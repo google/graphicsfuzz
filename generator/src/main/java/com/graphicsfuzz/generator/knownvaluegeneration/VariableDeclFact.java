@@ -1,4 +1,4 @@
-package com.graphicsfuzz.generator.mutateapi;
+package com.graphicsfuzz.generator.knownvaluegeneration;
 /*
  * Copyright 2019 The GraphicsFuzz Project Authors
  *

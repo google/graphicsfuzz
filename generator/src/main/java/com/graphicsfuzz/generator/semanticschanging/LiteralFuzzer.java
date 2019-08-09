@@ -20,20 +20,13 @@ import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
-import com.graphicsfuzz.common.ast.expr.Op;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.generator.mutateapi.BooleanValue;
-import com.graphicsfuzz.generator.mutateapi.CompositeValue;
-import com.graphicsfuzz.generator.mutateapi.NumericValue;
-import com.graphicsfuzz.generator.mutateapi.Value;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class LiteralFuzzer {
 

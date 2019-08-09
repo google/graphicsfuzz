@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.mutateapi;
+package com.graphicsfuzz.generator.knownvaluegeneration;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.mutateapi;
+package com.graphicsfuzz.generator.knownvaluegeneration;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
@@ -34,6 +34,7 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
+import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
@@ -564,16 +565,24 @@ public class ExpressionGenerator {
         body);
     translationUnit.addDeclarationBefore(newFunction, currentFunction);
 
-    // Since the new function has an empty body, we first need to inject a return statement into
-    // the body to be the point in a function where the new expressions can be injected before.
-    final ReturnStmt returnStmt = new ReturnStmt(null);
-    body.addStmt(returnStmt);
-    returnStmt.setExpr(generateExpr(
-        newFunctionScope,
-        newFunction,
-        returnStmt,
-        value
+    // Since the new function has an empty body, we first need to add a placeholder statement
+    // into the body to be the point in a function where the new expressions can be injected
+    // before.
+    final Stmt placeholderStmt = new NullStmt();
+    body.addStmt(placeholderStmt);
+
+
+    // We then replace the placeholder statement with a new return statement, returning a
+    // newly-generated expression.
+    body.replaceChild(placeholderStmt, new ReturnStmt(
+        generateExpr(
+            newFunctionScope,
+            newFunction,
+            placeholderStmt,
+            value
+        )
     ));
+
 
     globalFactManager.addFunctionFact(value, new FunctionFact(functionPrototype, argumentValues,
         value));
@@ -630,7 +639,7 @@ public class ExpressionGenerator {
     }
 
     // TODO(https://github.com/google/graphicsfuzz/issues/664): we should also support array and
-    //  struct type as well.
+    //  struct types as well.
     throw new RuntimeException("Not implemented yet!");
   }
 
@@ -639,7 +648,7 @@ public class ExpressionGenerator {
    *
    * @param value the original value that will be split into two numbers.
    * @return if value is unknown, returns a pair of empty value. Otherwise find and return two
-   * numbers that will add up to the given value.
+   *     numbers that will add up to the given value.
    */
   public Pair<Optional<Number>, Optional<Number>> getPairSum(Value value) {
 

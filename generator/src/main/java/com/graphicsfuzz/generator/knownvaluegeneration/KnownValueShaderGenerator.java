@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.tool;
+package com.graphicsfuzz.generator.knownvaluegeneration;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
@@ -44,9 +44,6 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.generator.mutateapi.ExpressionGenerator;
-import com.graphicsfuzz.generator.mutateapi.FactManager;
-import com.graphicsfuzz.generator.mutateapi.NumericValue;
 import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
@@ -61,9 +58,9 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ShaderGenerator {
+public class KnownValueShaderGenerator {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ShaderGenerator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(KnownValueShaderGenerator.class);
 
   private static Namespace parse(String[] args) throws ArgumentParserException {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("GlslGenerate")
@@ -136,7 +133,7 @@ public class ShaderGenerator {
     final Stmt placeholderForColorAssignment = new NullStmt();
     tu.getMainFunction().getBody().addStmt(placeholderForColorAssignment);
 
-    LOGGER.info("About to generate the known value fragment shader with the parameters R = " + rValue + ", G = " + gValue + ", B = " + bValue + " and A = " + aValue + " .");
+    LOGGER.info("About to generate the known value fragment shader with the parameters R = " + rValue + ", G = " + gValue + ", B = " + bValue + " and A = " + aValue + ".");
 
     final ExpressionGenerator expressionGenerator = new
         ExpressionGenerator(tu, pipelineInfo, generator, globalFactManager);
