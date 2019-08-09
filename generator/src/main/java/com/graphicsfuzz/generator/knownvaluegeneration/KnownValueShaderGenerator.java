@@ -166,7 +166,7 @@ public class KnownValueShaderGenerator {
     );
 
     tu.getMainFunction().getBody().replaceChild(placeholderForColorAssignment,
-        new ExprStmt(new BinaryExpr(new VariableIdentifierExpr("gl_FragColor"),
+        new ExprStmt(new BinaryExpr(new VariableIdentifierExpr("_GLF_color"),
             new TypeConstructorExpr("vec4",
                 rValue,
                 gValue,
