@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
+import java.util.Objects;
 import java.util.Optional;
 
 public class BooleanValue implements Value {
@@ -47,7 +48,7 @@ public class BooleanValue implements Value {
 
   @Override
   public int hashCode() {
-    return value.hashCode();
+    return Objects.hash(getType(), value);
   }
 
   @Override

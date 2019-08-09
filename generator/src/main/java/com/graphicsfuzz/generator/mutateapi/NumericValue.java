@@ -23,6 +23,7 @@ import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
+import java.util.Objects;
 import java.util.Optional;
 
 public class NumericValue implements Value {
@@ -82,7 +83,7 @@ public class NumericValue implements Value {
 
   @Override
   public int hashCode() {
-    return value.hashCode();
+    return Objects.hash(basicType, value);
   }
 
   @Override

@@ -19,15 +19,23 @@ package com.graphicsfuzz.generator.mutateapi;
 public abstract class VariableFact {
   private final Value value;
 
+  /**
+   * @param value which a new VariableDeclFact or ParameterDeclFact is representing.
+   */
   VariableFact(Value value) {
     this.value = value;
   }
 
+  /**
+   * @return a known value of the variable fact.
+   */
   public Value getValue() {
     return value;
   }
 
+  /**
+   * @return a variable name of this variable fact. This is used by the generator
+   * when it is generating a new variable identifier expression.
+   */
   public abstract String getVariableName();
-
-
 }
