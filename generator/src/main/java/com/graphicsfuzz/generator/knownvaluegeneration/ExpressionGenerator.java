@@ -617,7 +617,7 @@ public class ExpressionGenerator {
         return new NumericValue(BasicType.INT, Optional.of(Integer.valueOf(intString)));
       }
       if (type == BasicType.FLOAT) {
-        final String floatString = randomFloatString();
+        final String floatString = LiteralFuzzer.randomFloatString(generator);
         return new NumericValue(BasicType.FLOAT, Optional.of(Float.valueOf(floatString)));
       }
       if (type == BasicType.UINT) {
@@ -691,26 +691,4 @@ public class ExpressionGenerator {
     throw new RuntimeException("Should be unreachable");
   }
 
-  private String randomFloatString() {
-    final int maxDigitsEitherSide = 5;
-    StringBuilder sb = new StringBuilder();
-    sb.append(generator.nextBoolean() ? "-" : "");
-    int digitsBefore = Math.max(1, generator.nextInt(maxDigitsEitherSide));
-    for (int i = 0; i < digitsBefore; i++) {
-      int candidate;
-      while (true) {
-        candidate = generator.nextInt(10);
-        if (candidate == 0 && i == 0 && digitsBefore > 1) {
-          continue;
-        }
-        break;
-      }
-      sb.append(String.valueOf(candidate));
-    }
-    sb.append(".");
-    for (int i = 0; i < digitsBefore; i++) {
-      sb.append(String.valueOf(generator.nextInt(10)));
-    }
-    return sb.toString();
-  }
 }
