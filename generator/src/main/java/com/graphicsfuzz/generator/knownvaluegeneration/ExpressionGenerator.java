@@ -108,7 +108,6 @@ public class ExpressionGenerator {
                            FunctionDefinition functionDefinition,
                            Stmt stmtToInsertBefore,
                            Value value) {
-
     if (currentDepth > MAX_DEPTH) {
       // When current depth has reached the maximum limit, we don't want generation to go deeper.
       // Thus, we consider generating a new expression from non-recursive approaches only.
@@ -236,7 +235,6 @@ public class ExpressionGenerator {
     if (original < 1) {
       return null;
     }
-
     // A random number that will be added to the newly declared variable on each iteration.
     // We use max function here to prevent the division by zero error.
     int divisor = Math.max(1, generator.nextInt(original));
@@ -532,7 +530,6 @@ public class ExpressionGenerator {
                                     FactManager factManager,
                                     FunctionDefinition currentFunction,
                                     Stmt stmtToInsertBefore) {
-
     final String functionName = genFunctionName(value);
     final FactManager newFunctionScope = globalFactManager.newScope();
     final List<Value> argumentValues = new ArrayList<>();
@@ -571,7 +568,6 @@ public class ExpressionGenerator {
     final Stmt placeholderStmt = new NullStmt();
     body.addStmt(placeholderStmt);
 
-
     // We then replace the placeholder statement with a new return statement, returning a
     // newly-generated expression.
     body.replaceChild(placeholderStmt, new ReturnStmt(
@@ -582,7 +578,6 @@ public class ExpressionGenerator {
             value
         )
     ));
-
 
     globalFactManager.addFunctionFact(value, new FunctionFact(functionPrototype, argumentValues,
         value));
@@ -651,7 +646,6 @@ public class ExpressionGenerator {
    *     numbers that will add up to the given value.
    */
   public Pair<Optional<Number>, Optional<Number>> getPairSum(Value value) {
-
     assert value instanceof NumericValue;
     final NumericValue numericValue = (NumericValue) value;
 
