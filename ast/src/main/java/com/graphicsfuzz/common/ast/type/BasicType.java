@@ -496,7 +496,8 @@ public class BasicType extends BuiltinType {
   }
 
   /**
-   * Creates a matrix type that is the transpose of a given matrix type.
+   * Creates a matrix type that is the transpose of a given matrix type. A matrix type can be
+   * transposed by swapping its column and row widths.
    *
    * @return the type that is the transpose of the given matrix type.
    * @throws UnsupportedOperationException if the type this method is called on is not a matrix
@@ -507,26 +508,7 @@ public class BasicType extends BuiltinType {
       throw new UnsupportedOperationException(
           "Cannot transpose non-matrix type " + this);
     }
-    if (BasicType.allSquareMatrixTypes().contains(this)) {
-      return this; // transpose of a square matrix is a square matrix.
-    }
-    if (this == MAT2X3) {
-      return MAT3X2;
-    }
-    if (this == MAT2X4) {
-      return MAT4X2;
-    }
-    if (this == MAT3X2) {
-      return MAT2X3;
-    }
-    if (this == MAT3X4) {
-      return MAT4X3;
-    }
-    if (this == MAT4X2) {
-      return MAT2X4;
-    }
-    assert this == MAT4X3;
-    return MAT3X4;
+    return BasicType.makeMatrixType(this.getNumRows(), this.getNumColumns());
   }
 
   /**
