@@ -77,4 +77,5 @@ public class BooleanValue implements Value {
   public String toString() {
     return valueIsUnknown() ? "unknown_bool" : value.get().toString();
   }
+
 }

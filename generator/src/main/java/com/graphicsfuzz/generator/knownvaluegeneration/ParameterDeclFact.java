@@ -18,6 +18,12 @@ package com.graphicsfuzz.generator.knownvaluegeneration;
 
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 
+/**
+ * This class holds the information of a parameter of generated functions and its associated value.
+ * For any generated function, we randomly decide how parameters should be and for each parameter
+ * we create a parameter declaration fact and keep it in Fact Manager which later will be used by
+ * the Expression Generator when generating an expression.
+ */
 public class ParameterDeclFact extends VariableFact {
   private final ParameterDecl parameterDecl;
 
@@ -31,4 +37,5 @@ public class ParameterDeclFact extends VariableFact {
   public String getVariableName() {
     return parameterDecl.getName();
   }
+
 }

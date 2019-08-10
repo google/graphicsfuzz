@@ -1,4 +1,3 @@
-package com.graphicsfuzz.generator.knownvaluegeneration;
 /*
  * Copyright 2019 The GraphicsFuzz Project Authors
  *
@@ -15,9 +14,16 @@ package com.graphicsfuzz.generator.knownvaluegeneration;
  * limitations under the License.
  */
 
+package com.graphicsfuzz.generator.knownvaluegeneration;
+
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 
+/**
+ * This class holds the information of the newly-generated variable and its associated Value.
+ * Each time we declare a new variable, we create a variable declaration fact and keep it in Fact
+ * Manager which later will be used by the Expression Generator when generating an expression.
+ */
 public class VariableDeclFact extends VariableFact {
 
   private final VariablesDeclaration variablesDeclaration;
@@ -34,4 +40,5 @@ public class VariableDeclFact extends VariableFact {
   public String getVariableName() {
     return variableDeclInfo.getName();
   }
+
 }

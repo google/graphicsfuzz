@@ -408,8 +408,8 @@ public class ExpressionGenerator {
   }
 
   private String genVarName(Value value, boolean isGlobal) {
-    // Provides a variable name used when generating a new variable declaration from the given
-    // value. For example:
+    // Provides name for a new variable based on the given value.
+    // For example:
     // _GLF_PRIMITIVE_int_negative_103_0_id_18: a variable of a value -103.
     // _GLF_PRIMITIVE_float_unknown_numeric_id_69: a variable that can be any value of float type.
     return (isGlobal ? Constants.GLF_PRIMITIVE_GLOBAL : Constants.GLF_PRIMITIVE)
@@ -419,7 +419,7 @@ public class ExpressionGenerator {
   }
 
   private String genFunctionName(Value value) {
-    // Provides a function name used when generating a new function fact from the given value.
+    // Provides name for a new function based on the given value.
     // For example:
     // _GLF_COMPUTE_float_1_0_id_0: a function that returns a value 1.0 of float type.
     // _GLF_COMPUTE_vec4_UNKNOWN_id_1: a function that returns randomly generated value of vec4
@@ -431,7 +431,7 @@ public class ExpressionGenerator {
   }
 
   private String genParamName(Type type, boolean unknownValue) {
-    // Provides a parameter name required when making a paramater of a newly generated function.
+    // Provides name for a function arguments based on the given value.
     // For example:
     //  _GLF_UNKNOWN_PARAM_vec4_id_1: a parameter of unknown value of vec4 type.
     //  _GLF_PARAM_int_id_62: a parameter of integer type.
@@ -441,8 +441,8 @@ public class ExpressionGenerator {
   }
 
   /**
-   * Utility function to parse name from the value given, if value is known, for example, -0.45
-   * will be parsed as negative_0_45. If value is unknown, return the "UNKNOWN VALUE" string.
+   * Utility function to parse name from the value, for example, -0.45 will be parsed as
+   * negative_0_45.
    *
    * @param value value that will be converted to the name of variables or functions.
    * @return a string derived from the given value which will be used as function or variable names.

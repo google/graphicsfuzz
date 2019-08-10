@@ -84,7 +84,8 @@ public class CompositeValue implements Value {
       return new TypeConstructorExpr(type.toString(), args);
     }
 
-    // TODO: implement other types (Struct and Array)
+    // TODO(https://github.com/google/graphicsfuzz/issues/664): we should also support array and
+    //  struct types.
     throw new RuntimeException("The given type is not supported");
   }
 
@@ -92,4 +93,5 @@ public class CompositeValue implements Value {
   public String toString() {
     return valueIsUnknown() ? "unknown_composite" : valueList.get().toString();
   }
+
 }

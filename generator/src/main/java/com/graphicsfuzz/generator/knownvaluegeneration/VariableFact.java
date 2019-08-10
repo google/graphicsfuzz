@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.knownvaluegeneration;
 
 public abstract class VariableFact {
+
   private final Value value;
 
   /**
@@ -38,4 +39,5 @@ public abstract class VariableFact {
    *     when it is generating a new variable identifier expression.
    */
   public abstract String getVariableName();
+
 }
