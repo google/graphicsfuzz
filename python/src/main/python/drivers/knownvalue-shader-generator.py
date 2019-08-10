@@ -29,7 +29,7 @@ def go(argv):
     java_tool_path = cmd_helpers.get_tool_path()
     print(java_tool_path)
 
-    cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.generator.knownvaluegeneration.KnownValueShaderGenerator"] \
+    cmd = ["java", "-ea", "-cp", java_tool_path, "com.graphicsfuzz.generator.tool.KnownValueShaderGenerator"] \
         + argv
     print(cmd)
 

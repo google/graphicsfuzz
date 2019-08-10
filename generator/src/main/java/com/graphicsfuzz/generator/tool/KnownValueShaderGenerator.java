@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.knownvaluegeneration;
+package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
@@ -44,6 +44,9 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.generator.knownvaluegeneration.ExpressionGenerator;
+import com.graphicsfuzz.generator.knownvaluegeneration.FactManager;
+import com.graphicsfuzz.generator.knownvaluegeneration.NumericValue;
 import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +54,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.stream.Stream;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -63,9 +67,13 @@ public class KnownValueShaderGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(KnownValueShaderGenerator.class);
 
   private static Namespace parse(String[] args) throws ArgumentParserException {
-    ArgumentParser parser = ArgumentParsers.newArgumentParser("GlslGenerate")
+    ArgumentParser parser = ArgumentParsers.newArgumentParser("KnownValueShaderGenerator")
         .defaultHelp(true)
         .description("Generate a known value shader with the desired RGBA color.");
+
+    parser.addArgument("output")
+        .help("Output shader job file file (.json).")
+        .type(File.class);
 
     parser.addArgument("r")
         .help("Floating point number of red value.")
@@ -92,11 +100,6 @@ public class KnownValueShaderGenerator {
         .help("Seed (unsigned 64 bit long integer) for the random number generator.")
         .type(String.class);
 
-    parser.addArgument("--output-dir")
-        .help("Output directory for the generated shader, it not specified the current directory "
-            + "is used.")
-        .type(File.class);
-
     return parser.parseArgs(args);
   }
 
@@ -107,11 +110,9 @@ public class KnownValueShaderGenerator {
     final float bFloat = ns.getFloat("b");
     final float aFloat = ns.getFloat("a");
     final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
-    final File outputDir = ns.get("output_dir") == null ? new File(".") : ns.get("output_dir");
     final String version = ns.getString("version");
-    final File shaderJobFile = new File(".", "knownvalue_shader" + ".json");
+    final File shaderJobFile = ns.get("output");
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    fileOps.forceMkdir(outputDir);
 
     final TranslationUnit tu =
         new TranslationUnit(Optional.of(ShadingLanguageVersion.fromVersionString(version)),
@@ -140,39 +141,16 @@ public class KnownValueShaderGenerator {
     final ExpressionGenerator expressionGenerator = new
         ExpressionGenerator(tu, pipelineInfo, generator, globalFactManager);
     final FactManager mainFactManager = globalFactManager.newScope();
-    final Expr rValue = expressionGenerator.generateExpr(
-        mainFactManager,
-        tu.getMainFunction(),
-        placeholderForColorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(rFloat)));
-
-    final Expr gValue = expressionGenerator.generateExpr(
-        mainFactManager,
-        tu.getMainFunction(),
-        placeholderForColorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(gFloat)));
-
-    final Expr bValue = expressionGenerator.generateExpr(
-        mainFactManager,
-        tu.getMainFunction(),
-        placeholderForColorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(bFloat)));
-
-    final Expr aValue = expressionGenerator.generateExpr(
-        mainFactManager,
-        tu.getMainFunction(),
-        placeholderForColorAssignment,
-        new NumericValue(BasicType.FLOAT, Optional.of(aFloat))
-    );
+    final Expr[] rgbaExprs = Stream.of(rFloat, gFloat, bFloat, aFloat)
+        .map(item -> expressionGenerator.generateExpr(
+            mainFactManager,
+            tu.getMainFunction(),
+            placeholderForColorAssignment,
+            new NumericValue(BasicType.FLOAT, Optional.of(item)))).toArray(Expr[]::new);
 
     tu.getMainFunction().getBody().replaceChild(placeholderForColorAssignment,
         new ExprStmt(new BinaryExpr(new VariableIdentifierExpr("_GLF_color"),
-            new TypeConstructorExpr("vec4",
-                rValue,
-                gValue,
-                bValue,
-                aValue
-            ), BinOp.ASSIGN)));
+            new TypeConstructorExpr("vec4", rgbaExprs), BinOp.ASSIGN)));
 
     final ShaderJob newShaderJob = new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu);
     fileOps.writeShaderJobFile(newShaderJob, shaderJobFile);
