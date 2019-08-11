@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * This class holds the information of the newly-generated function and its associated Value.
  * Each time we generate a new function, we create a function fact and keep it in Fact Manager
- * which later will be used by the Expression Generator when generating an expression.
+ * which later will be used by the Expression Generator when generating known value expression.
  */
 public class FunctionFact {
 

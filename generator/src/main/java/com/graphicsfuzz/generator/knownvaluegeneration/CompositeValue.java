@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class CompositeValue implements Value {
+
   private final Type type;
   private final Optional<List<Value>> valueList;
 
