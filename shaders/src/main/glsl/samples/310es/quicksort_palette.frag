@@ -77,7 +77,17 @@ QuicksortObject obj;
  }
 
 vec3 palette(vec3 a, vec3 b, vec3 c, vec3 d) {
-    return mix(c, d + d, a - b);
+    return fract(mix(d * a, a * c, b + d - c));
+}
+
+float randomize(vec2 co)
+{
+    return float(floor(fract(sin(dot(co.xy ,vec2(12.5, 3.))) * 4250.) + 0.5));
+}
+
+bool puzzlelize(vec2 pos)
+{
+    return randomize(pos.xy) < .12;
 }
 
 void main() {
@@ -86,34 +96,36 @@ void main() {
         obj.numbers[i] = (10 - i) * int(injectionSwitch.y);
     }
     quicksort();
+    vec2 grid = vec2(20, 20);
     vec2 uv = gl_FragCoord.xy / resolution;
-    vec3 color = palette(vec3(float(obj.numbers[7]) * 0.1), vec3(0.5, float(obj.numbers[0]) * 0.1, 0.8), trunc(vec3(injectionSwitch.y)), vec3(injectionSwitch.x, 0.3, 0.7));
-    color.x += step(sin((uv.y - 0.1 + abs(uv.x) * 0.5) * 250.0), 0.0);
+    vec3 color = palette(vec3(float(obj.numbers[4]) * 0.1), vec3(0.9, float(obj.numbers[8]) * 0.1, 0.8), trunc(vec3(injectionSwitch.y)), vec3(injectionSwitch.x, 0.3, 0.7));
     if (uv.x > (1.0 / 4.0)) {
         int count = int(injectionSwitch.x);
         do {
             color += palette(vec3(0.5, float(obj.numbers[8]) * 0.1, 0.2), vec3(0.5), trunc(vec3(injectionSwitch.y)), vec3(float(obj.numbers[4]) * 0.1, injectionSwitch.x, 0.6));
-            color += sin(gl_FragCoord.x * cos(1.0 / 2.0) * 10.0) + cos(gl_FragCoord.y * cos(1.0 / 15.0) * 10.0);
             count++;
         } while (count != obj.numbers[int(injectionSwitch.x)]);
+        grid = vec2(count + obj.numbers[8], count + obj.numbers[6]);
     }
     if (uv.x > (2.0 / 4.0)) {
         int count = int(injectionSwitch.x);
         do {
             color -= palette(vec3(float(obj.numbers[4]) * 0.1), trunc(vec3(0.1)), vec3(float(obj.numbers[int(injectionSwitch.y)]) * 0.1), vec3(injectionSwitch.x, float(obj.numbers[2]) * 0.1 , float(obj.numbers[8]) * 0.1));
-            color.z += sin(gl_FragCoord.y * sin(1.0 / 10.0) * 40.0) + cos(gl_FragCoord.x * sin(1.0 / 25.0) * 40.0);
             count++;
         } while (count != obj.numbers[1]);
+        grid += vec2(count + int(injectionSwitch.y), count + int(injectionSwitch.x));
     }
     if(uv.x > (3.0 / 4.0)) {
         int count = int(injectionSwitch.x);
         do {
             color -= palette(vec3(float(obj.numbers[int(injectionSwitch.y)]) * 0.1), vec3(0.8), trunc(vec3(0.1)), vec3(injectionSwitch.x, 0.6, float(obj.numbers[int(injectionSwitch.x)]) * 0.1));
-            color.xy += tanh(faceforward(resolution, color.xy, gl_FragCoord.yy));
             count++;
         } while (count != obj.numbers[2]);
+        grid += vec2(count + obj.numbers[3], count + obj.numbers[3]);
     }
 
-    _GLF_color = vec4(color, injectionSwitch.y);
+    vec2 position = vec2(gl_FragCoord.x, resolution.x - gl_FragCoord.y);
+    position = floor(position / grid);
+    _GLF_color = vec4(color, injectionSwitch.y) + vec4(!puzzlelize(position));
 
 }
