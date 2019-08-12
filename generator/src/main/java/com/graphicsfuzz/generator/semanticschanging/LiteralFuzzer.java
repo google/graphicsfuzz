@@ -47,14 +47,13 @@ public class LiteralFuzzer {
     }
     if (type == BasicType.INT) {
       return Optional.of(new IntConstantExpr(
-            String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN)));
+          String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN)));
     }
     if (type == BasicType.FLOAT) {
-      return Optional.of(new FloatConstantExpr(
-            randomFloatString()));
+      return Optional.of(new FloatConstantExpr(LiteralFuzzer.randomFloatString(generator)));
     }
     if (type == BasicType.VEC2 || type == BasicType.VEC3 || type == BasicType.VEC4
-          || BasicType.allMatrixTypes().contains(type)) {
+        || BasicType.allMatrixTypes().contains(type)) {
       final List<Expr> args = new ArrayList<>();
       for (int i = 0; i < ((BasicType) type).getNumElements(); i++) {
         args.add(fuzz(((BasicType) type).getElementType()).get());
@@ -64,7 +63,7 @@ public class LiteralFuzzer {
     return Optional.empty();
   }
 
-  private String randomFloatString() {
+  public static String randomFloatString(IRandom generator) {
     final int maxDigitsEitherSide = 5;
     StringBuilder sb = new StringBuilder();
     sb.append(generator.nextBoolean() ? "-" : "");

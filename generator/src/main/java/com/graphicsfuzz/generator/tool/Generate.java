@@ -90,7 +90,7 @@ public class Generate {
         .type(File.class);
 
     parser.addArgument("output")
-        .help("Output shader job file file (.json.")
+        .help("Output shader job file file (.json).")
         .type(File.class);
 
     addGeneratorCommonArguments(parser);
