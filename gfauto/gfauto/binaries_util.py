@@ -121,7 +121,7 @@ class BinaryManager(BinaryGetter):
         platform: Optional[str] = None,
         binary_artifacts_prefix: Optional[str] = BUILT_IN_BINARY_RECIPES_PATH_PREFIX,
     ):
-        self._binary_list = binary_list or []
+        self._binary_list = binary_list or DEFAULT_BINARIES
         self._resolved_paths = {}
         self._platform = platform or util.get_platform()
         self._binary_artifacts = []
