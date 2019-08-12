@@ -43,9 +43,11 @@ void insert(int treeIndex, int data)
 {
     int baseIndex = 0;
     while (baseIndex <= treeIndex) {
-        // If new value is smaller thatn the current node, we known that we will have add this element in the left side.
+        // If new value is smaller thatn the current node, we known that we will have
+        // add this element in the left side.
         if (data <= tree[baseIndex].data) {
-          // If a left subtree of the current node is empty, the new node is added as a left subtree of the current node.
+          // If a left subtree of the current node is empty, the new node is added as
+          // a left subtree of the current node.
           if (tree[baseIndex].leftIndex == -1) {
               tree[baseIndex].leftIndex = treeIndex;
               makeTreeNode(tree[treeIndex], data);
@@ -55,7 +57,8 @@ void insert(int treeIndex, int data)
               continue;
           }
         } else {
-            // If a right subtree of the current node is empty, the new node is added as a right subtree of the current node.
+            // If a right subtree of the current node is empty, the new node is added as
+            // a right subtree of the current node.
             if (tree[baseIndex].rightIndex == -1) {
                 tree[baseIndex].rightIndex = treeIndex;
                 makeTreeNode(tree[treeIndex], data);
@@ -104,20 +107,24 @@ float makeFrame(float v) {
     return  10.0 + float(search(30));
 }
 
-// This shader implements binary search tree using an array data structure. The elements of tree are kept in array
-// that contains a list of BST object holding an index of left and right sub tree in the array.
-
-// - Tree representation of the number used in this shader:
-//            9
-//         /    \
-//        5      12
-//      /  \      \
-//     2   7      15
-//        / \    /  \
-//       6  8   13  17
-//
-// - Array representation:
-// [9, 5, 12, 15, 7, 8, 2, 6, 17, 13]
+/*
+* This shader implements binary search tree using an array data structure. The elements of
+* tree are kept in the array that contains a list of BST object holding indices of left and
+* right subtree in the array.
+*
+* - Tree representation of the number used in this shader:
+*            9
+*         /    \
+*        5      12
+*      /  \      \
+*     2   7      15
+*        / \    /  \
+*       6  8   13  17
+*
+* - Array representation:
+* [9, 5, 12, 15, 7, 8, 2, 6, 17, 13]
+*
+*/
 
 void main() {
     int treeIndex = int(injectionSwitch.x);
