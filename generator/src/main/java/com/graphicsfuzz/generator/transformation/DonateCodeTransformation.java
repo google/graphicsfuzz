@@ -72,6 +72,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -80,11 +81,20 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
   private final Function<IRandom, Boolean> probabilityOfDonation;
 
+  // During a single donation pass, this is populated on demand with the donors that are used.
   private Map<File, TranslationUnit> donorsToTranslationUnits;
+
   private final List<FunctionPrototype> functionPrototypes;
   private final Map<String, Type> globalVariables;
   private final Set<String> structNames;
-  private final List<File> donorFiles;
+
+  // 'donorFiles' contains those donors that have not yet been used for a code donation.  Once a
+  // donor has been used, it is moved to 'usedDonorFiles' (unless it is found to be incompatible,
+  // in which case it is discarded).  If 'donorFiles' becomes empty, it and 'usedDonorFiles' are
+  // swapped, so that previously used donors can be used again.
+  private List<File> donorFiles;
+  private List<File> usedDonorFiles;
+
   final GenerationParams generationParams;
   private int translationUnitCount;
 
@@ -95,13 +105,14 @@ public abstract class DonateCodeTransformation implements ITransformation {
     this.functionPrototypes = new ArrayList<>();
     this.globalVariables = new HashMap<>();
     this.structNames = new HashSet<>();
+    assert donorsDirectory.exists();
     this.donorFiles = new ArrayList<>();
+    this.donorFiles.addAll(Arrays.asList(donorsDirectory.listFiles(
+        pathname -> pathname.getName().endsWith(".frag"))));
+    this.donorFiles.sort(Comparator.naturalOrder());
+    this.usedDonorFiles = new ArrayList<>();
     this.generationParams = generationParams;
     this.translationUnitCount = 0;
-    assert donorsDirectory.exists();
-    donorFiles.addAll(Arrays.asList(donorsDirectory.listFiles(
-        pathname -> pathname.getName().endsWith(".frag"))));
-    donorFiles.sort(Comparator.naturalOrder());
   }
 
   /**
@@ -208,11 +219,19 @@ public abstract class DonateCodeTransformation implements ITransformation {
     final int maxTries = 10;
     int tries = 0;
     while (true) {
-      DonationContext donationContext = new DonationContextFinder(chooseDonor(generator), generator)
+      final Optional<TranslationUnit> maybeDonor = chooseDonor(generator);
+      if (!maybeDonor.isPresent()) {
+        // No compatible donors were found, thus we cannot do serious code donation here;
+        // we return a null statement instead.
+        return new NullStmt();
+      }
+      DonationContext donationContext = new DonationContextFinder(maybeDonor.get(), generator)
           .getDonationContext();
       if (incompatible(injectionPoint, donationContext, shadingLanguageVersion)) {
         tries++;
         if (tries == maxTries) {
+          // We have tried and tried to find something compatible to inject but not managed;
+          // return a null statement instead of a real piece of code to inject.
           return new NullStmt();
         }
       } else {
@@ -257,10 +276,18 @@ public abstract class DonateCodeTransformation implements ITransformation {
   }
 
   private void eliminateUsedDonors() {
-    // Having done donation using a particular donor, we remove it so that we do not use it
-    // again in a future pass.
+    // Having done donation using a particular donor, we move it to the list of used donors so that
+    // we only use it again in a future pass once all other donors have been tried.
     for (File donor : donorsToTranslationUnits.keySet()) {
+      assert donorFiles.contains(donor);
       donorFiles.remove(donor);
+      usedDonorFiles.add(donor);
+    }
+    // If there are no donors left -- i.e., if all have been used, then recycle the list of used
+    // donors.
+    if (donorFiles.isEmpty()) {
+      donorFiles = usedDonorFiles;
+      usedDonorFiles = new ArrayList<>();
     }
     donorsToTranslationUnits = new HashMap<>();
   }
@@ -580,25 +607,49 @@ public abstract class DonateCodeTransformation implements ITransformation {
     return !fs.stream().filter(item -> fp.matches(item)).collect(Collectors.toList()).isEmpty();
   }
 
-  TranslationUnit chooseDonor(IRandom generator) {
-    while (!donorFiles.isEmpty()) {
-      int index = generator.nextInt(donorFiles.size());
-      File donorFile = donorFiles.get(index);
+  Optional<TranslationUnit> chooseDonor(IRandom generator) {
+    // The donors that we have previously selected during this donation pass are captured via
+    // 'donorsToTranslationUnits'.  Furthermore, there is a maximum number of distinct donors we
+    // are allowed to use per donation pass.  So first check whether the donors we have already
+    // used have hit this maximum.
+
+    final String previouslyUsedDonorFoundToBeIncompatibleMessage = "A donor that was previously "
+        + "used has now been found to be incompatible.  This should not occur.";
+
+    if (donorsToTranslationUnits.size() >= generationParams.getMaxDonorsPerDonationPass()) {
+      // We have used the maximum number of donors we are allowed to use in this pass, so choose
+      // one of them again.
+      // The limit should be reached but never exceeded.
+      assert donorsToTranslationUnits.size() == generationParams.getMaxDonorsPerDonationPass();
+      final List<File> sortedKeys = new ArrayList<>(donorsToTranslationUnits.keySet());
+      sortedKeys.sort(Comparator.naturalOrder());
       try {
-        if (donorsToTranslationUnits.keySet().size() >= generationParams.getMaxDonors()
-            && !donorsToTranslationUnits.containsKey(donorFile)) {
-          // We have reached the donor limit; try again until we find a donor that we've
-          // already used
-          throw new IncompatibleDonorException();
-        }
-        return getDonorTranslationUnit(donorFile, generator);
+        return Optional.of(getDonorTranslationUnit(sortedKeys.get(generator.nextInt(sortedKeys
+                .size())),
+            generator));
       } catch (IncompatibleDonorException exception) {
-        assert index >= 0;
-        assert index < donorFiles.size();
-        donorFiles.remove(index);
+        throw new RuntimeException(previouslyUsedDonorFoundToBeIncompatibleMessage);
       }
     }
-    throw new RuntimeException("Could not find any compatible donors.");
+
+    // We have not reached the limit.  So we can choose any one of the available donor files.  It
+    // might turn out to be a donor we tried before (in which case it will already be a key to
+    // the 'donorsToTranslationUnits' map), or it may be new.
+    while (!donorFiles.isEmpty()) {
+      final File candidateDonorFile = donorFiles
+          .get(generator.nextInt(donorFiles.size()));
+      try {
+        return Optional.of(getDonorTranslationUnit(candidateDonorFile, generator));
+      } catch (IncompatibleDonorException exception) {
+        if (donorsToTranslationUnits.containsKey(candidateDonorFile)) {
+          throw new RuntimeException(previouslyUsedDonorFoundToBeIncompatibleMessage);
+        }
+        donorFiles.remove(candidateDonorFile);
+      }
+    }
+    // We did not manage to find any suitable donor.  This happens if all donors prove to be
+    // incompatible.
+    return Optional.empty();
   }
 
   private TranslationUnit getDonorTranslationUnit(File donorFile, IRandom generator)
@@ -622,10 +673,11 @@ public abstract class DonateCodeTransformation implements ITransformation {
   }
 
   private boolean compatibleDonor(TranslationUnit donor) {
-    List<String> usedFunctionNames = functionPrototypes.stream().map(item -> item.getName())
+    final List<String> usedFunctionNames = functionPrototypes.stream()
+        .map(FunctionPrototype::getName)
         .collect(Collectors.toList());
-    Set<String> usedGlobalVariableNames = globalVariables.keySet();
-    Set<String> usedStructNames = structNames;
+    final Set<String> usedGlobalVariableNames = globalVariables.keySet();
+    final Set<String> usedStructNames = structNames;
 
     for (FunctionPrototype donorPrototype : AstUtil.getFunctionPrototypesFromShader(donor)) {
       if (usedGlobalVariableNames.contains(donorPrototype.getName())
@@ -637,8 +689,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
       }
     }
     for (Map.Entry<String, Type> global : getGlobalVariablesFromShader(donor).entrySet()) {
-      String name = global.getKey();
-      Type type = global.getValue();
+      final String name = global.getKey();
+      final Type type = global.getValue();
       if (usedFunctionNames.contains(name) || usedStructNames.contains(name)) {
         return false;
       }
