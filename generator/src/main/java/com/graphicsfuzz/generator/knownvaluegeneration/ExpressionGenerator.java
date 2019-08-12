@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.knownvaluegeneration;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.Initializer;
@@ -39,6 +40,7 @@ import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.PipelineInfo;
@@ -486,19 +488,55 @@ public class ExpressionGenerator {
                                     Stmt stmtToInsertBefore) {
     boolean atGlobalScope = factManager.globalScope() || generator.nextBoolean();
     final String varName = genVarName(value, atGlobalScope);
-
+    final Expr initializer = generateExpr(atGlobalScope ? globalFactManager : factManager,
+        currentFunction, stmtToInsertBefore, value);
+    // If generating global scope variables, initialisation would be performed later in a global
+    // initializer function.
     final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(varName, null,
-        new Initializer(generateExpr(atGlobalScope ? globalFactManager : factManager,
-            currentFunction,
-            stmtToInsertBefore,
-            value
-        )));
-
+        atGlobalScope ? null : new Initializer(initializer));
     final VariablesDeclaration variablesDecl = new VariablesDeclaration(value.getType(),
         variableDeclInfo);
     final VariableDeclFact variableDeclFact = new VariableDeclFact(variablesDecl,
         variableDeclInfo, value);
+
     if (atGlobalScope) {
+      // Searching for the already declared globals initializer's function prototype, if not found,
+      // we have to generate a new prototype, function and a function call expression at the top
+      // level of main method to invoke the initializer function.
+      FunctionDefinition initGlobalsFunction = translationUnit.getTopLevelDeclarations()
+          .stream()
+          .filter(item -> item instanceof FunctionDefinition)
+          .map(item -> (FunctionDefinition) item)
+          .filter(item -> item.getPrototype().getName().equals(Constants.GLF_INIT_GLOBALS))
+          .findFirst().orElse(null);
+
+      if (initGlobalsFunction == null) {
+        // Function prototype of the globals initializer, this must be declared at the top level of
+        // the shader being generated.
+        final FunctionPrototype functionPrototype =
+            new FunctionPrototype(Constants.GLF_INIT_GLOBALS, VoidType.VOID,
+                new ArrayList<>());
+        translationUnit.addDeclarationBefore(functionPrototype, translationUnit.getMainFunction());
+
+        // The invocation to the globals initializer which needs to be inserted as the first
+        // statement in main function.
+        translationUnit.getMainFunction().getBody().insertStmt(0,
+            new ExprStmt(new FunctionCallExpr(Constants.GLF_INIT_GLOBALS, new ArrayList<>())));
+
+        // A function into which the assignments of values for global variables are injected.
+        initGlobalsFunction = new FunctionDefinition(functionPrototype,
+            new BlockStmt(new ArrayList<>(), false));
+        final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
+        newTopLevelDeclarations.addAll(translationUnit.getTopLevelDeclarations());
+        newTopLevelDeclarations.add(initGlobalsFunction);
+
+        translationUnit.setTopLevelDeclarations(newTopLevelDeclarations);
+      }
+      // Inject a statement assigning value to the global variable into function body.
+      initGlobalsFunction.getBody().addStmt(new ExprStmt(new BinaryExpr(
+          new VariableIdentifierExpr(varName), initializer, BinOp.ASSIGN
+      )));
+
       translationUnit.addDeclarationBefore(variablesDecl, currentFunction);
       globalFactManager.addVariableFact(value, variableDeclFact);
     } else {
