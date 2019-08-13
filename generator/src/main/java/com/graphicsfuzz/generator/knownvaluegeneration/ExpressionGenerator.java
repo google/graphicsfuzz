@@ -501,8 +501,8 @@ public class ExpressionGenerator {
 
     if (atGlobalScope) {
       // Searching for the already declared globals initializer's function prototype, if not found,
-      // we have to generate a new prototype, function and a function call expression at the top
-      // level of main method to invoke the initializer function.
+      // we have to generate a new prototype, function definition and a function call expression at
+      // the top level of main method to invoke the initializer function.
       FunctionDefinition initGlobalsFunction = translationUnit.getTopLevelDeclarations()
           .stream()
           .filter(item -> item instanceof FunctionDefinition)
