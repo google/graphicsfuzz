@@ -60,7 +60,7 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
   }
 
   @Override
-  public Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
+  Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
                                 DonationContext donationContext,
                                 TransformationProbabilities probabilities,
                                 IRandom generator, ShadingLanguageVersion shadingLanguageVersion) {
