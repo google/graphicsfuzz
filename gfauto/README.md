@@ -39,25 +39,62 @@ Add `whitelist.dic` as a custom dictionary (search for "Spelling" in Actions). D
 
 ## Imports
 
-We use the `black` Python code formatter and `isort` for sorting imports. 
+We use the `black` Python code formatter and `isort` for sorting imports.
 
-When importing things from gfauto, use the `gfauto` package name and only import modules, not functions:
+We also use the following import style, which is not automatically checked: use the package name (e.g. `gfauto`) and only import modules, not functions. For example:
+
 
 ```python
-# Do this:
-from gfauto import result_util
+# Good: importing a module
+from gfauto import binaries_util
 
-# Don't do this:
+binaries_util.add_common_tags_from_platform_suffix(...)  # using a function
+b = binaries_util.BinaryManager()  # using a class
+d = binaries_util.DEFAULT_BINARIES  # using a variable
 
-# Using ".".
-from . import result_util
 
-# Importing a function.
-from gfauto.result_util import get_status_path
+# Bad: directly importing a function, class, variable
+from gfauto.binaries_util import add_common_tags_from_platform_suffix, BinaryManager, DEFAULT_BINARIES
 
-# Using "." AND importing a function!
-from .result_util import get_status_path
+add_common_tags_from_platform_suffix(...)
+b = BinaryManager()
+d = DEFAULT_BINARIES
 
+
+# Bad: importing from "."
+from . import binaries_util
+
+
+# Bad: import from "." AND importing a function
+from .binaries_util import add_common_tags_from_platform_suffix
+
+
+# OK: importing "check" and "log" functions directly
+from gfauto.gflogging import log
+from gfauto.util import check
+
+log("Running")
+check(1 + 1 == 2, AssertionError("1 + 1 should be 2"))
+
+
+# OK: importing types for type annotations
+from typing import Dict, List, Optional, Union
+
+def prepend_catchsegv_if_available(cmd: List[str]) -> List[str]:
+    ...
+
+
+# OK: importing Path
+from pathlib import Path
+
+def tool_path(tool: str) -> Path:
+    return Path(tool)
+
+
+# OK: importing generated protobuf types
+from gfauto.settings_pb2 import Settings
+
+DEFAULT_SETTINGS = Settings()
 ```
 
 ## Symlinking other scripts
@@ -75,7 +112,7 @@ You can execute scripts in this repository by opening a Terminal in PyCharm.
 
 ## Terminal
 
-To reiterate, the `Terminal` tab in PyCharm is useful and will use the project's Python virtual environment. In any other terminal, you can execute the `./dev_shell.sh` script, but this is fairly slow as it checks and reinstalls all dependencies; a quicker alternative is: `source .venv/bin/activate`.
+The `Terminal` tab in PyCharm is useful and will use the project's Python virtual environment. In any other terminal, use `source .venv/bin/activate`. You can alternatively execute the `./dev_shell.sh` script, but this is fairly slow as it checks and reinstalls all dependencies
 
 ## Fuzzing
 
@@ -85,7 +122,6 @@ You can get some samples from the GraphicsFuzz project.
 ```sh
 mkdir donors/
 cp /data/graphicsfuzz_zip/samples/310es/* donors/
-cp /data/graphicsfuzz_zip/samples/compute/310es/* donors/
 ```
 
 Now run the fuzzer.
@@ -99,7 +135,7 @@ Review this file.
 All plugged Android devices should have been added to the list of devices.
 The `active_device_names` list should be modified to include only the unique devices that you care about:
 
-* Including multiple devices with the same GPU and drivers will currently result in redundant testing.
+* Including multiple, identical devices (with the same GPU and drivers) is not recommended, as it will currently result in redundant testing.
 * `host_preprocessor` should always be included first, as this virtual device detects failures in tools such as `glslangValidator` and `spirv-opt`, and will ensure such failures will not be logged for real devices.
-
+* You can use `--settings SETTINGS.json` to use a settings file other than `settings.json` (the default). In this way, you can run multiple instances of `gfauto_fuzz` in parallel to test *different* devices (`host_preprocessor` and `swift_shader` can be included in parallel instances). The code that downloads the binaries is not safe to run concurrently at the time of writing; running one instance for a few minutes to download the latest binaries is usually sufficient to then allow additional instance to be started without conflicts.
 
