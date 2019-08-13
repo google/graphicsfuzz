@@ -574,7 +574,7 @@ public final class OpaqueExpressionGenerator {
   }
 
   /**
-   * Function to create an opaque zero (specifically an opaque zero ved3) by taking the cross
+   * Function to create an opaque zero (specifically an opaque zero vec3) by taking the cross
    * product of two equivalent vec3s. This opaque function relies on the fact that if u == v, where
    * u and v are vec3, then cross(u, v) = (0, 0, 0). These equivalent vec3s are produced by
    * fuzzing random float values and applying different identity functions to them per vector.
@@ -602,8 +602,9 @@ public final class OpaqueExpressionGenerator {
     final List<Expr> secondVec3ConstructorArgs = new ArrayList<Expr>();
     for (int i = 0; i < type.getNumElements(); i++) {
       final Optional<Expr> maybeFuzzedFloatLiteral = litFuzzer.fuzz(type.getElementType());
-      // Something went horribly wrong if we got an Optional.empty(), since our type will always
-      // be a valid literal type to fuzz.
+      // Something went horribly wrong if we got an Optional.empty() - we are guaranteed to obtain a
+      // fuzzed expression, since the element type of a vec3 is a float, and it is always possible
+      // to fuzz a float literal.
       assert maybeFuzzedFloatLiteral.isPresent();
       final Expr fuzzedFloatLiteral = maybeFuzzedFloatLiteral.get();
       // We apply different identities to the literals per vector - the two vectors are
