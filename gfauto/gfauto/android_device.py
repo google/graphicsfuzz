@@ -227,7 +227,7 @@ def run_amber_on_device_helper(
         serial, ["push", str(amber_script_file), ANDROID_DEVICE_AMBER_SCRIPT_FILE]
     )
 
-    amber_flags = "--log-graphics-calls-time"
+    amber_flags = "--log-graphics-calls-time --disable-spirv-val"
     if skip_render:
         # -ps tells amber to stop after pipeline creation
         amber_flags += " -ps"

@@ -76,6 +76,7 @@ def run_amber_helper(
         str(util.tool_on_path("amber")),
         str(amber_script_file),
         "--log-graphics-calls-time",
+        "--disable-spirv-val",
     ]
 
     if not debug_layers:
