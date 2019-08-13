@@ -121,4 +121,17 @@ public class MakeArrayAccessesInBoundsTest {
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
+  @Test
+  public void testUIntStaticallyInBounds() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "void main() { float stuff[16];"
+        + "  stuff[3u] = 1.0;"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    final Typer typer = new Typer(tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu, typer);
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)),
+        PrettyPrinterVisitor.prettyPrintAsString(tu));
+  }
+
 }

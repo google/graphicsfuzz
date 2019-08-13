@@ -110,10 +110,10 @@ public class MakeArrayAccessesInBounds extends StandardVisitor {
     }
     Integer indexValue;
     if (index instanceof IntConstantExpr) {
-      indexValue = Integer.parseInt(((IntConstantExpr) index).getValue());
+      indexValue = ((IntConstantExpr) index).getNumericValue();
       return indexValue >= 0 && indexValue < getSize(type);
     } else { // index instanceof UIntConstantExpr
-      indexValue = Integer.parseInt(((UIntConstantExpr) index).getValue());
+      indexValue = ((UIntConstantExpr) index).getNumericValue();
       return indexValue < getSize(type);
     }
   }
