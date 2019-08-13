@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class OpaqueExpressionGenerator {
 
@@ -1411,18 +1412,15 @@ public final class OpaqueExpressionGenerator {
    */
   private class IdentityMatrixMultIdentity extends AbstractIdentityTransformation {
     private IdentityMatrixMultIdentity() {
-      // We want all non-square matrices and floating point vectors.
-      super(BasicType.allNumericTypes().stream()
-          .filter(item -> BasicType.allScalarTypes().contains(item))
-          .filter(item -> BasicType.allIntegerTypes().contains(item))
-          .filter(item -> BasicType.allSquareMatrixTypes().contains(item))
-          .collect(Collectors.toList()), false);
+      super(Stream.concat(BasicType.allNonSquareMatrixTypes().stream(),
+          Stream.of(BasicType.VEC2, BasicType.VEC3, BasicType.VEC4))
+          .collect(Collectors.toList()), true);
     }
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth, Fuzzer fuzzer) {
-      // We use isVector()/isMatrix() in this function for brevity and self-documentation even
-      // though they are more general than our giant lambda call chain in the constructor.
+      // We use isVector()/isMatrix() in this function for brevity and self-documentation instead of
+      // concatenating streams.
       assert type.isVector() || type.isMatrix();
       final boolean usingRightMultiplication = generator.nextBoolean();
       final int identityMatrixSize =
@@ -1434,9 +1432,10 @@ public final class OpaqueExpressionGenerator {
       final Expr identityMatrix = makeOpaqueIdentityMatrix(
           BasicType.makeMatrixType(identityMatrixSize, identityMatrixSize),
           constContext, depth, fuzzer);
+      // We wrap the original expr in parentheses to prevent issues with ternary operators.
       final Expr binaryMultExpr = usingRightMultiplication
-          ? new BinaryExpr(identityMatrix, expr.clone(), BinOp.MUL)
-          : new BinaryExpr(expr.clone(), identityMatrix, BinOp.MUL);
+          ? new BinaryExpr(identityMatrix, new ParenExpr(expr.clone()), BinOp.MUL)
+          : new BinaryExpr(new ParenExpr(expr.clone()), identityMatrix, BinOp.MUL);
       return identityConstructor(
           expr,
           applyIdentityFunction(binaryMultExpr, type, constContext, depth, fuzzer));
