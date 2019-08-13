@@ -53,9 +53,10 @@ public class MakeArrayAccessesInBounds extends StandardVisitor {
     assert isArrayVectorOrMatrix(type);
     if (!staticallyInBounds(arrayIndexExpr.getIndex(), type)) {
       Type indexType = typer.lookupType(arrayIndexExpr.getIndex());
-      if (indexType != null) {
-        indexType = indexType.getWithoutQualifiers();
+      if (indexType == null) {
+        return;
       }
+      indexType = indexType.getWithoutQualifiers();
       if (indexType == BasicType.UINT) {
         arrayIndexExpr.setIndex(new TernaryExpr(
             new BinaryExpr(
@@ -66,8 +67,7 @@ public class MakeArrayAccessesInBounds extends StandardVisitor {
             new UIntConstantExpr("0u"))
         );
       } else {
-        // If indexType ends up being null and the expression is still of type uint, it's better to
-        // generate a statement that will fail to validate rather than crash GraphicsFuzz.
+        assert indexType == BasicType.INT;
         arrayIndexExpr.setIndex(new TernaryExpr(
             new BinaryExpr(
                 new BinaryExpr(
