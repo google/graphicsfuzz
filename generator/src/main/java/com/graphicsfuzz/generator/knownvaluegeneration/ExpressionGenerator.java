@@ -500,17 +500,20 @@ public class ExpressionGenerator {
         variableDeclInfo, value);
 
     if (atGlobalScope) {
-      // Searching for the already declared globals initializer's function prototype, if not found,
-      // we have to generate a new prototype, function definition and a function call expression at
-      // the top level of main method to invoke the initializer function.
-      FunctionDefinition initGlobalsFunction = translationUnit.getTopLevelDeclarations()
-          .stream()
-          .filter(item -> item instanceof FunctionDefinition)
-          .map(item -> (FunctionDefinition) item)
-          .filter(item -> item.getPrototype().getName().equals(Constants.GLF_INIT_GLOBALS))
-          .findFirst().orElse(null);
+      // Search for an existing function for initialization of global variables. If not found, we
+      // have to create one and add a call to the top of 'main' to invoke it.
+      Optional<FunctionDefinition> maybeInitGlobalsFunction =
+          translationUnit.getTopLevelDeclarations()
+              .stream()
+              .filter(item -> item instanceof FunctionDefinition)
+              .map(item -> (FunctionDefinition) item)
+              .filter(item -> item.getPrototype().getName().equals(Constants.GLF_INIT_GLOBALS))
+              .findFirst();
 
-      if (initGlobalsFunction == null) {
+      FunctionDefinition initGlobalsFunction;
+      if (maybeInitGlobalsFunction.isPresent()) {
+        initGlobalsFunction = maybeInitGlobalsFunction.get();
+      } else {
         // Function prototype of the globals initializer, this must be declared at the top level of
         // the shader being generated.
         final FunctionPrototype functionPrototype =
@@ -529,9 +532,9 @@ public class ExpressionGenerator {
         final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
         newTopLevelDeclarations.addAll(translationUnit.getTopLevelDeclarations());
         newTopLevelDeclarations.add(initGlobalsFunction);
-
         translationUnit.setTopLevelDeclarations(newTopLevelDeclarations);
       }
+
       // Inject a statement assigning value to the global variable into function body.
       initGlobalsFunction.getBody().addStmt(new ExprStmt(new BinaryExpr(
           new VariableIdentifierExpr(varName), initializer, BinOp.ASSIGN
