@@ -48,11 +48,11 @@ These deliverables were:
  - Apply GraphicsFuzz to the Mesa open-source graphics driver suite, specifically the nVIDIA
  reverse-engineered driver [nouveau](https://nouveau.freedesktop.org/wiki/).
  
-### Enhance GraphicsFuzz's shader generator GLSL built-in support
+### Enhance GraphicsFuzz's shader generator - GLSL built-in support
 
 When GraphicsFuzz generates fuzzed/garbage expressions with the assumption that they won't be
-executed (e.g. in (true ? x : y), y will never be executed), it is able to generate calls to GLSL
-built-in functions(think abs(), sqrt(), etc.) with garbage values as arguments. To do this, however,
+executed (e.g. in `(true ? x : y)`, y will never be executed), it is able to generate calls to GLSL
+built-in functions(think `abs()`, `sqrt()`, etc.) with garbage values as arguments. To do this, however,
 GraphicsFuzz needs to know what types to fuzz expressions for, or it will cause syntax errors.
 The following PRs involve cross-checking built-in functions with the language version they were
 introduced in, then adding their function prototypes to GraphicsFuzz.
@@ -70,7 +70,7 @@ Add built-in function support for GLSL 3.20 Fragment Processing Functions
 Refactor exponential builtins into separate function
 
 Additionally, minor issues arised from adding support for these functions - some of these functions
-involve using 'out' parameters and modify said parameters during their execution. This would
+involve using `out` parameters and modify said parameters during their execution. This would
 potentially cause 'side effects' - lvalues being modified when not expected. The following PR
 relates to mitigating this issue.
 
@@ -88,11 +88,81 @@ Ensure certain function prototypes can use non-uniform shader input variables
 [#570](https://github.com/google/graphicsfuzz/issues/570):
 Be less conservative about when FunctionCallExprTemplates yield expressions that have side effects.
 
+### Enhance GraphicsFuzz's shader generator - identities and opaque value generation
 
+Among the various operations that GraphicsFuzz's generator can do to a shader when fuzzing, two of
+the most important are identity transformations and opaque value generation.
 
+An identity transformation is a function that, given an expression `e`, transforms `e -> f`, where `f` is
+an expression equivalent for all intents and purposes to `e` (*semantically equivalent*). GraphicsFuzz
+is able to use various properties of GLSL data types and built-in functions to craft these identity
+transformations, and can recursively apply them to create obscenely complicated expressions.
 
+For a toy example of an identity: Let `e` be a float of any valid value and let `identity(x) = x * 1.0`. 
+Then `e` is semantically equivalent to `identity(e)`.
 
+An opaque value in the context of GraphicsFuzz is an rvalue expression whose value is not obvious 
+to a compiler. The generator attempts to replace all instances of zero or one literals in a shader 
+with an opaque zero or an opaque one, and generates opaque zeroes or opaque ones whenever required 
+by other GraphicsFuzz transformations. Like identity transformations, these opaque values exploit
+invariants and properties of GLSL data types and built-in functions, and they can be recursively
+applied to complicate expressions.
 
+For a toy example of opaque values: Let `e = 0.0`. Notice that `0.0 == sqrt(0.0) == abs(0.0) == 
+float(0 >> 8) == abs(sqrt(float(0 >> 8)))`. Then `0.0` can be replaced with any of these expressions.
 
+The following PRs involve adding new ways to generate opaque values or identity transformations.
 
+[#509](https://github.com/google/graphicsfuzz/pull/509):
+Generate ternary identities for nonscalar types
 
+[#512](https://github.com/google/graphicsfuzz/pull/512):
+Add new transformation for rewriting nonscalars as their constructors
+
+[#525](https://github.com/google/graphicsfuzz/pull/525):
+Fix matrix constructors generating identities for the wrong base type
+
+[#527](https://github.com/google/graphicsfuzz/pull/527):
+Enhance matrix constructor identity to potentially use all elements of matrix
+
+[#553](https://github.com/google/graphicsfuzz/pull/553):
+Add new identities for integer types that use bitwise operations
+
+[#562](https://github.com/google/graphicsfuzz/pull/562):
+Add new ways to generate opaque zero/one from bitwise operations
+
+[#580](https://github.com/google/graphicsfuzz/pull/580):
+Ensure bitwise shift opaque one shifts left/right by same value
+
+[#641](https://github.com/google/graphicsfuzz/pull/641):
+Refactor shift opaque to use identities instead of fuzzed clamped expressions
+
+[#642](https://github.com/google/graphicsfuzz/pull/642):
+Add function to generate opaque zero/one from dot product of two vectors
+
+[#648](https://github.com/google/graphicsfuzz/pull/648):
+Add function to make opaque zero/one from determinant of a matrix
+
+[#649](https://github.com/google/graphicsfuzz/pull/649):
+Added identity to double transpose a matrix
+
+[#682](https://github.com/google/graphicsfuzz/pull/682):
+Add function to make opaque zero vec3 from cross product of equal vec3s
+
+[#683](https://github.com/google/graphicsfuzz/pull/683):
+Add identity to multiply rectangular matrix/vector by identity matrix
+
+#### Leftovers
+
+The following issues are nits or minor problems related to built-ins that were left unfixed due to 
+time or knowledge constraints, or are issues out of the scope of GraphicsFuzz.
+
+[#653](https://github.com/google/graphicsfuzz/issues/653):
+Be less conservative with matrix functions in constexpr contexts
+
+Related glslangValidator issue: https://github.com/KhronosGroup/glslang/issues/1865.
+
+[#552](https://github.com/google/graphicsfuzz/issues/552):
+Rewrite composite identity tries to index into shader output variables in GLES
+
+### Write worker script that uses Mesa's Piglit test framework to render images
