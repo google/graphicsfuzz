@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class OpaqueExpressionGenerator {
 
@@ -93,6 +94,7 @@ public final class OpaqueExpressionGenerator {
     if (shadingLanguageVersion.supportedTranspose()) {
       expressionIdentities.add(new IdentityDoubleTranspose());
     }
+    expressionIdentities.add(new IdentityMatrixMultIdentity());
 
   }
 
@@ -1366,8 +1368,8 @@ public final class OpaqueExpressionGenerator {
   }
 
   /**
-   * Identity function to transpose a matrix twice. When performed, transforms an expression of a
-   * matrix m -> transpose(identity(transpose(identity(m)))).
+   * Identity transformation to transpose a matrix twice. When performed, transforms an expression
+   * of a matrix m -> transpose(identity(transpose(identity(m)))).
    */
   private class IdentityDoubleTranspose extends AbstractIdentityTransformation {
     private IdentityDoubleTranspose() {
@@ -1393,6 +1395,50 @@ public final class OpaqueExpressionGenerator {
       //     issue, remove constContext check when fixed.
       return super.preconditionHolds(expr, basicType, constContext)
           && !constContext;
+    }
+  }
+
+  /**
+   * Identity transformation to multiply a vector or a rectangular matrix P by an identity matrix I,
+   * producing the same vector/matrix P as output. This relies on two properties of the identity
+   * matrix:
+   *     If P is a matrix of size n x m, where n is the number of columns and m the number of rows,
+   *     and I is the identity matrix of size n x n, then P * I = P.
+   *     If P is a matrix of size n x m, where n is the number of columns and m the number of rows,
+   *     and I is the identity matrix of size m x m, then I * P = P.
+   *     Note that matrices of size 1 x m or n x 1 are vecm or vecn, respectively.
+   * When performed, transforms an expression of a vector or rectangular matrix P ->
+   * identity(identityMatrix * P) or identity(P * identityMatrix).
+   */
+  private class IdentityMatrixMultIdentity extends AbstractIdentityTransformation {
+    private IdentityMatrixMultIdentity() {
+      super(Stream.concat(BasicType.allNonSquareMatrixTypes().stream(),
+          Stream.of(BasicType.VEC2, BasicType.VEC3, BasicType.VEC4))
+          .collect(Collectors.toList()), true);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth, Fuzzer fuzzer) {
+      // We use isVector()/isMatrix() in this function for brevity and self-documentation instead of
+      // concatenating streams.
+      assert type.isVector() || type.isMatrix();
+      final boolean usingRightMultiplication = generator.nextBoolean();
+      final int identityMatrixSize =
+          type.isVector()
+          ? type.getNumElements()
+          : usingRightMultiplication
+              ? type.getNumRows()
+              : type.getNumColumns();
+      final Expr identityMatrix = makeOpaqueIdentityMatrix(
+          BasicType.makeMatrixType(identityMatrixSize, identityMatrixSize),
+          constContext, depth, fuzzer);
+      // We wrap the original expr in parentheses to prevent issues with ternary operators.
+      final Expr binaryMultExpr = usingRightMultiplication
+          ? new BinaryExpr(identityMatrix, new ParenExpr(expr.clone()), BinOp.MUL)
+          : new BinaryExpr(new ParenExpr(expr.clone()), identityMatrix, BinOp.MUL);
+      return identityConstructor(
+          expr,
+          applyIdentityFunction(binaryMultExpr, type, constContext, depth, fuzzer));
     }
   }
 }
