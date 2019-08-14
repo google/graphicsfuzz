@@ -154,8 +154,9 @@ Add identity to multiply rectangular matrix/vector by identity matrix
 
 #### Leftovers
 
-The following issues are nits or minor problems related to built-ins that were left unfixed due to 
-time or knowledge constraints, or are issues out of the scope of GraphicsFuzz.
+The following issues are nits or minor problems related to opaque values/identity transformations
+that were left unfixed due to time or knowledge constraints, or are issues out of the scope of 
+GraphicsFuzz.
 
 [#653](https://github.com/google/graphicsfuzz/issues/653):
 Be less conservative with matrix functions in constexpr contexts
@@ -166,3 +167,66 @@ Related glslangValidator issue: https://github.com/KhronosGroup/glslang/issues/1
 Rewrite composite identity tries to index into shader output variables in GLES
 
 ### Write worker script that uses Mesa's Piglit test framework to render images
+
+[Mesa](https://mesa.freedesktop.org/) is an open-source graphics driver suite that is able to power
+a massive range of graphics hardware across the last twenty years of computing. To help deal with the 
+variance in hardware and driver implementations, contributors to Mesa wrote a graphics driver
+test framework called [Piglit](https://piglit.freedesktop.org/). Among its huge suite of GLSL and
+Vulkan tests, Piglit includes a rendering program, `shader_runner`, that can take user-supplied
+`.shader_test` files, render the included shader programs, test images for correct color values,
+ and more.
+ 
+For running shaders, GraphicsFuzz uses a client-server model. In GraphicsFuzz's toolset, a webserver
+and several 'workers', or clients, are supplied. These workers and the server communicate to each
+other via an [Apache Thrift](https://thrift.apache.org/) specification.
+ 
+To run a test set, the user starts the webserver and a worker, then selects a test set to run 
+(via UI or otherwise). For each shader, the webserver sends the shader source code and a JSON file
+that details any additional information the shader needs (such as uniform data) to the worker - the
+worker then renders the shader in any way it sees fit and returns the rendered image
+(if there was one), logs, etc.
+
+When reporting bugs in Mesa's drivers, it is most convenient for the Mesa developers to have a
+`.shader_test` file that they can easily plug into Piglit as a test case. Additionally, the OpenGL ES
+GraphicsFuzz worker is rather unwieldy to compile/use for desktop platforms, and so it was decided
+that the development of a Piglit/`shader_runner` worker was worth pursuing, along with a script to
+systematically convert GraphicsFuzz shader jobs into Piglit `.shader_test` files.
+
+The following PRs involve the Piglit worker.
+
+[#577](https://github.com/google/graphicsfuzz/pull/577):
+Add script to convert a GraphicsFuzz shader job to a piglit shader test
+
+[#584](https://github.com/google/graphicsfuzz/pull/584):
+Fix piglit converter script not inserting GL ES version
+
+[#587](https://github.com/google/graphicsfuzz/pull/587):
+Refactor common python script functions into one common lib
+
+[#613](https://github.com/google/graphicsfuzz/pull/613):
+Fix piglit converter not accepting blank JSON
+
+[#617](https://github.com/google/graphicsfuzz/pull/617):
+Add piglit shader_runner_gles3 worker script
+
+[#631](https://github.com/google/graphicsfuzz/pull/631):
+docs: Add documentation for piglit worker
+
+[#632](https://github.com/google/graphicsfuzz/pull/632):
+Piglit worker improvements
+
+[#638](https://github.com/google/graphicsfuzz/pull/638):
+graphicsfuzz-piglit-converter: support more uniform types
+
+In addition, a contribution was made to Piglit upstream to allow `shader_runner` to handle a case
+when unused uniform data was optimized out of a compiled shader.
+
+[shader_runner: Add command line option to ignore uniform if it isn't found in shader](https://gitlab.freedesktop.org/mesa/piglit/merge_requests/92)
+
+#### Leftovers
+
+The following issues are nits or minor problems related to the Piglit worker that were left unfixed
+due to time or knowledge constraints.
+
+[#597](https://github.com/google/graphicsfuzz/issues/597):
+Support compute shaders in graphicsfuzz_piglit_converter
