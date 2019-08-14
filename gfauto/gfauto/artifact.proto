@@ -1,0 +1,54 @@
+// Copyright 2019 The GraphicsFuzz Project Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package gfauto;
+
+import "gfauto/common.proto";
+
+
+// An artifact is a directory containing an ArtifactMetadata proto stored in "artifact.json" and/or a Recipe proto
+// stored in "recipe.json", plus any other files and directories within. The recipe can be executed to produce the files
+// that make up the artifact, which must include the "artifact.json" file. An artifact is referred to via an
+// "artifact path" that starts from a directory containing a file named "ROOT" (the contents is not used), written
+// as "//", followed by the path to the directory, using "/" as the directory separator. E.g.
+//
+// //binaries/my_binary
+//
+// Artifacts were planned to be used more frequently, but are now mainly used just for downloading and extracting
+// binaries.
+// See recipe.proto.
+message ArtifactMetadata {
+
+  // The artifact's type-specific data.
+  Data data = 1;
+
+  // A list of artifact paths from which this artifact is derived. Typically, this is similar to
+  // following the input artifacts in the recipe transitively, but some artifacts may not have a
+  // recipe because they were created manually so it is still useful to have this field.
+  repeated string derived_from = 2;
+
+  string comment = 3;
+
+  message Data {
+    oneof data {
+      ArtifactMetadataExtractedArchiveSet extracted_archive_set = 1;
+    }
+  }
+}
+
+message ArtifactMetadataExtractedArchiveSet {
+  ArchiveSet archive_set = 1;
+}

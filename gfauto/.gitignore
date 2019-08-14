@@ -1,0 +1,17 @@
+
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/workspace.xml
+.idea/dictionaries/*
+
+.venv/
+*.egg-info/
+__pycache__/
+.mypy_cache/
+
+
+.pytest_cache/
+.vscode/
+
+pip-wheel-metadata/

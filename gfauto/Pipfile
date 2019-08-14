@@ -1,0 +1,84 @@
+# Copyright 2019 The GraphicsFuzz Project Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[packages]
+# Add "this" package as a dependency; this ensures all packages listed in
+# setup.py are installed into the venv, as well as gfauto itself.
+gfauto = {path = ".", editable = true}
+
+[dev-packages]
+# autoflake = "*"  # Tool to auto-remove unused imports; does not seem to work
+# well.
+
+# iPython shell is useful for modifying artifacts interactively.
+ipython = "*"
+jedi = "*"
+
+# Code formatter. Explicit version given because it is a pre-release and
+# otherwise we get errors.
+black = "==19.3b0"
+
+# Plugin to protoc that outputs .pyi files (type information).
+mypy-protobuf = "*"
+
+# Provides protoc.
+grpcio-tools = "*"
+
+# Type checking.
+mypy = "*"
+
+# PyLint linter.
+pylint = "*"
+
+# Flake8 linter.
+flake8 = "*"
+# cohesion = "*"  # A tool for measuring Python class cohesion
+# flake8-alfred = "*"  # Can be used to blacklist symbols.
+# flake8-copyright = "*"  # Not maintained.
+# flake8-return = "*"  # Does not look that good.
+# flake8-if-expr = "*"  # Disallows ternary expressions.
+# flake8-strict = "*"  # Just contains two redundant checks.
+# flake8-eradicate = "*"  # Disallows commented out code, but has false-positives.
+flake8-bandit = "*"
+flake8-black = "*"
+flake8-breakpoint = "*"
+flake8-broken-line = "*"
+flake8-bugbear = "*"
+flake8-builtins = "*"
+flake8-coding = "*"  # Checks for a utf-8 comment at top of every file.
+flake8-comprehensions = "*"
+flake8-commas = "*"
+flake8-debugger = "*"
+flake8-docstrings = "*"
+# TODO: Remove once bug in flake8-docstrings is fixed: https://gitlab.com/pycqa/flake8-docstrings/issues/36
+pydocstyle = "==3.0.0"
+flake8-isort = "*"
+flake8-logging-format = "*"
+flake8-mock = "*"
+flake8-mutable = "*"
+# flake8-mypy = "*"  # We run the full mypy; this plugin gives false-positives.
+flake8-pep3101 = "*"
+flake8-print = "*"
+flake8-quotes = "*"
+flake8-spellcheck = "*"
+flake8-string-format = "*"
+flake8-type-annotations = "*"
+flake8-variables-names = "*"
+mccabe = "*"
+pep8-naming = "*"
