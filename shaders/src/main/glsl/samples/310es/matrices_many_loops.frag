@@ -4,6 +4,10 @@ precision highp float;
 
 layout(location = 0) out vec4 _GLF_color;
 
+uniform float one;
+
+uniform vec2 resolution;
+
 #define POPULATE_MAT(MAT, COLS, ROWS) \
   for (int c = 0; c < COLS; c++) {    \
     for (int r = 0; r < ROWS; r++) {  \
