@@ -38,6 +38,7 @@ import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.SideEffectChecker;
+import com.graphicsfuzz.generator.semanticschanging.LiteralFuzzer;
 import com.graphicsfuzz.generator.transformation.ExpressionIdentity;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
@@ -121,6 +122,7 @@ public final class OpaqueExpressionGenerator {
     opaqueZeroFactories.add(this::opaqueZeroLogarithm);
     opaqueZeroFactories.add(this::opaqueZeroTan);
     opaqueZeroFactories.add(this::opaqueZeroVectorLength);
+    opaqueZeroFactories.add(this::opaqueZeroVectorCross);
     return opaqueZeroFactories;
   }
 
@@ -569,6 +571,55 @@ public final class OpaqueExpressionGenerator {
     return Optional.of(new FunctionCallExpr("length", makeOpaqueZero(vectorType, constContext,
         depth,
         fuzzer)));
+  }
+
+  /**
+   * Function to create an opaque zero (specifically an opaque zero vec3) by taking the cross
+   * product of two equivalent vec3s. This opaque function relies on the fact that if u == v, where
+   * u and v are vec3, then cross(u, v) = (0, 0, 0). These equivalent vec3s are produced by
+   * fuzzing random float values and applying different identity functions to them per vector.
+   * @param type - the base type of the opaque value being created.
+   * @param constContext - true if we're in a constant expression context, false otherwise.
+   * @param depth - how deep we are in the expression.
+   * @param fuzzer - the fuzzer object for generating fuzzed expressions.
+   * @param isZero - true if we are making an opaque zero, false otherwise.
+   * @return Optional.empty() if an opaque value can't be generated, otherwise an opaque zero vec3
+   *     made from the cross product of two equal vec3s.
+   */
+  private Optional<Expr> opaqueZeroVectorCross(BasicType type, boolean constContext,
+                                               final int depth,
+                                               Fuzzer fuzzer, boolean isZero) {
+    assert isZero;
+    if (type != BasicType.VEC3) {
+      // Cross product only works on vec3 and can only produce vec3 as a return type.
+      return Optional.empty();
+    }
+    // We only want literals, so we need to make our own LiteralFuzzer rather than use the supplied
+    // Fuzzer object.
+    final LiteralFuzzer litFuzzer = new LiteralFuzzer(generator);
+    // cross(vec3(firstVec3ConstructorArgs), vec3(secondVec3ConstructorArgs))
+    final List<Expr> firstVec3ConstructorArgs = new ArrayList<Expr>();
+    final List<Expr> secondVec3ConstructorArgs = new ArrayList<Expr>();
+    for (int i = 0; i < type.getNumElements(); i++) {
+      final Optional<Expr> maybeFuzzedFloatLiteral = litFuzzer.fuzz(type.getElementType());
+      // Something went horribly wrong if we got an Optional.empty() - we are guaranteed to obtain a
+      // fuzzed expression, since the element type of a vec3 is a float, and it is always possible
+      // to fuzz a float literal.
+      assert maybeFuzzedFloatLiteral.isPresent();
+      final Expr fuzzedFloatLiteral = maybeFuzzedFloatLiteral.get();
+      // We apply different identities to the literals per vector - the two vectors are
+      // semantically the same vector (and so cross() should still return the zero vector).
+      firstVec3ConstructorArgs.add(
+          applyIdentityFunction(
+              fuzzedFloatLiteral, type.getElementType(), constContext, depth, fuzzer));
+      secondVec3ConstructorArgs.add(
+          applyIdentityFunction(
+              fuzzedFloatLiteral.clone(), type.getElementType(), constContext, depth, fuzzer));
+    }
+    return Optional.of(
+        new FunctionCallExpr("cross",
+            new TypeConstructorExpr(type.toString(), firstVec3ConstructorArgs),
+            new TypeConstructorExpr(type.toString(), secondVec3ConstructorArgs)));
   }
 
   private Optional<Expr> opaqueOneExponential(BasicType type, boolean constContext, final int depth,
