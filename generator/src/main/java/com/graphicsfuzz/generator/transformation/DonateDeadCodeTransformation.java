@@ -39,7 +39,9 @@ import com.graphicsfuzz.generator.transformation.donation.DonationContext;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
-import com.graphicsfuzz.generator.util.RemoveImmediateBreakAndContinueStatements;
+import com.graphicsfuzz.generator.util.RemoveImmediateBreakStatements;
+import com.graphicsfuzz.generator.util.RemoveImmediateCaseLabels;
+import com.graphicsfuzz.generator.util.RemoveImmediateContinueStatements;
 import com.graphicsfuzz.generator.util.RemoveReturnStatements;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.util.Constants;
@@ -125,8 +127,24 @@ public class DonateDeadCodeTransformation extends DonateCodeTransformation {
                     shadingLanguageVersion, generator,
                     generationParams)), new BlockStmt(donatedStmts, true), null);
 
+    // We cannot have 'case' and 'default' labels occurring in the donated statement, unless they
+    // are nested in their own 'switch' statement.  In principle we could allow these if the
+    // injection point happens to be in a 'switch' already, but this would require some fiddly
+    // checks that do not seem worth doing.
+    new RemoveImmediateCaseLabels(donatedStmt);
+
+    // If the injection point is in a loop then it's fine for the injected code to have continue
+    // statements (this is a dead code injection, so semantics will not be changed).  But otherwise
+    // they would make the shader invalid.
     if (!injectionPoint.inLoop()) {
-      new RemoveImmediateBreakAndContinueStatements(donatedStmt);
+      new RemoveImmediateContinueStatements(donatedStmt);
+    }
+
+    // If the injection point is in a loop or switch then it's fine for the injected code to have
+    // break statements (this is a dead code injection, so semantics will not be changed).  But
+    // otherwise they would make the shader invalid.
+    if (!(injectionPoint.inLoop() || injectionPoint.inSwitch())) {
+      new RemoveImmediateBreakStatements(donatedStmt);
     }
 
     if (generationParams.getShaderKind() != ShaderKind.FRAGMENT) {

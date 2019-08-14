@@ -33,7 +33,9 @@ import com.graphicsfuzz.generator.transformation.donation.DonationContext;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
-import com.graphicsfuzz.generator.util.RemoveImmediateBreakAndContinueStatements;
+import com.graphicsfuzz.generator.util.RemoveImmediateBreakStatements;
+import com.graphicsfuzz.generator.util.RemoveImmediateCaseLabels;
+import com.graphicsfuzz.generator.util.RemoveImmediateContinueStatements;
 import com.graphicsfuzz.generator.util.RemoveReturnStatements;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.util.Constants;
@@ -58,7 +60,7 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
   }
 
   @Override
-  public Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
+  Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
                                 DonationContext donationContext,
                                 TransformationProbabilities probabilities,
                                 IRandom generator, ShadingLanguageVersion shadingLanguageVersion) {
@@ -87,7 +89,9 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
     }
     donatedStmts.add(donationContext.getDonorFragment());
     BlockStmt donatedStmt = new BlockStmt(donatedStmts, true);
-    new RemoveImmediateBreakAndContinueStatements(donatedStmt);
+    new RemoveImmediateBreakStatements(donatedStmt);
+    new RemoveImmediateContinueStatements(donatedStmt);
+    new RemoveImmediateCaseLabels(donatedStmt);
     new RemoveReturnStatements(donatedStmt);
     new RemoveDiscardStatements(donatedStmt);
     return donatedStmt;

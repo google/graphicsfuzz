@@ -29,8 +29,9 @@ public class LoopInjectionPoint extends InjectionPoint {
   private LoopStmt loopStmt;
 
   public LoopInjectionPoint(LoopStmt loopStmt, FunctionDefinition enclosingFunction,
-      Scope scope) {
-    super(enclosingFunction, true, scope);
+                            boolean inSwitch,
+                            Scope scope) {
+    super(enclosingFunction, true, inSwitch, scope);
     this.loopStmt = loopStmt;
   }
 

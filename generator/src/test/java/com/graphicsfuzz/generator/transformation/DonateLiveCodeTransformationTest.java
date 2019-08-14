@@ -31,7 +31,10 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
+import com.graphicsfuzz.common.ast.stmt.ForStmt;
+import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -47,6 +50,8 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.transformation.donation.DonationContext;
 import com.graphicsfuzz.generator.transformation.injection.BlockInjectionPoint;
+import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
+import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.server.thrift.ImageJob;
@@ -59,6 +64,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -68,12 +74,15 @@ public class DonateLiveCodeTransformationTest {
   @Rule
   public TemporaryFolder testFolder = new TemporaryFolder();
 
-  @Test
-  public void prepareStatementToDonate() throws Exception {
+  private DonateLiveCodeTransformation getDummyTransformationObject() {
+    return new DonateLiveCodeTransformation(IRandom::nextBoolean, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT, true),
+        false);
+  }
 
-    final DonateLiveCodeTransformation dlc =
-        new DonateLiveCodeTransformation(IRandom::nextBoolean, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT, true),
-            false);
+  @Test
+  public void prepareStatementToDonateDiscardRemoved() throws Exception {
+
+    final DonateLiveCodeTransformation dlc = getDummyTransformationObject();
 
     DonationContext dc = new DonationContext(new DiscardStmt(), new HashMap<>(),
         new ArrayList<>(), null);
@@ -90,18 +99,290 @@ public class DonateLiveCodeTransformationTest {
   }
 
   @Test
+  public void prepareStatementToDonateTopLevelBreakRemoved() throws Exception {
+
+    // Checks that a top-level 'break' gets removed, even when injecting into a loop or
+    // switch.
+
+    final DonateLiveCodeTransformation dlc = getDummyTransformationObject();
+    final TranslationUnit donor = ParseHelper.parse("#version 310 es\n"
+        + "void main() {\n"
+        + "  for (int i = 0; i < 10; i ++)\n"
+        + "     if (i > 5) break;\n"
+        + "}\n");
+
+    final TranslationUnit reference = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  for(int i = 0; i < 100; i++) {\n"
+        + "    switch (i) {\n"
+        + "      case 0:\n"
+        + "        i++;\n"
+        + "      default:\n"
+        + "        i++;\n"
+        + "    }\n"
+        + "  }\n"
+        + "}\n");
+
+    for (IInjectionPoint injectionPoint : new InjectionPoints(reference, new RandomWrapper(0),
+        item -> true).getAllInjectionPoints()) {
+
+      final Stmt toDonate = ((ForStmt) donor.getMainFunction().getBody().getStmt(0)).getBody()
+          .clone();
+      assert toDonate instanceof IfStmt;
+
+      final DonationContext dc = new DonationContext(toDonate, new HashMap<>(),
+          new ArrayList<>(), donor.getMainFunction());
+
+      final Stmt donated = dlc.prepareStatementToDonate(injectionPoint, dc,
+          TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
+          ShadingLanguageVersion.ESSL_310);
+      assertEquals("{\n"
+          + " if(i > 5)\n"
+          + "  ;\n"
+          + "}\n", donated.getText());
+    }
+
+  }
+
+  @Test
+  public void prepareStatementToDonateTopLevelContinueRemoved() throws Exception {
+
+    // Checks that a top-level 'continue' gets removed, even when injecting into a loop.
+
+    final DonateLiveCodeTransformation dlc = getDummyTransformationObject();
+    final TranslationUnit donor = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  for (int i = 0; i < 10; i ++)\n"
+        + "     if (i > 5) continue;\n"
+        + "}\n");
+
+    final TranslationUnit reference = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  for(int i = 0; i < 100; i++) {\n"
+        + "  }\n"
+        + "}\n");
+
+    for (IInjectionPoint injectionPoint : new InjectionPoints(reference, new RandomWrapper(0),
+        item -> true).getAllInjectionPoints()) {
+      final Stmt toDonate = ((ForStmt) donor.getMainFunction().getBody().getStmt(0)).getBody()
+          .clone();
+      assert toDonate instanceof IfStmt;
+
+      final DonationContext dc = new DonationContext(toDonate, new HashMap<>(),
+          new ArrayList<>(), donor.getMainFunction());
+
+      final Stmt donated = dlc.prepareStatementToDonate(injectionPoint, dc,
+          TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
+          ShadingLanguageVersion.ESSL_100);
+      assertEquals("{\n"
+          + " if(i > 5)\n"
+          + "  ;\n"
+          + "}\n", donated.getText());
+    }
+
+  }
+
+  @Test
+  public void prepareStatementToDonateTopLevelCaseAndDefaultRemoved() throws Exception {
+    // Checks that top-level 'case' and 'default' labels get removed, even when injecting into
+    // a switch.
+
+    final DonateLiveCodeTransformation dlc = getDummyTransformationObject();
+    final TranslationUnit donor = ParseHelper.parse("#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 3;\n"
+        + "  switch (x) {\n"
+        + "    case 0:\n"
+        + "      x++;\n"
+        + "    default:\n"
+        + "      x++;\n"
+        + "  }\n"
+        + "}\n");
+
+    final TranslationUnit reference = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  switch (0) {\n"
+        + "    case 1:\n"
+        + "      1;\n"
+        + "    default:\n"
+        + "      2;\n"
+        + "  }\n"
+        + "}\n");
+
+    for (IInjectionPoint injectionPoint : new InjectionPoints(reference, new RandomWrapper(0),
+        item -> true).getAllInjectionPoints()) {
+
+      final Stmt toDonate = ((SwitchStmt) donor.getMainFunction().getBody().getStmt(1)).getBody()
+          .clone();
+
+      final DonationContext dc = new DonationContext(toDonate, new HashMap<>(),
+          new ArrayList<>(), donor.getMainFunction());
+
+      final Stmt donated = dlc.prepareStatementToDonate(injectionPoint, dc,
+          TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
+          ShadingLanguageVersion.ESSL_310);
+      assertEquals("{\n"
+          + " {\n"
+          + "  ;\n"
+          + "  x ++;\n"
+          + "  ;\n"
+          + "  x ++;\n"
+          + " }\n"
+          + "}\n", donated.getText());
+    }
+  }
+
+  @Test
+  public void prepareStatementToDonateBreakFromLoopKept() throws Exception {
+    // Checks that a 'break' in a loop gets kept if the whole loop is donated.
+
+    final DonateLiveCodeTransformation dlc = getDummyTransformationObject();
+    final TranslationUnit donor = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  for (int i = 0; i < 10; i ++)\n"
+        + "     if (i > 5) break;\n"
+        + "}\n");
+
+    final TranslationUnit reference = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  ;\n"
+        + "  for(int i = 0; i < 100; i++) {\n"
+        + "  }\n"
+        + "}\n");
+
+    for (IInjectionPoint injectionPoint : new InjectionPoints(reference, new RandomWrapper(0),
+        item -> true).getAllInjectionPoints()) {
+
+      final Stmt toDonate = donor.getMainFunction().getBody().getStmt(0)
+          .clone();
+      assert toDonate instanceof ForStmt;
+
+      final DonationContext dc = new DonationContext(toDonate, new HashMap<>(),
+          new ArrayList<>(), donor.getMainFunction());
+
+      final Stmt donated = dlc.prepareStatementToDonate(injectionPoint, dc,
+          TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
+          ShadingLanguageVersion.ESSL_100);
+      assertEquals("{\n"
+          + " for(\n"
+          + "     int i = 0;\n"
+          + "     i < 10;\n"
+          + "     i ++\n"
+          + " )\n"
+          + "  if(i > 5)\n"
+          + "   break;\n"
+          + "}\n", donated.getText());
+    }
+  }
+
+  @Test
+  public void prepareStatementToDonateSwitchWithBreakAndDefaultKept() throws Exception {
+    // Checks that 'case', 'default' and 'break' occurring in a switch are kept if the whole
+    // switch statement is donated.
+
+    final DonateLiveCodeTransformation dlc = getDummyTransformationObject();
+    final TranslationUnit donor = ParseHelper.parse("#version 310 es\n"
+        + "void main() {\n"
+        + "  switch (0) {\n"
+        + "    case 0:\n"
+        + "      1;\n"
+        + "      break;\n"
+        + "    default:\n"
+        + "      2;\n"
+        + "  }\n"
+        + "}\n");
+
+    final TranslationUnit reference = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  ;\n"
+        + "  switch (0) {\n"
+        + "    case 1:\n"
+        + "      1;\n"
+        + "    default:\n"
+        + "      2;\n"
+        + "  }\n"
+        + "}\n");
+
+    for (IInjectionPoint injectionPoint : new InjectionPoints(reference, new RandomWrapper(0),
+        item -> true).getAllInjectionPoints()) {
+
+      final Stmt toDonate = donor.getMainFunction().getBody().getStmt(0).clone();
+      assert toDonate instanceof SwitchStmt;
+
+      final DonationContext dc = new DonationContext(toDonate, new HashMap<>(),
+          new ArrayList<>(), donor.getMainFunction());
+
+      final Stmt donated = dlc.prepareStatementToDonate(injectionPoint, dc,
+          TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
+          ShadingLanguageVersion.ESSL_310);
+      assertEquals("{\n"
+          + " switch(0)\n"
+          + "  {\n"
+          + "   case 0:\n"
+          + "   1;\n"
+          + "   break;\n"
+          + "   default:\n"
+          + "   2;\n"
+          + "  }\n"
+          + "}\n", donated.getText());
+    }
+  }
+
+  @Test
+  public void prepareStatementToDonateContinueInLoopKept() throws Exception {
+    // Checks that a 'continue' in a loop gets kept if the whole loop is donated.
+
+    final DonateLiveCodeTransformation dlc = getDummyTransformationObject();
+    final TranslationUnit donor = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  for (int i = 0; i < 10; i ++)\n"
+        + "     if (i > 5) continue;\n"
+        + "}\n");
+
+    final TranslationUnit reference = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  ;\n"
+        + "  for(int i = 0; i < 100; i++) {\n"
+        + "  }\n"
+        + "}\n");
+
+    for (IInjectionPoint injectionPoint : new InjectionPoints(reference, new RandomWrapper(0),
+        item -> true).getAllInjectionPoints()) {
+
+      final Stmt toDonate = donor.getMainFunction().getBody().getStmt(0).clone();
+      assert toDonate instanceof ForStmt;
+
+      DonationContext dc = new DonationContext(toDonate, new HashMap<>(),
+          new ArrayList<>(), donor.getMainFunction());
+
+      final Stmt donated = dlc.prepareStatementToDonate(injectionPoint, dc,
+          TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
+          ShadingLanguageVersion.ESSL_100);
+      assertEquals("{\n"
+          + " for(\n"
+          + "     int i = 0;\n"
+          + "     i < 10;\n"
+          + "     i ++\n"
+          + " )\n"
+          + "  if(i > 5)\n"
+          + "   continue;\n"
+          + "}\n", donated.getText());
+    }
+  }
+
+  @Test
   public void checkMutateSpecialCase() throws Exception {
 
     // This test aimed to expose an issue, but did not succeed.  It's been left
     // here in the spirit of "why delete a test?"
 
     final String reference = "#version 300 es\n"
-          + "void main() {"
-          + "  int t;"
-          + "  {"
-          + "  }"
-          + "  gl_FragColor = vec4(float(t));"
-          + "}";
+          + "void main() {\n"
+          + "  int t;\n"
+          + "  {\n"
+          + "  }\n"
+          + "  gl_FragColor = vec4(float(t));\n"
+          + "}\n";
 
     final IRandom generator = new RandomWrapper(0);
 
@@ -124,7 +405,7 @@ public class DonateLiveCodeTransformationTest {
                 super.visitBlockStmt(stmt);
                 if (stmt.getNumStmts() == 0) {
                   blockInjectionPoint = new BlockInjectionPoint(stmt, null, getEnclosingFunction(),
-                        false, getCurrentScope());
+                        false, false, getCurrentScope());
                 }
               }
 
@@ -229,9 +510,8 @@ public class DonateLiveCodeTransformationTest {
 
     {
       final String referenceSource = "#version 300 es\n"
-          + "void main() {"
-          + "  "
-          + "}";
+          + "void main() {\n"
+          + "}\n";
 
       fileOps.writeShaderJobFileFromImageJob(
           new ImageJob()
@@ -296,9 +576,8 @@ public class DonateLiveCodeTransformationTest {
 
     {
       final String referenceSource = "#version 300 es\n"
-          + "void main() {"
-          + "  "
-          + "}";
+          + "void main() {\n"
+          + "}\n";
 
       fileOps.writeShaderJobFileFromImageJob(
           new ImageJob()
@@ -349,19 +628,19 @@ public class DonateLiveCodeTransformationTest {
       final String donorSource =
           "#version 300 es\n"
               + "void main() {\n"
-              + " int x = 0;"
-              + " {"
-              + "  int A[1];"
-              + "  A[x] = 42;"
-              + "  {"
-              + "   int B[1];"
-              + "   B[x] = 42;"
-              + "   {"
-              + "    int C[1];"
-              + "    C[x] = 42;"
-              + "   }"
-              + "  }"
-              + " }"
+              + " int x = 0;\n"
+              + " {\n"
+              + "  int A[1];\n"
+              + "  A[x] = 42;\n"
+              + "  {\n"
+              + "   int B[1];\n"
+              + "   B[x] = 42;\n"
+              + "   {\n"
+              + "    int C[1];\n"
+              + "    C[x] = 42;\n"
+              + "   }\n"
+              + "  }\n"
+              + " }\n"
               + "}\n";
 
       fileOps.writeShaderJobFileFromImageJob(
@@ -374,9 +653,8 @@ public class DonateLiveCodeTransformationTest {
 
     {
       final String referenceSource = "#version 300 es\n"
-          + "void main() {"
-          + "  "
-          + "}";
+          + "void main() {\n"
+          + "}\n";
 
       fileOps.writeShaderJobFileFromImageJob(
           new ImageJob()

@@ -94,6 +94,11 @@ public class SplitForLoopTransformationTest {
           }
 
           @Override
+          public boolean inSwitch() {
+            throw new RuntimeException();
+          }
+
+          @Override
           public FunctionDefinition getEnclosingFunction() {
             throw new RuntimeException();
           }
