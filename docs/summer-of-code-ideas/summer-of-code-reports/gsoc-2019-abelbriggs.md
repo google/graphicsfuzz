@@ -36,24 +36,25 @@ future.
 
 These deliverables were:
 
- - Enhance GraphicsFuzz's shader generator by making it more aware of OpenGL Shader Language's
+ - Enhance GraphicsFuzz's shader generator by making it more aware of OpenGL Shading Language's
  built-in functions.
  - Enhance GraphicsFuzz's shader generator by adding additional ways to generate opaque values and
  new identity transformations.
  - Add a new 'worker' program that takes GraphicsFuzz shader jobs from a server, renders the shader
  job via [Mesa](https://mesa.freedesktop.org/)'s open-source test framework
  [Piglit](https://piglit.freedesktop.org/), and sends the results back to the server.
- - Add new shaders to GraphicsFuzz's fuzz test set - new shaders as well as derivatives of the
+ - Add new shaders to GraphicsFuzz's fuzz test set - brand new shaders as well as derivatives of the
   original test set.
  - Apply GraphicsFuzz to the Mesa open-source graphics driver suite, specifically the nVIDIA
- reverse-engineered driver [nouveau](https://nouveau.freedesktop.org/wiki/).
+ reverse-engineered driver [nouveau](https://nouveau.freedesktop.org/wiki/), the open source driver
+ that was easiest for me to run tests on.
  
 ### Enhance GraphicsFuzz's shader generator - GLSL built-in support
 
-When GraphicsFuzz generates fuzzed/garbage expressions with the assumption that they won't be
+When GraphicsFuzz generates fuzzed/arbitrary expressions with the assumption that they won't be
 executed (e.g. in `(true ? x : y)`, y will never be executed), it is able to generate calls to GLSL
-built-in functions(think `abs()`, `sqrt()`, etc.) with garbage values as arguments. To do this, however,
-GraphicsFuzz needs to know what types to fuzz expressions for, or it will cause syntax errors.
+built-in functions(think `abs()`, `sqrt()`, etc.) with arbitrary values as arguments. To do this, however,
+GraphicsFuzz needs to know what types to fuzz expressions for, or it will cause type errors.
 
 The following PRs involve cross-checking built-in functions with the language version they were
 introduced in, then adding their function prototypes to GraphicsFuzz.
@@ -87,7 +88,7 @@ time or knowledge constraints.
 Ensure certain function prototypes can use non-uniform shader input variables
 
 [#570](https://github.com/google/graphicsfuzz/issues/570):
-Be less conservative about when FunctionCallExprTemplates yield expressions that have side effects.
+Be less conservative about when FunctionCallExprTemplates yield expressions that have side effects
 
 ### Enhance GraphicsFuzz's shader generator - identities and opaque value generation
 
@@ -102,15 +103,15 @@ transformations, and can recursively apply them to create obscenely complicated 
 For a toy example of an identity: Let `e` be a float of any valid value and let `identity(x) = x * 1.0`. 
 Then `e` is semantically equivalent to `identity(e)`.
 
-An opaque value in the context of GraphicsFuzz is an rvalue expression whose value is not obvious 
-to a compiler. The generator attempts to replace all instances of zero or one literals in a shader 
-with an opaque zero or an opaque one, and generates opaque zeroes or opaque ones whenever required 
-by other GraphicsFuzz transformations. Like identity transformations, these opaque values exploit
-invariants and properties of GLSL data types and built-in functions, and they can be recursively
-applied to complicate expressions.
+An opaque value in the context of GraphicsFuzz is an rvalue expression that is guaranteed to have
+a certain value, yet the value is not obvious to a compiler. The generator introduces opaque zeroes
+or opaque ones whenever required by other GraphicsFuzz transformations. Like identity transformations,
+these opaque values exploit invariants and properties of GLSL data types and built-in functions, and
+they can be recursively applied to complicate expressions.
 
 For a toy example of opaque values: Let `e = 0.0`. Notice that `0.0 == sqrt(0.0) == abs(0.0) == 
-float(0 >> 8) == abs(sqrt(float(0 >> 8)))`. Then `0.0` can be replaced with any of these expressions.
+float(0 >> 8) == injectionSwitch.x == abs(sqrt(float(0 >> 8)))`. Then `0.0` can be replaced with
+any of these expressions.
 
 The following PRs involve adding new ways to generate opaque values or identity transformations.
 
