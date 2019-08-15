@@ -79,8 +79,15 @@ def amberfy(
     amberfy_settings: amber_converter.AmberfySettings,
     input_glsl_source_json_path: Optional[Path] = None,
 ) -> Path:
-    return amber_converter.run_spirv_asm_shader_job_to_amber_script(
-        input_json, output_amber, amberfy_settings, input_glsl_source_json_path
+
+    shader_job_file_amber_test = amber_converter.ShaderJobFileBasedAmberTest(
+        reference_asm_spirv_job=None,
+        variant_asm_spirv_job=amber_converter.ShaderJobFile(
+            "variant", input_json, input_glsl_source_json_path, ""
+        ),
+    )
+    return amber_converter.spirv_asm_shader_job_to_amber_script(
+        shader_job_file_amber_test, output_amber, amberfy_settings
     )
 
 
