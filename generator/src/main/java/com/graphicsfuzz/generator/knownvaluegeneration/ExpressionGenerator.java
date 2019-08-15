@@ -349,8 +349,8 @@ public class ExpressionGenerator {
     } else {
       if (value.getType() == BasicType.FLOAT) {
         // TODO(https://github.com/google/graphicsfuzz/issues/688): range of numbers [-10, 10] is
-        //  temporary used here, we have to change how the summand is generated.
-        summandA = (float) generator.nextInt(20) - 10;
+        //  temporarily used here, we have to change how the summand is generated.
+        summandA = (float) generator.nextInt(21) - 10;
       } else {
         summandA = generator.nextInt(INT_MAX);
       }
