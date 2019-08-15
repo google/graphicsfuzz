@@ -52,8 +52,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class ExpressionGenerator {
 
@@ -290,6 +288,16 @@ public class ExpressionGenerator {
     return new VariableIdentifierExpr(varName);
   }
 
+  // A utility method performing the subtraction of the interface Number.
+  private Number subtractNumbers(Number firstOperand, Number secondOperand) {
+    if (firstOperand instanceof Float) {
+      assert secondOperand instanceof Float;
+      return firstOperand.floatValue() - secondOperand.floatValue();
+    }
+    assert firstOperand instanceof Integer && secondOperand instanceof Integer;
+    return firstOperand.intValue() - secondOperand.intValue();
+  }
+
   /**
    * This method generates the expression that performs the addition of two values which result is
    * equal to the given value.
@@ -315,15 +323,53 @@ public class ExpressionGenerator {
     if (value.getType() != BasicType.INT && value.getType() != BasicType.FLOAT) {
       return null;
     }
+    // If the given value is unknown, we are free to choose any arbitrary numbers for addition.
+    if (value.valueIsUnknown()) {
+      return new BinaryExpr(
+          generateExpr(factManager, currentFunction, stmtToInsertBefore,
+              new NumericValue((BasicType) value.getType(), Optional.empty())),
+          generateExpr(factManager, currentFunction, stmtToInsertBefore,
+              new NumericValue((BasicType) value.getType(), Optional.empty())),
+          BinOp.ADD);
+    }
 
-    final Pair<Optional<Number>, Optional<Number>> pair = getPairSum(value);
+    Number summandA;
+    // Given the expected type, we have to retrieve all values from the fact manager and filter only
+    // the facts that are known to compute particular values.
+    final List<Value> knownValues = factManager.getValuesFromType(value.getType())
+        .stream().filter(item -> !item.valueIsUnknown()).collect(Collectors.toList());
+    boolean genSummandsFromKnownValues = generator.nextBoolean();
+    // If we are able to find any known values with the correct type, we then consider choosing
+    // summands based on such values. Otherwise, we will have to pick a random number to make an
+    // addition expression.
+    if (!knownValues.isEmpty() && genSummandsFromKnownValues) {
+      summandA = ((NumericValue) knownValues
+          .get(generator.nextInt(knownValues.size())))
+          .getValue().get();
+    } else {
+      if (value.getType() == BasicType.FLOAT) {
+        // TODO(https://github.com/google/graphicsfuzz/issues/688): range of numbers [-10, 10] is
+        //  temporarily used here, we have to change how the summand is generated.
+        summandA = (float) generator.nextInt(21) - 10;
+      } else {
+        summandA = generator.nextInt(INT_MAX);
+      }
+    }
+
+    final Number expected = ((NumericValue) value).getValue().get();
+    // To get the second summand, we subtract original value by the the first summand.
+    final Number summandB = subtractNumbers(expected, summandA);
+    // Randomly decide whether summandA or summandB should be the first summand.
+    final boolean summandAFirst = generator.nextBoolean();
+    final Number firstSummand = summandAFirst ? summandA : summandB;
+    final Number secondSummand = summandAFirst ? summandB : summandA;
+
     return new BinaryExpr(
         generateExpr(factManager, currentFunction, stmtToInsertBefore,
-            new NumericValue((BasicType) value.getType(), pair.getLeft())),
+            new NumericValue((BasicType) value.getType(), Optional.of(firstSummand))),
         generateExpr(factManager, currentFunction, stmtToInsertBefore,
-            new NumericValue((BasicType) value.getType(), pair.getRight())),
-        BinOp.ADD
-    );
+            new NumericValue((BasicType) value.getType(), Optional.of(secondSummand))),
+        BinOp.ADD);
   }
 
   /**
@@ -429,13 +475,14 @@ public class ExpressionGenerator {
         + freshId();
   }
 
-  private String genParamName(Type type, boolean unknownValue) {
+  private String genParamName(Value value) {
     // Provides name for a function arguments based on the given value.
     // For example:
     //  _GLF_UNKNOWN_PARAM_vec4_id_1: a parameter of unknown value of vec4 type.
     //  _GLF_PARAM_int_id_62: a parameter of integer type.
-    return (unknownValue ? Constants.GLF_UNKNOWN_PARAM : Constants.GLF_PARAM)
-        + "_" + type.toString()
+    return (value.valueIsUnknown() ? Constants.GLF_UNKNOWN_PARAM : Constants.GLF_PARAM)
+        + "_" + value.getType().toString()
+        + parseNameFromValue(value)
         + freshId();
   }
 
@@ -580,7 +627,7 @@ public class ExpressionGenerator {
       // when calling this function the fact manager will generate any arbitrary value that
       // matches the parameter type.
       final Value paramValue = fuzzValue(paramType);
-      final String paramName = genParamName(paramType, paramValue.valueIsUnknown());
+      final String paramName = genParamName(paramValue);
 
       argumentValues.add(paramValue);
       final ParameterDecl parameterDecl = new ParameterDecl(
@@ -673,53 +720,6 @@ public class ExpressionGenerator {
     // TODO(https://github.com/google/graphicsfuzz/issues/664): we should also support array and
     //  struct types as well.
     throw new RuntimeException("Not implemented yet!");
-  }
-
-  /**
-   * A utility method that returns a pair of two numbers whose sum is equal to the given value.
-   *
-   * @param value the original value that will be split into two numbers.
-   * @return if value is unknown, returns a pair of empty value. Otherwise find and return two
-   *     numbers that will add up to the given value.
-   */
-  public Pair<Optional<Number>, Optional<Number>> getPairSum(Value value) {
-    assert value instanceof NumericValue;
-    final NumericValue numericValue = (NumericValue) value;
-
-    if (numericValue.valueIsUnknown()) {
-      return new ImmutablePair<>(Optional.empty(), Optional.empty());
-    }
-
-    // Following the equation a = (a/b) + (a - a/b), we first need to pick a random integer b
-    // in range 1-10. We then derive the left number by dividing the original number a with the
-    // random number b. We then generate the right number by subtracting the original value a
-    // with the left number obtained from the previous step.
-    //
-    // For example, if a number 7 is an input and we pick a random integer 3. The left number
-    // is (7/3) which equals to 2. Next we subtract the original value with the left number
-    // to find the right number: 7 - 2 = 5. We finally have two numbers 2 and 5 that can add
-    // up to 7.
-
-    // TODO(https://github.com/google/graphicsfuzz/issues/663): we can derive a number based on the
-    //  known facts hold by FactManager here.
-
-    if (numericValue.getType() == BasicType.FLOAT) {
-      final float a = numericValue.getValue().get().floatValue();
-      final float b = Math.max(1, generator.nextInt(10));
-      final float left = a / b;
-      final float right = a - left;
-      return new ImmutablePair<>(Optional.of(left), Optional.of(right));
-    }
-
-    if (numericValue.getType() == BasicType.INT) {
-      final int a = numericValue.getValue().get().intValue();
-      final int b = Math.max(1, generator.nextInt(10));
-      final int left = a / b;
-      final int right = a - left;
-      return new ImmutablePair<>(Optional.of(left), Optional.of(right));
-    }
-
-    throw new RuntimeException("Should be unreachable");
   }
 
 }

@@ -16,11 +16,14 @@
 
 package com.graphicsfuzz.generator.knownvaluegeneration;
 
+import com.graphicsfuzz.common.ast.type.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FactManager {
 
@@ -33,6 +36,19 @@ public class FactManager {
     this.prototype = prototype;
     variableFacts = new HashMap<Value, List<VariableFact>>();
     functionFacts = new HashMap<Value, List<FunctionFact>>();
+  }
+
+  /**
+   * Given an expected type, this method gets available function and variable facts hold by
+   * this fact manager.
+   *
+   * @param type type of the facts we are going to search for.
+   * @return a list of values that matches the given type.
+   */
+  public List<Value> getValuesFromType(Type type) {
+    return Stream.concat(variableFacts.keySet().stream(), functionFacts.keySet().stream())
+        .filter(value -> value.getType() == type)
+        .collect(Collectors.toList());
   }
 
   /**
