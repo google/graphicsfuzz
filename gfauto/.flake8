@@ -53,6 +53,8 @@ ignore =
 
   # Allow unindexed string format parameters
   P101
+  P102
+  P103
 
 
 # For flake8-quotes:

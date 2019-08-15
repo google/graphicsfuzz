@@ -20,35 +20,12 @@ A script that creates a README and bug_report directory for a test and its resul
 """
 
 import argparse
-import itertools
 import sys
 from pathlib import Path
 
 from gfauto import artifact_util, binaries_util, fuzz_glsl_test, test_util
 from gfauto.binaries_util import BinaryManager
-from gfauto.common_pb2 import Binary
-from gfauto.gflogging import log
 from gfauto.util import check, check_dir_exists
-
-
-def update_test_json(test_json: Path) -> Path:
-    test = test_util.metadata_read_from_path(test_json)
-
-    for test_binary in itertools.chain(
-        test.binaries, test.device.binaries
-    ):  # type: Binary
-        for default_binary in binaries_util.DEFAULT_BINARIES:
-            if (
-                test_binary.name == default_binary.name
-                and test_binary.version != default_binary.version
-            ):
-                log(
-                    f"Updating version: {test_binary.version} -> {default_binary.version}"
-                )
-                test_binary.version = default_binary.version
-                break
-
-    return test_util.metadata_write_to_path(test, test_json)
 
 
 def main() -> None:

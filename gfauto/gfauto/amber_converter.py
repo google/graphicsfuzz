@@ -18,14 +18,15 @@
 
 Converts a SPIR-V assembly shader job (all shaders are already disassembled) to an Amber script file.
 """
-import abc
+
 import itertools
 import json
 import pathlib
 from copy import copy
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict
+from typing import Dict, List, Optional
+
 import attr
 
 from gfauto import shader_job_util, util
@@ -79,10 +80,11 @@ def get_text_as_comment(text: str) -> str:
     return "\n".join(lines)
 
 
-def amberscript_comp_buff_decl(comp_json: str, make_empty_buffer: bool = False) -> str:
+def amberscript_comp_buff_def(comp_json: str, make_empty_buffer: bool = False) -> str:
     """
-    Returns a string (template) containing AmberScript commands for declaring the initial in/out buffer for a
-    compute shader test. Only the "$compute" key is read.
+    Returns a string (template) containing AmberScript commands for defining the initial in/out buffer.
+
+    Only the "$compute" key is read.
 
       {
         "myuniform": {
@@ -123,7 +125,6 @@ def amberscript_comp_buff_decl(comp_json: str, make_empty_buffer: bool = False) 
     listing hundreds of values that will just be overwritten, and makes it clear(er) for those reading the AmberScript
     file that the initial state of the buffer is unused.
     """
-
     ssbo_types = {
         "int": "int32",
         "ivec2": "vec2<int32>",
@@ -150,7 +151,7 @@ def amberscript_comp_buff_decl(comp_json: str, make_empty_buffer: bool = False) 
         AssertionError("Compute shader test with empty SSBO"),
     )
 
-    field_types_set = set([field["type"] for field in compute_info["buffer"]["fields"]])
+    field_types_set = {field["type"] for field in compute_info["buffer"]["fields"]}
 
     check(len(field_types_set) == 1, AssertionError("All field types must be the same"))
 
@@ -158,26 +159,26 @@ def amberscript_comp_buff_decl(comp_json: str, make_empty_buffer: bool = False) 
     if ssbo_type not in ssbo_types.keys():
         raise ValueError(f"Unsupported SSBO datum type: {ssbo_type}")
     ssbo_type_amber = ssbo_types[ssbo_type]
-    result = ""
 
     # E.g. [[0, 0], [5], [1, 2, 3]]
-    field_data = [field for field in compute_info["buffer"]["fields"]]
+    field_data = [field["data"] for field in compute_info["buffer"]["fields"]]
 
     # E.g. [0, 0, 5, 1, 2, 3]
     # |*| unpacks the list so each element is passed as an argument.
-    # |chain| takes a list of iterables.
+    # |chain| takes a list of iterables and concatenates them.
     field_data_flattened = itertools.chain(*field_data)
 
-    # E.g. ["0", "0", "", "1", "2", "3"]
+    # E.g. ["0", "0", "5", "1", "2", "3"]
     field_data_flattened_str = [str(field) for field in field_data_flattened]
 
+    result = ""
     if make_empty_buffer:
         # We just use the first value to initialize every element of the "empty" buffer.
-        result += f"BUFFER {{}} DATA_TYPE {ssbo_type_amber} SIZE {len(field_data_flattened_str)} {field_data_flattened_str[0]}\n\n"
+        result += f"BUFFER {{}} DATA_TYPE {ssbo_type_amber} SIZE {len(field_data_flattened_str)} {field_data_flattened_str[0]}\n"
     else:
         result += f"BUFFER {{}} DATA_TYPE {ssbo_type_amber} DATA\n"
         result += f" {' '.join(field_data_flattened_str)}\n"
-        result += "END\n\n"
+        result += "END\n"
 
     return result
 
@@ -192,6 +193,7 @@ def amberscript_comp_num_groups_def(json_contents: str) -> str:
 def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
     """
     Returns AmberScript commands for uniform binding.
+
     Skips the special '$compute' key, if present.
 
     {
@@ -207,7 +209,6 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
 
       BIND BUFFER {prefix}_myuniform AS uniform DESCRIPTOR_SET 0 BINDING 3
     """
-
     result = ""
     uniforms = json.loads(uniform_json)
     for name, entry in uniforms.items():
@@ -219,7 +220,8 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
 
 def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> str:
     """
-    Returns the string representing AmberScript version of uniform declarations.
+    Returns the string representing AmberScript version of uniform definitions.
+
     Skips the special '$compute' key, if present.
 
     {
@@ -244,7 +246,6 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
     :param prefix: E.g. "reference" or "variant". The buffer names will include this prefix to avoid name
     clashes.
     """
-
     uniform_types: Dict[str, str] = {
         "glUniform1i": "int32",
         "glUniform2i": "vec2<int32>",
@@ -265,7 +266,9 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
         "glUniformMatrix4fv": "mat4x4<float>",
     }
 
-    result = f"# uniforms for {prefix}\n\n"
+    result = f"# uniforms for {prefix}\n"
+
+    result += "\n"
 
     uniforms = json.loads(uniform_json_contents)
     for name, entry in uniforms.items():
@@ -290,7 +293,7 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
 
 def uniform_json_to_vk_script(uniform_json_contents: str) -> str:
     """
-    Returns the string representing VkScript version of uniform declarations.
+    Returns the string representing VkScript version of uniform definitions.
 
     Skips the special '$compute' key, if present.
 
@@ -657,54 +660,53 @@ class ShaderJobFile:
                     glsl_comp_contents,
                     self.processing_info,
                 ),
-                amberscript_comp_buff_decl(json_contents),
-                amberscript_comp_buff_decl(json_contents, make_empty_buffer=True),
+                amberscript_comp_buff_def(json_contents),
+                amberscript_comp_buff_def(json_contents, make_empty_buffer=True),
                 amberscript_comp_num_groups_def(json_contents),
             )
 
-        else:
-            # Get GLSL contents
-            glsl_vert_contents = None
-            glsl_frag_contents = None
-            if self.glsl_source_json:
-                glsl_vert_contents = shader_job_util.get_shader_contents(
-                    self.glsl_source_json, shader_job_util.EXT_VERT
-                )
-                glsl_frag_contents = shader_job_util.get_shader_contents(
-                    self.glsl_source_json, shader_job_util.EXT_FRAG
-                )
-
-            # Get spirv asm contents
-            vert_contents = shader_job_util.get_shader_contents(
-                self.asm_spirv_shader_job_json,
-                shader_job_util.EXT_VERT,
-                shader_job_util.SUFFIX_ASM_SPIRV,
+        # Get GLSL contents
+        glsl_vert_contents = None
+        glsl_frag_contents = None
+        if self.glsl_source_json:
+            glsl_vert_contents = shader_job_util.get_shader_contents(
+                self.glsl_source_json, shader_job_util.EXT_VERT
+            )
+            glsl_frag_contents = shader_job_util.get_shader_contents(
+                self.glsl_source_json, shader_job_util.EXT_FRAG
             )
 
-            frag_contents = shader_job_util.get_shader_contents(
-                self.asm_spirv_shader_job_json,
-                shader_job_util.EXT_FRAG,
-                shader_job_util.SUFFIX_ASM_SPIRV,
-                must_exist=True,
-            )
+        # Get spirv asm contents
+        vert_contents = shader_job_util.get_shader_contents(
+            self.asm_spirv_shader_job_json,
+            shader_job_util.EXT_VERT,
+            shader_job_util.SUFFIX_ASM_SPIRV,
+        )
 
-            return GraphicsShaderJob(
-                self.name_prefix,
-                amberscript_uniform_buffer_def(json_contents, self.name_prefix),
-                amberscript_uniform_buffer_bind(json_contents, self.name_prefix),
-                Shader(
-                    ShaderType.VERTEX,
-                    vert_contents,
-                    glsl_vert_contents,
-                    self.processing_info,
-                ),
-                Shader(
-                    ShaderType.FRAGMENT,
-                    frag_contents,
-                    glsl_frag_contents,
-                    self.processing_info,
-                ),
-            )
+        frag_contents = shader_job_util.get_shader_contents(
+            self.asm_spirv_shader_job_json,
+            shader_job_util.EXT_FRAG,
+            shader_job_util.SUFFIX_ASM_SPIRV,
+            must_exist=True,
+        )
+
+        return GraphicsShaderJob(
+            self.name_prefix,
+            amberscript_uniform_buffer_def(json_contents, self.name_prefix),
+            amberscript_uniform_buffer_bind(json_contents, self.name_prefix),
+            Shader(
+                ShaderType.VERTEX,
+                vert_contents,
+                glsl_vert_contents,
+                self.processing_info,
+            ),
+            Shader(
+                ShaderType.FRAGMENT,
+                frag_contents,
+                glsl_frag_contents,
+                self.processing_info,
+            ),
+        )
 
 
 @attr.dataclass
@@ -793,12 +795,10 @@ def graphics_shader_job_amber_test_to_amber_script(
 
     # Define shaders.
 
-    result += "\n"
     result += get_amber_script_shader_def(
         variant.vertex_shader, variant_vertex_shader_name
     )
 
-    result += "\n"
     result += get_amber_script_shader_def(
         variant.fragment_shader, variant_fragment_shader_name
     )
@@ -851,7 +851,6 @@ def compute_shader_job_amber_test_to_amber_script(
 
     # Define shaders.
 
-    result += "\n"
     result += get_amber_script_shader_def(
         variant.compute_shader, variant_compute_shader_name
     )
