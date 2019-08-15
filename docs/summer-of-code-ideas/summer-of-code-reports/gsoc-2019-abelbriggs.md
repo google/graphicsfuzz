@@ -54,6 +54,7 @@ When GraphicsFuzz generates fuzzed/garbage expressions with the assumption that 
 executed (e.g. in `(true ? x : y)`, y will never be executed), it is able to generate calls to GLSL
 built-in functions(think `abs()`, `sqrt()`, etc.) with garbage values as arguments. To do this, however,
 GraphicsFuzz needs to know what types to fuzz expressions for, or it will cause syntax errors.
+
 The following PRs involve cross-checking built-in functions with the language version they were
 introduced in, then adding their function prototypes to GraphicsFuzz.
 
@@ -69,7 +70,7 @@ Add built-in function support for GLSL 3.20 Fragment Processing Functions
 [#563](https://github.com/google/graphicsfuzz/pull/563):
 Refactor exponential builtins into separate function
 
-Additionally, minor issues arised from adding support for these functions - some of these functions
+Additionally, minor issues arose from adding support for these functions - some of these functions
 involve using `out` parameters and modify said parameters during their execution. This would
 potentially cause 'side effects' - lvalues being modified when not expected. The following PR
 relates to mitigating this issue.
@@ -158,13 +159,13 @@ The following issues are nits or minor problems related to opaque values/identit
 that were left unfixed due to time or knowledge constraints, or are issues out of the scope of 
 GraphicsFuzz.
 
+[#552](https://github.com/google/graphicsfuzz/issues/552):
+Rewrite composite identity tries to index into shader output variables in GLES
+
 [#653](https://github.com/google/graphicsfuzz/issues/653):
 Be less conservative with matrix functions in constexpr contexts
 
 Related glslangValidator issue: https://github.com/KhronosGroup/glslang/issues/1865.
-
-[#552](https://github.com/google/graphicsfuzz/issues/552):
-Rewrite composite identity tries to index into shader output variables in GLES
 
 ### Write worker script that uses Mesa's Piglit test framework to render images
 
@@ -192,7 +193,7 @@ GraphicsFuzz worker is rather unwieldy to compile/use for desktop platforms, and
 that the development of a Piglit/`shader_runner` worker was worth pursuing, along with a script to
 systematically convert GraphicsFuzz shader jobs into Piglit `.shader_test` files.
 
-The following PRs involve the Piglit worker.
+The following PRs involve the Piglit converter script or worker.
 
 [#577](https://github.com/google/graphicsfuzz/pull/577):
 Add script to convert a GraphicsFuzz shader job to a piglit shader test
@@ -225,8 +226,30 @@ when unused uniform data was optimized out of a compiled shader.
 
 #### Leftovers
 
-The following issues are nits or minor problems related to the Piglit worker that were left unfixed
-due to time or knowledge constraints.
+The following issues are nits or minor problems related to the Piglit worker or converter script
+that were left unfixed due to time or knowledge constraints.
 
 [#597](https://github.com/google/graphicsfuzz/issues/597):
 Support compute shaders in graphicsfuzz_piglit_converter
+
+### Add new shaders to GraphicsFuzz's test set
+
+With the exception of compute shaders, GraphicsFuzz had a fairly limited set of five simple test
+shaders for mutation. These shaders sufficed for finding simple bugs, but were limited to GLES 1.00
+features and were unable to test the full extent of the GLSL language even with significant additions
+to the shader generator.
+
+The following PRs involve adding new shaders to GraphicsFuzz's test suite.
+
+[#605](https://github.com/google/graphicsfuzz/pull/605):
+Add new versions of GraphicsFuzz shaders that use Integer Functions
+
+[#647](https://github.com/google/graphicsfuzz/pull/647):
+New 310es shader: householder_lattice
+
+[#670](https://github.com/google/graphicsfuzz/pull/670):
+Fix making array accesses inbounds with uint index accesses
+
+### Apply GraphicsFuzz to the nouveau open-source graphics driver
+
+
