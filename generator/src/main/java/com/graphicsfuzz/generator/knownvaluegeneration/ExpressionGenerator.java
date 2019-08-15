@@ -343,14 +343,14 @@ public class ExpressionGenerator {
     // summands based on such values. Otherwise, we will have to pick a random number to make an
     // addition expression.
     if (!knownValues.isEmpty() && genSummandsFromKnownValues) {
-      final NumericValue candidate =
-          (NumericValue) knownValues.get(generator.nextInt(knownValues.size()));
-      summandA = candidate.getValue().get();
+      summandA = ((NumericValue) knownValues
+          .get(generator.nextInt(knownValues.size())))
+          .getValue().get();
     } else {
       if (value.getType() == BasicType.FLOAT) {
-        // As floating number is more sensitive than integer we thus have to pick a random number
-        // carefully. To do so, we have to limit a reasonably small range of numbers.
-        summandA = (float) generator.nextInt(10);
+        // TODO(https://github.com/google/graphicsfuzz/issues/688): range of numbers [-10, 10] is
+        //  temporary used here, we have to change how the summand is generated.
+        summandA = (float) generator.nextInt(20) - 10;
       } else {
         summandA = generator.nextInt(INT_MAX);
       }
@@ -360,7 +360,7 @@ public class ExpressionGenerator {
     // To get the second summand, we subtract original value by the the first summand.
     final Number summandB = subtractNumbers(expected, summandA);
     // Randomly decide whether summandA or summandB should be the first summand.
-    final boolean summandAFirst = (generator.nextBoolean());
+    final boolean summandAFirst = generator.nextBoolean();
     final Number firstSummand = summandAFirst ? summandA : summandB;
     final Number secondSummand = summandAFirst ? summandB : summandA;
 
