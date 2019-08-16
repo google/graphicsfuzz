@@ -327,12 +327,12 @@ public final class OpaqueExpressionGenerator {
       }
     } else {
       // The two vectors will be exactly the same - all 0 except for one value, which will be 1.
-      final int nonZeroIndex = generator.nextInt(vectorWidth);
+      final int oneIndex = generator.nextInt(vectorWidth);
       for (int i = 0; i < vectorWidth; i++) {
         firstVectorArgs.add(
-            makeOpaqueZeroOrOne(i == nonZeroIndex, type, constContext, depth, fuzzer));
+            makeOpaqueZeroOrOne(i != oneIndex, type, constContext, depth, fuzzer));
         secondVectorArgs.add(
-            makeOpaqueZeroOrOne(i == nonZeroIndex, type, constContext, depth, fuzzer));
+            makeOpaqueZeroOrOne(i != oneIndex, type, constContext, depth, fuzzer));
       }
     }
     assert firstVectorArgs.size() == vectorWidth && secondVectorArgs.size() == vectorWidth;
