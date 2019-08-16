@@ -39,7 +39,9 @@ import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -56,7 +58,7 @@ import java.util.stream.Collectors;
 public class ExpressionGenerator {
 
   private static final int MAX_FUNCTION_PARAMS = 5;
-  private static final int NUM_WAYS_TO_GENERATE_EXPR = 7;
+  private static final int NUM_WAYS_TO_GENERATE_EXPR = 8;
   private static final int MAX_DEPTH = 5;
   // Theses boundaries are taken from the LiteralFuzzer, we may want to consider
   // modifying these values.
@@ -152,6 +154,9 @@ public class ExpressionGenerator {
         case 6:
           result = generateForLoopValue(value, factManager, functionDefinition, stmtToInsertBefore);
           break;
+        case 7:
+          result = generateUniformValue(value);
+          break;
         default:
           throw new RuntimeException("Should be unreachable as switch cases cover all cases");
       }
@@ -161,6 +166,45 @@ public class ExpressionGenerator {
     }
     currentDepth--;
     return result;
+  }
+
+  private Expr generateUniformValue(Value value) {
+    if (value.valueIsUnknown()) {
+      return null;
+    }
+    if (!(value instanceof NumericValue)) {
+      return null;
+    }
+    // TODO(https://github.com/google/graphicsfuzz/issues/692): we would be able to support
+    //  matrix uniform once Amber has solved the matrix-related issues.
+    if (value.getType() != BasicType.INT && value.getType() != BasicType.FLOAT) {
+      return null;
+    }
+
+    final String uniformName = Constants.GLF_UNIFORM + "_"
+        + value.getType().toString()
+        + parseNameFromValue(value)
+        + freshId();
+
+    // Add a new uniform to the pipeline from the given value.
+    final NumericValue numericValue = (NumericValue) value;
+    pipelineInfo.addUniform(uniformName, (BasicType) value.getType(),
+        Optional.empty(), Arrays.asList(numericValue.getValue().get()));
+
+    // Declare a new variable declaration for the uniform we generated.
+    final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(uniformName, null, null);
+    final VariablesDeclaration variablesDecl = new VariablesDeclaration(
+        new QualifiedType(value.getType(), Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
+    );
+    translationUnit.addDeclaration(variablesDecl);
+
+    // As uniform variables are available at the global scope, we create a new fact given a
+    // generated uniform and thus keep it at the global scope manager.
+    final VariableDeclFact variableDeclFact = new VariableDeclFact(variablesDecl,
+        variableDeclInfo, value);
+    globalFactManager.addVariableFact(value, variableDeclFact);
+
+    return new VariableIdentifierExpr(uniformName);
   }
 
   /**
