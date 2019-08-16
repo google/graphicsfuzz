@@ -42,12 +42,14 @@ import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.PipelineInfo;
+import com.graphicsfuzz.common.util.PruneUniforms;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.generator.knownvaluegeneration.ExpressionGenerator;
 import com.graphicsfuzz.generator.knownvaluegeneration.FactManager;
 import com.graphicsfuzz.generator.knownvaluegeneration.NumericValue;
 import com.graphicsfuzz.util.ArgsUtil;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,6 +58,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Stream;
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -100,6 +103,17 @@ public class KnownValueShaderGenerator {
         .help("Seed (unsigned 64 bit long integer) for the random number generator.")
         .type(String.class);
 
+    parser.addArgument("--max-uniforms")
+        .help("Ensure that generated shaders have no more than the given number of uniforms; "
+            + "required for Vulkan compatibility.")
+        .setDefault(0)
+        .type(Integer.class);
+
+    parser.addArgument("--generate-uniform-bindings")
+        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
+            + "compatibility.")
+        .action(Arguments.storeTrue());
+
     return parser.parseArgs(args);
   }
 
@@ -109,6 +123,8 @@ public class KnownValueShaderGenerator {
     final float gFloat = ns.getFloat("g");
     final float bFloat = ns.getFloat("b");
     final float aFloat = ns.getFloat("a");
+    final int maxUniforms = ns.getInt("max_uniforms");
+    final boolean generateUniformBindings = ns.getBoolean("generate_uniform_bindings");
     final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
     final String version = ns.getString("version");
     final File shaderJobFile = ns.get("output");
@@ -152,8 +168,16 @@ public class KnownValueShaderGenerator {
         new ExprStmt(new BinaryExpr(new VariableIdentifierExpr("_GLF_color"),
             new TypeConstructorExpr("vec4", rgbaExprs), BinOp.ASSIGN)));
 
-    final ShaderJob newShaderJob = new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu);
-    fileOps.writeShaderJobFile(newShaderJob, shaderJobFile);
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), pipelineInfo, tu);
+
+    if (maxUniforms > 0) {
+      PruneUniforms.prune(shaderJob, maxUniforms, Arrays.asList(Constants.GLF_UNIFORM));
+    }
+    if (generateUniformBindings) {
+      shaderJob.makeUniformBindings();
+    }
+
+    fileOps.writeShaderJobFile(shaderJob, shaderJobFile);
     LOGGER.info("Generation complete.");
   }
 
