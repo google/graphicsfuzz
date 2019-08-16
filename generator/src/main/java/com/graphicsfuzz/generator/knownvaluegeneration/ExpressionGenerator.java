@@ -168,29 +168,45 @@ public class ExpressionGenerator {
     return result;
   }
 
+
   private Expr generateUniformValue(Value value) {
-    if (value.valueIsUnknown()) {
-      return null;
-    }
-    if (!(value instanceof NumericValue)) {
+    if (!(value instanceof NumericValue) && !(value instanceof CompositeValue)) {
       return null;
     }
     // TODO(https://github.com/google/graphicsfuzz/issues/692): we would be able to support
     //  matrix uniform once Amber has solved the matrix-related issues.
-    if (value.getType() != BasicType.INT && value.getType() != BasicType.FLOAT) {
+    if (BasicType.allMatrixTypes().contains(value.getType())) {
       return null;
     }
-
     final String uniformName = Constants.GLF_UNIFORM + "_"
         + value.getType().toString()
         + parseNameFromValue(value)
         + freshId();
 
-    // Add a new uniform to the pipeline from the given value.
-    final NumericValue numericValue = (NumericValue) value;
-    pipelineInfo.addUniform(uniformName, (BasicType) value.getType(),
-        Optional.empty(), Arrays.asList(numericValue.getValue().get()));
+    // We must assign a random value if the given value is empty since we are not allowed to
+    // inject unknown uniform variables.
+    if (value.valueIsUnknown()) {
+      value = fuzzValue(value.getType(), true);
+    }
 
+    final List<Number> uniformValues = new ArrayList<>();
+    if (value instanceof CompositeValue) {
+      CompositeValue compositeValue = (CompositeValue) value;
+      for (Value element : compositeValue.getValueList().get()) {
+        // It's also possible that an element of the given composite value is unknown, thus we have
+        // to initialize the element if it is empty.
+        final NumericValue elementValue = element.valueIsUnknown() ?
+            (NumericValue) fuzzValue(element.getType(), true) :
+            (NumericValue) element;
+        uniformValues.add(elementValue.getValue().get());
+      }
+    } else {
+      assert value instanceof NumericValue;
+      uniformValues.add(((NumericValue) value).getValue().get());
+    }
+
+    pipelineInfo.addUniform(uniformName, (BasicType) value.getType(), Optional.empty(),
+        uniformValues);
     // Declare a new variable declaration for the uniform we generated.
     final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(uniformName, null, null);
     final VariablesDeclaration variablesDecl = new VariablesDeclaration(
@@ -670,7 +686,7 @@ public class ExpressionGenerator {
       // If the fact manager is generating an unknown parameter(value is Optional.empty),
       // when calling this function the fact manager will generate any arbitrary value that
       // matches the parameter type.
-      final Value paramValue = fuzzValue(paramType);
+      final Value paramValue = fuzzValue(paramType, false);
       final String paramName = genParamName(paramValue);
 
       argumentValues.add(paramValue);
@@ -723,10 +739,10 @@ public class ExpressionGenerator {
         BasicType.VEC3, BasicType.VEC4);
   }
 
-  private Value fuzzValue(Type type) {
+  private Value fuzzValue(Type type, boolean forceGenerateKnownValue) {
     // An Unknown value variable is the variable whose value could be anything. The fact manager
     // could generate any arbitrary value but with the correct type.
-    final boolean isUnknown = generator.nextBoolean();
+    final boolean isUnknown = generator.nextBoolean() && !forceGenerateKnownValue;
     if (type == BasicType.BOOL) {
       return new BooleanValue(
           isUnknown ? Optional.empty() : Optional.of(generator.nextBoolean()));
@@ -756,7 +772,7 @@ public class ExpressionGenerator {
     if (BasicType.allBasicTypes().contains(type)) {
       final List<Value> values = new ArrayList<>();
       for (int i = 0; i < ((BasicType) type).getNumElements(); i++) {
-        values.add(fuzzValue(((BasicType) type).getElementType()));
+        values.add(fuzzValue(((BasicType) type).getElementType(), forceGenerateKnownValue));
       }
       return new CompositeValue(type, Optional.of(values));
     }
