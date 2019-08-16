@@ -195,9 +195,9 @@ public class ExpressionGenerator {
       for (Value element : compositeValue.getValueList().get()) {
         // It's also possible that an element of the given composite value is unknown, thus we have
         // to initialize the element if it is empty.
-        final NumericValue elementValue = element.valueIsUnknown() ?
-            (NumericValue) fuzzValue(element.getType(), true) :
-            (NumericValue) element;
+        final NumericValue elementValue = element.valueIsUnknown()
+            ? (NumericValue) fuzzValue(element.getType(), true)
+            : (NumericValue) element;
         uniformValues.add(elementValue.getValue().get());
       }
     } else {
