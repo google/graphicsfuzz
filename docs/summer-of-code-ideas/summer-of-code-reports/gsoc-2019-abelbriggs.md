@@ -7,7 +7,7 @@
 ###### [Enhancing Metamorphic Testing Tools For Graphics Drivers](https://summerofcode.withgoogle.com/projects/#6749896743321600)
 
 ###### Mentors: 
-###### Alasdair Donaldson, Hugues Evrard
+###### Alastair Donaldson, Hugues Evrard
 
 ## Preface
 
@@ -46,7 +46,7 @@ These deliverables were:
  - Add new shaders to GraphicsFuzz's fuzz test set - brand new shaders as well as derivatives of the
   original test set.
  - Apply GraphicsFuzz to the Mesa open-source graphics driver suite, specifically the nVIDIA
- reverse-engineered driver [nouveau](https://nouveau.freedesktop.org/wiki/), the open source driver
+ reverse-engineered driver [nouveau](https://nouveau.freedesktop.org/wiki/), the open-source driver
  that was easiest for me to run tests on.
  
 ### Enhance GraphicsFuzz's shader generator - GLSL built-in support
@@ -113,7 +113,7 @@ For a toy example of opaque values: Let `e = 0.0`. Notice that `0.0 == sqrt(0.0)
 float(0 >> 8) == injectionSwitch.x == abs(sqrt(float(0 >> 8)))`. Then `0.0` can be replaced with
 any of these expressions.
 
-The following PRs involve adding new ways to generate opaque values or identity transformations.
+The following PRs directly involve adding new ways to generate opaque values or identity transformations.
 
 [#509](https://github.com/google/graphicsfuzz/pull/509):
 Generate ternary identities for nonscalar types
@@ -153,6 +153,9 @@ Add function to make opaque zero vec3 from cross product of equal vec3s
 
 [#683](https://github.com/google/graphicsfuzz/pull/683):
 Add identity to multiply rectangular matrix/vector by identity matrix
+
+[#695](https://github.com/google/graphicsfuzz/pull/695):
+Fix opaque dot function inverted isZero indices
 
 #### Leftovers
 
@@ -194,16 +197,13 @@ GraphicsFuzz worker is rather unwieldy to compile/use for desktop platforms, and
 that the development of a Piglit/`shader_runner` worker was worth pursuing, along with a script to
 systematically convert GraphicsFuzz shader jobs into Piglit `.shader_test` files.
 
-The following PRs involve the Piglit converter script or worker.
+The following PRs directly involve the Piglit converter script or worker.
 
 [#577](https://github.com/google/graphicsfuzz/pull/577):
 Add script to convert a GraphicsFuzz shader job to a piglit shader test
 
 [#584](https://github.com/google/graphicsfuzz/pull/584):
 Fix piglit converter script not inserting GL ES version
-
-[#587](https://github.com/google/graphicsfuzz/pull/587):
-Refactor common python script functions into one common lib
 
 [#613](https://github.com/google/graphicsfuzz/pull/613):
 Fix piglit converter not accepting blank JSON
@@ -223,7 +223,8 @@ graphicsfuzz-piglit-converter: support more uniform types
 In addition, a contribution was made to Piglit upstream to allow `shader_runner` to handle a case
 when unused uniform data was optimized out of a compiled shader.
 
-[shader_runner: Add command line option to ignore uniform if it isn't found in shader](https://gitlab.freedesktop.org/mesa/piglit/merge_requests/92)
+[shader_runner](https://gitlab.freedesktop.org/mesa/piglit/merge_requests/92):
+Add command line option to ignore uniform if it isn't found in shader
 
 #### Leftovers
 
@@ -240,7 +241,7 @@ shaders for mutation. These shaders sufficed for finding simple bugs, but were l
 features and were unable to test the full extent of the GLSL language even with significant additions
 to the shader generator.
 
-The following PRs involve adding new shaders to GraphicsFuzz's test suite.
+The following PRs directly involve adding new shaders to GraphicsFuzz's test suite.
 
 [#605](https://github.com/google/graphicsfuzz/pull/605):
 Add new versions of GraphicsFuzz shaders that use Integer Functions
@@ -248,9 +249,91 @@ Add new versions of GraphicsFuzz shaders that use Integer Functions
 [#647](https://github.com/google/graphicsfuzz/pull/647):
 New 310es shader: householder_lattice
 
+### Apply GraphicsFuzz to the nouveau open-source graphics driver
+
+[nouveau](https://nouveau.freedesktop.org/wiki/) is a reverse-engineered open-source graphics driver
+for nVIDIA graphics hardware that is developed under the umbrella of the Mesa driver suite. Because
+of limitations on modern nVIDIA cards due to nVIDIA requiring signed firmware to access
+key hardware on graphics cards past the [Maxwell](https://nouveau.freedesktop.org/wiki/CodeNames/#nv110familymaxwell)
+generation, nouveau receives little use in comparison to other Mesa drivers or nVIDIA's closed-source
+binaries, making it a prime target for fuzzing.
+
+The following are bugs reported to the Mesa bug tracker found via fuzzing.
+
+[Bug 110953](https://bugs.freedesktop.org/show_bug.cgi?id=110953):
+Adding a redundant single-iteration do-while loop causes different image to be rendered
+
+(images and description here eventually)
+
+[Bug 111006](https://bugs.freedesktop.org/show_bug.cgi?id=111006):
+Adding a uniform-dependent if-statement in shader renders a different image
+
+(images and description here eventually)
+
+[Bug 111167](https://bugs.freedesktop.org/show_bug.cgi?id=111167):
+Dividing zero by a uniform in loop header causes segfault in nv50_ir::NVC0LegalizeSSA::handleDIV
+
+(description here eventually)
+
+Stacktrace:
+```
+#0  std::_Deque_iterator<nv50_ir::ValueRef, nv50_ir::ValueRef&, nv50_ir::ValueRef*>::_Deque_iterator (
+    __x=<error reading variable: Cannot access memory at address 0xb0>, 
+    this=<synthetic pointer>) at /usr/include/c++/8/bits/stl_deque.h:1401
+#1  std::_Deque_iterator<nv50_ir::ValueRef, nv50_ir::ValueRef&, nv50_ir::ValueRef*>::operator+ (__n=0, this=0xb0) at /usr/include/c++/8/bits/stl_deque.h:230
+#2  std::_Deque_iterator<nv50_ir::ValueRef, nv50_ir::ValueRef&, nv50_ir::ValueRef*>::operator[] (__n=0, this=0xb0) at /usr/include/c++/8/bits/stl_deque.h:247
+#3  std::deque<nv50_ir::ValueRef, std::allocator<nv50_ir::ValueRef> >::operator[] (__n=0, this=0xa0) at /usr/include/c++/8/bits/stl_deque.h:1404
+#4  nv50_ir::Instruction::getSrc (s=0, this=0x0)
+    at ../src/gallium/drivers/nouveau/codegen/nv50_ir.h:827
+#5  nv50_ir::NVC0LegalizeSSA::handleDIV (this=0x7ffd7753af60, i=0x55d2e1b132a0)
+    at ../src/gallium/drivers/nouveau/codegen/nv50_ir_lowering_nvc0.cpp:54
+#6  0x00007fc7191cb4b3 in nv50_ir::NVC0LegalizeSSA::visit (
+    this=0x7ffd7753af60, bb=<optimized out>)
+    at ../src/gallium/drivers/nouveau/codegen/nv50_ir_lowering_nvc0.cpp:334
+#7  0x00007fc719111928 in nv50_ir::Pass::doRun (this=0x7ffd7753af60, 
+    func=<optimized out>, ordered=<optimized out>, skipPhi=true)
+    at ../src/gallium/drivers/nouveau/codegen/nv50_ir_bb.cpp:500
+#8  0x00007fc7191119f4 in nv50_ir::Pass::doRun (this=0x7ffd7753af60, 
+    prog=<optimized out>, ordered=false, skipPhi=true)
+    at ../src/gallium/drivers/nouveau/codegen/nv50_ir_inlines.h:413
+```
+
+#### Leftovers
+
+[Bug 111006](https://bugs.freedesktop.org/show_bug.cgi?id=111006) involves a critical component of
+GraphicsFuzz's fuzzing techniques - preventing a compiler from optimizing uni-directional
+branches (like an if-statement that is always true) by using a variable that is unknown until runtime.
+While this bug remains unfixed, it is difficult to continue fuzz testing without running into a
+large number of potential duplicate issues. This issue prevented continued fuzzing over the second
+half of GSoC 2019.
+
+### Miscellaneous
+
+While working on GraphicsFuzz for Google Summer of Code 2019, minor problems that were not directly
+related to the detailed deliverables cropped up.
+
+The following PRs involve miscellaneous refactoring or changes to GraphicsFuzz.
+
+[#507](https://github.com/google/graphicsfuzz/pull/507):
+Add additional tests for empty for statements
+
+[#532](https://github.com/google/graphicsfuzz/pull/532):
+Refactor BasicType with documentation and exception improvements
+
+[#535](https://github.com/google/graphicsfuzz/pull/535):
+Remove pointless static numColumns function
+
+[#537](https://github.com/google/graphicsfuzz/pull/537):
+Refactor code to use isType functions when possible
+
+[#587](https://github.com/google/graphicsfuzz/pull/587):
+Refactor common python script functions into one common lib
+
+[#668](https://github.com/google/graphicsfuzz/pull/668):
+Refactor transposedMatrixType() to use makeMatrixType()
+
 [#670](https://github.com/google/graphicsfuzz/pull/670):
 Fix making array accesses inbounds with uint index accesses
 
-### Apply GraphicsFuzz to the nouveau open-source graphics driver
 
 
