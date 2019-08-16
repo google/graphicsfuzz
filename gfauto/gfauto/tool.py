@@ -252,12 +252,11 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
             )
         )
 
-    if not spirv_opt_args:
+    if test_metadata_path:
         check(
-            bool(test_metadata_path),
-            AssertionError("Must have test_metadata_path or binary_paths"),
+            bool(not spirv_opt_args),
+            AssertionError("Cannot have spirv_opt_args AND test_metadata_path"),
         )
-        assert test_metadata_path  # noqa
         spirv_opt_args = list(
             test_util.metadata_read_from_path(test_metadata_path).glsl.spirv_opt_args
         )
