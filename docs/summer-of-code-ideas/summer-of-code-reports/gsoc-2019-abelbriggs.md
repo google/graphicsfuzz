@@ -45,7 +45,7 @@ These deliverables were:
  [Piglit](https://piglit.freedesktop.org/), and sends the results back to the server.
  - Add new shaders to GraphicsFuzz's fuzz test set - brand new shaders as well as derivatives of the
   original test set.
- - Apply GraphicsFuzz to the Mesa open-source graphics driver suite, specifically the nVIDIA
+ - Apply GraphicsFuzz to the Mesa open-source graphics driver suite, specifically the NVIDIA
  reverse-engineered driver [nouveau](https://nouveau.freedesktop.org/wiki/), the open-source driver
  that was easiest for me to run tests on.
  
@@ -252,10 +252,10 @@ New 310es shader: householder_lattice
 ### Apply GraphicsFuzz to the nouveau open-source graphics driver
 
 [nouveau](https://nouveau.freedesktop.org/wiki/) is a reverse-engineered open-source graphics driver
-for nVIDIA graphics hardware that is developed under the umbrella of the Mesa driver suite. Because
-of limitations on modern nVIDIA cards due to nVIDIA requiring signed firmware to access
+for NVIDIA graphics hardware that is developed under the umbrella of the Mesa driver suite. Because
+of limitations on modern NVIDIA cards due to NVIDIA requiring signed firmware to access
 key hardware on graphics cards past the [Maxwell](https://nouveau.freedesktop.org/wiki/CodeNames/#nv110familymaxwell)
-generation, nouveau receives little use in comparison to other Mesa drivers or nVIDIA's closed-source
+generation, nouveau receives little use in comparison to other Mesa drivers or NVIDIA's closed-source
 binaries, making it a prime target for fuzzing.
 
 The following are bugs reported to the Mesa bug tracker found via fuzzing.
