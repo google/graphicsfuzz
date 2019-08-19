@@ -34,20 +34,6 @@ LOG_COMMAND_FAILED_PREFIX = "Command failed: "
 LOG_COMMAND_TIMED_OUT_PREFIX = "Command timed out: "
 
 
-def convert_stdout_stderr(
-    result: Union[
-        subprocess.CalledProcessError,
-        subprocess.CompletedProcess,
-        subprocess.TimeoutExpired,
-    ]
-) -> None:
-
-    if result.stdout is not None:
-        result.stdout = result.stdout.decode(encoding="utf-8", errors="ignore")
-    if result.stderr is not None:
-        result.stderr = result.stderr.decode(encoding="utf-8", errors="ignore")
-
-
 def log_stdout_stderr_helper(stdout: str, stderr: str) -> None:
 
     log("STDOUT:")
