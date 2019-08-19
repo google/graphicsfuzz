@@ -92,6 +92,9 @@ public final class OpaqueExpressionGenerator {
     if (shadingLanguageVersion.supportedMixNonfloatBool()) {
       expressionIdentities.add(new IdentityMixBvec());
     }
+    if (shadingLanguageVersion.supportedNonSquareMatrices()) {
+      expressionIdentities.add(new IdentityCompositeConstructorExpansion());
+    }
     if (shadingLanguageVersion.supportedTranspose()) {
       expressionIdentities.add(new IdentityDoubleTranspose());
     }
@@ -1415,6 +1418,91 @@ public final class OpaqueExpressionGenerator {
     public boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext) {
       return super.preconditionHolds(expr, basicType, constContext)
           && expr instanceof VariableIdentifierExpr;
+    }
+  }
+
+  /**
+   * Identity transformation to insert a vector or matrix into a larger vector or matrix using a
+   * type constructor, then extract it back out again using another type constructor. When
+   * performed, transforms an expression e with type t -> identity(t(identity(m(identity(e), ..)))),
+   * where m is a type of equal or greater width than t.
+   * The rules for this smaller -> larger -> smaller transformation are as follows:
+   *     If the given type is a vector, the inner constructor type can be a vector of the same
+   *     element type with equal/greater width than the given type, or (provided that the given type
+   *     is a floating point genType) it can be a matrix with equal/greater column width than the
+   *     given type.
+   *     If the given type is a matrix, the inner constructor type can be a matrix with
+   *     equal/greater column/row width than the given type.
+   */
+  private class IdentityCompositeConstructorExpansion extends AbstractIdentityTransformation {
+    private IdentityCompositeConstructorExpansion() {
+      super(BasicType.allNumericTypes().stream().filter(
+          item -> !item.isScalar()).collect(Collectors.toList()), true);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      assert !type.isScalar();
+      // Our inner constructor type will be equal or larger in width than our given type. The goal
+      // of the next loop is to populate this list with all types that can fit our given type.
+      final List<BasicType> innerConstructorTypes = new ArrayList<BasicType>();
+      for (BasicType constructorType : BasicType.allBasicTypes().stream().filter(
+          item -> !item.isScalar()).collect(Collectors.toList())) {
+        if (type.isVector()) {
+          if (constructorType.getElementType() == type.getElementType()) {
+            if (constructorType.isVector()) {
+              if (type.getNumElements() <= constructorType.getNumElements()) {
+                innerConstructorTypes.add(constructorType);
+              }
+            } else {
+              assert constructorType.isMatrix();
+              // Matrix constructors are column-major, so to get the width of a column we need to
+              // check the number of rows.
+              if (type.getNumElements() <= constructorType.getNumRows()) {
+                innerConstructorTypes.add(constructorType);
+              }
+            }
+          }
+        } else {
+          assert type.isMatrix();
+          if (constructorType.isMatrix()) {
+            if (type.getNumRows() <= constructorType.getNumRows()
+                && type.getNumColumns() <= constructorType.getNumColumns()) {
+              innerConstructorTypes.add(constructorType);
+            }
+          }
+        }
+      }
+      assert !innerConstructorTypes.isEmpty();
+      assert innerConstructorTypes.contains(type);
+      final BasicType randomInnerConstructorType =
+          innerConstructorTypes.get(generator.nextInt(innerConstructorTypes.size()));
+      final List<Expr> innerConstructorArgs = new ArrayList<Expr>();
+      innerConstructorArgs.add(
+          applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer));
+      // GLSL won't fill in the blanks of the inner constructor unless a matrix is being constructed
+      // from another matrix.
+      if (!type.isMatrix()) {
+        final int numExcessConstructorArgs =
+            randomInnerConstructorType.getNumElements() - type.getNumElements();
+        for (int i = 0; i < numExcessConstructorArgs; i++) {
+          innerConstructorArgs.add(
+              makeOpaqueZeroOrOne(generator.nextBoolean(), type.getElementType(), constContext,
+                  depth, fuzzer));
+        }
+      }
+      return identityConstructor(
+          expr,
+          applyIdentityFunction(
+              new TypeConstructorExpr(
+                  type.toString(),
+                  applyIdentityFunction(
+                      new TypeConstructorExpr(
+                          randomInnerConstructorType.toString(),
+                          innerConstructorArgs),
+                      randomInnerConstructorType, constContext, depth, fuzzer)),
+              type, constContext, depth, fuzzer));
     }
   }
 
