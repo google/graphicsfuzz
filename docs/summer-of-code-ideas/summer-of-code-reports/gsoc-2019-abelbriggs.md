@@ -36,18 +36,18 @@ future.
 
 These deliverables were:
 
- - [Enhance GraphicsFuzz's shader generator by making it more aware of OpenGL Shading Language's built-in functions.](#graphicsfuzz-shader-generator-glsl-built-in-support)
- - [Enhance GraphicsFuzz's shader generator by adding additional ways to generate opaque values and new identity transformations.](#graphicsfuzz-shader-generator-identities-and-opaque-value-generation)
+ - [Enhance GraphicsFuzz's shader generator by making it more aware of OpenGL Shading Language's built-in functions.](#graphicsfuzz-shader-generator---glsl-built-in-support)
+ - [Enhance GraphicsFuzz's shader generator by adding additional ways to generate opaque values and new identity transformations.](#graphicsfuzz-shader-generator---identities-and-opaque-value-generation)
  - [Add a new 'worker' program](#write-worker-script-that-uses-piglit-test-framework-to-render-images)
  that takes GraphicsFuzz shader jobs from a server, renders the shader job via Mesa's open-source 
  OpenGL test framework Piglit, and sends the results back to the server.
- - [Add new shaders to GraphicsFuzz's fuzz test set](#add-new-shaders-to-graphicsfuzz-test-set) - brand new shaders as well as derivatives of the
+ - [Add new shaders to GraphicsFuzz's fuzz test set](#add-new-shaders-to-graphicsfuzzs-test-set) - brand new shaders as well as derivatives of the
   original test set.
- - [Apply GraphicsFuzz to the Mesa open-source graphics driver suite](#apply-graphicsfuzz-to-the-nouveau-graphics-driver),
+ - [Apply GraphicsFuzz to the Mesa open-source graphics driver suite](#apply-graphicsfuzz-to-the-nouveau-open-source-graphics-driver),
  specifically the NVIDIA reverse-engineered driver nouveau, the open-source driver that was easiest 
  for me to run tests on.
  
-### GraphicsFuzz shader generator GLSL built-in support
+### GraphicsFuzz shader generator - GLSL built-in support
 
 When GraphicsFuzz generates fuzzed/arbitrary expressions with the assumption that they won't be
 executed (e.g. in `(true ? x : y)`, y will never be executed), it is able to generate calls to GLSL
@@ -88,7 +88,7 @@ Ensure certain function prototypes can use non-uniform shader input variables
 [#570](https://github.com/google/graphicsfuzz/issues/570):
 Be less conservative about when FunctionCallExprTemplates yield expressions that have side effects
 
-### GraphicsFuzz shader generator identities and opaque value generation
+### GraphicsFuzz shader generator - identities and opaque value generation
 
 Among the various operations that GraphicsFuzz's generator can do to a shader when fuzzing, two of
 the most important are identity transformations and opaque value generation.
@@ -232,7 +232,7 @@ that were left unfixed due to time or knowledge constraints.
 [#597](https://github.com/google/graphicsfuzz/issues/597):
 Support compute shaders in graphicsfuzz_piglit_converter
 
-### Add new shaders to GraphicsFuzz test set
+### Add new shaders to GraphicsFuzz's test set
 
 With the exception of compute shaders, GraphicsFuzz had a fairly limited set of five simple test
 shaders for mutation. These shaders sufficed for finding simple bugs, but were limited to GLES 1.00
@@ -247,7 +247,7 @@ Add new versions of GraphicsFuzz shaders that use Integer Functions
 [#647](https://github.com/google/graphicsfuzz/pull/647):
 New 310es shader: householder_lattice
 
-### Apply GraphicsFuzz to the nouveau graphics driver
+### Apply GraphicsFuzz to the nouveau open-source graphics driver
 
 [nouveau](https://nouveau.freedesktop.org/wiki/) is a reverse-engineered open-source graphics driver
 for NVIDIA graphics hardware that is developed under the umbrella of the Mesa driver suite. Because
