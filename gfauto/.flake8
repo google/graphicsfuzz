@@ -15,7 +15,7 @@
 # This is not a TOML file; no quoting.
 
 [flake8]
-filename = */gfauto/*.py
+filename = */gfauto/*.py, */gfautotests/*.py
 exclude = *_pb2.py*
 max-line-length = 88
 ignore =
@@ -61,5 +61,5 @@ ignore =
 inline-quotes = "
 
 # For flake8-spellcheck. Default is whitelist.txt but using whitelist.dic means
-# we can add the file to PyCharm/IntelliJ (albeit, globally, not per project).
+# we can add the file to PyCharm/IntelliJ.
 whitelist=whitelist.dic

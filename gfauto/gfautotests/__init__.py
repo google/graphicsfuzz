@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright 2019 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,19 +13,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-[build-system]
-requires = ['wheel', 'setuptools']
-build-backend = 'setuptools.build_meta'
-
-[tool.black]
-line-length = 88
-target-version = ['py36', 'py37', 'py38']
-
-# Black currently matches against full paths, and can be quite slow at
-# filtering files. Thus, we just use the following filters and always
-# specify the "gfauto" directory when running.
-# https://github.com/python/black/issues/712
-
-include = '.*[.]py$'
-exclude = '__pycache__|_pb2[.]py'

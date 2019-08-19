@@ -22,7 +22,8 @@ if [ -z ${VIRTUAL_ENV+x} ]; then
   source .venv/bin/activate
 fi
 
-mypy --strict gfauto
-pylint gfauto
+mypy --strict gfauto gfautotests
+pylint gfauto gfautotests
 # Flake checks formatting via black.
 flake8 .
+pytest gfautotests
