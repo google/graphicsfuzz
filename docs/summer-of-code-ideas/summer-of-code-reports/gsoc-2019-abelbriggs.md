@@ -164,6 +164,9 @@ GraphicsFuzz.
 [#552](https://github.com/google/graphicsfuzz/issues/552):
 Rewrite composite identity tries to index into shader output variables in GLES
 
+[#637](https://github.com/google/graphicsfuzz/issues/637):
+Construct identity matrix by multiplying rectangular zero-one matrices
+
 [#653](https://github.com/google/graphicsfuzz/issues/653):
 Be less conservative with matrix functions in constexpr contexts
 
