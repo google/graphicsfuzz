@@ -192,6 +192,9 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches;
 
     artifact_util.recipes_write_built_in()
 
+    # Log a warning if there is no tool on the PATH for printing stack traces.
+    util.prepend_catchsegv_if_available([], log_warning=True)
+
     # TODO: make GraphicsFuzz find donors recursively.
     references = sorted(donors_dir.rglob("*.json"))
 

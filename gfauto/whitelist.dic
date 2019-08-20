@@ -172,3 +172,5 @@ vec2
 vec4
 framebuffer
 gfautotests
+cdb
+Dbg

@@ -95,7 +95,7 @@ def run_amber_helper(
             cmd.append("-B")
             cmd.append("0")
 
-    util.prepend_catchsegv_if_available(cmd)
+    cmd = util.prepend_catchsegv_if_available(cmd)
 
     status = "UNEXPECTED_ERROR"
 
