@@ -255,14 +255,14 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
             test_dir_reduction_output=test_dir,
             test_dir_to_reduce=test_dir,
             preserve_semantics=True,
-            reduction_name="part_1_preserve_semantics",
+            reduction_name="1",
         )
 
         part_2_reduced_test = run_reduction(
             test_dir_reduction_output=test_dir,
             test_dir_to_reduce=part_1_reduced_test,
             preserve_semantics=False,
-            reduction_name="part_2_change_semantics",
+            reduction_name="2",
         )
 
         device_name = test.device.name
