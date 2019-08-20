@@ -18,7 +18,7 @@ Alastair Donaldson, Paul Thomson
 
 
 ## Deliverables
-My project idea focused on enhancing a shading language support in GraphicsFuzz. To accomplish the goal, I have enhanced the tool in various aspects which could be elaborated as follow:
+My project idea focused on enhancing a shading language support in GraphicsFuzz. To accomplish the goal, I have improved the tool in various aspects which could be elaborated as follow:
 
 - [Add support for GLSL Built-In Functions](#add-support-for-glsl-built-in-functions)
 - [Add new ways to generate an opaque expression](#add-new-ways-to-generate-an-opaque-expression)
