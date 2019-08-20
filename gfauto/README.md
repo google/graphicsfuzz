@@ -112,7 +112,13 @@ You can execute scripts in this repository by opening a Terminal in PyCharm.
 
 ## Terminal
 
-The `Terminal` tab in PyCharm is useful and will use the project's Python virtual environment. In any other terminal, use `source .venv/bin/activate`. You can alternatively execute the `./dev_shell.sh` script, but this is fairly slow as it checks and reinstalls all dependencies
+The `Terminal` tab in PyCharm is useful and will use the project's Python virtual environment. In any other terminal, use:
+
+* `source .venv/bin/activate` (on Linux)
+* `source .venv/Scripts/activate` (on Windows with the Git Bash shell)
+* `.venv/Scripts/activate.bat` (on Windows with cmd)
+
+You can alternatively execute the `./dev_shell.sh` script, but this is fairly slow as it checks and reinstalls all dependencies
 
 ## Fuzzing
 
