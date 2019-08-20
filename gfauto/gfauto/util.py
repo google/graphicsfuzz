@@ -98,11 +98,35 @@ def tool_on_path(tool: str) -> pathlib.Path:  # noqa VNE002
     return pathlib.Path(result)
 
 
-def prepend_catchsegv_if_available(cmd: List[str]) -> List[str]:
+def prepend_catchsegv_if_available(
+    cmd: List[str], log_warning: bool = False
+) -> List[str]:
     try:
-        cmd.insert(0, str(tool_on_path("catchsegv")))
+        return [str(tool_on_path("catchsegv"))] + cmd
     except ToolNotOnPathError:
         pass
+
+    try:
+        # cdb is the command line version of WinDbg.
+        return [
+            str(tool_on_path("cdb")),
+            "-g",
+            "-G",
+            "-lines",
+            "-nosqm",
+            "-o",
+            "-x",
+            "-c",
+            "kp;q",
+        ] + cmd
+    except ToolNotOnPathError:
+        pass
+
+    if log_warning:
+        gflogging.log(
+            "WARNING: Could not find catchsegv (Linux) or cdb (Windows) on your PATH; you will not be able to get "
+            "stack traces from tools or the host driver."
+        )
 
     return cmd
 

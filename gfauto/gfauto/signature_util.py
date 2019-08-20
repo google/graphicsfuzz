@@ -58,6 +58,10 @@ ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE = re.compile(
     r")"
 )
 
+PATTERN_CDB_CALL_SITE = re.compile(
+    fr"\n{HEX_LIKE}+`{HEX_LIKE}+ {HEX_LIKE}+`{HEX_LIKE}+ (.*)"
+)
+
 PATTERN_ANDROID_BACKTRACE_CATCHALL = re.compile(r"\n.*#00 pc " + HEX_LIKE + r"+ (.*)")
 
 # E.g. ERROR: temp/.../variant/shader.frag:549: 'variable indexing fragment shader output array' : not supported with this profile: es
@@ -108,10 +112,11 @@ def remove_hex_like(string: str) -> str:
     return temp
 
 
-def clean_up(string: str) -> str:
+def clean_up(string: str, remove_numbers: bool = True) -> str:
     temp: str = string
     # Remove numbers.
-    temp = re.sub(r"\d+", "", temp)
+    if remove_numbers:
+        temp = re.sub(r"\d+", "", temp)
     # Replace spaces with _.
     temp = re.sub(r" ", "_", temp)
     # Remove non-word, non-_ characters.
@@ -176,6 +181,22 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
         group = basic_match(PATTERN_AMBER_ERROR, log_contents)
         if group:
             return group
+
+    # Cdb stack trace
+    cdb_call_site = re.search(
+        PATTERN_CDB_CALL_SITE, log_contents
+    )  # type: Optional[Match[str]]
+    if cdb_call_site:
+        site = cdb_call_site.group(1)
+        if "!" in site:
+            # We probably have symbols, so remove the address and everything after e.g. "+0x111 [file/path @ 123]"
+            site = re.sub(rf"\+{HEX_LIKE}+.*", "", site)
+            site = clean_up(site)
+        else:
+            # We don't have symbols so we may as well keep offsets around; don't remove numbers.
+            site = clean_up(site, remove_numbers=False)
+        site = reduce_length(site)
+        return site
 
     # Android stack traces.
     if "#00 pc" in log_contents:
