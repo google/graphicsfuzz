@@ -45,7 +45,7 @@ from gfauto.device_pb2 import Device
 from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 from gfauto.test_pb2 import Test, TestGlsl
-from gfauto.util import check
+from gfauto.util import check, tool_on_path
 
 
 class ReductionFailedError(Exception):
@@ -506,7 +506,7 @@ def run_glsl_reduce(
 ) -> Path:
 
     cmd = [
-        "glsl-reduce",
+        str(tool_on_path("glsl-reduce")),
         str(input_shader_job),
         "--output",
         str(output_dir),
