@@ -22,5 +22,5 @@ if [ -z ${VIRTUAL_ENV+x} ]; then
   source .venv/bin/activate
 fi
 
-isort -rc gfauto
-black gfauto
+isort -rc gfauto gfautotests
+black gfauto gfautotests

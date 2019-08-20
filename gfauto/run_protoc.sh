@@ -18,6 +18,10 @@ set -x
 set -e
 set -u
 
+if [ -z ${VIRTUAL_ENV+x} ]; then
+  source .venv/bin/activate
+fi
+
 python -m grpc.tools.protoc --python_out=. --proto_path=. --mypy_out=. gfauto/*.proto
 
 # protoc gfauto/artifact.proto gfauto/recipe.proto --python_out=. --plugin=protoc-gen-mypy=github/mypy-protobuf/python/protoc-gen-mypy --mypy_out=. --proto_path=.

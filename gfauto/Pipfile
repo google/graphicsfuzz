@@ -43,6 +43,9 @@ grpcio-tools = "*"
 # Type checking.
 mypy = "*"
 
+# Testing.
+pytest = "*"
+
 # PyLint linter.
 pylint = "*"
 

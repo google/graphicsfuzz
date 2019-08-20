@@ -20,6 +20,9 @@ Used to compute the "signature" of a bug, typically using the error message or t
 stack trace.
 """
 
+# Disable spell-checking for this file.
+# flake8: noqa: SC100
+
 import re
 from pathlib import Path
 from typing import Match, Optional, Pattern
@@ -59,7 +62,8 @@ PATTERN_ANDROID_BACKTRACE_CATCHALL = re.compile(r"\n.*#00 pc " + HEX_LIKE + r"+ 
 
 # E.g. ERROR: temp/.../variant/shader.frag:549: 'variable indexing fragment shader output array' : not supported with this profile: es
 #                                                variable indexing fragment shader output array   <-- group 1
-PATTERN_GLSLANG_ERROR = re.compile(r"ERROR: .*?: '(.*?)'")
+# E.g. ERROR: reports/.../part_1_preserve_semantics/reduction_work/variant/shader_reduced_0173/0_glsl/shader_reduced_0173.frag:456: '=' :  cannot convert from ' const 3-component vector of bool' to ' temp bool'
+PATTERN_GLSLANG_ERROR = re.compile(r"ERROR: .*?:\d+: (.*)")
 
 
 # E.g.

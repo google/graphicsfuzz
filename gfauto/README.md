@@ -33,7 +33,7 @@ Install and configure plugins:
 * Protobuf Support
 * File Watchers (may already be installed)
   * The watcher task should already be under version control.
-* Mypy: the built-in PyCharm type checking uses Mypy behinds the scenes, but this plugin enhances it by using the latest version and allowing the use of stricter settings, matching the settings used by the `./check_all.sh` script.
+* Mypy: the built-in PyCharm type checking uses Mypy behind-the-scenes, but this plugin enhances it by using the latest version and allowing the use of stricter settings, matching the settings used by the `./check_all.sh` script.
 
 Add `whitelist.dic` as a custom dictionary (search for "Spelling" in Actions). Do not add words via PyCharm's "Quick Fixes" feature, as the word will only be added to your personal dictionary. Instead, manually add the word to `whitelist.dic`.
 
