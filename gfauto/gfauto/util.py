@@ -25,7 +25,6 @@ import os
 import pathlib
 import platform
 import shutil
-import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, BinaryIO, Iterator, List, TextIO, cast
@@ -187,20 +186,23 @@ def make_directory_symlink(new_symlink_file_path: Path, existing_dir: Path) -> P
     gflogging.log(f"symlink: from {str(new_symlink_file_path)} to {str(existing_dir)}")
     check(existing_dir.is_dir(), AssertionError(f"Not a directory: {existing_dir}"))
     file_mkdirs_parent(new_symlink_file_path)
+
+    # symlink_to takes a path relative to the location of the new file (or an absolute path, but we avoid this).
     symlink_contents = os.path.relpath(
         str(existing_dir), start=str(new_symlink_file_path.parent)
     )
     try:
         new_symlink_file_path.symlink_to(symlink_contents, target_is_directory=True)
     except OSError:
-        if sys.platform != "windows":
+        if get_platform() != "Windows":
             raise
         # Retry using junctions under Windows.
         try:
             # noinspection PyUnresolvedReferences
             import _winapi  # pylint: disable=import-error;
 
-            _winapi.CreateJunction(symlink_contents, str(new_symlink_file_path))
+            # Unlike symlink_to, CreateJunction takes a path relative to the current directory.
+            _winapi.CreateJunction(str(existing_dir), str(new_symlink_file_path))
             return new_symlink_file_path
         except ModuleNotFoundError:
             pass
