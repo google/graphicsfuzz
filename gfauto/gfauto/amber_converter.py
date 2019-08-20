@@ -562,9 +562,9 @@ def graphics_shader_job_amber_test_to_amber_script(
 
     # Add fuzzy compare of framebuffers if there's more than one pipeline
 
-    for pipeline_index in range(len(jobs) - 1):
+    for pipeline_index in range(1, len(jobs)):
         prefix0 = jobs[0].name_prefix
-        prefix1 = jobs[pipeline_index + 1].name_prefix
+        prefix1 = jobs[pipeline_index].name_prefix
         result += f"EXPECT {prefix0}_framebuffer RMSE_BUFFER {prefix1}_framebuffer TOLERANCE 7"
 
     if amberfy_settings.extra_commands:
