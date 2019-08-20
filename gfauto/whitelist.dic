@@ -171,6 +171,7 @@ unindexed
 vec2
 vec4
 framebuffer
+framebuffers
 gfautotests
 cdb
 Dbg

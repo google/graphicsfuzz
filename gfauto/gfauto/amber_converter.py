@@ -513,51 +513,59 @@ def get_amber_script_shader_def(shader: Shader, name: str) -> str:
 def graphics_shader_job_amber_test_to_amber_script(
     shader_job_amber_test: ShaderJobBasedAmberTest, amberfy_settings: AmberfySettings
 ) -> str:
-    # TODO: handle reference, if present.
-
     # Guaranteed, and needed for type checker.
     assert isinstance(shader_job_amber_test.variant, GraphicsShaderJob)  # noqa
 
     result = get_amber_script_header(amberfy_settings)
 
-    variant = shader_job_amber_test.variant
+    jobs = [shader_job_amber_test.variant]
 
-    variant_vertex_shader_name = f"{variant.name_prefix}_vertex_shader"
-    variant_fragment_shader_name = f"{variant.name_prefix}_fragment_shader"
+    if shader_job_amber_test.reference:
+        assert isinstance(shader_job_amber_test.reference, GraphicsShaderJob)  # noqa
+        jobs.insert(0, shader_job_amber_test.reference)
 
-    # Define shaders.
+    for job in jobs:
+        prefix = job.name_prefix
 
-    result += get_amber_script_shader_def(
-        variant.vertex_shader, variant_vertex_shader_name
-    )
+        vertex_shader_name = f"{prefix}_vertex_shader"
+        fragment_shader_name = f"{prefix}_fragment_shader"
 
-    result += get_amber_script_shader_def(
-        variant.fragment_shader, variant_fragment_shader_name
-    )
+        # Define shaders.
 
-    # Define uniforms for variant shader job.
+        result += get_amber_script_shader_def(job.vertex_shader, vertex_shader_name)
 
-    result += "\n"
-    result += variant.uniform_definitions
+        result += get_amber_script_shader_def(job.fragment_shader, fragment_shader_name)
 
-    # Currently, this buffer must be called "framebuffer" to be able to dump it from Amber.
-    result += "\nBUFFER framebuffer FORMAT B8G8R8A8_UNORM\n"
+        # Define uniforms for shader job.
 
-    # Create a pipeline that uses the variant shaders and writes the output to "framebuffer".
+        result += "\n"
+        result += job.uniform_definitions
 
-    result += "\nPIPELINE graphics gfz_pipeline\n"
-    result += f"  ATTACH {variant_vertex_shader_name}\n"
-    result += f"  ATTACH {variant_fragment_shader_name}\n"
-    result += "  FRAMEBUFFER_SIZE 256 256\n"
-    result += "  BIND BUFFER framebuffer AS color LOCATION 0\n"
-    result += variant.uniform_bindings
-    result += "END\n"
-    result += "CLEAR_COLOR gfz_pipeline 0 0 0 255\n"
+        result += f"\nBUFFER {prefix}_framebuffer FORMAT B8G8R8A8_UNORM\n"
 
-    # Run the pipeline.
+        # Create a pipeline.
 
-    result += "\nCLEAR gfz_pipeline\n"
-    result += "RUN gfz_pipeline DRAW_RECT POS 0 0 SIZE 256 256\n"
+        result += f"\nPIPELINE graphics {prefix}_pipeline\n"
+        result += f"  ATTACH {vertex_shader_name}\n"
+        result += f"  ATTACH {fragment_shader_name}\n"
+        result += "  FRAMEBUFFER_SIZE 256 256\n"
+        result += f"  BIND BUFFER {prefix}_framebuffer AS color LOCATION 0\n"
+        result += job.uniform_bindings
+        result += "END\n"
+        result += f"CLEAR_COLOR {prefix}_pipeline 0 0 0 255\n"
+
+        # Run the pipeline.
+
+        result += f"\nCLEAR {prefix}_pipeline\n"
+        result += f"RUN {prefix}_pipeline DRAW_RECT POS 0 0 SIZE 256 256\n"
+        result += "\n"
+
+    # Add fuzzy compare of framebuffers if there's more than one pipeline
+
+    for pipeline_index in range(1, len(jobs)):
+        prefix_0 = jobs[0].name_prefix
+        prefix_1 = jobs[pipeline_index].name_prefix
+        result += f"EXPECT {prefix_0}_framebuffer RMSE_BUFFER {prefix_1}_framebuffer TOLERANCE 7"
 
     if amberfy_settings.extra_commands:
         result += amberfy_settings.extra_commands
