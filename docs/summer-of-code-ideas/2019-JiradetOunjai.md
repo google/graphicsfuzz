@@ -32,15 +32,15 @@ My project idea focused on enhancing a shading language support in GraphicsFuzz.
 ### Add support for GLSL Built-In Functions 
 GLSL built-in functions are functions that available for use in a shader. GraphicsFuzz donates these built-ins into the unreachable statements so that they will not be actually executed. By providing a support for the GLSL built-ins, we teach GraphicsFuzz how to call functions appropriately by ensuring that the required function arguments are matched with the GLSL specifications. Moreover, we have to check that the built-in function being injected into a shader is compatible with the given shading language version. The following PRs have provided a support for the GLSL built-in functions.
 
-[#554](https://github.com/google/graphicsfuzz/pull/554): Add support for angle and trigonometric built-in functions
+[#554](https://github.com/google/graphicsfuzz/pull/554): Add support for GLSL built-in functions: Angle and Trigonometric Functions
 
-[#555](https://github.com/google/graphicsfuzz/pull/555): Add support for built-in Matrix functions 
+[#555](https://github.com/google/graphicsfuzz/pull/555): Add support for GLSL built-in functions: Matrix Functions 
 
-[#581](https://github.com/google/graphicsfuzz/pull/581): Refactor geometric builtins 
+[#581](https://github.com/google/graphicsfuzz/pull/581): Add support for GLSL built-in functions: Geometric Functions 
 
-[#585](https://github.com/google/graphicsfuzz/pull/585): Refactor floating-point pack and unpack built-ins
+[#585](https://github.com/google/graphicsfuzz/pull/585): Add support for GLSL built-in functions: Floating-Point Pack and Unpack Functions
 
-[#592](https://github.com/google/graphicsfuzz/pull/592): Complete common builtins
+[#592](https://github.com/google/graphicsfuzz/pull/592): Add support for GLSL built-in functions: Common Functions
 
 
 ### Add new ways to generate an opaque expression
@@ -74,13 +74,13 @@ In GraphicsFuzz, sample shaders play an important role in exposing bugs in shade
 Having said that, we have only few sample shaders that come with GraphicsFuzz by default, the following PRs focus on adding a brand new set of 310 es sample shaders implementing different sorting and searching algorithms.
 
 
-[#602](https://github.com/google/graphicsfuzz/pull/602): WIP: new sample reference shaders
+[#602](https://github.com/google/graphicsfuzz/pull/602): New 310es sample shaders - v1 
 
-[#643](https://github.com/google/graphicsfuzz/pull/643): WIP: new 310es reference shaders
+[#643](https://github.com/google/graphicsfuzz/pull/643): New 310es sample shaders - v2
 
-[#660](https://github.com/google/graphicsfuzz/pull/660): WIP: new 310es shader 
+[#660](https://github.com/google/graphicsfuzz/pull/660): New 310es sample shaders - quicksort 
 
-[#676](https://github.com/google/graphicsfuzz/pull/676): New 310es shader - binary search tree
+[#676](https://github.com/google/graphicsfuzz/pull/676): New 310es sample shaders - binary search tree
 
 
 ### Enhancement for Reducer 
@@ -126,9 +126,9 @@ GraphicsFuzz has now equipped with a new tool called Known Value Shader Generato
 
 The following PRs involve implementing a new shader generator tool.
 
-[#625](https://github.com/google/graphicsfuzz/pull/625): WIP: add skeleton classes for the new primitive mutation
+[#625](https://github.com/google/graphicsfuzz/pull/625): Add a new tool: Known Value Shader Generator
 
-[#677](https://github.com/google/graphicsfuzz/pull/677): Expression Generator: Add global initializer method
+[#677](https://github.com/google/graphicsfuzz/pull/677): Expression Generator: add global initializer method
 
 [#681](https://github.com/google/graphicsfuzz/pull/681): Expression Generator: find numbers for addition based on known facts
 
