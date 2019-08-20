@@ -157,7 +157,7 @@ def main() -> None:
             gflogging.pop_stream_for_logging()
 
 
-def main_helper(  # pylint: disable=too-many-locals, too-many-branches;
+def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many-statements;
     settings_path: Path, iteration_seed_override: Optional[int]
 ) -> None:
 
@@ -234,10 +234,17 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches;
         log(f"Iteration seed: {iteration_seed}")
         random.seed(iteration_seed)
 
-        staging_name = get_random_name()
+        staging_name = get_random_name()[:8]
         staging_dir = temp_dir / staging_name
 
-        util.mkdirs_p(staging_dir)
+        try:
+            util.mkdir_p_new(staging_dir)
+        except FileExistsError:
+            if iteration_seed_override:
+                raise
+            log(f"Staging directory already exists: {str(staging_dir)}")
+            log(f"Starting new iteration.")
+            continue
 
         # Pseudocode:
         #  - Create test_dir(s) in staging directory.

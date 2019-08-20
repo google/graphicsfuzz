@@ -175,3 +175,6 @@ framebuffers
 gfautotests
 cdb
 Dbg
+mklink
+fullmatch
+winapi
