@@ -41,6 +41,7 @@ import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.util.OpenGlConstants;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,10 +59,6 @@ public class Typer extends ScopeTrackingVisitor {
   private final Map<String, Set<FunctionPrototype>> userDefinedFunctions;
 
   private final Map<StructNameType, StructDefinitionType> structDeclarationMap;
-
-  public Map<String, Set<FunctionPrototype>> getUserDefinedFunctions() {
-    return userDefinedFunctions;
-  }
 
   public Typer(TranslationUnit tu) {
     this.tu = tu;
@@ -104,27 +101,32 @@ public class Typer extends ScopeTrackingVisitor {
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
     super.visitFunctionCallExpr(functionCallExpr);
 
-    List<FunctionPrototype> candidateBuiltins =
+    // First, see if there is a builtin with a matching prototype.
+    final Optional<Type> maybeMatchingBuiltinFunctionReturn =
+        lookForMatchingFunction(functionCallExpr,
         TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), tu.getShaderKind())
-        .get(functionCallExpr.getCallee());
-    if (candidateBuiltins != null) {
-      for (FunctionPrototype prototype : candidateBuiltins) {
+            .get(functionCallExpr.getCallee()));
+    if (maybeMatchingBuiltinFunctionReturn.isPresent()) {
+      types.put(functionCallExpr, maybeMatchingBuiltinFunctionReturn.get());
+      return;
+    }
+
+    // If there was no relevant builtin, see whether there is a user-defined type.
+    lookForMatchingFunction(functionCallExpr,
+        userDefinedFunctions.get(functionCallExpr.getCallee()))
+        .ifPresent(type -> types.put(functionCallExpr, type));
+  }
+
+  private Optional<Type> lookForMatchingFunction(FunctionCallExpr functionCallExpr,
+                                                 Collection<FunctionPrototype> candidateFunctions) {
+    if (candidateFunctions != null) {
+      for (FunctionPrototype prototype : candidateFunctions) {
         if (prototypeMatches(prototype, functionCallExpr)) {
-          types.put(functionCallExpr, prototype.getReturnType());
+          return Optional.of(prototype.getReturnType());
         }
       }
     }
-
-    Set<FunctionPrototype> candidateUserDefined =
-        userDefinedFunctions.get(functionCallExpr.getCallee());
-    if (candidateUserDefined != null) {
-      for (FunctionPrototype prototype : candidateUserDefined) {
-        if (prototypeMatches(prototype, functionCallExpr)) {
-          types.put(functionCallExpr, prototype.getReturnType());
-        }
-      }
-    }
-
+    return Optional.empty();
   }
 
   /**
@@ -339,7 +341,9 @@ public class Typer extends ScopeTrackingVisitor {
       case LT:
       case LXOR:
       case NE:
-        types.put(binaryExpr, resolveBooleanResultType(lhsType, rhsType));
+        // The above all yield 'bool', even if (as is allowed in the case of '==' and '!=' they are
+        // applied to vector types.
+        types.put(binaryExpr, BasicType.BOOL);
         return;
       case COMMA:
         // The type of "e1, e2" is the type of "e2".
@@ -430,26 +434,6 @@ public class Typer extends ScopeTrackingVisitor {
           memberLookupExpr.getMember().length());
       types.put(memberLookupExpr, v);
     }
-  }
-
-  private Type resolveBooleanResultType(Type lhsType, Type rhsType) {
-    return maybeComputeBooleanVectorType(lhsType)
-        .orElse(maybeComputeBooleanVectorType(rhsType)
-            .orElse(BasicType.BOOL));
-  }
-
-  private Optional<Type> maybeComputeBooleanVectorType(Type lhsType) {
-    if (lhsType instanceof BasicType) {
-      final int numElements = ((BasicType) lhsType).getNumElements();
-      if (1 < numElements && numElements <= 4) {
-        return Optional.of(BasicType.makeVectorType(BasicType.BOOL, numElements));
-      }
-    }
-    return Optional.empty();
-  }
-
-  public Set<Expr> getTypedExpressions() {
-    return Collections.unmodifiableSet(types.keySet());
   }
 
   public Type lookupType(Expr expr) {
