@@ -521,7 +521,8 @@ def graphics_shader_job_amber_test_to_amber_script(
     jobs = [shader_job_amber_test.variant]
 
     if shader_job_amber_test.reference:
-        jobs.append(shader_job_amber_test.reference)
+        assert isinstance(shader_job_amber_test.reference, GraphicsShaderJob)  # noqa
+        jobs.insert(0, shader_job_amber_test.reference)
 
     for job in jobs:
         prefix = job.name_prefix
@@ -531,15 +532,11 @@ def graphics_shader_job_amber_test_to_amber_script(
 
         # Define shaders.
 
-        result += get_amber_script_shader_def(
-            job.vertex_shader, vertex_shader_name
-        )
+        result += get_amber_script_shader_def(job.vertex_shader, vertex_shader_name)
 
-        result += get_amber_script_shader_def(
-            job.fragment_shader, fragment_shader_name
-        )
+        result += get_amber_script_shader_def(job.fragment_shader, fragment_shader_name)
 
-        # Define uniforms for variant shader job.
+        # Define uniforms for shader job.
 
         result += "\n"
         result += job.uniform_definitions
