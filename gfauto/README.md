@@ -13,6 +13,8 @@ GraphicsFuzz auto (this project) provides scripts for running these tools with m
 
 > Optional: if you have just done `git pull` to get a more recent version of GraphicsFuzz auto, consider deleting `.venv/` to start from a fresh virtual environment. This is rarely needed.
 
+> On Windows, you can use the Git Bash shell, or adapt the commands (including those inside `dev_shell.sh.template`) to the Windows command prompt.
+
 Execute `./dev_shell.sh.template`. If the default settings don't work, make a copy of the file called `dev_shell.sh` and modify according to the comments before executing. `pip` must be installed for the version of Python you wish to use.
 
 The script generates and activates a Python virtual environment (located at `.venv/`) with all dependencies installed.
