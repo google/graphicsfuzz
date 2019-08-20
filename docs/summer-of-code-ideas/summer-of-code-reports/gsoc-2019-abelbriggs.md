@@ -25,6 +25,9 @@ proper software collaboration and in working on large/domain-specific codebases 
 submitting PRs to GraphicsFuzz - the code reviews and mentoring that I was given during the program 
 were instrumental in making me a better and more confident engineer.
 
+Thanks to Ally, Hugues and Paul for their continued mentorship and support over
+the 2019 summer.
+
 With that said...
 
 ## Deliverables
@@ -155,6 +158,9 @@ Add identity to multiply rectangular matrix/vector by identity matrix
 [#695](https://github.com/google/graphicsfuzz/pull/695):
 Fix opaque dot function inverted isZero indices
 
+[#704](https://github.com/google/graphicsfuzz/pull/704):
+Add identity to put data in a larger type and pull it back out
+
 #### Leftovers
 
 The following issues are nits or minor problems related to opaque values/identity transformations
@@ -250,6 +256,17 @@ Add new versions of GraphicsFuzz shaders that use Integer Functions
 [#647](https://github.com/google/graphicsfuzz/pull/647):
 New 310es shader: householder_lattice
 
+| householder_lattice.frag |
+| ------------------------ |
+| ![householder_lattice](https://i.imgur.com/ih3ORPH.png) |
+
+[#698](https://github.com/google/graphicsfuzz/pull/698):
+New 310es shader - Muller's method
+
+| muller.frag |
+| ----------- |
+| ![muller](https://i.imgur.com/recmnjw.png) |
+
 ### Apply GraphicsFuzz to the nouveau open-source graphics driver
 
 [nouveau](https://nouveau.freedesktop.org/wiki/) is a reverse-engineered open-source graphics driver
@@ -264,12 +281,16 @@ The following are bugs reported to the Mesa bug tracker found via fuzzing.
 [Bug 110953](https://bugs.freedesktop.org/show_bug.cgi?id=110953):
 Adding a redundant single-iteration do-while loop causes different image to be rendered
 
-(images and description here eventually)
+| Reference | Variant |
+| --------- | ------- |
+| ![reference](https://i.imgur.com/PBY0tCP.png) | ![variant](https://i.imgur.com/BHbVc3x.png)
 
 [Bug 111006](https://bugs.freedesktop.org/show_bug.cgi?id=111006):
 Adding a uniform-dependent if-statement in shader renders a different image
 
-(images and description here eventually)
+| Reference | Variant |
+| --------- | ------- |
+| ![reference](https://i.imgur.com/0Q8dSRZ.png) | ![variant](https://i.imgur.com/uaZCU8t.png)
 
 [Bug 111167](https://bugs.freedesktop.org/show_bug.cgi?id=111167):
 Dividing zero by a uniform in loop header causes segfault in nv50_ir::NVC0LegalizeSSA::handleDIV
