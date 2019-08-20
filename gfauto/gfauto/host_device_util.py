@@ -89,6 +89,8 @@ def run_amber_helper(
         if dump_image:
             cmd.append("-i")
             cmd.append(str(image_file))
+            cmd.append("-I")
+            cmd.append("variant_framebuffer")
         if dump_buffer:
             cmd.append("-b")
             cmd.append(str(buffer_file))
