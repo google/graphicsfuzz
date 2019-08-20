@@ -25,6 +25,7 @@ import os
 import pathlib
 import platform
 import shutil
+import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, BinaryIO, Iterator, List, TextIO, cast
@@ -74,6 +75,19 @@ def file_write_text(file: pathlib.Path, text: str) -> int:  # noqa VNE002
     file_mkdirs_parent(file)
     with file_open_text(file, "w") as f:
         return f.write(text)
+
+
+def mkdir_p_new(path: Path) -> Path:  # noqa VNE002
+    """
+    Creates a directory (and all parents, if needed), but fails if the directory already exists.
+
+    :param path: the path to create
+    :return: the created path
+    """
+
+    file_mkdirs_parent(path)
+    path.mkdir()
+    return path
 
 
 def mkdirs_p(path: pathlib.Path) -> Path:  # noqa VNE002
@@ -170,12 +184,28 @@ def move_dir(
 
 
 def make_directory_symlink(new_symlink_file_path: Path, existing_dir: Path) -> Path:
+    gflogging.log(f"symlink: from {str(new_symlink_file_path)} to {str(existing_dir)}")
     check(existing_dir.is_dir(), AssertionError(f"Not a directory: {existing_dir}"))
     file_mkdirs_parent(new_symlink_file_path)
     symlink_contents = os.path.relpath(
         str(existing_dir), start=str(new_symlink_file_path.parent)
     )
-    new_symlink_file_path.symlink_to(symlink_contents, target_is_directory=True)
+    try:
+        new_symlink_file_path.symlink_to(symlink_contents, target_is_directory=True)
+    except OSError:
+        if sys.platform != "windows":
+            raise
+        # Retry using junctions under Windows.
+        try:
+            # noinspection PyUnresolvedReferences
+            import _winapi  # pylint: disable=import-error;
+
+            _winapi.CreateJunction(symlink_contents, str(new_symlink_file_path))
+            return new_symlink_file_path
+        except ModuleNotFoundError:
+            pass
+        raise
+
     return new_symlink_file_path
 
 
