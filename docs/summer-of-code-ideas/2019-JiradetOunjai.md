@@ -18,7 +18,7 @@ Alastair Donaldson, Paul Thomson
 
 
 ## Deliverables
-My project idea focused on providing a new shading language support in GraphicsFuzz. To accomplish the goal, I have enhanced the tool in various aspects which could be elaborated as follow:
+My project idea focused on enhancing a shading language support in GraphicsFuzz. To accomplish the goal, I have enhanced the tool in various aspects which could be elaborated as follow:
 
 - [Add support for GLSL Built-In Functions](#add-support-for-glsl-built-in-functions)
 - [Add new ways to generate an opaque expression](#add-new-ways-to-generate-an-opaque-expression)
@@ -44,7 +44,7 @@ GLSL built-in functions are functions that available for use in a shader. Graphi
 
 
 ### Add new ways to generate an opaque expression
-Fuzzing a shader in GraphicsFuzz involves applying a number of transformations that might inject code fragment to the original shader aiming to generate a variant shader that is much larger than the original. Opaque expression, statment uninterpreted and thus non optimizable by compilers, is one of the various expressions that the generator employs when injecting code fragment. In GraphicsFuzz, we have plenty of opaque expressions representing 0 and 1 however by introducing new opaque values we provide a new expression that is likely to trigger a new bug. The following PRs involve adding new opaque expressions to the GraphicsFuzz's generator.
+Fuzzing a shader in GraphicsFuzz involves applying a number of transformations that might inject code fragment to the original shader aiming to generate a variant shader that is much larger than the original. Opaque expression, one of various expressions the generator employs when injecting code fragment, is an expression whose value is unknown by a compiler. Therefore, donating opaque expressions can help preventing the optimization performed by the compiler. In GraphicsFuzz, we have plenty of opaque expressions representing 0 and 1 however by introducing new opaque values we provide a new expression that is likely to trigger a new bug. The following PRs involve adding new opaque expressions to the GraphicsFuzz's generator.
 
 
 [#413](https://github.com/google/graphicsfuzz/pull/413): Represent 1 as length of normalized vector
@@ -67,7 +67,7 @@ Fuzzing a shader in GraphicsFuzz involves applying a number of transformations t
 
 
 ### New sample shaders
-![new_shaders](https://github.com/jiradeto/gsoc-summary/blob/master/images/new_shaders.png?raw=true)
+![new_shaders](./images/jiradet_new_shaders.png)
 
 In GraphicsFuzz, sample shaders play an important role in exposing bugs in shader compilers as they are the initial set of shaders that would be mutated whose final result are the variant shaders that might detect the potential conmpiler bugs. 
 
@@ -116,11 +116,11 @@ GraphicsFuzz's team has discovered and reported a bunch of bugs lying in many di
 
 SPIRV-Cross is a very convenient tool that helps parsing and converting SPIR-V to other shader languages. Throughout GSoC program, I relied heavily on this tool since I am using [MoltenVK](https://github.com/KhronosGroup/MoltenVK) to run SPIR-V on Mac and MoltenVK internally calls SPIRV-Cross to convert SPIR-V into Apple's Metal Shading Language.
 
-To see all SPIRV-Cross issues I filed please check [here.](https://github.com/KhronosGroup/SPIRV-Cross/issues?utf8=%E2%9C%93&q=+is%3Aissue+author%3Ajiradeto+)
+To see all SPIRV-Cross issues I filed please check [here](https://github.com/KhronosGroup/SPIRV-Cross/issues?utf8=%E2%9C%93&q=+is%3Aissue+author%3Ajiradeto+).
 
  
 ### New shader generator tool
-![new_shaders](https://github.com/jiradeto/gsoc-summary/blob/master/images/overview.png?raw=true)
+![new_shaders](./images/jiradet_shadergenerator_overview.png)
 
 GraphicsFuzz has now equipped with a new tool called Known Value Shader Generator which generates a shader job from the given RGBA colors. This tool mutates the numeric inputs by applying various transformations which eventually generates the mutated expressions that guarantee to produce the original input values. With the help of this tool, we have a brand new way to generate a variant shader just by simply providing the expected values.
 
