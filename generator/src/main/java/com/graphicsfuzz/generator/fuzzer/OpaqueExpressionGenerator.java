@@ -89,12 +89,11 @@ public final class OpaqueExpressionGenerator {
     expressionIdentities.add(new IdentityClamp());
 
     expressionIdentities.add(new IdentityRewriteComposite());
+    expressionIdentities.add(new IdentityCompositeConstructorExpansion());
     if (shadingLanguageVersion.supportedMixNonfloatBool()) {
       expressionIdentities.add(new IdentityMixBvec());
     }
-    if (shadingLanguageVersion.supportedNonSquareMatrices()) {
-      expressionIdentities.add(new IdentityCompositeConstructorExpansion());
-    }
+
     if (shadingLanguageVersion.supportedTranspose()) {
       expressionIdentities.add(new IdentityDoubleTranspose());
     }
@@ -1422,53 +1421,52 @@ public final class OpaqueExpressionGenerator {
   }
 
   /**
-   * Identity transformation to insert a vector or matrix into a larger vector or matrix using a
+   * Identity transformation to insert an expression into a wider vector or matrix using a
    * type constructor, then extract it back out again using another type constructor. When
-   * performed, transforms an expression e with type t -> identity(t(identity(m(identity(e), ..)))),
+   * performed, transforms an expression e of type t to identity(t(identity(m(identity(e), ..)))),
    * where m is a type of equal or greater width than t.
    * The rules for this smaller -> larger -> smaller transformation are as follows:
-   *     If the given type is a vector, the inner constructor type can be a vector of the same
-   *     element type with equal/greater width than the given type, or (provided that the given type
-   *     is a floating point genType) it can be a matrix with equal/greater column width than the
-   *     given type.
+   *     If the given type is a vector or scalar, the inner constructor type can be a vector of the
+   *     same element type with equal/greater width than the given type, or (provided that the
+   *     given type is a floating point genType) it can be a matrix with equal/greater column
+   *     width than the given type.
    *     If the given type is a matrix, the inner constructor type can be a matrix with
    *     equal/greater column/row width than the given type.
    */
   private class IdentityCompositeConstructorExpansion extends AbstractIdentityTransformation {
     private IdentityCompositeConstructorExpansion() {
-      super(BasicType.allNumericTypes().stream().filter(
-          item -> !item.isScalar()).collect(Collectors.toList()), true);
+      super(BasicType.allNumericTypes().stream()
+          .filter(item -> !Arrays.asList(BasicType.IVEC4, BasicType.UVEC4, BasicType.MAT4X4)
+              .contains(item))
+          .collect(Collectors.toList()), true);
     }
 
     @Override
     public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
                       Fuzzer fuzzer) {
-      assert !type.isScalar();
-      // Our inner constructor type will be equal or larger in width than our given type. The goal
-      // of the next loop is to populate this list with all types that can fit our given type.
+      assert !Arrays.asList(BasicType.IVEC4, BasicType.UVEC4, BasicType.MAT4X4).contains(type);
       final List<BasicType> innerConstructorTypes = new ArrayList<BasicType>();
-      for (BasicType constructorType : BasicType.allBasicTypes().stream().filter(
-          item -> !item.isScalar()).collect(Collectors.toList())) {
-        if (type.isVector()) {
-          if (constructorType.getElementType() == type.getElementType()) {
-            if (constructorType.isVector()) {
-              if (type.getNumElements() <= constructorType.getNumElements()) {
-                innerConstructorTypes.add(constructorType);
-              }
-            } else {
-              assert constructorType.isMatrix();
-              // Matrix constructors are column-major, so to get the width of a column we need to
-              // check the number of rows.
-              if (type.getNumElements() <= constructorType.getNumRows()) {
-                innerConstructorTypes.add(constructorType);
-              }
-            }
+      // Our inner constructor type will be equal or larger in width than our given type. The goal
+      // of the next set of conditionals is to populate this list with all types that can fit our
+      // given type.
+      final int maxVectorSize = 4;
+      if (!type.isMatrix()) {
+        for (int i = type.getNumElements(); i <= maxVectorSize; i++) {
+          innerConstructorTypes.add(BasicType.makeVectorType(type.getElementType(), i));
+        }
+        if (type.getElementType() == BasicType.FLOAT) {
+          innerConstructorTypes.addAll(BasicType.allSquareMatrixTypes());
+          if (shadingLanguageVersion.supportedNonSquareMatrices()) {
+            innerConstructorTypes.addAll(BasicType.allNonSquareMatrixTypes());
           }
-        } else {
-          assert type.isMatrix();
-          if (constructorType.isMatrix()) {
-            if (type.getNumRows() <= constructorType.getNumRows()
-                && type.getNumColumns() <= constructorType.getNumColumns()) {
+        }
+      } else {
+        for (BasicType constructorType : BasicType.allMatrixTypes()) {
+          if (type.getNumRows() <= constructorType.getNumRows()
+              && type.getNumColumns() <= constructorType.getNumColumns()) {
+            if (BasicType.allSquareMatrixTypes().contains(constructorType)) {
+              innerConstructorTypes.add(constructorType);
+            } else if (shadingLanguageVersion.supportedNonSquareMatrices()) {
               innerConstructorTypes.add(constructorType);
             }
           }
