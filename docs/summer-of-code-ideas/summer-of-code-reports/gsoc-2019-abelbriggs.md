@@ -295,7 +295,13 @@ Adding a uniform-dependent if-statement in shader renders a different image
 [Bug 111167](https://bugs.freedesktop.org/show_bug.cgi?id=111167):
 Dividing zero by a uniform in loop header causes segfault in nv50_ir::NVC0LegalizeSSA::handleDIV
 
-(description here eventually)
+```
+for (int i = 1; 1 <= (0 / int(injectionSwitch.y)); 1)
+{
+}
+```
+
+This snippet of shader code causes nouveau to crash when trying to handle the division.
 
 Stacktrace:
 ```
