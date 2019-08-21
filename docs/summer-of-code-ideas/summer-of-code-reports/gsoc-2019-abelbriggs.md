@@ -245,7 +245,7 @@ Support compute shaders in graphicsfuzz_piglit_converter
 
 With the exception of compute shaders, GraphicsFuzz had a fairly limited set of five simple test
 shaders for mutation. These shaders sufficed for finding simple bugs, but were limited to GLES 1.00
-features and were unable to test the full extent of the GLSL language even with significant additions
+features and were unable to test the full extent of GLSL even with significant additions
 to the shader generator.
 
 The following PRs directly involve adding new shaders to GraphicsFuzz's test suite.
