@@ -151,6 +151,6 @@ The following PRs involve implementing a new shader generator tool.
 [#693](https://github.com/google/graphicsfuzz/pull/693): Expression Generator: introduce uniforms
 
 #### Future development
-Currently, the shader generator tool has a limited number of transformations. The next steps for this tool involve extending transformations set and integrating this tool into the fuzzing chain of GraphicsFuzz. Afterward, it would also be interesting to apply new capabilities of the new tool to help finding a bug in shader compilers.
+Currently, the shader generator tool has a limited number of transformations. The next steps for this tool involve extending transformations set and integrating this tool into the fuzzing chain of GraphicsFuzz. Afterward, it would also be interesting to apply new capabilities of GraphicsFuzz armed with the new tool to find bugs in shader compilers.
 
 
