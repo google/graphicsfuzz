@@ -29,7 +29,7 @@ My project idea focused on enhancing a shading language support in GraphicsFuzz.
 
 
 ### Add support for GLSL Built-In Functions 
-GLSL built-in functions are functions that available for use in a shader. GraphicsFuzz donates these built-ins into the unreachable statements so that they will not be actually executed. By providing a support for the GLSL built-ins, we teach GraphicsFuzz how to call functions appropriately by ensuring that the required function arguments are matched with the GLSL specifications. Moreover, we have to check that the built-in function being injected into a shader is compatible with the given shading language version. The following PRs have provided a support for the GLSL built-in functions.
+GLSL built-in functions are functions that available for use in a shader and GraphicsFuzz donates these built-ins into the unreachable statements so that they will not be actually executed. By providing a support for the GLSL built-ins, we teach GraphicsFuzz how to call functions appropriately by ensuring that the required function arguments are matched with the GLSL specifications. Moreover, we have to check that the built-in function being injected into a shader is compatible with the given shading language version. The following PRs have provided a support for the GLSL built-in functions.
 
 [#554](https://github.com/google/graphicsfuzz/pull/554): Add support for GLSL built-in functions: Angle and Trigonometric Functions
 
@@ -67,9 +67,9 @@ Fuzzing a shader in GraphicsFuzz involves applying a number of transformations t
 
 ### New sample shaders
 
-In GraphicsFuzz, sample shaders play an important role in exposing bugs in shader compilers as they are the initial set of shaders that would be mutated whose final result are the variant shaders that might detect the potential conmpiler bugs. 
+In GraphicsFuzz, sample shaders play an important role in exposing bugs in shader compilers as they are the initial set of shaders that would be mutated whose final result are the variant shaders that might expose the potential compiler bugs. 
 
-Having said that, we have only few sample shaders that come with GraphicsFuzz by default, the following PRs focus on adding a brand new set of 310 es sample shaders implementing different sorting and searching algorithms.
+Having said that, we have only few sample shaders that come with GraphicsFuzz by default, the following PRs thus focus on adding a brand new set of 310 es sample shaders implementing different sorting and searching algorithms.
 
 
 [#602](https://github.com/google/graphicsfuzz/pull/602): New 310es sample shaders - v1 
@@ -100,7 +100,7 @@ Having said that, we have only few sample shaders that come with GraphicsFuzz by
 
 
 ### Enhancement for Reducer 
-To remove code fragment injected by the generator, we use reducer to reduce the variant shader into a very small and simple shader that is still inducing a bug. GraphicsFuzz' reducer basically finds the interesting code fragment to be removed based on the reducer opportunities. Currently, we have sufficiently large set of reducer opportunities that can shrink a variant shader significantly. However, there were areas need improvement. The following PRs involve adding new reducer opportunities to the GraphicsFuzz's reducer aiming to help reducer reducing GLSL shaders more efficient:
+To remove code fragment injected by the generator, we use reducer to shrink the variant shader into a very small and simple shader that is still inducing a bug. GraphicsFuzz' reducer essentially finds the interesting code fragment to be removed based on the reducer opportunities. Currently, we have sufficiently large set of reducer opportunities that can significantly reduce a variant shader. However, there were areas need improvement. The following PRs involve adding new reducer opportunities to the GraphicsFuzz's reducer aiming to help reducer reducing GLSL shaders more efficient:
 
 [#477](https://github.com/google/graphicsfuzz/pull/477): Add tests for Simplify
 
@@ -128,7 +128,7 @@ To remove code fragment injected by the generator, we use reducer to reduce the 
 
 
 ### Use GraphicsFuzz to find bugs in other tools
-GraphicsFuzz's team has discovered and reported a bunch of bugs lying in many different GPU vendors and we still keep doing the same as we would be happy if we could help compiler developers detecting more uncovering bugs. Over the past few months, I had a chance to use GraphicsFuzz to help finding bugs in [SPIRV Cross](https://github.com/KhronosGroup/SPIRV-Cross). 
+GraphicsFuzz's team has discovered and reported a bunch of bugs lying in many different GPU vendors and we constantly run a graphics compiler test since we would be happy if we could help developers detecting uncovering bugs. Over the past few months, I had a chance to use GraphicsFuzz to help finding bugs in [SPIRV Cross](https://github.com/KhronosGroup/SPIRV-Cross). 
 
 SPIRV-Cross is a very convenient tool that helps parsing and converting SPIR-V to other shader languages. Throughout GSoC program, I relied heavily on this tool since I am using [MoltenVK](https://github.com/KhronosGroup/MoltenVK) to run SPIR-V on Mac and MoltenVK internally calls SPIRV-Cross to convert SPIR-V into Apple's Metal Shading Language.
 
