@@ -825,7 +825,7 @@ SAMPLER1D: 'sampler1D' ;
 SAMPLER2D: 'sampler2D' ;
 SAMPLER3D: 'sampler3D' ;
 SAMPLER2DRECT: 'sampler2DRect' ;
-
+SAMPLEREXTERNALOES: 'samplerExternalOES' ;
 SAMPLER1DSHADOW: 'sampler1DShadow' ;
 SAMPLER2DSHADOW: 'sampler2DShadow' ;
 SAMPLER2DRECTSHADOW: 'sampler2DRectShadow' ;
