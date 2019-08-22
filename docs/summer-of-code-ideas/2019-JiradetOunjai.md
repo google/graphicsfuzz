@@ -5,16 +5,16 @@ The Google Summer of Code program has turned out to be a great learning opportun
 I have made this document to summarize the work done for my Google Summer of Code project *Improve Shading Language Support in GraphicsFuzz*. 
 
 
-## Personal Links
-[Github](https://github.com/jiradeto) - [Linkedin](https://www.linkedin.com/in/jiradeto/)
+###### Personal Links
+###### [Github](https://github.com/jiradeto) - [Linkedin](https://www.linkedin.com/in/jiradeto/)
 
 
-## Project Link
-[Improve Shading Language Support in GraphicsFuzz](https://summerofcode.withgoogle.com/projects/#4859963594244096)
+###### Project Link
+###### [Improve Shading Language Support in GraphicsFuzz](https://summerofcode.withgoogle.com/projects/#4859963594244096)
 
 
-## Mentors
-Alastair Donaldson, Paul Thomson
+###### Mentors
+###### Alastair Donaldson, Paul Thomson
 
 
 ## Deliverables
@@ -26,7 +26,6 @@ My project idea focused on enhancing a shading language support in GraphicsFuzz.
 - [Enhancement for Reducer](#enhancement-for-reducer)
 - [Use GraphicsFuzz to find bugs in other tools](#use-graphicsfuzz-to-find-bugs-in-other-tools)
 - [New shader generator tool](#new-shader-generator-tool)
-
 
 
 ### Add support for GLSL Built-In Functions 
@@ -67,7 +66,6 @@ Fuzzing a shader in GraphicsFuzz involves applying a number of transformations t
 
 
 ### New sample shaders
-![new_shaders](./images/jiradet_new_shaders.png)
 
 In GraphicsFuzz, sample shaders play an important role in exposing bugs in shader compilers as they are the initial set of shaders that would be mutated whose final result are the variant shaders that might detect the potential conmpiler bugs. 
 
@@ -76,11 +74,29 @@ Having said that, we have only few sample shaders that come with GraphicsFuzz by
 
 [#602](https://github.com/google/graphicsfuzz/pull/602): New 310es sample shaders - v1 
 
+| trigonometric_strip.frag | selection_sort_struct.frag | prefix_sum_checkers.frag |
+| :---: | :---: | :---: |
+| ![trigonometric_strip](./images/jiradet/shader_trigonometric_strip.png) | ![selection_sort_struct](./images/jiradet/shader_selection_sort_struct.png) | ![prefix_sum_checkers](./images/jiradet/shader_prefix_sum_checkers.png) |
+
 [#643](https://github.com/google/graphicsfuzz/pull/643): New 310es sample shaders - v2
+
+| binarysearch_bw.frag | mergesort_mosaic.frag |
+| :---: | :---: | 
+| ![binarysearch_bw](./images/jiradet/shader_binarysearch_bw.png) | ![mergesort_mosaic](./images/jiradet/shader_mergesort_mosaic.png) |
+
 
 [#660](https://github.com/google/graphicsfuzz/pull/660): New 310es sample shaders - quicksort 
 
+| quicksort_palette.frag |
+| :---: | 
+| ![quicksort_palette](./images/jiradet/shader_quicksort_palette.png) | 
+
+
 [#676](https://github.com/google/graphicsfuzz/pull/676): New 310es sample shaders - binary search tree
+
+| binarysearch_tree.frag |
+| :---: | 
+| ![binarysearch_tree](./images/jiradet/shader_binarysearch_tree.png) | 
 
 
 ### Enhancement for Reducer 
@@ -120,7 +136,7 @@ To see all SPIRV-Cross issues I filed please check [here](https://github.com/Khr
 
  
 ### New shader generator tool
-![new_shaders](./images/jiradet_shadergenerator_overview.png)
+![new_shaders](./images/jiradet/shadergenerator_overview.png)
 
 GraphicsFuzz has now equipped with a new tool called Known Value Shader Generator which generates a shader job from the given RGBA colors. This tool mutates the numeric inputs by applying various transformations which eventually generates the mutated expressions that guarantee to produce the original input values. With the help of this tool, we have a brand new way to generate a variant shader just by simply providing the expected values.
 
@@ -135,6 +151,6 @@ The following PRs involve implementing a new shader generator tool.
 [#693](https://github.com/google/graphicsfuzz/pull/693): Expression Generator: introduce uniforms
 
 #### Future development
-Currently, the shader generator tool has a limited number of transformations. The next steps for this tool involve extending transformations set and integrating this tool into the fuzzing chain of GraphicsFuzz.
+Currently, the shader generator tool has a limited number of transformations. The next steps for this tool involve extending transformations set and integrating this tool into the fuzzing chain of GraphicsFuzz. Afterward, it would also be interesting to apply new capabilities of the new tool to help finding a bug in shader compilers.
 
 
