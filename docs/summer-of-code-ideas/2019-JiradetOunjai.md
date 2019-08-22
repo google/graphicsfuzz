@@ -128,7 +128,7 @@ To remove code fragment injected by the generator, we use reducer to shrink the 
 
 
 ### Use GraphicsFuzz to find bugs in other tools
-GraphicsFuzz's team has discovered and reported a bunch of bugs lying in many different GPU vendors and we constantly run a graphics compiler test since we would be happy if we could help developers detecting uncovering bugs. Over the past few months, I had a chance to use GraphicsFuzz to help finding bugs in [SPIRV Cross](https://github.com/KhronosGroup/SPIRV-Cross). 
+GraphicsFuzz's team has discovered and reported a bunch of bugs lying in many different GPU vendors. In fact, we constantly run a graphics compiler test since we would be delighted if we could help developers detecting uncovering bugs. Over the past few months, I had a chance to use GraphicsFuzz to help finding bugs in [SPIRV Cross](https://github.com/KhronosGroup/SPIRV-Cross). 
 
 SPIRV-Cross is a very convenient tool that helps parsing and converting SPIR-V to other shader languages. Throughout GSoC program, I relied heavily on this tool since I am using [MoltenVK](https://github.com/KhronosGroup/MoltenVK) to run SPIR-V on Mac and MoltenVK internally calls SPIRV-Cross to convert SPIR-V into Apple's Metal Shading Language.
 
