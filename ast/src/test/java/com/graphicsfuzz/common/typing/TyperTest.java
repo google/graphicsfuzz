@@ -250,35 +250,7 @@ public class TyperTest {
     };
 
   }
-
-  @Test
-  public void testBooleanVectorType() throws Exception {
-    final String program = "#version 440\n"
-        + "void main() { vec3(1.0) > vec3(2.0); }";
-    TranslationUnit tu = ParseHelper.parse(program);
-    new NullCheckTyper(tu) {
-      @Override
-      public void visitBinaryExpr(BinaryExpr binaryExpr) {
-        super.visitBinaryExpr(binaryExpr);
-        assertEquals(BasicType.BVEC3, lookupType(binaryExpr));
-      }
-    };
-  }
-
-  @Test
-  public void testBooleanVectorType2() throws Exception {
-    final String program = "#version 440\n"
-        + "void main() { vec3(1.0) > 2.0; }";
-    TranslationUnit tu = ParseHelper.parse(program);
-    new NullCheckTyper(tu) {
-      @Override
-      public void visitBinaryExpr(BinaryExpr binaryExpr) {
-        super.visitBinaryExpr(binaryExpr);
-        assertEquals(BasicType.BVEC3, lookupType(binaryExpr));
-      }
-    };
-  }
-
+  
   @Test
   public void testSwizzleTyped() throws Exception {
     TranslationUnit tu = ParseHelper.parse("void main() { vec2 v; v.xy = v.yx; }");
@@ -496,6 +468,219 @@ public class TyperTest {
       public void visitInitializer(Initializer initializer) {
         super.visitInitializer(initializer);
         assertSame(lookupType(initializer.getExpr()), BasicType.UINT);
+      }
+    }.visit(tu);
+  }
+
+  @Test
+  public void testEqualityAndInequalityVectorsMatrices() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() {\n"
+        + "  float v1a, v1b;\n"
+        + "  vec2 v2a, v2b;\n"
+        + "  vec3 v3a, v3b;\n"
+        + "  vec4 v4a, v4b;\n"
+        + "  int i1a, i1b;\n"
+        + "  ivec2 i2a, i2b;\n"
+        + "  ivec3 i3a, i3b;\n"
+        + "  ivec4 i4a, i4b;\n"
+        + "  uint u1a, u1b;\n"
+        + "  uvec2 u2a, u2b;\n"
+        + "  uvec3 u3a, u3b;\n"
+        + "  uvec4 u4a, u4b;\n"
+        + "  bool b1a, b1b;\n"
+        + "  bvec2 b2a, b2b;\n"
+        + "  bvec3 b3a, b3b;\n"
+        + "  bvec4 b4a, b4b;\n"
+        + "  mat2x2 m22a, m22b;\n"
+        + "  mat2x3 m23a, m23b;\n"
+        + "  mat2x4 m24a, m24b;\n"
+        + "  mat3x2 m32a, m32b;\n"
+        + "  mat3x3 m33a, m33b;\n"
+        + "  mat3x4 m34a, m34b;\n"
+        + "  mat4x2 m42a, m42b;\n"
+        + "  mat4x3 m43a, m43b;\n"
+        + "  mat4x2 m44a, m44b;\n"
+        + "  v1a == v1b;\n"
+        + "  v2a == v2b;\n"
+        + "  v3a == v3b;\n"
+        + "  v4a == v4b;\n"
+        + "  v1a != v1b;\n"
+        + "  v2a != v2b;\n"
+        + "  v3a != v3b;\n"
+        + "  v4a != v4b;\n"
+        + "  u1a == u1b;\n"
+        + "  u2a == u2b;\n"
+        + "  u3a == u3b;\n"
+        + "  u4a == u4b;\n"
+        + "  u1a != u1b;\n"
+        + "  u2a != u2b;\n"
+        + "  u3a != u3b;\n"
+        + "  u4a != u4b;\n"
+        + "  i1a == i1b;\n"
+        + "  i2a == i2b;\n"
+        + "  i3a == i3b;\n"
+        + "  i4a == i4b;\n"
+        + "  i1a != i1b;\n"
+        + "  i2a != i2b;\n"
+        + "  i3a != i3b;\n"
+        + "  i4a != i4b;\n"
+        + "  b1a == b1b;\n"
+        + "  b2a == b2b;\n"
+        + "  b3a == b3b;\n"
+        + "  b4a == b4b;\n"
+        + "  b1a != b1b;\n"
+        + "  b2a != b2b;\n"
+        + "  b3a != b3b;\n"
+        + "  b4a != b4b;\n"
+        + "  m22a == m22b;\n"
+        + "  m22a != m22b;\n"
+        + "  m23a == m23b;\n"
+        + "  m23a != m23b;\n"
+        + "  m24a == m24b;\n"
+        + "  m24a != m24b;\n"
+        + "  m32a == m32b;\n"
+        + "  m32a != m32b;\n"
+        + "  m33a == m33b;\n"
+        + "  m33a != m33b;\n"
+        + "  m34a == m34b;\n"
+        + "  m34a != m34b;\n"
+        + "  m42a == m42b;\n"
+        + "  m42a != m42b;\n"
+        + "  m43a == m43b;\n"
+        + "  m43a != m43b;\n"
+        + "  m44a == m44b;\n"
+        + "  m44a != m44b;\n"
+        + "}\n");
+    new NullCheckTyper(tu) {
+      @Override
+      public void visitBinaryExpr(BinaryExpr binaryExpr) {
+        super.visitBinaryExpr(binaryExpr);
+        if (binaryExpr.getOp() == BinOp.EQ || binaryExpr.getOp() == BinOp.NE) {
+          assertSame(lookupType(binaryExpr), BasicType.BOOL);
+        }
+      }
+    }.visit(tu);
+  }
+
+  @Test
+  public void testVectorRelational() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() {\n"
+        + "  vec2 v2a, v2b;\n"
+        + "  vec3 v3a, v3b;\n"
+        + "  vec4 v4a, v4b;\n"
+        + "  ivec2 i2a, i2b;\n"
+        + "  ivec3 i3a, i3b;\n"
+        + "  ivec4 i4a, i4b;\n"
+        + "  uvec2 u2a, u2b;\n"
+        + "  uvec3 u3a, u3b;\n"
+        + "  uvec4 u4a, u4b;\n"
+        + "  bvec2 b2a, b2b;\n"
+        + "  bvec3 b3a, b3b;\n"
+        + "  bvec4 b4a, b4b;\n"
+        + "\n"
+        + "  lessThan(v2a, v2b);\n"
+        + "  lessThan(v3a, v3b);\n"
+        + "  lessThan(v4a, v4b);\n"
+        + "  lessThan(i2a, i2b);\n"
+        + "  lessThan(i3a, i3b);\n"
+        + "  lessThan(i4a, i4b);\n"
+        + "  lessThan(u2a, u2b);\n"
+        + "  lessThan(u3a, u3b);\n"
+        + "  lessThan(u4a, u4b);\n"
+        + "\n"
+        + "  lessThanEqual(v2a, v2b);\n"
+        + "  lessThanEqual(v3a, v3b);\n"
+        + "  lessThanEqual(v4a, v4b);\n"
+        + "  lessThanEqual(i2a, i2b);\n"
+        + "  lessThanEqual(i3a, i3b);\n"
+        + "  lessThanEqual(i4a, i4b);\n"
+        + "  lessThanEqual(u2a, u2b);\n"
+        + "  lessThanEqual(u3a, u3b);\n"
+        + "  lessThanEqual(u4a, u4b);\n"
+        + "\n"
+        + "  greaterThan(v2a, v2b);\n"
+        + "  greaterThan(v3a, v3b);\n"
+        + "  greaterThan(v4a, v4b);\n"
+        + "  greaterThan(i2a, i2b);\n"
+        + "  greaterThan(i3a, i3b);\n"
+        + "  greaterThan(i4a, i4b);\n"
+        + "  greaterThan(u2a, u2b);\n"
+        + "  greaterThan(u3a, u3b);\n"
+        + "  greaterThan(u4a, u4b);\n"
+        + "\n"
+        + "  greaterThanEqual(v2a, v2b);\n"
+        + "  greaterThanEqual(v3a, v3b);\n"
+        + "  greaterThanEqual(v4a, v4b);\n"
+        + "  greaterThanEqual(i2a, i2b);\n"
+        + "  greaterThanEqual(i3a, i3b);\n"
+        + "  greaterThanEqual(i4a, i4b);\n"
+        + "  greaterThanEqual(u2a, u2b);\n"
+        + "  greaterThanEqual(u3a, u3b);\n"
+        + "  greaterThanEqual(u4a, u4b);\n"
+        + "\n"
+        + "  equal(v2a, v2b);\n"
+        + "  equal(v3a, v3b);\n"
+        + "  equal(v4a, v4b);\n"
+        + "  equal(i2a, i2b);\n"
+        + "  equal(i3a, i3b);\n"
+        + "  equal(i4a, i4b);\n"
+        + "  equal(u2a, u2b);\n"
+        + "  equal(u3a, u3b);\n"
+        + "  equal(u4a, u4b);\n"
+        + "  equal(b2a, b2b);\n"
+        + "  equal(b3a, b3b);\n"
+        + "  equal(b4a, b4b);\n"
+        + "\n"
+        + "  notEqual(v2a, v2b);\n"
+        + "  notEqual(v3a, v3b);\n"
+        + "  notEqual(v4a, v4b);\n"
+        + "  notEqual(i2a, i2b);\n"
+        + "  notEqual(i3a, i3b);\n"
+        + "  notEqual(i4a, i4b);\n"
+        + "  notEqual(u2a, u2b);\n"
+        + "  notEqual(u3a, u3b);\n"
+        + "  notEqual(u4a, u4b);\n"
+        + "  notEqual(b2a, b2b);\n"
+        + "  notEqual(b3a, b3b);\n"
+        + "  notEqual(b4a, b4b);\n"
+        + "\n"
+        + "  any(b2a);\n"
+        + "  any(b3a);\n"
+        + "  any(b4a);\n"
+        + "\n"
+        + "  all(b2a);\n"
+        + "  all(b3a);\n"
+        + "  all(b4a);\n"
+        + "\n"
+        + "  not(b2a);\n"
+        + "  not(b3a);\n"
+        + "  not(b4a);\n"
+        + "}\n");
+    new NullCheckTyper(tu) {
+      @Override
+      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        super.visitFunctionCallExpr(functionCallExpr);
+
+        // There must be a first argument type and it must be a vec type.
+        BasicType firstArgType =
+            (BasicType) lookupType(functionCallExpr.getArg(0)).getWithoutQualifiers();
+        assertTrue(firstArgType.isVector());
+        if (functionCallExpr.getNumArgs() > 1) {
+          // If there is a second argument type it must match the first argument type.
+          assertEquals(2, functionCallExpr.getNumArgs());
+          assertEquals(firstArgType, lookupType(functionCallExpr.getArg(1)).getWithoutQualifiers());
+        }
+        if (functionCallExpr.getCallee().equals("any") || functionCallExpr.getCallee().equals(
+            "all")) {
+          // 'any' and 'all' return 'bool' in all cases.
+          assertSame(BasicType.BOOL, lookupType(functionCallExpr));
+        } else {
+          // If the first argument is a vector of length n, the result type must be 'bvecn'.
+          assertEquals(BasicType.makeVectorType(BasicType.BOOL, firstArgType.getNumElements()),
+              lookupType(functionCallExpr));
+        }
       }
     }.visit(tu);
   }
