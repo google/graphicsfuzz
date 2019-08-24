@@ -376,7 +376,8 @@ public class ExpressionGenerator {
     if (!(value instanceof NumericValue)) {
       return null;
     }
-    if (value.getType() != BasicType.INT && value.getType() != BasicType.FLOAT && value.getType() != BasicType.UINT) {
+    if (value.getType() != BasicType.INT && value.getType() != BasicType.FLOAT
+        && value.getType() != BasicType.UINT) {
       return null;
     }
     // If the given value is unknown, we are free to choose any arbitrary numbers for addition.
@@ -389,7 +390,8 @@ public class ExpressionGenerator {
           BinOp.ADD);
     }
 
-    Number summandA;
+    final Number expected = ((NumericValue) value).getValue().get();
+    Number summandA = null;
     // Given the expected type, we have to retrieve all values from the fact manager and filter only
     // the facts that are known to compute particular values.
     final List<Value> knownValues = factManager.getValuesFromType(value.getType())
@@ -407,16 +409,23 @@ public class ExpressionGenerator {
         // TODO(https://github.com/google/graphicsfuzz/issues/688): range of numbers [-10, 10] is
         //  temporarily used here, we have to change how the summand is generated.
         summandA = (float) generator.nextInt(21) - 10;
-      } else {
+      } else if (value.getType() == BasicType.UINT) {
+        // We pick a random number in a range of numbers [1- expectedValue] so that when
+        // subtracting the random summand with the expected value we would get the non-negative
+        // result.
+        summandA = generator.nextInt(Math.max(1, expected.intValue()));
+      } else if (value.getType() == BasicType.INT) {
         summandA = generator.nextInt(INT_MAX);
       }
     }
 
-    final Number expected = ((NumericValue) value).getValue().get();
+    assert summandA != null;
     // To get the second summand, we subtract original value by the the first summand.
     final Number summandB = subtractNumbers(expected, summandA);
-    // For uint type, Ensuring that the result obtained by subtraction is not negative because it is not 
-    // legal to have signed number for the uint type.
+    // We have a chance to have a summandA based on known fact that is greater than the expected
+    // value making the summandB obtained by subtraction negative. We thus have to ensure that
+    // the result of subtraction is non-negative number as since it is not legal to have singed
+    // number for uint type.
     if (value.getType() == BasicType.UINT && String.valueOf(summandB).contains("-")) {
       return null;
     }
