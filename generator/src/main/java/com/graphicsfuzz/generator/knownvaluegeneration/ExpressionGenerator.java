@@ -410,7 +410,7 @@ public class ExpressionGenerator {
         //  temporarily used here, we have to change how the summand is generated.
         summandA = (float) generator.nextInt(21) - 10;
       } else if (value.getType() == BasicType.UINT) {
-        // We pick a random number in a range of numbers [1- expectedValue] so that when
+        // We pick a random number in a range of numbers [1- expectedValue] so that when 
         // subtracting the random summand with the expected value we would get the non-negative
         // result.
         summandA = generator.nextInt(Math.max(1, expected.intValue()));
