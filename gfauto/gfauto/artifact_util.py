@@ -31,6 +31,7 @@ from gfauto import (
 )
 from gfauto.artifact_pb2 import ArtifactMetadata
 from gfauto.common_pb2 import ArchiveSet
+from gfauto.gflogging import log
 from gfauto.recipe_pb2 import Recipe
 from gfauto.util import check
 
@@ -49,6 +50,9 @@ class ArtifactWrap:
 
 
 def recipes_write_built_in() -> None:
+    log(
+        "Writing built-in binary recipes to //binaries/ (where // is the ROOT directory)"
+    )
     for recipe_wrap in binaries_util.BUILT_IN_BINARY_RECIPES:
         if not artifact_get_metadata_file_path(recipe_wrap.path).exists():
             recipe_wrap.write()
