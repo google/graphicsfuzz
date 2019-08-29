@@ -444,20 +444,24 @@ class ShaderJobFile:
 @attr.dataclass
 class ShaderJobBasedAmberTest:
     reference: Optional[ShaderJob]
-    variant: ShaderJob
+    variants: List[ShaderJob]
 
 
 @attr.dataclass
 class ShaderJobFileBasedAmberTest:
     reference_asm_spirv_job: Optional[ShaderJobFile]
-    variant_asm_spirv_job: ShaderJobFile
+    variants_asm_spirv_job: List[ShaderJobFile]
 
     def to_shader_job_based(self) -> ShaderJobBasedAmberTest:
+        variants = [
+            variant_asm_spirv_job.to_shader_job()
+            for variant_asm_spirv_job in self.variants_asm_spirv_job
+        ]
         return ShaderJobBasedAmberTest(
             self.reference_asm_spirv_job.to_shader_job()
             if self.reference_asm_spirv_job
             else None,
-            self.variant_asm_spirv_job.to_shader_job(),
+            variants,
         )
 
 
@@ -513,18 +517,19 @@ def get_amber_script_shader_def(shader: Shader, name: str) -> str:
 def graphics_shader_job_amber_test_to_amber_script(
     shader_job_amber_test: ShaderJobBasedAmberTest, amberfy_settings: AmberfySettings
 ) -> str:
-    # Guaranteed, and needed for type checker.
-    assert isinstance(shader_job_amber_test.variant, GraphicsShaderJob)  # noqa
 
     result = get_amber_script_header(amberfy_settings)
 
-    jobs = [shader_job_amber_test.variant]
+    jobs = shader_job_amber_test.variants.copy()
 
     if shader_job_amber_test.reference:
         assert isinstance(shader_job_amber_test.reference, GraphicsShaderJob)  # noqa
         jobs.insert(0, shader_job_amber_test.reference)
 
     for job in jobs:
+        # Guaranteed, and needed for type checker.
+        assert isinstance(job, GraphicsShaderJob)  # noqa
+
         prefix = job.name_prefix
 
         vertex_shader_name = f"{prefix}_vertex_shader"
@@ -566,6 +571,7 @@ def graphics_shader_job_amber_test_to_amber_script(
         prefix_0 = jobs[0].name_prefix
         prefix_1 = jobs[pipeline_index].name_prefix
         result += f"EXPECT {prefix_0}_framebuffer RMSE_BUFFER {prefix_1}_framebuffer TOLERANCE 7"
+        result += "\n"
 
     if amberfy_settings.extra_commands:
         result += amberfy_settings.extra_commands
@@ -579,12 +585,12 @@ def compute_shader_job_amber_test_to_amber_script(
 ) -> str:
     # TODO: handle reference, if present.
 
-    # Guaranteed, and needed for type checker.
-    assert isinstance(shader_job_amber_test.variant, ComputeShaderJob)  # noqa
-
     result = get_amber_script_header(amberfy_settings)
 
-    variant = shader_job_amber_test.variant
+    variant = shader_job_amber_test.variants[0]
+
+    # Guaranteed, and needed for type checker.
+    assert isinstance(variant, ComputeShaderJob)  # noqa
 
     variant_compute_shader_name = f"{variant.name_prefix}_compute_shader"
     variant_ssbo_name = f"{variant.name_prefix}_ssbo"
@@ -633,7 +639,7 @@ def spirv_asm_shader_job_to_amber_script(
 ) -> Path:
 
     log(
-        f"Amberfy: {str(shader_job_file_amber_test.variant_asm_spirv_job.asm_spirv_shader_job_json)} "
+        f"Amberfy: {[str(variant.asm_spirv_shader_job_json) for variant in shader_job_file_amber_test.variants_asm_spirv_job]} "
         + (
             f"with reference {str(shader_job_file_amber_test.reference_asm_spirv_job.asm_spirv_shader_job_json)} "
             if shader_job_file_amber_test.reference_asm_spirv_job
@@ -644,18 +650,18 @@ def spirv_asm_shader_job_to_amber_script(
 
     shader_job_amber_test = shader_job_file_amber_test.to_shader_job_based()
 
-    if isinstance(shader_job_amber_test.variant, GraphicsShaderJob):
+    if isinstance(shader_job_amber_test.variants[0], GraphicsShaderJob):
         result = graphics_shader_job_amber_test_to_amber_script(
             shader_job_amber_test, amberfy_settings
         )
 
-    elif isinstance(shader_job_amber_test.variant, ComputeShaderJob):
+    elif isinstance(shader_job_amber_test.variants[0], ComputeShaderJob):
         result = compute_shader_job_amber_test_to_amber_script(
             shader_job_amber_test, amberfy_settings
         )
     else:
         raise AssertionError(
-            f"Unknown shader job type: {shader_job_amber_test.variant}"
+            f"Unknown shader job type: {shader_job_amber_test.variants[0]}"
         )
 
     util.file_write_text(output_amber_script_file_path, result)
