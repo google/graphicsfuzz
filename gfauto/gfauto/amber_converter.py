@@ -520,7 +520,7 @@ def graphics_shader_job_amber_test_to_amber_script(
 
     result = get_amber_script_header(amberfy_settings)
 
-    jobs = shader_job_amber_test.variants
+    jobs = shader_job_amber_test.variants.copy()
 
     if shader_job_amber_test.reference:
         assert isinstance(shader_job_amber_test.reference, GraphicsShaderJob)  # noqa
@@ -639,7 +639,7 @@ def spirv_asm_shader_job_to_amber_script(
 ) -> Path:
 
     log(
-        f"Amberfy: {str(variant.asm_spirv_shader_job_json) for variant in shader_job_file_amber_test.variants_asm_spirv_job} "
+        f"Amberfy: {[str(variant.asm_spirv_shader_job_json) for variant in shader_job_file_amber_test.variants_asm_spirv_job]} "
         + (
             f"with reference {str(shader_job_file_amber_test.reference_asm_spirv_job.asm_spirv_shader_job_json)} "
             if shader_job_file_amber_test.reference_asm_spirv_job
