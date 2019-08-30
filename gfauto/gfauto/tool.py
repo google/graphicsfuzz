@@ -20,7 +20,9 @@ Used to convert shader jobs to Amber script tests that are suitable for adding t
 """
 
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple
+
+from attr import dataclass
 
 from gfauto import (
     amber_converter,
@@ -155,12 +157,21 @@ def validate_spirv_shader_job(
     )
 
 
+@dataclass
+class SpirvAndSpirvAsmShaderJob:
+    spirv_asm_shader_job: Path
+    spirv_shader_job: Path
+
+    def __iter__(self) -> Iterator[Path]:
+        return iter((self.spirv_asm_shader_job, self.spirv_shader_job))
+
+
 def compile_shader_job(
     input_json: Path,
     work_dir: Path,
     binary_paths: binaries_util.BinaryGetter,
     spirv_opt_args: Optional[List[str]] = None,
-) -> Path:
+) -> SpirvAndSpirvAsmShaderJob:
 
     result = input_json
 
@@ -206,7 +217,7 @@ def compile_shader_job(
 
         validate_spirv_shader_job(result_spirv, binary_paths)
 
-    return result
+    return SpirvAndSpirvAsmShaderJob(result, result_spirv)
 
 
 def glsl_shader_job_to_amber_script(
@@ -218,10 +229,15 @@ def glsl_shader_job_to_amber_script(
     spirv_opt_args: Optional[List[str]] = None,
 ) -> Path:
 
-    result = compile_shader_job(input_json, work_dir, binary_paths, spirv_opt_args)
-    result = amberfy(result, output_amber, amberfy_settings, input_json)
+    spirv_asm_shader_job = compile_shader_job(
+        input_json, work_dir, binary_paths, spirv_opt_args
+    ).spirv_asm_shader_job
 
-    return result
+    amber_test_path = amberfy(
+        spirv_asm_shader_job, output_amber, amberfy_settings, input_json
+    )
+
+    return amber_test_path
 
 
 def get_compilation_settings(
@@ -361,7 +377,7 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
                 work_dir / shader_job,
                 binary_paths,
                 spirv_opt_args=spirv_opt_args,
-            ),
+            ).spirv_asm_shader_job,
             source_dir / shader_job / test_util.SHADER_JOB,
             "",
         )

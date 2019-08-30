@@ -33,6 +33,7 @@ from gfauto import (
     glsl_generate_util,
     host_device_util,
     result_util,
+    shader_compiler_util,
     shader_job_util,
     signature_util,
     spirv_opt_util,
@@ -324,7 +325,7 @@ def handle_test(
     return issue_found
 
 
-def run_shader_job(
+def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branches;
     shader_job: Path,
     output_dir: Path,
     test: Test,
@@ -348,24 +349,18 @@ def run_shader_job(
             # TODO: If Amber is going to be used, check if Amber can use Vulkan debug layers now, and if not, pass that
             #  info down via a bool.
 
+            spirv_opt_hash: Optional[str] = None
+            if test.glsl.spirv_opt_args:
+                spirv_opt_hash = child_binary_manager.get_binary_by_name(
+                    binaries_util.SPIRV_OPT_NAME
+                ).version
+
             try:
-
-                spirv_opt_hash: Optional[str] = None
-                if test.glsl.spirv_opt_args:
-                    spirv_opt_hash = child_binary_manager.get_binary_by_name(
-                        binaries_util.SPIRV_OPT_NAME
-                    ).version
-
-                amber_script_file = tool.glsl_shader_job_to_amber_script(
+                spirv_asm_shader_job_path, spirv_shader_job_path = tool.compile_shader_job(
                     shader_job,
-                    output_dir / "test.amber",
                     output_dir,
                     child_binary_manager,
-                    amber_converter.AmberfySettings(
-                        spirv_opt_args=list(test.glsl.spirv_opt_args),
-                        spirv_opt_hash=spirv_opt_hash,
-                    ),
-                    spirv_opt_args=list(test.glsl.spirv_opt_args),
+                    list(test.glsl.spirv_opt_args),
                 )
             except subprocess.CalledProcessError:
                 util.file_write_text(
@@ -384,7 +379,7 @@ def run_shader_job(
                 )
             )
 
-            # Consider device type.
+            # Device types: |preprocess| and |shader_compiler| don't need an AmberScript file.
 
             if device.HasField("preprocess"):
                 # The "preprocess" device type just needs to get this far, so this is a success.
@@ -392,6 +387,39 @@ def run_shader_job(
                     result_util.get_status_path(output_dir), fuzz.STATUS_SUCCESS
                 )
                 return output_dir
+
+            if device.HasField("shader_compiler"):
+                try:
+                    shader_compiler_util.run_shader_job(
+                        device.shader_compiler, spirv_shader_job_path, output_dir
+                    )
+                    # The shader compiler succeeded; this is a success.
+                    util.file_write_text(
+                        result_util.get_status_path(output_dir), fuzz.STATUS_SUCCESS
+                    )
+                    return output_dir
+                except subprocess.CalledProcessError:
+                    util.file_write_text(
+                        result_util.get_status_path(output_dir), fuzz.STATUS_CRASH
+                    )
+                    return output_dir
+                except subprocess.TimeoutExpired:
+                    util.file_write_text(
+                        result_util.get_status_path(output_dir), fuzz.STATUS_TIMEOUT
+                    )
+                    return output_dir
+
+            # Other device types need an AmberScript file.
+
+            amber_script_file = tool.amberfy(
+                spirv_asm_shader_job_path,
+                output_dir,
+                amber_converter.AmberfySettings(
+                    spirv_opt_args=list(test.glsl.spirv_opt_args),
+                    spirv_opt_hash=spirv_opt_hash,
+                ),
+                shader_job,
+            )
 
             if device.HasField("host") or device.HasField("swift_shader"):
                 icd: Optional[Path] = None

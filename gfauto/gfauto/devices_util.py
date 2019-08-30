@@ -27,6 +27,7 @@ from gfauto.device_pb2 import (
     DeviceHost,
     DeviceList,
     DevicePreprocess,
+    DeviceShaderCompiler,
     DeviceSwiftShader,
 )
 from gfauto.gflogging import log
@@ -84,6 +85,16 @@ def get_device_list(device_list: Optional[DeviceList] = None) -> DeviceList:
             "WARNING: adb was not found on PATH nor was ANDROID_HOME set; "
             "Android devices will not be added to settings.json"
         )
+
+    # Offline compiler.
+    device = Device(
+        name="offline_compiler_1",
+        shader_compiler=DeviceShaderCompiler(
+            binary="amdllpc", args=["-gfxip=9.0.0", "-verify-ir", "-auto-layout-desc"]
+        ),
+    )
+    device_list.devices.extend([device])
+    # Don't add to active devices, since this is mostly just an example.
 
     return device_list
 

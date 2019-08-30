@@ -8,6 +8,10 @@ from gfauto.device_pb2 import (
     DeviceList as gfauto___device_pb2___DeviceList,
 )
 
+from google.protobuf.descriptor import (
+    Descriptor as google___protobuf___descriptor___Descriptor,
+)
+
 from google.protobuf.internal.containers import (
     RepeatedCompositeFieldContainer as google___protobuf___internal___containers___RepeatedCompositeFieldContainer,
 )
@@ -27,6 +31,7 @@ from typing_extensions import (
 
 
 class Settings(google___protobuf___message___Message):
+    DESCRIPTOR: google___protobuf___descriptor___Descriptor = ...
     maximum_duplicate_crashes = ... # type: int
 
     @property
@@ -36,6 +41,7 @@ class Settings(google___protobuf___message___Message):
     def custom_binaries(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[gfauto___common_pb2___Binary]: ...
 
     def __init__(self,
+        *,
         device_list : typing___Optional[gfauto___device_pb2___DeviceList] = None,
         custom_binaries : typing___Optional[typing___Iterable[gfauto___common_pb2___Binary]] = None,
         maximum_duplicate_crashes : typing___Optional[int] = None,
@@ -49,4 +55,4 @@ class Settings(google___protobuf___message___Message):
         def ClearField(self, field_name: typing_extensions___Literal[u"custom_binaries",u"device_list",u"maximum_duplicate_crashes"]) -> None: ...
     else:
         def HasField(self, field_name: typing_extensions___Literal[u"device_list",b"device_list"]) -> bool: ...
-        def ClearField(self, field_name: typing_extensions___Literal[b"custom_binaries",b"device_list",b"maximum_duplicate_crashes"]) -> None: ...
+        def ClearField(self, field_name: typing_extensions___Literal[u"custom_binaries",b"custom_binaries",u"device_list",b"device_list",u"maximum_duplicate_crashes",b"maximum_duplicate_crashes"]) -> None: ...
