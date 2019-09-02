@@ -26,12 +26,18 @@ from gfauto import shader_job_util, subprocess_util, util
 from gfauto.device_pb2 import DeviceShaderCompiler
 from gfauto.gflogging import log
 
+DEFAULT_TIMEOUT = 600
 
-def run_shader(compiler_path: Path, shader_path: Path, output_dir: Path) -> Path:
+
+def run_shader(
+    compiler_path: Path, shader_path: Path, args: List[str], output_dir: Path
+) -> Path:
     output_file_path = output_dir / (shader_path.name + ".out")
-    cmd = [str(compiler_path), str(shader_path), "-o", str(output_file_path)]
+    cmd = [str(compiler_path)]
+    cmd += args
+    cmd += [str(shader_path), "-o", str(output_file_path)]
     cmd = util.prepend_catchsegv_if_available(cmd)
-    subprocess_util.run(cmd, verbose=True)
+    subprocess_util.run(cmd, verbose=True, timeout=DEFAULT_TIMEOUT)
     return output_file_path
 
 
@@ -57,6 +63,13 @@ def run_shader_job(
     result = []
 
     for shader_path in shader_paths:
-        result.append(run_shader(compiler_path, shader_path, output_dir))
+        result.append(
+            run_shader(
+                compiler_path=compiler_path,
+                shader_path=shader_path,
+                args=list(shader_compiler_device.args),
+                output_dir=output_dir,
+            )
+        )
 
     return result
