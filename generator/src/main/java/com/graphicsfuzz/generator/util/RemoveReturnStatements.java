@@ -26,8 +26,8 @@ public class RemoveReturnStatements extends RemoveStatements {
   public RemoveReturnStatements(IAstNode node) {
     super(item -> item instanceof ReturnStmt,
         item -> ((ReturnStmt) item).hasExpr()
-            ? Optional.of(new ExprStmt(((ReturnStmt) item).getExpr()))
-            : Optional.empty(),
+            ? new ExprStmt(((ReturnStmt) item).getExpr())
+            : makeIntConstantExprStmt(),
         node);
   }
 

@@ -29,7 +29,7 @@ public class RemoveReturnStatementsTest {
   @Test
   public void testDo() throws Exception {
     final String prog = "void main() { do return; while(true); }";
-    final String expectedProg = "void main() { do ; while(true); }";
+    final String expectedProg = "void main() { do 1; while(true); }";
     TranslationUnit tu = ParseHelper.parse(prog);
     new RemoveReturnStatements(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),
@@ -39,7 +39,7 @@ public class RemoveReturnStatementsTest {
   @Test
   public void testWhile() throws Exception {
     final String prog = "void main() { while(true) return; }";
-    final String expectedProg = "void main() { while(true) ; }";
+    final String expectedProg = "void main() { while(true) 1; }";
     TranslationUnit tu = ParseHelper.parse(prog);
     new RemoveReturnStatements(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),
@@ -49,7 +49,7 @@ public class RemoveReturnStatementsTest {
   @Test
   public void testFor() throws Exception {
     final String prog = "void main() { for(int i = 0; i < 100; i++) return; }";
-    final String expectedProg = "void main() { for(int i = 0; i < 100; i++) ; }";
+    final String expectedProg = "void main() { for(int i = 0; i < 100; i++) 1; }";
     TranslationUnit tu = ParseHelper.parse(prog);
     new RemoveReturnStatements(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),
@@ -59,7 +59,27 @@ public class RemoveReturnStatementsTest {
   @Test
   public void testIf() throws Exception {
     final String prog = "void main() { if(true) return; else return; }";
-    final String expectedProg = "void main() { if(true) ; else ; }";
+    final String expectedProg = "void main() { if(true) 1; else 1; }";
+    TranslationUnit tu = ParseHelper.parse(prog);
+    new RemoveReturnStatements(tu);
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),
+        PrettyPrinterVisitor.prettyPrintAsString(tu));
+  }
+
+  @Test
+  public void testSwitch() throws Exception {
+    final String prog = "void main() {\n"
+        + "  switch(0) {\n"
+        + "    case 0:\n"
+        + "      return;\n"
+        + "  }\n"
+        + "}\n";
+    final String expectedProg = "void main() {\n"
+        + "  switch(0) {\n"
+        + "    case 0:\n"
+        + "      1;\n"
+        + "  }\n"
+        + "}\n";
     TranslationUnit tu = ParseHelper.parse(prog);
     new RemoveReturnStatements(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),

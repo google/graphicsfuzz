@@ -20,10 +20,8 @@ import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.stmt.BreakStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
-import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
-import java.util.Optional;
 
 /**
  * This class removes break statements that are not nested inside loop or switch statements.
@@ -32,7 +30,7 @@ public class RemoveImmediateBreakStatements extends RemoveStatements {
 
   public RemoveImmediateBreakStatements(IAstNode node) {
     super(item -> item instanceof BreakStmt,
-        item -> Optional.of(new NullStmt()), node);
+        item -> makeIntConstantExprStmt(), node);
   }
 
   @Override
