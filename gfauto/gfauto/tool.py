@@ -42,6 +42,10 @@ AMBER_COMMAND_PROBE_TOP_LEFT_RED = "probe rgba (0, 0) (1, 0, 0, 1)\n"
 
 AMBER_COMMAND_PROBE_TOP_LEFT_WHITE = "probe rgba (0, 0) (1, 1, 1, 1)\n"
 
+AMBER_COMMAND_EXPECT_RED = (
+    "EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255\n"
+)
+
 
 def get_copyright_header_google(year: str) -> str:
     return f"""Copyright {year} Google LLC
@@ -277,7 +281,6 @@ def get_compilation_settings(
 
 
 def glsl_shader_job_crash_to_amber_script_for_google_cts(
-    input_json: Path,
     output_amber: Path,
     work_dir: Path,
     short_description: str,
@@ -288,6 +291,8 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
     spirv_opt_args: Optional[List[str]] = None,
     spirv_opt_hash: Optional[str] = None,
     test_metadata_path: Optional[Path] = None,
+    input_json: Optional[Path] = None,
+    source_dir: Optional[Path] = None,
 ) -> Path:
     """
     Converts a GLSL shader job to an Amber script suitable for adding to the CTS.
@@ -303,8 +308,16 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
     :param spirv_opt_args:
     :param spirv_opt_hash:
     :param test_metadata_path:
+    :param source_dir:
     :return:
     """
+    if source_dir:
+        input_json = source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
+        test_metadata_path = source_dir / test_util.TEST_METADATA
+    else:
+        check(bool(input_json), AssertionError("Need input_json or source_dir"))
+        assert input_json  # noqa
+
     # Get compilation settings
     (binary_paths, spirv_opt_args, spirv_opt_hash) = get_compilation_settings(
         binary_paths, spirv_opt_args, spirv_opt_hash, test_metadata_path
