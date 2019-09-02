@@ -20,9 +20,7 @@ import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.stmt.ContinueStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
-import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
-import java.util.Optional;
 
 /**
  * This class removes continue statements that are not nested inside loops.
@@ -31,7 +29,7 @@ public class RemoveImmediateContinueStatements extends RemoveStatements {
 
   public RemoveImmediateContinueStatements(IAstNode node) {
     super(item -> item instanceof ContinueStmt,
-        item -> Optional.of(new NullStmt()), node);
+        item -> makeIntConstantExprStmt(), node);
   }
 
   @Override

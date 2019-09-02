@@ -138,7 +138,7 @@ public class DonateLiveCodeTransformationTest {
           ShadingLanguageVersion.ESSL_310);
       assertEquals("{\n"
           + " if(i > 5)\n"
-          + "  ;\n"
+          + "  1;\n"
           + "}\n", donated.getText());
     }
 
@@ -159,6 +159,7 @@ public class DonateLiveCodeTransformationTest {
     final TranslationUnit reference = ParseHelper.parse("#version 100\n"
         + "void main() {\n"
         + "  for(int i = 0; i < 100; i++) {\n"
+        + "      1;\n"
         + "  }\n"
         + "}\n");
 
@@ -176,7 +177,7 @@ public class DonateLiveCodeTransformationTest {
           ShadingLanguageVersion.ESSL_100);
       assertEquals("{\n"
           + " if(i > 5)\n"
-          + "  ;\n"
+          + "  1;\n"
           + "}\n", donated.getText());
     }
 
@@ -223,9 +224,9 @@ public class DonateLiveCodeTransformationTest {
           ShadingLanguageVersion.ESSL_310);
       assertEquals("{\n"
           + " {\n"
-          + "  ;\n"
+          + "  1;\n"
           + "  x ++;\n"
-          + "  ;\n"
+          + "  1;\n"
           + "  x ++;\n"
           + " }\n"
           + "}\n", donated.getText());

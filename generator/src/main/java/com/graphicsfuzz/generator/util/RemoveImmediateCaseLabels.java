@@ -18,9 +18,7 @@ package com.graphicsfuzz.generator.util;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.stmt.CaseLabel;
-import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
-import java.util.Optional;
 
 /**
  * This class removes case labels (including default) that are not nested inside switch statements.
@@ -29,7 +27,7 @@ public class RemoveImmediateCaseLabels extends RemoveStatements {
 
   public RemoveImmediateCaseLabels(IAstNode node) {
     super(item -> item instanceof CaseLabel,
-        item -> Optional.of(new NullStmt()), node);
+        item -> makeIntConstantExprStmt(), node);
   }
 
   @Override
