@@ -142,23 +142,33 @@ def main() -> None:
         help="The seed to use for one fuzzing iteration (useful for reproducing an issue).",
     )
 
+    parser.add_argument(
+        "--skip_writing_binary_recipes",
+        help="Don't write the default binary recipes to ROOT/binaries. "
+        "This is useful when running multiple, parallel instances of gfauto because otherwise the writes will race.",
+        action="store_true",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     settings_path = Path(parsed_args.settings)
-    iteration_seed: Optional[int] = int(
+    iteration_seed: Optional[int] = None if parsed_args.iteration_seed is None else int(
         parsed_args.iteration_seed
-    ) if parsed_args.iteration_seed else None
+    )
+    skip_writing_binary_recipes: bool = parsed_args.skip_writing_binary_recipes
 
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
         try:
-            main_helper(settings_path, iteration_seed)
+            main_helper(settings_path, iteration_seed, skip_writing_binary_recipes)
         finally:
             gflogging.pop_stream_for_logging()
 
 
 def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many-statements;
-    settings_path: Path, iteration_seed_override: Optional[int]
+    settings_path: Path,
+    iteration_seed_override: Optional[int],
+    skip_writing_binary_recipes: bool,
 ) -> None:
 
     try:
@@ -177,6 +187,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
 
     reports_dir = Path() / "reports"
     temp_dir = Path() / "temp"
+    references_dir = Path() / "references"
     donors_dir = Path() / "donors"
     spirv_fuzz_shaders_dir = Path() / "spirv_fuzz_shaders"
 
@@ -190,13 +201,14 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
             )
             util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
 
-    artifact_util.recipes_write_built_in()
+    if not skip_writing_binary_recipes:
+        artifact_util.recipes_write_built_in()
 
     # Log a warning if there is no tool on the PATH for printing stack traces.
     util.prepend_catchsegv_if_available([], log_warning=True)
 
     # TODO: make GraphicsFuzz find donors recursively.
-    references = sorted(donors_dir.rglob("*.json"))
+    references = sorted(references_dir.rglob("*.json"))
 
     # Filter to only include .json files that have at least one shader (.frag, .vert, .comp) file.
     references = [ref for ref in references if shader_job_util.get_related_files(ref)]
@@ -226,7 +238,8 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
 
     while True:
 
-        if iteration_seed_override:
+        # We have to use "is not None" because the seed could be 0.
+        if iteration_seed_override is not None:
             iteration_seed = iteration_seed_override
         else:
             iteration_seed = secrets.randbits(ITERATION_SEED_BITS)
@@ -240,7 +253,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
         try:
             util.mkdir_p_new(staging_dir)
         except FileExistsError:
-            if iteration_seed_override:
+            if iteration_seed_override is not None:
                 raise
             log(f"Staging directory already exists: {str(staging_dir)}")
             log(f"Starting new iteration.")
@@ -275,7 +288,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
 
         shutil.rmtree(staging_dir)
 
-        if iteration_seed_override:
+        if iteration_seed_override is not None:
             log("Stopping due to iteration_seed")
             break
 

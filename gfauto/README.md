@@ -124,11 +124,12 @@ You can alternatively execute the `./dev_shell.sh` script, but this is fairly sl
 
 ## Fuzzing
 
-To start fuzzing, create and change to a directory outside the `gfauto/` directory. E.g. `/data/temp/gfauto_fuzzing/2019_06_24`. From here, create a `donors/` directory containing GLSL shader jobs as used by GraphicsFuzz.
+To start fuzzing, create and change to a directory outside the `gfauto/` directory. E.g. `/data/temp/gfauto_fuzzing/2019_06_24`. From here, create `references/` and `donors/` directories containing GLSL shader jobs as used by GraphicsFuzz.
 You can get some samples from the GraphicsFuzz project.
 
 ```sh
-mkdir donors/
+mkdir references/ donors/ 
+cp /data/graphicsfuzz_zip/samples/310es/* references/
 cp /data/graphicsfuzz_zip/samples/310es/* donors/
 ```
 
@@ -145,5 +146,20 @@ The `active_device_names` list should be modified to include only the unique dev
 
 * Including multiple, identical devices (with the same GPU and drivers) is not recommended, as it will currently result in redundant testing.
 * `host_preprocessor` should always be included first, as this virtual device detects failures in tools such as `glslangValidator` and `spirv-opt`, and will ensure such failures will not be logged for real devices.
-* You can use `--settings SETTINGS.json` to use a settings file other than `settings.json` (the default). In this way, you can run multiple instances of `gfauto_fuzz` in parallel to test *different* devices (`host_preprocessor` and `swift_shader` can be included in parallel instances). The code that downloads the binaries is not safe to run concurrently at the time of writing; running one instance for a few minutes to download the latest binaries is usually sufficient to then allow additional instances to be started without conflicts.
+* You can use `--settings SETTINGS.json` to use a settings file other than `settings.json` (the default). In this way, you can run multiple instances of `gfauto_fuzz` in parallel to test *different* devices. When starting, `gfauto_fuzz` writes the built-in recipes to `//binaries/`, and this code is not safe to run concurrently; run `gfauto_fuzz` at least once to ensure the recipes are written and then use the `--skip_writing_binary_recipes` option to prevent other instances of `gfauto_fuzz` from writing them on start-up. The code that downloads binaries is not safe to run concurrently at the time of writing; running one instance for a few minutes to download the latest binaries is usually sufficient to then allow additional instances to be started without conflicts.
 
+You can generate a space-separated list of seeds as follows:
+
+```python
+import secrets
+
+" ".join([str(secrets.randbits(256)) for i in range(0, 1000)])
+```
+
+Assuming you saved those to `../seeds.txt`, you can run parallel instances of `gfauto_fuzz` using:
+
+```sh
+parallel -j 64 gfauto_fuzz --skip_writing_binary_recipes --iteration_seed -- $(cat ../seeds.txt)
+```
+
+This is probably only suitable for testing the `host_preprocessor` and `swift_shader` virtual devices; running parallel tests on actual hardware is likely to give unreliable results.
