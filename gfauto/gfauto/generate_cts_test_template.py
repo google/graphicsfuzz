@@ -40,15 +40,14 @@ def main() -> None:
     artifact_util.recipes_write_built_in()
 
     tool.glsl_shader_job_crash_to_amber_script_for_google_cts(
-        input_json=Path() / "reduced_glsl" / "variant" / "shader.json",
+        source_dir=Path() / "reduced_glsl_manual",
         output_amber=Path() / "name-of-test-TODO.amber",
         work_dir=Path() / "work",
         # One sentence, 58 characters max., no period, no line breaks.
         short_description="A fragment shader with TODO",
         comment_text="""The test passes because TODO""",
         copyright_year="2019",
-        extra_commands=tool.AMBER_COMMAND_PROBE_TOP_LEFT_RED,
-        test_metadata_path=Path() / "reduced_glsl" / "test.json",
+        extra_commands=tool.AMBER_COMMAND_EXPECT_RED,
     )
 
 

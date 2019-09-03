@@ -20,7 +20,9 @@ Used to convert shader jobs to Amber script tests that are suitable for adding t
 """
 
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple
+
+from attr import dataclass
 
 from gfauto import (
     amber_converter,
@@ -39,6 +41,10 @@ from gfauto.util import check
 AMBER_COMMAND_PROBE_TOP_LEFT_RED = "probe rgba (0, 0) (1, 0, 0, 1)\n"
 
 AMBER_COMMAND_PROBE_TOP_LEFT_WHITE = "probe rgba (0, 0) (1, 1, 1, 1)\n"
+
+AMBER_COMMAND_EXPECT_RED = (
+    "EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255\n"
+)
 
 
 def get_copyright_header_google(year: str) -> str:
@@ -155,12 +161,21 @@ def validate_spirv_shader_job(
     )
 
 
+@dataclass
+class SpirvAndSpirvAsmShaderJob:
+    spirv_asm_shader_job: Path
+    spirv_shader_job: Path
+
+    def __iter__(self) -> Iterator[Path]:
+        return iter((self.spirv_asm_shader_job, self.spirv_shader_job))
+
+
 def compile_shader_job(
     input_json: Path,
     work_dir: Path,
     binary_paths: binaries_util.BinaryGetter,
     spirv_opt_args: Optional[List[str]] = None,
-) -> Path:
+) -> SpirvAndSpirvAsmShaderJob:
 
     result = input_json
 
@@ -206,7 +221,7 @@ def compile_shader_job(
 
         validate_spirv_shader_job(result_spirv, binary_paths)
 
-    return result
+    return SpirvAndSpirvAsmShaderJob(result, result_spirv)
 
 
 def glsl_shader_job_to_amber_script(
@@ -218,10 +233,15 @@ def glsl_shader_job_to_amber_script(
     spirv_opt_args: Optional[List[str]] = None,
 ) -> Path:
 
-    result = compile_shader_job(input_json, work_dir, binary_paths, spirv_opt_args)
-    result = amberfy(result, output_amber, amberfy_settings, input_json)
+    spirv_asm_shader_job = compile_shader_job(
+        input_json, work_dir, binary_paths, spirv_opt_args
+    ).spirv_asm_shader_job
 
-    return result
+    amber_test_path = amberfy(
+        spirv_asm_shader_job, output_amber, amberfy_settings, input_json
+    )
+
+    return amber_test_path
 
 
 def get_compilation_settings(
@@ -261,7 +281,6 @@ def get_compilation_settings(
 
 
 def glsl_shader_job_crash_to_amber_script_for_google_cts(
-    input_json: Path,
     output_amber: Path,
     work_dir: Path,
     short_description: str,
@@ -272,6 +291,8 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
     spirv_opt_args: Optional[List[str]] = None,
     spirv_opt_hash: Optional[str] = None,
     test_metadata_path: Optional[Path] = None,
+    input_json: Optional[Path] = None,
+    source_dir: Optional[Path] = None,
 ) -> Path:
     """
     Converts a GLSL shader job to an Amber script suitable for adding to the CTS.
@@ -287,8 +308,16 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
     :param spirv_opt_args:
     :param spirv_opt_hash:
     :param test_metadata_path:
+    :param source_dir:
     :return:
     """
+    if source_dir:
+        input_json = source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
+        test_metadata_path = source_dir / test_util.TEST_METADATA
+    else:
+        check(bool(input_json), AssertionError("Need input_json or source_dir"))
+        assert input_json  # noqa
+
     # Get compilation settings
     (binary_paths, spirv_opt_args, spirv_opt_hash) = get_compilation_settings(
         binary_paths, spirv_opt_args, spirv_opt_hash, test_metadata_path
@@ -361,7 +390,7 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
                 work_dir / shader_job,
                 binary_paths,
                 spirv_opt_args=spirv_opt_args,
-            ),
+            ).spirv_asm_shader_job,
             source_dir / shader_job / test_util.SHADER_JOB,
             "",
         )

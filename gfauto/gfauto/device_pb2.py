@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='gfauto',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x13gfauto/device.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\"J\n\nDeviceList\x12\x1b\n\x13\x61\x63tive_device_names\x18\x01 \x03(\t\x12\x1f\n\x07\x64\x65vices\x18\x02 \x03(\x0b\x32\x0e.gfauto.Device\"\xf3\x01\n\x06\x44\x65vice\x12\x0c\n\x04name\x18\x01 \x01(\t\x12.\n\npreprocess\x18\x02 \x01(\x0b\x32\x18.gfauto.DevicePreprocessH\x00\x12\x31\n\x0cswift_shader\x18\x03 \x01(\x0b\x32\x19.gfauto.DeviceSwiftShaderH\x00\x12\"\n\x04host\x18\x04 \x01(\x0b\x32\x12.gfauto.DeviceHostH\x00\x12(\n\x07\x61ndroid\x18\x05 \x01(\x0b\x32\x15.gfauto.DeviceAndroidH\x00\x12 \n\x08\x62inaries\x18\x06 \x03(\x0b\x32\x0e.gfauto.BinaryB\x08\n\x06\x64\x65vice\"\x13\n\x11\x44\x65viceSwiftShader\"\x12\n\x10\x44\x65vicePreprocess\"\x0c\n\nDeviceHost\".\n\rDeviceAndroid\x12\x0e\n\x06serial\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n\x13gfauto/device.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\"J\n\nDeviceList\x12\x1b\n\x13\x61\x63tive_device_names\x18\x01 \x03(\t\x12\x1f\n\x07\x64\x65vices\x18\x02 \x03(\x0b\x32\x0e.gfauto.Device\"\xac\x02\n\x06\x44\x65vice\x12\x0c\n\x04name\x18\x01 \x01(\t\x12.\n\npreprocess\x18\x02 \x01(\x0b\x32\x18.gfauto.DevicePreprocessH\x00\x12\x31\n\x0cswift_shader\x18\x03 \x01(\x0b\x32\x19.gfauto.DeviceSwiftShaderH\x00\x12\"\n\x04host\x18\x04 \x01(\x0b\x32\x12.gfauto.DeviceHostH\x00\x12(\n\x07\x61ndroid\x18\x05 \x01(\x0b\x32\x15.gfauto.DeviceAndroidH\x00\x12\x37\n\x0fshader_compiler\x18\x07 \x01(\x0b\x32\x1c.gfauto.DeviceShaderCompilerH\x00\x12 \n\x08\x62inaries\x18\x06 \x03(\x0b\x32\x0e.gfauto.BinaryB\x08\n\x06\x64\x65vice\"\x13\n\x11\x44\x65viceSwiftShader\"\x12\n\x10\x44\x65vicePreprocess\"\x0c\n\nDeviceHost\".\n\rDeviceAndroid\x12\x0e\n\x06serial\x18\x01 \x01(\t\x12\r\n\x05model\x18\x02 \x01(\t\"4\n\x14\x44\x65viceShaderCompiler\x12\x0e\n\x06\x62inary\x18\x01 \x01(\t\x12\x0c\n\x04\x61rgs\x18\x02 \x03(\tb\x06proto3')
   ,
   dependencies=[gfauto_dot_common__pb2.DESCRIPTOR,])
 
@@ -109,7 +109,14 @@ _DEVICE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='binaries', full_name='gfauto.Device.binaries', index=5,
+      name='shader_compiler', full_name='gfauto.Device.shader_compiler', index=5,
+      number=7, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='binaries', full_name='gfauto.Device.binaries', index=6,
       number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -131,7 +138,7 @@ _DEVICE = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=129,
-  serialized_end=372,
+  serialized_end=429,
 )
 
 
@@ -154,8 +161,8 @@ _DEVICESWIFTSHADER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=374,
-  serialized_end=393,
+  serialized_start=431,
+  serialized_end=450,
 )
 
 
@@ -178,8 +185,8 @@ _DEVICEPREPROCESS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=395,
-  serialized_end=413,
+  serialized_start=452,
+  serialized_end=470,
 )
 
 
@@ -202,8 +209,8 @@ _DEVICEHOST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=415,
-  serialized_end=427,
+  serialized_start=472,
+  serialized_end=484,
 )
 
 
@@ -240,8 +247,46 @@ _DEVICEANDROID = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=429,
-  serialized_end=475,
+  serialized_start=486,
+  serialized_end=532,
+)
+
+
+_DEVICESHADERCOMPILER = _descriptor.Descriptor(
+  name='DeviceShaderCompiler',
+  full_name='gfauto.DeviceShaderCompiler',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='binary', full_name='gfauto.DeviceShaderCompiler.binary', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='args', full_name='gfauto.DeviceShaderCompiler.args', index=1,
+      number=2, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=534,
+  serialized_end=586,
 )
 
 _DEVICELIST.fields_by_name['devices'].message_type = _DEVICE
@@ -249,6 +294,7 @@ _DEVICE.fields_by_name['preprocess'].message_type = _DEVICEPREPROCESS
 _DEVICE.fields_by_name['swift_shader'].message_type = _DEVICESWIFTSHADER
 _DEVICE.fields_by_name['host'].message_type = _DEVICEHOST
 _DEVICE.fields_by_name['android'].message_type = _DEVICEANDROID
+_DEVICE.fields_by_name['shader_compiler'].message_type = _DEVICESHADERCOMPILER
 _DEVICE.fields_by_name['binaries'].message_type = gfauto_dot_common__pb2._BINARY
 _DEVICE.oneofs_by_name['device'].fields.append(
   _DEVICE.fields_by_name['preprocess'])
@@ -262,12 +308,16 @@ _DEVICE.fields_by_name['host'].containing_oneof = _DEVICE.oneofs_by_name['device
 _DEVICE.oneofs_by_name['device'].fields.append(
   _DEVICE.fields_by_name['android'])
 _DEVICE.fields_by_name['android'].containing_oneof = _DEVICE.oneofs_by_name['device']
+_DEVICE.oneofs_by_name['device'].fields.append(
+  _DEVICE.fields_by_name['shader_compiler'])
+_DEVICE.fields_by_name['shader_compiler'].containing_oneof = _DEVICE.oneofs_by_name['device']
 DESCRIPTOR.message_types_by_name['DeviceList'] = _DEVICELIST
 DESCRIPTOR.message_types_by_name['Device'] = _DEVICE
 DESCRIPTOR.message_types_by_name['DeviceSwiftShader'] = _DEVICESWIFTSHADER
 DESCRIPTOR.message_types_by_name['DevicePreprocess'] = _DEVICEPREPROCESS
 DESCRIPTOR.message_types_by_name['DeviceHost'] = _DEVICEHOST
 DESCRIPTOR.message_types_by_name['DeviceAndroid'] = _DEVICEANDROID
+DESCRIPTOR.message_types_by_name['DeviceShaderCompiler'] = _DEVICESHADERCOMPILER
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 DeviceList = _reflection.GeneratedProtocolMessageType('DeviceList', (_message.Message,), {
@@ -311,6 +361,13 @@ DeviceAndroid = _reflection.GeneratedProtocolMessageType('DeviceAndroid', (_mess
   # @@protoc_insertion_point(class_scope:gfauto.DeviceAndroid)
   })
 _sym_db.RegisterMessage(DeviceAndroid)
+
+DeviceShaderCompiler = _reflection.GeneratedProtocolMessageType('DeviceShaderCompiler', (_message.Message,), {
+  'DESCRIPTOR' : _DEVICESHADERCOMPILER,
+  '__module__' : 'gfauto.device_pb2'
+  # @@protoc_insertion_point(class_scope:gfauto.DeviceShaderCompiler)
+  })
+_sym_db.RegisterMessage(DeviceShaderCompiler)
 
 
 # @@protoc_insertion_point(module_scope)

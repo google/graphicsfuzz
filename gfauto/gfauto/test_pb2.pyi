@@ -8,6 +8,10 @@ from gfauto.device_pb2 import (
     Device as gfauto___device_pb2___Device,
 )
 
+from google.protobuf.descriptor import (
+    Descriptor as google___protobuf___descriptor___Descriptor,
+)
+
 from google.protobuf.internal.containers import (
     RepeatedCompositeFieldContainer as google___protobuf___internal___containers___RepeatedCompositeFieldContainer,
     RepeatedScalarFieldContainer as google___protobuf___internal___containers___RepeatedScalarFieldContainer,
@@ -29,6 +33,7 @@ from typing_extensions import (
 
 
 class Test(google___protobuf___message___Message):
+    DESCRIPTOR: google___protobuf___descriptor___Descriptor = ...
     crash_signature = ... # type: typing___Text
 
     @property
@@ -44,6 +49,7 @@ class Test(google___protobuf___message___Message):
     def binaries(self) -> google___protobuf___internal___containers___RepeatedCompositeFieldContainer[gfauto___common_pb2___Binary]: ...
 
     def __init__(self,
+        *,
         glsl : typing___Optional[TestGlsl] = None,
         spirv_fuzz : typing___Optional[TestSpirvFuzz] = None,
         crash_signature : typing___Optional[typing___Text] = None,
@@ -59,13 +65,15 @@ class Test(google___protobuf___message___Message):
         def ClearField(self, field_name: typing_extensions___Literal[u"binaries",u"crash_signature",u"device",u"glsl",u"spirv_fuzz",u"test"]) -> None: ...
     else:
         def HasField(self, field_name: typing_extensions___Literal[u"device",b"device",u"glsl",b"glsl",u"spirv_fuzz",b"spirv_fuzz",u"test",b"test"]) -> bool: ...
-        def ClearField(self, field_name: typing_extensions___Literal[b"binaries",b"crash_signature",b"device",b"glsl",b"spirv_fuzz",b"test"]) -> None: ...
+        def ClearField(self, field_name: typing_extensions___Literal[u"binaries",b"binaries",u"crash_signature",b"crash_signature",u"device",b"device",u"glsl",b"glsl",u"spirv_fuzz",b"spirv_fuzz",u"test",b"test"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions___Literal[u"test",b"test"]) -> typing_extensions___Literal["glsl","spirv_fuzz"]: ...
 
 class TestGlsl(google___protobuf___message___Message):
+    DESCRIPTOR: google___protobuf___descriptor___Descriptor = ...
     spirv_opt_args = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
 
     def __init__(self,
+        *,
         spirv_opt_args : typing___Optional[typing___Iterable[typing___Text]] = None,
         ) -> None: ...
     @classmethod
@@ -75,9 +83,10 @@ class TestGlsl(google___protobuf___message___Message):
     if sys.version_info >= (3,):
         def ClearField(self, field_name: typing_extensions___Literal[u"spirv_opt_args"]) -> None: ...
     else:
-        def ClearField(self, field_name: typing_extensions___Literal[b"spirv_opt_args"]) -> None: ...
+        def ClearField(self, field_name: typing_extensions___Literal[u"spirv_opt_args",b"spirv_opt_args"]) -> None: ...
 
 class TestSpirvFuzz(google___protobuf___message___Message):
+    DESCRIPTOR: google___protobuf___descriptor___Descriptor = ...
 
     def __init__(self,
         ) -> None: ...

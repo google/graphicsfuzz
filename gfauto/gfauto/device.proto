@@ -34,6 +34,7 @@ message Device {
     DeviceSwiftShader swift_shader = 3;
     DeviceHost host = 4;
     DeviceAndroid android = 5;
+    DeviceShaderCompiler shader_compiler = 7;
   }
   // A device can specify/override some binaries. E.g. you may want several SwiftShader "devices" with different
   // versions or configurations of SwiftShader.
@@ -57,4 +58,10 @@ message DeviceHost {
 message DeviceAndroid {
   string serial = 1;
   string model = 2;
+}
+
+// A virtual device that just executes an offline shader compiler.
+message DeviceShaderCompiler {
+  string binary = 1;
+  repeated string args = 2;
 }

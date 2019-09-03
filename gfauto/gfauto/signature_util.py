@@ -104,6 +104,12 @@ PATTERN_SWIFT_SHADER_ABORT = re.compile(r":\d+ ABORT:(.*)")
 
 PATTERN_SWIFT_SHADER_WARNING = re.compile(r":\d+ WARNING:(.*)")
 
+PATTERN_CATCH_ALL_ERROR = re.compile(r"\nERROR: (.*)")
+
+PATTERN_LLVM_FATAL_ERROR = re.compile(
+    r"LLVM FATAL ERROR:Broken function found, compilation aborted![\s\S]*STDERR:\n(.*)"
+)
+
 
 def remove_hex_like(string: str) -> str:
     temp = string
@@ -150,6 +156,12 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
     match: Optional[Match[str]]
     # noinspection PyUnusedLocal
     group: Optional[str]
+
+    # LLVM FATAL ERROR.
+    # [\s\S] matches anything, including newlines.
+    group = basic_match(PATTERN_LLVM_FATAL_ERROR, log_contents)
+    if group:
+        return group
 
     # glslang error.
     group = basic_match(PATTERN_GLSLANG_ERROR, log_contents)
@@ -261,6 +273,10 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
         result = get_signature_from_catchsegv_frame_address(log_contents)
         if result:
             return result
+
+    group = basic_match(PATTERN_CATCH_ALL_ERROR, log_contents)
+    if group:
+        return group
 
     if "Shader compilation failed" in log_contents:
         return "compile_error"
