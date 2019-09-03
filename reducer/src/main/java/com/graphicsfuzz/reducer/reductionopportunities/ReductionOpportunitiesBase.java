@@ -94,7 +94,10 @@ public abstract class ReductionOpportunitiesBase
 
   @Override
   public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
-    super.visitExprCaseLabel(exprCaseLabel);
+    // Do *not* invoke super.visitExprCaseLabel(...), as we do not wish to look for opportunities
+    // to simplify the literal expression that is used as a case label.  Literals are simple enough
+    // already, and attempting to change the value of a case label literal runs the risk of
+    // introducing duplicate case labels.
     injectionTracker.notifySwitchCase(exprCaseLabel);
   }
 
