@@ -413,7 +413,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
 
             amber_script_file = tool.amberfy(
                 spirv_asm_shader_job_path,
-                output_dir,
+                output_dir / "test.amber",
                 amber_converter.AmberfySettings(
                     spirv_opt_args=list(test.glsl.spirv_opt_args),
                     spirv_opt_hash=spirv_opt_hash,
