@@ -172,4 +172,21 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
           new RandomWrapper(0), new IdGenerator()));
   }
 
+  @Test
+  public void testSwitch() throws Exception {
+    final String program = "#version 310 es\n"
+        + "void main() {\n"
+        + "  switch(0) {\n"
+        + "    case - 1:\n"
+        + "      1;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<SimplifyExprReductionOpportunity> ops =
+        CompoundExprToSubExprReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(true, ShadingLanguageVersion.ESSL_310, new RandomWrapper(0),
+            new IdGenerator()));
+    assertEquals(0, ops.size());
+  }
+
 }
