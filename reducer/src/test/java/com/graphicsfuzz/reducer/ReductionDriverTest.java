@@ -23,8 +23,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -115,7 +118,7 @@ public class ReductionDriverTest {
                 MakeShaderJobFromFragmentShader.make(tu),
                 new ReducerContext(false, version, generator, new IdGenerator()),
                 fileOps);
-    assertEquals(3, ops.size());
+    assertEquals(4, ops.size());
 
     new ReductionDriver(
         new ReducerContext(
@@ -720,6 +723,131 @@ public class ReductionDriverTest {
         false,
         fileOps,
         usesFooFileJudge,
+        workDir)
+        .doReduction(shaderJob, "temp", 0, 100);
+
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+
+  }
+
+  @Test
+  public void testRemoveIfOrLoopButKeepGuard() throws Exception {
+    final String shaderIf = "#version 310 es\n"
+        + "void main() {\n"
+        + "  if(1 > 0) {\n"
+        + "  }\n"
+        + "}\n";
+
+    final String shaderWhile = "#version 310 es\n"
+        + "void main() {\n"
+        + "  while(1 > 0) {\n"
+        + "  }\n"
+        + "}\n";
+
+    final String shaderDoWhile = "#version 310 es\n"
+        + "void main() {\n"
+        + "  do {\n"
+        + "  } while(1 > 0);\n"
+        + "}\n";
+
+    final String shaderFor = "#version 310 es\n"
+        + "void main() {\n"
+        + "  for (; 1 > 0; ) {\n"
+        + "  }\n"
+        + "}\n";
+
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  1 > 0;\n"
+        + "}\n";
+
+    final IFileJudge customFileJudge =
+        new CheckAstFeaturesFileJudge(Collections.singletonList(
+            () -> new CheckAstFeatureVisitor() {
+              @Override
+              public void visitBinaryExpr(BinaryExpr binaryExpr) {
+                super.visitBinaryExpr(binaryExpr);
+                if (binaryExpr.getOp() == BinOp.GT
+                    && binaryExpr.getLhs() instanceof IntConstantExpr
+                    && ((IntConstantExpr) binaryExpr.getLhs()).getNumericValue() == 1
+                    && binaryExpr.getRhs() instanceof IntConstantExpr
+                    && ((IntConstantExpr) binaryExpr.getRhs()).getNumericValue() == 0) {
+                  trigger();
+                }
+              }
+            }),
+            ShaderKind.FRAGMENT,
+            fileOps);
+
+    for (String shader : Arrays.asList(shaderIf, shaderWhile, shaderDoWhile, shaderFor)) {
+      final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+          new PipelineInfo(),
+          ParseHelper.parse(shader));
+
+      final File workDir = testFolder.getRoot();
+      final File tempShaderJobFile = new File(workDir, "temp.json");
+      fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
+
+      final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+          ShadingLanguageVersion.ESSL_310,
+          new RandomWrapper(0),
+          new IdGenerator()),
+          false,
+          fileOps,
+          customFileJudge,
+          workDir)
+          .doReduction(shaderJob, "temp", 0, 100);
+
+      CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+    }
+
+  }
+
+  @Test
+  public void testRemoveSwitchButKeepGuard() throws Exception {
+
+    final String shaderSwitch = "#version 310 es\n"
+        + "void main() {\n"
+        + "  switch(0) {\n"
+        + "    case 1:\n"
+        + "      break;\n"
+        + "  }\n"
+        + "}\n";
+
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  0;\n"
+        + "}\n";
+
+    final IFileJudge customFileJudge =
+        new CheckAstFeaturesFileJudge(Collections.singletonList(
+            () -> new CheckAstFeatureVisitor() {
+              @Override
+              public void visitIntConstantExpr(IntConstantExpr intConstantExpr) {
+                super.visitIntConstantExpr(intConstantExpr);
+                if (intConstantExpr.getNumericValue() == 0) {
+                  trigger();
+                }
+              }
+            }),
+            ShaderKind.FRAGMENT,
+            fileOps);
+
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        new PipelineInfo(),
+        ParseHelper.parse(shaderSwitch));
+
+    final File workDir = testFolder.getRoot();
+    final File tempShaderJobFile = new File(workDir, "temp.json");
+    fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
+
+    final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+        ShadingLanguageVersion.ESSL_310,
+        new RandomWrapper(0),
+        new IdGenerator()),
+        false,
+        fileOps,
+        customFileJudge,
         workDir)
         .doReduction(shaderJob, "temp", 0, 100);
 

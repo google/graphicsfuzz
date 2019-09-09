@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The GraphicsFuzz Project Authors
+ * Copyright 2019 The GraphicsFuzz Project Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,43 +17,42 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
-import com.graphicsfuzz.common.ast.stmt.LoopStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
-import com.graphicsfuzz.common.util.ContainsTopLevelContinue;
 import com.graphicsfuzz.common.util.ListConcat;
-import com.graphicsfuzz.common.util.MacroNames;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public class CompoundToBlockReductionOpportunities
-      extends ReductionOpportunitiesBase<CompoundToBlockReductionOpportunity> {
+public class CompoundToGuardReductionOpportunities
+      extends ReductionOpportunitiesBase<CompoundToGuardReductionOpportunity> {
 
-  private CompoundToBlockReductionOpportunities(
+  private CompoundToGuardReductionOpportunities(
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);
   }
 
-  static List<CompoundToBlockReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
+  static List<CompoundToGuardReductionOpportunity> findOpportunities(
+      ShaderJob shaderJob,
+      ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
+        .reduce(Collections.emptyList(), ListConcat::concatenate);
   }
 
-  private static List<CompoundToBlockReductionOpportunity> findOpportunitiesForShader(
+  private static List<CompoundToGuardReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
       ReducerContext context) {
-    CompoundToBlockReductionOpportunities finder =
-          new CompoundToBlockReductionOpportunities(tu, context);
+    CompoundToGuardReductionOpportunities finder =
+        new CompoundToGuardReductionOpportunities(tu, context);
     finder.visit(tu);
     return finder.getOpportunities();
   }
@@ -61,47 +60,45 @@ public class CompoundToBlockReductionOpportunities
   @Override
   public void visitDoStmt(DoStmt doStmt) {
     super.visitDoStmt(doStmt);
-    handleLoopStmt(doStmt);
+    addOpportunity(doStmt, doStmt.getCondition());
   }
 
   @Override
   public void visitForStmt(ForStmt forStmt) {
     super.visitForStmt(forStmt);
-    handleLoopStmt(forStmt);
+    // We can only replace a for loop with its guard if it actually has a guard.
+    // Furthermore, we require that the for loop does not have a declaration in its
+    // initializer, as this declaration might be used in the guard (so that we would
+    // need to preserve the declaration too if we are to keep the guard).
+    if (forStmt.hasCondition() && !(forStmt.getInit() instanceof DeclarationStmt)) {
+      addOpportunity(forStmt, forStmt.getCondition());
+    }
   }
 
   @Override
   public void visitWhileStmt(WhileStmt whileStmt) {
     super.visitWhileStmt(whileStmt);
-    handleLoopStmt(whileStmt);
-  }
-
-  private void handleLoopStmt(LoopStmt loopStmt) {
-    if (ContainsTopLevelBreak.check(loopStmt.getBody())
-          || ContainsTopLevelContinue.check(loopStmt.getBody())) {
-      return;
-    }
-    if (MacroNames.isDeadByConstruction(loopStmt.getCondition())) {
-      return;
-    }
-    addOpportunity(loopStmt, loopStmt.getBody());
+    addOpportunity(whileStmt, whileStmt.getCondition());
   }
 
   @Override
   public void visitIfStmt(IfStmt ifStmt) {
     super.visitIfStmt(ifStmt);
-    addOpportunity(ifStmt, ifStmt.getThenStmt());
-    if (ifStmt.hasElseStmt()) {
-      addOpportunity(ifStmt, ifStmt.getElseStmt());
-    }
+    addOpportunity(ifStmt, ifStmt.getCondition());
+  }
+
+  @Override
+  public void visitSwitchStmt(SwitchStmt switchStmt) {
+    super.visitSwitchStmt(switchStmt);
+    addOpportunity(switchStmt, switchStmt.getExpr());
   }
 
   private void addOpportunity(Stmt compoundStmt,
-        Stmt childStmt) {
+      Expr guard) {
     if (allowedToReduceCompoundStmt(compoundStmt)) {
-      addOpportunity(new CompoundToBlockReductionOpportunity(
-            parentMap.getParent(compoundStmt), compoundStmt, childStmt,
-            getVistitationDepth()));
+      addOpportunity(new CompoundToGuardReductionOpportunity(
+          parentMap.getParent(compoundStmt), compoundStmt, guard,
+          getVistitationDepth()));
     }
   }
 

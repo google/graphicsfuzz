@@ -138,6 +138,21 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
+  static IReductionOpportunityFinder<CompoundToGuardReductionOpportunity> compoundToGuardFinder() {
+    return new IReductionOpportunityFinder<CompoundToGuardReductionOpportunity>() {
+      @Override
+      public List<CompoundToGuardReductionOpportunity> findOpportunities(ShaderJob shaderJob,
+                                                                         ReducerContext context) {
+        return CompoundToGuardReductionOpportunities.findOpportunities(shaderJob, context);
+      }
+
+      @Override
+      public String getName() {
+        return "compoundToGuard";
+      }
+    };
+  }
+
   static IReductionOpportunityFinder<SimplifyExprReductionOpportunity>
       inlineInitializerFinder() {
     return new IReductionOpportunityFinder<SimplifyExprReductionOpportunity>() {

@@ -113,6 +113,7 @@ public class ReductionDriver {
         IReductionOpportunityFinder.mutationFinder(),
         IReductionOpportunityFinder.loopMergeFinder(),
         IReductionOpportunityFinder.compoundToBlockFinder(),
+        IReductionOpportunityFinder.compoundToGuardFinder(),
         IReductionOpportunityFinder.switchToLoopFinder(),
         IReductionOpportunityFinder.outlinedStatementFinder(),
         IReductionOpportunityFinder.unwrapFinder(),
