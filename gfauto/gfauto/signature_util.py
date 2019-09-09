@@ -106,9 +106,16 @@ PATTERN_SWIFT_SHADER_WARNING = re.compile(r":\d+ WARNING:(.*)")
 
 PATTERN_CATCH_ALL_ERROR = re.compile(r"\nERROR: (.*)")
 
+# [\s\S] matches anything, including newlines.
 PATTERN_LLVM_FATAL_ERROR = re.compile(
     r"LLVM FATAL ERROR:Broken function found, compilation aborted![\s\S]*STDERR:\n(.*)"
 )
+
+PATTERN_LLVM_MACHINE_CODE_ERROR = re.compile(
+    r"ERROR: LLVM FATAL ERROR:Found .* machine code error[\s\S]*Bad machine code: (.*)"
+)
+
+PATTERN_LLVM_ERROR_DIAGNOSIS = re.compile(r"ERROR: LLVM DIAGNOSIS INFO: (.*)")
 
 
 def remove_hex_like(string: str) -> str:
@@ -157,9 +164,18 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
     # noinspection PyUnusedLocal
     group: Optional[str]
 
-    # LLVM FATAL ERROR.
-    # [\s\S] matches anything, including newlines.
+    # LLVM FATAL ERROR (special override).
     group = basic_match(PATTERN_LLVM_FATAL_ERROR, log_contents)
+    if group:
+        return group
+
+    # LLVM MACHINE CODE ERROR (special override).
+    group = basic_match(PATTERN_LLVM_MACHINE_CODE_ERROR, log_contents)
+    if group:
+        return group
+
+    # LLVM ERROR DIAGNOSIS: should come before PATTERN_ASSERTION_FAILURE.
+    group = basic_match(PATTERN_LLVM_ERROR_DIAGNOSIS, log_contents)
     if group:
         return group
 
