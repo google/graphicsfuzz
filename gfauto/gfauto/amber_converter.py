@@ -565,7 +565,7 @@ def graphics_shader_job_amber_test_to_amber_script(
         result += f"RUN {prefix}_pipeline DRAW_RECT POS 0 0 SIZE 256 256\n"
         result += "\n"
 
-    # Add fuzzy compare of framebuffers if there's more than one pipeline
+    # Add fuzzy compare of framebuffers if there's more than one pipeline.
 
     for pipeline_index in range(1, len(jobs)):
         prefix_0 = jobs[0].name_prefix
@@ -626,15 +626,14 @@ def compute_shader_job_amber_test_to_amber_script(
 
         # Run the pipeline.
 
-        result += f"\nRUN {prefix}_pipeline {job.num_groups_def}\n"
+        result += f"\nRUN {prefix}_pipeline {job.num_groups_def}\n\n"
 
-    # Add fuzzy compare of result SSBOs if there's more than one pipeline
+    # Add fuzzy compare of result SSBOs if there's more than one pipeline.
 
     for pipeline_index in range(1, len(jobs)):
         prefix_0 = jobs[0].name_prefix
         prefix_1 = jobs[pipeline_index].name_prefix
-        result += "\n"
-        result += f"EXPECT {prefix_0}_ssbo RMSE_BUFFER {prefix_1}_ssbo TOLERANCE 7"
+        result += f"EXPECT {prefix_0}_ssbo RMSE_BUFFER {prefix_1}_ssbo TOLERANCE 7\n"
 
     if amberfy_settings.extra_commands:
         result += amberfy_settings.extra_commands
