@@ -59,7 +59,7 @@ flake8 = "*"
 # flake8-strict = "*"  # Just contains two redundant checks.
 # flake8-eradicate = "*"  # Disallows commented out code, but has false-positives.
 flake8-bandit = "*"
-flake8-black = "*"
+flake8-black = "==0.1.0"  # Fix to 0.1.0 because otherwise it requires black =>19.3b0 (pre-release) which messes up dependency resolution for some reason.
 flake8-breakpoint = "*"
 flake8-broken-line = "*"
 flake8-bugbear = "*"
