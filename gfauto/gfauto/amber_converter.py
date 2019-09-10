@@ -565,7 +565,7 @@ def graphics_shader_job_amber_test_to_amber_script(
         result += f"RUN {prefix}_pipeline DRAW_RECT POS 0 0 SIZE 256 256\n"
         result += "\n"
 
-    # Add fuzzy compare of framebuffers if there's more than one pipeline
+    # Add fuzzy compare of framebuffers if there's more than one pipeline.
 
     for pipeline_index in range(1, len(jobs)):
         prefix_0 = jobs[0].name_prefix
@@ -583,48 +583,57 @@ def graphics_shader_job_amber_test_to_amber_script(
 def compute_shader_job_amber_test_to_amber_script(
     shader_job_amber_test: ShaderJobBasedAmberTest, amberfy_settings: AmberfySettings
 ) -> str:
-    # TODO: handle reference, if present.
+
+    jobs = shader_job_amber_test.variants.copy()
+
+    if shader_job_amber_test.reference:
+        assert isinstance(shader_job_amber_test.reference, ComputeShaderJob)  # noqa
+        jobs.insert(0, shader_job_amber_test.reference)
 
     result = get_amber_script_header(amberfy_settings)
 
-    variant = shader_job_amber_test.variants[0]
+    for job in jobs:
+        # Guaranteed, and needed for type checker.
+        assert isinstance(job, ComputeShaderJob)  # noqa
 
-    # Guaranteed, and needed for type checker.
-    assert isinstance(variant, ComputeShaderJob)  # noqa
+        prefix = job.name_prefix
 
-    variant_compute_shader_name = f"{variant.name_prefix}_compute_shader"
-    variant_ssbo_name = f"{variant.name_prefix}_ssbo"
+        compute_shader_name = f"{prefix}_compute_shader"
+        ssbo_name = f"{prefix}_ssbo"
 
-    # Define shaders.
+        # Define shaders.
 
-    result += get_amber_script_shader_def(
-        variant.compute_shader, variant_compute_shader_name
-    )
+        result += get_amber_script_shader_def(job.compute_shader, compute_shader_name)
 
-    # Define uniforms for variant shader job.
+        # Define uniforms for variant shader job.
 
-    result += "\n"
-    result += variant.uniform_definitions
+        result += "\n"
+        result += job.uniform_definitions
 
-    # Define in/out buffer for variant shader job.
-    # Note that |initial_buffer_definition_template| is a string template that takes the buffer name as an argument.
+        # Define in/out buffer for variant shader job.
+        # Note that |initial_buffer_definition_template| is a string template that takes the buffer name as an argument.
 
-    result += "\n"
-    result += variant.initial_buffer_definition_template.format(variant_ssbo_name)
+        result += "\n"
+        result += job.initial_buffer_definition_template.format(ssbo_name)
 
-    # Create a pipeline that uses the variant compute shader and binds |variant_ssbo_name|.
+        # Create a pipeline that uses the variant compute shader and binds |variant_ssbo_name|.
 
-    result += "\nPIPELINE compute gfz_pipeline\n"
-    result += f"  ATTACH {variant_compute_shader_name}\n"
-    result += (
-        f"  BIND BUFFER {variant_ssbo_name} AS storage DESCRIPTOR_SET 0 BINDING 0\n"
-    )
-    result += variant.uniform_bindings
-    result += "END\n"
+        result += f"\nPIPELINE compute {prefix}_pipeline\n"
+        result += f"  ATTACH {compute_shader_name}\n"
+        result += f"  BIND BUFFER {ssbo_name} AS storage DESCRIPTOR_SET 0 BINDING 0\n"
+        result += job.uniform_bindings
+        result += "END\n"
 
-    # Run the pipeline.
+        # Run the pipeline.
 
-    result += f"\nRUN gfz_pipeline {variant.num_groups_def}\n"
+        result += f"\nRUN {prefix}_pipeline {job.num_groups_def}\n\n"
+
+    # Add fuzzy compare of result SSBOs if there's more than one pipeline.
+
+    for pipeline_index in range(1, len(jobs)):
+        prefix_0 = jobs[0].name_prefix
+        prefix_1 = jobs[pipeline_index].name_prefix
+        result += f"EXPECT {prefix_0}_ssbo RMSE_BUFFER {prefix_1}_ssbo TOLERANCE 7\n"
 
     if amberfy_settings.extra_commands:
         result += amberfy_settings.extra_commands
