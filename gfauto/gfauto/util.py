@@ -72,9 +72,10 @@ def file_read_lines(file: pathlib.Path) -> List[str]:  # noqa VNE002
         return f.readlines()
 
 
-def file_write_text(file: pathlib.Path, text: str) -> int:  # noqa VNE002
+def file_write_text(file: pathlib.Path, text: str) -> Path:  # noqa VNE002
     with file_open_text(file, "w") as f:
-        return f.write(text)
+        f.write(text)
+    return file
 
 
 def mkdir_p_new(path: Path) -> Path:  # noqa VNE002
