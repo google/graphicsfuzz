@@ -262,22 +262,4 @@ public abstract class ReductionOpportunitiesBase
     }
   }
 
-  private static boolean isLoopLimiterCheck(Stmt compoundStmt) {
-    return compoundStmt instanceof IfStmt
-        && StmtReductionOpportunities.referencesLoopLimiter(compoundStmt);
-  }
-
-  // A helper to determine whether is is OK to simplify a compound statement, e.g. by replacing it
-  // with its guard or its body.
-  boolean allowedToReduceCompoundStmt(Stmt compoundStmt) {
-    return context.reduceEverywhere()
-        || injectionTracker.enclosedByDeadCodeInjection()
-        || injectionTracker.underUnreachableSwitchCase()
-        || (StmtReductionOpportunities.isLiveCodeInjection(compoundStmt)
-        && !isLoopLimiterCheck(compoundStmt))
-        || enclosingFunctionIsDead()
-        || SideEffectChecker.isSideEffectFree(compoundStmt, context.getShadingLanguageVersion(),
-        shaderKind);
-  }
-
 }
