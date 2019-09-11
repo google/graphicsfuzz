@@ -118,7 +118,7 @@ public class ReductionDriverTest {
                 MakeShaderJobFromFragmentShader.make(tu),
                 new ReducerContext(false, version, generator, new IdGenerator()),
                 fileOps);
-    assertEquals(4, ops.size());
+    assertEquals(3, ops.size());
 
     new ReductionDriver(
         new ReducerContext(
