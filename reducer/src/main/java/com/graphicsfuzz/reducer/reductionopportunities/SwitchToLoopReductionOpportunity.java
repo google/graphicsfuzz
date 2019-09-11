@@ -21,8 +21,10 @@ import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.CaseLabel;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 /**
@@ -32,7 +34,7 @@ import java.util.stream.Collectors;
  */
 public class SwitchToLoopReductionOpportunity extends AbstractReductionOpportunity {
 
-  // The parent of the switch statemtnt
+  // The parent of the switch statement
   private final IAstNode parent;
 
   // The switch statement to be replaced
@@ -46,9 +48,10 @@ public class SwitchToLoopReductionOpportunity extends AbstractReductionOpportuni
 
   @Override
   void applyReductionImpl() {
-    final BlockStmt loopBody = new BlockStmt(
-        switchStmt.getBody().getStmts().stream().filter(item -> !(item instanceof CaseLabel))
-            .collect(Collectors.toList()), true);
+    final BlockStmt loopBody = new BlockStmt(Collections.emptyList(), true);
+    loopBody.addStmt(new ExprStmt(switchStmt.getExpr()));
+    switchStmt.getBody().getStmts().stream().filter(item -> !(item instanceof CaseLabel))
+            .forEach(loopBody::addStmt);
     parent.replaceChild(switchStmt, new DoStmt(loopBody, new BoolConstantExpr(false)));
   }
 

@@ -30,13 +30,11 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
-public class CompoundToBlockReductionOpportunitiesTest {
+public class FlattenControlFlowReductionOpportunitiesTest {
 
   private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
@@ -62,7 +60,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
     final String expected1 = "void main() {"
           + "  switch(" + Constants.GLF_SWITCH + "(0)) {"
           + "    case 1:"
-          + "    { true; }"
+          + "    { true; true; }"
           + "    case 2:"
           + "    if (true) {"
           + "      true;"
@@ -81,7 +79,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "      true;"
           + "    }"
           + "    case 2:"
-          + "    { true; }"
+          + "    { true; true; }"
           + "    case 0:"
           + "    for (int i = 0; i < 100; i++) { }"
           + "    break;"
@@ -96,7 +94,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "      true;"
           + "    }"
           + "    case 2:"
-          + "    false;"
+          + "    { true; false; }"
           + "    case 0:"
           + "    for (int i = 0; i < 100; i++) { }"
           + "    break;"
@@ -118,7 +116,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "    for (int i = 0; i < 100; i++) { }"
           + "    break;"
           + "    default:"
-          + "    { 1; }"
+          + "    { true; 1; }"
           + "  }"
           + "}";
     check(false, original, expected1, expected2, expected3, expected4);
@@ -133,8 +131,8 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "    a = a + 1;"
           + "  }"
           + "}";
-    final List<CompoundToBlockReductionOpportunity> opportunities =
-        CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(ParseHelper.parse(original)),
+    final List<AbstractReductionOpportunity> opportunities =
+        FlattenControlFlowReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(ParseHelper.parse(original)),
             new ReducerContext(false,
                 ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                 new IdGenerator()));
@@ -156,6 +154,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "void main() {"
           + "  if (" + Constants.GLF_DEAD + "(false)) {"
           + "    {"
+          + "      false;"
           + "      int a = 2;"
           + "      a = a + 1;"
           + "    }"
@@ -178,6 +177,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
     final String expected1 = ""
         + "void main() {"
         + "  {" // first if changed to block
+        + "    " + Constants.GLF_DEAD + "(false);"
         + "    if (" + Constants.GLF_DEAD + "(false)) {"
         + "      int a = 2;"
         + "      a = a + 1;"
@@ -188,6 +188,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
         + "void main() {"
         + "  if (" + Constants.GLF_DEAD + "(false)) {"
         + "    {" // second if changed to block
+        + "      " + Constants.GLF_DEAD + "(false);"
         + "      int a = 2;"
         + "      a = a + 1;"
         + "    }"
@@ -212,39 +213,44 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "  }"
           + "}";
     final String expected1 = ""
-          + "void main() {"
-          + "  int a = 4;"
-          + "  if (" + Constants.GLF_DEAD + "(false)) {"
-          + "    {"
-          + "      if (a > 0) {"
-          + "        int a = 2;"
-          + "        a = a + 1;"
-          + "      } else"
-          + "        a++;"
-          + "    }"
-          + "  }"
-          + "}";
+        + "void main() {"
+        + "  int a = 4;"
+        + "  if (" + Constants.GLF_DEAD + "(false)) {"
+        + "    {"
+        + "      a;"
+        + "      if (a > 0) {"
+        + "        int a = 2;"
+        + "        a = a + 1;"
+        + "      } else"
+        + "        a++;"
+        + "    }"
+        + "  }"
+        + "}";
     final String expected2 = ""
-          + "void main() {"
-          + "  int a = 4;"
-          + "  if (" + Constants.GLF_DEAD + "(false)) {"
-          + "    if (a) {"
-          + "      {"
-          + "        int a = 2;"
-          + "        a = a + 1;"
-          + "      }"
-          + "    }"
-          + "  }"
-          + "}";
+        + "void main() {"
+        + "  int a = 4;"
+        + "  if (" + Constants.GLF_DEAD + "(false)) {"
+        + "    if (a) {"
+        + "      {"
+        + "        a > 0;"
+        + "        int a = 2;"
+        + "        a = a + 1;"
+        + "      }"
+        + "    }"
+        + "  }"
+        + "}";
     final String expected3 = ""
-          + "void main() {"
-          + "  int a = 4;"
-          + "  if (" + Constants.GLF_DEAD + "(false)) {"
-          + "    if (a) {"
-          + "      a++;"
-          + "    }"
-          + "  }"
-          + "}";
+        + "void main() {"
+        + "  int a = 4;"
+        + "  if (" + Constants.GLF_DEAD + "(false)) {"
+        + "    if (a) {"
+        + "      {"
+        + "        a > 0;"
+        + "        a++;"
+        + "      }"
+        + "    }"
+        + "  }"
+        + "}";
     check(false, original, expected1, expected2, expected3);
   }
 
@@ -265,7 +271,10 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "  int x;"
           + "  {"
           + "    int GLF_live1hello = 4;"
-          + "    GLF_live1hello++;"
+          + "    {"
+          + "      GLF_live1hello < 46;"
+          + "      GLF_live1hello++;"
+          + "    }"
           + "  }"
           + "  if (true) {"
           + "    x++;"
@@ -299,6 +308,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "int foo(int x) {"
           + "  {"
           + "    x++;"
+          + "    x < 100;"
           + "  }"
           + "}"
           + "int bar(int x) {"
@@ -335,89 +345,105 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "}";
 
     final String expected1 = ""
-          + "void main() {"
-          + "  {"
-          + "    int i = 0;"
-          + "    for (int j = 0; j < 200; j++) {"
-          + "      if (i > j) {"
-          + "      } else if(j > 5) {"
-          + "         while(j > 5) j--;"
-          + "      }"
-          + "      for (int t = 1; t < 4; t++) {"
-          + "        continue;"
-          + "      }"
-          + "    }"
-          + "  }"
-          + "}";
+        + "void main() {"
+        + "  {"
+        + "    int i = 0;"
+        + "    i < 100;"
+        + "    for (int j = 0; j < 200; j++) {"
+        + "      if (i > j) {"
+        + "      } else if(j > 5) {"
+        + "         while(j > 5) j--;"
+        + "      }"
+        + "      for (int t = 1; t < 4; t++) {"
+        + "        continue;"
+        + "      }"
+        + "    }"
+        + "    i++;"
+        + "  }"
+        + "}";
 
     final String expected2 = ""
-          + "void main() {"
-          + "  for(int i = 0; i < 100; i++) {"
-          + "    {"
-          + "      int j = 0;"
-          + "      if (i > j) {"
-          + "      } else if(j > 5) {"
-          + "         while(j > 5) j--;"
-          + "      }"
-          + "      for (int t = 1; t < 4; t++) {"
-          + "        continue;"
-          + "      }"
-          + "    }"
-          + "  }"
-          + "}";
+        + "void main() {"
+        + "  for(int i = 0; i < 100; i++) {"
+        + "    {"
+        + "      int j = 0;"
+        + "      j < 200;"
+        + "      if (i > j) {"
+        + "      } else if(j > 5) {"
+        + "         while(j > 5) j--;"
+        + "      }"
+        + "      for (int t = 1; t < 4; t++) {"
+        + "        continue;"
+        + "      }"
+        + "      j++;"
+        + "    }"
+        + "  }"
+        + "}";
+
     final String expected3 = ""
-          + "void main() {"
-          + "  for(int i = 0; i < 100; i++) {"
-          + "    for (int j = 0; j < 200; j++) {"
-          + "      {"
-          + "      }"
-          + "      for (int t = 1; t < 4; t++) {"
-          + "        continue;"
-          + "      }"
-          + "    }"
-          + "  }"
-          + "}";
+        + "void main() {"
+        + "  for(int i = 0; i < 100; i++) {"
+        + "    for (int j = 0; j < 200; j++) {"
+        + "      {"
+        + "        i > j;"
+        + "      }"
+        + "      for (int t = 1; t < 4; t++) {"
+        + "        continue;"
+        + "      }"
+        + "    }"
+        + "  }"
+        + "}";
+
     final String expected4 = ""
-          + "void main() {"
-          + "  for(int i = 0; i < 100; i++) {"
-          + "    for (int j = 0; j < 200; j++) {"
-          + "      if(j > 5) {"
-          + "         while(j > 5) j--;"
-          + "      }"
-          + "      for (int t = 1; t < 4; t++) {"
-          + "        continue;"
-          + "      }"
-          + "    }"
-          + "  }"
-          + "}";
+        + "void main() {"
+        + "  for(int i = 0; i < 100; i++) {"
+        + "    for (int j = 0; j < 200; j++) {"
+        + "      {"
+        + "        i > j;"
+        + "        if(j > 5) {"
+        + "          while(j > 5) j--;"
+        + "        }"
+        + "      }"
+        + "      for (int t = 1; t < 4; t++) {"
+        + "        continue;"
+        + "      }"
+        + "    }"
+        + "  }"
+        + "}";
+
     final String expected5 = ""
-          + "void main() {"
-          + "  for(int i = 0; i < 100; i++) {"
-          + "    for (int j = 0; j < 200; j++) {"
-          + "      if (i > j) {"
-          + "      } else if(j > 5) {"
-          + "         j--;"
-          + "      }"
-          + "      for (int t = 1; t < 4; t++) {"
-          + "        continue;"
-          + "      }"
-          + "    }"
-          + "  }"
-          + "}";
+        + "void main() {"
+        + "  for(int i = 0; i < 100; i++) {"
+        + "    for (int j = 0; j < 200; j++) {"
+        + "      if (i > j) {"
+        + "      } else {"
+        + "         j > 5;"
+        + "         while(j > 5) j--;"
+        + "      }"
+        + "      for (int t = 1; t < 4; t++) {"
+        + "        continue;"
+        + "      }"
+        + "    }"
+        + "  }"
+        + "}";
+
     final String expected6 = ""
-          + "void main() {"
-          + "  for(int i = 0; i < 100; i++) {"
-          + "    for (int j = 0; j < 200; j++) {"
-          + "      if (i > j) {"
-          + "      } else {"
-          + "         while(j > 5) j--;"
-          + "      }"
-          + "      for (int t = 1; t < 4; t++) {"
-          + "        continue;"
-          + "      }"
-          + "    }"
-          + "  }"
-          + "}";
+        + "void main() {"
+        + "  for(int i = 0; i < 100; i++) {"
+        + "    for (int j = 0; j < 200; j++) {"
+        + "      if (i > j) {"
+        + "      } else if(j > 5) {"
+        + "        {"
+        + "          j > 5;"
+        + "          j--;"
+        + "        }"
+        + "      }"
+        + "      for (int t = 1; t < 4; t++) {"
+        + "        continue;"
+        + "      }"
+        + "    }"
+        + "  }"
+        + "}";
 
     check(true, original, expected1, expected2, expected3, expected4, expected5, expected6);
   }
@@ -428,7 +454,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "  for (int i = 0; i < 10; i++) ;"
           + "}";
     final String expected = "void main() {"
-          + "  { int i = 0; ; }"
+          + "  { int i = 0; i < 10; ; i++; }"
           + "}";
     check(true, original, expected);
   }
@@ -439,7 +465,7 @@ public class CompoundToBlockReductionOpportunitiesTest {
           + "  for (int i = 0; i < 10; i++) { }"
           + "}";
     final String expected = "void main() {"
-          + "  { int i = 0; }"
+          + "  { int i = 0; i < 10; i++; }"
           + "}";
     check(true, original, expected);
   }
@@ -447,12 +473,12 @@ public class CompoundToBlockReductionOpportunitiesTest {
   private void check(boolean reduceEverywhere, String original, String... expected)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final TranslationUnit tu = ParseHelper.parse(original);
-    List<CompoundToBlockReductionOpportunity> ops =
+    List<AbstractReductionOpportunity> ops =
           getOps(tu, reduceEverywhere);
     final Set<String> actualSet = new HashSet<>();
     for (int i = 0; i < ops.size(); i++) {
       final TranslationUnit clonedTu = tu.clone();
-      List<CompoundToBlockReductionOpportunity> clonedOps =
+      List<AbstractReductionOpportunity> clonedOps =
             getOps(clonedTu, reduceEverywhere);
       assertEquals(ops.size(), clonedOps.size());
       clonedOps.get(i).applyReduction();
@@ -466,21 +492,15 @@ public class CompoundToBlockReductionOpportunitiesTest {
     assertEquals(expectedSet, actualSet);
   }
 
-  private List<CompoundToBlockReductionOpportunity> getOps(TranslationUnit tu,
-        boolean reduceEverywhere) {
-    return ReductionOpportunities.
-        getReductionOpportunities(
+  private List<AbstractReductionOpportunity> getOps(TranslationUnit tu,
+                                                                   boolean reduceEverywhere) {
+    return FlattenControlFlowReductionOpportunities.findOpportunities(
             MakeShaderJobFromFragmentShader.make(tu),
             new ReducerContext(
                 reduceEverywhere,
                 ShadingLanguageVersion.GLSL_440,
                 new RandomWrapper(0),
-                new IdGenerator()),
-            fileOps
-        ).stream()
-        .filter(item -> item instanceof CompoundToBlockReductionOpportunity)
-        .map(item -> (CompoundToBlockReductionOpportunity) item)
-        .collect(Collectors.toList());
+                new IdGenerator()));
   }
 
   @Test
@@ -503,8 +523,8 @@ public class CompoundToBlockReductionOpportunitiesTest {
         + " " + Constants.LIVE_PREFIX + "4doConvert();\n"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    final List<CompoundToBlockReductionOpportunity> ops =
-        CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    final List<AbstractReductionOpportunity> ops =
+        FlattenControlFlowReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
                 new RandomWrapper(0), new IdGenerator()));
     assertEquals(0, ops.size());
@@ -517,8 +537,8 @@ public class CompoundToBlockReductionOpportunitiesTest {
         + "    discard;"
         + "  }"
         + "}";
-    final List<CompoundToBlockReductionOpportunity> opportunities =
-        CompoundToBlockReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(ParseHelper.parse(original)),
+    final List<AbstractReductionOpportunity> opportunities =
+        FlattenControlFlowReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(ParseHelper.parse(original)),
             new ReducerContext(false,
                 ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                 new IdGenerator()));
