@@ -36,12 +36,16 @@ def pop_stream_for_logging() -> None:
     _LOG_TO_STREAM.pop()
 
 
-def log(message: str) -> None:
+def log(message: str, skip_newline: bool = False) -> None:
     if _LOG_TO_STDOUT:
-        print(message, flush=True)  # noqa T001
+        if not skip_newline:
+            print(message, flush=True)  # noqa T001
+        else:
+            print(message, end="", flush=True)  # noqa T001
     for stream in _LOG_TO_STREAM:
         stream.write(message)
-        stream.write("\n")
+        if not skip_newline:
+            stream.write("\n")
         stream.flush()
 
 
