@@ -17,15 +17,15 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.GlslParserException;
-import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.util.Constants;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +33,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class FlattenControlFlowReductionOpportunitiesTest {
 
@@ -132,10 +133,7 @@ public class FlattenControlFlowReductionOpportunitiesTest {
           + "  }"
           + "}";
     final List<AbstractReductionOpportunity> opportunities =
-        FlattenControlFlowReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(ParseHelper.parse(original)),
-            new ReducerContext(false,
-                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
-                new IdGenerator()));
+        getOps(ParseHelper.parse(original), false);
     assertEquals(0, opportunities.size());
   }
 
@@ -492,17 +490,6 @@ public class FlattenControlFlowReductionOpportunitiesTest {
     assertEquals(expectedSet, actualSet);
   }
 
-  private List<AbstractReductionOpportunity> getOps(TranslationUnit tu,
-                                                                   boolean reduceEverywhere) {
-    return FlattenControlFlowReductionOpportunities.findOpportunities(
-            MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(
-                reduceEverywhere,
-                ShadingLanguageVersion.GLSL_440,
-                new RandomWrapper(0),
-                new IdGenerator()));
-  }
-
   @Test
   public void testDoNotTurnForLoopIntoBlock() throws Exception {
     final String shader = "#version 310 es\n"
@@ -524,9 +511,7 @@ public class FlattenControlFlowReductionOpportunitiesTest {
         + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
     final List<AbstractReductionOpportunity> ops =
-        FlattenControlFlowReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
-                new RandomWrapper(0), new IdGenerator()));
+        getOps(tu, false);
     assertEquals(0, ops.size());
   }
 
@@ -538,11 +523,464 @@ public class FlattenControlFlowReductionOpportunitiesTest {
         + "  }"
         + "}";
     final List<AbstractReductionOpportunity> opportunities =
-        FlattenControlFlowReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(ParseHelper.parse(original)),
-            new ReducerContext(false,
-                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
-                new IdGenerator()));
+        getOps(ParseHelper.parse(original), false);
     assertEquals(0, opportunities.size());
+  }
+
+  @Test
+  public void testIfWithReduceEverywhere() throws Exception {
+    // Fine to reduce this conditional to its guard as we are not preserving semantics.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 2;\n"
+        + "  if (x > 0) {\n"
+        + "    ++x;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 2;\n"
+        + "  {\n"
+        + "    x > 0;\n"
+        + "    ++x;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, true);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testForWithReduceEverywhere() throws Exception {
+    // Fine to reduce this loop to its guard as we are not preserving semantics.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int i;\n"
+        + "  for (i = 0; i < 100; i++) {\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int i;\n"
+        + "  {\n"
+        + "    i = 0;\n"
+        + "    i < 100;\n"
+        + "    i++;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, true);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testWhileWithReduceEverywhere() throws Exception {
+    // Fine to reduce this loop to its guard as we are not preserving semantics.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  while (x > 0) {\n"
+        + "    x--;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  {\n"
+        + "    x > 0;"
+        + "    x--;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, true);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testDoWhileWithReduceEverywhere() throws Exception {
+    // Fine to reduce this loop to its guard as we are not preserving semantics.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  do {\n"
+        + "    x++;\n"
+        + "  } while (x > 0);\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  {\n"
+        + "    x++;\n"
+        + "    x > 0;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, true);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testNoIfWithPreserveSemantics() throws Exception {
+    // No reduction opportunities here if preserving semantics.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 2;\n"
+        + "  if (x > 0) {\n"
+        + "    ++x;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 2;\n"
+        + "  x > 0;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(0, opportunities.size());
+  }
+
+  @Test
+  public void testNoForWithPreserveSemantics() throws Exception {
+    // No reduction opportunities here if preserving semantics.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int i;\n"
+        + "  for (i = 0; i < 100; i++) {\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int i;\n"
+        + "  i < 100;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(0, opportunities.size());
+  }
+
+  @Test
+  public void testNoWhileWithPreserveSemantics() throws Exception {
+    // No reduction opportunities here if preserving semantics.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  while (x > 0) {\n"
+        + "    x--;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  x > 0;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(0, opportunities.size());
+  }
+
+  @Test
+  public void testNoDoWhileWithPreserveSemantics() throws Exception {
+    // No reduction opportunities here if preserving semantics.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  do {\n"
+        + "    x++;\n"
+        + "  } while (x > 0);\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  x > 0;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(0, opportunities.size());
+  }
+
+  @Test
+  public void testNoSwitchWithPreserveSemantics() throws Exception {
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 2;\n"
+        + "  switch (x + 3) {\n"
+        + "    default:\n"
+        + "      x++;\n"
+        + "      break;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 2;\n"
+        + "  x + 3;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(0, opportunities.size());
+  }
+
+  @Test
+  public void testIfWithPreserveSemanticsSideEffectFree() throws Exception {
+    // Despite preserving semantics, fine to reduce this conditional to its guard as the
+    // conditional is side effect-free.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 2;\n"
+        + "  if (x > 0) {\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 2;\n"
+        + "  {\n"
+        + "    x > 0;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testForWithPreserveSemanticsSideEffectFree() throws Exception {
+    // Despite preserving semantics, fine to reduce this loop to its guard as the loop is side
+    // effect-free.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int i;\n"
+        + "  i = 0;\n"
+        + "  for (; i < 100;) {\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int i;\n"
+        + "  i = 0;\n"
+        + "  {\n"
+        + "    ;\n"
+        + "    i < 100;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testWhileWithPreserveSemanticsSideEffectFree() throws Exception {
+    // Despite preserving semantics, fine to reduce this loop to its guard as the loop is side
+    // effect-free.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  while (x > 0) {\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  {\n"
+        + "    x > 0;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testDoWhileWithPreserveSemanticsSideEffectFree() throws Exception {
+    // Despite preserving semantics, fine to reduce this loop to its guard as the loop is side
+    // effect-free.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  do {\n"
+        + "  } while (x > 0);\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x = 100;\n"
+        + "  {\n"
+        + "    x > 0;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testIfWithPreserveSemanticsUnreachableSwitch() throws Exception {
+    // Fine to reduce two of these loops to their guards despite preserving semantics as they are
+    // under unreachable switch cases.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  switch(" + Constants.GLF_SWITCH + "(0)) {"
+        + "    case 1:"
+        + "    {\n"
+        + "      int x = 2;\n"
+        + "      if (x > 0) {\n"
+        + "        ++x;\n"
+        + "      }\n"
+        + "    }\n"
+        + "    case 0:"
+        + "    {\n"
+        + "      int y = 2;\n"
+        + "      if (y > 0) {\n"
+        + "        ++y;\n"
+        + "      }\n"
+        + "    }\n"
+        + "    break;\n"
+        + "    default:\n"
+        + "    {\n"
+        + "      int z = 2;\n"
+        + "      if (z > 0) {\n"
+        + "        ++z;\n"
+        + "      }\n"
+        + "    }\n"
+        + "  }"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  switch(" + Constants.GLF_SWITCH + "(0)) {"
+        + "    case 1:"
+        + "    {\n"
+        + "      int x = 2;\n"
+        + "      {\n"
+        + "        x > 0;\n"
+        + "        ++x;\n"
+        + "      }\n"
+        + "    }\n"
+        + "    case 0:"
+        + "    {\n"
+        + "      int y = 2;\n"
+        + "      if (y > 0) {\n"
+        + "        ++y;\n"
+        + "      }\n"
+        + "    }\n"
+        + "    break;\n"
+        + "    default:\n"
+        + "    {\n"
+        + "      int z = 2;\n"
+        + "      {\n"
+        + "        z > 0;\n"
+        + "        ++z;\n"
+        + "      }\n"
+        + "    }\n"
+        + "  }"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(2, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    opportunities.get(1).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testForWithPreserveSemanticsDeadCode() throws Exception {
+    // Fine to reduce this loop to its guard despite preserving semantics as we are in dead code.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int i;\n"
+        + "  if (" + Constants.GLF_DEAD + "(" + Constants.GLF_FALSE + "(false))) {"
+        + "    for (i = 0; i < 100; i++) {\n"
+        + "    }\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int i;\n"
+        + "  if (" + Constants.GLF_DEAD + "(" + Constants.GLF_FALSE + "(false))) {"
+        + "    {\n"
+        + "      i = 0;\n"
+        + "      i < 100;\n"
+        + "      i++;\n"
+        + "    }\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testWhileWithPreserveSemanticsLiveCode() throws Exception {
+    // Fine to reduce this loop to its guard despite preserving semantics as we are in injected
+    // live code.
+    final String original = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int " + Constants.LIVE_PREFIX + "x = 100;\n"
+        + "  while (" + Constants.LIVE_PREFIX + "x > 0) {\n"
+        + "    " + Constants.LIVE_PREFIX + "x--;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int " + Constants.LIVE_PREFIX + "x = 100;\n"
+        + "  {\n"
+        + "    " + Constants.LIVE_PREFIX + "x > 0;\n"
+        + "    " + Constants.LIVE_PREFIX + "x--;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testDoWhileWithPreserveSemanticsDeadFunction() throws Exception {
+    // Fine to reduce this loop to its guard despite preserving semantics as we are in a dead
+    // function.
+    final String original = "#version 310 es\n"
+        + "void " + Constants.GLF_DEAD + "_foo() {\n"
+        + "  int x = 100;\n"
+        + "  do {\n"
+        + "    x++;\n"
+        + "  } while (x > 0);\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void " + Constants.GLF_DEAD + "_foo() {\n"
+        + "  int x = 100;\n"
+        + "  {\n"
+        + "    x++;\n"
+        + "    x > 0;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    final List<AbstractReductionOpportunity> opportunities = getOps(tu, false);
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReductionImpl();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  private List<AbstractReductionOpportunity> getOps(TranslationUnit tu,
+                                                    boolean reduceEverywhere) {
+    return FlattenControlFlowReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(reduceEverywhere,
+            tu.getShadingLanguageVersion(), new RandomWrapper(0),
+            new IdGenerator()));
   }
 
 }
