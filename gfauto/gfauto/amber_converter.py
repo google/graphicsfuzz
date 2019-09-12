@@ -26,11 +26,11 @@ import re
 from copy import copy
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Match
+from typing import Dict, List, Match, Optional
 
 import attr
 
-from gfauto import shader_job_util, util, binaries_util, subprocess_util
+from gfauto import binaries_util, shader_job_util, subprocess_util, util
 from gfauto.gflogging import log
 from gfauto.util import check
 
@@ -687,7 +687,7 @@ def write_shader(
     binaries: binaries_util.BinaryManager,
 ) -> List[Path]:
 
-    files_written: List[Path] = list()
+    files_written: List[Path] = []
 
     shader_type_to_suffix = {
         "fragment": shader_job_util.EXT_FRAG,
@@ -735,7 +735,7 @@ def extract_shaders_amber_script(
     output_dir: Path,
     binaries: binaries_util.BinaryManager,
 ) -> List[Path]:
-    files_written: List[Path] = list()
+    files_written: List[Path] = []
     i = -1
     while i < len(lines) - 1:
         i += 1
@@ -782,7 +782,7 @@ def extract_shaders_vkscript(
     output_dir: Path,
     binaries: binaries_util.BinaryManager,
 ) -> List[Path]:
-    files_written: List[Path] = list()
+    files_written: List[Path] = []
     i = -1
     while i < len(lines) - 1:
         i += 1
@@ -819,7 +819,7 @@ def extract_shaders_vkscript(
 def extract_shaders(
     amber_file: Path, output_dir: Path, binaries: binaries_util.BinaryManager
 ) -> List[Path]:
-    files_written: List[Path] = list()
+    files_written: List[Path] = []
     with util.file_open_text(amber_file, "r") as file_handle:
         lines = file_handle.readlines()
         if lines[0].startswith("#!amber"):

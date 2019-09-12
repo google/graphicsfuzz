@@ -23,11 +23,19 @@ import argparse
 import sys
 from pathlib import Path
 
-from gfauto import fuzz, gerrit_util, subprocess_util, util
+from gfauto import (
+    amber_converter,
+    artifact_util,
+    binaries_util,
+    fuzz,
+    gerrit_util,
+    subprocess_util,
+    util,
+)
 
 
 def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
-    git_tool: Path, cookie: str
+    git_tool: Path, cookie: str, binaries: binaries_util.BinaryManager
 ) -> None:
     work_dir = Path() / "temp" / ("cts_" + fuzz.get_random_name())
 
@@ -90,7 +98,7 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
 
     subprocess_util.run(cmd, verbose=True, working_dir=work_dir)
 
-    util.copy_dir(
+    shader_dir = util.copy_dir(
         cts_out
         / "external"
         / "vulkancts"
@@ -101,7 +109,17 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
         Path() / "graphicsfuzz",
     )
 
-    # TODO: dump shaders.
+    for amber_file in shader_dir.glob("*.amber"):
+        amber_converter.extract_shaders(
+            amber_file, output_dir=amber_file.parent, binaries=binaries
+        )
+
+
+GERRIT_COOKIE_ARGUMENT_DESCRIPTION = (
+    "The Gerrit cookie used for authentication. To get this, log in to the Khronos Gerrit page in your "
+    "browser and paste the following into the JavaScript console (F12) to copy the cookie to your clipboard: "
+    "copy(document.cookie.match(/GerritAccount=([^;]*)/)[1])"
+)
 
 
 def main() -> None:
@@ -111,12 +129,7 @@ def main() -> None:
         "Requires Git."
     )
 
-    parser.add_argument(
-        "gerrit_cookie",
-        help="The Gerrit cookie used for authentication. To get this, log in to the Khronos Gerrit page in your "
-        "browser and paste the following into the JavaScript console (F12) to copy the cookie to your clipboard: "
-        "copy(document.cookie.match(/GerritAccount=([^;]*)/)[1])",
-    )
+    parser.add_argument("gerrit_cookie", help=GERRIT_COOKIE_ARGUMENT_DESCRIPTION)
 
     parsed_args = parser.parse_args(sys.argv[1:])
 
@@ -125,7 +138,11 @@ def main() -> None:
     # Need git.
     git_tool = util.tool_on_path("git")
 
-    download_cts_graphicsfuzz_tests(git_tool, cookie)
+    artifact_util.recipes_write_built_in()
+
+    binaries = binaries_util.BinaryManager()
+
+    download_cts_graphicsfuzz_tests(git_tool, cookie, binaries)
 
 
 if __name__ == "__main__":
