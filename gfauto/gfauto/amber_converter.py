@@ -22,14 +22,15 @@ Converts a SPIR-V assembly shader job (all shaders are already disassembled) to 
 import itertools
 import json
 import pathlib
+import re
 from copy import copy
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Match, Optional
 
 import attr
 
-from gfauto import shader_job_util, util
+from gfauto import binaries_util, shader_job_util, subprocess_util, util
 from gfauto.gflogging import log
 from gfauto.util import check
 
@@ -675,3 +676,160 @@ def spirv_asm_shader_job_to_amber_script(
 
     util.file_write_text(output_amber_script_file_path, result)
     return output_amber_script_file_path
+
+
+def write_shader(
+    shader_asm: str,
+    amber_file: Path,
+    output_dir: Path,
+    shader_type: str,
+    shader_name: str,
+    binaries: binaries_util.BinaryManager,
+) -> List[Path]:
+
+    files_written: List[Path] = []
+
+    shader_type_to_suffix = {
+        "fragment": shader_job_util.EXT_FRAG,
+        "vertex": shader_job_util.EXT_VERT,
+        "compute": shader_job_util.EXT_COMP,
+    }
+
+    shader_type_suffix = shader_type_to_suffix[shader_type]
+
+    # E.g. ifs-and-whiles.variant_fragment_shader.frag.asm
+    shader_asm_file_path = output_dir / (
+        f"{amber_file.stem}.{shader_name}{shader_type_suffix}{shader_job_util.SUFFIX_ASM_SPIRV}"
+    )
+
+    # E.g. ifs-and-whiles.variant_fragment_shader.frag.spv
+    shader_spirv_file_path = output_dir / (
+        f"{amber_file.stem}.{shader_name}{shader_type_suffix}{shader_job_util.SUFFIX_SPIRV}"
+    )
+
+    util.file_write_text(shader_asm_file_path, shader_asm)
+    files_written.append(shader_asm_file_path)
+
+    spirv_as_path = binaries.get_binary_path_by_name("spirv-as").path
+
+    subprocess_util.run(
+        [
+            str(spirv_as_path),
+            "-o",
+            str(shader_spirv_file_path),
+            str(shader_asm_file_path),
+            "--target-env",
+            "spv1.0",
+        ],
+        verbose=True,
+    )
+
+    files_written.append(shader_spirv_file_path)
+
+    return files_written
+
+
+def extract_shaders_amber_script(
+    amber_file: Path,
+    lines: List[str],
+    output_dir: Path,
+    binaries: binaries_util.BinaryManager,
+) -> List[Path]:
+    files_written: List[Path] = []
+    i = -1
+    while i < len(lines) - 1:
+        i += 1
+        line = lines[i]
+        if not line.strip().startswith("SHADER"):
+            continue
+        parts = line.strip().split()
+        shader_type = parts[1]
+        shader_name = parts[2]
+        shader_language = parts[3]
+        if shader_language == "PASSTHROUGH":
+            continue
+        check(
+            shader_language == "SPIRV-ASM",
+            AssertionError(
+                f"For {str(amber_file)}: unsupported shader language: {shader_language}"
+            ),
+        )
+        i += 1
+        shader_asm = ""
+        while not lines[i].strip().startswith("END"):
+            shader_asm += lines[i]
+            i += 1
+
+        files_written += write_shader(
+            shader_asm=shader_asm,
+            amber_file=amber_file,
+            output_dir=output_dir,
+            shader_type=shader_type,
+            shader_name=shader_name,
+            binaries=binaries,
+        )
+
+    return files_written
+
+
+# E.g. [compute shader spirv]
+VK_SCRIPT_SHADER_REGEX = re.compile(r"\[(compute|fragment|vertex) shader (\w*)\]")
+
+
+def extract_shaders_vkscript(
+    amber_file: Path,
+    lines: List[str],
+    output_dir: Path,
+    binaries: binaries_util.BinaryManager,
+) -> List[Path]:
+    files_written: List[Path] = []
+    i = -1
+    while i < len(lines) - 1:
+        i += 1
+        line = lines[i]
+        match: Optional[Match[str]] = re.match(VK_SCRIPT_SHADER_REGEX, line.strip())
+        if not match:
+            continue
+        shader_type = match.group(1)
+        shader_language = match.group(2)
+        if shader_language == "passthrough":
+            continue
+        check(
+            shader_language == "spirv",
+            AssertionError(
+                f"For {str(amber_file)}: unsupported shader language: {shader_language}"
+            ),
+        )
+        i += 1
+        shader_asm = ""
+        while not lines[i].strip().startswith("["):
+            shader_asm += lines[i]
+            i += 1
+        files_written += write_shader(
+            shader_asm=shader_asm,
+            amber_file=amber_file,
+            output_dir=output_dir,
+            shader_type=shader_type,
+            shader_name="shader",
+            binaries=binaries,
+        )
+    return files_written
+
+
+def extract_shaders(
+    amber_file: Path, output_dir: Path, binaries: binaries_util.BinaryManager
+) -> List[Path]:
+    files_written: List[Path] = []
+    with util.file_open_text(amber_file, "r") as file_handle:
+        lines = file_handle.readlines()
+        if lines[0].startswith("#!amber"):
+            files_written += extract_shaders_amber_script(
+                amber_file, lines, output_dir, binaries
+            )
+        else:
+            log(f"Skipping VkScript file {str(amber_file)} for now.")
+            files_written += extract_shaders_vkscript(
+                amber_file, lines, output_dir, binaries
+            )
+
+    return files_written

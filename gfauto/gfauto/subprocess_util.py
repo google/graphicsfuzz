@@ -25,6 +25,7 @@ import os
 import signal
 import subprocess
 import time
+from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from gfauto.gflogging import log
@@ -78,6 +79,7 @@ def run_helper(
     check_exit_code: bool = True,
     timeout: Optional[float] = None,
     env: Optional[Dict[str, str]] = None,
+    working_dir: Optional[Path] = None,
 ) -> subprocess.CompletedProcess:
     check(
         bool(cmd) and cmd[0] is not None and isinstance(cmd[0], str),
@@ -98,6 +100,7 @@ def run_helper(
         env=env_child,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        cwd=working_dir,
     ) as process:
         try:
             stdout, stderr = process.communicate(input=None, timeout=timeout)
@@ -128,10 +131,11 @@ def run(
     timeout: Optional[float] = None,
     verbose: bool = False,
     env: Optional[Dict[str, str]] = None,
+    working_dir: Optional[Path] = None,
 ) -> subprocess.CompletedProcess:
     log("Exec" + (" (verbose):" if verbose else ":") + str(cmd))
     try:
-        result = run_helper(cmd, check_exit_code, timeout, env)
+        result = run_helper(cmd, check_exit_code, timeout, env, working_dir)
     except subprocess.TimeoutExpired as ex:
         log(LOG_COMMAND_TIMED_OUT_PREFIX + str(cmd))
         # no return code to log in case of timeout

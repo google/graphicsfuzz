@@ -124,10 +124,6 @@ def get_random_name() -> str:
     return uuid.uuid4().hex
 
 
-class NoSettingsFile(Exception):
-    pass
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Fuzz")
 
@@ -171,17 +167,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     skip_writing_binary_recipes: bool,
 ) -> None:
 
-    try:
-        settings = settings_util.read(settings_path)
-    except FileNotFoundError as exception:
-        message = f"Could not find settings file at: {settings_path}"
-        if not settings_util.DEFAULT_SETTINGS_FILE_PATH.exists():
-            settings_util.write_default(settings_util.DEFAULT_SETTINGS_FILE_PATH)
-            message += (
-                f"; a default settings file has been created for you at {str(settings_util.DEFAULT_SETTINGS_FILE_PATH)}. "
-                f"Please review it and then run fuzz again. "
-            )
-        raise NoSettingsFile(message) from exception
+    settings = settings_util.read_or_create(settings_path)
 
     active_devices = devices_util.get_active_devices(settings.device_list)
 

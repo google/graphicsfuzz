@@ -31,7 +31,7 @@ setup(
     license="Apache License 2.0",
     packages=["gfauto"],
     python_requires=">=3.6",
-    install_requires=["protobuf"],
+    install_requires=["protobuf", "requests", "python-dateutil"],
     package_data={"gfauto": ["*.proto", "*.pyi"]},
     classifiers=[
         "Environment :: Console",
@@ -50,5 +50,7 @@ setup(
         "add_amber_tests_to_cts = gfauto.add_amber_tests_to_cts:main",
         "gfauto_test_update_binaries = gfauto.test_update_binaries:main",
         "gfauto_test_create_readme = gfauto.test_create_readme:main",
+        "gfauto_download_cts_gf_tests = gfauto.download_cts_gf_tests:main",
+        "gfauto_run_cts_gf_tests = gfauto.run_cts_gf_tests:main",
     ]},
 )

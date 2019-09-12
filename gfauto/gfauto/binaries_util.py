@@ -66,6 +66,7 @@ DEFAULT_BINARIES = [
     ),
     Binary(name="spirv-opt", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-dis", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
+    Binary(name="spirv-as", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-val", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-fuzz", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(

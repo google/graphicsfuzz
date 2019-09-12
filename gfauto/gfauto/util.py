@@ -39,6 +39,8 @@ MAX_SIGNED_INT_32 = pow(2, 31) - 1
 
 def file_open_binary(file: pathlib.Path, mode: str) -> BinaryIO:  # noqa VNE002
     check("b" in mode, AssertionError(f"|mode|(=={mode}) should contain 'b'"))
+    if "w" in mode:
+        file_mkdirs_parent(file)
     # Type hint (no runtime check).
     result = cast(BinaryIO, open(str(file), mode))
     return result
@@ -70,10 +72,10 @@ def file_read_lines(file: pathlib.Path) -> List[str]:  # noqa VNE002
         return f.readlines()
 
 
-def file_write_text(file: pathlib.Path, text: str) -> int:  # noqa VNE002
-    file_mkdirs_parent(file)
+def file_write_text(file: pathlib.Path, text: str) -> Path:  # noqa VNE002
     with file_open_text(file, "w") as f:
-        return f.write(text)
+        f.write(text)
+    return file
 
 
 def mkdir_p_new(path: Path) -> Path:  # noqa VNE002
@@ -266,3 +268,15 @@ def get_platform() -> str:
     if host == "Darwin":
         return "Mac"
     raise AssertionError("Unsupported platform: {}".format(host))
+
+
+def extract_archive(archive_file: Path, output_dir: Path) -> Path:
+    """
+    Extract/unpack an archive.
+
+    :return: output_dir
+    """
+    gflogging.log(f"Extracting {str(archive_file)} to {str(output_dir)}")
+    shutil.unpack_archive(str(archive_file), extract_dir=str(output_dir))
+    gflogging.log("Done")
+    return output_dir

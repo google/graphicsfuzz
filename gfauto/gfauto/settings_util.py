@@ -30,6 +30,24 @@ DEFAULT_SETTINGS_FILE_PATH = Path("settings.json")
 DEFAULT_SETTINGS = Settings(maximum_duplicate_crashes=3)
 
 
+class NoSettingsFile(Exception):
+    pass
+
+
+def read_or_create(settings_path: Path) -> Settings:
+    try:
+        return read(settings_path)
+    except FileNotFoundError as exception:
+        message = f"Could not find settings file at: {settings_path}"
+        if not DEFAULT_SETTINGS_FILE_PATH.exists():
+            write_default(DEFAULT_SETTINGS_FILE_PATH)
+            message += (
+                f"; a default settings file has been created for you at {str(DEFAULT_SETTINGS_FILE_PATH)}. "
+                f"Please review it and then try again. "
+            )
+        raise NoSettingsFile(message) from exception
+
+
 def read(settings_path: Path) -> Settings:
     result = proto_util.file_to_message(settings_path, Settings())
     if not result.maximum_duplicate_crashes:
