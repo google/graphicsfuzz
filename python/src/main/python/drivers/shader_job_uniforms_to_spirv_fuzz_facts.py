@@ -57,23 +57,26 @@ def main_helper(args) -> None:
         if name == "$compute":
             continue
 
+        scalar_uniform_functions = ['glUniform1i', 'glUniform1f']
+        vector_uniform_functions = ['glUniform2i', 'glUniform3i', 'glUniform4i', 'glUniform2f',
+                                   'glUniform3f', 'glUniform4f']
+
+        if not (entry["func"] in scalar_uniform_functions or entry["func"] in vector_uniform_functions):
+            print("Ignoring unsupported uniform function " + entry["func"])
+            continue
+
         # Make a separate fact for every component value of each uniform.
         for i in range(0, len(entry["args"])):
             # Every uniform is in its own struct, so we index into the first element of that struct
             # using index 0.  If the uniform is a vector, we need to further index into the vector.
-            if entry["func"] in ['glUniform1i', 'glUniform1f']:
+            if entry["func"] in scalar_uniform_functions:
                 # The uniform is a scalar.
                 assert i == 0
                 index_list = [0]
-            elif entry["func"] in ['glUniform2i', 'glUniform3i', 'glUniform4i', 'glUniform2f',
-                                   'glUniform3f', 'glUniform4f']:
+            else:
+                assert entry["func"] in vector_uniform_functions
                 # The uniform is a vector, so we have two levels of indexing.
                 index_list = [0, i]
-            else:
-                # We can deal with other uniforms in due course.
-                index_list = []
-                print("Unsupported uniform function " + entry["func"])
-                exit(1)
 
             # We need to pass the component value as an integer.  If it is a float, we need to
             # reinterpret its bits as an integer.
