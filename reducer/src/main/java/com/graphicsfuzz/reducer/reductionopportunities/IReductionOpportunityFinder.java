@@ -123,17 +123,17 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
-  static IReductionOpportunityFinder<CompoundToBlockReductionOpportunity> compoundToBlockFinder() {
-    return new IReductionOpportunityFinder<CompoundToBlockReductionOpportunity>() {
+  static IReductionOpportunityFinder<AbstractReductionOpportunity> flattenControlFlowFinder() {
+    return new IReductionOpportunityFinder<AbstractReductionOpportunity>() {
       @Override
-      public List<CompoundToBlockReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReducerContext context) {
-        return CompoundToBlockReductionOpportunities.findOpportunities(shaderJob, context);
+      public List<AbstractReductionOpportunity> findOpportunities(ShaderJob shaderJob,
+                                                                  ReducerContext context) {
+        return FlattenControlFlowReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
       @Override
       public String getName() {
-        return "compoundToBlock";
+        return "flattenControlFlow";
       }
     };
   }

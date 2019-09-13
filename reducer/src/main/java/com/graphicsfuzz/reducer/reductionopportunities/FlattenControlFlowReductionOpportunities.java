@@ -27,21 +27,20 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.ContainsTopLevelContinue;
 import com.graphicsfuzz.common.util.ListConcat;
-import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.common.util.SideEffectChecker;
 import java.util.Arrays;
 import java.util.List;
 
-public class CompoundToBlockReductionOpportunities
-      extends ReductionOpportunitiesBase<CompoundToBlockReductionOpportunity> {
+public class FlattenControlFlowReductionOpportunities
+      extends ReductionOpportunitiesBase<AbstractReductionOpportunity> {
 
-  private CompoundToBlockReductionOpportunities(
+  private FlattenControlFlowReductionOpportunities(
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);
   }
 
-  static List<CompoundToBlockReductionOpportunity> findOpportunities(
+  static List<AbstractReductionOpportunity> findOpportunities(
         ShaderJob shaderJob,
         ReducerContext context) {
     return shaderJob.getShaders()
@@ -50,11 +49,11 @@ public class CompoundToBlockReductionOpportunities
         .reduce(Arrays.asList(), ListConcat::concatenate);
   }
 
-  private static List<CompoundToBlockReductionOpportunity> findOpportunitiesForShader(
+  private static List<AbstractReductionOpportunity> findOpportunitiesForShader(
       TranslationUnit tu,
       ReducerContext context) {
-    CompoundToBlockReductionOpportunities finder =
-          new CompoundToBlockReductionOpportunities(tu, context);
+    FlattenControlFlowReductionOpportunities finder =
+          new FlattenControlFlowReductionOpportunities(tu, context);
     finder.visit(tu);
     return finder.getOpportunities();
   }
@@ -62,51 +61,64 @@ public class CompoundToBlockReductionOpportunities
   @Override
   public void visitDoStmt(DoStmt doStmt) {
     super.visitDoStmt(doStmt);
-    handleLoopStmt(doStmt);
+    if (allowedToReduce(doStmt)) {
+      addOpportunity(new FlattenDoWhileLoopReductionOpportunity(
+          parentMap.getParent(doStmt),
+          doStmt,
+          getVistitationDepth()));
+    }
   }
 
   @Override
   public void visitForStmt(ForStmt forStmt) {
     super.visitForStmt(forStmt);
-    handleLoopStmt(forStmt);
+    if (allowedToReduce(forStmt)) {
+      addOpportunity(new FlattenForLoopReductionOpportunity(
+          parentMap.getParent(forStmt),
+          forStmt,
+          getVistitationDepth()));
+    }
   }
 
   @Override
   public void visitWhileStmt(WhileStmt whileStmt) {
     super.visitWhileStmt(whileStmt);
-    handleLoopStmt(whileStmt);
-  }
-
-  private void handleLoopStmt(LoopStmt loopStmt) {
-    if (ContainsTopLevelBreak.check(loopStmt.getBody())
-          || ContainsTopLevelContinue.check(loopStmt.getBody())) {
-      return;
+    if (allowedToReduce(whileStmt)) {
+      addOpportunity(new FlattenWhileLoopReductionOpportunity(
+          parentMap.getParent(whileStmt),
+          whileStmt,
+          getVistitationDepth()));
     }
-    if (MacroNames.isDeadByConstruction(loopStmt.getCondition())) {
-      return;
-    }
-    addOpportunity(loopStmt, loopStmt.getBody());
   }
 
   @Override
   public void visitIfStmt(IfStmt ifStmt) {
     super.visitIfStmt(ifStmt);
-    addOpportunity(ifStmt, ifStmt.getThenStmt());
-    if (ifStmt.hasElseStmt()) {
-      addOpportunity(ifStmt, ifStmt.getElseStmt());
-    }
-  }
-
-  private void addOpportunity(Stmt compoundStmt,
-        Stmt childStmt) {
-    if (allowedToReduce(compoundStmt)) {
-      addOpportunity(new CompoundToBlockReductionOpportunity(
-            parentMap.getParent(compoundStmt), compoundStmt, childStmt,
+    if (allowedToReduce(ifStmt)) {
+      addOpportunity(new FlattenConditionalReductionOpportunity(
+          parentMap.getParent(ifStmt),
+          ifStmt,
+          true,
+          getVistitationDepth()));
+      if (ifStmt.hasElseStmt()) {
+        addOpportunity(new FlattenConditionalReductionOpportunity(
+            parentMap.getParent(ifStmt),
+            ifStmt,
+            false,
             getVistitationDepth()));
+      }
     }
   }
 
   private boolean allowedToReduce(Stmt compoundStmt) {
+    if (compoundStmt instanceof LoopStmt) {
+      final LoopStmt loopStmt = (LoopStmt) compoundStmt;
+      if (ContainsTopLevelBreak.check(loopStmt.getBody())
+          || ContainsTopLevelContinue.check(loopStmt.getBody())) {
+        return false;
+      }
+    }
+
     return context.reduceEverywhere()
           || injectionTracker.enclosedByDeadCodeInjection()
           || injectionTracker.underUnreachableSwitchCase()

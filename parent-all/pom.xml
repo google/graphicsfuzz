@@ -283,11 +283,6 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>com.graphicsfuzz</groupId>
-        <artifactId>astfuzzer</artifactId>
-        <version>1.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.graphicsfuzz</groupId>
         <artifactId>checkstyle-config</artifactId>
         <version>1.0</version>
       </dependency>

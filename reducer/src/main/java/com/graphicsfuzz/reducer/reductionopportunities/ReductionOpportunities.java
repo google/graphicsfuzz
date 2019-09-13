@@ -59,7 +59,7 @@ public final class ReductionOpportunities {
         IReductionOpportunityFinder.exprToConstantFinder(),
         IReductionOpportunityFinder.compoundExprToSubExprFinder(),
         IReductionOpportunityFinder.mutationFinder(),
-        IReductionOpportunityFinder.compoundToBlockFinder(),
+        IReductionOpportunityFinder.flattenControlFlowFinder(),
         IReductionOpportunityFinder.inlineInitializerFinder(),
         IReductionOpportunityFinder.inlineFunctionFinder(),
         IReductionOpportunityFinder.liveFragColorWriteFinder(),
