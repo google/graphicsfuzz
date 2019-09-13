@@ -25,9 +25,12 @@ import os
 import pathlib
 import platform
 import shutil
+import zipfile
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, BinaryIO, Iterator, List, TextIO, cast
+from typing import Any, BinaryIO, Iterator, List, Optional, TextIO, cast
+
+import attr
 
 from gfauto import gflogging
 
@@ -280,3 +283,20 @@ def extract_archive(archive_file: Path, output_dir: Path) -> Path:
     shutil.unpack_archive(str(archive_file), extract_dir=str(output_dir))
     gflogging.log("Done")
     return output_dir
+
+
+@attr.dataclass
+class ZipEntry:
+    path: Path
+    path_in_archive: Optional[Path] = None
+
+
+def create_zip(output_file_path: Path, entries: List[ZipEntry]) -> Path:
+    gflogging.log(f"Creating zip {str(output_file_path)}:")
+    with zipfile.ZipFile(
+        output_file_path, "w", compression=zipfile.ZIP_DEFLATED
+    ) as file_handle:
+        for entry in entries:
+            file_handle.write(entry.path, entry.path_in_archive)
+            gflogging.log(f"Adding: {entry.path} {entry.path_in_archive or ''}")
+    return output_file_path
