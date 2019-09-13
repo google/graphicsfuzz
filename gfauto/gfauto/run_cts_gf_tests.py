@@ -37,7 +37,7 @@ from gfauto import (
 DEFAULT_TIMEOUT = 30
 
 
-def main() -> None:  # pylint: disable=too-many-locals,too-many-branches;
+def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements;
     parser = argparse.ArgumentParser(
         description="Runs GraphicsFuzz AmberScript tests on the active devices listed in "
         "the settings.json file."
@@ -70,6 +70,8 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches;
     binaries = binaries_util.BinaryManager()
 
     work_dir = Path() / "temp" / f"cts_run_{fuzz.get_random_name()[:8]}"
+
+    util.mkdirs_p(work_dir)
 
     with util.file_open_text(Path("results.txt"), "w") as log_handle:
 

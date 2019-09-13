@@ -114,6 +114,13 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
             amber_file, output_dir=amber_file.parent, binaries=binaries
         )
 
+        zip_files = [
+            util.ZipEntry(f, Path(f.name))
+            for f in sorted(shader_dir.glob(f"{amber_file.stem}.*"))
+        ]
+
+        util.create_zip(amber_file.with_suffix(".zip"), zip_files)
+
 
 GERRIT_COOKIE_ARGUMENT_DESCRIPTION = (
     "The Gerrit cookie used for authentication. To get this, log in to the Khronos Gerrit page in your "
