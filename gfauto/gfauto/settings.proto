@@ -21,6 +21,7 @@ import "gfauto/device.proto";
 
 
 // A fuzzing session requires a Settings proto stored in "settings.json".
+// Default values are defined in settings_util.py.
 message Settings {
   // A list of devices, including the list of active devices names that will actually be used in this session.
   DeviceList device_list = 1;
@@ -33,4 +34,7 @@ message Settings {
   // Allow at most this many duplicate crashes per device.
   // If 0 (the protobuf default value), a different default value will actually be used, as determined by gfauto.
   uint32 maximum_duplicate_crashes = 3;
+
+  // Store at most this many fuzzing failure files.
+  uint32 maximum_fuzz_failures = 4;
 }

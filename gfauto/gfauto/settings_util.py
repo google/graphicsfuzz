@@ -27,7 +27,7 @@ from gfauto.settings_pb2 import Settings
 
 DEFAULT_SETTINGS_FILE_PATH = Path("settings.json")
 
-DEFAULT_SETTINGS = Settings(maximum_duplicate_crashes=3)
+DEFAULT_SETTINGS = Settings(maximum_duplicate_crashes=3, maximum_fuzz_failures=10)
 
 
 class NoSettingsFile(Exception):
