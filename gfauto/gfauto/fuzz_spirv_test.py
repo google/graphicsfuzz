@@ -20,6 +20,7 @@ Functions for handling spirv-fuzz generated tests.
 """
 
 import random
+import subprocess
 from pathlib import Path
 from typing import List, Optional
 
@@ -126,6 +127,7 @@ def handle_test(
 def fuzz_spirv(
     staging_dir: Path,
     reports_dir: Path,
+    fuzz_failures_dir: Path,
     active_devices: List[Device],
     spirv_fuzz_shaders: List[Path],
     settings: Settings,
@@ -143,13 +145,17 @@ def fuzz_spirv(
     )
 
     # TODO: Allow using downloaded spirv-fuzz.
-
-    spirv_fuzz_util.run_generate_on_shader_job(
-        util.tool_on_path("spirv-fuzz"),
-        reference_spirv_shader_job,
-        template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
-        seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
-    )
+    try:
+        spirv_fuzz_util.run_generate_on_shader_job(
+            util.tool_on_path("spirv-fuzz"),
+            reference_spirv_shader_job,
+            template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
+            seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
+        )
+    except subprocess.CalledProcessError:
+        if len(list(fuzz_failures_dir.iterdir())) < settings.maximum_fuzz_failures:
+            util.copy_dir(staging_dir, fuzz_failures_dir / staging_dir.name)
+        return
 
     test_dirs = [
         make_test(

@@ -118,6 +118,8 @@ ITERATION_SEED_BITS = 256
 
 SPIRV_FUZZ = False
 
+FUZZ_FAILURES_DIR_NAME = "fuzz_failures"
+
 
 def get_random_name() -> str:
     # TODO: could change to human-readable random name or the date.
@@ -172,6 +174,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     active_devices = devices_util.get_active_devices(settings.device_list)
 
     reports_dir = Path() / "reports"
+    fuzz_failures_dir = reports_dir / FUZZ_FAILURES_DIR_NAME
     temp_dir = Path() / "temp"
     references_dir = Path() / "references"
     donors_dir = Path() / "donors"
@@ -256,6 +259,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
             fuzz_spirv_test.fuzz_spirv(
                 staging_dir,
                 reports_dir,
+                fuzz_failures_dir,
                 active_devices,
                 spirv_fuzz_shaders,
                 settings,

@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='gfauto',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15gfauto/settings.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\x7f\n\x08Settings\x12\'\n\x0b\x64\x65vice_list\x18\x01 \x01(\x0b\x32\x12.gfauto.DeviceList\x12\'\n\x0f\x63ustom_binaries\x18\x02 \x03(\x0b\x32\x0e.gfauto.Binary\x12!\n\x19maximum_duplicate_crashes\x18\x03 \x01(\rb\x06proto3')
+  serialized_pb=_b('\n\x15gfauto/settings.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\x9e\x01\n\x08Settings\x12\'\n\x0b\x64\x65vice_list\x18\x01 \x01(\x0b\x32\x12.gfauto.DeviceList\x12\'\n\x0f\x63ustom_binaries\x18\x02 \x03(\x0b\x32\x0e.gfauto.Binary\x12!\n\x19maximum_duplicate_crashes\x18\x03 \x01(\r\x12\x1d\n\x15maximum_fuzz_failures\x18\x04 \x01(\rb\x06proto3')
   ,
   dependencies=[gfauto_dot_common__pb2.DESCRIPTOR,gfauto_dot_device__pb2.DESCRIPTOR,])
 
@@ -57,6 +57,13 @@ _SETTINGS = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='maximum_fuzz_failures', full_name='gfauto.Settings.maximum_fuzz_failures', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -69,8 +76,8 @@ _SETTINGS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=75,
-  serialized_end=202,
+  serialized_start=76,
+  serialized_end=234,
 )
 
 _SETTINGS.fields_by_name['device_list'].message_type = gfauto_dot_device__pb2._DEVICELIST
