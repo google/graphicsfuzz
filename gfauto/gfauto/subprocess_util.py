@@ -69,7 +69,7 @@ def log_returncode(
 
 
 def posix_kill_group(process: subprocess.Popen) -> None:
-    # To work around type warnings:
+    # Work around type warnings that will only show up on Windows:
     os_alias: Any = os
     os_alias.killpg(process.pid, signal.SIGTERM)
     time.sleep(1)
