@@ -709,6 +709,10 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append("#define " + Constants.GLF_WRAPPED_IF_TRUE + "(X)  X\n");
     out.append("#define " + Constants.GLF_WRAPPED_IF_FALSE + "(X) X\n");
     out.append("#define " + Constants.GLF_SWITCH + "(X)           X\n");
+    out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_TERNARY_INT + "(INDEX, SIZE) X\n");
+    out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_TERNARY_UINT + "(INDEX, SIZE) X\n");
+    out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_CLAMP_INT + "(INDEX, SIZE) X\n");
+    out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_CLAMP_UINT + "(INDEX, SIZE) X\n");
     out.append("#endif\n");
     out.append("\n");
     out.append(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES + "\n");
