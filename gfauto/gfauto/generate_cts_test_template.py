@@ -25,7 +25,7 @@ In particular, the Amber script test is suitable for use with |add_amber_tests_t
 import sys
 from pathlib import Path
 
-from gfauto import artifact_util, tool
+from gfauto import artifact_util, tool, util
 
 
 def main() -> None:
@@ -39,10 +39,12 @@ def main() -> None:
 
     artifact_util.recipes_write_built_in()
 
+    bug_dir = util.norm_path(Path(__file__).absolute()).parent
+
     tool.glsl_shader_job_crash_to_amber_script_for_google_cts(
-        source_dir=Path() / "reduced_glsl_manual",
-        output_amber=Path() / "name-of-test-TODO.amber",
-        work_dir=Path() / "work",
+        source_dir=bug_dir / "reduced_glsl_manual",
+        output_amber=bug_dir / "name-of-test-TODO.amber",
+        work_dir=bug_dir / "work",
         # One sentence, 58 characters max., no period, no line breaks.
         short_description="A fragment shader with TODO",
         comment_text="""The test passes because TODO""",
