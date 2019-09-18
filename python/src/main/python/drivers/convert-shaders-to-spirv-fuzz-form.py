@@ -58,21 +58,21 @@ def main_helper(args):
         shader_job_uniforms_to_spirv_fuzz_facts.main_helper([json_in_output_dir,
                                                              os.path.join(args.output_dir,
                                                                           shader_job_prefix
-                                                                          + ".facts")])
+                                                                          + ".frag.facts")])
         runspv.convert_glsl_to_spv(os.path.join(args.output_dir, shader_job_prefix + ".frag"),
-                                   os.path.join(args.output_dir, shader_job_prefix + ".spv"))
+                                   os.path.join(args.output_dir, shader_job_prefix + ".frag.spv"))
 
         for opt_settings in ["-O", "-Os"]:
             shutil.copyfile(os.path.join(args.output_dir, shader_job_prefix + ".json"),
                             os.path.join(args.output_dir, shader_job_prefix + opt_settings
                                          + ".json"))
-            shutil.copyfile(os.path.join(args.output_dir, shader_job_prefix + ".facts"),
+            shutil.copyfile(os.path.join(args.output_dir, shader_job_prefix + ".frag.facts"),
                             os.path.join(args.output_dir, shader_job_prefix + opt_settings
-                                         + ".facts"))
-            runspv.run_spirv_opt(os.path.join(args.output_dir, shader_job_prefix + ".spv"),
+                                         + ".frag.facts"))
+            runspv.run_spirv_opt(os.path.join(args.output_dir, shader_job_prefix + ".frag.spv"),
                                  [opt_settings],
                                  os.path.join(args.output_dir, shader_job_prefix + opt_settings
-                                              + ".spv"))
+                                              + ".frag.spv"))
 
 
 if __name__ == '__main__':
