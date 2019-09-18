@@ -170,7 +170,7 @@ void main() {
           }
         }
     }
-    float a = sinh(x + y * float(sum));
+    float a = tan(x + y * float(sum));
     _GLF_color = vec4(hueColor(a), 1.);
 
 }
