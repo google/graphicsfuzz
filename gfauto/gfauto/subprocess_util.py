@@ -26,7 +26,7 @@ import signal
 import subprocess
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from gfauto.gflogging import log
 from gfauto.util import check
@@ -69,9 +69,11 @@ def log_returncode(
 
 
 def posix_kill_group(process: subprocess.Popen) -> None:
-    os.killpg(process.pid, signal.SIGTERM)
+    # Work around type warnings that will only show up on Windows:
+    os_alias: Any = os
+    os_alias.killpg(process.pid, signal.SIGTERM)
     time.sleep(1)
-    os.killpg(process.pid, signal.SIGKILL)
+    os_alias.killpg(process.pid, signal.SIGKILL)
 
 
 def run_helper(
