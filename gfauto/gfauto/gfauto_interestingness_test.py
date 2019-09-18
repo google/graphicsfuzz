@@ -123,22 +123,39 @@ def main() -> None:
     )
 
     status = result_util.get_status(output_dir)
-    if status not in (fuzz.STATUS_CRASH, fuzz.STATUS_TOOL_CRASH):
-        log("Shader run did not crash; not interesting.")
-        sys.exit(1)
+    if test.expected_status:
+        log("")
+        log(f"Expected status: {test.expected_status}")
+        log(f"Actual   status: {status}")
 
     log_contents = util.file_read_text(result_util.get_log_path(output_dir))
     signature = signature_util.get_signature_from_log_contents(log_contents)
 
+    log("")
     log(f"Expected signature: {test.crash_signature}")
     log(f"Actual   signature: {signature}")
 
-    if signature == test.crash_signature:
-        log("Interesting!")
-        return
+    log("")
 
-    log("Not interesting")
-    sys.exit(1)
+    if test.expected_status:
+        if status != test.expected_status:
+            log("status != expected_status; not interesting")
+            sys.exit(1)
+    else:
+        # There is no expected status, so just assume it needs to be one of the "bad" statuses:
+        if status not in (
+            fuzz.STATUS_CRASH,
+            fuzz.STATUS_TOOL_CRASH,
+            fuzz.STATUS_UNRESPONSIVE,
+        ):
+            log("shader run did not fail; not interesting.")
+            sys.exit(1)
+
+    if signature != test.crash_signature:
+        log("signature != crash_signature; not interesting")
+        sys.exit(1)
+
+    log("Interesting!")
 
 
 if __name__ == "__main__":
