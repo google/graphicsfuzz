@@ -207,6 +207,8 @@ def maybe_add_report(
         report_subdirectory_name = "crashes"
     elif status == fuzz.STATUS_TOOL_CRASH:
         report_subdirectory_name = "tool_crashes"
+    elif status == fuzz.STATUS_UNRESPONSIVE:
+        report_subdirectory_name = "unresponsive"
 
     if not report_subdirectory_name:
         return None
@@ -243,6 +245,7 @@ def maybe_add_report(
     test_metadata = test_util.metadata_read(test_dir_in_reports)
     test_metadata.crash_signature = signature
     test_metadata.device.CopyFrom(device)
+    test_metadata.expected_status = status
     test_util.metadata_write(test_metadata, test_dir_in_reports)
 
     return test_dir_in_reports
@@ -301,7 +304,11 @@ def handle_test(
     # Run on all devices.
     for device in active_devices:
         status = run(test_dir, binary_manager, device)
-        if status in (fuzz.STATUS_CRASH, fuzz.STATUS_TOOL_CRASH):
+        if status in (
+            fuzz.STATUS_CRASH,
+            fuzz.STATUS_TOOL_CRASH,
+            fuzz.STATUS_UNRESPONSIVE,
+        ):
             issue_found = True
         if status == fuzz.STATUS_TOOL_CRASH:
             # No need to run further on real devices if the pre-processing step failed.

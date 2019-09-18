@@ -30,6 +30,8 @@ message Test {
   string crash_signature = 2;
   Device device = 3;
   repeated Binary binaries = 4;
+  // The expected status when running the test. E.g. CRASH, TOOL_CRASH, TIMEOUT. See fuzz.py.
+  string expected_status = 6;
 }
 
 message TestGlsl {

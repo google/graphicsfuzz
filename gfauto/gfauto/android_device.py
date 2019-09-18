@@ -42,6 +42,10 @@ ANDROID_DEVICE_AMBER_SCRIPT_FILE = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + "/test.ambe
 
 BUSY_WAIT_SLEEP_SLOW = 1.0
 
+ADB_DEFAULT_TIME_LIMIT = 30
+
+ADB_SHORT_LOGCAT_TIME_LIMIT = 3
+
 
 def adb_path() -> Path:
     if "ANDROID_HOME" in os.environ:
@@ -57,6 +61,7 @@ def adb_helper(
     adb_args: List[str],
     check_exit_code: bool,
     verbose: bool = False,
+    timeout: Optional[int] = ADB_DEFAULT_TIME_LIMIT,
 ) -> subprocess.CompletedProcess:
 
     adb_cmd = [str(adb_path())]
@@ -67,25 +72,32 @@ def adb_helper(
     adb_cmd.extend(adb_args)
 
     return subprocess_util.run(
-        adb_cmd,
-        check_exit_code=check_exit_code,
-        timeout=fuzz.AMBER_RUN_TIME_LIMIT,
-        verbose=verbose,
+        adb_cmd, check_exit_code=check_exit_code, timeout=timeout, verbose=verbose
     )
 
 
 def adb_check(
-    serial: Optional[str], adb_args: List[str], verbose: bool = False
+    serial: Optional[str],
+    adb_args: List[str],
+    verbose: bool = False,
+    timeout: Optional[int] = ADB_DEFAULT_TIME_LIMIT,
 ) -> subprocess.CompletedProcess:
 
-    return adb_helper(serial, adb_args, check_exit_code=True, verbose=verbose)
+    return adb_helper(
+        serial, adb_args, check_exit_code=True, verbose=verbose, timeout=timeout
+    )
 
 
 def adb_can_fail(
-    serial: Optional[str], adb_args: List[str], verbose: bool = False
+    serial: Optional[str],
+    adb_args: List[str],
+    verbose: bool = False,
+    timeout: Optional[int] = ADB_DEFAULT_TIME_LIMIT,
 ) -> subprocess.CompletedProcess:
 
-    return adb_helper(serial, adb_args, check_exit_code=False, verbose=verbose)
+    return adb_helper(
+        serial, adb_args, check_exit_code=False, verbose=verbose, timeout=timeout
+    )
 
 
 def stay_awake_warning(serial: Optional[str] = None) -> None:
@@ -150,6 +162,7 @@ def get_all_android_devices() -> List[Device]:
 
 
 def prepare_device(wait_for_screen: bool, serial: Optional[str] = None) -> None:
+    adb_check(serial, ["wait-for-device"], timeout=None)
     adb_check(serial, ["logcat", "-c"])
     res = adb_can_fail(serial, ["shell", "test -e " + ANDROID_DEVICE_AMBER])
     check(
@@ -250,25 +263,33 @@ def run_amber_on_device_helper(
     result: Optional[CompletedProcess] = None
 
     try:
-        result = adb_can_fail(serial, cmd, verbose=True)
+        result = adb_can_fail(
+            serial, cmd, verbose=True, timeout=fuzz.AMBER_RUN_TIME_LIMIT
+        )
     except subprocess.TimeoutExpired:
         status = fuzz.STATUS_TIMEOUT
 
-    if result:
-        if result.returncode != 0:
-            status = fuzz.STATUS_CRASH
-        else:
-            status = fuzz.STATUS_SUCCESS
+    try:
+        if result:
+            if result.returncode != 0:
+                status = fuzz.STATUS_CRASH
+            else:
+                status = fuzz.STATUS_SUCCESS
 
-        if not skip_render:
-            adb_check(
-                serial,
-                # The /. syntax means the contents of the results directory will be copied into output_dir.
-                ["pull", ANDROID_DEVICE_RESULT_DIR + "/.", str(output_dir)],
-            )
+            if not skip_render:
+                adb_check(
+                    serial,
+                    # The /. syntax means the contents of the results directory will be copied into output_dir.
+                    ["pull", ANDROID_DEVICE_RESULT_DIR + "/.", str(output_dir)],
+                )
 
-    # Grab log:
-    adb_check(serial, ["logcat", "-d"], verbose=True)
+        # Grab log. Use a short time limit to increase the chance of detecting a device reboot.
+        adb_check(
+            serial, ["logcat", "-d"], verbose=True, timeout=ADB_SHORT_LOGCAT_TIME_LIMIT
+        )
+    except subprocess.SubprocessError:
+        # If we fail in getting the results directory or log, assume the device has rebooted.
+        status = fuzz.STATUS_UNRESPONSIVE
 
     log("\nSTATUS " + status + "\n")
 

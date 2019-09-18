@@ -102,7 +102,11 @@ def handle_test(
     # Run on all devices.
     for device in active_devices:
         status = run(test_dir, binary_manager, device)
-        if status in (fuzz.STATUS_CRASH, fuzz.STATUS_TOOL_CRASH):
+        if status in (
+            fuzz.STATUS_CRASH,
+            fuzz.STATUS_TOOL_CRASH,
+            fuzz.STATUS_UNRESPONSIVE,
+        ):
             issue_found = True
         if status == fuzz.STATUS_TOOL_CRASH:
             # No need to run further on real devices if the pre-processing step failed.
