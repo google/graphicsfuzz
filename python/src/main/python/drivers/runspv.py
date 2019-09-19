@@ -53,8 +53,6 @@ SPIRV_OPT_OPTION_HELP = (
 
 TARGET_HELP = 'One of \'host\' (run on host machine) or \'android\' (run on Android device).'
 
-USE_AMBERSCRIPT_OPTION_HELP = 'Use AmberScript (not VkScript) test file format.'
-
 ################################################################################
 # Constants
 
@@ -826,65 +824,6 @@ def spv_get_disassembly(shader_filename):
     return subprocess_helper(cmd).stdout
 
 
-def uniform_json_to_vkscript(uniform_json):
-    """
-    Returns the string representing VkScript version of uniform declarations.
-    Skips the special '$compute' key, if present.
-
-    {
-      "myuniform": {
-        "func": "glUniform1f",
-        "args": [ 42.0 ],
-        "binding": 3
-      },
-      "$compute": { ... will be ignored ... }
-    }
-
-    becomes:
-
-    # myuniform
-    uniform ubo 0:3 float 0 42.0
-
-    """
-
-    uniform_types = {
-        'glUniform1i': 'int',
-        'glUniform2i': 'ivec2',
-        'glUniform3i': 'ivec3',
-        'glUniform4i': 'ivec4',
-        'glUniform1f': 'float',
-        'glUniform2f': 'vec2',
-        'glUniform3f': 'vec3',
-        'glUniform4f': 'vec4',
-    }
-
-    descriptor_set = 0  # always 0 in our tests
-    offset = 0  # We never have uniform offset in our tests
-
-    result = ''
-    with open_helper(uniform_json, 'r') as f:
-        j = json.load(f)
-    for name, entry in j.items():
-
-        if name == '$compute':
-            continue
-
-        func = entry['func']
-        if func not in uniform_types.keys():
-            raise AssertionError('Error: unknown uniform type for function: ' + func)
-        uniform_type = uniform_types[func]
-
-        result += '# ' + name + '\n'
-        result += 'uniform ubo {}:{}'.format(descriptor_set, entry['binding'])
-        result += ' ' + uniform_type
-        result += ' {}'.format(offset)
-        for arg in entry['args']:
-            result += ' {}'.format(arg)
-        result += '\n'
-
-    return result
-
-
 def get_shader_as_comment(shader: str) -> str:
     with open_helper(shader, 'r') as f:
         lines = f.readlines()
@@ -949,50 +888,6 @@ def get_header_comment_original_source_comp(
     spirv_args: str
 ):
     return get_header_comment_original_source(None, None, comp_original, spirv_args)
-
-
-def vkscriptify_image(
-    vert,
-    frag,
-    uniform_json,
-    vert_original,
-    frag_original,
-    spirv_args
-):
-    """
-    Generates VkScript representation of an image test
-    """
-
-    result = '# Generated\n\n'
-
-    result += '# A test for a bug found by GraphicsFuzz.\n\n'
-
-    result += get_header_comment_original_source_image(vert_original, frag_original, spirv_args)
-
-    result += '[require]\n'
-    result += 'fbsize 256 256\n\n'
-
-    result += '[require]\n'
-    result += 'fence_timeout ' + str(AMBER_FENCE_TIMEOUT_MS) + '\n\n'
-
-    if vert:
-        result += '[vertex shader spirv]\n'
-        result += spv_get_disassembly(vert)
-    else:
-        result += '[vertex shader passthrough]\n'
-    result += '\n\n'
-
-    result += '[fragment shader spirv]\n'
-    result += spv_get_disassembly(frag)
-    result += '\n\n'
-
-    result += '[test]\n'
-    result += '## Uniforms\n'
-    result += uniform_json_to_vkscript(uniform_json)
-    result += '\n'
-    result += 'draw rect -1 -1 2 2\n'
-
-    return result
 
 
 def amberscript_uniform_buffer_decl(uniform_json):
@@ -1157,8 +1052,7 @@ def run_image_amber(
     force: bool,
     is_android: bool,
     skip_render: bool,
-    spirv_opt_args: Optional[List[str]],
-    use_amberscript: bool,
+    spirv_opt_args: Optional[List[str]]
 ):
     # The vertex shader is optional; passthrough will be used if it is not present
     assert not vert_original or os.path.isfile(vert_original)
@@ -1173,28 +1067,16 @@ def run_image_amber(
 
     device_image = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + '/image_0.png'
 
-    if use_amberscript:
-        shader_test_file = os.path.join(output_dir, 'tmp_shader_test.amber')
-        with open_helper(shader_test_file, 'w') as f:
-            f.write(amberscriptify_image(
-                vert,
-                frag,
-                json_file,
-                vert_original,
-                frag_original,
-                spirv_opt_args,
-            ))
-    else:
-        shader_test_file = os.path.join(output_dir, 'tmp_shader_test.vkscript')
-        with open_helper(shader_test_file, 'w') as f:
-            f.write(vkscriptify_image(
-                vert,
-                frag,
-                json_file,
-                vert_original,
-                frag_original,
-                spirv_opt_args,
-            ))
+    shader_test_file = os.path.join(output_dir, 'tmp_shader_test.amber')
+    with open_helper(shader_test_file, 'w') as f:
+        f.write(amberscriptify_image(
+            vert,
+            frag,
+            json_file,
+            vert_original,
+            frag_original,
+            spirv_opt_args,
+        ))
 
     if is_android:
         prepare_device(force, using_legacy_worker=False)
@@ -1307,106 +1189,6 @@ def amber_check_buffer_single_type(json_filename):
             field_type = field_info['type']
         elif field_type != field_info['type']:
             raise ValueError('Amber only supports one type per buffer')
-
-
-def comp_json_to_vkscript(comp_json):
-    """
-    Returns the string representing VkScript version of compute shader setup,
-    found under the special "$compute" key in JSON
-
-      {
-        "my_uniform_name": { ... ignored by this function ... },
-
-        "$compute": {
-          "num_groups": [12, 13, 14];
-          "buffer": {
-            "binding": 123,
-            "input": [42, 43, 44, 45]
-          }
-        }
-
-      }
-
-    becomes:
-
-      ssbo 123 subdata int 0 42 43 44 45
-
-      compute 12 13 14
-
-    """
-
-    with open_helper(comp_json, 'r') as f:
-        j = json.load(f)
-
-    assert '$compute' in j.keys(), 'Cannot find "$compute" key in JSON file'
-    j = j['$compute']
-
-    result = ""
-
-    binding = j['buffer']['binding']
-    offset = 0
-
-    for field_info in j['buffer']['fields']:
-        result += (
-            'ssbo '
-            + str(binding)
-            + ' subdata '
-            + field_info['type']
-            + ' '
-            + str(offset)
-        )
-        for datum in field_info['data']:
-            result += ' ' + str(datum)
-            offset += 4
-        result += '\n'
-    result += '\n\n'
-
-    result += 'compute'
-    result += ' ' + str(j['num_groups'][0])
-    result += ' ' + str(j['num_groups'][1])
-    result += ' ' + str(j['num_groups'][2])
-    result += '\n'
-
-    return result
-
-
-def vkscriptify_comp(
-    comp_spv: str,
-    comp_json: str,
-    comp_original: Optional[str],
-    spirv_args: Optional[List[str]]
-):
-    """
-    Generates an Vkscript representation of a compute test
-    """
-
-    result = '# Generated\n\n'
-
-    result += '# A test for a bug found by GraphicsFuzz.\n\n'
-
-    result += get_spirv_opt_args_comment(spirv_args)
-
-    if comp_original and filename_extension_suggests_glsl(comp_original):
-        result += '# Derived from the following GLSL.\n\n'
-        result += '# Compute shader GLSL:\n'
-        result += get_shader_as_comment(comp_original)
-        result += '\n\n'
-
-    result += '[require]\n'
-    result += 'fence_timeout ' + str(AMBER_FENCE_TIMEOUT_MS) + '\n\n'
-
-    result += '[compute shader spirv]\n'
-    result += spv_get_disassembly(comp_spv)
-    result += '\n\n'
-
-    result += '[test]\n'
-    result += '## Uniforms\n'
-    result += uniform_json_to_vkscript(comp_json)
-    result += '## SSBO\n'
-    result += comp_json_to_vkscript(comp_json)
-    result += '\n'
-
-    return result
 
 
 def amberscript_comp_buff_decl(comp_json):
@@ -1621,8 +1403,7 @@ def run_compute_amber(
     force: bool,
     is_android: bool,
     skip_render: bool,
-    spirv_opt_args: Optional[List[str]],
-    use_amberscript: bool,
+    spirv_opt_args: Optional[List[str]]
 ) -> None:
 
     assert os.path.isfile(comp_original)
@@ -1635,24 +1416,14 @@ def run_compute_amber(
 
     comp = prepare_shader(output_dir, comp_original, spirv_opt_args)
 
-    if use_amberscript:
-        shader_test_file = os.path.join(output_dir, 'tmp_shader_test.amber')
-        with open_helper(shader_test_file, 'w') as f:
-            f.write(amberscriptify_comp(
-                comp,
-                json_file,
-                comp_original,
-                spirv_opt_args,
-            ))
-    else:
-        shader_test_file = os.path.join(output_dir, 'tmp_shader_test.vkscript')
-        with open_helper(shader_test_file, 'w') as f:
-            f.write(vkscriptify_comp(
-                comp,
-                json_file,
-                comp_original,
-                spirv_opt_args,
-            ))
+    shader_test_file = os.path.join(output_dir, 'tmp_shader_test.amber')
+    with open_helper(shader_test_file, 'w') as f:
+        f.write(amberscriptify_comp(
+            comp,
+            json_file,
+            comp_original,
+            spirv_opt_args,
+        ))
 
     # FIXME: in case of multiple SSBOs, we should pass the binding of the ones to be dumped
     ssbo_binding = str(get_ssbo_binding(json_file))
@@ -1819,7 +1590,6 @@ def main_helper(args):
     # Optional arguments
     parser.add_argument('--serial', help=SERIAL_OPTION_HELP)
     parser.add_argument('--legacy-worker', action='store_true', help=LEGACY_OPTION_HELP)
-    parser.add_argument('--use-amberscript', action='store_true', help=USE_AMBERSCRIPT_OPTION_HELP)
     parser.add_argument('--skip-render', action='store_true', help=SKIP_RENDER_OPTION_HELP)
     parser.add_argument('--spirvopt', help=SPIRV_OPT_OPTION_HELP)
     parser.add_argument('--force', action='store_true', help=FORCE_OPTION_HELP)
@@ -1910,8 +1680,7 @@ def main_helper(args):
                     force=args.force,
                     is_android=(args.target == 'android'),
                     skip_render=args.skip_render,
-                    spirv_opt_args=spirv_args,
-                    use_amberscript=args.use_amberscript,
+                    spirv_opt_args=spirv_args
                 )
                 return
 
@@ -1935,8 +1704,7 @@ def main_helper(args):
                 force=args.force,
                 is_android=(args.target == 'android'),
                 skip_render=args.skip_render,
-                spirv_opt_args=spirv_args,
-                use_amberscript=args.use_amberscript,
+                spirv_opt_args=spirv_args
             )
         finally:
             log_to_file = None
