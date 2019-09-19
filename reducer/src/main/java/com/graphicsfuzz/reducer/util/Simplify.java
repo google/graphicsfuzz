@@ -18,16 +18,12 @@ package com.graphicsfuzz.reducer.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.AddBraces;
-import com.graphicsfuzz.reducer.glslreducers.EliminateInjectionMacrosVisitor;
-import java.util.Optional;
+import com.graphicsfuzz.reducer.glslreducers.EliminateGraphicsFuzzDefines;
 
 public class Simplify {
 
   public static TranslationUnit simplify(TranslationUnit tu) {
-    TranslationUnit temp = tu.clone();
-    new EliminateInjectionMacrosVisitor().visit(temp);
-    temp = AddBraces.transform(temp);
-    return temp;
+    return AddBraces.transform(EliminateGraphicsFuzzDefines.transform(tu));
   }
 
 }

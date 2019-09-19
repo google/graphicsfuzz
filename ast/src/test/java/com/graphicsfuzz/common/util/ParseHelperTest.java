@@ -105,7 +105,7 @@ public class ParseHelperTest {
   public void testParseCurrentHeaderNoMacros() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps);
+    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps, ShadingLanguageVersion.ESSL_310);
     ps.println(TEST_PROGRAM);
     ps.close();
     TranslationUnit tu = ParseHelper.parse(tempFile);
@@ -116,7 +116,7 @@ public class ParseHelperTest {
   public void testParseCurrentHeaderWithMacros() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps);
+    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps, ShadingLanguageVersion.ESSL_310);
     ps.println(TEST_PROGRAM);
     ps.close();
     TranslationUnit tu = ParseHelper.parse(tempFile);

@@ -145,4 +145,80 @@ public class SimplifyTest {
     final TranslationUnit simplifiedTu = Simplify.simplify(tu);
     CompareAsts.assertEqualAsts(expected, simplifiedTu);
   }
+
+  @Test
+  public void testMakeInBoundsIntClampRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 310 es\n"
+        + "void main() {\n"
+        + "  float A[4];\n"
+        + "  A[_GLF_MAKE_IN_BOUNDS_INT(A[_GLF_MAKE_IN_BOUNDS_INT(3, 4)], 4)] =\n"
+        + "      A[_GLF_MAKE_IN_BOUNDS_INT(1 + 2, 4)];\n"
+        + "}\n"
+    );
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  float A[4];\n"
+        + "  A[clamp(A[clamp(3, 0, 4 - 1)], 0, 4 - 1)] =\n"
+        + "      A[clamp(1 + 2, 0, 4 - 1)];\n"
+        + "}\n";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
+
+  @Test
+  public void testMakeInBoundsUintClampRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 310 es\n"
+        + "void main() {\n"
+        + "  float A[4];\n"
+        + "  A[_GLF_MAKE_IN_BOUNDS_UINT(A[_GLF_MAKE_IN_BOUNDS_UINT(3u, 4u)], 4u)] =\n"
+        + "      A[_GLF_MAKE_IN_BOUNDS_UINT(uint(1 + 2), 4u)];\n"
+        + "}\n"
+    );
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  float A[4];\n"
+        + "  A[clamp(A[clamp(3u, 0u, 4u - 1u)], 0u, 4u - 1u)] =\n"
+        + "      A[clamp(uint(1 + 2), 0u, 4u - 1u)];\n"
+        + "}\n";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
+
+  @Test
+  public void testMakeInBoundsIntTernaryRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  float A[4];\n"
+        + "  A[_GLF_MAKE_IN_BOUNDS_INT(A[_GLF_MAKE_IN_BOUNDS_INT(3, 4)], 4)] = 1.0;\n"
+        + "}\n"
+    );
+    final String inner = "A[((3) < 0 ? 0 : ((3) >= 4 ? 4 - 1 : (3)))]";
+    final String expected = "#version 100\n"
+        + "void main() {\n"
+        + "  float A[4];\n"
+        + "  A[((" + inner + ") < 0 ? 0 : ((" + inner + ") >= 4 ? 4 - 1 : (" + inner + ")))] = 1"
+        + ".0;\n"
+        + "}\n";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
+
+  @Test
+  public void testMakeInBoundsUintTernaryRemoved() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 100\n"
+        + "void main() {\n"
+        + "  float A[4];\n"
+        + "  A[_GLF_MAKE_IN_BOUNDS_UINT(A[_GLF_MAKE_IN_BOUNDS_UINT(3u, 4u)], 4u)] = 1.0;\n"
+        + "}\n"
+    );
+    final String inner = "A[((3u) >= 4u ? 4u - 1u : (3u))]";
+    final String expected = "#version 100\n"
+        + "void main() {\n"
+        + "  float A[4];\n"
+        + "  A[((" + inner + ") >= 4u ? 4u - 1u : (" + inner + "))] = 1.0;\n"
+        + "}\n";
+    final TranslationUnit simplifiedTu = Simplify.simplify(tu);
+    CompareAsts.assertEqualAsts(expected, simplifiedTu);
+  }
+
 }

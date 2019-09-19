@@ -46,10 +46,8 @@ public final class Constants {
   public static final String GLF_SWITCH = "_GLF_SWITCH";
 
   // Macro names used to make array accesses in bounds
-  public static final String GLF_MAKE_IN_BOUNDS_CLAMP_INT = "_GLF_MAKE_IN_BOUNDS_CLAMP_INT";
-  public static final String GLF_MAKE_IN_BOUNDS_CLAMP_UINT = "_GLF_MAKE_IN_BOUNDS_CLAMP_UINT";
-  public static final String GLF_MAKE_IN_BOUNDS_TERNARY_INT = "_GLF_MAKE_IN_BOUNDS_TERNARY_INT";
-  public static final String GLF_MAKE_IN_BOUNDS_TERNARY_UINT = "_GLF_MAKE_IN_BOUNDS_TERNARY_UINT";
+  public static final String GLF_MAKE_IN_BOUNDS_INT = "_GLF_MAKE_IN_BOUNDS_INT";
+  public static final String GLF_MAKE_IN_BOUNDS_UINT = "_GLF_MAKE_IN_BOUNDS_UINT";
 
   public static final String GLF_PRIMITIVE = "_GLF_PRIMITIVE";
   public static final String GLF_PRIMITIVE_GLOBAL = "_GLF_PRIMITIVE_GLOBAL";

@@ -17,10 +17,13 @@
 package com.graphicsfuzz.generator.transformation.donation;
 
 import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TernaryExpr;
@@ -29,9 +32,11 @@ import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.typing.Typer;
+import com.graphicsfuzz.util.Constants;
 
-public class MakeArrayAccessesInBounds extends StandardVisitor {
+public class MakeArrayAccessesInBounds extends ScopeTrackingVisitor {
 
   private Typer typer;
 
@@ -39,12 +44,19 @@ public class MakeArrayAccessesInBounds extends StandardVisitor {
     this.typer = typer;
   }
 
-  public static void makeInBounds(IAstNode node, Typer typer) {
+  /**
+   * Clamp array / vector / matrix accesses to ensure they will be in-bounds.
+   * @param node AST node under which accesses should be made in bound.
+   * @param typer Type info for the AST.
+   * @param tu The translation unit in which node is contained.
+   */
+  public static void makeInBounds(IAstNode node, Typer typer, TranslationUnit tu) {
     new MakeArrayAccessesInBounds(typer).visit(node);
   }
 
   @Override
   public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
+    super.visitArrayIndexExpr(arrayIndexExpr);
     Type type = typer.lookupType(arrayIndexExpr.getArray());
     if (type == null) {
       return;
@@ -57,34 +69,20 @@ public class MakeArrayAccessesInBounds extends StandardVisitor {
         return;
       }
       indexType = indexType.getWithoutQualifiers();
-      if (indexType == BasicType.UINT) {
-        arrayIndexExpr.setIndex(new TernaryExpr(
-            new BinaryExpr(
-                new ParenExpr(arrayIndexExpr.getIndex().clone()),
-                new UIntConstantExpr(getSize(type).toString() + "u"),
-                BinOp.LT),
-            arrayIndexExpr.getIndex(),
-            new UIntConstantExpr("0u"))
-        );
-      } else {
-        assert indexType == BasicType.INT;
-        arrayIndexExpr.setIndex(new TernaryExpr(
-            new BinaryExpr(
-                new BinaryExpr(
-                    new ParenExpr(arrayIndexExpr.getIndex().clone()),
-                    new IntConstantExpr("0"),
-                    BinOp.GE),
-                new BinaryExpr(
-                    new ParenExpr(arrayIndexExpr.getIndex().clone()),
-                    new IntConstantExpr(getSize(type).toString()),
-                    BinOp.LT),
-                BinOp.LAND),
-            arrayIndexExpr.getIndex(),
-            new IntConstantExpr("0"))
-        );
-      }
+      assert indexType == BasicType.INT || indexType == BasicType.UINT;
+
+      final Expr arraySize = indexType == BasicType.INT
+          ? new IntConstantExpr(getSize(type).toString())
+          : new UIntConstantExpr(getSize(type).toString() + "u");
+
+      final Expr clampedIndexExpr =
+          new FunctionCallExpr(indexType == BasicType.INT ? Constants.GLF_MAKE_IN_BOUNDS_INT :
+              Constants.GLF_MAKE_IN_BOUNDS_UINT,
+              arrayIndexExpr.getIndex(),
+              arraySize);
+      arrayIndexExpr.setIndex(clampedIndexExpr);
+
     }
-    super.visitArrayIndexExpr(arrayIndexExpr);
   }
 
   private static Integer getSize(Type type) {
