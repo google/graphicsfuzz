@@ -138,7 +138,7 @@ void main() {
             color.x += atanh(color.x) * cosh(injectionSwitch.y) * smoothstep(color, injectionSwitch, gl_FragCoord.yy).x;
             break;
         } else if (int(gl_FragCoord[1]) < 120) {
-            color = fract(acosh(vecCoor.yx - trunc(float(data[3]))));
+            color = fract(acosh(clamp(vecCoor.yx - trunc(float(data[3])), 1, 1000)));
             color.x += (isnan(gl_FragCoord.x) ? log2(gl_FragCoord.x) : log2(gl_FragCoord.y));
             break;
         } else if (int(gl_FragCoord[1]) < 150) {
