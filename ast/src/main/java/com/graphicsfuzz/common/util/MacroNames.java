@@ -85,6 +85,14 @@ public class MacroNames {
     return isCallToNamedFunction(expr, Constants.GLF_SWITCH);
   }
 
+  public static boolean isMakeInBoundsInt(Expr expr) {
+    return isCallToNamedFunction(expr, Constants.GLF_MAKE_IN_BOUNDS_INT);
+  }
+
+  public static boolean isMakeInBoundsUint(Expr expr) {
+    return isCallToNamedFunction(expr, Constants.GLF_MAKE_IN_BOUNDS_UINT);
+  }
+
   private static boolean isCallToNamedFunction(Expr expr, String functionName) {
     return expr instanceof FunctionCallExpr && ((FunctionCallExpr) expr).getCallee()
         .equals(functionName);

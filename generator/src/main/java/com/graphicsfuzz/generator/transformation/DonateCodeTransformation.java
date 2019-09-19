@@ -296,7 +296,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
                                                  List<Stmt> injectedStmts) {
     Typer typer = new Typer(tu);
     for (Stmt stmt : injectedStmts) {
-      MakeArrayAccessesInBounds.makeInBounds(stmt, typer);
+      MakeArrayAccessesInBounds.makeInBounds(stmt, typer, tu);
     }
   }
 
