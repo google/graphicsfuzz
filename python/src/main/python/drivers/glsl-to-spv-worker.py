@@ -17,7 +17,6 @@
 import argparse
 import os
 import random
-import shutil
 import subprocess
 import sys
 import time
@@ -209,8 +208,7 @@ def do_image_job(
                     force=args.force,
                     is_android=(args.target == 'android'),
                     skip_render=skip_render,
-                    spirv_opt_args=resolved_spirvopt_args,
-                    use_amberscript=True
+                    spirv_opt_args=resolved_spirvopt_args
                 )
         except Exception as ex:
             runspv.log('Exception: ' + str(ex))
@@ -305,8 +303,7 @@ def do_compute_job(
                 force=args.force,
                 is_android=(args.target == 'android'),
                 skip_render=comp_job.skipRender,
-                spirv_opt_args=spirv_opt_args,
-                use_amberscript=True
+                spirv_opt_args=spirv_opt_args
             )
         except Exception as ex:
             runspv.log('Exception: ' + str(ex))
