@@ -157,6 +157,7 @@ def fuzz_spirv(
             seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
         )
     except subprocess.CalledProcessError:
+        util.mkdirs_p(fuzz_failures_dir)
         if len(list(fuzz_failures_dir.iterdir())) < settings.maximum_fuzz_failures:
             util.copy_dir(staging_dir, fuzz_failures_dir / staging_dir.name)
         return
