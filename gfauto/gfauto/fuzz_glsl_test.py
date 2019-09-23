@@ -22,7 +22,7 @@ Functions for handling GLSL shader job tests.
 import random
 import subprocess
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from gfauto import (
     amber_converter,
@@ -333,106 +333,137 @@ def handle_test(
 
 
 def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branches;
-    shader_job: Path,
+    source_dir: Path,
     output_dir: Path,
-    test: Test,
-    device: Device,
     binary_manager: binaries_util.BinaryManager,
-    use_default_binaries: bool = False,
+    test: Optional[Test] = None,
+    device: Optional[Device] = None,
+    ignore_test_and_device_binaries: bool = False,
 ) -> Path:
-
     with util.file_open_text(output_dir / "log.txt", "w") as log_file:
         try:
             gflogging.push_stream_for_logging(log_file)
-
-            child_binary_manager = binary_manager
-            if not use_default_binaries:
-                child_binary_manager = child_binary_manager.get_child_binary_manager(
-                    list(device.binaries) + list(test.binaries)
-                )
 
             # TODO: Find amber path. NDK or host.
 
             # TODO: If Amber is going to be used, check if Amber can use Vulkan debug layers now, and if not, pass that
             #  info down via a bool.
 
+            if not test:
+                test = test_util.metadata_read_from_path(
+                    source_dir / test_util.TEST_METADATA
+                )
+
+            if not device:
+                device = test.device
+
+            if not ignore_test_and_device_binaries:
+                binary_manager = binary_manager.get_child_binary_manager(
+                    list(device.binaries) + list(test.binaries)
+                )
+
             spirv_opt_hash: Optional[str] = None
             if test.glsl.spirv_opt_args:
-                spirv_opt_hash = child_binary_manager.get_binary_by_name(
+                spirv_opt_hash = binary_manager.get_binary_by_name(
                     binaries_util.SPIRV_OPT_NAME
                 ).version
 
-            try:
-                spirv_asm_shader_job_path, spirv_shader_job_path = tool.compile_shader_job(
-                    shader_job,
-                    output_dir,
-                    child_binary_manager,
-                    list(test.glsl.spirv_opt_args),
-                )
-            except subprocess.CalledProcessError:
-                util.file_write_text(
-                    result_util.get_status_path(output_dir), fuzz.STATUS_TOOL_CRASH
-                )
-                return output_dir
-            except subprocess.TimeoutExpired:
-                util.file_write_text(
-                    result_util.get_status_path(output_dir), fuzz.STATUS_TOOL_TIMEOUT
-                )
-                return output_dir
+            shader_jobs = tool.get_shader_jobs(source_dir)
 
-            is_compute = bool(
-                shader_job_util.get_related_files(
-                    shader_job, [shader_job_util.EXT_COMP]
-                )
-            )
+            combined_spirv_shader_jobs: List[tool.SpirvCombinedShaderJob] = []
+
+            for shader_job in shader_jobs:
+                try:
+                    combined_spirv_shader_jobs.append(
+                        tool.compile_shader_job(
+                            name=shader_job.name,
+                            input_json=shader_job.shader_job,
+                            work_dir=output_dir / shader_job.name,
+                            binary_paths=binary_manager,
+                            spirv_opt_args=list(test.glsl.spirv_opt_args),
+                        )
+                    )
+                except subprocess.CalledProcessError:
+                    result_util.write_status(
+                        output_dir, fuzz.STATUS_TOOL_CRASH, shader_job.name
+                    )
+                    return output_dir
+                except subprocess.TimeoutExpired:
+                    result_util.write_status(
+                        output_dir, fuzz.STATUS_TOOL_TIMEOUT, shader_job.name
+                    )
+                    return output_dir
 
             # Device types: |preprocess| and |shader_compiler| don't need an AmberScript file.
 
             if device.HasField("preprocess"):
                 # The "preprocess" device type just needs to get this far, so this is a success.
-                util.file_write_text(
-                    result_util.get_status_path(output_dir), fuzz.STATUS_SUCCESS
-                )
+                result_util.write_status(output_dir, fuzz.STATUS_SUCCESS)
                 return output_dir
 
             if device.HasField("shader_compiler"):
-                try:
-                    shader_compiler_util.run_shader_job(
-                        device.shader_compiler, spirv_shader_job_path, output_dir
-                    )
-                    # The shader compiler succeeded; this is a success.
-                    util.file_write_text(
-                        result_util.get_status_path(output_dir), fuzz.STATUS_SUCCESS
-                    )
-                    return output_dir
-                except subprocess.CalledProcessError:
-                    util.file_write_text(
-                        result_util.get_status_path(output_dir), fuzz.STATUS_CRASH
-                    )
-                    return output_dir
-                except subprocess.TimeoutExpired:
-                    util.file_write_text(
-                        result_util.get_status_path(output_dir), fuzz.STATUS_TIMEOUT
-                    )
-                    return output_dir
+                for combined_spirv_shader_job in combined_spirv_shader_jobs:
+                    try:
+                        shader_compiler_util.run_shader_job(
+                            device.shader_compiler,
+                            combined_spirv_shader_job.spirv_shader_job,
+                            output_dir,
+                        )
+                    except subprocess.CalledProcessError:
+                        result_util.write_status(
+                            output_dir,
+                            fuzz.STATUS_CRASH,
+                            combined_spirv_shader_job.name,
+                        )
+                        return output_dir
+                    except subprocess.TimeoutExpired:
+                        result_util.write_status(
+                            output_dir,
+                            fuzz.STATUS_TIMEOUT,
+                            combined_spirv_shader_job.name,
+                        )
+                        return output_dir
+
+                # The shader compiler succeeded on all files; this is a success.
+                result_util.write_status(output_dir, fuzz.STATUS_SUCCESS)
+                return output_dir
 
             # Other device types need an AmberScript file.
 
-            amber_script_file = tool.amberfy(
-                spirv_asm_shader_job_path,
-                output_dir / "test.amber",
-                amber_converter.AmberfySettings(
+            amber_converter_shader_job_files = [
+                amber_converter.ShaderJobFile(
+                    name_prefix=combined_spirv_shader_job.name,
+                    asm_spirv_shader_job_json=combined_spirv_shader_job.spirv_asm_shader_job,
+                    glsl_source_json=combined_spirv_shader_job.glsl_source_shader_job,
+                    processing_info="",
+                )
+                for combined_spirv_shader_job in combined_spirv_shader_jobs
+            ]
+
+            amber_script_file = amber_converter.spirv_asm_shader_job_to_amber_script(
+                shader_job_file_amber_test=amber_converter.ShaderJobFileBasedAmberTest(
+                    reference_asm_spirv_job=amber_converter_shader_job_files[0],
+                    variants_asm_spirv_job=amber_converter_shader_job_files[1:],
+                ),
+                output_amber_script_file_path=output_dir / "test.amber",
+                amberfy_settings=amber_converter.AmberfySettings(
                     spirv_opt_args=list(test.glsl.spirv_opt_args),
                     spirv_opt_hash=spirv_opt_hash,
                 ),
-                shader_job,
+            )
+
+            is_compute = bool(
+                shader_job_util.get_related_files(
+                    combined_spirv_shader_jobs[0].spirv_shader_job,
+                    [shader_job_util.EXT_COMP],
+                )
             )
 
             if device.HasField("host") or device.HasField("swift_shader"):
                 icd: Optional[Path] = None
 
                 if device.HasField("swift_shader"):
-                    icd = child_binary_manager.get_binary_path_by_name(
+                    icd = binary_manager.get_binary_path_by_name(
                         binaries_util.SWIFT_SHADER_NAME
                     ).path
 

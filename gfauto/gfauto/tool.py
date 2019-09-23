@@ -162,25 +162,33 @@ def validate_spirv_shader_job(
 
 
 @dataclass
-class SpirvAndSpirvAsmShaderJob:
+class SpirvCombinedShaderJob:
+    name: str
     spirv_asm_shader_job: Path
     spirv_shader_job: Path
+    glsl_source_shader_job: Optional[Path]
 
     def __iter__(self) -> Iterator[Path]:
         return iter((self.spirv_asm_shader_job, self.spirv_shader_job))
 
 
 def compile_shader_job(
+    name: str,
     input_json: Path,
     work_dir: Path,
     binary_paths: binaries_util.BinaryGetter,
     spirv_opt_args: Optional[List[str]] = None,
-) -> SpirvAndSpirvAsmShaderJob:
+) -> SpirvCombinedShaderJob:
 
     result = input_json
 
+    glsl_source_shader_job: Optional[Path] = None
+
     # If GLSL:
-    if shader_job_util.get_related_suffixes_that_exist(input_json):
+    if shader_job_util.get_related_suffixes_that_exist(
+        result, language_suffix=(shader_job_util.SUFFIX_GLSL,)
+    ):
+        glsl_source_shader_job = result
 
         result = shader_job_util.copy(result, work_dir / "0_glsl" / result.name)
 
@@ -221,7 +229,12 @@ def compile_shader_job(
 
         validate_spirv_shader_job(result_spirv, binary_paths)
 
-    return SpirvAndSpirvAsmShaderJob(result, result_spirv)
+    return SpirvCombinedShaderJob(
+        name=name,
+        spirv_asm_shader_job=result,
+        spirv_shader_job=result_spirv,
+        glsl_source_shader_job=glsl_source_shader_job,
+    )
 
 
 def glsl_shader_job_to_amber_script(
@@ -342,6 +355,29 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
     )
 
 
+@dataclass
+class NameAndShaderJob:
+    name: str
+    shader_job: Path
+
+
+def get_shader_jobs(source_dir: Path) -> List[NameAndShaderJob]:
+    shader_job_dir_names = [test_util.REFERENCE_DIR] + sorted(
+        variant.name
+        for variant in source_dir.glob(test_util.VARIANT_DIR + "*")
+        if variant.is_dir()
+    )
+
+    shader_jobs = [
+        NameAndShaderJob(
+            shader_job_dir_name, source_dir / shader_job_dir_name / test_util.SHADER_JOB
+        )
+        for shader_job_dir_name in shader_job_dir_names
+    ]
+
+    return shader_jobs
+
+
 def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
     source_dir: Path,
     output_amber: Path,
@@ -370,11 +406,7 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
     test_metadata_path = source_dir / test_util.TEST_METADATA
 
     # Populate shader jobs with reference and all available variants
-    shader_jobs = [test_util.REFERENCE_DIR] + sorted(
-        variant.name
-        for variant in source_dir.glob(test_util.VARIANT_DIR + "*")
-        if variant.is_dir()
-    )
+    shader_jobs = get_shader_jobs(source_dir)
 
     # Get compilation settings
     (binary_paths, spirv_opt_args, spirv_opt_hash) = get_compilation_settings(
