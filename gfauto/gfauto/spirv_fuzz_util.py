@@ -42,6 +42,7 @@ def run_generate(
         AssertionError(f"Expected {str(output_shader_spv)} to end with .spv"),
     )
 
+    util.file_mkdirs_parent(output_shader_spv)
     cmd = [
         str(spirv_fuzz_path),
         str(reference_shader_spv),
