@@ -42,6 +42,10 @@ ANDROID_DEVICE_AMBER_SCRIPT_FILE = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + "/test.ambe
 
 BUSY_WAIT_SLEEP_SLOW = 1.0
 
+WAIT_AFTER_BOOT_ANIMATION = 10
+
+WAIT_AFTER_BOOT_AND_UNLOCK = 20
+
 ADB_DEFAULT_TIME_LIMIT = 30
 
 ADB_SHORT_LOGCAT_TIME_LIMIT = 3
@@ -101,15 +105,23 @@ def adb_can_fail(
 
 
 def stay_awake_warning(serial: Optional[str] = None) -> None:
-    res = adb_check(serial, ["shell", "settings get global stay_on_while_plugged_in"])
-    if str(res.stdout).strip() == "0":
-        log('\nWARNING: please enable "Stay Awake" from developer settings\n')
+    try:
+        res = adb_check(
+            serial, ["shell", "settings get global stay_on_while_plugged_in"]
+        )
+        if str(res.stdout).strip() == "0":
+            log('\nWARNING: please enable "Stay Awake" from developer settings\n')
+    except subprocess.CalledProcessError:
+        log(
+            "Failed to check Stay Awake setting. This can happen if the device has just booted."
+        )
 
 
 def is_screen_off_or_locked(serial: Optional[str] = None) -> bool:
     """:return: True: the screen is off or locked. False: unknown."""
     res = adb_can_fail(serial, ["shell", "dumpsys nfc"])
     if res.returncode != 0:
+        log("Failed to run dumpsys.")
         return False
 
     stdout = str(res.stdout)
@@ -162,8 +174,71 @@ def get_all_android_devices() -> List[Device]:
 
 
 def prepare_device(wait_for_screen: bool, serial: Optional[str] = None) -> None:
+    device_was_booting_or_locked = False
+
+    res = adb_can_fail(serial, ["get-state"])
+    if res.returncode != 0 or res.stdout.strip() != "device":
+        device_was_booting_or_locked = True
+
     adb_check(serial, ["wait-for-device"], timeout=None)
+
+    # Conservatively check that booting has finished.
+    while True:
+
+        log("Checking if boot animation has finished.")
+
+        res_bootanim = adb_can_fail(serial, ["shell", "getprop init.svc.bootanim"])
+        res_bootanim_exit = adb_can_fail(
+            serial, ["shell", "getprop service.bootanim.exit"]
+        )
+        if res_bootanim.returncode != 0 and res_bootanim_exit != 0:
+            # Both commands failed so there is no point in trying to use either result.
+            log("Could not check boot animation; continuing.")
+            break
+        if (
+            res_bootanim.stdout.strip() != "running"
+            and res_bootanim_exit.stdout.strip() != "0"
+        ):
+            # Both commands suggest the boot animation is NOT running.
+            # This may include one or both commands returning nothing because the property doesn't exist on this device.
+            log("Boot animation is not running.")
+            break
+
+        # If either command suggests the boot animation is running, we assume it is accurate, so we wait.
+        device_was_booting_or_locked = True
+        time.sleep(BUSY_WAIT_SLEEP_SLOW)
+
+    if device_was_booting_or_locked:
+        log(
+            f"Device appeared to be booting previously, so waiting a further {WAIT_AFTER_BOOT_ANIMATION} seconds."
+        )
+        time.sleep(WAIT_AFTER_BOOT_ANIMATION)
+
+    if wait_for_screen:
+        stay_awake_warning(serial)
+        # We cannot reliably know if the screen is on, but this function definitely knows if it is
+        # off or locked. So we wait here while we definitely know there is an issue.
+        count = 0
+        while is_screen_off_or_locked(serial):
+            log(
+                "\nWARNING: The screen appears to be off or locked. Please unlock the device and ensure 'Stay Awake' is enabled in developer settings.\n"
+            )
+            device_was_booting_or_locked = True
+            time.sleep(BUSY_WAIT_SLEEP_SLOW)
+            count += 1
+            if count > 1 and (count % 3) == 0:
+                log("Pressing the menu key.")
+                adb_can_fail(serial, ["shell", "input keyevent 82"], verbose=True)
+
+    if device_was_booting_or_locked:
+        log(
+            f"Device appeared to be booting previously, so waiting a further {WAIT_AFTER_BOOT_AND_UNLOCK} seconds."
+        )
+        time.sleep(WAIT_AFTER_BOOT_AND_UNLOCK)
+
+    log("Clearing logcat.")
     adb_check(serial, ["logcat", "-c"])
+
     res = adb_can_fail(serial, ["shell", "test -e " + ANDROID_DEVICE_AMBER])
     check(
         res.returncode == 0,
@@ -181,21 +256,6 @@ def prepare_device(wait_for_screen: bool, serial: Optional[str] = None) -> None:
             f"mkdir -p {ANDROID_DEVICE_RESULT_DIR}",
         ],
     )
-
-    if wait_for_screen:
-        stay_awake_warning(serial)
-        # We cannot reliably know if the screen is on, but this function definitely knows if it is
-        # off or locked. So we wait here while we definitely know there is an issue.
-        count = 0
-        while is_screen_off_or_locked(serial):
-            log(
-                "\nWARNING: The screen appears to be off or locked. Please unlock the device and ensure 'Stay Awake' is enabled in developer settings.\n"
-            )
-            time.sleep(BUSY_WAIT_SLEEP_SLOW)
-            count += 1
-            if count > 1 and (count % 10) == 0:
-                log("Pressing the menu key.")
-                adb_can_fail(serial, ["shell", "input keyevent 82"], verbose=True)
 
 
 def run_amber_on_device(
