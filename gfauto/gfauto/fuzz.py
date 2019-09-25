@@ -117,7 +117,7 @@ STATUS_SUCCESS = "SUCCESS"
 # Python normally uses 256 bits internally when seeding its RNG, hence this choice.
 ITERATION_SEED_BITS = 256
 
-SPIRV_FUZZ = False
+SPIRV_FUZZ = True
 
 FUZZ_FAILURES_DIR_NAME = "fuzz_failures"
 

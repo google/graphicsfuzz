@@ -40,5 +40,5 @@ message TestGlsl {
 
 // Spirv-fuzz generated spirv test.
 message TestSpirvFuzz {
-
+  repeated string spirv_opt_args = 1;
 }

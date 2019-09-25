@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='gfauto',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x11gfauto/test.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\xd1\x01\n\x04Test\x12 \n\x04glsl\x18\x01 \x01(\x0b\x32\x10.gfauto.TestGlslH\x00\x12+\n\nspirv_fuzz\x18\x05 \x01(\x0b\x32\x15.gfauto.TestSpirvFuzzH\x00\x12\x17\n\x0f\x63rash_signature\x18\x02 \x01(\t\x12\x1e\n\x06\x64\x65vice\x18\x03 \x01(\x0b\x32\x0e.gfauto.Device\x12 \n\x08\x62inaries\x18\x04 \x03(\x0b\x32\x0e.gfauto.Binary\x12\x17\n\x0f\x65xpected_status\x18\x06 \x01(\tB\x06\n\x04test\"\"\n\x08TestGlsl\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\t\"\x0f\n\rTestSpirvFuzzb\x06proto3')
+  serialized_pb=_b('\n\x11gfauto/test.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\xd1\x01\n\x04Test\x12 \n\x04glsl\x18\x01 \x01(\x0b\x32\x10.gfauto.TestGlslH\x00\x12+\n\nspirv_fuzz\x18\x05 \x01(\x0b\x32\x15.gfauto.TestSpirvFuzzH\x00\x12\x17\n\x0f\x63rash_signature\x18\x02 \x01(\t\x12\x1e\n\x06\x64\x65vice\x18\x03 \x01(\x0b\x32\x0e.gfauto.Device\x12 \n\x08\x62inaries\x18\x04 \x03(\x0b\x32\x0e.gfauto.Binary\x12\x17\n\x0f\x65xpected_status\x18\x06 \x01(\tB\x06\n\x04test\"\"\n\x08TestGlsl\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\t\"\'\n\rTestSpirvFuzz\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\tb\x06proto3')
   ,
   dependencies=[gfauto_dot_common__pb2.DESCRIPTOR,gfauto_dot_device__pb2.DESCRIPTOR,])
 
@@ -136,6 +136,13 @@ _TESTSPIRVFUZZ = _descriptor.Descriptor(
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
+    _descriptor.FieldDescriptor(
+      name='spirv_opt_args', full_name='gfauto.TestSpirvFuzz.spirv_opt_args', index=0,
+      number=1, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -149,7 +156,7 @@ _TESTSPIRVFUZZ = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=319,
-  serialized_end=334,
+  serialized_end=358,
 )
 
 _TEST.fields_by_name['glsl'].message_type = _TESTGLSL

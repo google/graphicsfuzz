@@ -357,7 +357,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
             #  info down via a bool.
 
             spirv_opt_hash: Optional[str] = None
-            if test.glsl.spirv_opt_args:
+            if test.glsl.spirv_opt_args or test.spirv_fuzz.spirv_opt_args:
                 spirv_opt_hash = child_binary_manager.get_binary_by_name(
                     binaries_util.SPIRV_OPT_NAME
                 ).version
@@ -367,7 +367,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                     shader_job,
                     output_dir,
                     child_binary_manager,
-                    list(test.glsl.spirv_opt_args),
+                    list(test.glsl.spirv_opt_args) if test.glsl.spirv_opt_args else list(test.spirv_fuzz.spirv_opt_args),
                 )
             except subprocess.CalledProcessError:
                 util.file_write_text(
