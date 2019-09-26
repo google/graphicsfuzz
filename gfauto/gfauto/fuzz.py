@@ -117,8 +117,6 @@ STATUS_SUCCESS = "SUCCESS"
 # Python normally uses 256 bits internally when seeding its RNG, hence this choice.
 ITERATION_SEED_BITS = 256
 
-SPIRV_FUZZ = False
-
 FUZZ_FAILURES_DIR_NAME = "fuzz_failures"
 
 
@@ -148,6 +146,12 @@ def main() -> None:
         action="store_true",
     )
 
+    parser.add_argument(
+        "--use_spirv_fuzz",
+        help="Do fuzzing using spirv-fuzz, which must be on your PATH.",
+        action="store_true",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     settings_path = Path(parsed_args.settings)
@@ -155,11 +159,17 @@ def main() -> None:
         parsed_args.iteration_seed
     )
     skip_writing_binary_recipes: bool = parsed_args.skip_writing_binary_recipes
+    use_spirv_fuzz: bool = parsed_args.use_spirv_fuzz
 
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
         try:
-            main_helper(settings_path, iteration_seed, skip_writing_binary_recipes)
+            main_helper(
+                settings_path,
+                iteration_seed,
+                skip_writing_binary_recipes,
+                use_spirv_fuzz,
+            )
         finally:
             gflogging.pop_stream_for_logging()
 
@@ -168,6 +178,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     settings_path: Path,
     iteration_seed_override: Optional[int],
     skip_writing_binary_recipes: bool,
+    use_spirv_fuzz: bool,
 ) -> None:
 
     settings = settings_util.read_or_create(settings_path)
@@ -256,7 +267,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
         #  - Reduce each report (on the given device).
         #  - Produce a summary for each report.
 
-        if SPIRV_FUZZ:
+        if use_spirv_fuzz:
             fuzz_spirv_test.fuzz_spirv(
                 staging_dir,
                 reports_dir,
