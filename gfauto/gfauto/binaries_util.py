@@ -56,7 +56,7 @@ PLATFORM_SUFFIXES_RELWITHDEBINFO = [
     "Mac_x64_RelWithDebInfo",
 ]
 
-DEFAULT_SPIRV_TOOLS_VERSION = "ad7f2c5c4c7f51360e9e079109a9217aa5ba5cc0"
+DEFAULT_SPIRV_TOOLS_VERSION = "6b072126595dd8c2448eb1fda616251c5e6d7079"
 
 DEFAULT_BINARIES = [
     Binary(
@@ -72,7 +72,7 @@ DEFAULT_BINARIES = [
     Binary(
         name="swift_shader_icd",
         tags=["Debug"],
-        version="f25a1c68473b868ce61e97fe5b830c0cdd7e8181",
+        version="b6fa949c45397bd1fbfda769a104b9e8884f343e",
     ),
 ]
 
@@ -526,5 +526,13 @@ BUILT_IN_BINARY_RECIPES: List[recipe_wrap.RecipeWrap] = (
     + _get_built_in_spirv_tools_version(
         version_hash="ad7f2c5c4c7f51360e9e079109a9217aa5ba5cc0",
         build_version_hash="b97215064186d731eac68adcc5ade4c7b96b265b",
+    )
+    + _get_built_in_spirv_tools_version(
+        version_hash="6b072126595dd8c2448eb1fda616251c5e6d7079",
+        build_version_hash="74886e02e26453ee1dcba4290157e9c8a5e8d07e",
+    )
+    + _get_built_in_swift_shader_version(
+        version_hash="b6fa949c45397bd1fbfda769a104b9e8884f343e",
+        build_version_hash="70e8d53b94227fed094975771d96f240f7d00911",
     )
 )

@@ -26,6 +26,7 @@ See |setup.py| to see how this module is added to the entry_points/console_scrip
 import argparse
 import sys
 from pathlib import Path
+from typing import List, Optional, Tuple
 
 from gfauto import (
     artifact_util,
@@ -35,10 +36,10 @@ from gfauto import (
     result_util,
     signature_util,
     test_util,
+    tool,
     util,
 )
 from gfauto.gflogging import log
-from gfauto.util import check, check_file_exists
 
 # TODO: Maybe add helper method and throw exceptions instead of calling sys.exit.
 
@@ -48,21 +49,25 @@ from gfauto.util import check, check_file_exists
 #  A device (or test?) could then even specify a custom interestingness command, although the default one would probably
 #  be the same for all devices and it would look at the device info in the test_json?
 
-# TODO: Support more than just GLSL crash tests.
 
-
-def main() -> None:
+def main() -> None:  # pylint: disable=too-many-statements;
     parser = argparse.ArgumentParser(
-        description="Interestingness test that runs a shader using Amber, "
+        description="Interestingness test that runs a test using Amber, "
         "calculates the crash signature based on the result, and returns 0 "
         "if the signature matches the expected crash signature."
     )
 
     parser.add_argument(
-        "test_json",
-        help="The .json test metadata file path that describes how to run the test.",
+        "source_dir",
+        help="The source directory containing the shaders and the test.json file that describes how to run the test.",
     )
-    parser.add_argument("shader_job_json", help="The .json shader job file path.")
+    parser.add_argument(
+        "--override_shader",
+        nargs=2,
+        metavar=("shader_name", "shader_job_json"),
+        help='Override one of the shader jobs. E.g.: "--override_shader variant temp/variant.json". Note that '
+        "the output directory will be set to shader_job_json/ (with the .json extension removed) by default in this case.",
+    )
 
     parser.add_argument(
         "--use_default_binaries",
@@ -77,31 +82,29 @@ def main() -> None:
         action="store_true",
     )
 
-    parser.add_argument("--output", help="Output directory.", default=None)
+    parser.add_argument(
+        "--output",
+        help="Output directory. Required unless --override_shader is used; in this case "
+        "the output will be shader_job_json/ (a directory alongside the shader json with the same name).",
+        default=None,
+    )
 
     parsed_args = parser.parse_args(sys.argv[1:])
 
-    test_json: Path = Path(parsed_args.test_json)
-    shader_job_json: Path = Path(parsed_args.shader_job_json)
+    source_dir: Path = Path(parsed_args.source_dir)
+    override_shader: Optional[Tuple[str, str]] = parsed_args.override_shader
+
     use_default_binaries: bool = parsed_args.use_default_binaries
     fallback_binaries: bool = parsed_args.fallback_binaries or use_default_binaries
-    output: Path = Path(
-        parsed_args.output
-    ) if parsed_args.output else shader_job_json.with_suffix("")
-
-    check_file_exists(test_json)
-    check_file_exists(shader_job_json)
+    output: Path
+    if parsed_args.output:
+        output = Path(parsed_args.output)
+    elif override_shader:
+        output = Path(override_shader[1]).with_suffix("")
+    else:
+        raise AssertionError("Need --output or --override_shader parameter.")
 
     artifact_util.recipes_write_built_in()
-
-    test = test_util.metadata_read_from_path(test_json)
-
-    check(
-        test.HasField("glsl") and bool(test.device) and bool(test.crash_signature),
-        AssertionError(
-            f"Provided test json {str(test_json)} does not have entries: glsl, device, crash_signature"
-        ),
-    )
 
     binary_manager = binaries_util.BinaryManager(
         binaries_util.DEFAULT_BINARIES if fallback_binaries else [],
@@ -109,18 +112,33 @@ def main() -> None:
         binaries_util.BUILT_IN_BINARY_RECIPES_PATH_PREFIX,
     )
 
+    shader_overrides: List[tool.NameAndShaderJob] = []
+
+    if override_shader:
+        shader_overrides.append(
+            tool.NameAndShaderJob(
+                name=override_shader[0], shader_job=Path(override_shader[1])
+            )
+        )
+
+    # We don't need to read this to run the shader, but we need it afterwards anyway.
+    test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
+
     output_dir = fuzz_glsl_test.run_shader_job(
-        shader_job_json,
+        source_dir=source_dir,
         output_dir=output,
-        test=test,
-        device=test.device,
         binary_manager=binary_manager,
-        use_default_binaries=use_default_binaries,
+        test=test,
+        ignore_test_and_device_binaries=use_default_binaries,
+        shader_overrides=shader_overrides,
     )
 
     log(
-        f"gfauto_interestingness_test: finished running {str(shader_job_json)} in {str(output_dir)}."
+        f"gfauto_interestingness_test: finished running {str(source_dir)} in {str(output_dir)}."
     )
+
+    if override_shader:
+        log(f"The {override_shader[0]} shader was overridden with {override_shader[1]}")
 
     status = result_util.get_status(output_dir)
     if test.expected_status:
@@ -142,7 +160,7 @@ def main() -> None:
             log("status != expected_status; not interesting")
             sys.exit(1)
     else:
-        # There is no expected status, so just assume it needs to be one of the "bad" statuses:
+        # There is no expected status given, so just assume it needs to be one of the "bad" statuses:
         if status not in (
             fuzz.STATUS_CRASH,
             fuzz.STATUS_TOOL_CRASH,

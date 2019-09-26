@@ -20,7 +20,7 @@ Used to convert shader jobs to Amber script tests that are suitable for adding t
 """
 
 from pathlib import Path
-from typing import Iterator, List, Optional, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional
 
 from attr import dataclass
 
@@ -36,7 +36,6 @@ from gfauto import (
     test_util,
     util,
 )
-from gfauto.util import check
 
 AMBER_COMMAND_PROBE_TOP_LEFT_RED = "probe rgba (0, 0) (1, 0, 0, 1)\n"
 
@@ -237,121 +236,24 @@ def compile_shader_job(
     )
 
 
-def glsl_shader_job_to_amber_script(
-    input_json: Path,
-    output_amber: Path,
-    work_dir: Path,
-    binary_paths: binaries_util.BinaryGetter,
-    amberfy_settings: amber_converter.AmberfySettings,
-    spirv_opt_args: Optional[List[str]] = None,
-) -> Path:
-
-    spirv_asm_shader_job = compile_shader_job(
-        input_json, work_dir, binary_paths, spirv_opt_args
-    ).spirv_asm_shader_job
-
-    amber_test_path = amberfy(
-        spirv_asm_shader_job, output_amber, amberfy_settings, input_json
-    )
-
-    return amber_test_path
-
-
-def get_compilation_settings(
-    binary_paths: Optional[binaries_util.BinaryGetter] = None,
-    spirv_opt_args: Optional[List[str]] = None,
-    spirv_opt_hash: Optional[str] = None,
-    test_metadata_path: Optional[Path] = None,
-) -> Tuple[binaries_util.BinaryGetter, Optional[List[str]], Optional[str]]:
-
-    if not binary_paths:
-        check(
-            bool(test_metadata_path),
-            AssertionError("Must have test_metadata_path or binary_paths"),
-        )
-        assert test_metadata_path  # noqa
-        binary_paths = binaries_util.BinaryManager(
-            binaries_util.BinaryManager.get_binary_list_from_test_metadata(
-                test_metadata_path
-            )
-        )
-
-    if test_metadata_path:
-        check(
-            bool(not spirv_opt_args),
-            AssertionError("Cannot have spirv_opt_args AND test_metadata_path"),
-        )
-        spirv_opt_args = list(
-            test_util.metadata_read_from_path(test_metadata_path).glsl.spirv_opt_args
-        )
-
-    if spirv_opt_args and not spirv_opt_hash:
-        spirv_opt_hash = binary_paths.get_binary_path_by_name(
-            binaries_util.SPIRV_OPT_NAME
-        ).binary.version
-
-    return (binary_paths, spirv_opt_args, spirv_opt_hash)
-
-
 def glsl_shader_job_crash_to_amber_script_for_google_cts(
+    source_dir: Path,
     output_amber: Path,
     work_dir: Path,
     short_description: str,
     comment_text: str,
     copyright_year: str,
     extra_commands: str,
-    binary_paths: Optional[binaries_util.BinaryGetter] = None,
-    spirv_opt_args: Optional[List[str]] = None,
-    spirv_opt_hash: Optional[str] = None,
-    test_metadata_path: Optional[Path] = None,
-    input_json: Optional[Path] = None,
-    source_dir: Optional[Path] = None,
 ) -> Path:
-    """
-    Converts a GLSL shader job to an Amber script suitable for adding to the CTS.
-
-    :param input_json:
-    :param output_amber:
-    :param work_dir:
-    :param short_description: One sentence, 58 characters max., no period, no line breaks.
-    :param comment_text: Why the test should pass. Can have line breaks. Ideally make sure lines are not too long.
-    :param copyright_year:
-    :param extra_commands:
-    :param binary_paths:
-    :param spirv_opt_args:
-    :param spirv_opt_hash:
-    :param test_metadata_path:
-    :param source_dir:
-    :return:
-    """
-    if source_dir:
-        input_json = source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
-        test_metadata_path = source_dir / test_util.TEST_METADATA
-    else:
-        check(bool(input_json), AssertionError("Need input_json or source_dir"))
-        assert input_json  # noqa
-
-    # Get compilation settings
-    (binary_paths, spirv_opt_args, spirv_opt_hash) = get_compilation_settings(
-        binary_paths, spirv_opt_args, spirv_opt_hash, test_metadata_path
-    )
-
-    return glsl_shader_job_to_amber_script(
-        input_json,
-        output_amber,
-        work_dir,
-        binary_paths,
-        amber_converter.AmberfySettings(
-            copyright_header_text=get_copyright_header_google(copyright_year),
-            add_graphics_fuzz_comment=True,
-            short_description=short_description,
-            comment_text=comment_text,
-            use_default_fence_timeout=True,
-            extra_commands=extra_commands,
-            spirv_opt_args=spirv_opt_args,
-            spirv_opt_hash=spirv_opt_hash,
-        ),
-        spirv_opt_args=spirv_opt_args,
+    """Converts a GLSL shader job to an Amber script suitable for adding to the CTS."""
+    return glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
+        source_dir=source_dir,
+        output_amber=output_amber,
+        work_dir=work_dir,
+        short_description=short_description,
+        comment_text=comment_text,
+        copyright_year=copyright_year,
+        extra_commands=extra_commands,
     )
 
 
@@ -361,21 +263,34 @@ class NameAndShaderJob:
     shader_job: Path
 
 
-def get_shader_jobs(source_dir: Path) -> List[NameAndShaderJob]:
-    shader_job_dir_names = [test_util.REFERENCE_DIR] + sorted(
-        variant.name
-        for variant in source_dir.glob(test_util.VARIANT_DIR + "*")
-        if variant.is_dir()
-    )
-
-    shader_jobs = [
-        NameAndShaderJob(
-            shader_job_dir_name, source_dir / shader_job_dir_name / test_util.SHADER_JOB
-        )
-        for shader_job_dir_name in shader_job_dir_names
+def get_shader_jobs(
+    source_dir: Path, overrides: Iterable[NameAndShaderJob] = ()
+) -> List[NameAndShaderJob]:
+    shader_job_dir_names = [test_util.REFERENCE_DIR] + [
+        shader_directory.name
+        for shader_directory in source_dir.glob(test_util.VARIANT_DIR + "*")
+        if shader_directory.is_dir()
     ]
 
-    return shader_jobs
+    # name -> Path
+    shader_jobs: Dict[str, Path] = {
+        shader_job_dir_name: source_dir / shader_job_dir_name / test_util.SHADER_JOB
+        for shader_job_dir_name in shader_job_dir_names
+        if (source_dir / shader_job_dir_name / test_util.SHADER_JOB).is_file()
+    }
+
+    for override in overrides:
+        shader_jobs[override.name] = override.shader_job
+
+    shader_jobs_list = sorted(
+        (
+            NameAndShaderJob(name, Path(shader_job))
+            for (name, shader_job) in shader_jobs.items()
+        ),
+        key=lambda x: x.name,
+    )
+
+    return shader_jobs_list
 
 
 def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
@@ -385,45 +300,34 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
     short_description: str,
     comment_text: str,
     copyright_year: str,
-    binary_paths: Optional[binaries_util.BinaryGetter] = None,
-    spirv_opt_args: Optional[List[str]] = None,
-    spirv_opt_hash: Optional[str] = None,
+    extra_commands: str,
 ) -> Path:
-    """
-    Converts a GLSL shader job of a wrong image case to an Amber script suitable for adding to the CTS.
-
-    :param source_dir:
-    :param output_amber:
-    :param work_dir:
-    :param short_description: One sentence, 58 characters max., no period, no line breaks.
-    :param comment_text: Why the test should pass. Can have line breaks. Ideally make sure lines are not too long.
-    :param copyright_year:
-    :param binary_paths:
-    :param spirv_opt_args:
-    :param spirv_opt_hash:
-    :return
-    """
-    test_metadata_path = source_dir / test_util.TEST_METADATA
-
-    # Populate shader jobs with reference and all available variants
+    """Converts a GLSL shader job of a wrong image case to an Amber script suitable for adding to the CTS."""
     shader_jobs = get_shader_jobs(source_dir)
 
-    # Get compilation settings
-    (binary_paths, spirv_opt_args, spirv_opt_hash) = get_compilation_settings(
-        binary_paths, spirv_opt_args, spirv_opt_hash, test_metadata_path
+    test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
+    binary_manager = binaries_util.BinaryManager()
+    binary_manager = binary_manager.get_child_binary_manager(
+        list(test.device.binaries) + list(test.binaries)
     )
+
+    spirv_opt_args = list(test.glsl.spirv_opt_args)
+    spirv_opt_hash = binary_manager.get_binary_by_name(
+        binaries_util.SPIRV_OPT_NAME
+    ).version
 
     # Compile all shader jobs
     shader_job_files = [
         amber_converter.ShaderJobFile(
-            shader_job,
+            shader_job.name,
             compile_shader_job(
-                source_dir / shader_job / test_util.SHADER_JOB,
-                work_dir / shader_job,
-                binary_paths,
+                shader_job.name,
+                shader_job.shader_job,
+                work_dir / shader_job.name,
+                binary_manager,
                 spirv_opt_args=spirv_opt_args,
             ).spirv_asm_shader_job,
-            source_dir / shader_job / test_util.SHADER_JOB,
+            shader_job.shader_job,
             "",
         )
         for shader_job in shader_jobs
@@ -443,5 +347,6 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
             use_default_fence_timeout=True,
             spirv_opt_args=spirv_opt_args,
             spirv_opt_hash=spirv_opt_hash,
+            extra_commands=extra_commands,
         ),
     )

@@ -28,6 +28,27 @@ from gfauto import subprocess_util, util
 GENERATE_SEED_BITS = 64
 
 
+def run_prepare_reference(
+    graphicsfuzz_tool_path: Path,
+    input_reference_shader_json: Path,
+    output_reference_shader_json: Path,
+) -> Path:
+    util.file_mkdirs_parent(output_reference_shader_json)
+    cmd = [
+        str(graphicsfuzz_tool_path),
+        "com.graphicsfuzz.generator.tool.PrepareReference",
+        "--generate-uniform-bindings",
+        "--max-uniforms",
+        "10",
+        str(input_reference_shader_json),
+        str(output_reference_shader_json),
+    ]
+
+    subprocess_util.run(cmd)
+
+    return output_reference_shader_json
+
+
 def run_generate(
     graphicsfuzz_tool_path: Path,
     reference_shader_json: pathlib.Path,

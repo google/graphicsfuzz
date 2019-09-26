@@ -159,7 +159,13 @@ import secrets
 Assuming you saved those to `../seeds.txt`, you can run parallel instances of `gfauto_fuzz` using:
 
 ```sh
-parallel -j 64 gfauto_fuzz --skip_writing_binary_recipes --iteration_seed -- $(cat ../seeds.txt)
+parallel -j 32 gfauto_fuzz --skip_writing_binary_recipes --iteration_seed -- $(cat ../seeds.txt)
 ```
 
 This is probably only suitable for testing the `host_preprocessor` and `swift_shader` virtual devices; running parallel tests on actual hardware is likely to give unreliable results.
+
+You can run parallel instances of gfauto (just for increased throughput, not with fixed seeds) using:
+
+```sh
+parallel -j 32 -i gfauto_fuzz --skip_writing_binary_recipes -- $(seq 100)
+```

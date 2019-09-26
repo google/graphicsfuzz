@@ -118,6 +118,13 @@ PATTERN_LLVM_MACHINE_CODE_ERROR = re.compile(
 PATTERN_LLVM_ERROR_DIAGNOSIS = re.compile(r"ERROR: LLVM DIAGNOSIS INFO: (.*)")
 
 
+PATTERN_AMBER_TOLERANCE_ERROR = re.compile(
+    r"is greater th[ae]n tolerance|Buffers have different values"
+)
+
+BAD_IMAGE_SIGNATURE = "bad_image"
+
+
 def remove_hex_like(string: str) -> str:
     temp = string
     # Remove hex like chunks of 4 or more.
@@ -307,6 +314,10 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
 
     if "Resource deadlock would occur" in log_contents:
         return "Resource_deadlock_would_occur"
+
+    match = re.search(PATTERN_AMBER_TOLERANCE_ERROR, log_contents)
+    if match:
+        return BAD_IMAGE_SIGNATURE
 
     return "no_signature"
 

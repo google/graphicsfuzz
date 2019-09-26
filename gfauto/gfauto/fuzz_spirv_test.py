@@ -35,7 +35,6 @@ from gfauto import (
     util,
 )
 from gfauto.device_pb2 import Device
-from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 from gfauto.test_pb2 import Test, TestSpirvFuzz
 
@@ -74,16 +73,11 @@ def run(
     if not device:
         device = test.device
 
-    log(f"Running test on device:\n{device.name}")
-
     result_output_dir = fuzz_glsl_test.run_shader_job(
-        shader_job=test_util.get_shader_job_path(test_dir, is_variant=True),
-        output_dir=test_util.get_results_directory(
-            test_dir, device.name, is_variant=True
-        ),
-        test=test,
-        device=device,
+        source_dir=test_util.get_source_dir(test_dir),
+        output_dir=test_util.get_results_directory(test_dir, device.name),
         binary_manager=binary_manager,
+        device=device,
     )
 
     return result_util.get_status(result_output_dir)
