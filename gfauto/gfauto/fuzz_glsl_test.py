@@ -191,7 +191,7 @@ def run(
     return result_util.get_status(result_output_dir)
 
 
-def maybe_add_report(
+def maybe_add_report(  # pylint: disable=too-many-locals;
     test_dir: Path, reports_dir: Path, device: Device, settings: Settings
 ) -> Optional[Path]:
 
@@ -365,7 +365,7 @@ def handle_test(
     return issue_found
 
 
-def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branches, too-many-locals;
+def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branches, too-many-locals, too-many-statements;
     source_dir: Path,
     output_dir: Path,
     binary_manager: binaries_util.BinaryManager,
