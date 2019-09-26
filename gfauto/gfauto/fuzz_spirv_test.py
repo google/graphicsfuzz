@@ -31,6 +31,7 @@ from gfauto import (
     result_util,
     shader_job_util,
     spirv_fuzz_util,
+    spirv_opt_util,
     test_util,
     util,
 )
@@ -48,7 +49,7 @@ def make_test(
     # Create the subtest by copying the base source.
     util.copy_dir(base_source_dir, test_util.get_source_dir(subtest_dir))
 
-    test = Test(spirv_fuzz=TestSpirvFuzz())
+    test = Test(spirv_fuzz=TestSpirvFuzz(spirv_opt_args=spirv_opt_args))
 
     # TODO: Handle spirv_opt_args.
 
@@ -162,7 +163,37 @@ def fuzz_spirv(
             staging_dir / f"{staging_name}_no_opt_test",
             spirv_opt_args=None,
             binary_manager=binary_manager,
-        )
+        ),
+        make_test(
+            template_source_dir,
+            staging_dir / f"{staging_name}_opt_O_test",
+            spirv_opt_args=["-O"],
+            binary_manager=binary_manager,
+        ),
+        make_test(
+            template_source_dir,
+            staging_dir / f"{staging_name}_opt_Os_test",
+            spirv_opt_args=["-Os"],
+            binary_manager=binary_manager,
+        ),
+        make_test(
+            template_source_dir,
+            staging_dir / f"{staging_name}_opt_rand1_test",
+            spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
+            binary_manager=binary_manager,
+        ),
+        make_test(
+            template_source_dir,
+            staging_dir / f"{staging_name}_opt_rand2_test",
+            spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
+            binary_manager=binary_manager,
+        ),
+        make_test(
+            template_source_dir,
+            staging_dir / f"{staging_name}_opt_rand3_test",
+            spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
+            binary_manager=binary_manager,
+        ),
     ]
 
     for test_dir in test_dirs:

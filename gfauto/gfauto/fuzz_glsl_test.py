@@ -399,10 +399,16 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 )
 
             spirv_opt_hash: Optional[str] = None
-            if test.glsl.spirv_opt_args:
+            spirv_opt_args: Optional[List[str]] = None
+            if test.glsl.spirv_opt_args or test.spirv_fuzz.spirv_opt_args:
                 spirv_opt_hash = binary_manager.get_binary_by_name(
                     binaries_util.SPIRV_OPT_NAME
                 ).version
+                spirv_opt_args = (
+                    list(test.glsl.spirv_opt_args)
+                    if test.glsl.spirv_opt_args
+                    else list(test.spirv_fuzz.spirv_opt_args)
+                )
 
             shader_jobs = tool.get_shader_jobs(source_dir, overrides=shader_overrides)
 
@@ -416,7 +422,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                             input_json=shader_job.shader_job,
                             work_dir=output_dir / shader_job.name,
                             binary_paths=binary_manager,
-                            spirv_opt_args=list(test.glsl.spirv_opt_args),
+                            spirv_opt_args=spirv_opt_args,
                         )
                     )
                 except subprocess.CalledProcessError:
@@ -498,8 +504,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 ),
                 output_amber_script_file_path=output_dir / "test.amber",
                 amberfy_settings=amber_converter.AmberfySettings(
-                    spirv_opt_args=list(test.glsl.spirv_opt_args),
-                    spirv_opt_hash=spirv_opt_hash,
+                    spirv_opt_args=spirv_opt_args, spirv_opt_hash=spirv_opt_hash
                 ),
             )
 
