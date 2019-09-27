@@ -21,12 +21,32 @@ This module contains functions for getting the paths of these files.
 """
 
 from pathlib import Path
+from typing import Optional
 
 from gfauto import util
 
 
+def write_status(
+    result_output_dir: Path, status: str, bad_shader_name: Optional[str] = None
+) -> None:
+    util.file_write_text(get_status_path(result_output_dir), status)
+    if bad_shader_name:
+        util.file_write_text(
+            get_status_bad_shader_name_path(result_output_dir), bad_shader_name
+        )
+
+
 def get_status_path(result_output_dir: Path) -> Path:
     return result_output_dir / "STATUS"
+
+
+def get_status_bad_shader_name(result_output_dir: Path) -> str:
+    bad_shader_name_path = get_status_bad_shader_name_path(result_output_dir)
+    return util.file_read_text_or_else(bad_shader_name_path, "")
+
+
+def get_status_bad_shader_name_path(result_output_dir: Path) -> Path:
+    return result_output_dir / "BAD_SHADER"
 
 
 def get_status(result_output_dir: Path) -> str:

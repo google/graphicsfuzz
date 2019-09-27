@@ -22,7 +22,7 @@ Functions for handling GLSL shader job tests.
 import random
 import subprocess
 from pathlib import Path
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 from gfauto import (
     amber_converter,
@@ -108,17 +108,22 @@ def create_staging_tests(
     staging_name = staging_dir.name
     template_source_dir = staging_dir / "source_template"
 
-    # Copy in a randomly chosen reference.
-    reference_glsl_shader_job = shader_job_util.copy(
-        random.choice(references),
-        template_source_dir / test_util.REFERENCE_DIR / test_util.SHADER_JOB,
-    )
+    # Pick a randomly chosen reference.
+    unprepared_reference_shader_job = random.choice(references)
 
     # TODO: Allow GraphicsFuzz to be downloaded.
 
+    # Create the prepared (for Vulkan GLSL) reference.
+    glsl_generate_util.run_prepare_reference(
+        util.tool_on_path("graphicsfuzz-tool"),
+        unprepared_reference_shader_job,
+        template_source_dir / test_util.REFERENCE_DIR / test_util.SHADER_JOB,
+    )
+
+    # Generate the variant (GraphicsFuzz requires the unprepared reference as input).
     glsl_generate_util.run_generate(
         util.tool_on_path("graphicsfuzz-tool"),
-        reference_glsl_shader_job,
+        unprepared_reference_shader_job,
         donors_dir,
         template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
         seed=str(random.getrandbits(glsl_generate_util.GENERATE_SEED_BITS)),
@@ -176,28 +181,21 @@ def run(
     if not device:
         device = test.device
 
-    log(f"Running test on device:\n{device.name}")
-
     result_output_dir = run_shader_job(
-        shader_job=test_util.get_shader_job_path(test_dir, is_variant=True),
-        output_dir=test_util.get_results_directory(
-            test_dir, device.name, is_variant=True
-        ),
-        test=test,
-        device=device,
+        source_dir=test_util.get_source_dir(test_dir),
+        output_dir=test_util.get_results_directory(test_dir, device.name),
         binary_manager=binary_manager,
+        device=device,
     )
 
     return result_util.get_status(result_output_dir)
 
 
-def maybe_add_report(
+def maybe_add_report(  # pylint: disable=too-many-locals;
     test_dir: Path, reports_dir: Path, device: Device, settings: Settings
 ) -> Optional[Path]:
 
-    result_output_dir = test_util.get_results_directory(
-        test_dir, device.name, is_variant=True
-    )
+    result_output_dir = test_util.get_results_directory(test_dir, device.name)
 
     status = result_util.get_status(result_output_dir)
 
@@ -225,14 +223,15 @@ def maybe_add_report(
     if (signature_dir / "NOT_INTERESTING").exists():
         return None
 
-    # If we have reached the maximum number of crashes per signature for this device, don't create a report.
-    num_duplicates = [
-        report_dir
-        for report_dir in signature_dir.iterdir()
-        if report_dir.is_dir() and report_dir.name.endswith(f"_{device.name}")
-    ]
-    if len(num_duplicates) >= settings.maximum_duplicate_crashes:
-        return None
+    if signature != signature_util.BAD_IMAGE_SIGNATURE:
+        # If we have reached the maximum number of crashes per signature for this device, don't create a report.
+        num_duplicates = [
+            report_dir
+            for report_dir in signature_dir.iterdir()
+            if report_dir.is_dir() and report_dir.name.endswith(f"_{device.name}")
+        ]
+        if len(num_duplicates) >= settings.maximum_duplicate_crashes:
+            return None
 
     # We include the device name in the directory name because it is possible that this test crashes on two
     # different devices but gives the same crash signature in both cases (e.g. for generic signatures
@@ -241,6 +240,39 @@ def maybe_add_report(
     test_dir_in_reports = signature_dir / f"{test_dir.name}_{device.name}"
 
     util.copy_dir(test_dir, test_dir_in_reports)
+
+    if signature != signature_util.BAD_IMAGE_SIGNATURE:
+
+        # If we found a crash, rename the directories for all shaders other than the variant. Thus, only the variant
+        # shader will run.
+
+        bad_shader_name = result_util.get_status_bad_shader_name(
+            test_util.get_results_directory(test_dir_in_reports, device.name)
+        )
+
+        # TODO: Could possibly improve this. Could try scanning the Amber log to figure out which shader failed?
+
+        if not bad_shader_name:
+            log("WARNING: assuming that the bad shader is the variant")
+            bad_shader_name = test_util.VARIANT_DIR
+
+        shader_jobs = tool.get_shader_jobs(
+            test_util.get_source_dir(test_dir_in_reports)
+        )
+        found_bad_shader = False
+        for shader_job in shader_jobs:
+            if shader_job.name == bad_shader_name:
+                found_bad_shader = True
+            else:
+                shader_job.shader_job.parent.rename(
+                    shader_job.shader_job.parent.parent / f"_{shader_job.name}"
+                )
+        check(
+            found_bad_shader,
+            AssertionError(
+                f"Could not find bad shader at: {test_util.get_source_dir(test_dir_in_reports) / bad_shader_name}"
+            ),
+        )
 
     test_metadata = test_util.metadata_read(test_dir_in_reports)
     test_metadata.crash_signature = signature
@@ -255,19 +287,21 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
     test = test_util.metadata_read(test_dir)
 
     try:
-        part_1_reduced_test = run_reduction(
+        reduced_test = test_dir
+        reduced_test = run_reduction(
             test_dir_reduction_output=test_dir,
-            test_dir_to_reduce=test_dir,
+            test_dir_to_reduce=reduced_test,
             preserve_semantics=True,
             reduction_name="1",
         )
 
-        part_2_reduced_test = run_reduction(
-            test_dir_reduction_output=test_dir,
-            test_dir_to_reduce=part_1_reduced_test,
-            preserve_semantics=False,
-            reduction_name="2",
-        )
+        if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
+            reduced_test = run_reduction(
+                test_dir_reduction_output=test_dir,
+                test_dir_to_reduce=reduced_test,
+                preserve_semantics=False,
+                reduction_name="2",
+            )
 
         device_name = test.device.name
 
@@ -276,8 +310,7 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
             test_dir, device_name, fuzz.BEST_REDUCTION_NAME
         )
         util.make_directory_symlink(
-            new_symlink_file_path=best_reduced_test_link,
-            existing_dir=part_2_reduced_test,
+            new_symlink_file_path=best_reduced_test_link, existing_dir=reduced_test
         )
     except ReductionFailedError as ex:
         # Create a symlink to the failed reduction so it is easy to investigate failed reductions.
@@ -332,111 +365,160 @@ def handle_test(
     return issue_found
 
 
-def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branches;
-    shader_job: Path,
+def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branches, too-many-locals, too-many-statements;
+    source_dir: Path,
     output_dir: Path,
-    test: Test,
-    device: Device,
     binary_manager: binaries_util.BinaryManager,
-    use_default_binaries: bool = False,
+    test: Optional[Test] = None,
+    device: Optional[Device] = None,
+    ignore_test_and_device_binaries: bool = False,
+    shader_overrides: Iterable[tool.NameAndShaderJob] = (),
 ) -> Path:
-
     with util.file_open_text(output_dir / "log.txt", "w") as log_file:
         try:
             gflogging.push_stream_for_logging(log_file)
-
-            child_binary_manager = binary_manager
-            if not use_default_binaries:
-                child_binary_manager = child_binary_manager.get_child_binary_manager(
-                    list(device.binaries) + list(test.binaries)
-                )
 
             # TODO: Find amber path. NDK or host.
 
             # TODO: If Amber is going to be used, check if Amber can use Vulkan debug layers now, and if not, pass that
             #  info down via a bool.
 
+            if not test:
+                test = test_util.metadata_read_from_path(
+                    source_dir / test_util.TEST_METADATA
+                )
+
+            if not device:
+                device = test.device
+
+            log(f"Running test on device:\n{device.name}")
+
+            if not ignore_test_and_device_binaries:
+                binary_manager = binary_manager.get_child_binary_manager(
+                    list(device.binaries) + list(test.binaries)
+                )
+
             spirv_opt_hash: Optional[str] = None
             if test.glsl.spirv_opt_args:
-                spirv_opt_hash = child_binary_manager.get_binary_by_name(
+                spirv_opt_hash = binary_manager.get_binary_by_name(
                     binaries_util.SPIRV_OPT_NAME
                 ).version
 
-            try:
-                spirv_asm_shader_job_path, spirv_shader_job_path = tool.compile_shader_job(
-                    shader_job,
-                    output_dir,
-                    child_binary_manager,
-                    list(test.glsl.spirv_opt_args),
-                )
-            except subprocess.CalledProcessError:
-                util.file_write_text(
-                    result_util.get_status_path(output_dir), fuzz.STATUS_TOOL_CRASH
-                )
-                return output_dir
-            except subprocess.TimeoutExpired:
-                util.file_write_text(
-                    result_util.get_status_path(output_dir), fuzz.STATUS_TOOL_TIMEOUT
-                )
-                return output_dir
+            shader_jobs = tool.get_shader_jobs(source_dir, overrides=shader_overrides)
 
-            is_compute = bool(
-                shader_job_util.get_related_files(
-                    shader_job, [shader_job_util.EXT_COMP]
-                )
-            )
+            combined_spirv_shader_jobs: List[tool.SpirvCombinedShaderJob] = []
+
+            for shader_job in shader_jobs:
+                try:
+                    combined_spirv_shader_jobs.append(
+                        tool.compile_shader_job(
+                            name=shader_job.name,
+                            input_json=shader_job.shader_job,
+                            work_dir=output_dir / shader_job.name,
+                            binary_paths=binary_manager,
+                            spirv_opt_args=list(test.glsl.spirv_opt_args),
+                        )
+                    )
+                except subprocess.CalledProcessError:
+                    result_util.write_status(
+                        output_dir, fuzz.STATUS_TOOL_CRASH, shader_job.name
+                    )
+                    return output_dir
+                except subprocess.TimeoutExpired:
+                    result_util.write_status(
+                        output_dir, fuzz.STATUS_TOOL_TIMEOUT, shader_job.name
+                    )
+                    return output_dir
 
             # Device types: |preprocess| and |shader_compiler| don't need an AmberScript file.
 
             if device.HasField("preprocess"):
                 # The "preprocess" device type just needs to get this far, so this is a success.
-                util.file_write_text(
-                    result_util.get_status_path(output_dir), fuzz.STATUS_SUCCESS
-                )
+                result_util.write_status(output_dir, fuzz.STATUS_SUCCESS)
                 return output_dir
 
             if device.HasField("shader_compiler"):
-                try:
-                    shader_compiler_util.run_shader_job(
-                        device.shader_compiler, spirv_shader_job_path, output_dir
-                    )
-                    # The shader compiler succeeded; this is a success.
-                    util.file_write_text(
-                        result_util.get_status_path(output_dir), fuzz.STATUS_SUCCESS
-                    )
-                    return output_dir
-                except subprocess.CalledProcessError:
-                    util.file_write_text(
-                        result_util.get_status_path(output_dir), fuzz.STATUS_CRASH
-                    )
-                    return output_dir
-                except subprocess.TimeoutExpired:
-                    util.file_write_text(
-                        result_util.get_status_path(output_dir), fuzz.STATUS_TIMEOUT
-                    )
-                    return output_dir
+                for combined_spirv_shader_job in combined_spirv_shader_jobs:
+                    try:
+                        shader_compiler_util.run_shader_job(
+                            device.shader_compiler,
+                            combined_spirv_shader_job.spirv_shader_job,
+                            output_dir,
+                        )
+                    except subprocess.CalledProcessError:
+                        result_util.write_status(
+                            output_dir,
+                            fuzz.STATUS_CRASH,
+                            combined_spirv_shader_job.name,
+                        )
+                        return output_dir
+                    except subprocess.TimeoutExpired:
+                        result_util.write_status(
+                            output_dir,
+                            fuzz.STATUS_TIMEOUT,
+                            combined_spirv_shader_job.name,
+                        )
+                        return output_dir
+
+                # The shader compiler succeeded on all files; this is a success.
+                result_util.write_status(output_dir, fuzz.STATUS_SUCCESS)
+                return output_dir
 
             # Other device types need an AmberScript file.
 
-            amber_script_file = tool.amberfy(
-                spirv_asm_shader_job_path,
-                output_dir / "test.amber",
-                amber_converter.AmberfySettings(
+            amber_converter_shader_job_files = [
+                amber_converter.ShaderJobFile(
+                    name_prefix=combined_spirv_shader_job.name,
+                    asm_spirv_shader_job_json=combined_spirv_shader_job.spirv_asm_shader_job,
+                    glsl_source_json=combined_spirv_shader_job.glsl_source_shader_job,
+                    processing_info="",
+                )
+                for combined_spirv_shader_job in combined_spirv_shader_jobs
+            ]
+
+            # Check if the first is the reference shader; if so, pull it out into its own variable.
+
+            reference: Optional[amber_converter.ShaderJobFile] = None
+            variants = amber_converter_shader_job_files
+
+            if (
+                amber_converter_shader_job_files[0].name_prefix
+                == test_util.REFERENCE_DIR
+            ):
+                reference = amber_converter_shader_job_files[0]
+                variants = variants[1:]
+            elif len(variants) > 1:
+                raise AssertionError(
+                    "More than one variant, but no reference. This is unexpected."
+                )
+
+            amber_script_file = amber_converter.spirv_asm_shader_job_to_amber_script(
+                shader_job_file_amber_test=amber_converter.ShaderJobFileBasedAmberTest(
+                    reference_asm_spirv_job=reference, variants_asm_spirv_job=variants
+                ),
+                output_amber_script_file_path=output_dir / "test.amber",
+                amberfy_settings=amber_converter.AmberfySettings(
                     spirv_opt_args=list(test.glsl.spirv_opt_args),
                     spirv_opt_hash=spirv_opt_hash,
                 ),
-                shader_job,
+            )
+
+            is_compute = bool(
+                shader_job_util.get_related_files(
+                    combined_spirv_shader_jobs[0].spirv_shader_job,
+                    [shader_job_util.EXT_COMP],
+                )
             )
 
             if device.HasField("host") or device.HasField("swift_shader"):
                 icd: Optional[Path] = None
 
                 if device.HasField("swift_shader"):
-                    icd = child_binary_manager.get_binary_path_by_name(
+                    icd = binary_manager.get_binary_path_by_name(
                         binaries_util.SWIFT_SHADER_NAME
                     ).path
 
-                # Run the shader on the host using Amber.
+                # Run the test on the host using Amber.
                 host_device_util.run_amber(
                     amber_script_file,
                     output_dir,
@@ -475,17 +557,22 @@ def run_reduction(
     test_dir_to_reduce: Path,
     preserve_semantics: bool,
     reduction_name: str = "reduction1",
-    device_name: Optional[str] = None,
 ) -> Path:
     test = test_util.metadata_read(test_dir_to_reduce)
 
-    if not device_name and not test.device:
-        raise AssertionError(
+    check(
+        bool(test.device),
+        AssertionError(
             f"Cannot reduce {str(test_dir_to_reduce)}; device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
-        )
+        ),
+    )
 
-    if not device_name:
-        device_name = test.device.name
+    check(
+        bool(test.device.name),
+        AssertionError(
+            f"Cannot reduce {str(test_dir_to_reduce)}; device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
+        ),
+    )
 
     if not test.crash_signature:
         raise AssertionError(
@@ -493,17 +580,33 @@ def run_reduction(
             f"for now, only crash reductions are supported"
         )
 
-    reduced_test_dir_1 = test_util.get_reduced_test_dir(
-        test_dir_reduction_output, device_name, reduction_name
+    # E.g. reports/crashes/no_signature/d50c96e8_opt_rand2_test_phone_ABC/results/phone_ABC/reductions/1
+    # Will contain work/ and source/
+    reduced_test_dir = test_util.get_reduced_test_dir(
+        test_dir_reduction_output, test.device.name, reduction_name
     )
 
+    source_dir = test_util.get_source_dir(test_dir_to_reduce)
+
+    shader_jobs = tool.get_shader_jobs(source_dir)
+
+    # TODO: if needed, this could become a parameter to this function.
+    name_of_shader_to_reduce = shader_jobs[0].name
+
+    if len(shader_jobs) > 1:
+        check(
+            len(shader_jobs) == 2 and shader_jobs[1].name == test_util.VARIANT_DIR,
+            AssertionError(
+                "Can only reduce tests with shader jobs reference and variant, or just variant."
+            ),
+        )
+        name_of_shader_to_reduce = shader_jobs[1].name
+
     reduction_work_variant_dir = run_glsl_reduce(
-        input_shader_job=test_util.get_shader_job_path(
-            test_dir_to_reduce, is_variant=True
-        ),
-        test_metadata_path=test_util.get_metadata_path(test_dir_to_reduce),
+        source_dir=source_dir,
+        name_of_shader_to_reduce=name_of_shader_to_reduce,
         output_dir=test_util.get_reduction_work_directory(
-            reduced_test_dir_1, is_variant=True
+            reduced_test_dir, name_of_shader_to_reduce
         ),
         preserve_semantics=preserve_semantics,
     )
@@ -521,33 +624,39 @@ def run_reduction(
         ),
     )
 
-    # Finally, write the test metadata and shader job, so the returned directory can be used as a test_dir.
+    # Finally, create the source_dir so the returned directory can be used as a test_dir.
 
-    test_util.metadata_write(test, reduced_test_dir_1)
+    util.copy_dir(source_dir, test_util.get_source_dir(reduced_test_dir))
 
     shader_job_util.copy(
         final_reduced_shader_job_path,
-        test_util.get_shader_job_path(reduced_test_dir_1, is_variant=True),
+        test_util.get_shader_job_path(reduced_test_dir, name_of_shader_to_reduce),
     )
 
-    return reduced_test_dir_1
+    return reduced_test_dir
 
 
 def run_glsl_reduce(
-    input_shader_job: Path,
-    test_metadata_path: Path,
+    source_dir: Path,
+    name_of_shader_to_reduce: str,
     output_dir: Path,
     preserve_semantics: bool = False,
 ) -> Path:
+
+    input_shader_job = source_dir / name_of_shader_to_reduce / test_util.SHADER_JOB
 
     cmd = [
         str(tool_on_path("glsl-reduce")),
         str(input_shader_job),
         "--output",
         str(output_dir),
+        # This ensures the arguments that follow are all positional arguments.
         "--",
         "gfauto_interestingness_test",
-        str(test_metadata_path),
+        str(source_dir),
+        # --override_shader requires two parameters to follow; the second will be added by glsl-reduce (the shader.json file).
+        "--override_shader",
+        str(name_of_shader_to_reduce),
     ]
 
     if preserve_semantics:
@@ -589,21 +698,17 @@ def create_summary_and_reproduce_glsl(
         reduced_glsl = util.copy_dir(reduced_source_dir, summary_dir / "reduced_glsl")
 
     run_shader_job(
-        unreduced_glsl / test_util.VARIANT_DIR / test_util.SHADER_JOB,
-        summary_dir / "unreduced_glsl_result" / test_util.VARIANT_DIR,
-        test_metadata,
-        device,
-        binary_manager,
+        source_dir=unreduced_glsl,
+        output_dir=(summary_dir / "unreduced_glsl_result"),
+        binary_manager=binary_manager,
     )
 
     variant_reduced_glsl_result: Optional[Path] = None
     if reduced_glsl:
         variant_reduced_glsl_result = run_shader_job(
-            reduced_glsl / test_util.VARIANT_DIR / test_util.SHADER_JOB,
-            summary_dir / "reduced_glsl_result" / test_util.VARIANT_DIR,
-            test_metadata,
-            device,
-            binary_manager,
+            source_dir=reduced_glsl,
+            output_dir=(summary_dir / "reduced_glsl_result"),
+            binary_manager=binary_manager,
         )
 
     # Some post-processing for common error types.
