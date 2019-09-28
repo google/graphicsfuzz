@@ -18,7 +18,7 @@
 
 Used to convert shader jobs to Amber script tests that are suitable for adding to the VK-GL-CTS project.
 """
-
+from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional
 
@@ -177,19 +177,32 @@ def compile_shader_job(
     work_dir: Path,
     binary_paths: binaries_util.BinaryGetter,
     spirv_opt_args: Optional[List[str]] = None,
+    shader_overrides: Optional[Dict[str, Path]] = None,
 ) -> SpirvCombinedShaderJob:
+
+    if not shader_overrides:
+        shader_overrides = {}
+
+    # noinspection PyStatementEffect,Mypy
+    shader_overrides = shader_overrides  # type: Dict[str, Path]
 
     result = input_json
 
     glsl_source_shader_job: Optional[Path] = None
 
     # If GLSL:
-    if shader_job_util.get_related_suffixes_that_exist(
+    glsl_suffixes = shader_job_util.get_related_suffixes_that_exist(
         result, language_suffix=(shader_job_util.SUFFIX_GLSL,)
-    ):
+    )
+    if glsl_suffixes:
         glsl_source_shader_job = result
 
         result = shader_job_util.copy(result, work_dir / "0_glsl" / result.name)
+
+        for suffix in glsl_suffixes:
+            shader_override = shader_overrides.get(suffix)
+            if shader_override:
+                shader_job_util.get_related_suffixes_that_exist()
 
         result = glslang_glsl_shader_job_to_spirv(
             result, work_dir / "1_spirv" / result.name, binary_paths
@@ -257,10 +270,37 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
     )
 
 
+#
+# @dataclass
+# class Shader:
+#     suffix: str
+#     path: Path
+#
+#
+# @dataclass
+# class ShaderJob:
+#     name: str
+#     path: Path
+#     shader_files: Dict[str, Shader]
+#
+#
+# @dataclass
+# class SourceDirFiles:
+#     test_metadata: Path
+#     shader_jobs: Dict[str, ShaderJob]
+
+
 @dataclass
 class NameAndShaderJob:
     name: str
     shader_job: Path
+
+
+@dataclass
+class ShaderPathWithNameAndSuffix:
+    name: str
+    suffix: str
+    path: Path
 
 
 def get_shader_jobs(

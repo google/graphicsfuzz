@@ -22,7 +22,7 @@ Functions for handling GLSL shader job tests.
 import random
 import subprocess
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Dict
 
 from gfauto import (
     amber_converter,
@@ -372,8 +372,13 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
     test: Optional[Test] = None,
     device: Optional[Device] = None,
     ignore_test_and_device_binaries: bool = False,
-    shader_overrides: Iterable[tool.NameAndShaderJob] = (),
+    shader_job_overrides: Iterable[tool.NameAndShaderJob] = (),
+    shader_overrides: Optional[Dict[str, tool.ShaderPathWithNameAndSuffix]] = None,
 ) -> Path:
+
+    if not shader_overrides:
+        shader_overrides = {}  # type: Dict[str, tool.ShaderPathWithNameAndSuffix]
+
     with util.file_open_text(output_dir / "log.txt", "w") as log_file:
         try:
             gflogging.push_stream_for_logging(log_file)
@@ -410,7 +415,9 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                     else list(test.spirv_fuzz.spirv_opt_args)
                 )
 
-            shader_jobs = tool.get_shader_jobs(source_dir, overrides=shader_overrides)
+            shader_jobs = tool.get_shader_jobs(
+                source_dir, overrides=shader_job_overrides
+            )
 
             combined_spirv_shader_jobs: List[tool.SpirvCombinedShaderJob] = []
 
@@ -565,24 +572,15 @@ def run_reduction(
 ) -> Path:
     test = test_util.metadata_read(test_dir_to_reduce)
 
-    check(
-        bool(test.device),
-        AssertionError(
-            f"Cannot reduce {str(test_dir_to_reduce)}; device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
-        ),
-    )
-
-    check(
-        bool(test.device.name),
-        AssertionError(
-            f"Cannot reduce {str(test_dir_to_reduce)}; device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
-        ),
-    )
+    if not test.device or not test.device.name:
+        raise AssertionError(
+            f"Cannot reduce {str(test_dir_to_reduce)}; "
+            f"device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
+        )
 
     if not test.crash_signature:
         raise AssertionError(
-            f"Cannot reduce {str(test_dir_to_reduce)} because there is no crash string specified; "
-            f"for now, only crash reductions are supported"
+            f"Cannot reduce {str(test_dir_to_reduce)} because there is no crash string specified."
         )
 
     # E.g. reports/crashes/no_signature/d50c96e8_opt_rand2_test_phone_ABC/results/phone_ABC/reductions/1
@@ -623,9 +621,7 @@ def run_reduction(
     check(
         final_reduced_shader_job_path.exists(),
         ReductionFailedError(
-            "Reduction failed; not yet handled",
-            reduction_name,
-            reduction_work_variant_dir,
+            "Reduction failed.", reduction_name, reduction_work_variant_dir
         ),
     )
 
@@ -659,8 +655,8 @@ def run_glsl_reduce(
         "--",
         "gfauto_interestingness_test",
         str(source_dir),
-        # --override_shader requires two parameters to follow; the second will be added by glsl-reduce (the shader.json file).
-        "--override_shader",
+        # --override_shader_job requires two parameters to follow; the second will be added by glsl-reduce (the shader.json file).
+        "--override_shader_job",
         str(name_of_shader_to_reduce),
     ]
 

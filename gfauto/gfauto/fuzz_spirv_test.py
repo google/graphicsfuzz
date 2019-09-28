@@ -34,10 +34,15 @@ from gfauto import (
     spirv_opt_util,
     test_util,
     util,
+    tool,
+    gflogging,
+    subprocess_util,
 )
 from gfauto.device_pb2 import Device
+from gfauto.fuzz_glsl_test import ReductionFailedError
 from gfauto.settings_pb2 import Settings
 from gfauto.test_pb2 import Test, TestSpirvFuzz
+from gfauto.util import check
 
 
 def make_test(
@@ -84,6 +89,208 @@ def run(
     return result_util.get_status(result_output_dir)
 
 
+def run_spirv_fuzz_shrink(
+    source_dir: Path,
+    name_of_shader_job_to_reduce: str,
+    transformation_suffix_to_reduce: str,
+    output_dir: Path,
+) -> Path:
+    input_shader_job = source_dir / name_of_shader_job_to_reduce / test_util.SHADER_JOB
+
+    original_spirv_file = input_shader_job.with_suffix(
+        transformation_suffix_to_reduce
+    ).with_suffix(shader_job_util.SUFFIX_SPIRV_ORIG)
+    transformations_file = input_shader_job.with_suffix(transformation_suffix_to_reduce)
+
+    util.mkdirs_p(output_dir)
+
+    final_shader = output_dir / "final.spv"
+
+    cmd = [
+        str(util.tool_on_path("spirv-fuzz")),
+        str(original_spirv_file),
+        "-o",
+        str(final_shader),
+        f"--shrink={str(transformations_file)}",
+        # This ensures the arguments that follow are all positional arguments.
+        "--",
+        "gfauto_interestingness_test",
+        str(source_dir),
+        # --override_shader requires three parameters to follow; the third will be added by spirv-fuzz (the shader.spv file).
+        "--override_shader",
+        name_of_shader_job_to_reduce,
+        transformation_suffix_to_reduce,
+    ]
+
+    # Log the reduction.
+    with util.file_open_text(output_dir / "command.log", "w") as f:
+        gflogging.push_stream_for_logging(f)
+        try:
+            # The reducer can fail, but it will typically output an exception file, so we can ignore the exit code.
+            subprocess_util.run(cmd, verbose=True, check_exit_code=False)
+        finally:
+            gflogging.pop_stream_for_logging()
+
+    return final_shader
+
+
+def run_reduction(
+    test_dir_reduction_output: Path,
+    test_dir_to_reduce: Path,
+    shader_job_name_to_reduce: str,
+    transformation_suffix_to_reduce: str,
+    preserve_semantics: bool,
+    reduction_name: str = "reduction1",
+) -> Path:
+    test = test_util.metadata_read(test_dir_to_reduce)
+
+    check(
+        not test.device or not test.device.name,
+        AssertionError(
+            f"Cannot reduce {str(test_dir_to_reduce)}; "
+            f"device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
+        ),
+    )
+
+    check(
+        not test.crash_signature,
+        AssertionError(
+            f"Cannot reduce {str(test_dir_to_reduce)} because there is no crash string specified."
+        ),
+    )
+
+    check(
+        preserve_semantics,
+        AssertionError(
+            "preserve_semantics must be true for spirv reductions (for now)"
+        ),
+    )
+
+    # E.g. reports/crashes/no_signature/d50c96e8_opt_rand2_test_phone_ABC/results/phone_ABC/reductions/1
+    # Will contain work/ and source/
+    reduced_test_dir = test_util.get_reduced_test_dir(
+        test_dir_reduction_output, test.device.name, reduction_name
+    )
+
+    source_dir = test_util.get_source_dir(test_dir_to_reduce)
+    output_dir = test_util.get_reduction_work_directory(
+        reduced_test_dir, shader_job_name_to_reduce
+    )
+    final_shader_path = run_spirv_fuzz_shrink(
+        source_dir=source_dir,
+        name_of_shader_job_to_reduce=shader_job_name_to_reduce,
+        transformation_suffix_to_reduce=transformation_suffix_to_reduce,
+        output_dir=output_dir,
+    )
+
+    check(
+        final_shader_path.exists(),
+        ReductionFailedError("Reduction failed.", reduction_name, output_dir),
+    )
+
+    # Finally, create the source_dir so the returned directory can be used as a test_dir.
+
+    # Copy the original source directory.
+    util.copy_dir(source_dir, test_util.get_source_dir(reduced_test_dir))
+
+    # And then replace the shader.
+
+    final_shader_prefix = final_shader_path.with_suffix("")
+    output_shader_prefix = (
+        source_dir / shader_job_name_to_reduce / test_util.SHADER_JOB
+    ).with_suffix(transformation_suffix_to_reduce)
+
+    util.copy_file(
+        final_shader_prefix.with_suffix(shader_job_util.SUFFIX_SPIRV),
+        output_shader_prefix.with_suffix(shader_job_util.SUFFIX_SPIRV),
+    )
+
+    util.copy_file(
+        final_shader_prefix.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS),
+        output_shader_prefix.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS),
+    )
+
+    util.copy_file(
+        final_shader_prefix.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS_JSON),
+        output_shader_prefix.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS_JSON),
+    )
+
+    return reduced_test_dir
+
+
+def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
+    test = test_util.metadata_read(test_dir)
+
+    check(
+        not test.device or not test.device.name,
+        AssertionError(
+            f"Cannot reduce {str(test_dir)}; "
+            f"device must be specified in {str(test_util.get_metadata_path(test_dir))}"
+        ),
+    )
+
+    check(
+        not test.crash_signature,
+        AssertionError(
+            f"Cannot reduce {str(test_dir)} because there is no crash string specified."
+        ),
+    )
+
+    source_dir = test_util.get_source_dir(test_dir)
+
+    shader_jobs = tool.get_shader_jobs(source_dir)
+
+    # TODO: if needed, this could become a parameter to this function.
+    shader_job_to_reduce = shader_jobs[0]
+
+    if len(shader_jobs) > 1:
+        check(
+            len(shader_jobs) == 2 and shader_jobs[1].name == test_util.VARIANT_DIR,
+            AssertionError(
+                "Can only reduce tests with shader jobs reference and variant, or just variant."
+            ),
+        )
+        shader_job_to_reduce = shader_jobs[1]
+
+    shader_transformation_suffixes = shader_job_util.get_related_suffixes_that_exist(
+        shader_job_to_reduce.shader_job,
+        language_suffix=(shader_job_util.SUFFIX_TRANSFORMATIONS,),
+    )
+
+    try:
+        reduced_test = test_dir
+
+        for index, suffix in enumerate(shader_transformation_suffixes):
+            reduced_test = run_reduction(
+                test_dir_reduction_output=test_dir,
+                test_dir_to_reduce=reduced_test,
+                shader_job_name_to_reduce=shader_job_to_reduce.name,
+                transformation_suffix_to_reduce=suffix,
+                preserve_semantics=True,
+                reduction_name=f"{index}_{suffix}",
+            )
+            # TODO: reduce without preserving semantics if crash.
+
+        device_name = test.device.name
+
+        # Create a symlink to the "best" reduction.
+        best_reduced_test_link = test_util.get_reduced_test_dir(
+            test_dir, device_name, fuzz.BEST_REDUCTION_NAME
+        )
+        util.make_directory_symlink(
+            new_symlink_file_path=best_reduced_test_link, existing_dir=reduced_test
+        )
+    except ReductionFailedError as ex:
+        # Create a symlink to the failed reduction so it is easy to investigate failed reductions.
+        link_to_failed_reduction_path = (
+            reports_dir / "failed_reductions" / f"{test_dir.name}_{ex.reduction_name}"
+        )
+        util.make_directory_symlink(
+            new_symlink_file_path=link_to_failed_reduction_path,
+            existing_dir=ex.reduction_work_dir,
+        )
+
+
 def handle_test(
     test_dir: Path,
     reports_dir: Path,
@@ -116,7 +323,9 @@ def handle_test(
         if report_dir:
             report_paths.append(report_dir)
 
-    # TODO: reductions.
+        # For each report, run a reduction on the target device with the device-specific crash signature.
+        for test_dir_in_reports in report_paths:
+            run_reduction_on_report(test_dir_in_reports, reports_dir)
 
     # TODO: summaries.
 
