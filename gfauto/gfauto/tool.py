@@ -373,10 +373,16 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
         for shader_job in shader_jobs
     ]
 
+    reference_asm_spirv_job: Optional[amber_converter.ShaderJobFile] = None
+
+    if shader_job_files[0].name_prefix == test_util.REFERENCE_DIR:
+        reference_asm_spirv_job = shader_job_files[0]
+        del shader_job_files[0]
+
     return amber_converter.spirv_asm_shader_job_to_amber_script(
         amber_converter.ShaderJobFileBasedAmberTest(
-            reference_asm_spirv_job=shader_job_files[0],
-            variants_asm_spirv_job=shader_job_files[1:],
+            reference_asm_spirv_job=reference_asm_spirv_job,
+            variants_asm_spirv_job=shader_job_files,
         ),
         output_amber,
         amber_converter.AmberfySettings(
