@@ -303,8 +303,8 @@ def create_summary_and_reproduce(
     test_metadata = test_util.metadata_read(test_dir)
 
     # noinspection PyTypeChecker
-    if test_metadata.HasField("glsl"):
-        fuzz_glsl_test.create_summary_and_reproduce_glsl(test_dir, binary_manager)
+    if test_metadata.HasField("glsl") or test_metadata.HasField("spirv_fuzz"):
+        fuzz_glsl_test.create_summary_and_reproduce(test_dir, binary_manager)
     else:
         raise AssertionError("Unrecognized test type")
 

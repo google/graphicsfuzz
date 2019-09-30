@@ -335,11 +335,13 @@ def handle_test(
         if report_dir:
             report_paths.append(report_dir)
 
-        # For each report, run a reduction on the target device with the device-specific crash signature.
-        for test_dir_in_reports in report_paths:
-            run_reduction_on_report(test_dir_in_reports, reports_dir)
+    # For each report, run a reduction on the target device with the device-specific crash signature.
+    for test_dir_in_reports in report_paths:
+        run_reduction_on_report(test_dir_in_reports, reports_dir)
 
-    # TODO: summaries.
+    # For each report, create a summary and reproduce the bug.
+    for test_dir_in_reports in report_paths:
+        fuzz.create_summary_and_reproduce(test_dir_in_reports, binary_manager)
 
     return issue_found
 

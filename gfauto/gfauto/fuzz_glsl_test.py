@@ -686,36 +686,36 @@ def run_glsl_reduce(
     return output_dir
 
 
-def create_summary_and_reproduce_glsl(
+def create_summary_and_reproduce(
     test_dir: Path, binary_manager: binaries_util.BinaryManager
 ) -> None:
     test_metadata = test_util.metadata_read(test_dir)
 
     summary_dir = test_dir / "summary"
 
-    unreduced_glsl = util.copy_dir(
-        test_util.get_source_dir(test_dir), summary_dir / "unreduced_glsl"
+    unreduced = util.copy_dir(
+        test_util.get_source_dir(test_dir), summary_dir / "unreduced"
     )
 
     reduced_test_dir = test_util.get_reduced_test_dir(
         test_dir, test_metadata.device.name, fuzz.BEST_REDUCTION_NAME
     )
     reduced_source_dir = test_util.get_source_dir(reduced_test_dir)
-    reduced_glsl: Optional[Path] = None
+    reduced: Optional[Path] = None
     if reduced_source_dir.exists():
-        reduced_glsl = util.copy_dir(reduced_source_dir, summary_dir / "reduced_glsl")
+        reduced = util.copy_dir(reduced_source_dir, summary_dir / "reduced")
 
     run_shader_job(
-        source_dir=unreduced_glsl,
-        output_dir=(summary_dir / "unreduced_glsl_result"),
+        source_dir=unreduced,
+        output_dir=(summary_dir / "unreduced_result"),
         binary_manager=binary_manager,
     )
 
     variant_reduced_glsl_result: Optional[Path] = None
-    if reduced_glsl:
+    if reduced:
         variant_reduced_glsl_result = run_shader_job(
-            source_dir=reduced_glsl,
-            output_dir=(summary_dir / "reduced_glsl_result"),
+            source_dir=reduced,
+            output_dir=(summary_dir / "reduced_result"),
             binary_manager=binary_manager,
         )
 
@@ -737,17 +737,22 @@ def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
     variant_reduced_glsl_result_dir: Path,
     output_dir: Path,
     binary_manager: binaries_util.BinaryManager,
-) -> Path:
+) -> Optional[Path]:
     # Create a simple script and README.
 
     shader_job = reduced_glsl_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
+
+    if not shader_job.is_file():
+        return None
 
     test_metadata: Test = test_util.metadata_read_from_path(
         reduced_glsl_source_dir / test_util.TEST_METADATA
     )
 
     shader_files = shader_job_util.get_related_files(
-        shader_job, shader_job_util.EXT_ALL
+        shader_job,
+        shader_job_util.EXT_ALL,
+        (shader_job_util.SUFFIX_GLSL, shader_job_util.SUFFIX_SPIRV),
     )
     check(
         len(shader_files) > 0,
@@ -787,19 +792,26 @@ def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
         "Issue found using [GraphicsFuzz](https://github.com/google/graphicsfuzz).\n\n"
     )
     readme += "Tool versions:\n\n"
-    readme += f"* glslangValidator commit hash: {binary_manager.get_binary_by_name(binaries_util.GLSLANG_VALIDATOR_NAME).version}\n"
 
-    if test_metadata.glsl.spirv_opt_args:
+    # noinspection PyTypeChecker
+    if test_metadata.HasField("glsl"):
+        readme += f"* glslangValidator commit hash: {binary_manager.get_binary_by_name(binaries_util.GLSLANG_VALIDATOR_NAME).version}\n"
+
+    if test_metadata.glsl.spirv_opt_args or test_metadata.spirv_fuzz.spirv_opt_args:
         readme += f"* spirv-opt commit hash: {binary_manager.get_binary_by_name(binaries_util.SPIRV_OPT_NAME).version}\n"
 
     readme += "\nTo reproduce:\n\n"
     readme += f"`glslangValidator -V shader{shader_extension} -o shader{shader_extension}.spv`\n\n"
 
-    if spv_files and not test_metadata.glsl.spirv_opt_args:
-        # There was an .spv file and no spirv-opt, so validate the SPIR-V.
+    if (
+        test_metadata.HasField("glsl")
+        and spv_files
+        and not test_metadata.glsl.spirv_opt_args
+    ):
+        # GLSL was converted to SPIR-V, and spirv-opt was not run, so indicate that we should validate the SPIR-V.
         readme += f"`spirv-val shader{shader_extension}.spv`\n\n"
 
-    if test_metadata.glsl.spirv_opt_args:
+    if test_metadata.glsl.spirv_opt_args or test_metadata.spirv_fuzz.spirv_opt_args:
         readme += f"`spirv-opt shader{shader_extension}.spv -o temp.spv --validate-after-all {' '.join(test_metadata.glsl.spirv_opt_args)}`\n\n"
 
     files_to_list = glsl_files + spv_files + asm_files
