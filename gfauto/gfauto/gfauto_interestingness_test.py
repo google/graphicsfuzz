@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from gfauto import (
+    artifact_util,
     binaries_util,
     fuzz,
     fuzz_glsl_test,
@@ -113,7 +114,7 @@ def main() -> None:  # pylint: disable=too-many-statements, too-many-locals;
     else:
         raise AssertionError("Need --output or --override_shader[_job] parameter.")
 
-    # artifact_util.recipes_write_built_in()
+    artifact_util.recipes_write_built_in()
 
     binary_manager = binaries_util.BinaryManager(
         binaries_util.DEFAULT_BINARIES if fallback_binaries else [],
