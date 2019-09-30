@@ -29,7 +29,6 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from gfauto import (
-    artifact_util,
     binaries_util,
     fuzz,
     fuzz_glsl_test,
@@ -50,7 +49,7 @@ from gfauto.gflogging import log
 #  be the same for all devices and it would look at the device info in the test_json?
 
 
-def main() -> None:  # pylint: disable=too-many-statements;
+def main() -> None:  # pylint: disable=too-many-statements, too-many-locals;
     parser = argparse.ArgumentParser(
         description="Interestingness test that runs a test using Amber, "
         "calculates the crash signature based on the result, and returns 0 "
@@ -73,7 +72,7 @@ def main() -> None:  # pylint: disable=too-many-statements;
         "--override_shader",
         nargs=3,
         metavar=("shader_name", "suffix", "shader_path"),
-        help='Override one of the shaders. E.g.: "--override_shader variant .frag temp/my_shader.spv". Note that '
+        help='Override one of the shaders. E.g.: "--override_shader variant .frag.spv temp/my_shader.spv". Note that '
         "the output directory will be set to shader_path/ (with the .spv extension removed) by default in this case. ",
     )
 
@@ -131,6 +130,23 @@ def main() -> None:  # pylint: disable=too-many-statements;
             )
         )
 
+    shader_overrides: tool.ShaderJobNameToShaderOverridesMap = {}
+
+    if override_shader:
+        override = tool.ShaderPathWithNameAndSuffix(
+            name=override_shader[0],
+            suffix=override_shader[1],
+            path=Path(override_shader[2]),
+        )
+        shader_overrides[override.name] = {override.suffix: override}
+
+        # E.g. shader_overrides ==
+        # {
+        #   "variant": {
+        #     ".frag.spv": ShaderPathWithNameAndSuffix("variant", ".frag.spv", Path("path/to/shader.frag.spv"))
+        #   }
+        # }
+
     # We don't need to read this to run the shader, but we need it afterwards anyway.
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
 
@@ -141,6 +157,7 @@ def main() -> None:  # pylint: disable=too-many-statements;
         test=test,
         ignore_test_and_device_binaries=use_default_binaries,
         shader_job_overrides=shader_job_overrides,
+        shader_job_shader_overrides=shader_overrides,
     )
 
     log(

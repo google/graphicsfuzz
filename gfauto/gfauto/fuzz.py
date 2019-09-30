@@ -226,6 +226,8 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     # so that we don't need to specify it and update it in the device list (on disk).
     # Thus, when we save the test, the device will contain the version of SwiftShader we used.
     for device in active_devices:
+
+        # noinspection PyTypeChecker
         if device.HasField("swift_shader"):
             swift_binaries = [
                 binary
@@ -296,16 +298,14 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
 
 
 def create_summary_and_reproduce(
-    test_dir: Path,
-    binary_manager: binaries_util.BinaryManager,
-    device: Optional[Device] = None,
+    test_dir: Path, binary_manager: binaries_util.BinaryManager
 ) -> None:
     util.mkdirs_p(test_dir / "summary")
     test_metadata = test_util.metadata_read(test_dir)
+
+    # noinspection PyTypeChecker
     if test_metadata.HasField("glsl"):
-        fuzz_glsl_test.create_summary_and_reproduce_glsl(
-            test_dir, binary_manager, device
-        )
+        fuzz_glsl_test.create_summary_and_reproduce_glsl(test_dir, binary_manager)
     else:
         raise AssertionError("Unrecognized test type")
 

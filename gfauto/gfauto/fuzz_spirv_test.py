@@ -28,15 +28,15 @@ from gfauto import (
     binaries_util,
     fuzz,
     fuzz_glsl_test,
+    gflogging,
     result_util,
     shader_job_util,
     spirv_fuzz_util,
     spirv_opt_util,
-    test_util,
-    util,
-    tool,
-    gflogging,
     subprocess_util,
+    test_util,
+    tool,
+    util,
 )
 from gfauto.device_pb2 import Device
 from gfauto.fuzz_glsl_test import ReductionFailedError
@@ -55,8 +55,6 @@ def make_test(
     util.copy_dir(base_source_dir, test_util.get_source_dir(subtest_dir))
 
     test = Test(spirv_fuzz=TestSpirvFuzz(spirv_opt_args=spirv_opt_args))
-
-    # TODO: Handle spirv_opt_args.
 
     test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-dis")])
     test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-val")])
@@ -106,12 +104,23 @@ def run_spirv_fuzz_shrink(
 
     final_shader = output_dir / "final.spv"
 
+    # E.g. transformation_suffix_to_reduce == ".frag.transformations"
+
+    # E.g. ".frag.spv"
+    shader_suffix_to_override = (
+        util.remove_end(
+            transformation_suffix_to_reduce, shader_job_util.SUFFIX_TRANSFORMATIONS
+        )
+        + shader_job_util.SUFFIX_SPIRV
+    )
+
     cmd = [
         str(util.tool_on_path("spirv-fuzz")),
         str(original_spirv_file),
         "-o",
         str(final_shader),
         f"--shrink={str(transformations_file)}",
+        f"--shrinker-temp-file-prefix={str(output_dir / 'temp_')}",
         # This ensures the arguments that follow are all positional arguments.
         "--",
         "gfauto_interestingness_test",
@@ -119,7 +128,7 @@ def run_spirv_fuzz_shrink(
         # --override_shader requires three parameters to follow; the third will be added by spirv-fuzz (the shader.spv file).
         "--override_shader",
         name_of_shader_job_to_reduce,
-        transformation_suffix_to_reduce,
+        shader_suffix_to_override,
     ]
 
     # Log the reduction.
@@ -145,7 +154,7 @@ def run_reduction(
     test = test_util.metadata_read(test_dir_to_reduce)
 
     check(
-        not test.device or not test.device.name,
+        bool(test.device and test.device.name),
         AssertionError(
             f"Cannot reduce {str(test_dir_to_reduce)}; "
             f"device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
@@ -153,7 +162,7 @@ def run_reduction(
     )
 
     check(
-        not test.crash_signature,
+        bool(test.crash_signature),
         AssertionError(
             f"Cannot reduce {str(test_dir_to_reduce)} because there is no crash string specified."
         ),
@@ -196,8 +205,11 @@ def run_reduction(
     # And then replace the shader.
 
     final_shader_prefix = final_shader_path.with_suffix("")
+
     output_shader_prefix = (
-        source_dir / shader_job_name_to_reduce / test_util.SHADER_JOB
+        test_util.get_source_dir(reduced_test_dir)
+        / shader_job_name_to_reduce
+        / test_util.SHADER_JOB
     ).with_suffix(transformation_suffix_to_reduce)
 
     util.copy_file(
@@ -222,7 +234,7 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
     test = test_util.metadata_read(test_dir)
 
     check(
-        not test.device or not test.device.name,
+        bool(test.device and test.device.name),
         AssertionError(
             f"Cannot reduce {str(test_dir)}; "
             f"device must be specified in {str(test_util.get_metadata_path(test_dir))}"
@@ -230,7 +242,7 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
     )
 
     check(
-        not test.crash_signature,
+        bool(test.crash_signature),
         AssertionError(
             f"Cannot reduce {str(test_dir)} because there is no crash string specified."
         ),
@@ -267,7 +279,7 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
                 shader_job_name_to_reduce=shader_job_to_reduce.name,
                 transformation_suffix_to_reduce=suffix,
                 preserve_semantics=True,
-                reduction_name=f"{index}_{suffix}",
+                reduction_name=f"{index}_{suffix.split('.')[1]}",
             )
             # TODO: reduce without preserving semantics if crash.
 

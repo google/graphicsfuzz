@@ -22,7 +22,7 @@ Functions for handling GLSL shader job tests.
 import random
 import subprocess
 from pathlib import Path
-from typing import Iterable, List, Optional, Dict
+from typing import Iterable, List, Optional
 
 from gfauto import (
     amber_converter,
@@ -373,11 +373,13 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
     device: Optional[Device] = None,
     ignore_test_and_device_binaries: bool = False,
     shader_job_overrides: Iterable[tool.NameAndShaderJob] = (),
-    shader_overrides: Optional[Dict[str, tool.ShaderPathWithNameAndSuffix]] = None,
+    shader_job_shader_overrides: Optional[
+        tool.ShaderJobNameToShaderOverridesMap
+    ] = None,
 ) -> Path:
 
-    if not shader_overrides:
-        shader_overrides = {}  # type: Dict[str, tool.ShaderPathWithNameAndSuffix]
+    if not shader_job_shader_overrides:
+        shader_job_shader_overrides = {}
 
     with util.file_open_text(output_dir / "log.txt", "w") as log_file:
         try:
@@ -423,6 +425,9 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
 
             for shader_job in shader_jobs:
                 try:
+                    shader_overrides = shader_job_shader_overrides.get(
+                        shader_job.name, None
+                    )
                     combined_spirv_shader_jobs.append(
                         tool.compile_shader_job(
                             name=shader_job.name,
@@ -430,6 +435,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                             work_dir=output_dir / shader_job.name,
                             binary_paths=binary_manager,
                             spirv_opt_args=spirv_opt_args,
+                            shader_overrides=shader_overrides,
                         )
                     )
                 except subprocess.CalledProcessError:
@@ -445,11 +451,13 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
 
             # Device types: |preprocess| and |shader_compiler| don't need an AmberScript file.
 
+            # noinspection PyTypeChecker
             if device.HasField("preprocess"):
                 # The "preprocess" device type just needs to get this far, so this is a success.
                 result_util.write_status(output_dir, fuzz.STATUS_SUCCESS)
                 return output_dir
 
+            # noinspection PyTypeChecker
             if device.HasField("shader_compiler"):
                 for combined_spirv_shader_job in combined_spirv_shader_jobs:
                     try:
@@ -522,9 +530,11 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 )
             )
 
+            # noinspection PyTypeChecker
             if device.HasField("host") or device.HasField("swift_shader"):
                 icd: Optional[Path] = None
 
+                # noinspection PyTypeChecker
                 if device.HasField("swift_shader"):
                     icd = binary_manager.get_binary_path_by_name(
                         binaries_util.SWIFT_SHADER_NAME
@@ -540,6 +550,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 )
                 return output_dir
 
+            # noinspection PyTypeChecker
             if device.HasField("android"):
 
                 android_device.run_amber_on_device(
@@ -676,13 +687,9 @@ def run_glsl_reduce(
 
 
 def create_summary_and_reproduce_glsl(
-    test_dir: Path,
-    binary_manager: binaries_util.BinaryManager,
-    device: Optional[Device] = None,
+    test_dir: Path, binary_manager: binaries_util.BinaryManager
 ) -> None:
     test_metadata = test_util.metadata_read(test_dir)
-    if not device:
-        device = test_metadata.device
 
     summary_dir = test_dir / "summary"
 
