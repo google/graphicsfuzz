@@ -40,7 +40,6 @@ from gfauto import (
     test_util,
     util,
 )
-from gfauto.device_pb2 import Device
 from gfauto.gflogging import log
 
 # Root:
