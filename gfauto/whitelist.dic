@@ -189,3 +189,7 @@ bootanim
 metavar
 d50c96e8
 rand2
+makedirs
+unlink
+fsync
+fileno

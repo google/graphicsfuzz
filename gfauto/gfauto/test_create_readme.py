@@ -23,8 +23,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from gfauto import artifact_util, binaries_util, fuzz_glsl_test, test_util
-from gfauto.binaries_util import BinaryManager
+from gfauto import binaries_util, fuzz_glsl_test, test_util
 from gfauto.util import check, check_dir_exists
 
 
@@ -57,11 +56,11 @@ def main() -> None:
     check_dir_exists(source_dir)
     check_dir_exists(result_dir)
 
-    artifact_util.recipes_write_built_in()
-
-    binary_manager = BinaryManager(binaries_util.DEFAULT_BINARIES)
-
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
+
+    binary_manager = binaries_util.get_default_binary_manager().get_child_binary_manager(
+        binary_list=list(test.binaries) + list(test.device.binaries)
+    )
 
     check(test.HasField("glsl"), AssertionError("Only glsl tests currently supported"))
 

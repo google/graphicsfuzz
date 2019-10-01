@@ -25,7 +25,6 @@ from pathlib import Path
 
 from gfauto import (
     amber_converter,
-    artifact_util,
     binaries_util,
     fuzz,
     gerrit_util,
@@ -145,9 +144,7 @@ def main() -> None:
     # Need git.
     git_tool = util.tool_on_path("git")
 
-    artifact_util.recipes_write_built_in()
-
-    binaries = binaries_util.BinaryManager()
+    binaries = binaries_util.get_default_binary_manager()
 
     download_cts_graphicsfuzz_tests(git_tool, cookie, binaries)
 

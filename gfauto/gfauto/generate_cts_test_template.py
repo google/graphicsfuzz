@@ -25,7 +25,7 @@ In particular, the Amber script test is suitable for use with |add_amber_tests_t
 import sys
 from pathlib import Path
 
-from gfauto import artifact_util, tool, util
+from gfauto import tool, util
 
 
 def main() -> None:
@@ -36,8 +36,6 @@ def main() -> None:
     # - check comment_text
     # - check copyright_year
     # - check extra_commands
-
-    artifact_util.recipes_write_built_in()
 
     bug_dir = util.norm_path(Path(__file__).absolute()).parent
 

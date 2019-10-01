@@ -88,12 +88,15 @@ def get_binary_paths_using_artifact_system(
 
     # Deprecated.
 
-    artifact_util.recipes_write_built_in()
-    artifact_util.artifact_execute_recipe_if_needed(artifact_path)
+    artifact_util.artifact_execute_recipe_if_needed(
+        artifact_path, binaries_util.BUILT_IN_BINARY_RECIPES_MAP
+    )
     artifact_metadata = artifact_util.artifact_read_metadata(artifact_path)
 
     return binaries_util.BinaryManager(
-        list(artifact_metadata.data.extracted_archive_set.archive_set.binaries)
+        list(artifact_metadata.data.extracted_archive_set.archive_set.binaries),
+        built_in_binary_recipes=binaries_util.BUILT_IN_BINARY_RECIPES_MAP,
+        custom_binary_artifacts_prefix=artifact_path,
     )
 
 
@@ -387,9 +390,8 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
     shader_jobs = get_shader_jobs(source_dir)
 
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
-    binary_manager = binaries_util.BinaryManager()
-    binary_manager = binary_manager.get_child_binary_manager(
-        list(test.device.binaries) + list(test.binaries)
+    binary_manager = binaries_util.get_default_binary_manager().get_child_binary_manager(
+        binary_list=list(test.device.binaries) + list(test.binaries)
     )
 
     spirv_opt_args = list(test.glsl.spirv_opt_args)
