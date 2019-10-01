@@ -149,10 +149,17 @@ def prepend_catchsegv_if_available(
     return cmd
 
 
+def copy_file_if_exists(source_file_path: Path, dest_file_path: Path) -> Optional[Path]:
+    if not source_file_path.is_file():
+        return None
+    return copy_file(source_file_path, dest_file_path)
+
+
 def copy_file(
     source_file_path: pathlib.Path, dest_file_path: pathlib.Path
 ) -> pathlib.Path:
     file_mkdirs_parent(dest_file_path)
+    gflogging.log(f"Copying {str(source_file_path)} to {str(dest_file_path)}")
     shutil.copy(str(source_file_path), str(dest_file_path))
     return dest_file_path
 

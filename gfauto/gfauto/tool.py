@@ -36,6 +36,7 @@ from gfauto import (
     test_util,
     util,
 )
+from gfauto.util import check
 
 AMBER_COMMAND_PROBE_TOP_LEFT_RED = "probe rgba (0, 0) (1, 0, 0, 1)\n"
 
@@ -44,6 +45,24 @@ AMBER_COMMAND_PROBE_TOP_LEFT_WHITE = "probe rgba (0, 0) (1, 1, 1, 1)\n"
 AMBER_COMMAND_EXPECT_RED = (
     "EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255\n"
 )
+
+
+@dataclass
+class NameAndShaderJob:
+    name: str
+    shader_job: Path
+
+
+@dataclass
+class ShaderPathWithNameAndSuffix:
+    name: str
+    suffix: str
+    path: Path
+
+
+ShaderSuffixToShaderOverride = Dict[str, ShaderPathWithNameAndSuffix]
+
+ShaderJobNameToShaderOverridesMap = Dict[str, ShaderSuffixToShaderOverride]
 
 
 def get_copyright_header_google(year: str) -> str:
@@ -177,35 +196,83 @@ def compile_shader_job(
     work_dir: Path,
     binary_paths: binaries_util.BinaryGetter,
     spirv_opt_args: Optional[List[str]] = None,
+    shader_overrides: Optional[ShaderSuffixToShaderOverride] = None,
 ) -> SpirvCombinedShaderJob:
 
     result = input_json
 
     glsl_source_shader_job: Optional[Path] = None
 
-    # If GLSL:
-    if shader_job_util.get_related_suffixes_that_exist(
+    glsl_suffixes = shader_job_util.get_related_suffixes_that_exist(
         result, language_suffix=(shader_job_util.SUFFIX_GLSL,)
-    ):
+    )
+
+    spirv_suffixes = shader_job_util.get_related_suffixes_that_exist(
+        result, language_suffix=[shader_job_util.SUFFIX_SPIRV]
+    )
+
+    # If GLSL:
+    if glsl_suffixes:
         glsl_source_shader_job = result
 
         result = shader_job_util.copy(result, work_dir / "0_glsl" / result.name)
 
+        if shader_overrides:
+            raise AssertionError("Shader overrides are not supported for GLSL")
+
         result = glslang_glsl_shader_job_to_spirv(
             result, work_dir / "1_spirv" / result.name, binary_paths
         )
-
     # If SPIR-V:
-    elif shader_job_util.get_related_suffixes_that_exist(
-        input_json, language_suffix=[shader_job_util.SUFFIX_SPIRV]
-    ):
+    elif spirv_suffixes:
+
         result = shader_job_util.copy(
             result,
             work_dir / "1_spirv" / result.name,
             # Copy all spirv-fuzz related files too:
             language_suffix=shader_job_util.SUFFIXES_SPIRV_FUZZ,
         )
+
+        if shader_overrides:
+            for suffix in spirv_suffixes:
+                shader_override = shader_overrides.get(suffix)
+                if shader_override:
+                    check(
+                        name == shader_override.name,
+                        AssertionError(
+                            f"shader job name {name} does not match shader override job name {shader_override.name}"
+                        ),
+                    )
+                    check(
+                        shader_override.suffix == suffix,
+                        AssertionError(
+                            f"shader suffix {suffix} does not match shader override suffix {shader_override.suffix}"
+                        ),
+                    )
+
+                    # These will be used as prefixes via .with_suffix().
+                    # E.g. path/to/temp.spv
+                    source_prefix = shader_override.path
+                    # E.g. path/to/shader.json -> path/to/shader.frag.spv
+                    dest_prefix = result.with_suffix(suffix)
+
+                    util.copy_file_if_exists(source_prefix, dest_prefix)
+                    util.copy_file_if_exists(
+                        source_prefix.with_suffix(
+                            shader_job_util.SUFFIX_TRANSFORMATIONS
+                        ),
+                        dest_prefix.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS),
+                    )
+                    util.copy_file_if_exists(
+                        source_prefix.with_suffix(
+                            shader_job_util.SUFFIX_TRANSFORMATIONS_JSON
+                        ),
+                        dest_prefix.with_suffix(
+                            shader_job_util.SUFFIX_TRANSFORMATIONS_JSON
+                        ),
+                    )
     else:
+        # result has not changed, which means nothing was executed above.
         raise AssertionError(f"Unrecognized shader job type: {str(input_json)}")
 
     result_spirv = result
@@ -257,10 +324,24 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
     )
 
 
-@dataclass
-class NameAndShaderJob:
-    name: str
-    shader_job: Path
+#
+# @dataclass
+# class Shader:
+#     suffix: str
+#     path: Path
+#
+#
+# @dataclass
+# class ShaderJob:
+#     name: str
+#     path: Path
+#     shader_files: Dict[str, Shader]
+#
+#
+# @dataclass
+# class SourceDirFiles:
+#     test_metadata: Path
+#     shader_jobs: Dict[str, ShaderJob]
 
 
 def get_shader_jobs(
@@ -333,10 +414,16 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
         for shader_job in shader_jobs
     ]
 
+    reference_asm_spirv_job: Optional[amber_converter.ShaderJobFile] = None
+
+    if shader_job_files[0].name_prefix == test_util.REFERENCE_DIR:
+        reference_asm_spirv_job = shader_job_files[0]
+        del shader_job_files[0]
+
     return amber_converter.spirv_asm_shader_job_to_amber_script(
         amber_converter.ShaderJobFileBasedAmberTest(
-            reference_asm_spirv_job=shader_job_files[0],
-            variants_asm_spirv_job=shader_job_files[1:],
+            reference_asm_spirv_job=reference_asm_spirv_job,
+            variants_asm_spirv_job=shader_job_files,
         ),
         output_amber,
         amber_converter.AmberfySettings(

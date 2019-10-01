@@ -372,8 +372,15 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
     test: Optional[Test] = None,
     device: Optional[Device] = None,
     ignore_test_and_device_binaries: bool = False,
-    shader_overrides: Iterable[tool.NameAndShaderJob] = (),
+    shader_job_overrides: Iterable[tool.NameAndShaderJob] = (),
+    shader_job_shader_overrides: Optional[
+        tool.ShaderJobNameToShaderOverridesMap
+    ] = None,
 ) -> Path:
+
+    if not shader_job_shader_overrides:
+        shader_job_shader_overrides = {}
+
     with util.file_open_text(output_dir / "log.txt", "w") as log_file:
         try:
             gflogging.push_stream_for_logging(log_file)
@@ -399,24 +406,36 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 )
 
             spirv_opt_hash: Optional[str] = None
-            if test.glsl.spirv_opt_args:
+            spirv_opt_args: Optional[List[str]] = None
+            if test.glsl.spirv_opt_args or test.spirv_fuzz.spirv_opt_args:
                 spirv_opt_hash = binary_manager.get_binary_by_name(
                     binaries_util.SPIRV_OPT_NAME
                 ).version
+                spirv_opt_args = (
+                    list(test.glsl.spirv_opt_args)
+                    if test.glsl.spirv_opt_args
+                    else list(test.spirv_fuzz.spirv_opt_args)
+                )
 
-            shader_jobs = tool.get_shader_jobs(source_dir, overrides=shader_overrides)
+            shader_jobs = tool.get_shader_jobs(
+                source_dir, overrides=shader_job_overrides
+            )
 
             combined_spirv_shader_jobs: List[tool.SpirvCombinedShaderJob] = []
 
             for shader_job in shader_jobs:
                 try:
+                    shader_overrides = shader_job_shader_overrides.get(
+                        shader_job.name, None
+                    )
                     combined_spirv_shader_jobs.append(
                         tool.compile_shader_job(
                             name=shader_job.name,
                             input_json=shader_job.shader_job,
                             work_dir=output_dir / shader_job.name,
                             binary_paths=binary_manager,
-                            spirv_opt_args=list(test.glsl.spirv_opt_args),
+                            spirv_opt_args=spirv_opt_args,
+                            shader_overrides=shader_overrides,
                         )
                     )
                 except subprocess.CalledProcessError:
@@ -432,11 +451,13 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
 
             # Device types: |preprocess| and |shader_compiler| don't need an AmberScript file.
 
+            # noinspection PyTypeChecker
             if device.HasField("preprocess"):
                 # The "preprocess" device type just needs to get this far, so this is a success.
                 result_util.write_status(output_dir, fuzz.STATUS_SUCCESS)
                 return output_dir
 
+            # noinspection PyTypeChecker
             if device.HasField("shader_compiler"):
                 for combined_spirv_shader_job in combined_spirv_shader_jobs:
                     try:
@@ -498,8 +519,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 ),
                 output_amber_script_file_path=output_dir / "test.amber",
                 amberfy_settings=amber_converter.AmberfySettings(
-                    spirv_opt_args=list(test.glsl.spirv_opt_args),
-                    spirv_opt_hash=spirv_opt_hash,
+                    spirv_opt_args=spirv_opt_args, spirv_opt_hash=spirv_opt_hash
                 ),
             )
 
@@ -510,9 +530,11 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 )
             )
 
+            # noinspection PyTypeChecker
             if device.HasField("host") or device.HasField("swift_shader"):
                 icd: Optional[Path] = None
 
+                # noinspection PyTypeChecker
                 if device.HasField("swift_shader"):
                     icd = binary_manager.get_binary_path_by_name(
                         binaries_util.SWIFT_SHADER_NAME
@@ -528,6 +550,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 )
                 return output_dir
 
+            # noinspection PyTypeChecker
             if device.HasField("android"):
 
                 android_device.run_amber_on_device(
@@ -560,24 +583,15 @@ def run_reduction(
 ) -> Path:
     test = test_util.metadata_read(test_dir_to_reduce)
 
-    check(
-        bool(test.device),
-        AssertionError(
-            f"Cannot reduce {str(test_dir_to_reduce)}; device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
-        ),
-    )
-
-    check(
-        bool(test.device.name),
-        AssertionError(
-            f"Cannot reduce {str(test_dir_to_reduce)}; device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
-        ),
-    )
+    if not test.device or not test.device.name:
+        raise AssertionError(
+            f"Cannot reduce {str(test_dir_to_reduce)}; "
+            f"device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
+        )
 
     if not test.crash_signature:
         raise AssertionError(
-            f"Cannot reduce {str(test_dir_to_reduce)} because there is no crash string specified; "
-            f"for now, only crash reductions are supported"
+            f"Cannot reduce {str(test_dir_to_reduce)} because there is no crash string specified."
         )
 
     # E.g. reports/crashes/no_signature/d50c96e8_opt_rand2_test_phone_ABC/results/phone_ABC/reductions/1
@@ -618,9 +632,7 @@ def run_reduction(
     check(
         final_reduced_shader_job_path.exists(),
         ReductionFailedError(
-            "Reduction failed; not yet handled",
-            reduction_name,
-            reduction_work_variant_dir,
+            "Reduction failed.", reduction_name, reduction_work_variant_dir
         ),
     )
 
@@ -654,8 +666,8 @@ def run_glsl_reduce(
         "--",
         "gfauto_interestingness_test",
         str(source_dir),
-        # --override_shader requires two parameters to follow; the second will be added by glsl-reduce (the shader.json file).
-        "--override_shader",
+        # --override_shader_job requires two parameters to follow; the second will be added by glsl-reduce (the shader.json file).
+        "--override_shader_job",
         str(name_of_shader_to_reduce),
     ]
 
@@ -674,40 +686,36 @@ def run_glsl_reduce(
     return output_dir
 
 
-def create_summary_and_reproduce_glsl(
-    test_dir: Path,
-    binary_manager: binaries_util.BinaryManager,
-    device: Optional[Device] = None,
+def create_summary_and_reproduce(
+    test_dir: Path, binary_manager: binaries_util.BinaryManager
 ) -> None:
     test_metadata = test_util.metadata_read(test_dir)
-    if not device:
-        device = test_metadata.device
 
     summary_dir = test_dir / "summary"
 
-    unreduced_glsl = util.copy_dir(
-        test_util.get_source_dir(test_dir), summary_dir / "unreduced_glsl"
+    unreduced = util.copy_dir(
+        test_util.get_source_dir(test_dir), summary_dir / "unreduced"
     )
 
     reduced_test_dir = test_util.get_reduced_test_dir(
         test_dir, test_metadata.device.name, fuzz.BEST_REDUCTION_NAME
     )
     reduced_source_dir = test_util.get_source_dir(reduced_test_dir)
-    reduced_glsl: Optional[Path] = None
+    reduced: Optional[Path] = None
     if reduced_source_dir.exists():
-        reduced_glsl = util.copy_dir(reduced_source_dir, summary_dir / "reduced_glsl")
+        reduced = util.copy_dir(reduced_source_dir, summary_dir / "reduced")
 
     run_shader_job(
-        source_dir=unreduced_glsl,
-        output_dir=(summary_dir / "unreduced_glsl_result"),
+        source_dir=unreduced,
+        output_dir=(summary_dir / "unreduced_result"),
         binary_manager=binary_manager,
     )
 
     variant_reduced_glsl_result: Optional[Path] = None
-    if reduced_glsl:
+    if reduced:
         variant_reduced_glsl_result = run_shader_job(
-            source_dir=reduced_glsl,
-            output_dir=(summary_dir / "reduced_glsl_result"),
+            source_dir=reduced,
+            output_dir=(summary_dir / "reduced_result"),
             binary_manager=binary_manager,
         )
 
@@ -729,17 +737,22 @@ def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
     variant_reduced_glsl_result_dir: Path,
     output_dir: Path,
     binary_manager: binaries_util.BinaryManager,
-) -> Path:
+) -> Optional[Path]:
     # Create a simple script and README.
 
     shader_job = reduced_glsl_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
+
+    if not shader_job.is_file():
+        return None
 
     test_metadata: Test = test_util.metadata_read_from_path(
         reduced_glsl_source_dir / test_util.TEST_METADATA
     )
 
     shader_files = shader_job_util.get_related_files(
-        shader_job, shader_job_util.EXT_ALL
+        shader_job,
+        shader_job_util.EXT_ALL,
+        (shader_job_util.SUFFIX_GLSL, shader_job_util.SUFFIX_SPIRV),
     )
     check(
         len(shader_files) > 0,
@@ -779,19 +792,26 @@ def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
         "Issue found using [GraphicsFuzz](https://github.com/google/graphicsfuzz).\n\n"
     )
     readme += "Tool versions:\n\n"
-    readme += f"* glslangValidator commit hash: {binary_manager.get_binary_by_name(binaries_util.GLSLANG_VALIDATOR_NAME).version}\n"
 
-    if test_metadata.glsl.spirv_opt_args:
+    # noinspection PyTypeChecker
+    if test_metadata.HasField("glsl"):
+        readme += f"* glslangValidator commit hash: {binary_manager.get_binary_by_name(binaries_util.GLSLANG_VALIDATOR_NAME).version}\n"
+
+    if test_metadata.glsl.spirv_opt_args or test_metadata.spirv_fuzz.spirv_opt_args:
         readme += f"* spirv-opt commit hash: {binary_manager.get_binary_by_name(binaries_util.SPIRV_OPT_NAME).version}\n"
 
     readme += "\nTo reproduce:\n\n"
     readme += f"`glslangValidator -V shader{shader_extension} -o shader{shader_extension}.spv`\n\n"
 
-    if spv_files and not test_metadata.glsl.spirv_opt_args:
-        # There was an .spv file and no spirv-opt, so validate the SPIR-V.
+    if (
+        test_metadata.HasField("glsl")
+        and spv_files
+        and not test_metadata.glsl.spirv_opt_args
+    ):
+        # GLSL was converted to SPIR-V, and spirv-opt was not run, so indicate that we should validate the SPIR-V.
         readme += f"`spirv-val shader{shader_extension}.spv`\n\n"
 
-    if test_metadata.glsl.spirv_opt_args:
+    if test_metadata.glsl.spirv_opt_args or test_metadata.spirv_fuzz.spirv_opt_args:
         readme += f"`spirv-opt shader{shader_extension}.spv -o temp.spv --validate-after-all {' '.join(test_metadata.glsl.spirv_opt_args)}`\n\n"
 
     files_to_list = glsl_files + spv_files + asm_files

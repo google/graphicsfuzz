@@ -50,7 +50,7 @@ from gfauto.gflogging import log
 #  be the same for all devices and it would look at the device info in the test_json?
 
 
-def main() -> None:  # pylint: disable=too-many-statements;
+def main() -> None:  # pylint: disable=too-many-statements, too-many-locals;
     parser = argparse.ArgumentParser(
         description="Interestingness test that runs a test using Amber, "
         "calculates the crash signature based on the result, and returns 0 "
@@ -62,11 +62,19 @@ def main() -> None:  # pylint: disable=too-many-statements;
         help="The source directory containing the shaders and the test.json file that describes how to run the test.",
     )
     parser.add_argument(
-        "--override_shader",
+        "--override_shader_job",
         nargs=2,
-        metavar=("shader_name", "shader_job_json"),
-        help='Override one of the shader jobs. E.g.: "--override_shader variant temp/variant.json". Note that '
-        "the output directory will be set to shader_job_json/ (with the .json extension removed) by default in this case.",
+        metavar=("shader_job_name", "shader_job_json"),
+        help='Override one of the shader jobs. E.g.: "--override_shader_job variant temp/variant.json". Note that '
+        "the output directory will be set to shader_job_json/ (with the .json extension removed) by default in this case. ",
+    )
+
+    parser.add_argument(
+        "--override_shader",
+        nargs=3,
+        metavar=("shader_name", "suffix", "shader_path"),
+        help='Override one of the shaders. E.g.: "--override_shader variant .frag.spv temp/my_shader.spv". Note that '
+        "the output directory will be set to shader_path/ (with the .spv extension removed) by default in this case. ",
     )
 
     parser.add_argument(
@@ -84,25 +92,27 @@ def main() -> None:  # pylint: disable=too-many-statements;
 
     parser.add_argument(
         "--output",
-        help="Output directory. Required unless --override_shader is used; in this case "
-        "the output will be shader_job_json/ (a directory alongside the shader json with the same name).",
+        help="Output directory. Required unless --override_shader[_job] is used; see --override_shader[_job] for details.",
         default=None,
     )
 
     parsed_args = parser.parse_args(sys.argv[1:])
 
     source_dir: Path = Path(parsed_args.source_dir)
-    override_shader: Optional[Tuple[str, str]] = parsed_args.override_shader
+    override_shader_job: Optional[Tuple[str, str]] = parsed_args.override_shader_job
+    override_shader: Optional[Tuple[str, str, str]] = parsed_args.override_shader
 
     use_default_binaries: bool = parsed_args.use_default_binaries
     fallback_binaries: bool = parsed_args.fallback_binaries or use_default_binaries
     output: Path
     if parsed_args.output:
         output = Path(parsed_args.output)
+    elif override_shader_job:
+        output = Path(override_shader_job[1]).with_suffix("")
     elif override_shader:
-        output = Path(override_shader[1]).with_suffix("")
+        output = Path(override_shader[2]).with_suffix("")
     else:
-        raise AssertionError("Need --output or --override_shader parameter.")
+        raise AssertionError("Need --output or --override_shader[_job] parameter.")
 
     artifact_util.recipes_write_built_in()
 
@@ -112,14 +122,31 @@ def main() -> None:  # pylint: disable=too-many-statements;
         binaries_util.BUILT_IN_BINARY_RECIPES_PATH_PREFIX,
     )
 
-    shader_overrides: List[tool.NameAndShaderJob] = []
+    shader_job_overrides: List[tool.NameAndShaderJob] = []
 
-    if override_shader:
-        shader_overrides.append(
+    if override_shader_job:
+        shader_job_overrides.append(
             tool.NameAndShaderJob(
-                name=override_shader[0], shader_job=Path(override_shader[1])
+                name=override_shader_job[0], shader_job=Path(override_shader_job[1])
             )
         )
+
+    shader_overrides: tool.ShaderJobNameToShaderOverridesMap = {}
+
+    if override_shader:
+        override = tool.ShaderPathWithNameAndSuffix(
+            name=override_shader[0],
+            suffix=override_shader[1],
+            path=Path(override_shader[2]),
+        )
+        shader_overrides[override.name] = {override.suffix: override}
+
+        # E.g. shader_overrides ==
+        # {
+        #   "variant": {
+        #     ".frag.spv": ShaderPathWithNameAndSuffix("variant", ".frag.spv", Path("path/to/shader.frag.spv"))
+        #   }
+        # }
 
     # We don't need to read this to run the shader, but we need it afterwards anyway.
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
@@ -130,15 +157,18 @@ def main() -> None:  # pylint: disable=too-many-statements;
         binary_manager=binary_manager,
         test=test,
         ignore_test_and_device_binaries=use_default_binaries,
-        shader_overrides=shader_overrides,
+        shader_job_overrides=shader_job_overrides,
+        shader_job_shader_overrides=shader_overrides,
     )
 
     log(
         f"gfauto_interestingness_test: finished running {str(source_dir)} in {str(output_dir)}."
     )
 
-    if override_shader:
-        log(f"The {override_shader[0]} shader was overridden with {override_shader[1]}")
+    if override_shader_job:
+        log(
+            f"The {override_shader_job[0]} shader was overridden with {override_shader_job[1]}"
+        )
 
     status = result_util.get_status(output_dir)
     if test.expected_status:
