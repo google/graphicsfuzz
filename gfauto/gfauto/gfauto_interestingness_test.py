@@ -29,7 +29,6 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from gfauto import (
-    artifact_util,
     binaries_util,
     fuzz,
     fuzz_glsl_test,
@@ -50,7 +49,7 @@ from gfauto.gflogging import log
 #  be the same for all devices and it would look at the device info in the test_json?
 
 
-def main() -> None:  # pylint: disable=too-many-statements, too-many-locals;
+def main() -> None:  # pylint: disable=too-many-statements, too-many-locals, too-many-branches;
     parser = argparse.ArgumentParser(
         description="Interestingness test that runs a test using Amber, "
         "calculates the crash signature based on the result, and returns 0 "
@@ -114,13 +113,10 @@ def main() -> None:  # pylint: disable=too-many-statements, too-many-locals;
     else:
         raise AssertionError("Need --output or --override_shader[_job] parameter.")
 
-    artifact_util.recipes_write_built_in()
+    binary_manager = binaries_util.get_default_binary_manager()
 
-    binary_manager = binaries_util.BinaryManager(
-        binaries_util.DEFAULT_BINARIES if fallback_binaries else [],
-        util.get_platform(),
-        binaries_util.BUILT_IN_BINARY_RECIPES_PATH_PREFIX,
-    )
+    if not fallback_binaries:
+        binary_manager = binary_manager.get_child_binary_manager(binary_list=[])
 
     shader_job_overrides: List[tool.NameAndShaderJob] = []
 

@@ -25,6 +25,7 @@ import os
 import pathlib
 import platform
 import shutil
+import uuid
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
@@ -42,7 +43,7 @@ MAX_SIGNED_INT_32 = pow(2, 31) - 1
 
 def file_open_binary(file: pathlib.Path, mode: str) -> BinaryIO:  # noqa VNE002
     check("b" in mode, AssertionError(f"|mode|(=={mode}) should contain 'b'"))
-    if "w" in mode:
+    if "w" in mode or "x" in mode:
         file_mkdirs_parent(file)
     # Type hint (no runtime check).
     result = cast(BinaryIO, open(str(file), mode))
@@ -51,7 +52,7 @@ def file_open_binary(file: pathlib.Path, mode: str) -> BinaryIO:  # noqa VNE002
 
 def file_open_text(file: pathlib.Path, mode: str) -> TextIO:  # noqa VNE002
     check("b" not in mode, AssertionError(f"|mode|(=={mode}) should not contain 'b'"))
-    if "w" in mode:
+    if "w" in mode or "x" in mode:
         file_mkdirs_parent(file)
     # Type hint (no runtime check).
     result = cast(TextIO, open(str(file), mode, encoding="utf-8", errors="ignore"))
@@ -75,6 +76,26 @@ def file_read_lines(file: pathlib.Path) -> List[str]:  # noqa VNE002
         return f.readlines()
 
 
+def file_write_text_atomic(file: Path, text: str) -> Path:  # noqa VNE002
+    """
+    Writes |text| to |file| atomically by first writing to a temporary file alongside |file| then renaming the
+    temporary file to |file|.
+
+    :param file:
+    :param text:
+    :return:
+    """
+    temp_file: Path = file.parent / get_random_name()
+    with file_open_text(temp_file, "x") as f:
+        f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    # Will not fail if dest already exists; will just silently replace dest.
+    os.replace(str(temp_file), str(file))
+
+    return file
+
+
 def file_write_text(file: pathlib.Path, text: str) -> Path:  # noqa VNE002
     with file_open_text(file, "w") as f:
         f.write(text)
@@ -95,7 +116,8 @@ def mkdir_p_new(path: Path) -> Path:  # noqa VNE002
 
 
 def mkdirs_p(path: pathlib.Path) -> Path:  # noqa VNE002
-    path.mkdir(parents=True, exist_ok=True)
+    # Use os.makedirs, as this is more likely to be atomic.
+    os.makedirs(str(path), exist_ok=True)
     return path
 
 
@@ -307,3 +329,7 @@ def create_zip(output_file_path: Path, entries: List[ZipEntry]) -> Path:
             file_handle.write(entry.path, entry.path_in_archive)
             gflogging.log(f"Adding: {entry.path} {entry.path_in_archive or ''}")
     return output_file_path
+
+
+def get_random_name() -> str:
+    return uuid.uuid4().hex

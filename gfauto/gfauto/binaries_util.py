@@ -31,8 +31,11 @@ from gfauto import artifact_util, recipe_wrap, test_util, util
 from gfauto.common_pb2 import Archive, ArchiveSet, Binary
 from gfauto.gflogging import log
 from gfauto.recipe_pb2 import Recipe, RecipeDownloadAndExtractArchiveSet
+from gfauto.util import check
 
-LATEST_GRAPHICSFUZZ_ARTIFACT = "//binaries/graphicsfuzz_v1.2.1"
+BINARY_RECIPES_PREFIX = "//binaries"
+
+LATEST_GRAPHICSFUZZ_ARTIFACT = f"{BINARY_RECIPES_PREFIX}/graphicsfuzz_v1.2.1"
 
 GLSLANG_VALIDATOR_NAME = "glslangValidator"
 SPIRV_OPT_NAME = "spirv-opt"
@@ -42,7 +45,9 @@ SWIFT_SHADER_NAME = "swift_shader_icd"
 
 SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG = "no-validate-after-all"
 
-BUILT_IN_BINARY_RECIPES_PATH_PREFIX = "//binaries"
+BUILT_IN_BINARY_RECIPES_PATH_PREFIX = f"{BINARY_RECIPES_PREFIX}/built_in"
+
+CUSTOM_BINARY_RECIPES_PATH_PREFIX = f"{BINARY_RECIPES_PREFIX}/custom"
 
 PLATFORM_SUFFIXES_DEBUG = ["Linux_x64_Debug", "Windows_x64_Debug", "Mac_x64_Debug"]
 PLATFORM_SUFFIXES_RELEASE = [
@@ -97,103 +102,6 @@ class BinaryPathNotFound(Exception):
         super().__init__(f"Could not find binary path for binary: \n{binary}")
 
 
-class BinaryManager(BinaryGetter):
-    """
-    Implements BinaryGetter.
-
-    An instance of BinaryManager is the main way that code accesses binaries. BinaryManger allows certain tests and/or
-    devices to override binaries by passing a list of binary versions that take priority, so the correct versions are
-    always used. Plus, the current platform will be used when deciding which binary to download and return.
-
-    See the Binary proto.
-
-    _binary_list: A list of Binary with name, version, configuration. This is used to map a binary name to a Binary.
-    _resolved_paths: A map containing: Binary (serialized bytes) -> Path
-    _binary_artifacts: A list of all available binary artifacts/recipes stored as tuples: (ArchiveSet, artifact_path).
-    """
-
-    _binary_list: List[Binary]
-    _resolved_paths: Dict[bytes, Path]
-    _binary_artifacts: List[Tuple[ArchiveSet, str]]
-
-    def __init__(
-        self,
-        binary_list: Optional[List[Binary]] = None,
-        platform: Optional[str] = None,
-        binary_artifacts_prefix: Optional[str] = BUILT_IN_BINARY_RECIPES_PATH_PREFIX,
-    ):
-        self._binary_list = binary_list or DEFAULT_BINARIES
-        self._resolved_paths = {}
-        self._platform = platform or util.get_platform()
-        self._binary_artifacts = []
-
-        if binary_artifacts_prefix:
-            self._binary_artifacts.extend(
-                artifact_util.binary_artifacts_find(binary_artifacts_prefix)
-            )
-
-    @staticmethod
-    def get_binary_list_from_test_metadata(test_json_path: Path) -> List[Binary]:
-        test_metadata = test_util.metadata_read_from_path(test_json_path)
-        result: List[Binary] = []
-        if test_metadata.device:
-            result.extend(test_metadata.device.binaries)
-        result.extend(test_metadata.binaries)
-        return result
-
-    def get_binary_path(self, binary: Binary) -> Path:
-        result = self._resolved_paths.get(binary.SerializePartialToString())
-        if result:
-            return result
-        log(f"Finding path of binary:\n{binary}")
-        binary_tags = set(binary.tags)
-        binary_tags.add(self._platform)
-        for (archive_set, artifact_path) in self._binary_artifacts:
-            for artifact_binary in archive_set.binaries:  # type: Binary
-                if artifact_binary.name != binary.name:
-                    continue
-                if artifact_binary.version != binary.version:
-                    continue
-                recipe_binary_tags = set(artifact_binary.tags)
-                if not binary_tags.issubset(recipe_binary_tags):
-                    continue
-                artifact_util.artifact_execute_recipe_if_needed(artifact_path)
-                result = artifact_util.artifact_get_inner_file_path(
-                    artifact_binary.path, artifact_path
-                )
-                self._resolved_paths[binary.SerializePartialToString()] = result
-                return result
-        raise BinaryPathNotFound(binary)
-
-    @staticmethod
-    def get_binary_by_name_from_list(name: str, binary_list: List[Binary]) -> Binary:
-        for binary in binary_list:
-            if binary.name == name:
-                return binary
-        raise BinaryNotFound(
-            f"Could not find binary named {name} in list:\n{binary_list}"
-        )
-
-    def get_binary_path_by_name(self, name: str) -> BinaryPathAndInfo:
-        binary = self.get_binary_by_name(name)
-        return BinaryPathAndInfo(self.get_binary_path(binary), binary)
-
-    def get_binary_by_name(self, name: str) -> Binary:
-        return self.get_binary_by_name_from_list(name, self._binary_list)
-
-    def get_child_binary_manager(self, binary_list: List[Binary]) -> "BinaryManager":
-        result = BinaryManager(
-            binary_list + self._binary_list,
-            self._platform,
-            binary_artifacts_prefix=None,
-        )
-        # pylint: disable=protected-access; This is fine since |result| is a BinaryManager.
-        result._resolved_paths = self._resolved_paths
-        # pylint: disable=protected-access; This is fine since |result| is a BinaryManager.
-        result._binary_artifacts = self._binary_artifacts
-        return result
-
-
 @attr.dataclass
 class ToolNameAndPath:
     name: str
@@ -245,7 +153,7 @@ def _get_built_in_binary_recipe_from_build_github_repo(
 
         result.append(
             recipe_wrap.RecipeWrap(
-                f"//binaries/{project_name}_{version_hash}_{platform_suffix}",
+                f"{BUILT_IN_BINARY_RECIPES_PATH_PREFIX}/{project_name}_{version_hash}_{platform_suffix}",
                 Recipe(
                     download_and_extract_archive_set=RecipeDownloadAndExtractArchiveSet(
                         archive_set=ArchiveSet(
@@ -325,7 +233,7 @@ def _get_built_in_glslang_version(
 def get_graphics_fuzz_121() -> List[recipe_wrap.RecipeWrap]:
     return [
         recipe_wrap.RecipeWrap(
-            "//binaries/graphicsfuzz_v1.2.1",
+            f"{BUILT_IN_BINARY_RECIPES_PATH_PREFIX}/graphicsfuzz_v1.2.1",
             Recipe(
                 download_and_extract_archive_set=RecipeDownloadAndExtractArchiveSet(
                     archive_set=ArchiveSet(
@@ -536,3 +444,134 @@ BUILT_IN_BINARY_RECIPES: List[recipe_wrap.RecipeWrap] = (
         build_version_hash="70e8d53b94227fed094975771d96f240f7d00911",
     )
 )
+
+BUILT_IN_BINARY_RECIPES_MAP: Dict[str, Recipe] = {
+    recipe_wrap.path: recipe_wrap.recipe for recipe_wrap in BUILT_IN_BINARY_RECIPES
+}
+
+
+class BinaryManager(BinaryGetter):
+    """
+    Implements BinaryGetter.
+
+    An instance of BinaryManager is the main way that code accesses binaries. BinaryManger allows certain tests and/or
+    devices to override binaries by passing a list of binary versions that take priority, so the correct versions are
+    always used. Plus, the current platform will be used when deciding which binary to download and return.
+
+    See the Binary proto.
+
+    _binary_list: A list of Binary with name, version, configuration. This is used to map a binary name to a Binary.
+    _resolved_paths: A map containing: Binary (serialized bytes) -> Path
+    _binary_artifacts: A list of all available binary artifacts/recipes stored as tuples: (ArchiveSet, artifact_path).
+    _built_in_binary_recipes: This is needed to pass to artifact_util.artifact_execute_recipe_if_needed() so that the
+    recipe file can be written on-demand from our in-memory list of built-in recipes.
+    """
+
+    _binary_list: List[Binary]
+    _resolved_paths: Dict[bytes, Path]
+    _binary_artifacts: List[Tuple[ArchiveSet, str]]
+    _built_in_binary_recipes: artifact_util.RecipeMap
+
+    def __init__(
+        self,
+        binary_list: Optional[List[Binary]] = None,
+        platform: Optional[str] = None,
+        built_in_binary_recipes: Optional[Dict[str, Recipe]] = None,
+        custom_binary_artifacts_prefix: Optional[str] = None,
+    ):
+        self._binary_list = binary_list or DEFAULT_BINARIES
+        self._resolved_paths = {}
+        self._platform = platform or util.get_platform()
+        self._binary_artifacts = []
+        self._built_in_binary_recipes = {}
+
+        # When changing this constructor, check self.get_child_binary_manager().
+
+        if built_in_binary_recipes:
+            self._built_in_binary_recipes = built_in_binary_recipes
+            # For each recipe, add a tuple (ArchiveSet, artifact_path) to self._binary_artifacts.
+            for (artifact_path, recipe) in self._built_in_binary_recipes.items():
+                check(
+                    recipe.HasField("download_and_extract_archive_set"),
+                    AssertionError(f"Bad built-in recipe: {recipe}"),
+                )
+                archive_set: RecipeDownloadAndExtractArchiveSet = recipe.download_and_extract_archive_set
+                self._binary_artifacts.append((archive_set.archive_set, artifact_path))
+
+        if custom_binary_artifacts_prefix:
+            self._binary_artifacts.extend(
+                artifact_util.binary_artifacts_find(custom_binary_artifacts_prefix)
+            )
+
+    @staticmethod
+    def get_binary_list_from_test_metadata(test_json_path: Path) -> List[Binary]:
+        test_metadata = test_util.metadata_read_from_path(test_json_path)
+        result: List[Binary] = []
+        if test_metadata.device:
+            result.extend(test_metadata.device.binaries)
+        result.extend(test_metadata.binaries)
+        return result
+
+    def get_binary_path(self, binary: Binary) -> Path:
+        result = self._resolved_paths.get(binary.SerializePartialToString())
+        if result:
+            return result
+        log(f"Finding path of binary:\n{binary}")
+        binary_tags = set(binary.tags)
+        binary_tags.add(self._platform)
+        for (archive_set, artifact_path) in self._binary_artifacts:
+            for artifact_binary in archive_set.binaries:  # type: Binary
+                if artifact_binary.name != binary.name:
+                    continue
+                if artifact_binary.version != binary.version:
+                    continue
+                recipe_binary_tags = set(artifact_binary.tags)
+                if not binary_tags.issubset(recipe_binary_tags):
+                    continue
+                artifact_util.artifact_execute_recipe_if_needed(
+                    artifact_path, self._built_in_binary_recipes
+                )
+                result = artifact_util.artifact_get_inner_file_path(
+                    artifact_binary.path, artifact_path
+                )
+                self._resolved_paths[binary.SerializePartialToString()] = result
+                return result
+        raise BinaryPathNotFound(binary)
+
+    @staticmethod
+    def get_binary_by_name_from_list(name: str, binary_list: List[Binary]) -> Binary:
+        for binary in binary_list:
+            if binary.name == name:
+                return binary
+        raise BinaryNotFound(
+            f"Could not find binary named {name} in list:\n{binary_list}"
+        )
+
+    def get_binary_path_by_name(self, name: str) -> BinaryPathAndInfo:
+        binary = self.get_binary_by_name(name)
+        return BinaryPathAndInfo(self.get_binary_path(binary), binary)
+
+    def get_binary_by_name(self, name: str) -> Binary:
+        return self.get_binary_by_name_from_list(name, self._binary_list)
+
+    def get_child_binary_manager(
+        self, binary_list: List[Binary], prepend: bool = False
+    ) -> "BinaryManager":
+        child_binary_list = binary_list
+        if prepend:
+            child_binary_list += self._binary_list
+        result = BinaryManager(child_binary_list, self._platform)
+        # pylint: disable=protected-access; This is fine since |result| is a BinaryManager.
+        result._resolved_paths = self._resolved_paths
+        # pylint: disable=protected-access; This is fine since |result| is a BinaryManager.
+        result._binary_artifacts = self._binary_artifacts
+        # pylint: disable=protected-access; This is fine since |result| is a BinaryManager.
+        result._built_in_binary_recipes = self._built_in_binary_recipes
+        return result
+
+
+def get_default_binary_manager() -> BinaryManager:
+    return BinaryManager(
+        built_in_binary_recipes=BUILT_IN_BINARY_RECIPES_MAP,
+        custom_binary_artifacts_prefix=CUSTOM_BINARY_RECIPES_PATH_PREFIX,
+    )

@@ -24,7 +24,6 @@ import random
 import secrets
 import shutil
 import sys
-import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -121,7 +120,7 @@ FUZZ_FAILURES_DIR_NAME = "fuzz_failures"
 
 def get_random_name() -> str:
     # TODO: could change to human-readable random name or the date.
-    return uuid.uuid4().hex
+    return util.get_random_name()
 
 
 def main() -> None:
@@ -139,13 +138,6 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--skip_writing_binary_recipes",
-        help="Don't write the default binary recipes to ROOT/binaries. "
-        "This is useful when running multiple, parallel instances of gfauto because otherwise the writes will race.",
-        action="store_true",
-    )
-
-    parser.add_argument(
         "--use_spirv_fuzz",
         help="Do fuzzing using spirv-fuzz, which must be on your PATH.",
         action="store_true",
@@ -157,27 +149,18 @@ def main() -> None:
     iteration_seed: Optional[int] = None if parsed_args.iteration_seed is None else int(
         parsed_args.iteration_seed
     )
-    skip_writing_binary_recipes: bool = parsed_args.skip_writing_binary_recipes
     use_spirv_fuzz: bool = parsed_args.use_spirv_fuzz
 
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
         try:
-            main_helper(
-                settings_path,
-                iteration_seed,
-                skip_writing_binary_recipes,
-                use_spirv_fuzz,
-            )
+            main_helper(settings_path, iteration_seed, use_spirv_fuzz)
         finally:
             gflogging.pop_stream_for_logging()
 
 
 def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many-statements;
-    settings_path: Path,
-    iteration_seed_override: Optional[int],
-    skip_writing_binary_recipes: bool,
-    use_spirv_fuzz: bool,
+    settings_path: Path, iteration_seed_override: Optional[int], use_spirv_fuzz: bool
 ) -> None:
 
     settings = settings_util.read_or_create(settings_path)
@@ -201,9 +184,6 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
             )
             util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
 
-    if not skip_writing_binary_recipes:
-        artifact_util.recipes_write_built_in()
-
     # Log a warning if there is no tool on the PATH for printing stack traces.
     util.prepend_catchsegv_if_available([], log_warning=True)
 
@@ -215,10 +195,8 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
 
     spirv_fuzz_shaders = sorted(spirv_fuzz_shaders_dir.rglob("*.json"))
 
-    binary_manager = binaries_util.BinaryManager(
-        list(settings.custom_binaries) + binaries_util.DEFAULT_BINARIES,
-        util.get_platform(),
-        binary_artifacts_prefix=binaries_util.BUILT_IN_BINARY_RECIPES_PATH_PREFIX,
+    binary_manager = binaries_util.get_default_binary_manager().get_child_binary_manager(
+        list(settings.custom_binaries), prepend=True
     )
 
     # For convenience, we add the default (i.e. newest) SwiftShader ICD (binary) to any swift_shader devices

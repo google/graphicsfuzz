@@ -23,7 +23,6 @@ from subprocess import CalledProcessError, TimeoutExpired
 from typing import Optional
 
 from gfauto import (
-    artifact_util,
     binaries_util,
     devices_util,
     fuzz,
@@ -66,8 +65,7 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
     active_devices = devices_util.get_active_devices(settings.device_list)
 
     # Binaries.
-    artifact_util.recipes_write_built_in()
-    binaries = binaries_util.BinaryManager()
+    binaries = binaries_util.get_default_binary_manager()
 
     work_dir = Path() / "temp" / f"cts_run_{fuzz.get_random_name()[:8]}"
 
