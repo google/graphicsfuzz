@@ -26,6 +26,7 @@ from attr import dataclass
 
 from gfauto import (
     amber_converter,
+    artifact_util,
     binaries_util,
     glslang_validator_util,
     shader_job_util,
@@ -34,7 +35,6 @@ from gfauto import (
     subprocess_util,
     test_util,
     util,
-    artifact_util,
 )
 from gfauto.util import check
 
