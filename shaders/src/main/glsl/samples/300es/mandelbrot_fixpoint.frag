@@ -1,7 +1,7 @@
 #version 300 es
 
 /*
- * Copyright 2018 The GraphicsFuzz Project Authors
+ * Copyright 2019 The GraphicsFuzz Project Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,35 +28,35 @@ vec3 pickColor(int i) {
 
 vec3 mand(float xCoord, float yCoord) 
 {
-	int xpos = (int)xCoord * 256;
-	int ypos = (int)yCoord * 256;
-	int height = (int)resolution.y * 256;
-	int width = (int)resolution.x * 256;
+  int xpos = int(xCoord) * 256;
+  int ypos = int(yCoord) * 256;
+  int height = int(resolution.y) * 256;
+  int width = int(resolution.x) * 256;
 
-	int c_re = ((xpos - width / 2) * 819) / width - 102;
-	int c_im = ((ypos - height / 2) * 819) / width;
+  int c_re = ((xpos - width / 2) * 819) / width - 102;
+  int c_im = ((ypos - height / 2) * 819) / width;
 
-	int x = 0, y = 0;
-	int iteration = 0;
-	for (int k = 0; k < 1000; k++) 
-	{
-		if (x * x + y * y > 262144) 
-		{
-			break;
-		}
-		int x_new = ((x * x - y * y) / 256 + c_re);
-		y = (2 * x * y / 256 + c_im);
-		x = x_new;
-		iteration++;
-	}
-	if (iteration < 1000) 
-	{
-		return pickColor(iteration);
-	}
-	else 
-	{
-		return vec3(0.0, 0.0, 0.5);
-	}
+  int x = 0, y = 0;
+  int iteration = 0;
+  for (int k = 0; k < 1000; k++) 
+  {
+    if (x * x + y * y > 262144) 
+    {
+      break;
+    }
+    int x_new = ((x * x - y * y) / 256 + c_re);
+    y = (2 * x * y / 256 + c_im);
+    x = x_new;
+    iteration++;
+  }
+  if (iteration < 1000) 
+  {
+    return pickColor(iteration);
+  }
+  else 
+  {
+    return vec3(0.0, 0.0, 0.5);
+  }
 }
 
 void main() {
@@ -73,3 +73,4 @@ void main() {
   sum /= vec3(16.0);
   _GLF_color = vec4(sum, 1.0);
 }
+
