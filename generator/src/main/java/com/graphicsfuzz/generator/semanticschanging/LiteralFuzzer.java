@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
@@ -48,6 +49,10 @@ public class LiteralFuzzer {
     if (type == BasicType.INT) {
       return Optional.of(new IntConstantExpr(
           String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN)));
+    }
+    if (type == BasicType.UINT) {
+      return Optional.of(new UIntConstantExpr(
+          String.valueOf(Math.abs(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN) + "u")));
     }
     if (type == BasicType.FLOAT) {
       return Optional.of(new FloatConstantExpr(LiteralFuzzer.randomFloatString(generator)));
