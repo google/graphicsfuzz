@@ -24,8 +24,11 @@ vec3 mand(float xCoord, float yCoord) {
   float height = resolution.y;
   float width = resolution.x;
 
-  float c_re = 0.8*(xCoord - width/2.0)*4.0/width - 0.4;
-  float c_im = 0.8*(yCoord - height/2.0)*4.0/width;
+  float xpos = xCoord * 0.1 + (resolution.x * 0.6);
+  float ypos = yCoord * 0.1 + (resolution.y * 0.4);
+
+  float c_re = 0.8*(xpos - width/2.0)*4.0/width - 0.4;
+  float c_im = 0.8*(ypos - height/2.0)*4.0/width;
   float x = 0.0, y = 0.0;
   int iteration = 0;
   for (int k = 0; k < 1000; k++) {
@@ -40,7 +43,7 @@ vec3 mand(float xCoord, float yCoord) {
   if (iteration < 1000) {
     return pickColor(iteration);
   } else {
-    return vec3(0.0);
+    return vec3(xCoord / resolution.x, 0.0, yCoord / resolution.y);
   }
 }
 
