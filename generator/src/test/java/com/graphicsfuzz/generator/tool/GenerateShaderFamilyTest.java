@@ -62,7 +62,7 @@ public class GenerateShaderFamilyTest {
   @Test
   public void testGenerateSmall300esShaderFamily() throws Exception {
     final String samplesSubdir = "300es";
-    final String referenceShaderName = "mandelbrot_blurry";
+    final String referenceShaderName = "mandelbrot_zoom";
     final int numVariants = 3;
     int seed = 2;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
