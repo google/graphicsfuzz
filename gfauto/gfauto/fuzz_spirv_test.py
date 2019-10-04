@@ -31,6 +31,7 @@ from gfauto import (
     gflogging,
     result_util,
     shader_job_util,
+    signature_util,
     spirv_fuzz_util,
     spirv_opt_util,
     subprocess_util,
@@ -87,18 +88,25 @@ def run(
     return result_util.get_status(result_output_dir)
 
 
-def run_spirv_fuzz_shrink(
+def run_spirv_reduce_or_shrink(
     source_dir: Path,
     name_of_shader_job_to_reduce: str,
-    transformation_suffix_to_reduce: str,
+    extension_to_reduce: str,
     output_dir: Path,
+    preserve_semantics: bool,
 ) -> Path:
     input_shader_job = source_dir / name_of_shader_job_to_reduce / test_util.SHADER_JOB
 
     original_spirv_file = input_shader_job.with_suffix(
-        transformation_suffix_to_reduce
-    ).with_suffix(shader_job_util.SUFFIX_SPIRV_ORIG)
-    transformations_file = input_shader_job.with_suffix(transformation_suffix_to_reduce)
+        extension_to_reduce + shader_job_util.SUFFIX_SPIRV_ORIG
+    )
+
+    transformed_spirv_file = input_shader_job.with_suffix(
+        extension_to_reduce + shader_job_util.SUFFIX_SPIRV
+    )
+    transformations_file = input_shader_job.with_suffix(
+        extension_to_reduce + shader_job_util.SUFFIX_TRANSFORMATIONS
+    )
 
     util.mkdirs_p(output_dir)
 
@@ -106,30 +114,42 @@ def run_spirv_fuzz_shrink(
 
     # E.g. transformation_suffix_to_reduce == ".frag.transformations"
 
-    # E.g. ".frag.spv"
-    shader_suffix_to_override = (
-        util.remove_end(
-            transformation_suffix_to_reduce, shader_job_util.SUFFIX_TRANSFORMATIONS
-        )
-        + shader_job_util.SUFFIX_SPIRV
-    )
+    # E.g. ".frag.??" -> ".frag.spv"
+    shader_suffix_to_override = extension_to_reduce + shader_job_util.SUFFIX_SPIRV
 
-    cmd = [
-        str(util.tool_on_path("spirv-fuzz")),
-        str(original_spirv_file),
-        "-o",
-        str(final_shader),
-        f"--shrink={str(transformations_file)}",
-        f"--shrinker-temp-file-prefix={str(output_dir / 'temp_')}",
-        # This ensures the arguments that follow are all positional arguments.
-        "--",
-        "gfauto_interestingness_test",
-        str(source_dir),
-        # --override_shader requires three parameters to follow; the third will be added by spirv-fuzz (the shader.spv file).
-        "--override_shader",
-        name_of_shader_job_to_reduce,
-        shader_suffix_to_override,
-    ]
+    if preserve_semantics:
+        cmd = [
+            str(util.tool_on_path("spirv-fuzz")),
+            str(original_spirv_file),
+            "-o",
+            str(final_shader),
+            f"--shrink={str(transformations_file)}",
+            f"--shrinker-temp-file-prefix={str(output_dir / 'temp_')}",
+            # This ensures the arguments that follow are all positional arguments.
+            "--",
+            "gfauto_interestingness_test",
+            str(source_dir),
+            # --override_shader requires three parameters to follow; the third will be added by spirv-fuzz (the shader.spv file).
+            "--override_shader",
+            name_of_shader_job_to_reduce,
+            shader_suffix_to_override,
+        ]
+    else:
+        cmd = [
+            str(util.tool_on_path("spirv-reduce")),
+            str(transformed_spirv_file),
+            "-o",
+            str(final_shader),
+            f"--temp-file-prefix={str(output_dir / 'temp_')}",
+            # This ensures the arguments that follow are all positional arguments.
+            "--",
+            "gfauto_interestingness_test",
+            str(source_dir),
+            # --override_shader requires three parameters to follow; the third will be added by spirv-reduce (the shader.spv file).
+            "--override_shader",
+            name_of_shader_job_to_reduce,
+            shader_suffix_to_override,
+        ]
 
     # Log the reduction.
     with util.file_open_text(output_dir / "command.log", "w") as f:
@@ -147,7 +167,7 @@ def run_reduction(
     test_dir_reduction_output: Path,
     test_dir_to_reduce: Path,
     shader_job_name_to_reduce: str,
-    transformation_suffix_to_reduce: str,
+    extension_to_reduce: str,
     preserve_semantics: bool,
     reduction_name: str = "reduction1",
 ) -> Path:
@@ -168,13 +188,6 @@ def run_reduction(
         ),
     )
 
-    check(
-        preserve_semantics,
-        AssertionError(
-            "preserve_semantics must be true for spirv reductions (for now)"
-        ),
-    )
-
     # E.g. reports/crashes/no_signature/d50c96e8_opt_rand2_test_phone_ABC/results/phone_ABC/reductions/1
     # Will contain work/ and source/
     reduced_test_dir = test_util.get_reduced_test_dir(
@@ -185,12 +198,22 @@ def run_reduction(
     output_dir = test_util.get_reduction_work_directory(
         reduced_test_dir, shader_job_name_to_reduce
     )
-    final_shader_path = run_spirv_fuzz_shrink(
-        source_dir=source_dir,
-        name_of_shader_job_to_reduce=shader_job_name_to_reduce,
-        transformation_suffix_to_reduce=transformation_suffix_to_reduce,
-        output_dir=output_dir,
-    )
+    if preserve_semantics:
+        final_shader_path = run_spirv_reduce_or_shrink(
+            source_dir=source_dir,
+            name_of_shader_job_to_reduce=shader_job_name_to_reduce,
+            extension_to_reduce=extension_to_reduce,
+            output_dir=output_dir,
+            preserve_semantics=preserve_semantics,
+        )
+    else:
+        final_shader_path = run_spirv_reduce_or_shrink(
+            source_dir=source_dir,
+            name_of_shader_job_to_reduce=shader_job_name_to_reduce,
+            extension_to_reduce=extension_to_reduce,
+            output_dir=output_dir,
+            preserve_semantics=preserve_semantics,
+        )
 
     check(
         final_shader_path.exists(),
@@ -204,33 +227,37 @@ def run_reduction(
 
     # And then replace the shader.
 
-    final_shader_prefix = final_shader_path.with_suffix("")
-
+    # Destination file. E.g. reductions/source/variant/shader.frag.spv
     output_shader_prefix = (
         test_util.get_source_dir(reduced_test_dir)
         / shader_job_name_to_reduce
         / test_util.SHADER_JOB
-    ).with_suffix(transformation_suffix_to_reduce)
+    ).with_suffix(extension_to_reduce + shader_job_util.SUFFIX_SPIRV)
 
     util.copy_file(
-        final_shader_prefix.with_suffix(shader_job_util.SUFFIX_SPIRV),
+        final_shader_path.with_suffix(shader_job_util.SUFFIX_SPIRV),
         output_shader_prefix.with_suffix(shader_job_util.SUFFIX_SPIRV),
     )
 
-    util.copy_file(
-        final_shader_prefix.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS),
-        output_shader_prefix.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS),
-    )
+    if preserve_semantics:
+        util.copy_file(
+            final_shader_path.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS),
+            output_shader_prefix.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS),
+        )
 
-    util.copy_file(
-        final_shader_prefix.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS_JSON),
-        output_shader_prefix.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS_JSON),
-    )
+        util.copy_file(
+            final_shader_path.with_suffix(shader_job_util.SUFFIX_TRANSFORMATIONS_JSON),
+            output_shader_prefix.with_suffix(
+                shader_job_util.SUFFIX_TRANSFORMATIONS_JSON
+            ),
+        )
 
     return reduced_test_dir
 
 
-def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
+def run_reduction_on_report(  # pylint: disable=too-many-locals;
+    test_dir: Path, reports_dir: Path
+) -> None:
     test = test_util.metadata_read(test_dir)
 
     check(
@@ -269,19 +296,37 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
         language_suffix=(shader_job_util.SUFFIX_TRANSFORMATIONS,),
     )
 
+    shader_spv_suffixes = shader_job_util.get_related_suffixes_that_exist(
+        shader_job_to_reduce.shader_job, language_suffix=(shader_job_util.SUFFIX_SPIRV,)
+    )
+
     try:
         reduced_test = test_dir
 
         for index, suffix in enumerate(shader_transformation_suffixes):
+            # E.g. .frag.transformations -> .frag
+            extension_to_reduce = str(Path(suffix).with_suffix(""))
             reduced_test = run_reduction(
                 test_dir_reduction_output=test_dir,
                 test_dir_to_reduce=reduced_test,
                 shader_job_name_to_reduce=shader_job_to_reduce.name,
-                transformation_suffix_to_reduce=suffix,
+                extension_to_reduce=extension_to_reduce,
                 preserve_semantics=True,
-                reduction_name=f"{index}_{suffix.split('.')[1]}",
+                reduction_name=f"0_{index}_{suffix.split('.')[1]}",
             )
-            # TODO: reduce without preserving semantics if crash.
+
+        if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
+            for index, suffix in enumerate(shader_spv_suffixes):
+                # E.g. .frag.spv -> .frag
+                extension_to_reduce = str(Path(suffix).with_suffix(""))
+                reduced_test = run_reduction(
+                    test_dir_reduction_output=test_dir,
+                    test_dir_to_reduce=reduced_test,
+                    shader_job_name_to_reduce=shader_job_to_reduce.name,
+                    extension_to_reduce=extension_to_reduce,
+                    preserve_semantics=False,
+                    reduction_name=f"1_{index}_{suffix.split('.')[1]}",
+                )
 
         device_name = test.device.name
 
