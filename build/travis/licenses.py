@@ -48,7 +48,7 @@ def get_extras():
             'comment': 'Used by angle',
             'name': 'libpng',
             'url': 'http://libpng.org/pub/png/libpng.html',
-            'license_file': 'build/licenses/libpng-LICENSE.txt',
+            'license_file': path('third_party', 'licenses', 'libpng-LICENSE.txt'),
             'license_url': '',
             'skipped': '',
         },
@@ -58,7 +58,16 @@ def get_extras():
             'name': 'minigbm',
             'url': 'https://chromium.googlesource.com/chromiumos/platform/minigbm/+/master',
             'license_url': '',
-            'license_file': 'build/licenses/minigbm.txt',
+            'license_file': path('third_party', 'licenses', 'minigbm.txt'),
+            'skipped': '',
+        },
+
+        'rapidjson': {
+            'comment': 'Used by angle',
+            'name': 'RapidJSON',
+            'url': 'https://github.com/TenCent/rapidjson',
+            'license_url': 'https://raw.githubusercontent.com/Tencent/rapidjson/6a6bed2759d42891f9e29a37b21315d3192890ed/license.txt',
+            'license_file': '',
             'skipped': '',
         },
 
@@ -107,14 +116,11 @@ def get_extras():
             'skipped': '',
         },
 
-        'vulkan-validationLayers': {
+        'vulkan-validation-layers': {
             'comment': 'Used by angle',
             'name': 'Vulkan Validation Layers - Vulkan Ecosystem Components',
             'url': 'https://github.com/KhronosGroup/Vulkan-ValidationLayers',
-            'license_url': [
-                'http://www.apache.org/licenses/LICENSE-2.0.txt',
-                'https://raw.githubusercontent.com/KhronosGroup/Vulkan-ValidationLayers/44b7b80e5e52f2962077346caa4ed175798d16df/COPYRIGHT.txt'
-            ],
+            'license_url': 'https://raw.githubusercontent.com/KhronosGroup/Vulkan-ValidationLayers/b8d149f81be4496ef8df11097e17365268ea832f/LICENSE.txt',
             'license_file': '',
             'skipped': '',
         },
@@ -166,11 +172,29 @@ def get_extras():
             'skipped': '',
         },
 
-        'llvm': {
+        'libbacktrace': {
+            'comment': 'Used by swiftshader',
+            'name': 'libbacktrace',
+            'url': 'https://github.com/ianlancetaylor/libbacktrace',
+            'license_url': 'https://raw.githubusercontent.com/ianlancetaylor/libbacktrace/5a99ff7fed66b8ea8f09c9805c138524a7035ece/LICENSE',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'llvm-7.0': {
             'comment': '',
-            'name': 'LLVM',
+            'name': 'LLVM 7.0',
             'url': 'https://llvm.org/',
-            'license_url': 'https://raw.githubusercontent.com/google/swiftshader/720aec1cd6ebf4c4d74326c5faaddd57ee351609/third_party/LLVM/LICENSE.TXT',
+            'license_url': 'https://raw.githubusercontent.com/google/swiftshader/ae022faf53b9f648324874063d7147ba7b555417/third_party/llvm-7.0/llvm/LICENSE.TXT',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'marl': {
+            'comment': '',
+            'name': 'Marl',
+            'url': 'https://github.com/google/marl',
+            'license_url': 'https://raw.githubusercontent.com/google/swiftshader/ae022faf53b9f648324874063d7147ba7b555417/third_party/marl/LICENSE',
             'license_file': '',
             'skipped': '',
         },
@@ -178,17 +202,8 @@ def get_extras():
         'stlport-cpp11-extension': {
             'comment': '',
             'name': 'stlport-cpp11-extension',
-            'url': 'https://github.com/google/swiftshader/tree/720aec1cd6ebf4c4d74326c5faaddd57ee351609/third_party/stlport-cpp11-extension',
+            'url': 'https://github.com/google/swiftshader/tree/ae022faf53b9f648324874063d7147ba7b555417/third_party/stlport-cpp11-extension',
             'license_url': 'http://www.apache.org/licenses/LICENSE-2.0.txt',
-            'license_file': '',
-            'skipped': '',
-        },
-
-        'subzero': {
-            'comment': '',
-            'name': 'Subzero from Chromium',
-            'url': 'https://github.com/google/swiftshader/tree/720aec1cd6ebf4c4d74326c5faaddd57ee351609/third_party/subzero',
-            'license_url': 'https://raw.githubusercontent.com/google/swiftshader/720aec1cd6ebf4c4d74326c5faaddd57ee351609/third_party/subzero/LICENSE.TXT',
             'license_file': '',
             'skipped': '',
         },
@@ -199,7 +214,7 @@ def get_extras():
             'name': 'OpenGL headers',
             'url': 'https://github.com/KhronosGroup/OpenGL-Registry',
             'license_url': '',
-            'license_file': 'build/licenses/opengl-headers.txt',
+            'license_file': path('third_party', 'licenses', 'opengl-headers.txt'),
             'skipped': '',
         },
 
@@ -208,7 +223,7 @@ def get_extras():
             'name': 'EGL headers',
             'url': 'https://github.com/KhronosGroup/EGL-Registry',
             'license_url': '',
-            'license_file': 'build/licenses/opengl-headers.txt',
+            'license_file': path('third_party', 'licenses', 'opengl-headers.txt'),
             'skipped': '',
         },
 
@@ -240,7 +255,7 @@ def get_extras():
         },
 
         'lodepng': {
-            'comment': '',
+            'comment': 'Used by Vulkan worker and Amber',
             'name': 'LodePNG',
             'url': 'https://github.com/lvandeve/lodepng',
             'license_url': 'https://raw.githubusercontent.com/lvandeve/lodepng/941de186edfc68bca5ba1043423d0937b4baf3c6/LICENSE',
@@ -269,7 +284,7 @@ def get_extras():
                     'https://www.shadertoy.com/view/lsKXDW',
                 ],
             'license_url': '',
-            'license_file': 'build/licenses/max-sills-shaders.txt',
+            'license_file': path('third_party', 'licenses', 'max-sills-shaders.txt'),
             'skipped': '',
         },
 
@@ -278,7 +293,7 @@ def get_extras():
             'name': 'Valters Mednis\' GLSL shaders',
             'url':'https://www.shadertoy.com/view/ltVGWG',
             'license_url': '',
-            'license_file': 'build/licenses/valters-mednis-shaders.txt',
+            'license_file': path('third_party', 'licenses', 'valters-mednis-shaders.txt'),
             'skipped': '',
         },
 
@@ -307,7 +322,7 @@ def get_extras():
             'name': 'Android support libraries',
             'url': 'https://source.android.com/',
             'license_url': '',
-            'license_file': 'build/licenses/android-support-libraries.txt',
+            'license_file': path('third_party', 'licenses', 'android-support-libraries.txt'),
             'skipped': '',
         },
 
@@ -360,7 +375,7 @@ def get_extras():
             'name': 'zt-process-killer',
             'url': 'https://github.com/zeroturnaround/zt-process-killer',
             'license_url': '',
-            'license_file': 'build/licenses/zt-process-killer.txt',
+            'license_file': path('third_party', 'licenses', 'zt-process-killer.txt'),
             'skipped': '',
         },
 
@@ -384,6 +399,117 @@ def get_extras():
             'skipped': '',
         },
 
+
+        'amber': {
+            'comment': '',
+            'name': 'Amber',
+            'url': 'https://github.com/google/amber',
+            'license_url': 'https://raw.githubusercontent.com/google/amber/ab41eacc3fba9ea3365a57b1712837cb4ed6d2c4/LICENSE',
+            'license_file': '',
+            'skipped': '',
+        },
+
+
+
+        'amdvlk': {
+            'comment': '',
+            'name': 'AMD Open Source Driver for Vulkan (AMDVLK)',
+            'url': 'https://github.com/GPUOpen-Drivers/AMDVLK',
+            'license_url': 'https://raw.githubusercontent.com/GPUOpen-Drivers/AMDVLK/808b6d5603653e6efa7a0da46b4f519f0c105b27/LICENSE.txt',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'cwpack': {
+            'comment': '',
+            'name': 'CWPack',
+            'url': 'https://github.com/clwi/CWPack',
+            'license_url': 'https://raw.githubusercontent.com/clwi/CWPack/43583ff9abe6f5e68602eccb24d5f5c3aceac51c/LICENSE',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'metrohash': {
+            'comment': '',
+            'name': 'MetroHash',
+            'url': 'https://github.com/jandrewrogers/MetroHash',
+            'license_url': 'https://raw.githubusercontent.com/jandrewrogers/MetroHash/690a521d9beb2e1050cc8f273fdabc13b31bf8f6/LICENSE',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'llvm': {
+            'comment': 'Used by AMDVLK',
+            'name': 'LLVM',
+            'url': 'https://llvm.org/',
+            'license_url': 'https://raw.githubusercontent.com/GPUOpen-Drivers/llvm/21b028dc97ee9b0c6629ff83c2924b3b80c5d6e7/LICENSE.TXT',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'llpc': {
+            'comment': '',
+            'name': 'LLVM-Based Pipeline Compiler (LLPC)',
+            'url': 'https://github.com/GPUOpen-Drivers/llpc',
+            'license_url': [
+                'https://raw.githubusercontent.com/GPUOpen-Drivers/llpc/8b8fc751408274f1f96064e183956d6fab1d54d1/LICENSE',
+                'https://raw.githubusercontent.com/GPUOpen-Drivers/AMDVLK/808b6d5603653e6efa7a0da46b4f519f0c105b27/LICENSE.txt',
+            ],
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'pal': {
+            'comment': '',
+            'name': 'Platform Abstraction Library (PAL)',
+            'url': 'https://github.com/GPUOpen-Drivers/pal',
+            'license_url': 'https://raw.githubusercontent.com/GPUOpen-Drivers/pal/3e28ea331cf8e7b0e5733e5bd7f7d16582c603c5/LICENSE.txt',
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'spvgen': {
+            'comment': '',
+            'name': 'SPVGEN',
+            'url': 'https://github.com/GPUOpen-Drivers/spvgen',
+            'license_url': [
+                'https://raw.githubusercontent.com/GPUOpen-Drivers/spvgen/2f31d1170e8a12a66168b23235638c4bbc43ecdc/LICENSE',
+                'https://raw.githubusercontent.com/GPUOpen-Drivers/AMDVLK/808b6d5603653e6efa7a0da46b4f519f0c105b27/LICENSE.txt',
+            ],
+            'license_file': '',
+            'skipped': '',
+        },
+
+        'xgl': {
+            'comment': '',
+            'name': 'Vulkan API Layer (XGL)',
+            'url': 'https://github.com/GPUOpen-Drivers/xgl',
+            'license_url': 'https://raw.githubusercontent.com/GPUOpen-Drivers/xgl/3252b6223947f9fc67399e0798b1062983925fce/LICENSE.txt',
+            'license_file': '',
+            'skipped': '',
+        },
+
+
+        'gfauto': {
+            'comment': '',
+            'name': 'GraphicsFuzz auto (gfauto)',
+            'url': 'https://github.com/google/graphicsfuzz/tree/dev/gfauto',
+            'license_url': 'https://raw.githubusercontent.com/google/graphicsfuzz/143f46a1298a2a1e012b8b3ab31fc87c2075e82f/LICENSE',
+            'license_file': '',
+            'skipped': '',
+        },
+
+
+        # Android stuff:
+
+        'bionic': {
+            'comment': '',
+            'name': 'Android bionic libc',
+            'url': 'https://android.googlesource.com/platform/bionic/',
+            'license_url': 'https://raw.githubusercontent.com/aosp-mirror/platform_bionic/48da33389b086d1a52524feee049d8219dc4a190/libc/NOTICE',
+            'license_file': '',
+            'skipped': '',
+        },
 
 
 
@@ -414,7 +540,7 @@ def get_maven_dependencies_populated():
             'name': 'The Alphanum Algorithm',
             'url': 'http://www.davekoelle.com/alphanum.html',
             'license_url': '',
-            'license_file': 'third_party/alphanum-comparator/LICENSE',
+            'license_file': path('third_party', 'alphanum-comparator', 'LICENSE'),
             'skipped': '',
         },
         'com.graphicsfuzz:assembly-binaries': {
@@ -470,7 +596,7 @@ def get_maven_dependencies_populated():
             'name': 'Animated GIF Writer',
             'url': 'http://elliot.kroo.net/software/java/GifSequenceWriter/',
             'license_url': '',
-            'license_file': 'third_party/gif-sequence-writer/LICENSE',
+            'license_file': path('third_party', 'gif-sequence-writer', 'LICENSE'),
             'skipped': '',
         },
         'com.graphicsfuzz.thirdparty:jquery-js': {
@@ -479,8 +605,8 @@ def get_maven_dependencies_populated():
             'url': 'https://jquery.org/',
             'license_url': '',
             'license_file': [
-                'third_party/jquery-js/LICENSE.txt',
-                'third_party/jquery-js/AUTHORS.txt',
+                path('third_party', 'jquery-js', 'LICENSE.txt'),
+                path('third_party', 'jquery-js', 'AUTHORS.txt'),
             ],
             'skipped': '',
         },
@@ -489,7 +615,7 @@ def get_maven_dependencies_populated():
             'name': 'six',
             'url': 'https://pypi.org/project/six/',
             'license_url': '',
-            'license_file': 'third_party/python-six/LICENSE',
+            'license_file': path('third_party', 'python-six', 'LICENSE'),
             'skipped': '',
         },
         'com.graphicsfuzz:python': {
@@ -513,7 +639,7 @@ def get_maven_dependencies_populated():
             'name': 'Semantic UI',
             'url': 'https://github.com/semantic-org/semantic-ui/',
             'license_url': '',
-            'license_file': 'third_party/semantic-ui/LICENSE',
+            'license_file': path('third_party', 'semantic-ui', 'LICENSE'),
             'skipped': '',
         },
         'com.graphicsfuzz:server-static-public': {
@@ -561,7 +687,7 @@ def get_maven_dependencies_populated():
             'name': 'Apache Thrift',
             'url': 'https://thrift.apache.org/',
             'license_url': '',
-            'license_file': ['third_party/thrift-js/NOTICE', 'third_party/thrift-js/LICENSE'],
+            'license_file': [path('third_party', 'thrift-js', 'NOTICE'), path('third_party', 'thrift-js', 'LICENSE')],
             'skipped': '',
         },
         'com.graphicsfuzz.thirdparty:thrift-py': {
@@ -780,7 +906,7 @@ def get_maven_dependencies_populated():
             'name': 'JavaCPP',
             'url': 'https://github.com/bytedeco/javacpp',
             'license_url': '',
-            'license_file': 'build/licenses/javacpp.txt',
+            'license_file': path('third_party', 'licenses', 'javacpp.txt'),
             'skipped': '',
         },
         'org.bytedeco.javacpp-presets:opencv': {
@@ -788,7 +914,7 @@ def get_maven_dependencies_populated():
             'name': 'JavaCPP Presets (OpenCV)',
             'url': 'https://github.com/bytedeco/javacpp-presets',
             'license_url': '',
-            'license_file': 'build/licenses/javacpp.txt',
+            'license_file': path('third_party', 'licenses', 'javacpp.txt'),
             'skipped': '',
         },
         'org.eclipse.jetty:jetty-http': {
@@ -954,9 +1080,11 @@ def go():
             errors='ignore') as fout:
 
         fout.write('\n')
+        fout.write('Open source licenses for the GraphicsFuzz project.\n')
+        fout.write('https://github.com/google/graphicsfuzz\n\n')
         fout.write('Summary of projects:\n\n')
 
-        for (dep, details) in dependencies_populated.items():
+        for (dep, details) in sorted(dependencies_populated.items(), key=lambda x: x[1]['name'].lower()):
             print('Dependency: ' + dep)
             if len(details['skipped']) > 0:
                 print('Skipping (' + details['skipped'] + ')')
