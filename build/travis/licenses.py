@@ -1071,6 +1071,8 @@ def go():
             print('Missing dependency license information ' + dep)
             sys.exit(1)
 
+    dependencies_populated_list = sorted(dependencies_populated.items(), key=lambda x: x[1]['name'].lower())
+
     # Write an OPEN_SOURCE_LICENSES.TXT file.
     with io.open(
             'OPEN_SOURCE_LICENSES.TXT',
@@ -1084,7 +1086,7 @@ def go():
         fout.write('https://github.com/google/graphicsfuzz\n\n')
         fout.write('Summary of projects:\n\n')
 
-        for (dep, details) in sorted(dependencies_populated.items(), key=lambda x: x[1]['name'].lower()):
+        for (dep, details) in dependencies_populated_list:
             print('Dependency: ' + dep)
             if len(details['skipped']) > 0:
                 print('Skipping (' + details['skipped'] + ')')
@@ -1103,7 +1105,7 @@ def go():
         fout.write('\n')
         fout.write('All projects and licenses:\n')
 
-        for (dep, details) in dependencies_populated.items():
+        for (dep, details) in dependencies_populated_list:
             print('Dependency: ' + dep)
             if len(details['skipped']) > 0:
                 print('Skipping (' + details['skipped'] + ')')
