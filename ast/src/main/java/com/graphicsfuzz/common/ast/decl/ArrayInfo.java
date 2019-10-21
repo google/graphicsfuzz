@@ -17,27 +17,48 @@
 package com.graphicsfuzz.common.ast.decl;
 
 import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import java.util.Optional;
 
 public class ArrayInfo implements IAstNode {
 
-  private Optional<Integer> size;
+  private Optional<Expr> size;
+  private Optional<Expr> originalSize;
 
-  public ArrayInfo(Integer size) {
+  public ArrayInfo(Expr size) {
     this.size = Optional.of(size);
+    this.originalSize = Optional.of(size);
   }
 
   public ArrayInfo() {
     this.size = Optional.empty();
+    this.originalSize = Optional.empty();
   }
 
   public boolean hasSize() {
     return size.isPresent();
   }
 
-  public Integer getSize() {
+  public Integer getSize() throws UnsupportedLanguageFeatureException {
+    if (size.get() instanceof IntConstantExpr) {
+      return ((IntConstantExpr)size.get()).getNumericValue();
+    }
+    throw new UnsupportedLanguageFeatureException("Not a constant expression");
+  }
+
+  public Expr getSizeExpr() {
     return size.get();
+  }
+
+  public void setSizeExpr(Expr expr) {
+    this.size = Optional.of(expr);
+  }
+
+  public Expr getOriginalSizeExpr() {
+    return originalSize.get();
   }
 
   @Override
@@ -47,7 +68,7 @@ public class ArrayInfo implements IAstNode {
 
   @Override
   public ArrayInfo clone() {
-    return hasSize() ? new ArrayInfo(getSize()) : new ArrayInfo();
+    return hasSize() ? new ArrayInfo(getSizeExpr()) : new ArrayInfo();
   }
 
   @Override

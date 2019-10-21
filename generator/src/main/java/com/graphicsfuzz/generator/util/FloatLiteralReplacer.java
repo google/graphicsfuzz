@@ -79,7 +79,7 @@ public class FloatLiteralReplacer extends StandardVisitor {
       tu.addDeclaration(new VariablesDeclaration(
           new QualifiedType(BasicType.FLOAT, Arrays.asList(TypeQualifier.UNIFORM)),
           new VariableDeclInfo(Constants.FLOAT_CONST,
-              new ArrayInfo(uniformIndex), null)
+              new ArrayInfo(new IntConstantExpr(Integer.toString(uniformIndex))), null)
       ));
     }
   }

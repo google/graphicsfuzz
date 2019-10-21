@@ -566,17 +566,61 @@ public class ParseHelperTest {
   }
 
   @Test
-  public void testUnsupportedArrayLength() throws Exception {
-
-    // Change this test to check for support if it is eventually introduced.
-
+  public void
+  testSupportedArrayLength() throws Exception {
     try {
       ParseHelper.parse("void main() {\n"
           + "  int A[3 + 4];\n"
           + "}\n");
-      fail("Exception was expected");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 - 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 * 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 / 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 << 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 >> 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[(3 + 4)];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 && 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 & 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 || 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 | 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 ^^ 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 ^ 4];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3 + 4 + 5];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  const int v = 5;\n"
+          + "  int A[3 + v];\n"
+          + "}\n");
+      ParseHelper.parse("void main() {\n"
+          + "  const int v = 5;\n"
+          + "  int A[(((3 + 4) * v) >> 2) && 7];\n"
+          + "}\n");
     } catch (UnsupportedLanguageFeatureException exception) {
-      assertTrue(exception.getMessage().contains("Unable to construct array info"));
+      fail(exception.getMessage());
     }
   }
 

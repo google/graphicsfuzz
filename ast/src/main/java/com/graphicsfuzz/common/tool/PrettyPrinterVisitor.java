@@ -175,10 +175,14 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       first = false;
       out.append(vdi.getName());
       if (vdi.hasArrayInfo()) {
-        out.append("[" + vdi.getArrayInfo().getSize() + "]");
+        out.append("[");
+        visit(vdi.getArrayInfo().getOriginalSizeExpr());
+        out.append("]");
         assert !(baseType instanceof ArrayType);
       } else if (baseType instanceof ArrayType) {
-        out.append("[" + ((ArrayType) baseType).getArrayInfo().getSize() + "]");
+        out.append("[");
+        visit(((ArrayType) baseType).getArrayInfo().getOriginalSizeExpr());
+        out.append("]");
       }
       if (vdi.hasInitializer()) {
         out.append(" = ");
@@ -222,7 +226,9 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       out.append(" " + parameterDecl.getName());
     }
     if (parameterDecl.getArrayInfo() != null) {
-      out.append("[" + parameterDecl.getArrayInfo().getSize() + "]");
+      out.append("[");
+      visit(parameterDecl.getArrayInfo().getOriginalSizeExpr());
+      out.append("]");
     }
   }
 
@@ -515,7 +521,9 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
     visit(arrayConstructorExpr.getArrayType());
-    out.append("[" + arrayConstructorExpr.getArrayType().getArrayInfo().getSize() + "](");
+    out.append("[");
+    visit(arrayConstructorExpr.getArrayType().getArrayInfo().getOriginalSizeExpr());
+    out.append("](");
     boolean first = true;
     for (Expr e : arrayConstructorExpr.getArgs()) {
       if (!first) {
@@ -553,9 +561,11 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     }
     ArrayType arrayType = (ArrayType) type.getWithoutQualifiers();
     while (true) {
-      out.append("["
-          + (arrayType.getArrayInfo().hasSize() ? arrayType.getArrayInfo().getSize() : "")
-          + "]");
+      out.append("[");
+      if (arrayType.getArrayInfo().hasSize()) {
+        visit(arrayType.getArrayInfo().getOriginalSizeExpr());
+      }
+      out.append("]");
       if (!(arrayType.getBaseType().getWithoutQualifiers() instanceof ArrayType)) {
         break;
       }

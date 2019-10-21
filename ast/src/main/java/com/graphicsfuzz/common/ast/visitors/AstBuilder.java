@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.common.ast.visitors;
 
+import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
@@ -85,6 +87,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.UnknownLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.parser.GLSLBaseVisitor;
 import com.graphicsfuzz.parser.GLSLParser;
@@ -195,9 +198,124 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     topLevelDeclarations.add(decl);
   }
 
+  private static TranslationUnit fixUpArraySizes(TranslationUnit tu) {
+    // Use a private class that extends ScopeTrackingVisitor to do the patching up.
+    new ScopeTrackingVisitor() {
+      public Expr reduce(Expr expr) {
+
+        if (expr instanceof IntConstantExpr) {
+          return expr;
+        }
+        if (expr instanceof VariableIdentifierExpr) {
+          Expr newexpr =
+              getCurrentScope()
+                  .lookupScopeEntry(((VariableIdentifierExpr) expr).getName())
+                  .getVariableDeclInfo()
+                  .getInitializer()
+                  .getExpr();
+          return reduce(newexpr);
+        }
+        if (expr instanceof ParenExpr) {
+          return reduce(((ParenExpr)expr).getExpr());
+        }
+        if (expr instanceof BinaryExpr) {
+          BinaryExpr bexpr = (BinaryExpr) expr;
+
+          Expr lexpr = reduce(bexpr.getLhs());
+          Expr rexpr = reduce(bexpr.getRhs());
+
+          if (!(lexpr instanceof IntConstantExpr && rexpr instanceof IntConstantExpr)) {
+            throw new RuntimeException("Unable to fold constant " + bexpr.getText());
+          }
+
+          int lval = ((IntConstantExpr) lexpr).getNumericValue();
+          int rval = ((IntConstantExpr) rexpr).getNumericValue();
+          int fval = 0;
+          switch (bexpr.getOp()) {
+            case MOD:
+              fval = lval % rval;
+              break;
+            case MUL:
+              fval = lval * rval;
+              break;
+            case DIV:
+              if (rval == 0) {
+                throw new RuntimeException("Division by zero folding constant " + bexpr.getText());
+              }
+              fval = lval / rval;
+              break;
+            case ADD:
+              fval = lval + rval;
+              break;
+            case SUB:
+              fval = lval - rval;
+              break;
+            case BAND:
+              fval = lval & rval;
+              break;
+            case BOR:
+              fval = lval | rval;
+              break;
+            case BXOR:
+              fval = lval ^ rval;
+              break;
+            case LAND:
+              fval = ((lval != 0) && (rval != 0)) ? 1 : 0;
+              break;
+            case LOR:
+              fval = ((lval != 0) || (rval != 0)) ? 1 : 0;
+              break;
+            case LXOR:
+              fval = ((lval == 0) != (rval == 0)) ? 1 : 0;
+              break;
+            case SHL:
+              fval = lval << rval;
+              break;
+            case SHR:
+              fval = lval >> rval;
+              break;
+            case LT:
+              fval = (lval < rval) ? 1 : 0;
+              break;
+            case GT:
+              fval = (lval > rval) ? 1 : 0;
+              break;
+            case LE:
+              fval = (lval <= rval) ? 1 : 0;
+              break;
+            case GE:
+              fval = (lval >= rval) ? 1 : 0;
+              break;
+            case EQ:
+              fval = (lval == rval) ? 1 : 0;
+              break;
+            case NE:
+              fval = (lval != rval) ? 1 : 0;
+              break;
+            default:
+              throw new RuntimeException("Unable to fold constant " + bexpr.getText());
+          }
+          return new IntConstantExpr(Integer.toString(fval));
+        }
+        throw new RuntimeException("Unable to fold constant " + expr.getText());
+      }
+
+      @Override
+      public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
+        if (variableDeclInfo.hasArrayInfo() && variableDeclInfo.getArrayInfo().hasSize()) {
+          Expr expr = variableDeclInfo.getArrayInfo().getSizeExpr();
+          expr = reduce(expr);
+          variableDeclInfo.getArrayInfo().setSizeExpr(expr);
+        }
+        super.visitVariableDeclInfo(variableDeclInfo);
+      }
+    }.visit(tu);
+    return tu;
+  }
+
   public static TranslationUnit getTranslationUnit(Translation_unitContext ctx,
                                                    ShaderKind shaderKind, boolean hasWebGlHint) {
-    return new AstBuilder(shaderKind, hasWebGlHint).visitTranslation_unit(ctx);
+    return fixUpArraySizes(new AstBuilder(shaderKind, hasWebGlHint).visitTranslation_unit(ctx));
   }
 
   @Override
@@ -426,11 +544,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       return new ArrayInfo();
     }
     final Expr expr = (Expr) visit(arraySpecifierContext.constant_expression());
-    if (expr instanceof IntConstantExpr) {
-      return new ArrayInfo(Integer.parseInt(((IntConstantExpr) expr).getValue()));
-    }
-    throw new UnsupportedLanguageFeatureException("Unable to construct array info for array with "
-        + "size " + expr.getText());
+    return new ArrayInfo(expr);
   }
 
   private BuiltinType getBuiltinType(Builtin_type_specifier_nonarrayContext ctx) {

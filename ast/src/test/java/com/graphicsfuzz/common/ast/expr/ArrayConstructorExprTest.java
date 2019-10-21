@@ -36,7 +36,7 @@ public class ArrayConstructorExprTest {
         "vec4", new FloatConstantExpr("0.0"));
     arrayConstructor = new ArrayConstructorExpr(new ArrayType(
         BasicType.VEC4,
-        new ArrayInfo(3)),
+        new ArrayInfo(new IntConstantExpr("3"))),
         Arrays.asList(temp.clone(), temp.clone(), temp.clone())
     );
   }
