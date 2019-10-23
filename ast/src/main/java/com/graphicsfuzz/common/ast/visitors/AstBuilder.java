@@ -251,7 +251,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
               break;
             case DIV:
               if (rval == 0) {
-                throw new RuntimeException("Division by zero while folding constant " + bexpr.getText());
+                throw new RuntimeException("Division by zero while folding constant "
+                    + bexpr.getText());
               }
               fval = lval / rval;
               break;
@@ -309,7 +310,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
           }
           return new IntConstantExpr(Integer.toString(fval));
         }
-        throw new RuntimeException("Unable to fold constant (unimplemented expression) " + expr.getText());
+        throw new RuntimeException("Unable to fold constant (unimplemented expression) "
+            + expr.getText());
       }
 
       @Override

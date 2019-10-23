@@ -46,8 +46,8 @@ public class ArrayInfo implements IAstNode {
   /**
    * Private constructor for cloning, needed since the constant size expression may have been
    * folded by the time the expression is cloned.
-   * @param constantSize
-   * @param originalSize
+   * @param constantSize Possibly constant-folded size
+   * @param originalSize Original size, for pretty printing
    */
   private ArrayInfo(Expr constantSize, Expr originalSize) {
     this.constantSize = Optional.of(constantSize.clone());
