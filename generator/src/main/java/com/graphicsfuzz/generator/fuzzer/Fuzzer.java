@@ -177,7 +177,7 @@ public class Fuzzer {
       if (!shadingLanguageVersion.restrictedArrayIndexing()) {
         ArrayType arrayType = (ArrayType) targetType;
         List<Expr> args = new ArrayList<>();
-        for (int i = 0; i < arrayType.getArrayInfo().getSize(); i++) {
+        for (int i = 0; i < arrayType.getArrayInfo().getConstantSize(); i++) {
           args.add(makeExpr(arrayType.getBaseType(), isLValue, constContext, depth + 1));
         }
         return new ArrayConstructorExpr((ArrayType) stripQualifiers(targetType), args);

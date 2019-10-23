@@ -88,7 +88,7 @@ public class MakeArrayAccessesInBounds extends ScopeTrackingVisitor {
   private static Integer getSize(Type type) {
     assert isArrayVectorOrMatrix(type);
     if (type instanceof ArrayType) {
-      return ((ArrayType) type).getArrayInfo().getSize();
+      return ((ArrayType) type).getArrayInfo().getConstantSize();
     }
     if (BasicType.allVectorTypes().contains(type)) {
       return ((BasicType) type).getNumElements();

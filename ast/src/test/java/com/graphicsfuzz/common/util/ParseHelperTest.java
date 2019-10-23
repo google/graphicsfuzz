@@ -26,8 +26,10 @@ import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
+import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
+import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
@@ -565,60 +567,80 @@ public class ParseHelperTest {
     return writer.toString();
   }
 
+  /**
+   * Validate folding in testSupportedArrayLength. We know that the array is the last statement
+   * in the function, but it may not be the first.
+   * @param shaderSource Source code for the shader to test
+   * @param expectedSize Expected size of the array
+   * @throws Exception Producing the AST may throw exceptions
+   */
+  private void
+  validateFolding(String shaderSource, int expectedSize) throws Exception
+  {
+    final BlockStmt block = ParseHelper.parse(shaderSource)
+        .getMainFunction().getBody();
+    assertTrue(((DeclarationStmt)block.getStmt(block.getNumStmts()-1)).getVariablesDeclaration()
+        .getDeclInfo(0).getArrayInfo().getConstantSize() == expectedSize);
+  }
+
+  /**
+   * Test various forms of statements that may occur inside array size declaration
+   * @throws Exception Producing the AST may throw exceptions
+   */
   @Test
   public void
   testSupportedArrayLength() throws Exception {
     try {
-      ParseHelper.parse("void main() {\n"
+      validateFolding("void main() {\n"
           + "  int A[3 + 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
-          + "  int A[3 - 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
+          + "}\n",7);
+      validateFolding("void main() {\n"
+          + "  int A[4 - 3];\n"
+          + "}\n",1);
+      validateFolding("void main() {\n"
           + "  int A[3 * 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
-          + "  int A[3 / 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
-          + "  int A[3 << 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
-          + "  int A[3 >> 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
+          + "}\n", 12);
+      validateFolding("void main() {\n"
+          + "  int A[4 / 2];\n"
+          + "}\n", 2);
+      validateFolding("void main() {\n"
+          + "  int A[3 << 2];\n"
+          + "}\n", 12);
+      validateFolding("void main() {\n"
+          + "  int A[8 >> 2];\n"
+          + "}\n", 2);
+      validateFolding("void main() {\n"
           + "  int A[(3 + 4)];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
+          + "}\n", 7);
+      validateFolding("void main() {\n"
           + "  int A[3 && 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
-          + "  int A[3 & 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
+          + "}\n", 1);
+      validateFolding("void main() {\n"
+          + "  int A[3 & 5];\n"
+          + "}\n", 1);
+      validateFolding("void main() {\n"
           + "  int A[3 || 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
+          + "}\n", 1);
+      validateFolding("void main() {\n"
           + "  int A[3 | 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
+          + "}\n", 7);
+      validateFolding("void main() {\n"
           + "  int A[3 ^^ 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
+          + "}\n", 0);
+      validateFolding("void main() {\n"
           + "  int A[3 ^ 4];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
+          + "}\n", 7);
+      validateFolding("void main() {\n"
           + "  int A[3 + 4 + 5];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
+          + "}\n", 12);
+      validateFolding("void main() {\n"
           + "  const int v = 5;\n"
           + "  int A[3 + v];\n"
-          + "}\n");
-      ParseHelper.parse("void main() {\n"
+          + "}\n", 8);
+      validateFolding("void main() {\n"
           + "  const int v = 5;\n"
           + "  int A[(((3 + 4) * v) >> 2) && 7];\n"
-          + "}\n");
+          + "}\n", 1);
     } catch (UnsupportedLanguageFeatureException exception) {
       fail(exception.getMessage());
     }

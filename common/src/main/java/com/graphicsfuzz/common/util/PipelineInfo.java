@@ -143,7 +143,7 @@ public final class PipelineInfo {
         }
         int arrayLength;
         if (vdi.hasArrayInfo()) {
-          arrayLength = vdi.getArrayInfo().getSize();
+          arrayLength = vdi.getArrayInfo().getConstantSize();
         } else {
           arrayLength = 1;
         }
@@ -167,7 +167,7 @@ public final class PipelineInfo {
 
   private Optional<Integer> maybeGetArrayCount(VariableDeclInfo vdi) {
     if (vdi.hasArrayInfo()) {
-      return Optional.of(vdi.getArrayInfo().getSize());
+      return Optional.of(vdi.getArrayInfo().getConstantSize());
     }
     return Optional.empty();
   }

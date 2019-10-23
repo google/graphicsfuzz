@@ -47,6 +47,17 @@ public class PrettyPrinterVisitorTest {
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Test
+  public void testArraySizeExpression() throws Exception {
+    final String program = ""
+        + "void main()\n"
+        + "{\n"
+        + " int a[3 + 4];\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
+  }
+
+  @Test
   public void testParseAndPrint() throws Exception {
     final String program = ""
         + "struct A {\n"

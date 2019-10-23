@@ -198,9 +198,19 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     topLevelDeclarations.add(decl);
   }
 
+  /**
+   * Performs constant folding for array size fields
+   * @param tu Parsed syntax tree to scan and modify
+   * @return Modified syntax tree
+   */
   private static TranslationUnit fixUpArraySizes(TranslationUnit tu) {
     // Use a private class that extends ScopeTrackingVisitor to do the patching up.
     new ScopeTrackingVisitor() {
+      /**
+       * Attempt to reduce expression, or throw exception if failed.
+       * @param Expression to fold
+       * @return Folded expression
+       */
       public Expr reduce(Expr expr) {
 
         if (expr instanceof IntConstantExpr) {
@@ -225,7 +235,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
           Expr rexpr = reduce(bexpr.getRhs());
 
           if (!(lexpr instanceof IntConstantExpr && rexpr instanceof IntConstantExpr)) {
-            throw new RuntimeException("Unable to fold constant " + bexpr.getText());
+            throw new RuntimeException("Unable to fold constant (leaf of binary expression did "
+                + "not fold)" + bexpr.getText());
           }
 
           int lval = ((IntConstantExpr) lexpr).getNumericValue();
@@ -240,7 +251,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
               break;
             case DIV:
               if (rval == 0) {
-                throw new RuntimeException("Division by zero folding constant " + bexpr.getText());
+                throw new RuntimeException("Division by zero while folding constant " + bexpr.getText());
               }
               fval = lval / rval;
               break;
@@ -293,19 +304,21 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
               fval = (lval != rval) ? 1 : 0;
               break;
             default:
-              throw new RuntimeException("Unable to fold constant " + bexpr.getText());
+              throw new RuntimeException("Unable to fold constant (unimplemented binary "
+                  + "expression) " + bexpr.getText());
           }
           return new IntConstantExpr(Integer.toString(fval));
         }
-        throw new RuntimeException("Unable to fold constant " + expr.getText());
+        throw new RuntimeException("Unable to fold constant (unimplemented expression) " + expr.getText());
       }
 
       @Override
       public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
-        if (variableDeclInfo.hasArrayInfo() && variableDeclInfo.getArrayInfo().hasSize()) {
-          Expr expr = variableDeclInfo.getArrayInfo().getSizeExpr();
-          expr = reduce(expr);
-          variableDeclInfo.getArrayInfo().setSizeExpr(expr);
+        if (variableDeclInfo.hasArrayInfo()) {
+          final ArrayInfo arrayInfo = variableDeclInfo.getArrayInfo();
+          if (arrayInfo.hasSize()) {
+            arrayInfo.setConstantSizeExpr((IntConstantExpr) reduce(arrayInfo.getSizeExpr()));
+          }
         }
         super.visitVariableDeclInfo(variableDeclInfo);
       }
@@ -315,6 +328,10 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
 
   public static TranslationUnit getTranslationUnit(Translation_unitContext ctx,
                                                    ShaderKind shaderKind, boolean hasWebGlHint) {
+    /* Scan parsed AST and perform constant folding for array sizes.
+     * Doing the constant folding during AST build is not as convenient as
+     * not all of the required information may be available when needed.
+     */
     return fixUpArraySizes(new AstBuilder(shaderKind, hasWebGlHint).visitTranslation_unit(ctx));
   }
 
