@@ -332,10 +332,18 @@ def get_signature_from_catchsegv_frame_address(log_contents: str) -> Optional[st
     address = match.group(2)
     function_signature = get_function_signature_from_address(module, address)
     if not function_signature:
-        return None
+        # As a last resort, we can use the module name + offset as the signature.
+        return get_hex_signature_from_frame(module, address)
     function_signature = clean_up(function_signature)
     function_signature = reduce_length(function_signature)
     return function_signature
+
+
+def get_hex_signature_from_frame(module: Path, address: str) -> str:
+    signature = f"{module.name}+{address}"
+    signature = clean_up(signature)
+    signature = reduce_length(signature)
+    return signature
 
 
 def get_function_signature_from_address(module: Path, address: str) -> Optional[str]:
