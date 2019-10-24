@@ -413,12 +413,17 @@ def fuzz_spirv(
 
     # TODO: Allow using downloaded spirv-fuzz.
     try:
-        spirv_fuzz_util.run_generate_on_shader_job(
-            util.tool_on_path("spirv-fuzz"),
-            reference_spirv_shader_job,
-            template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
-            seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
-        )
+        with util.file_open_text(staging_dir / "log.txt", "w") as log_file:
+            try:
+                gflogging.push_stream_for_logging(log_file)
+                spirv_fuzz_util.run_generate_on_shader_job(
+                    util.tool_on_path("spirv-fuzz"),
+                    reference_spirv_shader_job,
+                    template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
+                    seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
+                )
+            finally:
+                gflogging.pop_stream_for_logging()
     except subprocess.CalledProcessError:
         util.mkdirs_p(fuzz_failures_dir)
         if len(list(fuzz_failures_dir.iterdir())) < settings.maximum_fuzz_failures:
