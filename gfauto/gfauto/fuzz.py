@@ -165,6 +165,8 @@ def main() -> None:
             main_helper(
                 settings_path, iteration_seed, use_spirv_fuzz, force_no_stack_traces
             )
+        except settings_util.NoSettingsFile as exception:
+            log(str(exception))
         finally:
             gflogging.pop_stream_for_logging()
 
@@ -312,4 +314,3 @@ def create_summary_and_reproduce(
 
 if __name__ == "__main__":
     main()
-    sys.exit(0)

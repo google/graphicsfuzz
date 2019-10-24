@@ -38,12 +38,12 @@ def read_or_create(settings_path: Path) -> Settings:
     try:
         return read(settings_path)
     except FileNotFoundError as exception:
-        message = f"Could not find settings file at: {settings_path}"
+        message = f'gfauto could not find "{settings_path}"'
         if not DEFAULT_SETTINGS_FILE_PATH.exists():
             write_default(DEFAULT_SETTINGS_FILE_PATH)
             message += (
-                f"; a default settings file has been created for you at {str(DEFAULT_SETTINGS_FILE_PATH)}. "
-                f"Please review it and then try again. "
+                f'; a default settings file "{str(DEFAULT_SETTINGS_FILE_PATH)}" has been created for you. '
+                f"Please review it and then try again. \n"
             )
         raise NoSettingsFile(message) from exception
 
