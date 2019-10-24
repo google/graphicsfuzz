@@ -25,7 +25,7 @@ import secrets
 import shutil
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from gfauto import (
     artifact_util,
@@ -40,6 +40,7 @@ from gfauto import (
     util,
 )
 from gfauto.gflogging import log
+from gfauto.util import check_dir_exists
 
 # Root:
 #   - donors/ (contains GLSL shader jobs)
@@ -186,28 +187,35 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     donors_dir = Path() / "donors"
     spirv_fuzz_shaders_dir = Path() / "spirv_fuzz_shaders"
 
-    if donors_dir.exists():
-        try:
-            artifact_util.artifact_path_get_root()
-        except FileNotFoundError:
-            log(
-                "Could not find ROOT file (in the current directory or above) to mark where binaries should be stored. "
-                "Creating a ROOT file in the current directory."
-            )
-            util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
+    try:
+        artifact_util.artifact_path_get_root()
+    except FileNotFoundError:
+        log(
+            "Could not find ROOT file (in the current directory or above) to mark where binaries should be stored. "
+            "Creating a ROOT file in the current directory."
+        )
+        util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
 
     # Log a warning if there is no tool on the PATH for printing stack traces.
     prepended = util.prepend_catchsegv_if_available([], log_warning=True)
     if not force_no_stack_traces and not prepended:
         raise AssertionError("Stopping because we cannot get stack traces.")
 
-    # TODO: make GraphicsFuzz find donors recursively.
-    references = sorted(references_dir.rglob("*.json"))
+    spirv_fuzz_shaders: List[Path] = []
+    references: List[Path] = []
 
-    # Filter to only include .json files that have at least one shader (.frag, .vert, .comp) file.
-    references = [ref for ref in references if shader_job_util.get_related_files(ref)]
-
-    spirv_fuzz_shaders = sorted(spirv_fuzz_shaders_dir.rglob("*.json"))
+    if use_spirv_fuzz:
+        check_dir_exists(spirv_fuzz_shaders_dir)
+        spirv_fuzz_shaders = sorted(spirv_fuzz_shaders_dir.rglob("*.json"))
+    else:
+        check_dir_exists(references_dir)
+        check_dir_exists(donors_dir)
+        # TODO: make GraphicsFuzz find donors recursively.
+        references = sorted(references_dir.rglob("*.json"))
+        # Filter to only include .json files that have at least one shader (.frag, .vert, .comp) file.
+        references = [
+            ref for ref in references if shader_job_util.get_related_files(ref)
+        ]
 
     binary_manager = binaries_util.get_default_binary_manager().get_child_binary_manager(
         list(settings.custom_binaries), prepend=True
