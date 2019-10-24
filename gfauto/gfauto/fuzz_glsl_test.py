@@ -59,52 +59,13 @@ class ReductionFailedError(Exception):
 def fuzz_glsl(
     staging_dir: Path,
     reports_dir: Path,
+    fuzz_failures_dir: Path,
     active_devices: List[Device],
     references: List[Path],
     donors_dir: Path,
     settings: Settings,
     binary_manager: binaries_util.BinaryManager,
 ) -> None:
-    test_dirs = create_staging_tests(
-        staging_dir, references, donors_dir, binary_manager
-    )
-
-    for test_dir in test_dirs:
-        if handle_test(test_dir, reports_dir, active_devices, binary_manager, settings):
-            # If we generated a report, don't bother trying other optimization combinations.
-            break
-
-
-def make_test(
-    base_source_dir: Path,
-    subtest_dir: Path,
-    spirv_opt_args: Optional[List[str]],
-    binary_manager: binaries_util.BinaryManager,
-) -> Path:
-    # Create the subtest by copying the base source.
-    util.copy_dir(base_source_dir, test_util.get_source_dir(subtest_dir))
-
-    test = Test(glsl=TestGlsl(spirv_opt_args=spirv_opt_args))
-
-    test.binaries.extend([binary_manager.get_binary_by_name(name="glslangValidator")])
-    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-dis")])
-    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-val")])
-    if spirv_opt_args:
-        test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-opt")])
-
-    # Write the test metadata.
-    test_util.metadata_write(test, subtest_dir)
-
-    return subtest_dir
-
-
-def create_staging_tests(
-    staging_dir: Path,
-    references: List[Path],
-    donors_dir: Path,
-    binary_manager: binaries_util.BinaryManager,
-) -> List[Path]:
-
     staging_name = staging_dir.name
     template_source_dir = staging_dir / "source_template"
 
@@ -113,21 +74,35 @@ def create_staging_tests(
 
     # TODO: Allow GraphicsFuzz to be downloaded.
 
-    # Create the prepared (for Vulkan GLSL) reference.
-    glsl_generate_util.run_prepare_reference(
-        util.tool_on_path("graphicsfuzz-tool"),
-        unprepared_reference_shader_job,
-        template_source_dir / test_util.REFERENCE_DIR / test_util.SHADER_JOB,
-    )
+    try:
+        with util.file_open_text(staging_dir / "log.txt", "w") as log_file:
+            try:
+                gflogging.push_stream_for_logging(log_file)
 
-    # Generate the variant (GraphicsFuzz requires the unprepared reference as input).
-    glsl_generate_util.run_generate(
-        util.tool_on_path("graphicsfuzz-tool"),
-        unprepared_reference_shader_job,
-        donors_dir,
-        template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
-        seed=str(random.getrandbits(glsl_generate_util.GENERATE_SEED_BITS)),
-    )
+                # Create the prepared (for Vulkan GLSL) reference.
+                glsl_generate_util.run_prepare_reference(
+                    util.tool_on_path("graphicsfuzz-tool"),
+                    unprepared_reference_shader_job,
+                    template_source_dir
+                    / test_util.REFERENCE_DIR
+                    / test_util.SHADER_JOB,
+                )
+
+                # Generate the variant (GraphicsFuzz requires the unprepared reference as input).
+                glsl_generate_util.run_generate(
+                    util.tool_on_path("graphicsfuzz-tool"),
+                    unprepared_reference_shader_job,
+                    donors_dir,
+                    template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
+                    seed=str(random.getrandbits(glsl_generate_util.GENERATE_SEED_BITS)),
+                )
+            finally:
+                gflogging.pop_stream_for_logging()
+    except subprocess.CalledProcessError:
+        util.mkdirs_p(fuzz_failures_dir)
+        if len(list(fuzz_failures_dir.iterdir())) < settings.maximum_fuzz_failures:
+            util.copy_dir(staging_dir, fuzz_failures_dir / staging_dir.name)
+        return
 
     test_dirs = [
         make_test(
@@ -168,7 +143,33 @@ def create_staging_tests(
         ),
     ]
 
-    return test_dirs
+    for test_dir in test_dirs:
+        if handle_test(test_dir, reports_dir, active_devices, binary_manager, settings):
+            # If we generated a report, don't bother trying other optimization combinations.
+            break
+
+
+def make_test(
+    base_source_dir: Path,
+    subtest_dir: Path,
+    spirv_opt_args: Optional[List[str]],
+    binary_manager: binaries_util.BinaryManager,
+) -> Path:
+    # Create the subtest by copying the base source.
+    util.copy_dir(base_source_dir, test_util.get_source_dir(subtest_dir))
+
+    test = Test(glsl=TestGlsl(spirv_opt_args=spirv_opt_args))
+
+    test.binaries.extend([binary_manager.get_binary_by_name(name="glslangValidator")])
+    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-dis")])
+    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-val")])
+    if spirv_opt_args:
+        test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-opt")])
+
+    # Write the test metadata.
+    test_util.metadata_write(test, subtest_dir)
+
+    return subtest_dir
 
 
 def run(

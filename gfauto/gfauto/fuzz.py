@@ -274,6 +274,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
             fuzz_glsl_test.fuzz_glsl(
                 staging_dir,
                 reports_dir,
+                fuzz_failures_dir,
                 active_devices,
                 references,
                 donors_dir,
