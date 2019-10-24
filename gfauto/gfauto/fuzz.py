@@ -143,6 +143,12 @@ def main() -> None:
         action="store_true",
     )
 
+    parser.add_argument(
+        "--force_no_stack_traces",
+        help="Continue even if we cannot get stack traces (using catchsegv or cdb).",
+        action="store_true",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     settings_path = Path(parsed_args.settings)
@@ -150,17 +156,23 @@ def main() -> None:
         parsed_args.iteration_seed
     )
     use_spirv_fuzz: bool = parsed_args.use_spirv_fuzz
+    force_no_stack_traces: bool = parsed_args.force_no_stack_traces
 
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
         try:
-            main_helper(settings_path, iteration_seed, use_spirv_fuzz)
+            main_helper(
+                settings_path, iteration_seed, use_spirv_fuzz, force_no_stack_traces
+            )
         finally:
             gflogging.pop_stream_for_logging()
 
 
 def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many-statements;
-    settings_path: Path, iteration_seed_override: Optional[int], use_spirv_fuzz: bool
+    settings_path: Path,
+    iteration_seed_override: Optional[int],
+    use_spirv_fuzz: bool,
+    force_no_stack_traces: bool,
 ) -> None:
 
     settings = settings_util.read_or_create(settings_path)
@@ -185,7 +197,9 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
             util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
 
     # Log a warning if there is no tool on the PATH for printing stack traces.
-    util.prepend_catchsegv_if_available([], log_warning=True)
+    prepended = util.prepend_catchsegv_if_available([], log_warning=True)
+    if not force_no_stack_traces and not prepended:
+        raise AssertionError("Stopping because we cannot get stack traces.")
 
     # TODO: make GraphicsFuzz find donors recursively.
     references = sorted(references_dir.rglob("*.json"))
