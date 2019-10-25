@@ -98,7 +98,8 @@ from gfauto.util import check_dir_exists
 #
 
 
-IMAGE_FILE_NAME = "image.png"
+REFERENCE_IMAGE_FILE_NAME = "reference.png"
+VARIANT_IMAGE_FILE_NAME = "variant.png"
 BUFFER_FILE_NAME = "buffer.bin"
 
 BEST_REDUCTION_NAME = "best"
