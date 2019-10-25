@@ -284,6 +284,29 @@ def maybe_add_report(  # pylint: disable=too-many-locals;
     return test_dir_in_reports
 
 
+def should_reduce_report(settings: Settings, test_dir: Path) -> bool:
+    test = test_util.metadata_read(test_dir)
+    status = test.expected_status
+    signature = test.crash_signature
+
+    if not settings.reduce_tool_crashes and status == fuzz.STATUS_TOOL_CRASH:
+        return False
+    if (
+        not settings.reduce_crashes
+        and status == fuzz.STATUS_CRASH
+        and signature != signature_util.BAD_IMAGE_SIGNATURE
+    ):
+        return False
+    if (
+        not settings.reduce_bad_images
+        and status == fuzz.STATUS_CRASH
+        and signature_util == signature_util.BAD_IMAGE_SIGNATURE
+    ):
+        return False
+
+    return True
+
+
 def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
     test = test_util.metadata_read(test_dir)
 
@@ -357,7 +380,10 @@ def handle_test(
 
     # For each report, run a reduction on the target device with the device-specific crash signature.
     for test_dir_in_reports in report_paths:
-        run_reduction_on_report(test_dir_in_reports, reports_dir)
+        if should_reduce_report(settings, test_dir_in_reports):
+            run_reduction_on_report(test_dir_in_reports, reports_dir)
+        else:
+            log("Skipping reduction due to settings.")
 
     # For each report, create a summary and reproduce the bug.
     for test_dir_in_reports in report_paths:

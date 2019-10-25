@@ -27,7 +27,13 @@ from gfauto.settings_pb2 import Settings
 
 DEFAULT_SETTINGS_FILE_PATH = Path("settings.json")
 
-DEFAULT_SETTINGS = Settings(maximum_duplicate_crashes=3, maximum_fuzz_failures=10)
+DEFAULT_SETTINGS = Settings(
+    maximum_duplicate_crashes=3,
+    maximum_fuzz_failures=10,
+    reduce_tool_crashes=True,
+    reduce_crashes=True,
+    reduce_bad_images=True,
+)
 
 
 class NoSettingsFile(Exception):
@@ -50,8 +56,6 @@ def read_or_create(settings_path: Path) -> Settings:
 
 def read(settings_path: Path) -> Settings:
     result = proto_util.file_to_message(settings_path, Settings())
-    if not result.maximum_duplicate_crashes:
-        result.maximum_duplicate_crashes = DEFAULT_SETTINGS.maximum_duplicate_crashes
     return result
 
 

@@ -41,6 +41,7 @@ from gfauto import (
 )
 from gfauto.device_pb2 import Device
 from gfauto.fuzz_glsl_test import ReductionFailedError
+from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 from gfauto.test_pb2 import Test, TestSpirvFuzz
 from gfauto.util import check
@@ -382,7 +383,10 @@ def handle_test(
 
     # For each report, run a reduction on the target device with the device-specific crash signature.
     for test_dir_in_reports in report_paths:
-        run_reduction_on_report(test_dir_in_reports, reports_dir)
+        if fuzz_glsl_test.should_reduce_report(settings, test_dir_in_reports):
+            run_reduction_on_report(test_dir_in_reports, reports_dir)
+        else:
+            log("Skipping reduction due to settings.")
 
     # For each report, create a summary and reproduce the bug.
     for test_dir_in_reports in report_paths:

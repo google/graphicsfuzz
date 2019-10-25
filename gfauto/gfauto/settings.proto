@@ -37,4 +37,14 @@ message Settings {
 
   // Store at most this many fuzzing failure files.
   uint32 maximum_fuzz_failures = 4;
+
+  // Reduce tool crashes. E.g. spirv-opt or glslangValidator crashes. You can disable this if you would rather focus on
+  // bugs in your actual test device.
+  bool reduce_tool_crashes = 5;
+
+  // Reduce crashes. E.g. shader compilation errors, shader compilation crashes, runtime crashes.
+  bool reduce_crashes = 6;
+
+  // Reduce bad images. E.g. your test device renders an incorrect image.
+  bool reduce_bad_images = 7;
 }
