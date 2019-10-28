@@ -318,8 +318,9 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
         if (variableDeclInfo.hasArrayInfo()) {
           final ArrayInfo arrayInfo = variableDeclInfo.getArrayInfo();
-          if (arrayInfo.hasSize()) {
-            arrayInfo.setConstantSizeExpr((IntConstantExpr) reduce(arrayInfo.getSizeExpr()));
+          if (arrayInfo.hasSizeExpr()) {
+            arrayInfo.setConstantSizeExpr(((IntConstantExpr)reduce(arrayInfo.getSizeExpr()))
+                .getNumericValue());
           }
         }
         super.visitVariableDeclInfo(variableDeclInfo);

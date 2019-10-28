@@ -26,32 +26,36 @@ import java.util.Optional;
 public class ArrayInfo implements IAstNode {
 
   /**
-   * Size expression, should be IntConstantExpr after folding.
+   * Size, set after folding.
    */
-  private Optional<Expr> constantSize;
+  private Optional<Integer> constantSize;
   /**
-   * Original size expression before folding, for prettyprint.
+   * Original size expression before folding, for pretty printing.
    */
-  private Optional<Expr> originalSize;
+  private Optional<Expr> sizeExpr;
 
   /**
-   * Constructor, stores the original expression and a clone for constant folding.
-   * @param size Array size expression
+   * "originalSize" is the expression in the original shader representing the array size,
+   * and is empty if no size was given. If "originalSize" is present, constant folding can
+   * be used to turn the expression into an integer value, which can be stored in
+   * "constantSize". It is useful to keep "originalSize" around to allow the shader to
+   * be pretty-printed in its original form.
+   * @param originalSize Array size expression
    */
-  public ArrayInfo(Expr size) {
-    this.constantSize = Optional.of(size.clone());
-    this.originalSize = Optional.of(size);
+  public ArrayInfo(Expr originalSize) {
+    this.constantSize = Optional.empty();
+    this.sizeExpr = Optional.of(originalSize);
   }
 
   /**
    * Private constructor for cloning, needed since the constant size expression may have been
    * folded by the time the expression is cloned.
-   * @param constantSize Possibly constant-folded size
+   * @param constantSize Possible constant-folded size
    * @param originalSize Original size, for pretty printing
    */
-  private ArrayInfo(Expr constantSize, Expr originalSize) {
-    this.constantSize = Optional.of(constantSize.clone());
-    this.originalSize = Optional.of(originalSize.clone());
+  private ArrayInfo(Optional<Integer> constantSize, Optional<Expr> originalSize) {
+    this.constantSize = constantSize;
+    this.sizeExpr = originalSize;
   }
 
   /**
@@ -59,53 +63,60 @@ public class ArrayInfo implements IAstNode {
    */
   public ArrayInfo() {
     this.constantSize = Optional.empty();
-    this.originalSize = Optional.empty();
+    this.sizeExpr = Optional.empty();
   }
 
   /**
    * Query for whether this array has a size definition.
    * @return true if size definition is available
    */
-  public boolean hasSize() {
+  public boolean hasConstantSize() {
     return constantSize.isPresent();
   }
 
   /**
+   * Query whether this array has a size expression
+   * @return Size expression
+   */
+  public boolean hasSizeExpr() {
+    return sizeExpr.isPresent();
+  }
+
+  /**
    * Get the constant size.
-   * Assumes that constant folding has occurred before this is called, so calling this while the
-   * AST is being built will likely result in exception.
+   * If constant folding was not performed yet (for example, the AST is stil being built) or if
+   * the array has no size declaration, calling this function will throw an exception.
    * @return Integer value of the array size
    * @throws UnsupportedLanguageFeatureException if folding was not done
    */
   public Integer getConstantSize() throws UnsupportedLanguageFeatureException {
-    if (constantSize.get() instanceof IntConstantExpr) {
-      return ((IntConstantExpr)constantSize.get()).getNumericValue();
+    if (hasConstantSize()) {
+      return constantSize.get();
+    }
+    /*
+     Sometimes array size is required during AST creation. If we allow IntConstantExpr
+     here, even without folding, some things will pass that wouldn't otherwise.
+     */
+    if (hasSizeExpr() && sizeExpr.get() instanceof IntConstantExpr) {
+      return ((IntConstantExpr)sizeExpr.get()).getNumericValue();
     }
     throw new UnsupportedLanguageFeatureException("Not a constant expression");
   }
 
   /**
-   * Get the size expression, which may be folded
-   * @return Size expression
-   */
-  public Expr getSizeExpr() {
-    return constantSize.get();
-  }
-
-  /**
    * Set constant expression after folding.
-   * @param expr Completely folded expression
+   * @param foldedSize Completely folded size
    */
-  public void setConstantSizeExpr(IntConstantExpr expr) {
-    constantSize = Optional.of(expr);
+  public void setConstantSizeExpr(int foldedSize) {
+    constantSize = Optional.of(foldedSize);
   }
 
   /**
    * Get the original expression for pretty printing.
    * @return Original, non-folded size expression
    */
-  public Expr getOriginalSizeExpr() {
-    return originalSize.get();
+  public Expr getSizeExpr() {
+    return sizeExpr.get();
   }
 
   @Override
@@ -115,18 +126,18 @@ public class ArrayInfo implements IAstNode {
 
   @Override
   public ArrayInfo clone() {
-    return hasSize() ? new ArrayInfo(getSizeExpr(), getOriginalSizeExpr()) :
+    return hasSizeExpr() ? new ArrayInfo(constantSize, sizeExpr) :
         new ArrayInfo();
   }
 
   @Override
   public boolean equals(Object obj) {
-    return obj instanceof ArrayInfo && originalSize.equals(((ArrayInfo) obj).originalSize);
+    return obj instanceof ArrayInfo && sizeExpr.equals(((ArrayInfo) obj).sizeExpr);
   }
 
   @Override
   public int hashCode() {
-    return originalSize.hashCode();
+    return sizeExpr.hashCode();
   }
 
 }

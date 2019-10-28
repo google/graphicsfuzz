@@ -176,12 +176,12 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       out.append(vdi.getName());
       if (vdi.hasArrayInfo()) {
         out.append("[");
-        visit(vdi.getArrayInfo().getOriginalSizeExpr());
+        visit(vdi.getArrayInfo().getSizeExpr());
         out.append("]");
         assert !(baseType instanceof ArrayType);
       } else if (baseType instanceof ArrayType) {
         out.append("[");
-        visit(((ArrayType) baseType).getArrayInfo().getOriginalSizeExpr());
+        visit(((ArrayType) baseType).getArrayInfo().getSizeExpr());
         out.append("]");
       }
       if (vdi.hasInitializer()) {
@@ -227,7 +227,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     }
     if (parameterDecl.getArrayInfo() != null) {
       out.append("[");
-      visit(parameterDecl.getArrayInfo().getOriginalSizeExpr());
+      visit(parameterDecl.getArrayInfo().getSizeExpr());
       out.append("]");
     }
   }
@@ -522,7 +522,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
     visit(arrayConstructorExpr.getArrayType());
     out.append("[");
-    visit(arrayConstructorExpr.getArrayType().getArrayInfo().getOriginalSizeExpr());
+    visit(arrayConstructorExpr.getArrayType().getArrayInfo().getSizeExpr());
     out.append("](");
     boolean first = true;
     for (Expr e : arrayConstructorExpr.getArgs()) {
@@ -562,8 +562,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     ArrayType arrayType = (ArrayType) type.getWithoutQualifiers();
     while (true) {
       out.append("[");
-      if (arrayType.getArrayInfo().hasSize()) {
-        visit(arrayType.getArrayInfo().getOriginalSizeExpr());
+      if (arrayType.getArrayInfo().hasSizeExpr()) {
+        visit(arrayType.getArrayInfo().getSizeExpr());
       }
       out.append("]");
       if (!(arrayType.getBaseType().getWithoutQualifiers() instanceof ArrayType)) {
