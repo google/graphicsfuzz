@@ -27,7 +27,13 @@ from gfauto.settings_pb2 import Settings
 
 DEFAULT_SETTINGS_FILE_PATH = Path("settings.json")
 
-DEFAULT_SETTINGS = Settings(maximum_duplicate_crashes=3, maximum_fuzz_failures=10)
+DEFAULT_SETTINGS = Settings(
+    maximum_duplicate_crashes=3,
+    maximum_fuzz_failures=10,
+    reduce_tool_crashes=True,
+    reduce_crashes=True,
+    reduce_bad_images=True,
+)
 
 
 class NoSettingsFile(Exception):
@@ -38,20 +44,18 @@ def read_or_create(settings_path: Path) -> Settings:
     try:
         return read(settings_path)
     except FileNotFoundError as exception:
-        message = f"Could not find settings file at: {settings_path}"
+        message = f'gfauto could not find "{settings_path}"'
         if not DEFAULT_SETTINGS_FILE_PATH.exists():
             write_default(DEFAULT_SETTINGS_FILE_PATH)
             message += (
-                f"; a default settings file has been created for you at {str(DEFAULT_SETTINGS_FILE_PATH)}. "
-                f"Please review it and then try again. "
+                f'; a default settings file "{str(DEFAULT_SETTINGS_FILE_PATH)}" has been created for you. '
+                f"Please review it and then try again. \n"
             )
         raise NoSettingsFile(message) from exception
 
 
 def read(settings_path: Path) -> Settings:
     result = proto_util.file_to_message(settings_path, Settings())
-    if not result.maximum_duplicate_crashes:
-        result.maximum_duplicate_crashes = DEFAULT_SETTINGS.maximum_duplicate_crashes
     return result
 
 

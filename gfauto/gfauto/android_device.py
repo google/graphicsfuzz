@@ -306,7 +306,7 @@ def run_amber_on_device_helper(
         amber_flags += " -ps"
     else:
         if dump_image:
-            amber_flags += f" -i {fuzz.IMAGE_FILE_NAME} -I variant_framebuffer"
+            amber_flags += f" -I variant_framebuffer -i {fuzz.VARIANT_IMAGE_FILE_NAME} -I reference_framebuffer -i {fuzz.REFERENCE_IMAGE_FILE_NAME}"
         if dump_buffer:
             amber_flags += f" -b {fuzz.BUFFER_FILE_NAME} -B 0"
 

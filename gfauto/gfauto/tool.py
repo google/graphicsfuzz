@@ -394,10 +394,12 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
         binary_list=list(test.device.binaries) + list(test.binaries)
     )
 
-    spirv_opt_args = list(test.glsl.spirv_opt_args)
-    spirv_opt_hash = binary_manager.get_binary_by_name(
-        binaries_util.SPIRV_OPT_NAME
-    ).version
+    spirv_opt_args = list(test.glsl.spirv_opt_args) or None
+    spirv_opt_hash: Optional[str] = None
+    if spirv_opt_args:
+        spirv_opt_hash = binary_manager.get_binary_by_name(
+            binaries_util.SPIRV_OPT_NAME
+        ).version
 
     # Compile all shader jobs
     shader_job_files = [

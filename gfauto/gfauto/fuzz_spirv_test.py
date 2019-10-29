@@ -41,6 +41,7 @@ from gfauto import (
 )
 from gfauto.device_pb2 import Device
 from gfauto.fuzz_glsl_test import ReductionFailedError
+from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 from gfauto.test_pb2 import Test, TestSpirvFuzz
 from gfauto.util import check
@@ -382,7 +383,10 @@ def handle_test(
 
     # For each report, run a reduction on the target device with the device-specific crash signature.
     for test_dir_in_reports in report_paths:
-        run_reduction_on_report(test_dir_in_reports, reports_dir)
+        if fuzz_glsl_test.should_reduce_report(settings, test_dir_in_reports):
+            run_reduction_on_report(test_dir_in_reports, reports_dir)
+        else:
+            log("Skipping reduction due to settings.")
 
     # For each report, create a summary and reproduce the bug.
     for test_dir_in_reports in report_paths:
@@ -413,12 +417,17 @@ def fuzz_spirv(
 
     # TODO: Allow using downloaded spirv-fuzz.
     try:
-        spirv_fuzz_util.run_generate_on_shader_job(
-            util.tool_on_path("spirv-fuzz"),
-            reference_spirv_shader_job,
-            template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
-            seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
-        )
+        with util.file_open_text(staging_dir / "log.txt", "w") as log_file:
+            try:
+                gflogging.push_stream_for_logging(log_file)
+                spirv_fuzz_util.run_generate_on_shader_job(
+                    util.tool_on_path("spirv-fuzz"),
+                    reference_spirv_shader_job,
+                    template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
+                    seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
+                )
+            finally:
+                gflogging.pop_stream_for_logging()
     except subprocess.CalledProcessError:
         util.mkdirs_p(fuzz_failures_dir)
         if len(list(fuzz_failures_dir.iterdir())) < settings.maximum_fuzz_failures:

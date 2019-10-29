@@ -69,7 +69,8 @@ def run_amber_helper(
 
     # TODO: Use binary paths.
 
-    image_file = output_dir / fuzz.IMAGE_FILE_NAME
+    variant_image_file = output_dir / fuzz.VARIANT_IMAGE_FILE_NAME
+    reference_image_file = output_dir / fuzz.REFERENCE_IMAGE_FILE_NAME
     buffer_file = output_dir / fuzz.BUFFER_FILE_NAME
 
     cmd = [
@@ -87,10 +88,14 @@ def run_amber_helper(
         cmd.append("-ps")
     else:
         if dump_image:
-            cmd.append("-i")
-            cmd.append(str(image_file))
             cmd.append("-I")
             cmd.append("variant_framebuffer")
+            cmd.append("-i")
+            cmd.append(str(variant_image_file))
+            cmd.append("-I")
+            cmd.append("reference_framebuffer")
+            cmd.append("-i")
+            cmd.append(str(reference_image_file))
         if dump_buffer:
             cmd.append("-b")
             cmd.append(str(buffer_file))

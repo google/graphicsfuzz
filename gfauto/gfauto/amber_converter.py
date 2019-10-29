@@ -571,7 +571,7 @@ def graphics_shader_job_amber_test_to_amber_script(
     for pipeline_index in range(1, len(jobs)):
         prefix_0 = jobs[0].name_prefix
         prefix_1 = jobs[pipeline_index].name_prefix
-        result += f"EXPECT {prefix_0}_framebuffer RMSE_BUFFER {prefix_1}_framebuffer TOLERANCE 7"
+        result += f"EXPECT {prefix_0}_framebuffer EQ_HISTOGRAM_EMD_BUFFER {prefix_1}_framebuffer TOLERANCE 0.005"
         result += "\n"
 
     if amberfy_settings.extra_commands:
