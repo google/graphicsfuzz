@@ -67,6 +67,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -126,20 +127,19 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
   private TranslationUnit prepareTranslationUnit(File donorFile, IRandom generator)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    TranslationUnit tu = ParseHelper.parse(donorFile);
+    final TranslationUnit tu = ParseHelper.parse(donorFile);
+    final Typer typer = new Typer(tu);
+    // To avoid undefined behaviours, make all array access in bounds for every donor.
+    MakeArrayAccessesInBounds.makeInBounds(tu, typer, tu);
     addPrefixes(tu, getDeclaredFunctionNames(tu));
     // Add prefixed versions of these builtins, in case they are used.
     // Use explicit precision qualifier to avoid introducing errors if there are no float precision
     // qualifiers.
-    List<TypeQualifier> coordQualifiers = new ArrayList<>();
-    coordQualifiers.add(TypeQualifier.MEDIUMP);
     tu.addDeclaration(new VariablesDeclaration(
-        new QualifiedType(BasicType.VEC4, coordQualifiers),
+        new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
         new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
-    List<TypeQualifier> colorQualifiers = new ArrayList<>();
-    colorQualifiers.add(TypeQualifier.MEDIUMP);
     tu.addDeclaration(new VariablesDeclaration(
-        new QualifiedType(BasicType.VEC4, colorQualifiers),
+        new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
         new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
     adaptTranslationUnitForSpecificDonation(tu, generator);
     translationUnitCount++;
@@ -269,8 +269,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
     }
     donateFunctionsAndGlobals(tu);
     eliminateUsedDonors();
-    makeInjectedArrayAccessesInBounds(tu, injectedStmts);
-
     return !injectionPoints.isEmpty();
 
   }
@@ -290,14 +288,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
       usedDonorFiles = new ArrayList<>();
     }
     donorsToTranslationUnits = new HashMap<>();
-  }
-
-  private void makeInjectedArrayAccessesInBounds(TranslationUnit tu,
-                                                 List<Stmt> injectedStmts) {
-    Typer typer = new Typer(tu);
-    for (Stmt stmt : injectedStmts) {
-      MakeArrayAccessesInBounds.makeInBounds(stmt, typer, tu);
-    }
   }
 
   private boolean incompatible(IInjectionPoint injectionPoint, DonationContext donationContext,
