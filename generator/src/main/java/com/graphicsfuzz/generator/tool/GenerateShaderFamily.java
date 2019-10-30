@@ -226,7 +226,7 @@ public class GenerateShaderFamily {
         Generate.generateVariant(fileOps, referenceShaderJob, variantShaderJobFile,
             generatorArguments, childRandom, writeProbabilities);
       } catch (Exception exception) {
-        if (verbose) {
+        /*if (verbose)*/ {
           LOGGER.error("Failed generating variant: "
               + "\nGenerator arguments: " + generatorArguments
               + "\nReference shader job: " + referenceShaderJob

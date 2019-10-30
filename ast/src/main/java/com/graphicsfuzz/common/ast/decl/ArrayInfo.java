@@ -93,13 +93,9 @@ public class ArrayInfo implements IAstNode {
     if (hasConstantSize()) {
       return constantSize.get();
     }
-    /*
-     Sometimes array size is required during AST creation. If we allow IntConstantExpr
-     here, even without folding, some things will pass that wouldn't otherwise.
-     */
-    if (hasSizeExpr() && sizeExpr.get() instanceof IntConstantExpr) {
-      return ((IntConstantExpr)sizeExpr.get()).getNumericValue();
-    }
+    // TODO(https://github.com/google/graphicsfuzz/issues/784) Until array parameter support
+    //  is overhauled there could be array parameters to which constant folding has not been
+    //  applied.
     throw new UnsupportedLanguageFeatureException("Not a constant expression");
   }
 
@@ -126,8 +122,7 @@ public class ArrayInfo implements IAstNode {
 
   @Override
   public ArrayInfo clone() {
-    return hasSizeExpr() ? new ArrayInfo(constantSize, sizeExpr) :
-        new ArrayInfo();
+    return new ArrayInfo(constantSize, sizeExpr);
   }
 
   @Override

@@ -314,17 +314,31 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
             + expr.getText());
       }
 
+      private void handleArrayInfo(ArrayInfo arrayInfo) {
+        if (arrayInfo.hasSizeExpr()) {
+          arrayInfo.setConstantSizeExpr(((IntConstantExpr)reduce(arrayInfo.getSizeExpr()))
+              .getNumericValue());
+        }
+      }
+
       @Override
       public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
         if (variableDeclInfo.hasArrayInfo()) {
-          final ArrayInfo arrayInfo = variableDeclInfo.getArrayInfo();
-          if (arrayInfo.hasSizeExpr()) {
-            arrayInfo.setConstantSizeExpr(((IntConstantExpr)reduce(arrayInfo.getSizeExpr()))
-                .getNumericValue());
-          }
+          handleArrayInfo(variableDeclInfo.getArrayInfo());
         }
         super.visitVariableDeclInfo(variableDeclInfo);
       }
+
+      @Override
+      public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
+        super.visitStructDefinitionType(structDefinitionType);
+        for (Type fieldType : structDefinitionType.getFieldTypes()) {
+          if (fieldType.getWithoutQualifiers() instanceof ArrayType) {
+            handleArrayInfo(((ArrayType) fieldType.getWithoutQualifiers()).getArrayInfo());
+          }
+        }
+      }
+
     }.visit(tu);
     return tu;
   }
