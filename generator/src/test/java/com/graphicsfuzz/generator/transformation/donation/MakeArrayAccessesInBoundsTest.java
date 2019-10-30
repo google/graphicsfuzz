@@ -20,8 +20,10 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.typing.Typer;
+import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.util.Constants;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -135,6 +137,116 @@ public class MakeArrayAccessesInBoundsTest {
     MakeArrayAccessesInBounds.makeInBounds(tu, typer, tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
+  }
+
+  @Test
+  public void testMakeStructMemberArrayAccessInBounds1() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "struct S {\n"
+        + "  int A[3];\n"
+        + "};\n"
+        + "void main() {\n"
+        + "  int x;\n"
+        + "  x = 22;\n"
+        + "  S myS;\n"
+        + "  myS.A[x] = 6;\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "struct S {\n"
+        + "  int A[3];\n"
+        + "};\n"
+        + "void main() {\n"
+        + "  int x;\n"
+        + "  x = 22;\n"
+        + "  S myS;\n"
+        + "  myS.A[" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 3)] = 6;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    MakeArrayAccessesInBounds.makeInBounds(tu, new Typer(tu), tu);
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testMakeStructMemberArrayAccessInBounds2() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "const int N = 3;\n"
+        + "struct S {\n"
+        + "  int A[N];\n"
+        + "};\n"
+        + "void main() {\n"
+        + "  int x;\n"
+        + "  x = 22;\n"
+        + "  S myS;\n"
+        + "  myS.A[x] = 6;\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "const int N = 3;\n"
+        + "struct S {\n"
+        + "  int A[N];\n"
+        + "};\n"
+        + "void main() {\n"
+        + "  int x;\n"
+        + "  x = 22;\n"
+        + "  S myS;\n"
+        + "  myS.A[" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 3)] = 6;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    MakeArrayAccessesInBounds.makeInBounds(tu, new Typer(tu), tu);
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  // TODO(https://github.com/google/graphicsfuzz/issues/784) Enable once array parameter support is
+  //  overhauled.
+  @Ignore
+  @Test
+  public void testMakeArrayParameterAccessInBounds1() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "int foo(int A[3], int x) {\n"
+        + "  return A[x];\n"
+        + "}\n"
+        + "void main() {\n"
+        + "  int A[3];\n"
+        + "  foo(A, 7);\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "int foo(int A[3], int x) {\n"
+        + "  return A[" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 3)];\n"
+        + "}\n"
+        + "void main() {\n"
+        + "  int A[3];\n"
+        + "  foo(A, 7);\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    MakeArrayAccessesInBounds.makeInBounds(tu, new Typer(tu), tu);
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  // TODO(https://github.com/google/graphicsfuzz/issues/784) Enable once array parameter support is
+  //  overhauled.
+  @Ignore
+  @Test
+  public void testMakeArrayParameterAccessInBounds2() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "const int N = 3;\n"
+        + "int foo(int A[N], int x) {\n"
+        + "  return A[x];\n"
+        + "}\n"
+        + "void main() {\n"
+        + "  int A[N];\n"
+        + "  foo(A, 7);\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "const int N = 3;\n"
+        + "int foo(int A[N], int x) {\n"
+        + "  return A[" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 3)];\n"
+        + "}\n"
+        + "void main() {\n"
+        + "  int A[N];\n"
+        + "  foo(A, 7);\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    MakeArrayAccessesInBounds.makeInBounds(tu, new Typer(tu), tu);
+    CompareAsts.assertEqualAsts(expected, tu);
   }
 
 }

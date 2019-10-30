@@ -123,9 +123,9 @@ public final class PruneUniforms {
                                              ArrayInfo arrayInfo,
                                              List<Number> args) {
     if (arrayInfo != null) {
-      assert arrayInfo.getSize() * baseType.getNumElements() == args.size();
+      assert arrayInfo.getConstantSize() * baseType.getNumElements() == args.size();
       List<Expr> argExprs = new ArrayList<>();
-      for (int index = 0; index < arrayInfo.getSize(); index++) {
+      for (int index = 0; index < arrayInfo.getConstantSize(); index++) {
         argExprs.add(getBasicTypeLiteralExpr(baseType,
             args.subList(index * baseType.getNumElements(),
                 (index + 1) * baseType.getNumElements())));

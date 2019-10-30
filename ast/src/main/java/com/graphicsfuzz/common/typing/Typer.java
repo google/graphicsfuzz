@@ -40,6 +40,7 @@ import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import java.util.Collection;
 import java.util.Collections;
@@ -151,8 +152,11 @@ public class Typer extends ScopeTrackingVisitor {
       if (argType == null) {
         return false;
       }
-      // Not yet worked out how to deal with array info
-      assert prototype.getParameters().get(i).getArrayInfo() == null;
+      // TODO(https://github.com/google/graphicsfuzz/issues/784) Not yet worked out how to deal with
+      //  array info
+      if (prototype.getParameters().get(i).getArrayInfo() != null) {
+        throw new UnsupportedLanguageFeatureException("Array parameters are not yet supported.");
+      }
       if (!argType.getWithoutQualifiers()
           .equals(prototype.getParameters().get(i).getType().getWithoutQualifiers())) {
         return false;
