@@ -269,7 +269,7 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
 
     uniforms = json.loads(uniform_json_contents)
 
-    # Do not generate anything if there are no uniforms.
+    # If there are no uniforms, do not generate anything.
     if not uniforms:
         return ""
 
