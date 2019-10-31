@@ -152,8 +152,8 @@ public final class PrepareReference {
       FloatLiteralReplacer.replace(tu, pipelineInfo);
     }
 
-    // Ensure that all if-then-else statements have braces.  This makes the reference easier to compare
-    // with a reduced variant.
+    // Ensure that all if-then-else statements have braces.  This makes the reference easier to
+    // compare with a reduced variant.
     AddBraces.transform(tu);
 
   }
