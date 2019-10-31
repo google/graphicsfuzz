@@ -267,11 +267,16 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
         "glUniformMatrix4fv": "mat4x4<float>",
     }
 
+    uniforms = json.loads(uniform_json_contents)
+
+    # If there are no uniforms, do not generate anything.
+    if not uniforms:
+        return ""
+
     result = f"# uniforms for {prefix}\n"
 
     result += "\n"
 
-    uniforms = json.loads(uniform_json_contents)
     for name, entry in uniforms.items():
 
         if name == "$compute":
