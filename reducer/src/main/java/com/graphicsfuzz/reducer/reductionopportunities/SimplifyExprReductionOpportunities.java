@@ -74,8 +74,8 @@ abstract class SimplifyExprReductionOpportunities
   boolean allowedToReduceExpr(IAstNode parent, Expr child) {
 
     if (child instanceof VariableIdentifierExpr) {
-      String name = ((VariableIdentifierExpr) child).getName();
-      if (name.startsWith(Constants.LIVE_PREFIX)
+      final String name = ((VariableIdentifierExpr) child).getName();
+      if (isLiveInjectedVariableName(name)
             && !StmtReductionOpportunities.isLooplimiter(name)) {
         return true;
       }
@@ -102,15 +102,11 @@ abstract class SimplifyExprReductionOpportunities
       return true;
     }
 
-    if (enclosingFunctionIsDead()) {
+    if (currentProgramPointIsDeadCode()) {
       return true;
     }
 
     if (injectionTracker.underFuzzedMacro()) {
-      return true;
-    }
-
-    if (injectionTracker.enclosedByDeadCodeInjection()) {
       return true;
     }
 

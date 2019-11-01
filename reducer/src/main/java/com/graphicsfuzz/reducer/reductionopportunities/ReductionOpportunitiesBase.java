@@ -98,7 +98,6 @@ public abstract class ReductionOpportunitiesBase
     // to simplify the literal expression that is used as a case label.  Literals are simple enough
     // already, and attempting to change the value of a case label literal runs the risk of
     // introducing duplicate case labels.
-    injectionTracker.notifySwitchCase(exprCaseLabel);
   }
 
   protected void visitChildOfBlock(BlockStmt block, int childIndex) {
@@ -111,31 +110,45 @@ public abstract class ReductionOpportunitiesBase
 
     for (int i = 0; i < block.getNumStmts(); i++) {
 
-      visitChildOfBlock(block, i);
-
       final Stmt child = block.getStmt(i);
+
+      if (child instanceof ExprCaseLabel) {
+        // It is important to notify the injection tracker of a switch case *before* we visit the
+        // switch case so that we can identify when we have entered the reachable part of an
+        // injected switch statement.
+        injectionTracker.notifySwitchCase((ExprCaseLabel) child);
+      }
+
+      visitChildOfBlock(block, i);
 
       if (child instanceof BreakStmt && parentMap.getParent(block) instanceof SwitchStmt) {
         injectionTracker.notifySwitchBreak();
       }
 
       visit(child);
+
     }
     leaveBlockStmt(block);
   }
 
-  public static boolean isDeadCodeInjection(Stmt stmt) {
+  static boolean isDeadCodeInjection(Stmt stmt) {
     return stmt instanceof IfStmt && MacroNames
         .isDeadByConstruction(((IfStmt) stmt).getCondition());
   }
 
-  protected boolean enclosingFunctionIsDead() {
+  private boolean enclosingFunctionIsDead() {
     if (enclosingFunctionName == null) {
       // We are in global scope
       return false;
     }
     return enclosingFunctionName.startsWith(Constants.DEAD_PREFIX)
         || notReferencedFromLiveContext.neverCalledFromLiveContext(enclosingFunctionName);
+  }
+
+  boolean currentProgramPointIsDeadCode() {
+    return injectionTracker.enclosedByDeadCodeInjection()
+        || injectionTracker.underUnreachableSwitchCase()
+        || enclosingFunctionIsDead();
   }
 
   @Override
@@ -263,6 +276,10 @@ public abstract class ReductionOpportunitiesBase
       // does not hold -- this would lead to a reduction loop.
       opportunities.add(opportunity);
     }
+  }
+
+  static boolean isLiveInjectedVariableName(String name) {
+    return name.startsWith(Constants.LIVE_PREFIX);
   }
 
 }
