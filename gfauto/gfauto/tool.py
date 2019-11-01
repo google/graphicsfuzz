@@ -46,6 +46,10 @@ AMBER_COMMAND_EXPECT_RED = (
     "EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255\n"
 )
 
+AMBER_COMMAND_EXPECT_BLACK = (
+    "EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 0 0 0 255\n"
+)
+
 
 @dataclass
 class NameAndShaderJob:
