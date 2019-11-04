@@ -26,7 +26,6 @@ from attr import dataclass
 
 from gfauto import (
     amber_converter,
-    artifact_util,
     binaries_util,
     glslang_validator_util,
     shader_job_util,
@@ -84,24 +83,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-
-def get_binary_paths_using_artifact_system(
-    artifact_path: str
-) -> binaries_util.BinaryManager:
-
-    # Deprecated.
-
-    artifact_util.artifact_execute_recipe_if_needed(
-        artifact_path, binaries_util.BUILT_IN_BINARY_RECIPES_MAP
-    )
-    artifact_metadata = artifact_util.artifact_read_metadata(artifact_path)
-
-    return binaries_util.BinaryManager(
-        list(artifact_metadata.data.extracted_archive_set.archive_set.binaries),
-        built_in_binary_recipes=binaries_util.BUILT_IN_BINARY_RECIPES_MAP,
-        custom_binary_artifacts_prefix=artifact_path,
-    )
 
 
 def amberfy(

@@ -23,7 +23,7 @@ Defines BinaryManager; see below.
 
 import abc
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Tuple
 
 import attr
 
@@ -85,7 +85,7 @@ DEFAULT_BINARIES = [
     Binary(
         name="swift_shader_icd",
         tags=["Debug"],
-        version="b6fa949c45397bd1fbfda769a104b9e8884f343e",
+        version="aaa64b76c0b40c2958a18cfdc623157c8c6e1b7d",
     ),
 ]
 
@@ -563,7 +563,7 @@ def get_github_release_recipe(binary: Binary) -> recipe_wrap.RecipeWrap:
             Binary(
                 name="swift_shader_icd",
                 tags=tags,
-                path=f"{project_name}/lib/vk_swifthshader_icd.json",
+                path=f"{project_name}/lib/vk_swiftshader_icd.json",
                 version=version,
             )
         ]
@@ -684,11 +684,12 @@ class BinaryManager(BinaryGetter):
         # Now we should be able to find it in the binary artifacts list.
         result = self._get_binary_path_from_binary_artifacts(binary)
         check(
-            result,
+            bool(result),
             AssertionError(
                 f"Could not find:\n{binary} even though we just added it:\n{wrapped_recipe}"
             ),
         )
+        assert result  # noqa
         return result
 
     @staticmethod
