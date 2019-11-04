@@ -23,7 +23,7 @@ Defines BinaryManager; see below.
 
 import abc
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 
 import attr
 
@@ -49,6 +49,14 @@ BUILT_IN_BINARY_RECIPES_PATH_PREFIX = f"{BINARY_RECIPES_PREFIX}/built_in"
 
 CUSTOM_BINARY_RECIPES_PATH_PREFIX = f"{BINARY_RECIPES_PREFIX}/custom"
 
+PLATFORMS = ["Linux", "Mac", "Windows"]
+
+PLATFORMS_SET = set(PLATFORMS)
+
+CONFIGS = ["Release", "Debug"]
+
+CONFIGS_SET = set(CONFIGS)
+
 PLATFORM_SUFFIXES_DEBUG = ["Linux_x64_Debug", "Windows_x64_Debug", "Mac_x64_Debug"]
 PLATFORM_SUFFIXES_RELEASE = [
     "Linux_x64_Release",
@@ -61,13 +69,13 @@ PLATFORM_SUFFIXES_RELWITHDEBINFO = [
     "Mac_x64_RelWithDebInfo",
 ]
 
-DEFAULT_SPIRV_TOOLS_VERSION = "6b072126595dd8c2448eb1fda616251c5e6d7079"
+DEFAULT_SPIRV_TOOLS_VERSION = "f1e5cd73f658abcc23ee96d78f2dc27c4b7028c1"
 
 DEFAULT_BINARIES = [
     Binary(
         name="glslangValidator",
         tags=["Debug"],
-        version="fe0b2bd694bb07004a2db859c5714c321c26b751",
+        version="18d6b6b63e9adc2aa2cce1ce85d1c348f9475118",
     ),
     Binary(name="spirv-opt", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-dis", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
@@ -450,6 +458,122 @@ BUILT_IN_BINARY_RECIPES_MAP: Dict[str, Recipe] = {
 }
 
 
+def get_platform_from_binary(binary: Binary) -> str:
+    tags = list(binary.tags)
+    platforms = [p for p in tags if p in PLATFORMS_SET]
+    if platforms:
+        check(
+            len(platforms) == 1, AssertionError(f"More than one platform in: {binary}")
+        )
+        platform = platforms[0]
+    else:
+        platform = util.get_platform()
+    return platform
+
+
+def get_config_from_binary(binary: Binary) -> str:
+    tags = list(binary.tags)
+    configs = [c for c in tags if c in CONFIGS_SET]
+    if not configs:
+        raise AssertionError(f"Could not find a config in tags: {tags}")
+    check(len(configs) == 1, AssertionError(f"More than one config in: {binary}"))
+    config = configs[0]
+    return config
+
+
+def get_github_release_recipe(binary: Binary) -> recipe_wrap.RecipeWrap:
+
+    if binary.name == "glslangValidator":
+        project_name = "glslang"
+    elif binary.name in ("spirv-opt", "spirv-as", "spirv-dis", "spirv-val"):
+        project_name = "SPIRV-Tools"
+    elif binary.name == "swift_shader_icd":
+        project_name = "swiftshader"
+    else:
+        raise AssertionError(f'Could not map "{binary.name}" to a project.')
+
+    platform = get_platform_from_binary(binary)
+    config = get_config_from_binary(binary)
+    arch = "x64"
+
+    tags = [platform, config, arch]
+
+    repo_name = f"gfbuild-{project_name}"
+    version = binary.version
+    artifact_name = f"gfbuild-{project_name}-{version}-{platform}_{arch}_{config}"
+
+    recipe = recipe_wrap.RecipeWrap(
+        path=f"{BUILT_IN_BINARY_RECIPES_PATH_PREFIX}/{artifact_name}",
+        recipe=Recipe(
+            download_and_extract_archive_set=RecipeDownloadAndExtractArchiveSet(
+                archive_set=ArchiveSet(
+                    archives=[
+                        Archive(
+                            url=f"https://github.com/google/{repo_name}/releases/download/github/google/{repo_name}/{version}/{artifact_name}.zip",
+                            output_file=f"{project_name}.zip",
+                            output_directory=f"{project_name}",
+                        )
+                    ],
+                    binaries=[],
+                )
+            )
+        ),
+    )
+
+    executable_suffix = ".exe" if platform == "Windows" else ""
+
+    if project_name == "glslang":
+        binaries = [
+            Binary(
+                name="glslangValidator",
+                tags=tags,
+                path=f"{project_name}/bin/glslangValidator" + executable_suffix,
+                version=version,
+            )
+        ]
+    elif project_name == "SPIRV-Tools":
+        binaries = [
+            Binary(
+                name="spirv-opt",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-opt" + executable_suffix,
+                version=version,
+            ),
+            Binary(
+                name="spirv-as",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-as" + executable_suffix,
+                version=version,
+            ),
+            Binary(
+                name="spirv-dis",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-dis" + executable_suffix,
+                version=version,
+            ),
+            Binary(
+                name="spirv-val",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-val" + executable_suffix,
+                version=version,
+            ),
+        ]
+    elif project_name == "swiftshader":
+        binaries = [
+            Binary(
+                name="swift_shader_icd",
+                tags=tags,
+                path=f"{project_name}/lib/vk_swifthshader_icd.json",
+                version=version,
+            )
+        ]
+    else:
+        raise AssertionError(f"Unknown project name: {project_name}")
+
+    recipe.recipe.download_and_extract_archive_set.archive_set.binaries.extend(binaries)
+    return recipe
+
+
 class BinaryManager(BinaryGetter):
     """
     Implements BinaryGetter.
@@ -477,13 +601,16 @@ class BinaryManager(BinaryGetter):
         binary_list: Optional[List[Binary]] = None,
         platform: Optional[str] = None,
         built_in_binary_recipes: Optional[Dict[str, Recipe]] = None,
-        custom_binary_artifacts_prefix: Optional[str] = None,
     ):
         self._binary_list = binary_list or DEFAULT_BINARIES
         self._resolved_paths = {}
         self._platform = platform or util.get_platform()
         self._binary_artifacts = []
         self._built_in_binary_recipes = {}
+
+        self._binary_artifacts.extend(
+            artifact_util.binary_artifacts_find(BINARY_RECIPES_PREFIX)
+        )
 
         # When changing this constructor, check self.get_child_binary_manager().
 
@@ -498,11 +625,6 @@ class BinaryManager(BinaryGetter):
                 archive_set: RecipeDownloadAndExtractArchiveSet = recipe.download_and_extract_archive_set
                 self._binary_artifacts.append((archive_set.archive_set, artifact_path))
 
-        if custom_binary_artifacts_prefix:
-            self._binary_artifacts.extend(
-                artifact_util.binary_artifacts_find(custom_binary_artifacts_prefix)
-            )
-
     @staticmethod
     def get_binary_list_from_test_metadata(test_json_path: Path) -> List[Binary]:
         test_metadata = test_util.metadata_read_from_path(test_json_path)
@@ -512,11 +634,7 @@ class BinaryManager(BinaryGetter):
         result.extend(test_metadata.binaries)
         return result
 
-    def get_binary_path(self, binary: Binary) -> Path:
-        result = self._resolved_paths.get(binary.SerializePartialToString())
-        if result:
-            return result
-        log(f"Finding path of binary:\n{binary}")
+    def _get_binary_path_from_binary_artifacts(self, binary: Binary) -> Optional[Path]:
         binary_tags = set(binary.tags)
         binary_tags.add(self._platform)
         for (archive_set, artifact_path) in self._binary_artifacts:
@@ -536,7 +654,42 @@ class BinaryManager(BinaryGetter):
                 )
                 self._resolved_paths[binary.SerializePartialToString()] = result
                 return result
-        raise BinaryPathNotFound(binary)
+        return None
+
+    def get_binary_path(self, binary: Binary) -> Path:
+        # Try resolved cache first.
+        result = self._resolved_paths.get(binary.SerializePartialToString())
+        if result:
+            return result
+        log(f"Finding path of binary:\n{binary}")
+
+        # Try list (cache) of binary artifacts on disk.
+        result = self._get_binary_path_from_binary_artifacts(binary)
+        if result:
+            return result
+
+        # Try online.
+        wrapped_recipe = get_github_release_recipe(binary)
+        # Execute the recipe to download the binaries.
+        artifact_util.artifact_execute_recipe_if_needed(
+            wrapped_recipe.path, {wrapped_recipe.path: wrapped_recipe.recipe}
+        )
+        # Add to binary artifacts list (cache).
+        self._binary_artifacts.append(
+            (
+                wrapped_recipe.recipe.download_and_extract_archive_set.archive_set,
+                wrapped_recipe.path,
+            )
+        )
+        # Now we should be able to find it in the binary artifacts list.
+        result = self._get_binary_path_from_binary_artifacts(binary)
+        check(
+            result,
+            AssertionError(
+                f"Could not find:\n{binary} even though we just added it:\n{wrapped_recipe}"
+            ),
+        )
+        return result
 
     @staticmethod
     def get_binary_by_name_from_list(name: str, binary_list: List[Binary]) -> Binary:
@@ -571,7 +724,4 @@ class BinaryManager(BinaryGetter):
 
 
 def get_default_binary_manager() -> BinaryManager:
-    return BinaryManager(
-        built_in_binary_recipes=BUILT_IN_BINARY_RECIPES_MAP,
-        custom_binary_artifacts_prefix=CUSTOM_BINARY_RECIPES_PATH_PREFIX,
-    )
+    return BinaryManager(built_in_binary_recipes=BUILT_IN_BINARY_RECIPES_MAP)
