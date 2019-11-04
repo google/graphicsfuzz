@@ -23,6 +23,7 @@ This file is self-contained so it can be provided alongside Amber test files.
 
 import argparse
 import os
+import re
 import shutil
 import sys
 from typing import TextIO, cast
@@ -214,12 +215,20 @@ def add_amber_test_to_cpp(
                     break
             cpp_out.write(cpp_in.readline())
 
+            # Compile regex for finding test name from a cpp file line.
+            search_pattern = re.compile(r"(?:\")(.*)(?:\.amber\")")
+
             # Get to the point where we should insert our line.
             line = ""
             for line in cpp_in:
                 if not line.startswith("		{"):
                     break
-                elif line >= line_to_write:
+
+                # Search the test name from the line.
+                result = search_pattern.search(line)
+                # Group 1 is the test name.
+                test_name_in_line = result.group(1) if result else None
+                if test_name_in_line and test_name_in_line >= amber_test_name:
                     break
                 else:
                     cpp_out.write(line)
