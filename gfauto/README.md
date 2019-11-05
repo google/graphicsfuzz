@@ -133,7 +133,7 @@ To start fuzzing, create and change to a directory outside the `gfauto/` directo
 You can get some samples from the GraphicsFuzz project.
 
 ```sh
-mkdir references/ donors/ 
+mkdir references/ donors/
 cp /data/graphicsfuzz_zip/samples/310es/* references/
 cp /data/graphicsfuzz_zip/samples/310es/* donors/
 ```
@@ -195,7 +195,7 @@ export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH
 
 # In a new terminal:
-eval "$(pyenv init -)
+eval "$(pyenv init -)"
 pyenv install 3.6.9
 pyenv global 3.6.9
 

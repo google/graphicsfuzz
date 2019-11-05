@@ -195,3 +195,5 @@ fsync
 fileno
 Debian
 prepended
+config
+configs
