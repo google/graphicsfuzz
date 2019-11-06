@@ -22,10 +22,8 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
-import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
-import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.BreakStmt;
@@ -33,7 +31,6 @@ import com.graphicsfuzz.common.ast.stmt.ExprCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
-import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -243,26 +240,6 @@ public abstract class ReductionOpportunitiesBase
         (variableDeclInfo.getInitializer()).getExpr(),
         context.getShadingLanguageVersion(),
         shaderKind);
-  }
-
-  boolean typeIsReducibleToConst(Type type) {
-    return type != null && type.hasCanonicalConstant();
-  }
-
-  boolean isFullyReducedConstant(Expr expr) {
-    if (expr instanceof ConstantExpr) {
-      return true;
-    }
-    if (!(expr instanceof TypeConstructorExpr)) {
-      return false;
-    }
-    TypeConstructorExpr tce = (TypeConstructorExpr) expr;
-    for (int i = 0; i < tce.getNumChildren(); i++) {
-      if (!isFullyReducedConstant(tce.getChild(i))) {
-        return false;
-      }
-    }
-    return true;
   }
 
   public final List<ReductionOpportunityT> getOpportunities() {

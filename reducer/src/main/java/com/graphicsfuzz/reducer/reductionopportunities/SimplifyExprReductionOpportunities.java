@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
@@ -36,6 +37,10 @@ abstract class SimplifyExprReductionOpportunities
   final Typer typer;
 
   private boolean inLiveInjectedStmtOrDeclaration;
+
+  // Tracks whether we are visiting the components of a loop limiter's declaration (Which includes
+  // its initializer).  We do not wish to mess with these.
+  private boolean inLoopLimiterVariableDeclInfo;
 
   SimplifyExprReductionOpportunities(
         TranslationUnit tu,
@@ -68,6 +73,19 @@ abstract class SimplifyExprReductionOpportunities
     if (StmtReductionOpportunities.isLiveCodeVariableDeclaration(declarationStmt)) {
       assert inLiveInjectedStmtOrDeclaration;
       inLiveInjectedStmtOrDeclaration = false;
+    }
+  }
+
+  @Override
+  public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
+    if (StmtReductionOpportunities.isLooplimiter(variableDeclInfo.getName())) {
+      assert !inLoopLimiterVariableDeclInfo;
+      inLoopLimiterVariableDeclInfo = true;
+    }
+    super.visitVariableDeclInfo(variableDeclInfo);
+    if (StmtReductionOpportunities.isLooplimiter(variableDeclInfo.getName())) {
+      assert inLoopLimiterVariableDeclInfo;
+      inLoopLimiterVariableDeclInfo = false;
     }
   }
 
@@ -110,7 +128,10 @@ abstract class SimplifyExprReductionOpportunities
       return true;
     }
 
-    if (inLiveInjectedStmtOrDeclaration && !referencesLoopLimiter(child)) {
+    if (inLiveInjectedStmtOrDeclaration && !inLoopLimiterVariableDeclInfo
+        && !referencesLoopLimiter(child)) {
+      // We can simplify expressions in live code, so long as they do not reference loop limiters,
+      // and are not related to loop limiter initialization.
       return true;
     }
 

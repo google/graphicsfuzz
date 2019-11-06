@@ -18,8 +18,12 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +40,7 @@ public final class ExprToConstantReductionOpportunities extends SimplifyExprRedu
   void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
     if (allowedToReduceExpr(parent, child) && !inLValueContext()
           && typeIsReducibleToConst(typer.lookupType(child))
-          && !isFullyReducedConstant(child)) {
+          && !isFullyReducedConstant(child, typer)) {
       addOpportunity(new SimplifyExprReductionOpportunity(
                   parent,
                   typer.lookupType(child).getCanonicalConstant(),
@@ -62,4 +66,30 @@ public final class ExprToConstantReductionOpportunities extends SimplifyExprRedu
     finder.visit(tu);
     return finder.getOpportunities();
   }
+
+  private boolean typeIsReducibleToConst(Type type) {
+    return type != null && type.hasCanonicalConstant();
+  }
+
+  private boolean isFullyReducedConstant(Expr expr, Typer typer) {
+    if (expr instanceof ConstantExpr) {
+      assert typer.lookupType(expr) != null : "A constant expression must be typed.";
+      assert typer.lookupType(expr).hasCanonicalConstant() : "All constants have canonical "
+          + "versions.";
+      // To make the reduced shader as clean as possible, we try reducing every constant to
+      // something textually equivalent to its canonical constant.
+      return expr.getText().equals(typer.lookupType(expr).getCanonicalConstant().getText());
+    }
+    if (!(expr instanceof TypeConstructorExpr)) {
+      return false;
+    }
+    TypeConstructorExpr tce = (TypeConstructorExpr) expr;
+    for (int i = 0; i < tce.getNumChildren(); i++) {
+      if (!isFullyReducedConstant(tce.getChild(i), typer)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 }
