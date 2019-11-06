@@ -619,7 +619,7 @@ public class ReductionDriverTest {
 
     final String expected = "#version 310 es\n"
         + "void main() {\n"
-        + "  mix(0.0, 1.0, 0.0);\n"
+        + "  mix(1.0, 1.0, 1.0);\n"
         + "}\n";
 
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
