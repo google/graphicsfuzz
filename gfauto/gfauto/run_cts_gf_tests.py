@@ -23,10 +23,12 @@ from subprocess import CalledProcessError, TimeoutExpired
 from typing import Optional
 
 from gfauto import (
+    android_device,
     binaries_util,
     devices_util,
     fuzz,
     host_device_util,
+    result_util,
     settings_util,
     shader_compiler_util,
     spirv_opt_util,
@@ -106,39 +108,67 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
         # Enumerate tests and devices, writing the results.
 
         for test in sorted(tests_dir.glob("*.amber")):
-            write_entry(test.name)
+            test_name = util.remove_end(test.name, ".amber")
+            write_entry(test_name)
             spirv_shaders = sorted(
                 tests_dir.glob(util.remove_end(test.name, "amber") + "*.spv")
             )
             for device in active_devices:
+                test_run_dir = work_dir / f"{test_name}_{device.name}"
+                util.mkdirs_p(test_run_dir)
                 try:
+                    # Confusingly, some functions below will raise on an error; others will write e.g. CRASH to the
+                    # STATUS file in the output directory. In the latter case, we update |status|. We check |status| at
+                    # the end of this if-else chain and raise fake exceptions if appropriate.
+                    status = fuzz.STATUS_SUCCESS
+
                     if device.HasField("preprocess"):
                         # This just means spirv-op for now.
 
                         assert spirv_opt_path  # noqa
                         for spirv_shader in spirv_shaders:
                             spirv_opt_util.run_spirv_opt_on_spirv_shader(
-                                spirv_shader, work_dir, ["-O"], spirv_opt_path
+                                spirv_shader, test_run_dir, ["-O"], spirv_opt_path
                             )
                     elif device.HasField("shader_compiler"):
                         for spirv_shader in spirv_shaders:
                             shader_compiler_util.run_shader(
                                 shader_compiler_device=device.shader_compiler,
                                 shader_path=spirv_shader,
-                                output_dir=work_dir,
+                                output_dir=test_run_dir,
                                 timeout=DEFAULT_TIMEOUT,
                             )
                     elif device.HasField("swift_shader"):
                         assert swift_shader_path  # noqa
                         host_device_util.run_amber(
                             test,
-                            work_dir,
+                            test_run_dir,
                             dump_image=False,
                             dump_buffer=False,
                             icd=swift_shader_path,
                         )
+                        status = result_util.get_status(test_run_dir)
+                    elif device.HasField("host"):
+                        host_device_util.run_amber(
+                            test, test_run_dir, dump_image=False, dump_buffer=False
+                        )
+                        status = result_util.get_status(test_run_dir)
+                    elif device.HasField("android"):
+                        android_device.run_amber_on_device(
+                            test,
+                            test_run_dir,
+                            dump_image=False,
+                            dump_buffer=False,
+                            serial=device.android.serial,
+                        )
+                        status = result_util.get_status(test_run_dir)
                     else:
                         raise AssertionError(f"Unsupported device {device.name}")
+
+                    if status in (fuzz.STATUS_CRASH, fuzz.STATUS_TOOL_CRASH):
+                        raise CalledProcessError(1, "??")
+                    if status != fuzz.STATUS_SUCCESS:
+                        raise TimeoutExpired("??", fuzz.AMBER_RUN_TIME_LIMIT)
 
                     write_entry("P")
                 except CalledProcessError:
