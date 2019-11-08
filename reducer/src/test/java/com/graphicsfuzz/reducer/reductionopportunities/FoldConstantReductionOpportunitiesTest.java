@@ -628,7 +628,7 @@ public class FoldConstantReductionOpportunitiesTest {
       ParseTimeoutException, InterruptedException, GlslParserException {
     final TranslationUnit tu = ParseHelper.parse(before);
     final List<SimplifyExprReductionOpportunity> ops = FoldConstantReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
             ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     ops.forEach(item -> item.applyReduction());
     CompareAsts.assertEqualAsts(after, tu);
