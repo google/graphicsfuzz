@@ -494,5 +494,4 @@ public class StmtReductionOpportunitiesTest {
 
   }
 
-
 }
