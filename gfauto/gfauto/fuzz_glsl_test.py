@@ -300,7 +300,7 @@ def should_reduce_report(settings: Settings, test_dir: Path) -> bool:
     if (
         not settings.reduce_bad_images
         and status == fuzz.STATUS_CRASH
-        and signature_util == signature_util.BAD_IMAGE_SIGNATURE
+        and signature == signature_util.BAD_IMAGE_SIGNATURE
     ):
         return False
 
