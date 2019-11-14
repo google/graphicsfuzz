@@ -42,6 +42,7 @@ SPIRV_OPT_NAME = "spirv-opt"
 SPIRV_VAL_NAME = "spirv-val"
 SPIRV_DIS_NAME = "spirv-dis"
 SWIFT_SHADER_NAME = "swift_shader_icd"
+AMBER_NAME = "amber"
 
 SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG = "no-validate-after-all"
 
@@ -86,6 +87,17 @@ DEFAULT_BINARIES = [
         name="swift_shader_icd",
         tags=["Debug"],
         version="aaa64b76c0b40c2958a18cfdc623157c8c6e1b7d",
+    ),
+    Binary(
+        name="amber", tags=["Debug"], version="2bade8f0a3608872962c0e9e451ccdd63c3332f9"
+    ),
+    Binary(
+        name="graphicsfuzz", tags=[], version="2bade8f0a3608872962c0e9e451ccdd63c3332f9"
+    ),
+    Binary(
+        name="amdllpc",
+        tags=["Debug"],
+        version="06e4d24336a16ed10d305931804d75a4104dce35",
     ),
 ]
 
@@ -481,26 +493,51 @@ def get_config_from_binary(binary: Binary) -> str:
     return config
 
 
-def get_github_release_recipe(binary: Binary) -> recipe_wrap.RecipeWrap:
+def get_github_release_recipe(  # pylint: disable=too-many-branches;
+    binary: Binary
+) -> recipe_wrap.RecipeWrap:
 
     if binary.name == "glslangValidator":
         project_name = "glslang"
-    elif binary.name in ("spirv-opt", "spirv-as", "spirv-dis", "spirv-val"):
+    elif binary.name in (
+        "spirv-opt",
+        "spirv-as",
+        "spirv-dis",
+        "spirv-val",
+        "spirv-fuzz",
+    ):
         project_name = "SPIRV-Tools"
     elif binary.name == "swift_shader_icd":
         project_name = "swiftshader"
+    elif binary.name == "amber":
+        project_name = "amber"
+    elif binary.name == "graphicsfuzz":
+        project_name = "graphicsfuzz"
+    elif binary.name == "amdllpc":
+        project_name = "llpc"
     else:
-        raise AssertionError(f'Could not map "{binary.name}" to a project.')
+        raise AssertionError(
+            f"Could not find {binary.name}. Could not map {binary.name} to a gfbuild- repo."
+        )
 
-    platform = get_platform_from_binary(binary)
-    config = get_config_from_binary(binary)
-    arch = "x64"
+    if project_name == "graphicsfuzz":
+        # Special case:
+        platform = util.get_platform()
+        tags: List[str] = []
+        repo_name = f"gfbuild-{project_name}"
+        version = binary.version
+        artifact_name = f"gfbuild-{project_name}-{version}"
+    else:
+        # Normal case:
+        platform = get_platform_from_binary(binary)
+        config = get_config_from_binary(binary)
+        arch = "x64"
 
-    tags = [platform, config, arch]
+        tags = [platform, config, arch]
 
-    repo_name = f"gfbuild-{project_name}"
-    version = binary.version
-    artifact_name = f"gfbuild-{project_name}-{version}-{platform}_{arch}_{config}"
+        repo_name = f"gfbuild-{project_name}"
+        version = binary.version
+        artifact_name = f"gfbuild-{project_name}-{version}-{platform}_{arch}_{config}"
 
     recipe = recipe_wrap.RecipeWrap(
         path=f"{BUILT_IN_BINARY_RECIPES_PATH_PREFIX}/{artifact_name}",
@@ -527,7 +564,7 @@ def get_github_release_recipe(binary: Binary) -> recipe_wrap.RecipeWrap:
             Binary(
                 name="glslangValidator",
                 tags=tags,
-                path=f"{project_name}/bin/glslangValidator" + executable_suffix,
+                path=f"{project_name}/bin/glslangValidator{executable_suffix}",
                 version=version,
             )
         ]
@@ -536,25 +573,31 @@ def get_github_release_recipe(binary: Binary) -> recipe_wrap.RecipeWrap:
             Binary(
                 name="spirv-opt",
                 tags=tags,
-                path=f"{project_name}/bin/spirv-opt" + executable_suffix,
+                path=f"{project_name}/bin/spirv-opt{executable_suffix}",
                 version=version,
             ),
             Binary(
                 name="spirv-as",
                 tags=tags,
-                path=f"{project_name}/bin/spirv-as" + executable_suffix,
+                path=f"{project_name}/bin/spirv-as{executable_suffix}",
                 version=version,
             ),
             Binary(
                 name="spirv-dis",
                 tags=tags,
-                path=f"{project_name}/bin/spirv-dis" + executable_suffix,
+                path=f"{project_name}/bin/spirv-dis{executable_suffix}",
                 version=version,
             ),
             Binary(
                 name="spirv-val",
                 tags=tags,
-                path=f"{project_name}/bin/spirv-val" + executable_suffix,
+                path=f"{project_name}/bin/spirv-val{executable_suffix}",
+                version=version,
+            ),
+            Binary(
+                name="spirv-fuzz",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-fuzz{executable_suffix}",
                 version=version,
             ),
         ]
@@ -564,6 +607,35 @@ def get_github_release_recipe(binary: Binary) -> recipe_wrap.RecipeWrap:
                 name="swift_shader_icd",
                 tags=tags,
                 path=f"{project_name}/lib/vk_swiftshader_icd.json",
+                version=version,
+            )
+        ]
+    elif project_name == "amber":
+        binaries = [
+            Binary(
+                name="amber",
+                tags=tags,
+                path=f"{project_name}/bin/amber{executable_suffix}",
+                version=version,
+            )
+        ]
+    elif project_name == "graphicsfuzz":
+        binaries = [
+            Binary(
+                name="graphicsfuzz-tool",
+                tags=tags,
+                path=f"{project_name}/python/drivers/graphicsfuzz-tool",
+                version=version,
+            )
+        ]
+    elif project_name == "llpc":
+        if platform != "Linux":
+            raise AssertionError("amdllpc is only available on Linux")
+        binaries = [
+            Binary(
+                name="amdllpc",
+                tags=tags,
+                path=f"{project_name}/bin/amdllpc{executable_suffix}",
                 version=version,
             )
         ]

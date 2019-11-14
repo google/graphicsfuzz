@@ -427,6 +427,13 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
 
             log(f"Running test on device:\n{device.name}")
 
+            # We will create a binary_manager child with a restricted set of binaries so that we only use the binaries
+            # specified in the test and by the device; if some required binaries are not specified by the test nor the
+            # device, there will be an error instead of falling back to our default binaries. But we keep a reference to
+            # the parent so we can still access certain "test-independent" binaries like Amber.
+
+            binary_manager_parent = binary_manager
+
             if not ignore_test_and_device_binaries:
                 binary_manager = binary_manager.get_child_binary_manager(
                     list(device.binaries) + list(test.binaries)
@@ -571,6 +578,9 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 host_device_util.run_amber(
                     amber_script_file,
                     output_dir,
+                    amber_path=binary_manager_parent.get_binary_path_by_name(
+                        binaries_util.AMBER_NAME
+                    ).path,
                     dump_image=(not is_compute),
                     dump_buffer=is_compute,
                     icd=icd,
