@@ -14,19 +14,19 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-set(SHADER_SCRAPER_LAYER_SOURCES
+set(SHADER_FUZZER_LAYER_SOURCES
     layer.h
     layer.cpp
     layer_impl.cpp
     )
 
-add_library(VkLayer_graphicsfuzz_shader_scraper SHARED ${SHADER_SCRAPER_LAYER_SOURCES})
+add_library(VkLayer_graphicsfuzz_shader_fuzzer SHARED ${SHADER_FUZZER_LAYER_SOURCES})
 
-target_include_directories(VkLayer_graphicsfuzz_shader_scraper
+target_include_directories(VkLayer_graphicsfuzz_shader_fuzzer
         PRIVATE ../external/SPIRV-Tools
         PRIVATE ${CMAKE_BINARY_DIR}/external/SPIRV-Tools
         PRIVATE ../gapid
 )
 
-target_link_libraries(VkLayer_graphicsfuzz_shader_scraper
-        PUBLIC SPIRV-Tools-opt)
+target_link_libraries(VkLayer_graphicsfuzz_shader_fuzzer
+        PUBLIC SPIRV-Tools-fuzz)

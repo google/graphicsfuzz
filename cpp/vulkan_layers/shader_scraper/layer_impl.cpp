@@ -40,6 +40,9 @@ const char kPathSeparator =
 std::atomic_uint shader_counter(0);
 
 void TryScrapingShader(VkShaderModuleCreateInfo const* pCreateInfo) {
+
+  uint32_t shader_id = shader_counter++;
+
   std::string dump_dir_environment_variable =
           "GRAPHICSFUZZ_SHADER_SCRAPER_DUMP_DIR";
 
@@ -86,8 +89,8 @@ void TryScrapingShader(VkShaderModuleCreateInfo const* pCreateInfo) {
   std::stringstream strstr;
   strstr << std::string(dump_dir)
          << kPathSeparator
-         << "captured_shader_"
-         << shader_counter
+         << "_captured_shader_"
+         << shader_id
          << "."
          << extension_prefix
          << ".spv";
@@ -95,7 +98,6 @@ void TryScrapingShader(VkShaderModuleCreateInfo const* pCreateInfo) {
   shader.open(strstr.str().c_str(), std::ios::out | std::ios::binary);
   shader.write((const char*)pCreateInfo->pCode, pCreateInfo->codeSize);
   shader.close();
-  shader_counter++;
 }
 
 VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device, VkShaderModuleCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkShaderModule* pShaderModule) {
