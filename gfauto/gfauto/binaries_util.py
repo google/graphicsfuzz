@@ -83,6 +83,7 @@ DEFAULT_BINARIES = [
     Binary(name="spirv-as", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-val", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-fuzz", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
+    Binary(name="spirv-reduce", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(
         name="swift_shader_icd",
         tags=["Debug"],
@@ -92,7 +93,9 @@ DEFAULT_BINARIES = [
         name="amber", tags=["Debug"], version="2bade8f0a3608872962c0e9e451ccdd63c3332f9"
     ),
     Binary(
-        name="graphicsfuzz", tags=[], version="2bade8f0a3608872962c0e9e451ccdd63c3332f9"
+        name="graphicsfuzz-tool",
+        tags=[],
+        version="2584a469d121aa0b1304115a8640cc4e7aedfcf4",
     ),
     Binary(
         name="amdllpc",
@@ -511,7 +514,7 @@ def get_github_release_recipe(  # pylint: disable=too-many-branches;
         project_name = "swiftshader"
     elif binary.name == "amber":
         project_name = "amber"
-    elif binary.name == "graphicsfuzz":
+    elif binary.name == "graphicsfuzz-tool":
         project_name = "graphicsfuzz"
     elif binary.name == "amdllpc":
         project_name = "llpc"
@@ -523,7 +526,7 @@ def get_github_release_recipe(  # pylint: disable=too-many-branches;
     if project_name == "graphicsfuzz":
         # Special case:
         platform = util.get_platform()
-        tags: List[str] = []
+        tags = PLATFORMS[:]
         repo_name = f"gfbuild-{project_name}"
         version = binary.version
         artifact_name = f"gfbuild-{project_name}-{version}"
@@ -598,6 +601,12 @@ def get_github_release_recipe(  # pylint: disable=too-many-branches;
                 name="spirv-fuzz",
                 tags=tags,
                 path=f"{project_name}/bin/spirv-fuzz{executable_suffix}",
+                version=version,
+            ),
+            Binary(
+                name="spirv-reduce",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-reduce{executable_suffix}",
                 version=version,
             ),
         ]

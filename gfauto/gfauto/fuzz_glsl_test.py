@@ -72,7 +72,12 @@ def fuzz_glsl(
     # Pick a randomly chosen reference.
     unprepared_reference_shader_job = random.choice(references)
 
-    # TODO: Allow GraphicsFuzz to be downloaded.
+    # The "graphicsfuzz-tool" tool is designed to be on your PATH so that e.g. ".bat" will be appended on Windows.
+    # So we use tool_on_path with a custom PATH to get the actual file we want to execute.
+    graphicsfuzz_tool_path = util.tool_on_path(
+        "graphicsfuzz-tool",
+        str(binary_manager.get_binary_path_by_name("graphicsfuzz-tool").path.parent),
+    )
 
     try:
         with util.file_open_text(staging_dir / "log.txt", "w") as log_file:
@@ -81,7 +86,7 @@ def fuzz_glsl(
 
                 # Create the prepared (for Vulkan GLSL) reference.
                 glsl_generate_util.run_prepare_reference(
-                    util.tool_on_path("graphicsfuzz-tool"),
+                    graphicsfuzz_tool_path,
                     unprepared_reference_shader_job,
                     template_source_dir
                     / test_util.REFERENCE_DIR
@@ -90,7 +95,7 @@ def fuzz_glsl(
 
                 # Generate the variant (GraphicsFuzz requires the unprepared reference as input).
                 glsl_generate_util.run_generate(
-                    util.tool_on_path("graphicsfuzz-tool"),
+                    graphicsfuzz_tool_path,
                     unprepared_reference_shader_job,
                     donors_dir,
                     template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
@@ -307,7 +312,9 @@ def should_reduce_report(settings: Settings, test_dir: Path) -> bool:
     return True
 
 
-def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
+def run_reduction_on_report(
+    test_dir: Path, reports_dir: Path, binary_manager: binaries_util.BinaryManager
+) -> None:
     test = test_util.metadata_read(test_dir)
 
     try:
@@ -316,6 +323,7 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
             test_dir_reduction_output=test_dir,
             test_dir_to_reduce=reduced_test,
             preserve_semantics=True,
+            binary_manager=binary_manager,
             reduction_name="1",
         )
 
@@ -324,6 +332,7 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
                 test_dir_reduction_output=test_dir,
                 test_dir_to_reduce=reduced_test,
                 preserve_semantics=False,
+                binary_manager=binary_manager,
                 reduction_name="2",
             )
 
@@ -381,7 +390,7 @@ def handle_test(
     # For each report, run a reduction on the target device with the device-specific crash signature.
     for test_dir_in_reports in report_paths:
         if should_reduce_report(settings, test_dir_in_reports):
-            run_reduction_on_report(test_dir_in_reports, reports_dir)
+            run_reduction_on_report(test_dir_in_reports, reports_dir, binary_manager)
         else:
             log("Skipping reduction due to settings.")
 
@@ -616,6 +625,7 @@ def run_reduction(
     test_dir_reduction_output: Path,
     test_dir_to_reduce: Path,
     preserve_semantics: bool,
+    binary_manager: binaries_util.BinaryManager,
     reduction_name: str = "reduction1",
 ) -> Path:
     test = test_util.metadata_read(test_dir_to_reduce)
@@ -659,6 +669,7 @@ def run_reduction(
         output_dir=test_util.get_reduction_work_directory(
             reduced_test_dir, name_of_shader_to_reduce
         ),
+        binary_manager=binary_manager,
         preserve_semantics=preserve_semantics,
     )
 
@@ -689,13 +700,19 @@ def run_glsl_reduce(
     source_dir: Path,
     name_of_shader_to_reduce: str,
     output_dir: Path,
+    binary_manager: binaries_util.BinaryManager,
     preserve_semantics: bool = False,
 ) -> Path:
 
     input_shader_job = source_dir / name_of_shader_to_reduce / test_util.SHADER_JOB
 
+    glsl_reduce_path = util.tool_on_path(
+        "glsl-reduce",
+        str(binary_manager.get_binary_path_by_name("graphicsfuzz-tool").path.parent),
+    )
+
     cmd = [
-        str(tool_on_path("glsl-reduce")),
+        str(glsl_reduce_path),
         str(input_shader_job),
         "--output",
         str(output_dir),
