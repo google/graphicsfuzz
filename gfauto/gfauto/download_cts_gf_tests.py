@@ -28,6 +28,7 @@ from gfauto import (
     binaries_util,
     fuzz,
     gerrit_util,
+    settings_util,
     subprocess_util,
     util,
 )
@@ -137,14 +138,23 @@ def main() -> None:
 
     parser.add_argument("gerrit_cookie", help=GERRIT_COOKIE_ARGUMENT_DESCRIPTION)
 
+    parser.add_argument(
+        "--settings",
+        help="Path to the settings JSON file for this instance.",
+        default=str(settings_util.DEFAULT_SETTINGS_FILE_PATH),
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     cookie: str = parsed_args.gerrit_cookie
+    settings_path: Path = Path(parsed_args.settings)
 
     # Need git.
     git_tool = util.tool_on_path("git")
 
-    binaries = binaries_util.get_default_binary_manager()
+    settings = settings_util.read_or_create(settings_path)
+
+    binaries = binaries_util.get_default_binary_manager(settings=settings)
 
     download_cts_graphicsfuzz_tests(git_tool, cookie, binaries)
 

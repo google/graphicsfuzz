@@ -220,9 +220,9 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
             ref for ref in references if shader_job_util.get_related_files(ref)
         ]
 
-    binary_manager = binaries_util.get_default_binary_manager().get_child_binary_manager(
-        list(settings.custom_binaries), prepend=True
-    )
+    binary_manager = binaries_util.get_default_binary_manager(
+        settings=settings
+    ).get_child_binary_manager(list(settings.custom_binaries), prepend=True)
 
     # For convenience, for some virtual devices, we mutate the device proto (in memory) to add the newest relevant
     # Binary protos (e.g. SwiftShader binary info).

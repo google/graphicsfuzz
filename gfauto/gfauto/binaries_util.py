@@ -26,11 +26,13 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import attr
+import requests
 
 from gfauto import artifact_util, recipe_wrap, test_util, util
 from gfauto.common_pb2 import Archive, ArchiveSet, Binary
 from gfauto.gflogging import log
 from gfauto.recipe_pb2 import Recipe, RecipeDownloadAndExtractArchiveSet
+from gfauto.settings_pb2 import Settings
 from gfauto.util import check
 
 BINARY_RECIPES_PREFIX = "//binaries"
@@ -496,32 +498,39 @@ def get_config_from_binary(binary: Binary) -> str:
     return config
 
 
-def get_github_release_recipe(  # pylint: disable=too-many-branches;
-    binary: Binary
-) -> recipe_wrap.RecipeWrap:
-
-    if binary.name == "glslangValidator":
+def binary_name_to_project_name(binary_name: str) -> str:
+    if binary_name == "glslangValidator":
         project_name = "glslang"
-    elif binary.name in (
+    elif binary_name in (
         "spirv-opt",
         "spirv-as",
         "spirv-dis",
         "spirv-val",
         "spirv-fuzz",
+        "spirv-reduce",
     ):
         project_name = "SPIRV-Tools"
-    elif binary.name == "swift_shader_icd":
+    elif binary_name == "swift_shader_icd":
         project_name = "swiftshader"
-    elif binary.name == "amber":
+    elif binary_name == "amber":
         project_name = "amber"
-    elif binary.name == "graphicsfuzz-tool":
+    elif binary_name == "graphicsfuzz-tool":
         project_name = "graphicsfuzz"
-    elif binary.name == "amdllpc":
+    elif binary_name == "amdllpc":
         project_name = "llpc"
     else:
         raise AssertionError(
-            f"Could not find {binary.name}. Could not map {binary.name} to a gfbuild- repo."
+            f"Could not find {binary_name}. Could not map {binary_name} to a gfbuild- repo."
         )
+
+    return project_name
+
+
+def get_github_release_recipe(  # pylint: disable=too-many-branches;
+    binary: Binary
+) -> recipe_wrap.RecipeWrap:
+
+    project_name = binary_name_to_project_name(binary.name)
 
     if project_name == "graphicsfuzz":
         # Special case:
@@ -805,5 +814,82 @@ class BinaryManager(BinaryGetter):
         return result
 
 
-def get_default_binary_manager() -> BinaryManager:
-    return BinaryManager(built_in_binary_recipes=BUILT_IN_BINARY_RECIPES_MAP)
+def get_default_binary_manager(settings: Settings) -> BinaryManager:
+    """
+    Gets the default binary manager.
+
+    :param settings: Passing just "Settings()" will use the hardcoded (slightly out-of-date) default binary_list, which
+    may be fine, especially if you plan to use specific versions anyway by immediately overriding the binary_list using
+    get_child_binary_manager().
+    :return:
+    """
+    return BinaryManager(
+        binary_list=list(settings.latest_binary_versions) or DEFAULT_BINARIES,
+        built_in_binary_recipes=BUILT_IN_BINARY_RECIPES_MAP,
+    )
+
+
+class DownloadVersionError(Exception):
+    pass
+
+
+def _download_latest_version_number(project_name: str) -> str:
+
+    url = f"https://api.github.com/repos/google/gfbuild-{project_name}/releases"
+    log(f"Checking: {url}")
+    response = requests.get(url)
+    if not response:
+        raise DownloadVersionError(f"Failed to find version of {project_name}")
+
+    result = response.json()
+
+    expected_num_assets_map = {
+        "amber": 17,
+        "glslang": 15,
+        "SPIRV-Tools": 15,
+        "swiftshader": 15,
+        "graphicsfuzz": 5,
+        "llpc": 7,
+    }
+
+    expected_num_assets = expected_num_assets_map[project_name]
+
+    for release in result:
+        assets = release["assets"]
+        if len(assets) != expected_num_assets:
+            log(
+                f"SKIPPING a release of {project_name} with {len(assets)} assets (expected {expected_num_assets})"
+            )
+            continue
+
+        tag_name: str = release["tag_name"]
+        last_slash = tag_name.rfind("/")
+        if last_slash == -1:
+            raise DownloadVersionError(
+                f"Failed to find version of {project_name}; tag name: {tag_name}"
+            )
+        version = tag_name[last_slash + 1 :]
+        log(f"Found {project_name} version {version}")
+        return version
+
+    raise DownloadVersionError(
+        f"Failed to find version of {project_name} with {expected_num_assets} assets"
+    )
+
+
+def download_latest_binary_version_numbers() -> List[Binary]:
+    log("Downloading the latest binary version numbers...")
+
+    # Deep copy of DEFAULT_BINARIES.
+    binaries: List[Binary] = []
+    for binary in DEFAULT_BINARIES:
+        new_binary = Binary()
+        new_binary.CopyFrom(binary)
+        binaries.append(new_binary)
+
+    # Update version numbers.
+    for binary in binaries:
+        project_name = binary_name_to_project_name(binary.name)
+        binary.version = _download_latest_version_number(project_name)
+
+    return binaries

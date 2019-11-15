@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 
 from gfauto import binaries_util, fuzz_glsl_test, test_util
+from gfauto.settings_pb2 import Settings
 from gfauto.util import check, check_dir_exists
 
 
@@ -58,7 +59,9 @@ def main() -> None:
 
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
 
-    binary_manager = binaries_util.get_default_binary_manager().get_child_binary_manager(
+    binary_manager = binaries_util.get_default_binary_manager(
+        settings=Settings()
+    ).get_child_binary_manager(
         binary_list=list(test.binaries) + list(test.device.binaries)
     )
 

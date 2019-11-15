@@ -137,7 +137,7 @@ def is_screen_off_or_locked(serial: Optional[str] = None) -> bool:
 def get_all_android_devices() -> List[Device]:
     result: List[Device] = []
 
-    log("Getting the list of connected Android devices via adb")
+    log("Getting the list of connected Android devices via adb\n")
 
     adb_devices = adb_check(None, ["devices", "-l"], verbose=True)
     stdout: str = adb_devices.stdout

@@ -46,7 +46,7 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
 
     parser.add_argument(
         "--settings",
-        help="Path to the settings JSON file for this fuzzing instance.",
+        help="Path to the settings JSON file for this instance.",
         default=str(settings_util.DEFAULT_SETTINGS_FILE_PATH),
     )
 
@@ -67,7 +67,7 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
     active_devices = devices_util.get_active_devices(settings.device_list)
 
     # Binaries.
-    binaries = binaries_util.get_default_binary_manager()
+    binaries = binaries_util.get_default_binary_manager(settings=settings)
 
     work_dir = Path() / "temp" / f"cts_run_{fuzz.get_random_name()[:8]}"
 
