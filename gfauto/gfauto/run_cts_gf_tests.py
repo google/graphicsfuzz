@@ -146,6 +146,9 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
                                 shader_compiler_device=device.shader_compiler,
                                 shader_path=spirv_shader,
                                 output_dir=test_run_dir,
+                                compiler_path=binaries.get_binary_path_by_name(
+                                    device.shader_compiler.binary
+                                ).path,
                                 timeout=DEFAULT_TIMEOUT,
                             )
                     elif device.HasField("swift_shader"):

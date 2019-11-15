@@ -20,37 +20,23 @@ Used to run offline shader compilers on all shaders in a shader job.
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
-from gfauto import shader_job_util, subprocess_util, util
+from gfauto import binaries_util, shader_job_util, subprocess_util, util
 from gfauto.device_pb2 import DeviceShaderCompiler
 from gfauto.gflogging import log
-from gfauto.util import check_file_exists
 
 DEFAULT_TIMEOUT = 600
-
-
-def resolve_compiler_path(shader_compiler_device: DeviceShaderCompiler) -> Path:
-    try:
-        compiler_path: Path = util.tool_on_path(shader_compiler_device.binary)
-    except util.ToolNotOnPathError:
-        # If not found on PATH, then assume it is an absolute path.
-        compiler_path = Path(shader_compiler_device.binary)
-        check_file_exists(compiler_path)
-    return compiler_path
 
 
 def run_shader(
     shader_compiler_device: DeviceShaderCompiler,
     shader_path: Path,
     output_dir: Path,
-    compiler_path: Optional[Path] = None,
+    compiler_path: Path,
     timeout: int = DEFAULT_TIMEOUT,
 ) -> Path:
     output_file_path = output_dir / (shader_path.name + ".out")
-
-    if not compiler_path:
-        compiler_path = resolve_compiler_path(shader_compiler_device)
 
     cmd = [str(compiler_path)]
     cmd += list(shader_compiler_device.args)
@@ -64,8 +50,11 @@ def run_shader_job(
     shader_compiler_device: DeviceShaderCompiler,
     spirv_shader_job_path: Path,
     output_dir: Path,
+    binary_manager: binaries_util.BinaryManager,
 ) -> List[Path]:
-    compiler_path = resolve_compiler_path(shader_compiler_device)
+    compiler_path = binary_manager.get_binary_path_by_name(
+        shader_compiler_device.binary
+    ).path
 
     log(f"Running {str(compiler_path)} on shader job {str(spirv_shader_job_path)}")
 

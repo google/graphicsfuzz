@@ -224,22 +224,24 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
         list(settings.custom_binaries), prepend=True
     )
 
-    # For convenience, we add the default (i.e. newest) SwiftShader ICD (binary) to any swift_shader devices
-    # so that we don't need to specify it and update it in the device list (on disk).
-    # Thus, when we save the test, the device will contain the version of SwiftShader we used.
+    # For convenience, for some virtual devices, we mutate the device proto (in memory) to add the newest relevant
+    # Binary protos (e.g. SwiftShader binary info).
+    # When we save a report to disk, the test's device proto will contain the binaries we used.
     for device in active_devices:
 
-        # noinspection PyTypeChecker
-        if device.HasField("swift_shader"):
-            swift_binaries = [
-                binary
-                for binary in device.binaries
-                if "swift" not in binary.name.lower()
-            ]
-            if not swift_binaries:
-                device.binaries.extend(
-                    [binary_manager.get_binary_by_name("swift_shader_icd")]
-                )
+        if device.HasField("swift_shader") and not [
+            binary for binary in device.binaries if binary.name == "swift_shader_icd"
+        ]:
+            device.binaries.extend(
+                [binary_manager.get_binary_by_name("swift_shader_icd")]
+            )
+
+        if (
+            device.HasField("shader_compiler")
+            and device.shader_compiler.binary == "amdllpc"
+            and not [binary for binary in device.binaries if binary.name == "amdllpc"]
+        ):
+            device.binaries.extend([binary_manager.get_binary_by_name("amdllpc")])
 
     while True:
 

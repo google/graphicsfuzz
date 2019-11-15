@@ -46,7 +46,7 @@ from gfauto.device_pb2 import Device
 from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 from gfauto.test_pb2 import Test, TestGlsl
-from gfauto.util import check, tool_on_path
+from gfauto.util import check
 
 
 class ReductionFailedError(Exception):
@@ -508,6 +508,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                             device.shader_compiler,
                             combined_spirv_shader_job.spirv_shader_job,
                             output_dir,
+                            binary_manager=binary_manager,
                         )
                     except subprocess.CalledProcessError:
                         result_util.write_status(
