@@ -36,31 +36,33 @@ namespace graphicsfuzz_shader_fuzzer {
 
 std::atomic_uint shader_counter(0);
 
-std::vector<uint32_t> TryFuzzingShader(VkShaderModuleCreateInfo const*
-pCreateInfo) {
+std::vector<uint32_t>
+TryFuzzingShader(VkShaderModuleCreateInfo const *pCreateInfo) {
 
   uint32_t shader_id = shader_counter++;
 
   std::string work_dir_environment_variable =
-          "GRAPHICSFUZZ_SHADER_FUZZER_WORK_DIR";
+      "GRAPHICSFUZZ_SHADER_FUZZER_WORK_DIR";
 
-  const char* work_dir = std::getenv(work_dir_environment_variable.c_str());
+  const char *work_dir = std::getenv(work_dir_environment_variable.c_str());
   if (!work_dir) {
-    std::cerr << "Environment variable " << work_dir_environment_variable <<
-              " is not set; shaders will not be fuzzed." << std::endl;
+    std::cerr << "Environment variable " << work_dir_environment_variable
+              << " is not set; shaders will not be fuzzed." << std::endl;
     return std::vector<uint32_t>();
   }
   const spv_target_env target_env = SPV_ENV_UNIVERSAL_1_3;
   const uint32_t code_size_in_words =
-          static_cast<uint32_t>(pCreateInfo->codeSize) / 4;
+      static_cast<uint32_t>(pCreateInfo->codeSize) / 4;
   spvtools::SpirvTools tools(target_env);
   if (!tools.IsValid()) {
     std::cerr << "Did not manage to create a SPIRV-Tools instance; shaders "
-                 "will not be fuzzed." << std::endl;
+                 "will not be fuzzed."
+              << std::endl;
     return std::vector<uint32_t>();
   }
   spvtools::fuzz::Fuzzer fuzzer(target_env);
-  std::vector<uint32_t> binary_in(pCreateInfo->pCode, pCreateInfo->pCode + code_size_in_words);
+  std::vector<uint32_t> binary_in(pCreateInfo->pCode,
+                                  pCreateInfo->pCode + code_size_in_words);
   std::vector<uint32_t> result;
   spvtools::fuzz::protobufs::FactSequence no_facts;
   spvtools::fuzz::protobufs::TransformationSequence transformation_sequence;
@@ -68,13 +70,10 @@ pCreateInfo) {
   spvtools::FuzzerOptions fuzzer_options;
   fuzzer_options.set_random_seed(shader_id);
 
-  auto fuzzer_result_status = fuzzer.Run(binary_in,
-          no_facts,
-          fuzzer_options,
-          &result,
-          &transformation_sequence);
+  auto fuzzer_result_status = fuzzer.Run(binary_in, no_facts, fuzzer_options,
+                                         &result, &transformation_sequence);
   if (fuzzer_result_status !=
-  spvtools::fuzz::Fuzzer::FuzzerResultStatus::kComplete) {
+      spvtools::fuzz::Fuzzer::FuzzerResultStatus::kComplete) {
     std::cerr << "Fuzzing failed." << std::endl;
     return std::vector<uint32_t>();
   }
@@ -101,12 +100,13 @@ pCreateInfo) {
   // Write out the transformations in JSON format
   {
     std::stringstream transformations_json_name;
-    transformations_json_name << "_fuzzed_" << shader_id << ".transformations_json";
+    transformations_json_name << "_fuzzed_" << shader_id
+                              << ".transformations_json";
     std::string json_string;
     auto json_options = google::protobuf::util::JsonOptions();
     json_options.add_whitespace = true;
     auto json_generation_status = google::protobuf::util::MessageToJsonString(
-            transformation_sequence, &json_string, json_options);
+        transformation_sequence, &json_string, json_options);
     if (json_generation_status == google::protobuf::util::Status::OK) {
       std::ofstream transformations_json_file(transformations_json_name.str());
       transformations_json_file << json_string;
@@ -115,16 +115,18 @@ pCreateInfo) {
   }
 
   return result;
-
 }
 
-VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device, VkShaderModuleCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkShaderModule* pShaderModule) {
+VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device,
+                              VkShaderModuleCreateInfo const *pCreateInfo,
+                              AllocationCallbacks pAllocator,
+                              VkShaderModule *pShaderModule) {
   std::vector<uint32_t> fuzzed = TryFuzzingShader(pCreateInfo);
   VkShaderModuleCreateInfo fuzzed_shader_module_create_info;
-  VkShaderModuleCreateInfo const* fuzzed_shader_module_create_info_pointer;
+  VkShaderModuleCreateInfo const *fuzzed_shader_module_create_info_pointer;
   if (!fuzzed.empty()) {
     fuzzed_shader_module_create_info_pointer =
-            &fuzzed_shader_module_create_info;
+        &fuzzed_shader_module_create_info;
     fuzzed_shader_module_create_info.sType = pCreateInfo->sType;
     fuzzed_shader_module_create_info.pNext = pCreateInfo->pNext;
     fuzzed_shader_module_create_info.flags = pCreateInfo->flags;
@@ -133,7 +135,8 @@ VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device, Vk
   } else {
     fuzzed_shader_module_create_info_pointer = pCreateInfo;
   }
-  return next(device, fuzzed_shader_module_create_info_pointer, pAllocator, pShaderModule);
+  return next(device, fuzzed_shader_module_create_info_pointer, pAllocator,
+              pShaderModule);
 }
 
-}
+} // namespace graphicsfuzz_shader_fuzzer
