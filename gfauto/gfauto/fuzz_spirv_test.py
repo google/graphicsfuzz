@@ -95,6 +95,7 @@ def run_spirv_reduce_or_shrink(
     extension_to_reduce: str,
     output_dir: Path,
     preserve_semantics: bool,
+    binary_manager: binaries_util.BinaryManager,
 ) -> Path:
     input_shader_job = source_dir / name_of_shader_job_to_reduce / test_util.SHADER_JOB
 
@@ -120,7 +121,7 @@ def run_spirv_reduce_or_shrink(
 
     if preserve_semantics:
         cmd = [
-            str(util.tool_on_path("spirv-fuzz")),
+            str(binary_manager.get_binary_path_by_name("spirv-fuzz").path),
             str(original_spirv_file),
             "-o",
             str(final_shader),
@@ -137,7 +138,7 @@ def run_spirv_reduce_or_shrink(
         ]
     else:
         cmd = [
-            str(util.tool_on_path("spirv-reduce")),
+            str(binary_manager.get_binary_path_by_name("spirv-reduce").path),
             str(transformed_spirv_file),
             "-o",
             str(final_shader),
@@ -170,6 +171,7 @@ def run_reduction(
     shader_job_name_to_reduce: str,
     extension_to_reduce: str,
     preserve_semantics: bool,
+    binary_manager: binaries_util.BinaryManager,
     reduction_name: str = "reduction1",
 ) -> Path:
     test = test_util.metadata_read(test_dir_to_reduce)
@@ -206,6 +208,7 @@ def run_reduction(
             extension_to_reduce=extension_to_reduce,
             output_dir=output_dir,
             preserve_semantics=preserve_semantics,
+            binary_manager=binary_manager,
         )
     else:
         final_shader_path = run_spirv_reduce_or_shrink(
@@ -214,6 +217,7 @@ def run_reduction(
             extension_to_reduce=extension_to_reduce,
             output_dir=output_dir,
             preserve_semantics=preserve_semantics,
+            binary_manager=binary_manager,
         )
 
     check(
@@ -257,7 +261,7 @@ def run_reduction(
 
 
 def run_reduction_on_report(  # pylint: disable=too-many-locals;
-    test_dir: Path, reports_dir: Path
+    test_dir: Path, reports_dir: Path, binary_manager: binaries_util.BinaryManager
 ) -> None:
     test = test_util.metadata_read(test_dir)
 
@@ -313,6 +317,7 @@ def run_reduction_on_report(  # pylint: disable=too-many-locals;
                 shader_job_name_to_reduce=shader_job_to_reduce.name,
                 extension_to_reduce=extension_to_reduce,
                 preserve_semantics=True,
+                binary_manager=binary_manager,
                 reduction_name=f"0_{index}_{suffix.split('.')[1]}",
             )
 
@@ -326,6 +331,7 @@ def run_reduction_on_report(  # pylint: disable=too-many-locals;
                     shader_job_name_to_reduce=shader_job_to_reduce.name,
                     extension_to_reduce=extension_to_reduce,
                     preserve_semantics=False,
+                    binary_manager=binary_manager,
                     reduction_name=f"1_{index}_{suffix.split('.')[1]}",
                 )
 
@@ -384,7 +390,9 @@ def handle_test(
     # For each report, run a reduction on the target device with the device-specific crash signature.
     for test_dir_in_reports in report_paths:
         if fuzz_glsl_test.should_reduce_report(settings, test_dir_in_reports):
-            run_reduction_on_report(test_dir_in_reports, reports_dir)
+            run_reduction_on_report(
+                test_dir_in_reports, reports_dir, binary_manager=binary_manager
+            )
         else:
             log("Skipping reduction due to settings.")
 
@@ -421,7 +429,7 @@ def fuzz_spirv(
             try:
                 gflogging.push_stream_for_logging(log_file)
                 spirv_fuzz_util.run_generate_on_shader_job(
-                    util.tool_on_path("spirv-fuzz"),
+                    binary_manager.get_binary_path_by_name("spirv-fuzz").path,
                     reference_spirv_shader_job,
                     template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
                     seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
