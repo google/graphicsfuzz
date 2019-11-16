@@ -19,7 +19,7 @@
 Used to read and write the Settings proto.
 See settings.proto.
 """
-
+import traceback
 from pathlib import Path
 
 from gfauto import binaries_util, devices_util, proto_util
@@ -69,7 +69,21 @@ def write_default(settings_path: Path) -> Path:
     settings = Settings()
     settings.CopyFrom(DEFAULT_SETTINGS)
     devices_util.get_device_list(settings.device_list)
-    settings.latest_binary_versions.extend(
-        binaries_util.download_latest_binary_version_numbers()
-    )
+
+    # noinspection PyBroadException
+    try:
+
+        settings.latest_binary_versions.extend(
+            binaries_util.download_latest_binary_version_numbers()
+        )
+    except Exception:  # pylint: disable=broad-except;
+        message = "WARNING: Could not download the latest binary version numbers. We will just use the (older) hardcoded versions."
+        details = traceback.format_exc()  # noqa: SC100, SC200 (spelling of exc)
+
+        log(message)
+        log(f"\nDetails:\n{details}\n\n")
+        log(message)
+
+        settings.latest_binary_versions.extend(binaries_util.DEFAULT_BINARIES)
+
     return write(settings, settings_path)
