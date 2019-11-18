@@ -192,7 +192,7 @@ git clone https://github.com/pyenv/pyenv.git ~/.pyenv
 
 # Add the following two lines to your ~/.bashrc file.
 export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH
+export PATH="$PYENV_ROOT/bin:$PATH"
 
 # In a new terminal:
 eval "$(pyenv init -)"

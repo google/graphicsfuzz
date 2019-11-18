@@ -88,7 +88,7 @@ def get_device_list(device_list: Optional[DeviceList] = None) -> DeviceList:
 
     # Offline compiler.
     device = Device(
-        name="offline_compiler_1",
+        name="amdllpc",
         shader_compiler=DeviceShaderCompiler(
             binary="amdllpc", args=["-gfxip=9.0.0", "-verify-ir", "-auto-layout-desc"]
         ),

@@ -26,11 +26,13 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import attr
+import requests
 
 from gfauto import artifact_util, recipe_wrap, test_util, util
 from gfauto.common_pb2 import Archive, ArchiveSet, Binary
 from gfauto.gflogging import log
 from gfauto.recipe_pb2 import Recipe, RecipeDownloadAndExtractArchiveSet
+from gfauto.settings_pb2 import Settings
 from gfauto.util import check
 
 BINARY_RECIPES_PREFIX = "//binaries"
@@ -42,6 +44,7 @@ SPIRV_OPT_NAME = "spirv-opt"
 SPIRV_VAL_NAME = "spirv-val"
 SPIRV_DIS_NAME = "spirv-dis"
 SWIFT_SHADER_NAME = "swift_shader_icd"
+AMBER_NAME = "amber"
 
 SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG = "no-validate-after-all"
 
@@ -82,10 +85,24 @@ DEFAULT_BINARIES = [
     Binary(name="spirv-as", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-val", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-fuzz", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
+    Binary(name="spirv-reduce", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(
         name="swift_shader_icd",
         tags=["Debug"],
         version="aaa64b76c0b40c2958a18cfdc623157c8c6e1b7d",
+    ),
+    Binary(
+        name="amber", tags=["Debug"], version="2bade8f0a3608872962c0e9e451ccdd63c3332f9"
+    ),
+    Binary(
+        name="graphicsfuzz-tool",
+        tags=[],
+        version="2584a469d121aa0b1304115a8640cc4e7aedfcf4",
+    ),
+    Binary(
+        name="amdllpc",
+        tags=["Debug"],
+        version="06e4d24336a16ed10d305931804d75a4104dce35",
     ),
 ]
 
@@ -481,26 +498,58 @@ def get_config_from_binary(binary: Binary) -> str:
     return config
 
 
-def get_github_release_recipe(binary: Binary) -> recipe_wrap.RecipeWrap:
-
-    if binary.name == "glslangValidator":
+def binary_name_to_project_name(binary_name: str) -> str:
+    if binary_name == "glslangValidator":
         project_name = "glslang"
-    elif binary.name in ("spirv-opt", "spirv-as", "spirv-dis", "spirv-val"):
+    elif binary_name in (
+        "spirv-opt",
+        "spirv-as",
+        "spirv-dis",
+        "spirv-val",
+        "spirv-fuzz",
+        "spirv-reduce",
+    ):
         project_name = "SPIRV-Tools"
-    elif binary.name == "swift_shader_icd":
+    elif binary_name == "swift_shader_icd":
         project_name = "swiftshader"
+    elif binary_name == "amber":
+        project_name = "amber"
+    elif binary_name == "graphicsfuzz-tool":
+        project_name = "graphicsfuzz"
+    elif binary_name == "amdllpc":
+        project_name = "llpc"
     else:
-        raise AssertionError(f'Could not map "{binary.name}" to a project.')
+        raise AssertionError(
+            f"Could not find {binary_name}. Could not map {binary_name} to a gfbuild- repo."
+        )
 
-    platform = get_platform_from_binary(binary)
-    config = get_config_from_binary(binary)
-    arch = "x64"
+    return project_name
 
-    tags = [platform, config, arch]
 
-    repo_name = f"gfbuild-{project_name}"
-    version = binary.version
-    artifact_name = f"gfbuild-{project_name}-{version}-{platform}_{arch}_{config}"
+def get_github_release_recipe(  # pylint: disable=too-many-branches;
+    binary: Binary
+) -> recipe_wrap.RecipeWrap:
+
+    project_name = binary_name_to_project_name(binary.name)
+
+    if project_name == "graphicsfuzz":
+        # Special case:
+        platform = util.get_platform()
+        tags = PLATFORMS[:]
+        repo_name = f"gfbuild-{project_name}"
+        version = binary.version
+        artifact_name = f"gfbuild-{project_name}-{version}"
+    else:
+        # Normal case:
+        platform = get_platform_from_binary(binary)
+        config = get_config_from_binary(binary)
+        arch = "x64"
+
+        tags = [platform, config, arch]
+
+        repo_name = f"gfbuild-{project_name}"
+        version = binary.version
+        artifact_name = f"gfbuild-{project_name}-{version}-{platform}_{arch}_{config}"
 
     recipe = recipe_wrap.RecipeWrap(
         path=f"{BUILT_IN_BINARY_RECIPES_PATH_PREFIX}/{artifact_name}",
@@ -527,7 +576,7 @@ def get_github_release_recipe(binary: Binary) -> recipe_wrap.RecipeWrap:
             Binary(
                 name="glslangValidator",
                 tags=tags,
-                path=f"{project_name}/bin/glslangValidator" + executable_suffix,
+                path=f"{project_name}/bin/glslangValidator{executable_suffix}",
                 version=version,
             )
         ]
@@ -536,25 +585,37 @@ def get_github_release_recipe(binary: Binary) -> recipe_wrap.RecipeWrap:
             Binary(
                 name="spirv-opt",
                 tags=tags,
-                path=f"{project_name}/bin/spirv-opt" + executable_suffix,
+                path=f"{project_name}/bin/spirv-opt{executable_suffix}",
                 version=version,
             ),
             Binary(
                 name="spirv-as",
                 tags=tags,
-                path=f"{project_name}/bin/spirv-as" + executable_suffix,
+                path=f"{project_name}/bin/spirv-as{executable_suffix}",
                 version=version,
             ),
             Binary(
                 name="spirv-dis",
                 tags=tags,
-                path=f"{project_name}/bin/spirv-dis" + executable_suffix,
+                path=f"{project_name}/bin/spirv-dis{executable_suffix}",
                 version=version,
             ),
             Binary(
                 name="spirv-val",
                 tags=tags,
-                path=f"{project_name}/bin/spirv-val" + executable_suffix,
+                path=f"{project_name}/bin/spirv-val{executable_suffix}",
+                version=version,
+            ),
+            Binary(
+                name="spirv-fuzz",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-fuzz{executable_suffix}",
+                version=version,
+            ),
+            Binary(
+                name="spirv-reduce",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-reduce{executable_suffix}",
                 version=version,
             ),
         ]
@@ -564,6 +625,35 @@ def get_github_release_recipe(binary: Binary) -> recipe_wrap.RecipeWrap:
                 name="swift_shader_icd",
                 tags=tags,
                 path=f"{project_name}/lib/vk_swiftshader_icd.json",
+                version=version,
+            )
+        ]
+    elif project_name == "amber":
+        binaries = [
+            Binary(
+                name="amber",
+                tags=tags,
+                path=f"{project_name}/bin/amber{executable_suffix}",
+                version=version,
+            )
+        ]
+    elif project_name == "graphicsfuzz":
+        binaries = [
+            Binary(
+                name="graphicsfuzz-tool",
+                tags=tags,
+                path=f"{project_name}/python/drivers/graphicsfuzz-tool",
+                version=version,
+            )
+        ]
+    elif project_name == "llpc":
+        if platform != "Linux":
+            raise AssertionError("amdllpc is only available on Linux")
+        binaries = [
+            Binary(
+                name="amdllpc",
+                tags=tags,
+                path=f"{project_name}/bin/amdllpc{executable_suffix}",
                 version=version,
             )
         ]
@@ -724,5 +814,82 @@ class BinaryManager(BinaryGetter):
         return result
 
 
-def get_default_binary_manager() -> BinaryManager:
-    return BinaryManager(built_in_binary_recipes=BUILT_IN_BINARY_RECIPES_MAP)
+def get_default_binary_manager(settings: Settings) -> BinaryManager:
+    """
+    Gets the default binary manager.
+
+    :param settings: Passing just "Settings()" will use the hardcoded (slightly out-of-date) default binary_list, which
+    may be fine, especially if you plan to use specific versions anyway by immediately overriding the binary_list using
+    get_child_binary_manager().
+    :return:
+    """
+    return BinaryManager(
+        binary_list=list(settings.latest_binary_versions) or DEFAULT_BINARIES,
+        built_in_binary_recipes=BUILT_IN_BINARY_RECIPES_MAP,
+    )
+
+
+class DownloadVersionError(Exception):
+    pass
+
+
+def _download_latest_version_number(project_name: str) -> str:
+
+    url = f"https://api.github.com/repos/google/gfbuild-{project_name}/releases"
+    log(f"Checking: {url}")
+    response = requests.get(url)
+    if not response:
+        raise DownloadVersionError(f"Failed to find version of {project_name}")
+
+    result = response.json()
+
+    expected_num_assets_map = {
+        "amber": 17,
+        "glslang": 15,
+        "SPIRV-Tools": 15,
+        "swiftshader": 15,
+        "graphicsfuzz": 5,
+        "llpc": 7,
+    }
+
+    expected_num_assets = expected_num_assets_map[project_name]
+
+    for release in result:
+        assets = release["assets"]
+        if len(assets) != expected_num_assets:
+            log(
+                f"SKIPPING a release of {project_name} with {len(assets)} assets (expected {expected_num_assets})"
+            )
+            continue
+
+        tag_name: str = release["tag_name"]
+        last_slash = tag_name.rfind("/")
+        if last_slash == -1:
+            raise DownloadVersionError(
+                f"Failed to find version of {project_name}; tag name: {tag_name}"
+            )
+        version = tag_name[last_slash + 1 :]
+        log(f"Found {project_name} version {version}")
+        return version
+
+    raise DownloadVersionError(
+        f"Failed to find version of {project_name} with {expected_num_assets} assets"
+    )
+
+
+def download_latest_binary_version_numbers() -> List[Binary]:
+    log("Downloading the latest binary version numbers...")
+
+    # Deep copy of DEFAULT_BINARIES.
+    binaries: List[Binary] = []
+    for binary in DEFAULT_BINARIES:
+        new_binary = Binary()
+        new_binary.CopyFrom(binary)
+        binaries.append(new_binary)
+
+    # Update version numbers.
+    for binary in binaries:
+        project_name = binary_name_to_project_name(binary.name)
+        binary.version = _download_latest_version_number(project_name)
+
+    return binaries

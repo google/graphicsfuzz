@@ -33,20 +33,22 @@ from gfauto import (
     fuzz,
     fuzz_glsl_test,
     result_util,
+    settings_util,
     signature_util,
     test_util,
     tool,
     util,
 )
 from gfauto.gflogging import log
-
-# TODO: Maybe add helper method and throw exceptions instead of calling sys.exit.
+from gfauto.settings_pb2 import Settings
 
 # TODO: Could we make the interestingness test the only way of running a shader job (or indeed, any test)?
 #  We would want to pass the output directory (default is one will be created, as is currently the case), the test_json,
 #  no crash signature nor device (we can get that from the test_json), although perhaps these could be overridden?
 #  A device (or test?) could then even specify a custom interestingness command, although the default one would probably
 #  be the same for all devices and it would look at the device info in the test_json?
+
+# TODO: Maybe add helper method and throw exceptions instead of calling sys.exit.
 
 
 def main() -> None:  # pylint: disable=too-many-statements, too-many-locals, too-many-branches;
@@ -79,7 +81,7 @@ def main() -> None:  # pylint: disable=too-many-statements, too-many-locals, too
     parser.add_argument(
         "--use_default_binaries",
         help="Use the latest binaries, ignoring those defined in the test.json. "
-        "Implies --fallback_binaries.",
+        "Implies --fallback_binaries. Passing --settings is recommended to ensure the latest binaries are used.",
         action="store_true",
     )
 
@@ -95,11 +97,26 @@ def main() -> None:  # pylint: disable=too-many-statements, too-many-locals, too
         default=None,
     )
 
+    parser.add_argument(
+        "--settings",
+        help="Path to a settings JSON file for this instance. "
+        "Unlike with gfauto_fuzz, the default value is an empty string, which is ignored. "
+        "You only need to use a settings file if you pass --use_default_binaries and you want to use the latest binary versions. "
+        'In this case, use e.g. "--settings settings.json" so that a default settings file is generated with the latest binary version numbers '
+        "and then run gfauto_interestingness_test again to use those latest binaries.",
+        default="",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     source_dir: Path = Path(parsed_args.source_dir)
     override_shader_job: Optional[Tuple[str, str]] = parsed_args.override_shader_job
     override_shader: Optional[Tuple[str, str, str]] = parsed_args.override_shader
+    settings_str: str = parsed_args.settings
+
+    settings = Settings()
+    if settings_str:
+        settings = settings_util.read_or_create(Path(settings_str))
 
     use_default_binaries: bool = parsed_args.use_default_binaries
     fallback_binaries: bool = parsed_args.fallback_binaries or use_default_binaries
@@ -113,7 +130,7 @@ def main() -> None:  # pylint: disable=too-many-statements, too-many-locals, too
     else:
         raise AssertionError("Need --output or --override_shader[_job] parameter.")
 
-    binary_manager = binaries_util.get_default_binary_manager()
+    binary_manager = binaries_util.get_default_binary_manager(settings=settings)
 
     if not fallback_binaries:
         binary_manager = binary_manager.get_child_binary_manager(binary_list=[])

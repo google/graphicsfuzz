@@ -19,10 +19,11 @@
 Used to read and write the Settings proto.
 See settings.proto.
 """
-
+import traceback
 from pathlib import Path
 
-from gfauto import devices_util, proto_util
+from gfauto import binaries_util, devices_util, proto_util
+from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 
 DEFAULT_SETTINGS_FILE_PATH = Path("settings.json")
@@ -44,14 +45,15 @@ def read_or_create(settings_path: Path) -> Settings:
     try:
         return read(settings_path)
     except FileNotFoundError as exception:
-        message = f'gfauto could not find "{settings_path}"'
-        if not DEFAULT_SETTINGS_FILE_PATH.exists():
-            write_default(DEFAULT_SETTINGS_FILE_PATH)
-            message += (
-                f'; a default settings file "{str(DEFAULT_SETTINGS_FILE_PATH)}" has been created for you. '
-                f"Please review it and then try again. \n"
-            )
-        raise NoSettingsFile(message) from exception
+        if settings_path.exists():
+            raise
+        log(
+            f'\ngfauto could not find "{settings_path}" so one will be created for you\n'
+        )
+        write_default(settings_path)
+        raise NoSettingsFile(
+            f'\ngfauto could not find "{settings_path}" so one was created for you. Please review "{settings_path}" and try again.\n'
+        ) from exception
 
 
 def read(settings_path: Path) -> Settings:
@@ -67,4 +69,21 @@ def write_default(settings_path: Path) -> Path:
     settings = Settings()
     settings.CopyFrom(DEFAULT_SETTINGS)
     devices_util.get_device_list(settings.device_list)
+
+    # noinspection PyBroadException
+    try:
+
+        settings.latest_binary_versions.extend(
+            binaries_util.download_latest_binary_version_numbers()
+        )
+    except Exception:  # pylint: disable=broad-except;
+        message = "WARNING: Could not download the latest binary version numbers. We will just use the (older) hardcoded versions."
+        details = traceback.format_exc()  # noqa: SC100, SC200 (spelling of exc)
+
+        log(message)
+        log(f"\nDetails:\n{details}\n\n")
+        log(message)
+
+        settings.latest_binary_versions.extend(binaries_util.DEFAULT_BINARIES)
+
     return write(settings, settings_path)

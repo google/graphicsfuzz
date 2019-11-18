@@ -32,6 +32,7 @@ def run_amber(
     output_dir: Path,
     dump_image: bool,
     dump_buffer: bool,
+    amber_path: Path,
     skip_render: bool = False,
     debug_layers: bool = False,
     icd: Optional[Path] = None,
@@ -47,6 +48,7 @@ def run_amber(
                 output_dir,
                 dump_image,
                 dump_buffer,
+                amber_path,
                 skip_render,
                 debug_layers,
                 icd,
@@ -62,19 +64,18 @@ def run_amber_helper(
     output_dir: Path,
     dump_image: bool,
     dump_buffer: bool,
+    amber_path: Path,
     skip_render: bool = False,
     debug_layers: bool = False,
     icd: Optional[Path] = None,
 ) -> Path:
-
-    # TODO: Use binary paths.
 
     variant_image_file = output_dir / fuzz.VARIANT_IMAGE_FILE_NAME
     reference_image_file = output_dir / fuzz.REFERENCE_IMAGE_FILE_NAME
     buffer_file = output_dir / fuzz.BUFFER_FILE_NAME
 
     cmd = [
-        str(util.tool_on_path("amber")),
+        str(amber_path),
         str(amber_script_file),
         "--log-graphics-calls-time",
         "--disable-spirv-val",

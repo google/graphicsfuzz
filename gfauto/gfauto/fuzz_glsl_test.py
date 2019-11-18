@@ -46,7 +46,7 @@ from gfauto.device_pb2 import Device
 from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 from gfauto.test_pb2 import Test, TestGlsl
-from gfauto.util import check, tool_on_path
+from gfauto.util import check
 
 
 class ReductionFailedError(Exception):
@@ -72,7 +72,12 @@ def fuzz_glsl(
     # Pick a randomly chosen reference.
     unprepared_reference_shader_job = random.choice(references)
 
-    # TODO: Allow GraphicsFuzz to be downloaded.
+    # The "graphicsfuzz-tool" tool is designed to be on your PATH so that e.g. ".bat" will be appended on Windows.
+    # So we use tool_on_path with a custom PATH to get the actual file we want to execute.
+    graphicsfuzz_tool_path = util.tool_on_path(
+        "graphicsfuzz-tool",
+        str(binary_manager.get_binary_path_by_name("graphicsfuzz-tool").path.parent),
+    )
 
     try:
         with util.file_open_text(staging_dir / "log.txt", "w") as log_file:
@@ -81,7 +86,7 @@ def fuzz_glsl(
 
                 # Create the prepared (for Vulkan GLSL) reference.
                 glsl_generate_util.run_prepare_reference(
-                    util.tool_on_path("graphicsfuzz-tool"),
+                    graphicsfuzz_tool_path,
                     unprepared_reference_shader_job,
                     template_source_dir
                     / test_util.REFERENCE_DIR
@@ -90,7 +95,7 @@ def fuzz_glsl(
 
                 # Generate the variant (GraphicsFuzz requires the unprepared reference as input).
                 glsl_generate_util.run_generate(
-                    util.tool_on_path("graphicsfuzz-tool"),
+                    graphicsfuzz_tool_path,
                     unprepared_reference_shader_job,
                     donors_dir,
                     template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
@@ -300,14 +305,16 @@ def should_reduce_report(settings: Settings, test_dir: Path) -> bool:
     if (
         not settings.reduce_bad_images
         and status == fuzz.STATUS_CRASH
-        and signature_util == signature_util.BAD_IMAGE_SIGNATURE
+        and signature == signature_util.BAD_IMAGE_SIGNATURE
     ):
         return False
 
     return True
 
 
-def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
+def run_reduction_on_report(
+    test_dir: Path, reports_dir: Path, binary_manager: binaries_util.BinaryManager
+) -> None:
     test = test_util.metadata_read(test_dir)
 
     try:
@@ -316,6 +323,7 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
             test_dir_reduction_output=test_dir,
             test_dir_to_reduce=reduced_test,
             preserve_semantics=True,
+            binary_manager=binary_manager,
             reduction_name="1",
         )
 
@@ -324,6 +332,7 @@ def run_reduction_on_report(test_dir: Path, reports_dir: Path) -> None:
                 test_dir_reduction_output=test_dir,
                 test_dir_to_reduce=reduced_test,
                 preserve_semantics=False,
+                binary_manager=binary_manager,
                 reduction_name="2",
             )
 
@@ -381,7 +390,7 @@ def handle_test(
     # For each report, run a reduction on the target device with the device-specific crash signature.
     for test_dir_in_reports in report_paths:
         if should_reduce_report(settings, test_dir_in_reports):
-            run_reduction_on_report(test_dir_in_reports, reports_dir)
+            run_reduction_on_report(test_dir_in_reports, reports_dir, binary_manager)
         else:
             log("Skipping reduction due to settings.")
 
@@ -426,6 +435,13 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 device = test.device
 
             log(f"Running test on device:\n{device.name}")
+
+            # We will create a binary_manager child with a restricted set of binaries so that we only use the binaries
+            # specified in the test and by the device; if some required binaries are not specified by the test nor the
+            # device, there will be an error instead of falling back to our default binaries. But we keep a reference to
+            # the parent so we can still access certain "test-independent" binaries like Amber.
+
+            binary_manager_parent = binary_manager
 
             if not ignore_test_and_device_binaries:
                 binary_manager = binary_manager.get_child_binary_manager(
@@ -492,6 +508,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                             device.shader_compiler,
                             combined_spirv_shader_job.spirv_shader_job,
                             output_dir,
+                            binary_manager=binary_manager,
                         )
                     except subprocess.CalledProcessError:
                         result_util.write_status(
@@ -571,6 +588,9 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                 host_device_util.run_amber(
                     amber_script_file,
                     output_dir,
+                    amber_path=binary_manager_parent.get_binary_path_by_name(
+                        binaries_util.AMBER_NAME
+                    ).path,
                     dump_image=(not is_compute),
                     dump_buffer=is_compute,
                     icd=icd,
@@ -606,6 +626,7 @@ def run_reduction(
     test_dir_reduction_output: Path,
     test_dir_to_reduce: Path,
     preserve_semantics: bool,
+    binary_manager: binaries_util.BinaryManager,
     reduction_name: str = "reduction1",
 ) -> Path:
     test = test_util.metadata_read(test_dir_to_reduce)
@@ -649,6 +670,7 @@ def run_reduction(
         output_dir=test_util.get_reduction_work_directory(
             reduced_test_dir, name_of_shader_to_reduce
         ),
+        binary_manager=binary_manager,
         preserve_semantics=preserve_semantics,
     )
 
@@ -679,13 +701,19 @@ def run_glsl_reduce(
     source_dir: Path,
     name_of_shader_to_reduce: str,
     output_dir: Path,
+    binary_manager: binaries_util.BinaryManager,
     preserve_semantics: bool = False,
 ) -> Path:
 
     input_shader_job = source_dir / name_of_shader_to_reduce / test_util.SHADER_JOB
 
+    glsl_reduce_path = util.tool_on_path(
+        "glsl-reduce",
+        str(binary_manager.get_binary_path_by_name("graphicsfuzz-tool").path.parent),
+    )
+
     cmd = [
-        str(tool_on_path("glsl-reduce")),
+        str(glsl_reduce_path),
         str(input_shader_job),
         "--output",
         str(output_dir),

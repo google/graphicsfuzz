@@ -46,7 +46,7 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
 
     parser.add_argument(
         "--settings",
-        help="Path to the settings JSON file for this fuzzing instance.",
+        help="Path to the settings JSON file for this instance.",
         default=str(settings_util.DEFAULT_SETTINGS_FILE_PATH),
     )
 
@@ -67,7 +67,7 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
     active_devices = devices_util.get_active_devices(settings.device_list)
 
     # Binaries.
-    binaries = binaries_util.get_default_binary_manager()
+    binaries = binaries_util.get_default_binary_manager(settings=settings)
 
     work_dir = Path() / "temp" / f"cts_run_{fuzz.get_random_name()[:8]}"
 
@@ -86,22 +86,32 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
 
         spirv_opt_path: Optional[Path] = None
         swift_shader_path: Optional[Path] = None
+        amber_path: Optional[Path] = None
 
         # Enumerate active devices, writing their name and storing binary paths if needed.
         write_entry("test")
         for device in active_devices:
-            if device.HasField("preprocess"):
+
+            if device.name == "host_preprocessor":
+                # We are actually just running spirv-opt on the SPIR-V shaders.
                 write_entry("spirv-opt")
+            else:
+                write_entry(device.name)
+
+            if device.HasField("preprocess"):
                 spirv_opt_path = binaries.get_binary_path_by_name(
                     binaries_util.SPIRV_OPT_NAME
                 ).path
-            elif device.HasField("swift_shader"):
-                write_entry("SwiftShader")
+
+            if device.HasField("swift_shader"):
                 swift_shader_path = binaries.get_binary_path_by_name(
                     binaries_util.SWIFT_SHADER_NAME
                 ).path
-            else:
-                write_entry(device.name)
+
+            if device.HasField("swift_shader") or device.HasField("host"):
+                amber_path = binaries.get_binary_path_by_name(
+                    binaries_util.AMBER_NAME
+                ).path
 
         write_newline()
 
@@ -136,21 +146,31 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
                                 shader_compiler_device=device.shader_compiler,
                                 shader_path=spirv_shader,
                                 output_dir=test_run_dir,
+                                compiler_path=binaries.get_binary_path_by_name(
+                                    device.shader_compiler.binary
+                                ).path,
                                 timeout=DEFAULT_TIMEOUT,
                             )
                     elif device.HasField("swift_shader"):
                         assert swift_shader_path  # noqa
+                        assert amber_path  # noqa
                         host_device_util.run_amber(
                             test,
                             test_run_dir,
+                            amber_path=amber_path,
                             dump_image=False,
                             dump_buffer=False,
                             icd=swift_shader_path,
                         )
                         status = result_util.get_status(test_run_dir)
                     elif device.HasField("host"):
+                        assert amber_path  # noqa
                         host_device_util.run_amber(
-                            test, test_run_dir, dump_image=False, dump_buffer=False
+                            test,
+                            test_run_dir,
+                            amber_path=amber_path,
+                            dump_image=False,
+                            dump_buffer=False,
                         )
                         status = result_util.get_status(test_run_dir)
                     elif device.HasField("android"):

@@ -26,9 +26,9 @@ message Settings {
   // A list of devices, including the list of active devices names that will actually be used in this session.
   DeviceList device_list = 1;
 
-  // A list of custom binaries; this should rarely be set, but can be used, for example, if you want to override the
-  // default versions of some binaries for all devices. It is probably more common to override binaries for certain
-  // devices, or to just update the hardcoded set of default binaries (in binaries_util.py) to their newer versions.
+  // A list of custom binary versions; this should rarely be set, but can be used, for example, if you want to override
+  // the default versions of some binaries for all devices. It is probably more common to specify binaries for certain
+  // devices.
   repeated Binary custom_binaries = 2;
 
   // Allow at most this many duplicate crashes per device.
@@ -47,4 +47,7 @@ message Settings {
 
   // Reduce bad images. E.g. your test device renders an incorrect image.
   bool reduce_bad_images = 7;
+
+  // A list of built-in binary versions that will be generated automatically.
+  repeated Binary latest_binary_versions = 8;
 }

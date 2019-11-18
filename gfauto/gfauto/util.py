@@ -129,8 +129,8 @@ class ToolNotOnPathError(Exception):
     pass
 
 
-def tool_on_path(tool: str) -> pathlib.Path:  # noqa VNE002
-    result = shutil.which(tool)
+def tool_on_path(tool: str, path: Optional[str] = None) -> pathlib.Path:  # noqa VNE002
+    result = shutil.which(tool, path=path)
     if result is None:
         raise ToolNotOnPathError(
             "Could not find {} on PATH. Please add to PATH.".format(tool)

@@ -35,6 +35,7 @@ from gfauto import (
     test_util,
     util,
 )
+from gfauto.settings_pb2 import Settings
 from gfauto.util import check
 
 AMBER_COMMAND_PROBE_TOP_LEFT_RED = "probe rgba (0, 0) (1, 0, 0, 1)\n"
@@ -375,7 +376,9 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
     shader_jobs = get_shader_jobs(source_dir)
 
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
-    binary_manager = binaries_util.get_default_binary_manager().get_child_binary_manager(
+    binary_manager = binaries_util.get_default_binary_manager(
+        settings=Settings()
+    ).get_child_binary_manager(
         binary_list=list(test.device.binaries) + list(test.binaries)
     )
 
