@@ -712,6 +712,12 @@ def write_shader(
         f"{amber_file.stem}.{shader_name}{shader_type_suffix}{shader_job_util.SUFFIX_SPIRV}"
     )
 
+    # E.g. dEQP-VK.graphicsfuzz.ifs-and-whiles.variant_fragment_shader.spvas
+    # These files can be added to the llpc repo as a shader test.
+    shader_llpc_asm_test_file_path = output_dir / (
+        f"dEQP-VK.graphicsfuzz.{amber_file.stem}.{shader_name}.spvas"
+    )
+
     util.file_write_text(shader_asm_file_path, shader_asm)
     files_written.append(shader_asm_file_path)
 
@@ -730,6 +736,20 @@ def write_shader(
     )
 
     files_written.append(shader_spirv_file_path)
+
+    util.file_write_text(
+        shader_llpc_asm_test_file_path,
+        """; BEGIN_SHADERTEST
+; RUN: amdllpc -verify-ir -spvgen-dir=%spvgendir% -v %gfxip %s | FileCheck -check-prefix=SHADERTEST %s
+; SHADERTEST-LABEL: {{^// LLPC.*}} SPIRV-to-LLVM translation results
+; SHADERTEST: AMDLLPC SUCCESS
+; END_SHADERTEST
+;
+"""
+        + f"; Based on dEQP-VK.graphicsfuzz.{amber_file.stem}\n\n"
+        + shader_asm,
+    )
+    files_written.append(shader_llpc_asm_test_file_path)
 
     return files_written
 
