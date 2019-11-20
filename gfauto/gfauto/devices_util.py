@@ -54,7 +54,7 @@ def swift_shader_device(binary_manager: binaries_util.BinaryManager) -> Device:
 
     driver_details = ""
     try:
-        host_device_util.get_driver_details(
+        driver_details = host_device_util.get_driver_details(
             amber_path, swift_shader_binary_and_path.path
         )
     except GetDeviceDetailsError as ex:
@@ -83,7 +83,7 @@ def device_host(binary_manager: binaries_util.BinaryManager) -> Device:
 
     driver_details = ""
     try:
-        host_device_util.get_driver_details(amber_path)
+        driver_details = host_device_util.get_driver_details(amber_path)
     except GetDeviceDetailsError as ex:
         log(f"WARNING: Failed to get device driver details: {ex}")
 
