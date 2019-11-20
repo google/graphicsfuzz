@@ -179,6 +179,15 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     force_no_stack_traces: bool,
 ) -> None:
 
+    try:
+        artifact_util.artifact_path_get_root()
+    except FileNotFoundError:
+        log(
+            "Could not find ROOT file (in the current directory or above) to mark where binaries should be stored. "
+            "Creating a ROOT file in the current directory."
+        )
+        util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
+
     settings = settings_util.read_or_create(settings_path)
 
     active_devices = devices_util.get_active_devices(settings.device_list)
@@ -189,15 +198,6 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     references_dir = Path() / "references"
     donors_dir = Path() / "donors"
     spirv_fuzz_shaders_dir = Path() / "spirv_fuzz_shaders"
-
-    try:
-        artifact_util.artifact_path_get_root()
-    except FileNotFoundError:
-        log(
-            "Could not find ROOT file (in the current directory or above) to mark where binaries should be stored. "
-            "Creating a ROOT file in the current directory."
-        )
-        util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
 
     # Log a warning if there is no tool on the PATH for printing stack traces.
     prepended = util.prepend_catchsegv_if_available([], log_warning=True)
@@ -223,25 +223,6 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     binary_manager = binaries_util.get_default_binary_manager(
         settings=settings
     ).get_child_binary_manager(list(settings.custom_binaries), prepend=True)
-
-    # For convenience, for some virtual devices, we mutate the device proto (in memory) to add the newest relevant
-    # Binary protos (e.g. SwiftShader binary info).
-    # When we save a report to disk, the test's device proto will contain the binaries we used.
-    for device in active_devices:
-
-        if device.HasField("swift_shader") and not [
-            binary for binary in device.binaries if binary.name == "swift_shader_icd"
-        ]:
-            device.binaries.extend(
-                [binary_manager.get_binary_by_name("swift_shader_icd")]
-            )
-
-        if (
-            device.HasField("shader_compiler")
-            and device.shader_compiler.binary == "amdllpc"
-            and not [binary for binary in device.binaries if binary.name == "amdllpc"]
-        ):
-            device.binaries.extend([binary_manager.get_binary_by_name("amdllpc")])
 
     while True:
 

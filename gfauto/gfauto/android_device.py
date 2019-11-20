@@ -27,7 +27,7 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from typing import List, Optional
 
-from gfauto import fuzz, gflogging, result_util, subprocess_util, util
+from gfauto import devices_util, fuzz, gflogging, result_util, subprocess_util, util
 from gfauto.device_pb2 import Device, DeviceAndroid
 from gfauto.gflogging import log
 from gfauto.util import check, file_open_text, file_write_text
@@ -134,6 +134,31 @@ def is_screen_off_or_locked(serial: Optional[str] = None) -> bool:
     return False
 
 
+def get_device_driver_details(serial: str) -> str:
+    prepare_device(wait_for_screen=True, serial=serial)
+    cmd = [
+        "shell",
+        # The following is a single string:
+        f"cd {ANDROID_DEVICE_RESULT_DIR} && "
+        # -d disables Vulkan validation layers.
+        f"{ANDROID_DEVICE_AMBER} -d -V",
+    ]
+    try:
+        result = adb_check(serial, cmd, verbose=True)
+
+    except subprocess.SubprocessError as ex:
+        raise devices_util.GetDeviceDetailsError() from ex
+
+    match = devices_util.AMBER_DEVICE_DETAILS_PATTERN.search(result.stdout)
+
+    if not match:
+        raise devices_util.GetDeviceDetailsError(
+            "Could not find device details in stdout: " + result.stdout
+        )
+
+    return match.group(1)
+
+
 def get_all_android_devices() -> List[Device]:
     result: List[Device] = []
 
@@ -163,9 +188,30 @@ def get_all_android_devices() -> List[Device]:
                 device_model = util.remove_start(fields[field_index], "model:")
                 break
 
+        build_fingerprint: str = ""
+        try:
+            adb_fingerprint_result = adb_check(
+                device_serial, ["adb", "shell", "getprop ro.build.fingerprint"]
+            )
+            build_fingerprint = adb_fingerprint_result.stdout
+            build_fingerprint = build_fingerprint.strip()
+        except subprocess.CalledProcessError:
+            log("Failed to get device fingerprint")
+
+        driver_details = ""
+        try:
+            driver_details = get_device_driver_details(device_serial)
+        except devices_util.GetDeviceDetailsError as ex:
+            log(f"WARNING: Failed to get device driver details: {ex}")
+
         device = Device(
             name=f"{device_model}_{device_serial}",
-            android=DeviceAndroid(serial=device_serial, model=device_model),
+            android=DeviceAndroid(
+                serial=device_serial,
+                model=device_model,
+                build_fingerprint=build_fingerprint,
+            ),
+            device_properties=driver_details,
         )
         log(f"Found Android device:\n{str(device)}")
         result.append(device)
