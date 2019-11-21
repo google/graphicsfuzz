@@ -18,10 +18,10 @@
 
 Used to enumerate the available devices and work with device lists.
 """
+import re
+from typing import Dict, List, Optional, Pattern
 
-from typing import Dict, List, Optional
-
-from gfauto import android_device
+from gfauto import android_device, binaries_util, host_device_util
 from gfauto.device_pb2 import (
     Device,
     DeviceHost,
@@ -33,10 +33,41 @@ from gfauto.device_pb2 import (
 from gfauto.gflogging import log
 from gfauto.util import ToolNotOnPathError
 
+# [\s\S] matches anything, including newlines.
+# *? is non-greedy.
 
-def swift_shader_device() -> Device:
-    # TODO: version hash, maybe a better name.
-    return Device(name="swift_shader", swift_shader=DeviceSwiftShader())
+AMBER_DEVICE_DETAILS_PATTERN: Pattern[str] = re.compile(
+    r"Physical device properties:\n([\s\S]*?)End of physical device properties."
+)
+
+
+class GetDeviceDetailsError(Exception):
+    pass
+
+
+def swift_shader_device(binary_manager: binaries_util.BinaryManager) -> Device:
+
+    amber_path = binary_manager.get_binary_path_by_name(binaries_util.AMBER_NAME).path
+    swift_shader_binary_and_path = binary_manager.get_binary_path_by_name(
+        binaries_util.SWIFT_SHADER_NAME
+    )
+
+    driver_details = ""
+    try:
+        driver_details = host_device_util.get_driver_details(
+            amber_path, swift_shader_binary_and_path.path
+        )
+    except GetDeviceDetailsError as ex:
+        log(f"WARNING: Failed to get device driver details: {ex}")
+
+    device = Device(
+        name="swift_shader",
+        swift_shader=DeviceSwiftShader(),
+        binaries=[swift_shader_binary_and_path.binary],
+        device_properties=driver_details,
+    )
+
+    return device
 
 
 def device_preprocessor() -> Device:
@@ -47,12 +78,22 @@ def device_preprocessor() -> Device:
     return Device(name="host_preprocessor", preprocess=DevicePreprocess())
 
 
-def device_host() -> Device:
-    # TODO: add details to host (and indeed, to all devices).
-    return Device(name="host", host=DeviceHost())
+def device_host(binary_manager: binaries_util.BinaryManager) -> Device:
+    amber_path = binary_manager.get_binary_path_by_name(binaries_util.AMBER_NAME).path
+
+    driver_details = ""
+    try:
+        driver_details = host_device_util.get_driver_details(amber_path)
+    except GetDeviceDetailsError as ex:
+        log(f"WARNING: Failed to get device driver details: {ex}")
+
+    return Device(name="host", host=DeviceHost(), device_properties=driver_details)
 
 
-def get_device_list(device_list: Optional[DeviceList] = None) -> DeviceList:
+def get_device_list(
+    binary_manager: binaries_util.BinaryManager,
+    device_list: Optional[DeviceList] = None,
+) -> DeviceList:
 
     if not device_list:
         device_list = DeviceList()
@@ -66,12 +107,12 @@ def get_device_list(device_list: Optional[DeviceList] = None) -> DeviceList:
     device_list.active_device_names.append(device.name)
 
     # SwiftShader.
-    device = swift_shader_device()
+    device = swift_shader_device(binary_manager)
     device_list.devices.extend([device])
     device_list.active_device_names.append(device.name)
 
     # Host device.
-    device = device_host()
+    device = device_host(binary_manager)
     device_list.devices.extend([device])
     device_list.active_device_names.append(device.name)
 
@@ -92,6 +133,7 @@ def get_device_list(device_list: Optional[DeviceList] = None) -> DeviceList:
         shader_compiler=DeviceShaderCompiler(
             binary="amdllpc", args=["-gfxip=9.0.0", "-verify-ir", "-auto-layout-desc"]
         ),
+        binaries=[binary_manager.get_binary_path_by_name("amdllpc").binary],
     )
     device_list.devices.extend([device])
     # Don't add to active devices, since this is mostly just an example.

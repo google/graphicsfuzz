@@ -26,7 +26,7 @@ import os
 import re
 import shutil
 import sys
-from typing import TextIO, cast
+from typing import Pattern, TextIO, cast
 
 SHORT_DESCRIPTION_LINE_PREFIX = "# Short description: "
 
@@ -37,6 +37,8 @@ MUST_PASS_PATHS = [
     ),
     os.path.join("external", "vulkancts", "mustpass", "master", "vk-default.txt"),
 ]
+
+TEST_NAME_IN_LINE_PATTERN: Pattern[str] = re.compile(r"\"(.*?)\.amber\"")
 
 
 def check(condition: bool, exception: Exception) -> None:
@@ -86,15 +88,16 @@ def get_amber_test_file_path(vk_gl_cts: str, amber_test_name: str) -> str:
     )
 
 
-def get_graphics_fuzz_tests_cpp_file_path(vk_gl_cts: str) -> str:
+def get_graphics_fuzz_tests_index_file_path(vk_gl_cts: str) -> str:
     return os.path.join(
         vk_gl_cts,
         "external",
         "vulkancts",
-        "modules",
+        "data",
         "vulkan",
         "amber",
-        "vktAmberGraphicsFuzzTests.cpp",
+        "graphicsfuzz",
+        "index.txt",
     )
 
 
@@ -136,7 +139,7 @@ def check_and_add_tabs(
     return line
 
 
-def get_cpp_line_to_write(amber_test_name: str, short_description: str) -> str:
+def get_index_line_to_write(amber_test_name: str, short_description: str) -> str:
 
     # A test line has the following form, except with tabs aligning each field.
     # { "name.amber", "name", "description" },
@@ -144,17 +147,17 @@ def get_cpp_line_to_write(amber_test_name: str, short_description: str) -> str:
     #   1             2       3             4
 
     # 1
-    test_file_name_start_index = 13
+    test_file_name_start_index = 5
     # 2
-    test_name_start_index = 61
+    test_name_start_index = 53
     # 3
-    test_description_start_index = 101
+    test_description_start_index = 93
     # 4
-    test_close_bracket_index = 189
+    test_close_bracket_index = 181
 
     tab_size = 4
 
-    line = "\t\t{"
+    line = "{"
 
     line = check_and_add_tabs(
         line, "internal", "internal", test_file_name_start_index, tab_size
@@ -183,71 +186,54 @@ def get_cpp_line_to_write(amber_test_name: str, short_description: str) -> str:
     return line
 
 
-def add_amber_test_to_cpp(
+def add_amber_test_to_index_file(
     vk_gl_cts: str, amber_test_name: str, input_amber_test_file_path: str
 ) -> None:
-    log("Adding Amber test to the C++.")
+    log("Adding Amber test to the index file.")
 
     short_description = get_amber_test_short_description(input_amber_test_file_path)
 
-    cpp_file = get_graphics_fuzz_tests_cpp_file_path(vk_gl_cts)
-    cpp_file_bak = cpp_file + ".bak"
+    index_file = get_graphics_fuzz_tests_index_file_path(vk_gl_cts)
+    index_file_bak = index_file + ".bak"
 
-    copyfile(cpp_file, cpp_file_bak)
+    copyfile(index_file, index_file_bak)
 
-    line_to_write = get_cpp_line_to_write(amber_test_name, short_description)
+    line_to_write = get_index_line_to_write(amber_test_name, short_description)
 
-    log("Writing from {} to {}.".format(cpp_file_bak, cpp_file))
+    log("Writing from {} to {}.".format(index_file_bak, index_file))
 
-    with open_helper(cpp_file_bak, "r") as cpp_in:
-        with open_helper(cpp_file, "w") as cpp_out:
+    with open_helper(index_file_bak, "r") as index_file_in:
+        with open_helper(index_file, "w") as index_file_out:
 
-            # The start of the tests look like this (except with tabs!):
-            #     tests[] =
-            #     {
-            #         {    "continue-and-merge.amber",...
-            #         {    "control-flow-switch.amber",...
-
-            # Get to just before the first test line, writing lines as we go.
-            for line in cpp_in:
-                cpp_out.write(line)
-                if line.startswith("\ttests[] ="):
-                    break
-            cpp_out.write(cpp_in.readline())
-
-            # Compile regex for finding test name from a cpp file line.
-            search_pattern = re.compile(r"(?:\")(.*)(?:\.amber\")")
+            # {    "continue-and-merge.amber",...
 
             # Get to the point where we should insert our line.
             line = ""
-            for line in cpp_in:
-                if not line.startswith("		{"):
-                    break
-
-                # Search the test name from the line.
-                result = search_pattern.search(line)
-                # Group 1 is the test name.
-                test_name_in_line = result.group(1) if result else None
-                if test_name_in_line and test_name_in_line >= amber_test_name:
-                    break
-                else:
-                    cpp_out.write(line)
+            for line in index_file_in:
+                if line.startswith("{"):
+                    result = TEST_NAME_IN_LINE_PATTERN.search(line)
+                    if result:
+                        # Group 1 is the test name.
+                        test_name_in_line = result.group(1)
+                        if test_name_in_line >= amber_test_name:
+                            break
+                index_file_out.write(line)
 
             # Write our line and then the previously read line.
 
             # Don't write the line if it already exists; idempotent.
             if line != line_to_write:
                 log("Writing line: {}".format(line_to_write[:-1]))
-                cpp_out.write(line_to_write)
+                index_file_out.write(line_to_write)
             else:
                 log("Line already exists.")
-            cpp_out.write(line)
+            index_file_out.write(line)
 
             # Write the remaining lines.
-            for line in cpp_in:
-                cpp_out.write(line)
+            for line in index_file_in:
+                index_file_out.write(line)
 
-    remove(cpp_file_bak)
+    remove(index_file_bak)
 
 
 def add_amber_test_to_must_pass(amber_test_name: str, must_pass_file_path: str) -> None:
@@ -322,7 +308,7 @@ def add_amber_test(input_amber_test_file_path: str, vk_gl_cts: str) -> None:
 
     log('Using test name "{}"'.format(amber_test_name))
 
-    add_amber_test_to_cpp(vk_gl_cts, amber_test_name, input_amber_test_file_path)
+    add_amber_test_to_index_file(vk_gl_cts, amber_test_name, input_amber_test_file_path)
 
     copy_amber_test_file(vk_gl_cts, amber_test_name, input_amber_test_file_path)
 
@@ -351,7 +337,7 @@ def main() -> None:
     amber_files = parsed_args.amber_files
 
     check_dir_exists(vk_gl_cts)
-    check_file_exists(get_graphics_fuzz_tests_cpp_file_path(vk_gl_cts))
+    check_file_exists(get_graphics_fuzz_tests_index_file_path(vk_gl_cts))
 
     for amber_file in amber_files:
         add_amber_test(amber_file, vk_gl_cts)

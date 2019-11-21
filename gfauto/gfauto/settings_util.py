@@ -68,7 +68,6 @@ def write(settings: Settings, settings_path: Path) -> Path:
 def write_default(settings_path: Path) -> Path:
     settings = Settings()
     settings.CopyFrom(DEFAULT_SETTINGS)
-    devices_util.get_device_list(settings.device_list)
 
     # noinspection PyBroadException
     try:
@@ -85,5 +84,9 @@ def write_default(settings_path: Path) -> Path:
         log(message)
 
         settings.latest_binary_versions.extend(binaries_util.DEFAULT_BINARIES)
+
+    binary_manager = binaries_util.get_default_binary_manager(settings=settings)
+
+    devices_util.get_device_list(binary_manager, settings.device_list)
 
     return write(settings, settings_path)

@@ -39,6 +39,9 @@ message Device {
   // A device can specify/override some binaries. E.g. you may want several SwiftShader "devices" with different
   // versions or configurations of SwiftShader.
   repeated Binary binaries = 6;
+
+  // The Vulkan device properties, most likely obtained by running "amber -d -V".
+  string device_properties = 9;
 }
 
 message DeviceSwiftShader {
@@ -58,6 +61,8 @@ message DeviceHost {
 message DeviceAndroid {
   string serial = 1;
   string model = 2;
+  string build_fingerprint = 3;
+
 }
 
 // A virtual device that just executes an offline shader compiler.

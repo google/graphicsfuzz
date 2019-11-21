@@ -52,5 +52,6 @@ setup(
         "gfauto_test_create_readme = gfauto.test_create_readme:main",
         "gfauto_download_cts_gf_tests = gfauto.download_cts_gf_tests:main",
         "gfauto_run_cts_gf_tests = gfauto.run_cts_gf_tests:main",
+        "gfauto_run_bin = gfauto.run_bin:main",
     ]},
 )
