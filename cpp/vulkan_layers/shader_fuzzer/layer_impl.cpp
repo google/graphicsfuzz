@@ -64,8 +64,46 @@ TryFuzzingShader(VkShaderModuleCreateInfo const *pCreateInfo) {
     return std::vector<uint32_t>();
   }
 
-  // TODO(afd): The required target environment should be queried.
-  const spv_target_env target_env = SPV_ENV_UNIVERSAL_1_3;
+  // Use the module's magic number to determine endianness.
+  const bool little_endian = ((char*)(pCreateInfo->pCode))[0] == 3;
+
+  char* version_bytes_ptr = (char*)pCreateInfo->pCode[1];
+  auto major_version = static_cast<uint32_t>(version_bytes_ptr[little_endian
+                                                               ? 2 : 1]);
+  auto minor_version = static_cast<uint32_t>(version_bytes_ptr[little_endian
+                                                               ? 1 : 2]);
+  if (major_version != 1) {
+    std::cerr << "Unknown SPIR-V major version " << major_version
+    << "; shaders will not be fuzzed." << std::endl;
+    return std::vector<uint32_t>();
+  }
+
+  spv_target_env target_env;
+
+  switch (minor_version) {
+    case 0:
+      target_env = SPV_ENV_UNIVERSAL_1_0;
+      break;
+    case 1:
+      target_env = SPV_ENV_UNIVERSAL_1_1;
+      break;
+    case 2:
+      target_env = SPV_ENV_UNIVERSAL_1_2;
+      break;
+    case 3:
+      target_env = SPV_ENV_UNIVERSAL_1_3;
+      break;
+    case 4:
+      target_env = SPV_ENV_UNIVERSAL_1_4;
+      break;
+    case 5:
+      target_env = SPV_ENV_UNIVERSAL_1_5;
+      break;
+    default:
+      std::cerr << "Unknown SPIR-V minor version " << minor_version
+                << "; shaders will not be fuzzed." << std::endl;
+      return std::vector<uint32_t>();
+  }
 
   // |pCreateInfo->codeSize| gives the size in bytes; convert it to words.
   const uint32_t code_size_in_words =
