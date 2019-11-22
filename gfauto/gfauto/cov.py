@@ -19,6 +19,7 @@
 import argparse
 import glob
 import os
+import subprocess
 import threading
 from queue import Queue
 from typing import Dict, Counter, List, Tuple
@@ -29,13 +30,24 @@ LineCounts = Dict[Counter[str]]
 DirAndItsFiles = Tuple[str, List[str]]
 
 
-def _thread_gcov(gcda_files_queue: Queue[DirAndItsFiles]):
+def _thread_gcov(gcov_path: str, gcda_files_queue: Queue[DirAndItsFiles]):
     # keep getting chunk and processing.
     # until "done" ("", [])
-    print("hello")
+
+    while True:
+        root, files = gcda_files_queue.get()
+        if not root:
+            break
+        cmd = [gcov_path, "-i", "-t"]
+        cmd.extend(files)
+        result = subprocess.run(cmd, encoding="utf-8", errors="ignore")
 
 
-def _thread_gcovs(num_threads: int, gcda_files_queue: Queue[DirAndItsFiles]):
+def _thread_gcovs(
+    num_threads: int,
+    gcda_files_queue: Queue[DirAndItsFiles],
+    adder_queue: Queue[LineCounts],
+):
     threads = [
         threading.Thread(target=_thread_gcov, args=[gcda_files_queue])
         for _ in range(num_threads)
@@ -47,6 +59,7 @@ def _thread_gcovs(num_threads: int, gcda_files_queue: Queue[DirAndItsFiles]):
         thread.join()
 
     # send "done" message to adder.
+    adder_queue.put({})
 
 
 def _thread_adder():
@@ -63,7 +76,7 @@ def get_line_counts(
     adder_queue: Queue[LineCounts] = Queue()
 
     gcovs_thread = threading.Thread(
-        target=_thread_gcovs, args=[num_threads, gcda_files_queue]
+        target=_thread_gcovs, args=[num_threads, gcda_files_queue, adder_queue]
     )
     gcovs_thread.start()
 
@@ -75,10 +88,12 @@ def get_line_counts(
     files: List[str]
     for root, dirs, files in os.walk(build_dir):
         gcda_files = [f for f in files if f.endswith(".gcda")]
+        # TODO: Could split further if necessary.
         gcda_files_queue.put((os.path.join(root), gcda_files))
 
-    # Send "done" message.
-    gcda_files_queue.XXXX
+    # Send a "done" message for each thread.
+    for _ in range(num_threads):
+        gcda_files_queue.put(("", []))
 
     # wait for threads.
     gcovs_thread.join()
