@@ -26,6 +26,7 @@ import string
 import subprocess
 import threading
 import timeit
+import pickle
 import typing
 from collections import Counter
 from queue import Queue
@@ -227,7 +228,21 @@ def main() -> None:
 
     get_line_counts(data)
 
-    for k, v in data.line_counts.items():
+    print("Saving map", flush=True)
+
+    with open("/data/git/SwiftShader/out/out.cov", mode="wb") as f:
+        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    print("Saved.", flush=True)
+
+    print("Loading map.", flush=True)
+
+    with open("/data/git/SwiftShader/out/out.cov", mode="rb") as f:
+        data2 = pickle.load(f)
+
+    print("Loaded map.", flush=True)
+
+    for k, v in data2.line_counts.items():
         print(k)
         counter = 0
         print(len(v.items()))
