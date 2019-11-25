@@ -16,23 +16,16 @@
 
 """Processes coverage files."""
 
-import argparse
 import io
 import os
-import random
-import re
 import shutil
-import string
 import subprocess
 import threading
-import timeit
-import pickle
 import typing
 from collections import Counter
 from queue import Queue
 from typing import Dict, List, Tuple
 
-import array
 from attr import dataclass
 
 # Type:
@@ -44,12 +37,15 @@ DirAndItsFiles = Tuple[str, List[str]]
 
 DirAndItsOutput = Tuple[str, str]
 
+IGNORED_MISSING_FILES = ["CMakeCXXCompilerId.cpp", "CMakeCCompilerId.c"]
+
 
 @dataclass
 class GetLineCountsData:
     gcov_path: str
     gcov_uses_json_output: bool
     build_dir: str
+    gcov_prefix_dir: str
     num_threads: int
     gcda_files_queue: "Queue[DirAndItsFiles]" = Queue()
     stdout_queue: "Queue[DirAndItsOutput]" = Queue()
@@ -190,21 +186,48 @@ def _thread_adder(data: GetLineCountsData) -> None:
 
 def get_line_counts(data: GetLineCountsData) -> None:
 
+    root: str
+    dirs: List[str]
+    files: List[str]
+
+    # In gcov_prefix_dir, add symlinks of build_dir .gcno files.
+    print("Adding symlinks.")
+
+    # If the symlinks already exist, we will get an error.
+    # os.symlink does not provide an option to overwrite.
+    # We instead create the symlink with a randomized name and then rename it using os.replace, which atomically
+    # overwrites any existing file.
+    random_text = util.get_random_name()[:10]
+
+    for root, dirs, files in os.walk(data.build_dir):
+        gcno_files = [f for f in files if f.endswith(".gcno")]
+        if gcno_files:
+            root_rel = strip_root(root)
+            os.makedirs(os.path.join(data.gcov_prefix_dir, root_rel), exist_ok=True)
+            for file_name in gcno_files:
+                source = os.path.join(root, file_name)
+                dest = os.path.join(data.gcov_prefix_dir, root_rel, file_name)
+                temp = dest + random_text
+                os.symlink(source, temp)
+                os.replace(temp, dest)
+
+    print("Done.")
+
+    print("Processing .gcno files.")
+
     gcovs_thread = threading.Thread(target=_thread_gcovs, args=(data,))
     adder_thread = threading.Thread(target=_thread_adder, args=(data,))
-    a = array.array("L")
 
     gcovs_thread.start()
     adder_thread.start()
 
-    root: str
-    dirs: List[str]
-    files: List[str]
-    for root, dirs, files in os.walk(data.build_dir):
-        gcda_files = [f for f in files if f.endswith(".gcno")]
+    for root, dirs, files in os.walk(
+        os.path.join(data.gcov_prefix_dir, strip_root(data.build_dir))
+    ):
+        gcno_files = [f for f in files if f.endswith(".gcno")]
         # TODO: Could split further if necessary.
-        if gcda_files:
-            data.gcda_files_queue.put((os.path.join(root), gcda_files))
+        if gcno_files:
+            data.gcda_files_queue.put((os.path.join(root), gcno_files))
 
     # Send a "done" message for each thread.
     for _ in range(data.num_threads):
@@ -214,70 +237,69 @@ def get_line_counts(data: GetLineCountsData) -> None:
     gcovs_thread.join()
     adder_thread.join()
 
+    print("Done.")
 
-def main() -> None:
 
-    gcov_path = shutil.which("gcov")
-    assert gcov_path
-    data = GetLineCountsData(
-        gcov_path=gcov_path,
-        gcov_uses_json_output=False,
-        build_dir="/data/git/SwiftShader/out/build_cov",
-        num_threads=1,
+INDENT = 8
+
+
+def strip_root(path: str) -> str:
+    path_stripped = path
+    if os.path.isabs(path_stripped):
+        # Most of this coverage code only works on Linux, so we assume Linux here.
+        # If we had Windows paths that could be on different drives etc., we would need to be more careful.
+        util.check(
+            path_stripped.startswith("/"),
+            AssertionError(f"Non-posix absolute file path? {path}"),
+        )
+        path_stripped = path_stripped[1:]
+    util.check(
+        not path_stripped.startswith("/"),
+        AssertionError(
+            f"Internal error trying to make a relative path: {path_stripped}"
+        ),
     )
-
-    get_line_counts(data)
-
-    print("Saving map", flush=True)
-
-    with open("/data/git/SwiftShader/out/out.cov", mode="wb") as f:
-        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-    print("Saved.", flush=True)
-
-    print("Loading map.", flush=True)
-
-    with open("/data/git/SwiftShader/out/out.cov", mode="rb") as f:
-        data2 = pickle.load(f)
-
-    print("Loaded map.", flush=True)
-
-    for k, v in data2.line_counts.items():
-        print(k)
-        counter = 0
-        print(len(v.items()))
-        # for line, count in v.items():
-        #     print(f"Line {line}, count {count}")
-        #     counter += 1
-        #     if counter > 4:
-        #         break
-
-    # parser = argparse.ArgumentParser(
-    #     description="Runs a binary given the binary name and settings.json file."
-    # )
-    #
-    # parser.add_argument(
-    #     "--settings",
-    #     help="Path to the settings JSON file for this instance.",
-    #     default=str(settings_util.DEFAULT_SETTINGS_FILE_PATH),
-    # )
-    #
-    # parser.add_argument(
-    #     "binary_name",
-    #     help="The name of the binary to run. E.g. spirv-opt, glslangValidator",
-    #     type=str,
-    # )
-    #
-    # parser.add_argument(
-    #     "arguments",
-    #     metavar="arguments",
-    #     type=str,
-    #     nargs="*",
-    #     help="The arguments to pass to the binary",
-    # )
-    #
-    # parsed_args = parser.parse_args(sys.argv[1:])
+    return path_stripped
 
 
-if __name__ == "__main__":
-    main()
+def output_source_files(
+    build_dir: str,
+    output_dir: str,
+    line_counts: LineCounts,
+    force_zero_coverage: bool = False,
+) -> None:
+    build_dir = os.path.abspath(build_dir)
+
+    for source_path, counts in line_counts.items():
+        source_path = os.path.join(build_dir, source_path)
+        source_path = os.path.normpath(source_path)
+
+        if not os.path.isfile(source_path):
+            if not os.path.basename(source_path) in IGNORED_MISSING_FILES:
+                print(f"WARNING: Could not find source file: {source_path}")
+            continue
+
+        dest_path = os.path.join(output_dir, strip_root(source_path))
+
+        with open(source_path, "r", encoding="utf-8", errors="ignore") as source_file:
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+            with open(dest_path, "w", encoding="utf-8", errors="ignore") as dest_file:
+                line_number = 1
+                while True:
+                    line = source_file.readline()
+                    if not line:
+                        break
+                    # .get() returns None if the line is not executable
+                    line_count = counts.get(line_number)
+                    if line_count:
+                        if force_zero_coverage:
+                            line_count = 0
+                        line_count_str = str(line_count) + " "
+                    else:
+                        line_count_str = " "
+                    line_count_str = (
+                        " " * (INDENT - len(line_count_str)) + line_count_str
+                    )
+                    line = line_count_str + line
+                    dest_file.write(line)
+                    line_number += 1
