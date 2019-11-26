@@ -25,3 +25,26 @@ apic template -templatesearch $GAPID_SRC $GAPID_SRC/gapis/api/vulkan/vulkan.api 
 ```
 
 This will re-generate `layer.cpp` and `layer.h` for the associated layer.
+
+
+
+# Using the shader fuzzer layer
+
+(Instructions for the shader scraper layer are similar.)
+
+Copy VkLayer_graphicsfuzz_shader_fuzzer.json to:
+
+```
+/path/to/vulkansdk/x86_64/etc/vulkan/explicit_layer.d/
+```
+
+Ensure that `LD_LIBRARY_PATH` includes the directory containing `libVkLayer_graphicsfuzz_shader_fuzzer.so`.
+
+Enable the layer:
+
+```
+export VK_INSTANCE_LAYERS=$VK_INSTANCE_LAYERS:VK_LAYER_GRAPHICSFUZZ_shader_fuzzer
+```
+
+Set `GRAPHICSFUZZ_SHADER_FUZZER_WORK_DIR` to the directory where you would like shaders to be saved to.
+

@@ -64,14 +64,9 @@ TryFuzzingShader(VkShaderModuleCreateInfo const *pCreateInfo) {
     return std::vector<uint32_t>();
   }
 
-  // Use the module's magic number to determine endianness.
-  const bool little_endian = ((char*)(pCreateInfo->pCode))[0] == 3;
-
-  char* version_bytes_ptr = (char*)pCreateInfo->pCode[1];
-  auto major_version = static_cast<uint32_t>(version_bytes_ptr[little_endian
-                                                               ? 2 : 1]);
-  auto minor_version = static_cast<uint32_t>(version_bytes_ptr[little_endian
-                                                               ? 1 : 2]);
+  uint32_t version_word = pCreateInfo->pCode[1];
+  auto major_version = (version_word >> 16) & 0xff;
+  auto minor_version = (version_word >> 8) & 0xff;
   if (major_version != 1) {
     std::cerr << "Unknown SPIR-V major version " << major_version
     << "; shaders will not be fuzzed." << std::endl;
