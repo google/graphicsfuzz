@@ -66,7 +66,10 @@ def main() -> None:
     parser.add_argument(
         "gcov_prefix_dir",
         type=str,
-        help="The GCOV_PREFIX directory that was used when running the target application.",
+        help="The GCOV_PREFIX directory that was used when running the target application. "
+        'If the directory ends with "PROC_ID" then "PROC_ID" will be replaced with each directory that exists '
+        'and the coverage results will be merged. E.g. Given "--gcov_prefix_dir /cov/PROC_ID", the results from '
+        "/cov/001 /cov/002 /cov/blah etc. will be computed and the results will be merged.",
     )
 
     parsed_args = parser.parse_args(sys.argv[1:])
@@ -94,7 +97,23 @@ def main() -> None:
 
     output_coverage_path: str = parsed_args.out
 
-    cov_util.get_line_counts(data)
+    # Special case for "PROC_ID".
+    if "PROC_ID" in gcov_prefix_dir:
+        print("Detected PROC_ID in gcov_prefix_dir")
+        if os.path.exists(gcov_prefix_dir):
+            raise AssertionError(f"Unexpected file/directory: {gcov_prefix_dir}.")
+        gcov_prefix_prefix = os.path.dirname(gcov_prefix_dir)
+        if "PROC_ID" in gcov_prefix_dir:
+            raise AssertionError(
+                f"Can only handle PROC_ID as the last component of the path: {gcov_prefix_dir}"
+            )
+        for proc_dir in os.listdir(gcov_prefix_prefix):
+            if not os.path.isdir(proc_dir):
+                continue
+            data.gcov_prefix_dir = os.path.join(gcov_prefix_prefix, proc_dir)
+            cov_util.get_line_counts(data)
+    else:
+        cov_util.get_line_counts(data)
 
     with open(output_coverage_path, mode="wb") as f:
         pickle.dump(data.line_counts, f, protocol=pickle.HIGHEST_PROTOCOL)
