@@ -21,7 +21,6 @@ Unlike most code in gfauto, we use str instead of pathlib.Path because the incre
 
 import argparse
 import pickle
-import shutil
 import sys
 
 from gfauto import cov_util

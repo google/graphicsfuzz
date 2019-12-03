@@ -24,9 +24,8 @@ import os
 import pickle
 import shutil
 import sys
-import tempfile
 
-from gfauto import cov_util, util
+from gfauto import cov_util
 
 
 def main() -> None:
