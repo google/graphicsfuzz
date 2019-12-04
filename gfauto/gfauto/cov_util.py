@@ -18,7 +18,6 @@
 
 import io
 import os
-import shutil
 import subprocess
 import threading
 import typing
@@ -106,9 +105,7 @@ def _thread_gcovs(data: GetLineCountsData) -> None:
     data.stdout_queue.put(("", ""))
 
 
-def _process_text_lines(
-    data: GetLineCountsData, root: str, lines: typing.TextIO
-) -> None:
+def _process_text_lines(data: GetLineCountsData, lines: typing.TextIO) -> None:
     current_file = ""
     current_file_line_counts: typing.Counter[int] = Counter()
     for line in lines:
@@ -132,9 +129,7 @@ def _process_text_lines(
             continue
 
 
-def _process_json_lines(
-    data: GetLineCountsData, root: str, lines: typing.TextIO
-) -> None:
+def _process_json_lines(data: GetLineCountsData, lines: typing.TextIO) -> None:
     current_file = ""
     current_file_line_counts: typing.Counter[int] = Counter()
     # The count value given by the previous line, which may or may not be used depending on the next line.
@@ -179,15 +174,14 @@ def _thread_adder(data: GetLineCountsData) -> None:
         lines = io.StringIO(stdout)
 
         if data.gcov_uses_json_output:
-            _process_json_lines(data, root, lines)
+            _process_json_lines(data, lines)
         else:
-            _process_text_lines(data, root, lines)
+            _process_text_lines(data, lines)
 
 
 def get_line_counts(data: GetLineCountsData) -> None:
 
     root: str
-    dirs: List[str]
     files: List[str]
 
     # In gcov_prefix_dir, add symlinks of build_dir .gcno files.
@@ -199,7 +193,7 @@ def get_line_counts(data: GetLineCountsData) -> None:
     # overwrites any existing file.
     random_text = util.get_random_name()[:10]
 
-    for root, dirs, files in os.walk(data.build_dir):
+    for root, _, files in os.walk(data.build_dir):
         gcno_files = [f for f in files if f.endswith(".gcno")]
         if gcno_files:
             root_rel = strip_root(root)
@@ -221,7 +215,7 @@ def get_line_counts(data: GetLineCountsData) -> None:
     gcovs_thread.start()
     adder_thread.start()
 
-    for root, dirs, files in os.walk(
+    for root, _, files in os.walk(
         os.path.join(data.gcov_prefix_dir, strip_root(data.build_dir))
     ):
         gcno_files = [f for f in files if f.endswith(".gcno")]

@@ -50,19 +50,19 @@ def main() -> None:
     output_file: str = parsed_args.out
     input_files: List[str] = parsed_args.coverage_files
 
-    line_counts: cov_util.LineCounts = {}
+    output_line_counts: cov_util.LineCounts = {}
 
     for input_file in input_files:
         with open(input_file, mode="rb") as f:
             input_line_counts: cov_util.LineCounts = pickle.load(f)
-        for k, v in input_line_counts.items():
-            if k not in line_counts:
-                line_counts[k] = v
+        for file_path, line_counts in input_line_counts.items():
+            if file_path not in line_counts:
+                output_line_counts[file_path] = line_counts
             else:
-                line_counts[k].update(v)
+                output_line_counts[file_path].update(line_counts)
 
     with open(output_file, mode="wb") as f:
-        pickle.dump(line_counts, f, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(output_line_counts, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":

@@ -57,6 +57,9 @@ ignore =
   P102
   P103
 
+  # Consider possible security implications associated with pickle module
+  S403
+
 
 # For flake8-quotes:
 inline-quotes = "
