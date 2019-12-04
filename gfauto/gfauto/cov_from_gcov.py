@@ -103,16 +103,19 @@ def main() -> None:
         if os.path.exists(gcov_prefix_dir):
             raise AssertionError(f"Unexpected file/directory: {gcov_prefix_dir}.")
         gcov_prefix_prefix = os.path.dirname(gcov_prefix_dir)
-        if "PROC_ID" in gcov_prefix_dir:
+        if "PROC_ID" in gcov_prefix_prefix:
             raise AssertionError(
                 f"Can only handle PROC_ID as the last component of the path: {gcov_prefix_dir}"
             )
         for proc_dir in os.listdir(gcov_prefix_prefix):
+            proc_dir = os.path.join(gcov_prefix_prefix, proc_dir)
             if not os.path.isdir(proc_dir):
                 continue
-            data.gcov_prefix_dir = os.path.join(gcov_prefix_prefix, proc_dir)
+            data.gcov_prefix_dir = proc_dir
+            print(f"Consuming {data.gcov_prefix_dir}")
             cov_util.get_line_counts(data)
     else:
+        print(f"Consuming {data.gcov_prefix_dir}")
         cov_util.get_line_counts(data)
 
     with open(output_coverage_path, mode="wb") as f:
