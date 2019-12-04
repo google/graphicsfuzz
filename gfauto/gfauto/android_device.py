@@ -24,10 +24,17 @@ import shutil
 import subprocess
 import time
 from pathlib import Path
-from subprocess import CompletedProcess
 from typing import List, Optional
 
-from gfauto import devices_util, fuzz, gflogging, result_util, subprocess_util, util
+from gfauto import (
+    devices_util,
+    fuzz,
+    gflogging,
+    result_util,
+    subprocess_util,
+    types,
+    util,
+)
 from gfauto.device_pb2 import Device, DeviceAndroid
 from gfauto.gflogging import log
 from gfauto.util import check, file_open_text, file_write_text
@@ -66,7 +73,7 @@ def adb_helper(
     check_exit_code: bool,
     verbose: bool = False,
     timeout: Optional[int] = ADB_DEFAULT_TIME_LIMIT,
-) -> subprocess.CompletedProcess:
+) -> types.CompletedProcess:
 
     adb_cmd = [str(adb_path())]
     if serial:
@@ -85,7 +92,7 @@ def adb_check(
     adb_args: List[str],
     verbose: bool = False,
     timeout: Optional[int] = ADB_DEFAULT_TIME_LIMIT,
-) -> subprocess.CompletedProcess:
+) -> types.CompletedProcess:
 
     return adb_helper(
         serial, adb_args, check_exit_code=True, verbose=verbose, timeout=timeout
@@ -97,7 +104,7 @@ def adb_can_fail(
     adb_args: List[str],
     verbose: bool = False,
     timeout: Optional[int] = ADB_DEFAULT_TIME_LIMIT,
-) -> subprocess.CompletedProcess:
+) -> types.CompletedProcess:
 
     return adb_helper(
         serial, adb_args, check_exit_code=False, verbose=verbose, timeout=timeout
@@ -366,7 +373,7 @@ def run_amber_on_device_helper(
 
     status = "UNEXPECTED_ERROR"
 
-    result: Optional[CompletedProcess] = None
+    result: Optional[types.CompletedProcess] = None
 
     try:
         result = adb_can_fail(

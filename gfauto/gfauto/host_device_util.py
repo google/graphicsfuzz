@@ -23,7 +23,15 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Optional
 
-from gfauto import devices_util, fuzz, gflogging, result_util, subprocess_util, util
+from gfauto import (
+    devices_util,
+    fuzz,
+    gflogging,
+    result_util,
+    subprocess_util,
+    types,
+    util,
+)
 from gfauto.gflogging import log
 
 
@@ -134,7 +142,7 @@ def run_amber_helper(
 
     status = "UNEXPECTED_ERROR"
 
-    result: Optional[subprocess.CompletedProcess] = None
+    result: Optional[types.CompletedProcess] = None
     env: Optional[Dict[str, str]] = None
 
     if icd:

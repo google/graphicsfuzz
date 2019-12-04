@@ -233,7 +233,7 @@ def make_directory_symlink(new_symlink_file_path: Path, existing_dir: Path) -> P
         # Retry using junctions under Windows.
         try:
             # noinspection PyUnresolvedReferences
-            import _winapi  # pylint: disable=import-error;
+            import _winapi  # pylint: disable=import-error,import-outside-toplevel;
 
             # Unlike symlink_to, CreateJunction takes a path relative to the current directory.
             _winapi.CreateJunction(str(existing_dir), str(new_symlink_file_path))

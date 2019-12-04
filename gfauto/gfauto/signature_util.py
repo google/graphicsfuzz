@@ -20,8 +20,6 @@ Used to compute the "signature" of a bug, typically using the error message or t
 stack trace.
 """
 
-# Disable spell-checking for this file.
-# flake8: noqa: SC100
 
 import re
 from pathlib import Path
@@ -163,7 +161,7 @@ def basic_match(pattern: Pattern[str], log_contents: str) -> Optional[str]:
 
 
 def get_signature_from_log_contents(  # pylint: disable=too-many-return-statements, too-many-branches, too-many-statements;
-    log_contents: str
+    log_contents: str,
 ) -> str:
 
     # noinspection PyUnusedLocal

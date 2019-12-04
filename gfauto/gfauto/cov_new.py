@@ -52,9 +52,9 @@ def main() -> None:
         b_line_counts: cov_util.LineCounts = pickle.load(f)
 
     # We modify b_line_counts so that lines already covered by A are set to 0.
-    for file, b_counts in b_line_counts.items():
-        if file in a_line_counts:
-            a_counts = a_line_counts[file]
+    for source_file_path, b_counts in b_line_counts.items():
+        if source_file_path in a_line_counts:
+            a_counts = a_line_counts[source_file_path]
             for line_number, b_count in b_counts.items():
                 if b_count > 0:
                     if a_counts[line_number] > 0:

@@ -32,7 +32,9 @@ from gfauto.common_pb2 import Archive
 from gfauto.gflogging import log
 from gfauto.recipe_pb2 import RecipeDownloadAndExtractArchiveSet
 
-ALL_EXECUTABLE_PERMISSION_BITS = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+ALL_EXECUTABLE_PERMISSION_BITS = (
+    stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH  # noqa: SC200
+)
 
 
 def recipe_download_and_extract_archive_set(

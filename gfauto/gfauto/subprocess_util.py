@@ -28,6 +28,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from gfauto import types
 from gfauto.gflogging import log
 from gfauto.util import check
 
@@ -49,7 +50,7 @@ def log_stdout_stderr_helper(stdout: str, stderr: str) -> None:
 def log_stdout_stderr(
     result: Union[
         subprocess.CalledProcessError,
-        subprocess.CompletedProcess,
+        types.CompletedProcess,
         subprocess.TimeoutExpired,
     ],
 ) -> None:
@@ -61,14 +62,12 @@ def log_returncode_helper(returncode: int) -> None:
 
 
 def log_returncode(
-    result: Union[
-        subprocess.CalledProcessError, subprocess.CompletedProcess, subprocess.Popen
-    ],
+    result: Union[subprocess.CalledProcessError, types.CompletedProcess, types.Popen],
 ) -> None:
     log_returncode_helper(result.returncode)
 
 
-def posix_kill_group(process: subprocess.Popen) -> None:
+def posix_kill_group(process: types.Popen) -> None:
     # Work around type warnings that will only show up on Windows:
     os_alias: Any = os
     os_alias.killpg(process.pid, signal.SIGTERM)
@@ -82,7 +81,7 @@ def run_helper(
     timeout: Optional[float] = None,
     env: Optional[Dict[str, str]] = None,
     working_dir: Optional[Path] = None,
-) -> subprocess.CompletedProcess:
+) -> types.CompletedProcess:
     check(
         bool(cmd) and cmd[0] is not None and isinstance(cmd[0], str),
         AssertionError("run takes a list of str, not a str"),
@@ -134,7 +133,7 @@ def run(
     verbose: bool = False,
     env: Optional[Dict[str, str]] = None,
     working_dir: Optional[Path] = None,
-) -> subprocess.CompletedProcess:
+) -> types.CompletedProcess:
     log("Exec" + (" (verbose):" if verbose else ":") + str(cmd))
     try:
         result = run_helper(cmd, check_exit_code, timeout, env, working_dir)

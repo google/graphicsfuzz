@@ -47,7 +47,7 @@ def check(condition: bool, exception: Exception) -> None:
 
 
 def log(message: str = "") -> None:
-    print(message, flush=True)  # noqa T001
+    print(message, flush=True)  # noqa: T001
 
 
 def remove_start(string: str, start: str) -> str:

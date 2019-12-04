@@ -59,10 +59,22 @@ ignore =
 
   # Consider possible security implications associated with pickle module
   S403
+  # Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.
+  S301
 
+per-file-ignores =
+  # Ignore spelling errors in signatures.
+  gfauto/signature_util.py:SC100,SC200
+
+  # Ignore use of print in coverage code.
+  gfauto/cov_*.py:T001
 
 # For flake8-quotes:
 inline-quotes = "
+
+# Use the formatter provided by flake8_formatter_abspath.
+# This will output the full path of files with warnings so they will be clickable from PyCharm's terminal.
+format = abspath
 
 # For flake8-spellcheck. Default is whitelist.txt but using whitelist.dic means
 # we can add the file to PyCharm/IntelliJ.

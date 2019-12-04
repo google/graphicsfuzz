@@ -39,7 +39,7 @@ DirAndItsOutput = Tuple[str, str]
 IGNORED_MISSING_FILES = ["CMakeCXXCompilerId.cpp", "CMakeCCompilerId.c"]
 
 
-@dataclass
+@dataclass  # pylint: disable=too-many-instance-attributes;
 class GetLineCountsData:
     gcov_path: str
     gcov_uses_json_output: bool
@@ -63,7 +63,7 @@ def _thread_gcov(data: GetLineCountsData) -> None:
         if data.gcov_uses_json_output:
             cmd.append("-t")
         cmd.extend(files)
-        # I.e.: cd $root && gcov -i -t file1.gcda file2.gcda ...
+        # I.e.: cd $root && gcov -i -t file_1.gcda file_2.gcda ...
         result = subprocess.run(
             cmd,
             encoding="utf-8",
@@ -184,7 +184,7 @@ def get_line_counts(data: GetLineCountsData) -> None:
     root: str
     files: List[str]
 
-    # In gcov_prefix_dir, add symlinks of build_dir .gcno files.
+    # In gcov_prefix_dir, add symlinks to build_dir .gcno files.
     print("Adding symlinks.")
 
     # If the symlinks already exist, we will get an error.
