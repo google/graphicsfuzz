@@ -226,3 +226,4 @@ PROC
 listdir
 RNG
 toplevel
+getpid
