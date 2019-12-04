@@ -32,7 +32,7 @@ jedi = "*"
 
 # Code formatter. Explicit version given because it is a pre-release and
 # otherwise we get errors.
-black = "==19.3b0"
+black = "==19.10b0"
 
 # Plugin to protoc that outputs .pyi files (type information).
 mypy-protobuf = "*"
@@ -51,6 +51,7 @@ pylint = "*"
 
 # Flake8 linter.
 flake8 = "*"
+flake8_formatter_abspath = "*"
 # cohesion = "*"  # A tool for measuring Python class cohesion
 # flake8-alfred = "*"  # Can be used to blacklist symbols.
 # flake8-copyright = "*"  # Not maintained.
@@ -69,8 +70,6 @@ flake8-comprehensions = "*"
 flake8-commas = "*"
 flake8-debugger = "*"
 flake8-docstrings = "*"
-# TODO: Remove once bug in flake8-docstrings is fixed: https://gitlab.com/pycqa/flake8-docstrings/issues/36
-pydocstyle = "==3.0.0"
 flake8-isort = "*"
 flake8-logging-format = "*"
 flake8-mock = "*"
