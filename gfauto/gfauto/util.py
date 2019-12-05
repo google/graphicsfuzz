@@ -233,7 +233,7 @@ def make_directory_symlink(new_symlink_file_path: Path, existing_dir: Path) -> P
         # Retry using junctions under Windows.
         try:
             # noinspection PyUnresolvedReferences
-            import _winapi  # pylint: disable=import-error;
+            import _winapi  # pylint: disable=import-error,import-outside-toplevel;
 
             # Unlike symlink_to, CreateJunction takes a path relative to the current directory.
             _winapi.CreateJunction(str(existing_dir), str(new_symlink_file_path))
@@ -333,3 +333,18 @@ def create_zip(output_file_path: Path, entries: List[ZipEntry]) -> Path:
 
 def get_random_name() -> str:
     return uuid.uuid4().hex
+
+
+def update_gcov_environment_variable_if_needed() -> None:
+    if "GCOV_PREFIX" in os.environ.keys():
+        gcov_prefix: str = os.environ["GCOV_PREFIX"]
+        if "PROC_ID" in gcov_prefix:
+            pid = str(os.getpid())
+            check(
+                bool(pid),
+                AssertionError(
+                    "Failed to get process ID to replace PROC_ID in GCOV_PREFIX environment variable."
+                ),
+            )
+            gcov_prefix = gcov_prefix.replace("PROC_ID", pid)
+            os.environ["GCOV_PREFIX"] = gcov_prefix

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+# -*- coding: utf-8 -*-
 
 # Copyright 2019 The GraphicsFuzz Project Authors
 #
@@ -14,16 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x
-set -e
-set -u
+"""Types module.
 
-if [ -z ${VIRTUAL_ENV+x} ]; then
-  source .venv/bin/activate
-fi
+Defines types that cause issues with the type checker and/or other error checking.
+"""
 
-mypy --strict --show-absolute-path gfauto gfautotests
-pylint gfauto gfautotests
-# Flake checks formatting via black.
-flake8 .
-pytest gfautotests
+import subprocess
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    CompletedProcess = subprocess.CompletedProcess[Any]  # pylint: disable=invalid-name;
+    Popen = subprocess.Popen[Any]  # pylint: disable=invalid-name;
+else:
+    CompletedProcess = subprocess.CompletedProcess  # pylint: disable=invalid-name;
+    Popen = subprocess.Popen  # pylint: disable=invalid-name;

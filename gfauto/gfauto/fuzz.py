@@ -179,6 +179,8 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     force_no_stack_traces: bool,
 ) -> None:
 
+    util.update_gcov_environment_variable_if_needed()
+
     try:
         artifact_util.artifact_path_get_root()
     except FileNotFoundError:

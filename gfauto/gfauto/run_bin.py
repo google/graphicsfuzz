@@ -62,7 +62,7 @@ def main() -> int:
 
     cmd = [str(binary_manager.get_binary_path_by_name(binary_name).path)]
     cmd.extend(arguments)
-    return subprocess.run(cmd).returncode
+    return subprocess.run(cmd, check=False).returncode
 
 
 if __name__ == "__main__":

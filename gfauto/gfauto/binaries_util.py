@@ -527,7 +527,7 @@ def binary_name_to_project_name(binary_name: str) -> str:
 
 
 def get_github_release_recipe(  # pylint: disable=too-many-branches;
-    binary: Binary
+    binary: Binary,
 ) -> recipe_wrap.RecipeWrap:
 
     project_name = binary_name_to_project_name(binary.name)
