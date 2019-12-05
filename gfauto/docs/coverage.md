@@ -1,0 +1,76 @@
+# Coverage
+
+
+
+```sh
+# Make sure gfauto_* is available.
+# E.g.
+# source /path/to/gfauto/.venv/activate
+# gfauto_cov_from_gcov -h
+
+COV_ROOT=$(pwd)
+
+
+### Build SwiftShader ###
+
+git clone https://swiftshader.googlesource.com/SwiftShader
+cd SwiftShader
+
+mkdir -p out/build
+cd out/build
+
+BUILD_DIR=$(pwd)
+
+export CFLAGS=--coverage
+export CXXFLAGS=--coverage
+export LDFLAGS=--coverage
+
+cmake -G Ninja ../.. -DCMAKE_BUILD_TYPE=Debug
+cmake --build . --config Debug
+
+cd $COV_ROOT
+
+export VK_ICD_FILENAMES=$BUILD_DIR/Linux/vk_swiftshader_icd.json
+
+
+### Build dEQP ###
+DEQP_USERNAME=paulthomson
+git clone ssh://$DEQP_USERNAME@gerrit.khronos.org:29418/vk-gl-cts && scp -p -P 29418 $DEQP_USERNAME@gerrit.khronos.org:hooks/commit-msg vk-gl-cts/.git/hooks/
+
+mkdir vk-gl-cts-build
+cd vk-gl-cts-build
+cmake -G Ninja ../vk-gl-cts -DCMAKE_BUILD_TYPE=Release DCMAKE_C_FLAGS=-m64 -DCMAKE_CXX_FLAGS=-m64
+cmake --build . --config Release --target deqp-vk
+
+cd $COV_ROOT
+
+
+export GCOV_PREFIX=$COV_ROOT/prefix_gfauto/PROC_ID
+
+
+### Run gfauto ###
+
+mkdir gfauto_run
+cd gfauto_run
+
+# Run gfauto. See ../README.md.
+# In settings.json, set `active_devices` to `host`.
+# Of course, `host` will actually be your built version of SwiftShader
+# because of VK_ICD_FILENAMES.
+# In settings.json, set `reduce_*` to false. E.g. "reduce_bad_images": false.
+# Once `gfauto_fuzz` seems to work, you can try running a few instances in parallel:
+
+parallel -j 32 -i gfauto_fuzz -- $(seq 100)
+# Output coverage files are in: $COV_ROOT/prefix_gfauto/*/
+
+
+### Run dEQP ###
+
+
+
+cd $COV_ROOT
+
+
+
+
+```
