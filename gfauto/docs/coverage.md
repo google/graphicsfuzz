@@ -26,6 +26,10 @@ export LDFLAGS=--coverage
 cmake -G Ninja ../.. -DCMAKE_BUILD_TYPE=Debug
 cmake --build . --config Debug
 
+unset CFLAGS
+unset CXXFLAGS
+unset LDFLAGS
+
 cd $COV_ROOT
 
 export VK_ICD_FILENAMES=$BUILD_DIR/Linux/vk_swiftshader_icd.json
