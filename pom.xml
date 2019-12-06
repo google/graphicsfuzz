@@ -29,7 +29,6 @@ limitations under the License.
   <modules>
     <!-- Keep in alphabetical order -->
     <module>assembly-binaries</module>
-    <module>assembly-public</module>
     <module>ast</module>
     <module>checkstyle-config</module>
     <module>client-tests</module>

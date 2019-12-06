@@ -268,11 +268,6 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>com.graphicsfuzz</groupId>
-        <artifactId>assembly-public</artifactId>
-        <version>1.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.graphicsfuzz</groupId>
         <artifactId>assembly-webglfuzz</artifactId>
         <version>1.0</version>
       </dependency>
