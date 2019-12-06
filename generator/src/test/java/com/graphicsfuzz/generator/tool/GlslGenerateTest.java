@@ -150,7 +150,7 @@ public class GlslGenerateTest {
 
     generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs, true);
 
-    for (String reference : Arrays.asList("bubblesort_flag", "colorgrid_modulo",
+    for (String reference : Arrays.asList("stable_bubblesort_flag", "colorgrid_modulo",
         "mandelbrot_zoom", "prefix_sum", "squares")) {
       final File expectedOutputDirectory = new File(temporaryFolder.getRoot(), prefix
           + "_" + reference);
