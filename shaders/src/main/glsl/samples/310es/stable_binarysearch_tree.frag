@@ -20,10 +20,6 @@ precision highp float;
 
 layout(location = 0) out vec4 _GLF_color;
 
-uniform vec2 injectionSwitch;
-
-uniform vec2 resolution;
-
 struct BST{
     int data;
     int leftIndex;
@@ -85,25 +81,6 @@ int search(int target){
     return -1;
 }
 
-vec3 hueColor(float angle) {
-    float nodeData = float(search(15));
-    return (30.0 + angle * vec3(1.0, 5.0, nodeData)) / 50.0;
-}
-
-float makeFrame(float v) {
-    v *= 6.5;
-    if (v < 1.5) {
-        return float(search(100));
-    }
-    if (v < 4.0) {
-        return injectionSwitch.x;
-    }
-    if (v < float(search(6))) {
-        return  1.0;
-    }
-    return  10.0 + float(search(30));
-}
-
 /*
 * This shader implements binary search tree using an array data structure. The elements of
 * tree are kept in the array that contains a list of BST object holding indices of left and
@@ -124,9 +101,9 @@ float makeFrame(float v) {
 */
 
 void main() {
-    int treeIndex = int(injectionSwitch.x);
+    int treeIndex = 0;
     // Initialize root node.
-    makeTreeNode(tree[int(injectionSwitch.x)], 9);
+    makeTreeNode(tree[0], 9);
     // Each time we insert a new node into the tree, we increment one.
     treeIndex++;
 
@@ -148,26 +125,35 @@ void main() {
     treeIndex++;
     insert(treeIndex, 13);
 
-    vec2 z = (gl_FragCoord.yx / resolution);
-    float x = makeFrame(z.x);
-    float y = makeFrame(z.y);
-
-    int sum = -100;
-    for (int target = 0; target < 20; target ++) {
-        int result = search(target);
-        if (result > 0) {
-            sum += result;
-        } else {
-            switch (result) {
-                case -1:
-                    sum += int(injectionSwitch.y);
+    int count = 0;
+    for (int i = 0; i < 20; i++) {
+        int result = search(i);
+        switch (i) {
+            case 9:
+            case 5:
+            case 12:
+            case 15:
+            case 7:
+            case 8:
+            case 2:
+            case 6:
+            case 17:
+            case 13:
+                if (result == i) {
+                    count++;
+                }
                 break;
-                case 0:
-                    return;
-          }
+            default:
+                if (result == -1) {
+                    count++;
+                }
+                break;
         }
     }
-    float a = x + y * float(sum);
-    _GLF_color = vec4(hueColor(a), 1.);
-
+    if (count == 20) {
+        _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+    } else {
+        _GLF_color = vec4(0.0, 0.0, 1.0, 1.0);
+    }
 }
+

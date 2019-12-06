@@ -20,8 +20,6 @@ precision highp float;
 
 layout(location = 0) out vec4 _GLF_color;
 
-uniform vec2 injectionSwitch;
-
 uniform vec2 resolution;
 
 struct BST{
@@ -89,7 +87,7 @@ vec3 hueColor(float angle) {
     float nodeData = float(search(15));
     vec3 color;
     color = clamp(fract(angle * vec3(1.0, 5.0, nodeData)), 0.0, 1.0);
-    color.x *= cosh(isnan(float(search(30))) ? injectionSwitch.x : injectionSwitch.y);
+    color.x *= cosh(isnan(float(search(30))) ? 0.0 : 1.0);
     return color;
 }
 
@@ -99,7 +97,7 @@ float makeFrame(float v) {
         return float(search(100));
     }
     if (v < 4.0) {
-        return injectionSwitch.x;
+        return 0.0;
     }
     if (v < float(search(6))) {
         return  1.0;
@@ -127,9 +125,9 @@ float makeFrame(float v) {
 */
 
 void main() {
-    int treeIndex = int(injectionSwitch.x);
+    int treeIndex = 0;
     // Initialize root node.
-    makeTreeNode(tree[int(injectionSwitch.x)], 9);
+    makeTreeNode(tree[0], 9);
     // Each time we insert a new node into the tree, we increment one.
     treeIndex++;
 
@@ -163,7 +161,7 @@ void main() {
         } else {
             switch (result) {
                 case -1:
-                    sum += int(injectionSwitch.y);
+                    sum += 1;
                 break;
                 case 0:
                     return;
