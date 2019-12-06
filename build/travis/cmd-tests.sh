@@ -59,9 +59,9 @@ glsl-generate --seed 0 samples/300es samples/donors 10 family_300es work/shaderf
 glsl-generate --seed 0 samples/100 samples/donors 10 family_100 work/shaderfamilies >/dev/null
 glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 family_vulkan work/shaderfamilies >/dev/null
 
-test -d "work/shaderfamilies/family_100_bubblesort_flag"
-test -d "work/shaderfamilies/family_300es_bubblesort_flag"
-test -d "work/shaderfamilies/family_vulkan_bubblesort_flag"
+test -d "work/shaderfamilies/family_100_stable_bubblesort_flag"
+test -d "work/shaderfamilies/family_300es_stable_bubblesort_flag"
+test -d "work/shaderfamilies/family_vulkan_stable_bubblesort_flag"
 
 
 ### Reduce examples.
@@ -102,7 +102,7 @@ test "${EXIT_CODE}" -eq 143
 
 
 ### Check some binaries.
-SHADER=work/shaderfamilies/family_100_bubblesort_flag/reference.frag
+SHADER=work/shaderfamilies/family_100_stable_bubblesort_flag/reference.frag
 
 glslangValidator "${SHADER}"
 shader_translator "${SHADER}" >/dev/null
