@@ -20,8 +20,6 @@ precision highp float;
 
 layout(location = 0) out vec4 _GLF_color;
 
-uniform vec2 injectionSwitch;
-
 uniform vec2 resolution;
 
 struct QuicksortObject{
@@ -78,9 +76,9 @@ QuicksortObject obj;
 
 void main() {
     // Initialize decreasing values to an array starting from 10.
-    for (int i = int(injectionSwitch.x); i < 10; i ++) {
-        obj.numbers[i] = (10 - i) * int(injectionSwitch.y);
-	obj.numbers[i] = obj.numbers[i] * obj.numbers[i];
+    for (int i = 0; i < 10; i ++) {
+        obj.numbers[i] = (10 - i);
+        obj.numbers[i] = obj.numbers[i] * obj.numbers[i];
     }
     quicksort();
     vec2 uv = gl_FragCoord.xy / resolution;
@@ -109,6 +107,6 @@ void main() {
     if (abs(uv.x - uv.y) < 0.25) {
       color.x += float(obj.numbers[9]);
     }
-    _GLF_color = vec4(normalize(color), injectionSwitch.y);
+    _GLF_color = vec4(normalize(color), 1.0);
 
 }
