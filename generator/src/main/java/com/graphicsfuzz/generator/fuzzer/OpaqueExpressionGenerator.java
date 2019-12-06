@@ -136,7 +136,9 @@ public final class OpaqueExpressionGenerator {
     opaqueOneFactories.addAll(waysToMakeZeroOrOne());
     opaqueOneFactories.add(this::opaqueOneExponential);
     opaqueOneFactories.add(this::opaqueOneCosine);
-    opaqueOneFactories.add(this::opaqueOneNormalizedVectorLength);
+    if (shadingLanguageVersion.supportedRound()) {
+      opaqueOneFactories.add(this::opaqueOneRoundedNormalizedVectorLength);
+    }
     return opaqueOneFactories;
   }
 
@@ -646,10 +648,12 @@ public final class OpaqueExpressionGenerator {
         fuzzer)));
   }
 
-  private Optional<Expr> opaqueOneNormalizedVectorLength(BasicType type, boolean constContext,
-                                                         final int depth,
-                                                         Fuzzer fuzzer, boolean isZero) {
-    // represent 1 as the length of a normalized vector
+  private Optional<Expr> opaqueOneRoundedNormalizedVectorLength(BasicType type,
+                                                                boolean constContext,
+                                                                final int depth,
+                                                                Fuzzer fuzzer,
+                                                                boolean isZero) {
+    // represent 1 as the rounded length of a normalized vector
     assert !isZero;
     if (type != BasicType.FLOAT) {
       // 'length' has return type 'float', so we can only create a scalar floating-point zero.
@@ -660,11 +664,13 @@ public final class OpaqueExpressionGenerator {
     final BasicType vectorType =
         BasicType.allGenTypes().get(generator.nextInt(BasicType.allGenTypes().size()));
 
-    // We create a vector of ones and normalize it.  Note that we could be more general and create
-    // any non-zero vector and normalize it.
-    Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(false,
-        vectorType, constContext, depth, fuzzer));
-    return Optional.of(new FunctionCallExpr("length", normalizedExpr));
+    // We create a vector of ones and normalize it, rounding the result to guard against the case
+    // where round-off leads to a result that is not quite one.  Note that we could be more general
+    // here and normalize any non-zero vector.
+    return Optional.of(new FunctionCallExpr("round",
+        new FunctionCallExpr("length",
+            new FunctionCallExpr("normalize",
+                makeOpaqueZeroOrOne(false, vectorType, constContext, depth, fuzzer)))));
   }
 
   private List<BasicType> numericTypesOrGenTypesIfEssl100() {
