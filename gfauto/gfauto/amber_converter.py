@@ -267,11 +267,16 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
         "glUniformMatrix4fv": "mat4x4<float>",
     }
 
+    uniforms = json.loads(uniform_json_contents)
+
+    # If there are no uniforms, do not generate anything.
+    if not uniforms:
+        return ""
+
     result = f"# uniforms for {prefix}\n"
 
     result += "\n"
 
-    uniforms = json.loads(uniform_json_contents)
     for name, entry in uniforms.items():
 
         if name == "$compute":
@@ -571,7 +576,7 @@ def graphics_shader_job_amber_test_to_amber_script(
     for pipeline_index in range(1, len(jobs)):
         prefix_0 = jobs[0].name_prefix
         prefix_1 = jobs[pipeline_index].name_prefix
-        result += f"EXPECT {prefix_0}_framebuffer RMSE_BUFFER {prefix_1}_framebuffer TOLERANCE 7"
+        result += f"EXPECT {prefix_0}_framebuffer EQ_HISTOGRAM_EMD_BUFFER {prefix_1}_framebuffer TOLERANCE 0.005"
         result += "\n"
 
     if amberfy_settings.extra_commands:
@@ -707,6 +712,12 @@ def write_shader(
         f"{amber_file.stem}.{shader_name}{shader_type_suffix}{shader_job_util.SUFFIX_SPIRV}"
     )
 
+    # E.g. dEQP-VK.graphicsfuzz.ifs-and-whiles.variant_fragment_shader.spvas
+    # These files can be added to the llpc repo as a shader test.
+    shader_llpc_asm_test_file_path = output_dir / (
+        f"dEQP-VK.graphicsfuzz.{amber_file.stem}.{shader_name}.spvas"
+    )
+
     util.file_write_text(shader_asm_file_path, shader_asm)
     files_written.append(shader_asm_file_path)
 
@@ -725,6 +736,20 @@ def write_shader(
     )
 
     files_written.append(shader_spirv_file_path)
+
+    util.file_write_text(
+        shader_llpc_asm_test_file_path,
+        """; BEGIN_SHADERTEST
+; RUN: amdllpc -verify-ir -spvgen-dir=%spvgendir% -v %gfxip %s | FileCheck -check-prefix=SHADERTEST %s
+; SHADERTEST-LABEL: {{^// LLPC.*}} SPIRV-to-LLVM translation results
+; SHADERTEST: AMDLLPC SUCCESS
+; END_SHADERTEST
+;
+"""
+        + f"; Based on dEQP-VK.graphicsfuzz.{amber_file.stem}\n\n"
+        + shader_asm,
+    )
+    files_written.append(shader_llpc_asm_test_file_path)
 
     return files_written
 

@@ -24,10 +24,17 @@ import shutil
 import subprocess
 import time
 from pathlib import Path
-from subprocess import CompletedProcess
 from typing import List, Optional
 
-from gfauto import fuzz, gflogging, result_util, subprocess_util, util
+from gfauto import (
+    devices_util,
+    fuzz,
+    gflogging,
+    result_util,
+    subprocess_util,
+    types,
+    util,
+)
 from gfauto.device_pb2 import Device, DeviceAndroid
 from gfauto.gflogging import log
 from gfauto.util import check, file_open_text, file_write_text
@@ -66,7 +73,7 @@ def adb_helper(
     check_exit_code: bool,
     verbose: bool = False,
     timeout: Optional[int] = ADB_DEFAULT_TIME_LIMIT,
-) -> subprocess.CompletedProcess:
+) -> types.CompletedProcess:
 
     adb_cmd = [str(adb_path())]
     if serial:
@@ -85,7 +92,7 @@ def adb_check(
     adb_args: List[str],
     verbose: bool = False,
     timeout: Optional[int] = ADB_DEFAULT_TIME_LIMIT,
-) -> subprocess.CompletedProcess:
+) -> types.CompletedProcess:
 
     return adb_helper(
         serial, adb_args, check_exit_code=True, verbose=verbose, timeout=timeout
@@ -97,7 +104,7 @@ def adb_can_fail(
     adb_args: List[str],
     verbose: bool = False,
     timeout: Optional[int] = ADB_DEFAULT_TIME_LIMIT,
-) -> subprocess.CompletedProcess:
+) -> types.CompletedProcess:
 
     return adb_helper(
         serial, adb_args, check_exit_code=False, verbose=verbose, timeout=timeout
@@ -134,10 +141,35 @@ def is_screen_off_or_locked(serial: Optional[str] = None) -> bool:
     return False
 
 
+def get_device_driver_details(serial: str) -> str:
+    prepare_device(wait_for_screen=True, serial=serial)
+    cmd = [
+        "shell",
+        # The following is a single string:
+        f"cd {ANDROID_DEVICE_RESULT_DIR} && "
+        # -d disables Vulkan validation layers.
+        f"{ANDROID_DEVICE_AMBER} -d -V",
+    ]
+    try:
+        result = adb_check(serial, cmd, verbose=True)
+
+    except subprocess.SubprocessError as ex:
+        raise devices_util.GetDeviceDetailsError() from ex
+
+    match = devices_util.AMBER_DEVICE_DETAILS_PATTERN.search(result.stdout)
+
+    if not match:
+        raise devices_util.GetDeviceDetailsError(
+            "Could not find device details in stdout: " + result.stdout
+        )
+
+    return match.group(1)
+
+
 def get_all_android_devices() -> List[Device]:
     result: List[Device] = []
 
-    log("Getting the list of connected Android devices via adb")
+    log("Getting the list of connected Android devices via adb\n")
 
     adb_devices = adb_check(None, ["devices", "-l"], verbose=True)
     stdout: str = adb_devices.stdout
@@ -163,9 +195,30 @@ def get_all_android_devices() -> List[Device]:
                 device_model = util.remove_start(fields[field_index], "model:")
                 break
 
+        build_fingerprint: str = ""
+        try:
+            adb_fingerprint_result = adb_check(
+                device_serial, ["adb", "shell", "getprop ro.build.fingerprint"]
+            )
+            build_fingerprint = adb_fingerprint_result.stdout
+            build_fingerprint = build_fingerprint.strip()
+        except subprocess.CalledProcessError:
+            log("Failed to get device fingerprint")
+
+        driver_details = ""
+        try:
+            driver_details = get_device_driver_details(device_serial)
+        except devices_util.GetDeviceDetailsError as ex:
+            log(f"WARNING: Failed to get device driver details: {ex}")
+
         device = Device(
             name=f"{device_model}_{device_serial}",
-            android=DeviceAndroid(serial=device_serial, model=device_model),
+            android=DeviceAndroid(
+                serial=device_serial,
+                model=device_model,
+                build_fingerprint=build_fingerprint,
+            ),
+            device_properties=driver_details,
         )
         log(f"Found Android device:\n{str(device)}")
         result.append(device)
@@ -306,7 +359,7 @@ def run_amber_on_device_helper(
         amber_flags += " -ps"
     else:
         if dump_image:
-            amber_flags += f" -i {fuzz.IMAGE_FILE_NAME} -I variant_framebuffer"
+            amber_flags += f" -I variant_framebuffer -i {fuzz.VARIANT_IMAGE_FILE_NAME} -I reference_framebuffer -i {fuzz.REFERENCE_IMAGE_FILE_NAME}"
         if dump_buffer:
             amber_flags += f" -b {fuzz.BUFFER_FILE_NAME} -B 0"
 
@@ -320,7 +373,7 @@ def run_amber_on_device_helper(
 
     status = "UNEXPECTED_ERROR"
 
-    result: Optional[CompletedProcess] = None
+    result: Optional[types.CompletedProcess] = None
 
     try:
         result = adb_can_fail(

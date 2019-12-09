@@ -23,8 +23,43 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Optional
 
-from gfauto import fuzz, gflogging, result_util, subprocess_util, util
+from gfauto import (
+    devices_util,
+    fuzz,
+    gflogging,
+    result_util,
+    subprocess_util,
+    types,
+    util,
+)
 from gfauto.gflogging import log
+
+
+def get_driver_details(amber_path: Path, icd: Optional[Path] = None) -> str:
+
+    env: Optional[Dict[str, str]] = None
+
+    if icd:
+        env = {"VK_ICD_FILENAMES": str(icd)}
+
+    try:
+        result = subprocess_util.run(
+            [str(amber_path), "-d", "-V"],
+            timeout=fuzz.AMBER_RUN_TIME_LIMIT,
+            verbose=True,
+            env=env,
+        )
+    except subprocess.SubprocessError as ex:
+        raise devices_util.GetDeviceDetailsError() from ex
+
+    match = devices_util.AMBER_DEVICE_DETAILS_PATTERN.search(result.stdout)
+
+    if not match:
+        raise devices_util.GetDeviceDetailsError(
+            "Could not find device details in stdout: " + result.stdout
+        )
+
+    return match.group(1)
 
 
 def run_amber(
@@ -32,6 +67,7 @@ def run_amber(
     output_dir: Path,
     dump_image: bool,
     dump_buffer: bool,
+    amber_path: Path,
     skip_render: bool = False,
     debug_layers: bool = False,
     icd: Optional[Path] = None,
@@ -47,6 +83,7 @@ def run_amber(
                 output_dir,
                 dump_image,
                 dump_buffer,
+                amber_path,
                 skip_render,
                 debug_layers,
                 icd,
@@ -62,18 +99,18 @@ def run_amber_helper(
     output_dir: Path,
     dump_image: bool,
     dump_buffer: bool,
+    amber_path: Path,
     skip_render: bool = False,
     debug_layers: bool = False,
     icd: Optional[Path] = None,
 ) -> Path:
 
-    # TODO: Use binary paths.
-
-    image_file = output_dir / fuzz.IMAGE_FILE_NAME
+    variant_image_file = output_dir / fuzz.VARIANT_IMAGE_FILE_NAME
+    reference_image_file = output_dir / fuzz.REFERENCE_IMAGE_FILE_NAME
     buffer_file = output_dir / fuzz.BUFFER_FILE_NAME
 
     cmd = [
-        str(util.tool_on_path("amber")),
+        str(amber_path),
         str(amber_script_file),
         "--log-graphics-calls-time",
         "--disable-spirv-val",
@@ -87,10 +124,14 @@ def run_amber_helper(
         cmd.append("-ps")
     else:
         if dump_image:
-            cmd.append("-i")
-            cmd.append(str(image_file))
             cmd.append("-I")
             cmd.append("variant_framebuffer")
+            cmd.append("-i")
+            cmd.append(str(variant_image_file))
+            cmd.append("-I")
+            cmd.append("reference_framebuffer")
+            cmd.append("-i")
+            cmd.append(str(reference_image_file))
         if dump_buffer:
             cmd.append("-b")
             cmd.append(str(buffer_file))
@@ -101,7 +142,7 @@ def run_amber_helper(
 
     status = "UNEXPECTED_ERROR"
 
-    result: Optional[subprocess.CompletedProcess] = None
+    result: Optional[types.CompletedProcess] = None
     env: Optional[Dict[str, str]] = None
 
     if icd:

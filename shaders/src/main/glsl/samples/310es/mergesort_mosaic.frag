@@ -77,34 +77,34 @@ void main() {
         switch(i) {
             case 0:
                 data[i] = 4;
-            break;
+                break;
             case 1:
-                data[i] = 3 ;
-            break;
+                data[i] = 3;
+                break;
             case 2:
-                data[i] = 2 ;
-            break;
+                data[i] = 2;
+                break;
             case 3:
-                data[i] = 1 ;
-            break;
+                data[i] = 1;
+                break;
             case 4:
-                data[i] = 0 ;
-            break;
+                data[i] = 0;
+                break;
             case 5:
                 data[i] = -1;
-            break;
+                break;
             case 6:
                 data[i] = -2;
-            break;
+                break;
             case 7:
                 data[i] = -3;
-            break;
+                break;
             case 8:
                 data[i] = -4;
-            break;
+                break;
             case 9:
                 data[i] = -5;
-            break;
+                break;
         }
         i++;
     } while (i < 10);
@@ -136,7 +136,7 @@ void main() {
             color.x += atanh(color.x) * cosh(injectionSwitch.y) * smoothstep(color, injectionSwitch, gl_FragCoord.yy).x;
             break;
         } else if (int(gl_FragCoord[1]) < 120) {
-            color = fract(acosh(vecCoor.yx - trunc(float(data[3]))));
+            color = fract(acosh(clamp(vecCoor.yx - trunc(float(data[3])), 1.0, 1000.0)));
             color.x += (isnan(gl_FragCoord.x) ? log2(gl_FragCoord.x) : log2(gl_FragCoord.y));
             break;
         } else if (int(gl_FragCoord[1]) < 150) {

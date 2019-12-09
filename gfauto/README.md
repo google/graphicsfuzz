@@ -15,7 +15,12 @@ GraphicsFuzz auto (this project) provides scripts for running these tools with m
 
 > On Windows, you can use the Git Bash shell, or adapt the commands (including those inside `dev_shell.sh.template`) to the Windows command prompt.
 
-Execute `./dev_shell.sh.template`. If the default settings don't work, make a copy of the file called `dev_shell.sh` and modify according to the comments before executing. `pip` must be installed for the version of Python you wish to use.
+Execute `./dev_shell.sh.template`. If the default settings don't work, make a copy of the file called `dev_shell.sh` and modify according to the comments before executing. `pip` must be installed for the version of Python you wish to use. Note that you can do e.g. `export PYTHON=python3.6.8` to set your preferred Python binary. We currently target Python 3.6.
+
+> Pip for Python 3.6 may be broken on certain Debian distributions.
+> You can just use the newer Python 3.7+ version provided by your
+> distribution.
+> See "Installing Python" below if you want to use Python 3.6.
 
 The script generates and activates a Python virtual environment (located at `.venv/`) with all dependencies installed.
 
@@ -128,7 +133,7 @@ To start fuzzing, create and change to a directory outside the `gfauto/` directo
 You can get some samples from the GraphicsFuzz project.
 
 ```sh
-mkdir references/ donors/ 
+mkdir references/ donors/
 cp /data/graphicsfuzz_zip/samples/310es/* references/
 cp /data/graphicsfuzz_zip/samples/310es/* donors/
 ```
@@ -169,3 +174,37 @@ You can run parallel instances of gfauto (just for increased throughput, not wit
 ```sh
 parallel -j 32 -i gfauto_fuzz -- $(seq 100)
 ```
+
+# Installing Python
+
+To manually install Python on your Linux distribution, you can use `pyenv`.
+
+https://github.com/pyenv/pyenv#basic-github-checkout
+
+In summary:
+
+* Install the required packages recommended [here](https://github.com/pyenv/pyenv/wiki/Common-build-problems).
+
+* Then:
+
+```sh
+git clone https://github.com/pyenv/pyenv.git ~/.pyenv
+
+# Add the following two lines to your ~/.bashrc file.
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
+# In a new terminal:
+eval "$(pyenv init -)"
+pyenv install 3.6.9
+pyenv global 3.6.9
+
+# Now execute the development shell script, as usual.
+export PYTHON="python"
+./dev_shell.sh.template
+```
+
+You can reactivate the development shell later,
+as explained above, using
+`source .venv/bin/activate`,
+without having to re-execute the above `pyenv` commands.

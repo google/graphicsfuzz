@@ -25,7 +25,7 @@ import secrets
 import shutil
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from gfauto import (
     artifact_util,
@@ -40,6 +40,7 @@ from gfauto import (
     util,
 )
 from gfauto.gflogging import log
+from gfauto.util import check_dir_exists
 
 # Root:
 #   - donors/ (contains GLSL shader jobs)
@@ -97,7 +98,8 @@ from gfauto.gflogging import log
 #
 
 
-IMAGE_FILE_NAME = "image.png"
+REFERENCE_IMAGE_FILE_NAME = "reference.png"
+VARIANT_IMAGE_FILE_NAME = "variant.png"
 BUFFER_FILE_NAME = "buffer.bin"
 
 BEST_REDUCTION_NAME = "best"
@@ -143,6 +145,12 @@ def main() -> None:
         action="store_true",
     )
 
+    parser.add_argument(
+        "--force_no_stack_traces",
+        help="Continue even if we cannot get stack traces (using catchsegv or cdb).",
+        action="store_true",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     settings_path = Path(parsed_args.settings)
@@ -150,18 +158,37 @@ def main() -> None:
         parsed_args.iteration_seed
     )
     use_spirv_fuzz: bool = parsed_args.use_spirv_fuzz
+    force_no_stack_traces: bool = parsed_args.force_no_stack_traces
 
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
         try:
-            main_helper(settings_path, iteration_seed, use_spirv_fuzz)
+            main_helper(
+                settings_path, iteration_seed, use_spirv_fuzz, force_no_stack_traces
+            )
+        except settings_util.NoSettingsFile as exception:
+            log(str(exception))
         finally:
             gflogging.pop_stream_for_logging()
 
 
 def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many-statements;
-    settings_path: Path, iteration_seed_override: Optional[int], use_spirv_fuzz: bool
+    settings_path: Path,
+    iteration_seed_override: Optional[int],
+    use_spirv_fuzz: bool,
+    force_no_stack_traces: bool,
 ) -> None:
+
+    util.update_gcov_environment_variable_if_needed()
+
+    try:
+        artifact_util.artifact_path_get_root()
+    except FileNotFoundError:
+        log(
+            "Could not find ROOT file (in the current directory or above) to mark where binaries should be stored. "
+            "Creating a ROOT file in the current directory."
+        )
+        util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
 
     settings = settings_util.read_or_create(settings_path)
 
@@ -174,47 +201,30 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     donors_dir = Path() / "donors"
     spirv_fuzz_shaders_dir = Path() / "spirv_fuzz_shaders"
 
-    if donors_dir.exists():
-        try:
-            artifact_util.artifact_path_get_root()
-        except FileNotFoundError:
-            log(
-                "Could not find ROOT file (in the current directory or above) to mark where binaries should be stored. "
-                "Creating a ROOT file in the current directory."
-            )
-            util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
-
     # Log a warning if there is no tool on the PATH for printing stack traces.
-    util.prepend_catchsegv_if_available([], log_warning=True)
+    prepended = util.prepend_catchsegv_if_available([], log_warning=True)
+    if not force_no_stack_traces and not prepended:
+        raise AssertionError("Stopping because we cannot get stack traces.")
 
-    # TODO: make GraphicsFuzz find donors recursively.
-    references = sorted(references_dir.rglob("*.json"))
+    spirv_fuzz_shaders: List[Path] = []
+    references: List[Path] = []
 
-    # Filter to only include .json files that have at least one shader (.frag, .vert, .comp) file.
-    references = [ref for ref in references if shader_job_util.get_related_files(ref)]
+    if use_spirv_fuzz:
+        check_dir_exists(spirv_fuzz_shaders_dir)
+        spirv_fuzz_shaders = sorted(spirv_fuzz_shaders_dir.rglob("*.json"))
+    else:
+        check_dir_exists(references_dir)
+        check_dir_exists(donors_dir)
+        # TODO: make GraphicsFuzz find donors recursively.
+        references = sorted(references_dir.rglob("*.json"))
+        # Filter to only include .json files that have at least one shader (.frag, .vert, .comp) file.
+        references = [
+            ref for ref in references if shader_job_util.get_related_files(ref)
+        ]
 
-    spirv_fuzz_shaders = sorted(spirv_fuzz_shaders_dir.rglob("*.json"))
-
-    binary_manager = binaries_util.get_default_binary_manager().get_child_binary_manager(
-        list(settings.custom_binaries), prepend=True
-    )
-
-    # For convenience, we add the default (i.e. newest) SwiftShader ICD (binary) to any swift_shader devices
-    # so that we don't need to specify it and update it in the device list (on disk).
-    # Thus, when we save the test, the device will contain the version of SwiftShader we used.
-    for device in active_devices:
-
-        # noinspection PyTypeChecker
-        if device.HasField("swift_shader"):
-            swift_binaries = [
-                binary
-                for binary in device.binaries
-                if "swift" not in binary.name.lower()
-            ]
-            if not swift_binaries:
-                device.binaries.extend(
-                    [binary_manager.get_binary_by_name("swift_shader_icd")]
-                )
+    binary_manager = binaries_util.get_default_binary_manager(
+        settings=settings
+    ).get_child_binary_manager(list(settings.custom_binaries), prepend=True)
 
     while True:
 
@@ -260,6 +270,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
             fuzz_glsl_test.fuzz_glsl(
                 staging_dir,
                 reports_dir,
+                fuzz_failures_dir,
                 active_devices,
                 references,
                 donors_dir,
@@ -289,4 +300,3 @@ def create_summary_and_reproduce(
 
 if __name__ == "__main__":
     main()
-    sys.exit(0)

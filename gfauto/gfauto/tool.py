@@ -26,7 +26,6 @@ from attr import dataclass
 
 from gfauto import (
     amber_converter,
-    artifact_util,
     binaries_util,
     glslang_validator_util,
     shader_job_util,
@@ -36,6 +35,7 @@ from gfauto import (
     test_util,
     util,
 )
+from gfauto.settings_pb2 import Settings
 from gfauto.util import check
 
 AMBER_COMMAND_PROBE_TOP_LEFT_RED = "probe rgba (0, 0) (1, 0, 0, 1)\n"
@@ -44,6 +44,10 @@ AMBER_COMMAND_PROBE_TOP_LEFT_WHITE = "probe rgba (0, 0) (1, 1, 1, 1)\n"
 
 AMBER_COMMAND_EXPECT_RED = (
     "EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255\n"
+)
+
+AMBER_COMMAND_EXPECT_BLACK = (
+    "EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 0 0 0 255\n"
 )
 
 
@@ -80,24 +84,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-
-def get_binary_paths_using_artifact_system(
-    artifact_path: str
-) -> binaries_util.BinaryManager:
-
-    # Deprecated.
-
-    artifact_util.artifact_execute_recipe_if_needed(
-        artifact_path, binaries_util.BUILT_IN_BINARY_RECIPES_MAP
-    )
-    artifact_metadata = artifact_util.artifact_read_metadata(artifact_path)
-
-    return binaries_util.BinaryManager(
-        list(artifact_metadata.data.extracted_archive_set.archive_set.binaries),
-        built_in_binary_recipes=binaries_util.BUILT_IN_BINARY_RECIPES_MAP,
-        custom_binary_artifacts_prefix=artifact_path,
-    )
 
 
 def amberfy(
@@ -390,14 +376,18 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
     shader_jobs = get_shader_jobs(source_dir)
 
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
-    binary_manager = binaries_util.get_default_binary_manager().get_child_binary_manager(
+    binary_manager = binaries_util.get_default_binary_manager(
+        settings=Settings()
+    ).get_child_binary_manager(
         binary_list=list(test.device.binaries) + list(test.binaries)
     )
 
-    spirv_opt_args = list(test.glsl.spirv_opt_args)
-    spirv_opt_hash = binary_manager.get_binary_by_name(
-        binaries_util.SPIRV_OPT_NAME
-    ).version
+    spirv_opt_args = list(test.glsl.spirv_opt_args) or None
+    spirv_opt_hash: Optional[str] = None
+    if spirv_opt_args:
+        spirv_opt_hash = binary_manager.get_binary_by_name(
+            binaries_util.SPIRV_OPT_NAME
+        ).version
 
     # Compile all shader jobs
     shader_job_files = [

@@ -26,11 +26,13 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import attr
+import requests
 
 from gfauto import artifact_util, recipe_wrap, test_util, util
 from gfauto.common_pb2 import Archive, ArchiveSet, Binary
 from gfauto.gflogging import log
 from gfauto.recipe_pb2 import Recipe, RecipeDownloadAndExtractArchiveSet
+from gfauto.settings_pb2 import Settings
 from gfauto.util import check
 
 BINARY_RECIPES_PREFIX = "//binaries"
@@ -42,12 +44,21 @@ SPIRV_OPT_NAME = "spirv-opt"
 SPIRV_VAL_NAME = "spirv-val"
 SPIRV_DIS_NAME = "spirv-dis"
 SWIFT_SHADER_NAME = "swift_shader_icd"
+AMBER_NAME = "amber"
 
 SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG = "no-validate-after-all"
 
 BUILT_IN_BINARY_RECIPES_PATH_PREFIX = f"{BINARY_RECIPES_PREFIX}/built_in"
 
 CUSTOM_BINARY_RECIPES_PATH_PREFIX = f"{BINARY_RECIPES_PREFIX}/custom"
+
+PLATFORMS = ["Linux", "Mac", "Windows"]
+
+PLATFORMS_SET = set(PLATFORMS)
+
+CONFIGS = ["Release", "Debug"]
+
+CONFIGS_SET = set(CONFIGS)
 
 PLATFORM_SUFFIXES_DEBUG = ["Linux_x64_Debug", "Windows_x64_Debug", "Mac_x64_Debug"]
 PLATFORM_SUFFIXES_RELEASE = [
@@ -61,23 +72,37 @@ PLATFORM_SUFFIXES_RELWITHDEBINFO = [
     "Mac_x64_RelWithDebInfo",
 ]
 
-DEFAULT_SPIRV_TOOLS_VERSION = "6b072126595dd8c2448eb1fda616251c5e6d7079"
+DEFAULT_SPIRV_TOOLS_VERSION = "f1e5cd73f658abcc23ee96d78f2dc27c4b7028c1"
 
 DEFAULT_BINARIES = [
     Binary(
         name="glslangValidator",
         tags=["Debug"],
-        version="fe0b2bd694bb07004a2db859c5714c321c26b751",
+        version="18d6b6b63e9adc2aa2cce1ce85d1c348f9475118",
     ),
     Binary(name="spirv-opt", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-dis", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-as", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-val", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-fuzz", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
+    Binary(name="spirv-reduce", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(
         name="swift_shader_icd",
         tags=["Debug"],
-        version="b6fa949c45397bd1fbfda769a104b9e8884f343e",
+        version="aaa64b76c0b40c2958a18cfdc623157c8c6e1b7d",
+    ),
+    Binary(
+        name="amber", tags=["Debug"], version="2bade8f0a3608872962c0e9e451ccdd63c3332f9"
+    ),
+    Binary(
+        name="graphicsfuzz-tool",
+        tags=[],
+        version="2584a469d121aa0b1304115a8640cc4e7aedfcf4",
+    ),
+    Binary(
+        name="amdllpc",
+        tags=["Debug"],
+        version="06e4d24336a16ed10d305931804d75a4104dce35",
     ),
 ]
 
@@ -450,6 +475,195 @@ BUILT_IN_BINARY_RECIPES_MAP: Dict[str, Recipe] = {
 }
 
 
+def get_platform_from_binary(binary: Binary) -> str:
+    tags = list(binary.tags)
+    platforms = [p for p in tags if p in PLATFORMS_SET]
+    if platforms:
+        check(
+            len(platforms) == 1, AssertionError(f"More than one platform in: {binary}")
+        )
+        platform = platforms[0]
+    else:
+        platform = util.get_platform()
+    return platform
+
+
+def get_config_from_binary(binary: Binary) -> str:
+    tags = list(binary.tags)
+    configs = [c for c in tags if c in CONFIGS_SET]
+    if not configs:
+        raise AssertionError(f"Could not find a config in tags: {tags}")
+    check(len(configs) == 1, AssertionError(f"More than one config in: {binary}"))
+    config = configs[0]
+    return config
+
+
+def binary_name_to_project_name(binary_name: str) -> str:
+    if binary_name == "glslangValidator":
+        project_name = "glslang"
+    elif binary_name in (
+        "spirv-opt",
+        "spirv-as",
+        "spirv-dis",
+        "spirv-val",
+        "spirv-fuzz",
+        "spirv-reduce",
+    ):
+        project_name = "SPIRV-Tools"
+    elif binary_name == "swift_shader_icd":
+        project_name = "swiftshader"
+    elif binary_name == "amber":
+        project_name = "amber"
+    elif binary_name == "graphicsfuzz-tool":
+        project_name = "graphicsfuzz"
+    elif binary_name == "amdllpc":
+        project_name = "llpc"
+    else:
+        raise AssertionError(
+            f"Could not find {binary_name}. Could not map {binary_name} to a gfbuild- repo."
+        )
+
+    return project_name
+
+
+def get_github_release_recipe(  # pylint: disable=too-many-branches;
+    binary: Binary,
+) -> recipe_wrap.RecipeWrap:
+
+    project_name = binary_name_to_project_name(binary.name)
+
+    if project_name == "graphicsfuzz":
+        # Special case:
+        platform = util.get_platform()
+        tags = PLATFORMS[:]
+        repo_name = f"gfbuild-{project_name}"
+        version = binary.version
+        artifact_name = f"gfbuild-{project_name}-{version}"
+    else:
+        # Normal case:
+        platform = get_platform_from_binary(binary)
+        config = get_config_from_binary(binary)
+        arch = "x64"
+
+        tags = [platform, config, arch]
+
+        repo_name = f"gfbuild-{project_name}"
+        version = binary.version
+        artifact_name = f"gfbuild-{project_name}-{version}-{platform}_{arch}_{config}"
+
+    recipe = recipe_wrap.RecipeWrap(
+        path=f"{BUILT_IN_BINARY_RECIPES_PATH_PREFIX}/{artifact_name}",
+        recipe=Recipe(
+            download_and_extract_archive_set=RecipeDownloadAndExtractArchiveSet(
+                archive_set=ArchiveSet(
+                    archives=[
+                        Archive(
+                            url=f"https://github.com/google/{repo_name}/releases/download/github/google/{repo_name}/{version}/{artifact_name}.zip",
+                            output_file=f"{project_name}.zip",
+                            output_directory=f"{project_name}",
+                        )
+                    ],
+                    binaries=[],
+                )
+            )
+        ),
+    )
+
+    executable_suffix = ".exe" if platform == "Windows" else ""
+
+    if project_name == "glslang":
+        binaries = [
+            Binary(
+                name="glslangValidator",
+                tags=tags,
+                path=f"{project_name}/bin/glslangValidator{executable_suffix}",
+                version=version,
+            )
+        ]
+    elif project_name == "SPIRV-Tools":
+        binaries = [
+            Binary(
+                name="spirv-opt",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-opt{executable_suffix}",
+                version=version,
+            ),
+            Binary(
+                name="spirv-as",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-as{executable_suffix}",
+                version=version,
+            ),
+            Binary(
+                name="spirv-dis",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-dis{executable_suffix}",
+                version=version,
+            ),
+            Binary(
+                name="spirv-val",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-val{executable_suffix}",
+                version=version,
+            ),
+            Binary(
+                name="spirv-fuzz",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-fuzz{executable_suffix}",
+                version=version,
+            ),
+            Binary(
+                name="spirv-reduce",
+                tags=tags,
+                path=f"{project_name}/bin/spirv-reduce{executable_suffix}",
+                version=version,
+            ),
+        ]
+    elif project_name == "swiftshader":
+        binaries = [
+            Binary(
+                name="swift_shader_icd",
+                tags=tags,
+                path=f"{project_name}/lib/vk_swiftshader_icd.json",
+                version=version,
+            )
+        ]
+    elif project_name == "amber":
+        binaries = [
+            Binary(
+                name="amber",
+                tags=tags,
+                path=f"{project_name}/bin/amber{executable_suffix}",
+                version=version,
+            )
+        ]
+    elif project_name == "graphicsfuzz":
+        binaries = [
+            Binary(
+                name="graphicsfuzz-tool",
+                tags=tags,
+                path=f"{project_name}/python/drivers/graphicsfuzz-tool",
+                version=version,
+            )
+        ]
+    elif project_name == "llpc":
+        if platform != "Linux":
+            raise AssertionError("amdllpc is only available on Linux")
+        binaries = [
+            Binary(
+                name="amdllpc",
+                tags=tags,
+                path=f"{project_name}/bin/amdllpc{executable_suffix}",
+                version=version,
+            )
+        ]
+    else:
+        raise AssertionError(f"Unknown project name: {project_name}")
+
+    recipe.recipe.download_and_extract_archive_set.archive_set.binaries.extend(binaries)
+    return recipe
+
+
 class BinaryManager(BinaryGetter):
     """
     Implements BinaryGetter.
@@ -477,13 +691,16 @@ class BinaryManager(BinaryGetter):
         binary_list: Optional[List[Binary]] = None,
         platform: Optional[str] = None,
         built_in_binary_recipes: Optional[Dict[str, Recipe]] = None,
-        custom_binary_artifacts_prefix: Optional[str] = None,
     ):
         self._binary_list = binary_list or DEFAULT_BINARIES
         self._resolved_paths = {}
         self._platform = platform or util.get_platform()
         self._binary_artifacts = []
         self._built_in_binary_recipes = {}
+
+        self._binary_artifacts.extend(
+            artifact_util.binary_artifacts_find(BINARY_RECIPES_PREFIX)
+        )
 
         # When changing this constructor, check self.get_child_binary_manager().
 
@@ -498,11 +715,6 @@ class BinaryManager(BinaryGetter):
                 archive_set: RecipeDownloadAndExtractArchiveSet = recipe.download_and_extract_archive_set
                 self._binary_artifacts.append((archive_set.archive_set, artifact_path))
 
-        if custom_binary_artifacts_prefix:
-            self._binary_artifacts.extend(
-                artifact_util.binary_artifacts_find(custom_binary_artifacts_prefix)
-            )
-
     @staticmethod
     def get_binary_list_from_test_metadata(test_json_path: Path) -> List[Binary]:
         test_metadata = test_util.metadata_read_from_path(test_json_path)
@@ -512,11 +724,7 @@ class BinaryManager(BinaryGetter):
         result.extend(test_metadata.binaries)
         return result
 
-    def get_binary_path(self, binary: Binary) -> Path:
-        result = self._resolved_paths.get(binary.SerializePartialToString())
-        if result:
-            return result
-        log(f"Finding path of binary:\n{binary}")
+    def _get_binary_path_from_binary_artifacts(self, binary: Binary) -> Optional[Path]:
         binary_tags = set(binary.tags)
         binary_tags.add(self._platform)
         for (archive_set, artifact_path) in self._binary_artifacts:
@@ -536,7 +744,43 @@ class BinaryManager(BinaryGetter):
                 )
                 self._resolved_paths[binary.SerializePartialToString()] = result
                 return result
-        raise BinaryPathNotFound(binary)
+        return None
+
+    def get_binary_path(self, binary: Binary) -> Path:
+        # Try resolved cache first.
+        result = self._resolved_paths.get(binary.SerializePartialToString())
+        if result:
+            return result
+        log(f"Finding path of binary:\n{binary}")
+
+        # Try list (cache) of binary artifacts on disk.
+        result = self._get_binary_path_from_binary_artifacts(binary)
+        if result:
+            return result
+
+        # Try online.
+        wrapped_recipe = get_github_release_recipe(binary)
+        # Execute the recipe to download the binaries.
+        artifact_util.artifact_execute_recipe_if_needed(
+            wrapped_recipe.path, {wrapped_recipe.path: wrapped_recipe.recipe}
+        )
+        # Add to binary artifacts list (cache).
+        self._binary_artifacts.append(
+            (
+                wrapped_recipe.recipe.download_and_extract_archive_set.archive_set,
+                wrapped_recipe.path,
+            )
+        )
+        # Now we should be able to find it in the binary artifacts list.
+        result = self._get_binary_path_from_binary_artifacts(binary)
+        check(
+            bool(result),
+            AssertionError(
+                f"Could not find:\n{binary} even though we just added it:\n{wrapped_recipe}"
+            ),
+        )
+        assert result  # noqa
+        return result
 
     @staticmethod
     def get_binary_by_name_from_list(name: str, binary_list: List[Binary]) -> Binary:
@@ -570,8 +814,82 @@ class BinaryManager(BinaryGetter):
         return result
 
 
-def get_default_binary_manager() -> BinaryManager:
+def get_default_binary_manager(settings: Settings) -> BinaryManager:
+    """
+    Gets the default binary manager.
+
+    :param settings: Passing just "Settings()" will use the hardcoded (slightly out-of-date) default binary_list, which
+    may be fine, especially if you plan to use specific versions anyway by immediately overriding the binary_list using
+    get_child_binary_manager().
+    :return:
+    """
     return BinaryManager(
+        binary_list=list(settings.latest_binary_versions) or DEFAULT_BINARIES,
         built_in_binary_recipes=BUILT_IN_BINARY_RECIPES_MAP,
-        custom_binary_artifacts_prefix=CUSTOM_BINARY_RECIPES_PATH_PREFIX,
     )
+
+
+class DownloadVersionError(Exception):
+    pass
+
+
+def _download_latest_version_number(project_name: str) -> str:
+
+    url = f"https://api.github.com/repos/google/gfbuild-{project_name}/releases"
+    log(f"Checking: {url}")
+    response = requests.get(url)
+    if not response:
+        raise DownloadVersionError(f"Failed to find version of {project_name}")
+
+    result = response.json()
+
+    expected_num_assets_map = {
+        "amber": 17,
+        "glslang": 15,
+        "SPIRV-Tools": 15,
+        "swiftshader": 15,
+        "graphicsfuzz": 5,
+        "llpc": 7,
+    }
+
+    expected_num_assets = expected_num_assets_map[project_name]
+
+    for release in result:
+        assets = release["assets"]
+        if len(assets) != expected_num_assets:
+            log(
+                f"SKIPPING a release of {project_name} with {len(assets)} assets (expected {expected_num_assets})"
+            )
+            continue
+
+        tag_name: str = release["tag_name"]
+        last_slash = tag_name.rfind("/")
+        if last_slash == -1:
+            raise DownloadVersionError(
+                f"Failed to find version of {project_name}; tag name: {tag_name}"
+            )
+        version = tag_name[last_slash + 1 :]
+        log(f"Found {project_name} version {version}")
+        return version
+
+    raise DownloadVersionError(
+        f"Failed to find version of {project_name} with {expected_num_assets} assets"
+    )
+
+
+def download_latest_binary_version_numbers() -> List[Binary]:
+    log("Downloading the latest binary version numbers...")
+
+    # Deep copy of DEFAULT_BINARIES.
+    binaries: List[Binary] = []
+    for binary in DEFAULT_BINARIES:
+        new_binary = Binary()
+        new_binary.CopyFrom(binary)
+        binaries.append(new_binary)
+
+    # Update version numbers.
+    for binary in binaries:
+        project_name = binary_name_to_project_name(binary.name)
+        binary.version = _download_latest_version_number(project_name)
+
+    return binaries

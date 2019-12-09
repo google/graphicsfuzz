@@ -115,11 +115,7 @@ public class StmtReductionOpportunities
       return true;
     }
 
-    if (injectionTracker.enclosedByDeadCodeInjection()) {
-      return true;
-    }
-
-    if (injectionTracker.underUnreachableSwitchCase() && !isZeroSwitchCase(stmt)) {
+    if (currentProgramPointIsDeadCode()) {
       return true;
     }
 
@@ -135,8 +131,7 @@ public class StmtReductionOpportunities
     }
 
     return context.reduceEverywhere()
-          || (isLiveCodeInjection(stmt) && !referencesLoopLimiter(stmt))
-          || enclosingFunctionIsDead();
+          || (isLiveCodeInjection(stmt) && !referencesLoopLimiter(stmt));
 
   }
 
@@ -173,11 +168,6 @@ public class StmtReductionOpportunities
         }
       }
     }.test(stmt);
-  }
-
-  private boolean isZeroSwitchCase(Stmt stmt) {
-    return stmt instanceof ExprCaseLabel
-          && ((IntConstantExpr) ((ExprCaseLabel) stmt).getExpr()).getValue().equals("0");
   }
 
   /**
@@ -257,10 +247,6 @@ public class StmtReductionOpportunities
   private static boolean isLiveCodeVariableDeclaration(VariableDeclInfo vdi) {
     final String name = vdi.getName();
     return isLiveInjectedVariableName(name);
-  }
-
-  private static boolean isLiveInjectedVariableName(String name) {
-    return name.startsWith(Constants.LIVE_PREFIX);
   }
 
   /**

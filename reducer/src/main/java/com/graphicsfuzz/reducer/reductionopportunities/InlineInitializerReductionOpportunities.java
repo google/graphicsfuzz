@@ -112,7 +112,7 @@ public class InlineInitializerReductionOpportunities
     }
 
     if (inLValueContext()) {
-      if (!context.reduceEverywhere() && !currentProgramPointHasNoEffect()) {
+      if (!context.reduceEverywhere() && !currentProgramPointIsDeadCode()) {
         // The declaration is used as an l-value.  To preserve semantics we cannot inline its
         // initializer.  For example, in:
         //   int x = 2;
@@ -137,39 +137,14 @@ public class InlineInitializerReductionOpportunities
     if (context.reduceEverywhere()) {
       return true;
     }
-    if (currentProgramPointHasNoEffect()) {
+    if (currentProgramPointIsDeadCode()) {
       return true;
     }
     if (StmtReductionOpportunities.isLooplimiter(variableDeclInfo.getName())) {
       // Do not mess with loop limiters.
       return false;
     }
-    if (initializerIsScalarAndSideEffectFree(variableDeclInfo)
-        && !referencesVariableIdentifier(variableDeclInfo.getInitializer())) {
-      // We need to be careful about inlining e.g.: "int x = y;", because if y is then modified,
-      // inlined uses of x would get the new value of y.
-      return true;
-    }
-    return false;
-  }
-
-  private boolean referencesVariableIdentifier(Initializer initializer) {
-    return new CheckPredicateVisitor() {
-      @Override
-      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
-        predicateHolds();
-      }
-    }.test(initializer);
-  }
-
-  private boolean currentProgramPointHasNoEffect() {
-    if (injectionTracker.enclosedByDeadCodeInjection()) {
-      return true;
-    }
-    if (injectionTracker.underUnreachableSwitchCase()) {
-      return true;
-    }
-    if (enclosingFunctionIsDead()) {
+    if (isLiveInjectedVariableName(variableDeclInfo.getName())) {
       return true;
     }
     return false;

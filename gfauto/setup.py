@@ -52,5 +52,10 @@ setup(
         "gfauto_test_create_readme = gfauto.test_create_readme:main",
         "gfauto_download_cts_gf_tests = gfauto.download_cts_gf_tests:main",
         "gfauto_run_cts_gf_tests = gfauto.run_cts_gf_tests:main",
+        "gfauto_run_bin = gfauto.run_bin:main",
+        "gfauto_cov_merge = gfauto.cov_merge:main",
+        "gfauto_cov_new = gfauto.cov_new:main",
+        "gfauto_cov_to_source = gfauto.cov_to_source:main",
+        "gfauto_cov_from_gcov = gfauto.cov_from_gcov:main",
     ]},
 )

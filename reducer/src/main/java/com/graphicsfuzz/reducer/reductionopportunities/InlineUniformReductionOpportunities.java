@@ -59,6 +59,14 @@ public class InlineUniformReductionOpportunities extends SimplifyExprReductionOp
   @Override
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
+
+    // We only inline uniforms if we are not preserving semantics, if the current program point is
+    // is dead code, or if the uniform is a live-injected variable.
+    if (!(context.reduceEverywhere() || currentProgramPointIsDeadCode()
+        || isLiveInjectedVariableName(variableIdentifierExpr.getName()))) {
+      return;
+    }
+
     final String name = variableIdentifierExpr.getName();
     final ScopeEntry se = getCurrentScope().lookupScopeEntry(name);
     if (se == null) {

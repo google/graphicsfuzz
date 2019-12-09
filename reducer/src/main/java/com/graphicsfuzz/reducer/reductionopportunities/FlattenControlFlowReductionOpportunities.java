@@ -120,11 +120,9 @@ public class FlattenControlFlowReductionOpportunities
     }
 
     return context.reduceEverywhere()
-          || injectionTracker.enclosedByDeadCodeInjection()
-          || injectionTracker.underUnreachableSwitchCase()
+          || currentProgramPointIsDeadCode()
           || (StmtReductionOpportunities.isLiveCodeInjection(compoundStmt)
                && !isLoopLimiterCheck(compoundStmt))
-          || enclosingFunctionIsDead()
           || SideEffectChecker.isSideEffectFree(compoundStmt, context.getShadingLanguageVersion(),
         shaderKind);
   }

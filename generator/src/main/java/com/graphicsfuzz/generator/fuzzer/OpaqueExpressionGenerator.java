@@ -89,9 +89,11 @@ public final class OpaqueExpressionGenerator {
     expressionIdentities.add(new IdentityClamp());
 
     expressionIdentities.add(new IdentityRewriteComposite());
+    expressionIdentities.add(new IdentityCompositeConstructorExpansion());
     if (shadingLanguageVersion.supportedMixNonfloatBool()) {
       expressionIdentities.add(new IdentityMixBvec());
     }
+
     if (shadingLanguageVersion.supportedTranspose()) {
       expressionIdentities.add(new IdentityDoubleTranspose());
     }
@@ -134,7 +136,9 @@ public final class OpaqueExpressionGenerator {
     opaqueOneFactories.addAll(waysToMakeZeroOrOne());
     opaqueOneFactories.add(this::opaqueOneExponential);
     opaqueOneFactories.add(this::opaqueOneCosine);
-    opaqueOneFactories.add(this::opaqueOneNormalizedVectorLength);
+    if (shadingLanguageVersion.supportedRound()) {
+      opaqueOneFactories.add(this::opaqueOneRoundedNormalizedVectorLength);
+    }
     return opaqueOneFactories;
   }
 
@@ -644,10 +648,12 @@ public final class OpaqueExpressionGenerator {
         fuzzer)));
   }
 
-  private Optional<Expr> opaqueOneNormalizedVectorLength(BasicType type, boolean constContext,
-                                                         final int depth,
-                                                         Fuzzer fuzzer, boolean isZero) {
-    // represent 1 as the length of a normalized vector
+  private Optional<Expr> opaqueOneRoundedNormalizedVectorLength(BasicType type,
+                                                                boolean constContext,
+                                                                final int depth,
+                                                                Fuzzer fuzzer,
+                                                                boolean isZero) {
+    // represent 1 as the rounded length of a normalized vector
     assert !isZero;
     if (type != BasicType.FLOAT) {
       // 'length' has return type 'float', so we can only create a scalar floating-point zero.
@@ -658,11 +664,13 @@ public final class OpaqueExpressionGenerator {
     final BasicType vectorType =
         BasicType.allGenTypes().get(generator.nextInt(BasicType.allGenTypes().size()));
 
-    // We create a vector of ones and normalize it.  Note that we could be more general and create
-    // any non-zero vector and normalize it.
-    Expr normalizedExpr = new FunctionCallExpr("normalize", makeOpaqueZeroOrOne(false,
-        vectorType, constContext, depth, fuzzer));
-    return Optional.of(new FunctionCallExpr("length", normalizedExpr));
+    // We create a vector of ones and normalize it, rounding the result to guard against the case
+    // where round-off leads to a result that is not quite one.  Note that we could be more general
+    // here and normalize any non-zero vector.
+    return Optional.of(new FunctionCallExpr("round",
+        new FunctionCallExpr("length",
+            new FunctionCallExpr("normalize",
+                makeOpaqueZeroOrOne(false, vectorType, constContext, depth, fuzzer)))));
   }
 
   private List<BasicType> numericTypesOrGenTypesIfEssl100() {
@@ -1415,6 +1423,102 @@ public final class OpaqueExpressionGenerator {
     public boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext) {
       return super.preconditionHolds(expr, basicType, constContext)
           && expr instanceof VariableIdentifierExpr;
+    }
+  }
+
+  /**
+   * Identity transformation to insert an expression into a wider vector or matrix using a
+   * type constructor, then extract it back out again using another type constructor. When
+   * performed, transforms an expression e of type t to identity(t(identity(m(identity(e), ..)))),
+   * where m is a type of equal or greater width than t.
+   * The rules for this smaller -> larger -> smaller transformation are as follows:
+   *     If the given type is a vector or scalar, the inner constructor type can be a vector of the
+   *     same element type with equal/greater width than the given type, or (provided that the
+   *     given type is a floating point genType) it can be a matrix with equal/greater column
+   *     width than the given type.
+   *     If the given type is a matrix, the inner constructor type can be a matrix with
+   *     equal/greater column/row width than the given type.
+   */
+  private class IdentityCompositeConstructorExpansion extends AbstractIdentityTransformation {
+    private IdentityCompositeConstructorExpansion() {
+      super(BasicType.allBasicTypes().stream()
+          .filter(item -> !Arrays.asList(BasicType.BVEC4, BasicType.IVEC4, BasicType.UVEC4,
+              BasicType.MAT4X4)
+              .contains(item))
+          .collect(Collectors.toList()), true);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer) {
+      assert !Arrays.asList(BasicType.BVEC4, BasicType.IVEC4, BasicType.UVEC4, BasicType.MAT4X4)
+          .contains(type);
+      final List<BasicType> innerConstructorTypes = new ArrayList<BasicType>();
+      // Our inner constructor type will be equal or larger in width than our given type. The goal
+      // of the next set of conditionals is to populate this list with all types that can fit our
+      // given type.
+      final int maxVectorSize = 4;
+      if (!type.isMatrix()) {
+        for (int i = type.getNumElements(); i <= maxVectorSize; i++) {
+          innerConstructorTypes.add(BasicType.makeVectorType(type.getElementType(), i));
+        }
+        if (type.getElementType() == BasicType.FLOAT) {
+          innerConstructorTypes.addAll(BasicType.allSquareMatrixTypes());
+          if (shadingLanguageVersion.supportedNonSquareMatrices()) {
+            innerConstructorTypes.addAll(BasicType.allNonSquareMatrixTypes());
+          }
+        }
+      } else {
+        for (BasicType constructorType : BasicType.allMatrixTypes()) {
+          if (type.getNumRows() <= constructorType.getNumRows()
+              && type.getNumColumns() <= constructorType.getNumColumns()) {
+            if (BasicType.allSquareMatrixTypes().contains(constructorType)) {
+              innerConstructorTypes.add(constructorType);
+            } else if (shadingLanguageVersion.supportedNonSquareMatrices()) {
+              innerConstructorTypes.add(constructorType);
+            }
+          }
+        }
+      }
+      assert !innerConstructorTypes.isEmpty();
+      assert innerConstructorTypes.contains(type);
+      final BasicType randomInnerConstructorType =
+          innerConstructorTypes.get(generator.nextInt(innerConstructorTypes.size()));
+      final List<Expr> innerConstructorArgs = new ArrayList<Expr>();
+      innerConstructorArgs.add(
+          applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer));
+      // GLSL won't fill in the blanks of the inner constructor unless a matrix is being constructed
+      // from another matrix.
+      if (!type.isMatrix()) {
+        final int numExcessConstructorArgs =
+            randomInnerConstructorType.getNumElements() - type.getNumElements();
+        for (int i = 0; i < numExcessConstructorArgs; i++) {
+          // We add a boolean if the element type is boolean, and a zero/one otherwise.
+          innerConstructorArgs.add(
+              type.getElementType() == BasicType.BOOL
+                  ? makeOpaqueBoolean(generator.nextBoolean(),
+                                      BasicType.BOOL,
+                                      constContext,
+                                      depth,
+                                      fuzzer)
+                  : makeOpaqueZeroOrOne(generator.nextBoolean(),
+                                        type.getElementType(),
+                                        constContext,
+                                        depth,
+                                        fuzzer));
+        }
+      }
+      return identityConstructor(
+          expr,
+          applyIdentityFunction(
+              new TypeConstructorExpr(
+                  type.toString(),
+                  applyIdentityFunction(
+                      new TypeConstructorExpr(
+                          randomInnerConstructorType.toString(),
+                          innerConstructorArgs),
+                      randomInnerConstructorType, constContext, depth, fuzzer)),
+              type, constContext, depth, fuzzer));
     }
   }
 

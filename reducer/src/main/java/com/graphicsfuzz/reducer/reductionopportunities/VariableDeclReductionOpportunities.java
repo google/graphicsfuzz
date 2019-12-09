@@ -128,15 +128,10 @@ public class VariableDeclReductionOpportunities
     }
     // Fine to remove if in a dead context, a live context, if no initializer, or if
     // initializer does not have side effects.
-    return context.reduceEverywhere() || enclosingFunctionIsDead()
-        || injectionTracker.enclosedByDeadCodeInjection()
-        || isLiveInjection(variableDeclInfo)
+    return context.reduceEverywhere() || currentProgramPointIsDeadCode()
+        || isLiveInjectedVariableName(variableDeclInfo.getName())
         || !variableDeclInfo.hasInitializer()
         || initializerIsScalarAndSideEffectFree(variableDeclInfo);
-  }
-
-  private boolean isLiveInjection(VariableDeclInfo variableDeclInfo) {
-    return variableDeclInfo.getName().startsWith(Constants.LIVE_PREFIX);
   }
 
   /**

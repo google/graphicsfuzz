@@ -142,8 +142,8 @@ public class GeneratorUnitTest {
             Util.getDonorsFolder(),
             GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
         "donatedead",
-        Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_blurry.json"),
-        Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_blurry.json"));
+        Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_zoom.json"),
+        Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_zoom.json"));
     // Reason for blacklisting^: slow.
   }
 

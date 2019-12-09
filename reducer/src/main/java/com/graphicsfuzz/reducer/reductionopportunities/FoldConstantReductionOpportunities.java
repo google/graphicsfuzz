@@ -52,6 +52,10 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
   @Override
   void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
 
+    if (!allowedToReduceExpr(parent, child)) {
+      return;
+    }
+
     Optional<FunctionCallExpr> maybeFce = asFunctionCallExpr(child);
     if (maybeFce.isPresent()) {
       switch (maybeFce.get().getCallee()) {

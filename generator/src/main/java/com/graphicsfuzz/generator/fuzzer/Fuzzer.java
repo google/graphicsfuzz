@@ -27,6 +27,7 @@ import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.BreakStmt;
@@ -176,7 +177,7 @@ public class Fuzzer {
       if (!shadingLanguageVersion.restrictedArrayIndexing()) {
         ArrayType arrayType = (ArrayType) targetType;
         List<Expr> args = new ArrayList<>();
-        for (int i = 0; i < arrayType.getArrayInfo().getSize(); i++) {
+        for (int i = 0; i < arrayType.getArrayInfo().getConstantSize(); i++) {
           args.add(makeExpr(arrayType.getBaseType(), isLValue, constContext, depth + 1));
         }
         return new ArrayConstructorExpr((ArrayType) stripQualifiers(targetType), args);
@@ -452,7 +453,9 @@ public class Fuzzer {
       final String name = createName("v");
       ArrayInfo arrayInfo = null;
       if (generator.nextInt(10) < 3) { // TODO Hack for now, needs thought
-        arrayInfo = new ArrayInfo(generator.nextPositiveInt(MAX_ARRAY_SIZE));
+        arrayInfo =
+            new ArrayInfo(new IntConstantExpr(Integer.toString(
+                generator.nextPositiveInt(MAX_ARRAY_SIZE))));
       }
       fuzzingContext.addLocal(name, arrayInfo == null ? baseType : getType(baseType, arrayInfo));
       decls.add(new VariableDeclInfo(name, arrayInfo, null)); // TODO: no initializer for now
