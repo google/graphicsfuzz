@@ -67,6 +67,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -126,20 +127,19 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
   private TranslationUnit prepareTranslationUnit(File donorFile, IRandom generator)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    TranslationUnit tu = ParseHelper.parse(donorFile);
+    final TranslationUnit tu = ParseHelper.parse(donorFile);
+    final Typer typer = new Typer(tu);
+    // To avoid undefined behaviours, make all array access in bounds for every donor.
+    MakeArrayAccessesInBounds.makeInBounds(tu, typer, tu);
     addPrefixes(tu, getDeclaredFunctionNames(tu));
     // Add prefixed versions of these builtins, in case they are used.
     // Use explicit precision qualifier to avoid introducing errors if there are no float precision
     // qualifiers.
-    List<TypeQualifier> coordQualifiers = new ArrayList<>();
-    coordQualifiers.add(TypeQualifier.MEDIUMP);
     tu.addDeclaration(new VariablesDeclaration(
-        new QualifiedType(BasicType.VEC4, coordQualifiers),
+        new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
         new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
-    List<TypeQualifier> colorQualifiers = new ArrayList<>();
-    colorQualifiers.add(TypeQualifier.MEDIUMP);
     tu.addDeclaration(new VariablesDeclaration(
-        new QualifiedType(BasicType.VEC4, colorQualifiers),
+        new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
         new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
     adaptTranslationUnitForSpecificDonation(tu, generator);
     translationUnitCount++;
@@ -219,11 +219,22 @@ public abstract class DonateCodeTransformation implements ITransformation {
     final int maxTries = 10;
     int tries = 0;
     while (true) {
-      final Optional<TranslationUnit> maybeDonor = chooseDonor(generator);
+      final Optional<TranslationUnit> maybeDonor = chooseDonor(generator, shadingLanguageVersion);
+
       if (!maybeDonor.isPresent()) {
         // No compatible donors were found, thus we cannot do serious code donation here;
         // we return a null statement instead.
         return new NullStmt();
+      } else {
+        if (shadingLanguageVersion != maybeDonor.get().getShadingLanguageVersion()) {
+          throw new RuntimeException("Incompatible versions: ref=" + shadingLanguageVersion
+              + " donor=" + maybeDonor.get().getShadingLanguageVersion());
+        }
+        if (this.generationParams.getShaderKind() != maybeDonor.get().getShaderKind()) {
+          throw new RuntimeException("Incompatible shader types: ref="
+              + this.generationParams.getShaderKind() + " donor="
+              + maybeDonor.get().getShaderKind());
+        }
       }
       DonationContext donationContext = new DonationContextFinder(maybeDonor.get(), generator)
           .getDonationContext();
@@ -269,8 +280,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
     }
     donateFunctionsAndGlobals(tu);
     eliminateUsedDonors();
-    makeInjectedArrayAccessesInBounds(tu, injectedStmts);
-
     return !injectionPoints.isEmpty();
 
   }
@@ -290,14 +299,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
       usedDonorFiles = new ArrayList<>();
     }
     donorsToTranslationUnits = new HashMap<>();
-  }
-
-  private void makeInjectedArrayAccessesInBounds(TranslationUnit tu,
-                                                 List<Stmt> injectedStmts) {
-    Typer typer = new Typer(tu);
-    for (Stmt stmt : injectedStmts) {
-      MakeArrayAccessesInBounds.makeInBounds(stmt, typer, tu);
-    }
   }
 
   private boolean incompatible(IInjectionPoint injectionPoint, DonationContext donationContext,
@@ -607,7 +608,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
     return !fs.stream().filter(item -> fp.matches(item)).collect(Collectors.toList()).isEmpty();
   }
 
-  Optional<TranslationUnit> chooseDonor(IRandom generator) {
+  Optional<TranslationUnit> chooseDonor(IRandom generator,
+                                        ShadingLanguageVersion shadingLanguageVersion) {
     // The donors that we have previously selected during this donation pass are captured via
     // 'donorsToTranslationUnits'.  Furthermore, there is a maximum number of distinct donors we
     // are allowed to use per donation pass.  So first check whether the donors we have already
@@ -626,7 +628,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
       try {
         return Optional.of(getDonorTranslationUnit(sortedKeys.get(generator.nextInt(sortedKeys
                 .size())),
-            generator));
+            generator, shadingLanguageVersion));
       } catch (IncompatibleDonorException exception) {
         throw new RuntimeException(previouslyUsedDonorFoundToBeIncompatibleMessage);
       }
@@ -639,7 +641,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
       final File candidateDonorFile = donorFiles
           .get(generator.nextInt(donorFiles.size()));
       try {
-        return Optional.of(getDonorTranslationUnit(candidateDonorFile, generator));
+        return Optional.of(getDonorTranslationUnit(candidateDonorFile, generator,
+            shadingLanguageVersion));
       } catch (IncompatibleDonorException exception) {
         if (donorsToTranslationUnits.containsKey(candidateDonorFile)) {
           throw new RuntimeException(previouslyUsedDonorFoundToBeIncompatibleMessage);
@@ -652,12 +655,13 @@ public abstract class DonateCodeTransformation implements ITransformation {
     return Optional.empty();
   }
 
-  private TranslationUnit getDonorTranslationUnit(File donorFile, IRandom generator)
+  private TranslationUnit getDonorTranslationUnit(File donorFile, IRandom generator,
+                                                  ShadingLanguageVersion shadingLanguageVersion)
       throws IncompatibleDonorException {
     if (!donorsToTranslationUnits.containsKey(donorFile)) {
       try {
         TranslationUnit donor = prepareTranslationUnit(donorFile, generator);
-        if (!compatibleDonor(donor)) {
+        if (!compatibleDonor(donor, shadingLanguageVersion)) {
           throw new IncompatibleDonorException();
         }
         functionPrototypes.addAll(AstUtil.getFunctionPrototypesFromShader(donor));
@@ -672,13 +676,13 @@ public abstract class DonateCodeTransformation implements ITransformation {
     return donorsToTranslationUnits.get(donorFile);
   }
 
-  private boolean compatibleDonor(TranslationUnit donor) {
+  private boolean compatibleDonor(TranslationUnit donor,
+                                  ShadingLanguageVersion shadingLanguageVersion) {
     final List<String> usedFunctionNames = functionPrototypes.stream()
         .map(FunctionPrototype::getName)
         .collect(Collectors.toList());
     final Set<String> usedGlobalVariableNames = globalVariables.keySet();
     final Set<String> usedStructNames = structNames;
-
     for (FunctionPrototype donorPrototype : AstUtil.getFunctionPrototypesFromShader(donor)) {
       if (usedGlobalVariableNames.contains(donorPrototype.getName())
           || usedStructNames.contains(donorPrototype.getName())) {
