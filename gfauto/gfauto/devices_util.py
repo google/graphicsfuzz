@@ -118,7 +118,7 @@ def get_device_list(
 
     try:
         # Android devices.
-        android_devices = android_device.get_all_android_devices()
+        android_devices = android_device.get_all_android_devices(binary_manager)
         device_list.devices.extend(android_devices)
         device_list.active_device_names.extend([d.name for d in android_devices])
     except ToolNotOnPathError:

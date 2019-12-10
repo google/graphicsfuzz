@@ -92,7 +92,17 @@ DEFAULT_BINARIES = [
         version="aaa64b76c0b40c2958a18cfdc623157c8c6e1b7d",
     ),
     Binary(
-        name="amber", tags=["Debug"], version="2bade8f0a3608872962c0e9e451ccdd63c3332f9"
+        name="amber", tags=["Debug"], version="f231728f60cb3b0f21d7423aed24fd3b317f38c9"
+    ),
+    Binary(
+        name="amber_apk",
+        tags=["Debug"],
+        version="f231728f60cb3b0f21d7423aed24fd3b317f38c9",
+    ),
+    Binary(
+        name="amber_apk_test",
+        tags=["Debug"],
+        version="f231728f60cb3b0f21d7423aed24fd3b317f38c9",
     ),
     Binary(
         name="graphicsfuzz-tool",
@@ -512,7 +522,7 @@ def binary_name_to_project_name(binary_name: str) -> str:
         project_name = "SPIRV-Tools"
     elif binary_name == "swift_shader_icd":
         project_name = "swiftshader"
-    elif binary_name == "amber":
+    elif binary_name in ("amber", "amber_apk", "amber_apk_test"):
         project_name = "amber"
     elif binary_name == "graphicsfuzz-tool":
         project_name = "graphicsfuzz"
@@ -534,11 +544,18 @@ def get_github_release_recipe(  # pylint: disable=too-many-branches;
 
     if project_name == "graphicsfuzz":
         # Special case:
-        platform = util.get_platform()
-        tags = PLATFORMS[:]
+        platform = util.get_platform()  # Not used.
+        tags = PLATFORMS[:]  # All host platforms.
         repo_name = f"gfbuild-{project_name}"
         version = binary.version
         artifact_name = f"gfbuild-{project_name}-{version}"
+    elif project_name == "amber" and binary.name in ("amber_apk", "amber_apk_test"):
+        # Special case:
+        platform = util.get_platform()  # Not used.
+        tags = PLATFORMS[:]  # All host platforms.
+        repo_name = f"gfbuild-{project_name}"
+        version = binary.version
+        artifact_name = f"gfbuild-{project_name}-{version}-android_apk"
     else:
         # Normal case:
         platform = get_platform_from_binary(binary)
@@ -629,14 +646,30 @@ def get_github_release_recipe(  # pylint: disable=too-many-branches;
             )
         ]
     elif project_name == "amber":
-        binaries = [
-            Binary(
-                name="amber",
-                tags=tags,
-                path=f"{project_name}/bin/amber{executable_suffix}",
-                version=version,
-            )
-        ]
+        if binary.name in ("amber_apk", "amber_apk_test"):
+            binaries = [
+                Binary(
+                    name="amber_apk",
+                    tags=tags,
+                    path=f"{project_name}/amber.apk",
+                    version=version,
+                ),
+                Binary(
+                    name="amber_apk_test",
+                    tags=tags,
+                    path=f"{project_name}/amber-test.apk",
+                    version=version,
+                ),
+            ]
+        else:
+            binaries = [
+                Binary(
+                    name="amber",
+                    tags=tags,
+                    path=f"{project_name}/bin/amber{executable_suffix}",
+                    version=version,
+                )
+            ]
     elif project_name == "graphicsfuzz":
         binaries = [
             Binary(
@@ -844,7 +877,7 @@ def _download_latest_version_number(project_name: str) -> str:
     result = response.json()
 
     expected_num_assets_map = {
-        "amber": 17,
+        "amber": 19,
         "glslang": 15,
         "SPIRV-Tools": 15,
         "swiftshader": 15,
