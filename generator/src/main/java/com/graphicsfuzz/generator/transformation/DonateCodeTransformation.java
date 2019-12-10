@@ -138,10 +138,28 @@ public abstract class DonateCodeTransformation implements ITransformation {
     tu.addDeclaration(new VariablesDeclaration(
         new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
         new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
-    tu.addDeclaration(new VariablesDeclaration(
-        new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
-        new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
+    if (tu.getShadingLanguageVersion().supportedGlFragColor()) {
+      tu.addDeclaration(new VariablesDeclaration(
+          new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
+    }
+    // Remove 'in', 'out' and 'layout' qualifiers from global variables.  This means that, for
+    // instance, the output colour variable of a donated fragment shader will change from:
+    //   layout(location = 0) out vec4 name;
+    // to:
+    //   vec4 name;
+    tu.getTopLevelDeclarations().stream().filter(item -> item instanceof VariablesDeclaration)
+        .map(item -> (VariablesDeclaration) item)
+        .filter(item -> item.getBaseType() instanceof QualifiedType)
+        .forEach(item -> item.setBaseType(
+            new QualifiedType(item.getBaseType().getWithoutQualifiers(),
+              ((QualifiedType) item.getBaseType()).getQualifiers()
+                  .stream()
+                  .filter(qualifier -> !(qualifier instanceof LayoutQualifierSequence)
+                      && qualifier != TypeQualifier.SHADER_INPUT
+                      && qualifier != TypeQualifier.SHADER_OUTPUT).collect(Collectors.toList()))));
     adaptTranslationUnitForSpecificDonation(tu, generator);
+
     translationUnitCount++;
     return tu;
   }
