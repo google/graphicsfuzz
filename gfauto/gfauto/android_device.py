@@ -432,8 +432,8 @@ def run_amber_on_device_helper(
 
     result: Optional[types.CompletedProcess] = None
 
-    # Before running, make sure the app is not already running.
-    adb_can_fail(serial, ["am", "force-stop", "com.google.amber"])
+    # Before running, try to ensure the app is not already running.
+    adb_can_fail(serial, ["shell", "am force-stop com.google.amber"])
 
     try:
         result = adb_can_fail(
@@ -441,7 +441,7 @@ def run_amber_on_device_helper(
         )
     except subprocess.TimeoutExpired:
         status = fuzz.STATUS_TIMEOUT
-        adb_can_fail(serial, ["am", "force-stop", "com.google.amber"])
+        adb_can_fail(serial, ["shell", "am force-stop com.google.amber"])
 
     try:
         if result:
