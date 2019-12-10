@@ -553,6 +553,7 @@ def get_github_release_recipe(  # pylint: disable=too-many-branches;
         # Special case:
         platform = util.get_platform()  # Not used.
         tags = PLATFORMS[:]  # All host platforms.
+        tags.append("Debug")
         repo_name = f"gfbuild-{project_name}"
         version = binary.version
         artifact_name = f"gfbuild-{project_name}-{version}-android_apk"

@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from gfauto import (
+    binaries_util,
     devices_util,
     fuzz,
     gflogging,
@@ -35,13 +36,12 @@ from gfauto import (
     subprocess_util,
     types,
     util,
-    binaries_util,
 )
 from gfauto.device_pb2 import Device, DeviceAndroid
 from gfauto.gflogging import log
 from gfauto.util import check, file_open_text, file_write_text
 
-ANDROID_DEVICE_DIR = "/sdcard/Android/data/com.google.amber/cache/"
+ANDROID_DEVICE_DIR = "/sdcard/Android/data/com.google.amber/cache"
 
 ANDROID_DEVICE_GRAPHICSFUZZ_DIR = ANDROID_DEVICE_DIR + "/graphicsfuzz"
 ANDROID_DEVICE_RESULT_DIR = ANDROID_DEVICE_GRAPHICSFUZZ_DIR + "/result"
@@ -143,16 +143,18 @@ def is_screen_off_or_locked(serial: Optional[str] = None) -> bool:
 
 def get_device_driver_details(serial: str) -> str:
     prepare_device(wait_for_screen=True, serial=serial)
+    amber_args = [
+        "-d",  # Disables validation layers.
+        "-V",  # Print version information.
+    ]
+
     cmd = [
         "shell",
-        # The following is a single string:
-        f"cd {ANDROID_DEVICE_RESULT_DIR} && "
-        # -d disables Vulkan validation layers.
-        f"{ANDROID_DEVICE_AMBER} -d -V",
+        get_amber_adb_shell_cmd(amber_args),
     ]
+
     try:
         result = adb_check(serial, cmd, verbose=True)
-
     except subprocess.SubprocessError as ex:
         raise devices_util.GetDeviceDetailsError() from ex
 
@@ -178,8 +180,8 @@ def ensure_amber_installed(
     adb_check(device_serial, ["install", "-r", str(amber_apk_test_binary.path)])
 
 
-def get_all_android_devices(
-    binary_manager: binaries_util.BinaryManager
+def get_all_android_devices(  # pylint: disable=too-many-locals;
+    binary_manager: binaries_util.BinaryManager,
 ) -> List[Device]:
     result: List[Device] = []
 
@@ -348,6 +350,35 @@ def run_amber_on_device(
     return output_dir
 
 
+def get_amber_adb_shell_cmd(amber_args: List[str]) -> str:
+    shell_command = [
+        "am",
+        "instrument",
+        "-w",
+        "-e",
+        "stdout",
+        f"{ANDROID_DEVICE_RESULT_DIR}/amber_stdout.txt",
+        "-e",
+        "stderr",
+        f"{ANDROID_DEVICE_RESULT_DIR}/amber_stderr.txt",
+    ]
+
+    # Amber arguments are passed as key-value pairs via -e. E.g. for "-d": -e arg1 -d
+    arg_index = 1
+    for amber_arg in amber_args:
+        shell_command.append("-e")
+        shell_command.append(f"arg{arg_index}")
+        shell_command.append(amber_arg)
+        arg_index += 1
+
+    shell_command.append(
+        "com.google.amber.test/androidx.test.runner.AndroidJUnitRunner"
+    )
+
+    shell_command = [shlex.quote(c) for c in shell_command]
+    return " ".join(shell_command)
+
+
 def run_amber_on_device_helper(
     amber_script_file: Path,
     output_dir: Path,
@@ -378,49 +409,31 @@ def run_amber_on_device_helper(
                 "-I",
                 "variant_framebuffer",
                 "-i",
-                fuzz.VARIANT_IMAGE_FILE_NAME,
+                f"{ANDROID_DEVICE_RESULT_DIR}/{fuzz.VARIANT_IMAGE_FILE_NAME}",
                 "-I",
                 "reference_framebuffer",
                 "-i",
-                fuzz.REFERENCE_IMAGE_FILE_NAME,
+                f"{ANDROID_DEVICE_RESULT_DIR}/{fuzz.REFERENCE_IMAGE_FILE_NAME}",
             ]
         if dump_buffer:
-            amber_args += ["-b", fuzz.BUFFER_FILE_NAME, "-B", "0"]
-
-    shell_command = [
-        "am",
-        "instrument",
-        "-w",
-        "-e",
-        "stdout",
-        f"{ANDROID_DEVICE_RESULT_DIR}/amber_stdout.txt",
-        "-e",
-        "stderr" f"{ANDROID_DEVICE_RESULT_DIR}/amber_stderr.txt",
-    ]
-
-    # Amber arguments are passed as key-value pairs via -e. E.g. for "-d": -e arg1 -d
-    arg_index = 1
-    for amber_arg in amber_args:
-        shell_command.append("-e")
-        shell_command.append(f"arg{arg_index}")
-        shell_command.append(amber_arg)
-
-    shell_command.append(
-        "com.google.amber.test/androidx.test.runner.AndroidJUnitRunner"
-    )
-
-    shell_command = [shlex.quote(c) for c in shell_command]
-    shell_command_str = " ".join(shell_command)
+            amber_args += [
+                "-b",
+                f"{ANDROID_DEVICE_RESULT_DIR}/{fuzz.BUFFER_FILE_NAME}",
+                "-B",
+                "0",
+            ]
 
     cmd = [
         "shell",
-        # The following is a single string:
-        f"cd {ANDROID_DEVICE_RESULT_DIR} && {shell_command_str}",
+        get_amber_adb_shell_cmd(amber_args),
     ]
 
     status = "UNEXPECTED_ERROR"
 
     result: Optional[types.CompletedProcess] = None
+
+    # Before running, make sure the app is not already running.
+    adb_can_fail(serial, ["am", "force-stop", "com.google.amber"])
 
     try:
         result = adb_can_fail(
@@ -428,25 +441,34 @@ def run_amber_on_device_helper(
         )
     except subprocess.TimeoutExpired:
         status = fuzz.STATUS_TIMEOUT
+        adb_can_fail(serial, ["am", "force-stop", "com.google.amber"])
 
     try:
         if result:
             if result.returncode != 0:
+                log(
+                    "WARNING: am instrument command failed, which is unexpected, even if the GPU driver crashed!"
+                )
+                status = fuzz.STATUS_CRASH
+            elif "shortMsg=Process crashed" in result.stdout:
                 status = fuzz.STATUS_CRASH
             else:
                 status = fuzz.STATUS_SUCCESS
 
-            if not skip_render:
-                adb_check(
-                    serial,
-                    # The /. syntax means the contents of the results directory will be copied into output_dir.
-                    ["pull", ANDROID_DEVICE_RESULT_DIR + "/.", str(output_dir)],
-                )
+            adb_check(
+                serial,
+                # The /. syntax means the contents of the results directory will be copied into output_dir.
+                ["pull", ANDROID_DEVICE_RESULT_DIR + "/.", str(output_dir)],
+            )
+
+        gflogging.log_a_file(output_dir / "amber_stdout.txt")
+        gflogging.log_a_file(output_dir / "amber_stderr.txt")
 
         # Grab log. Use a short time limit to increase the chance of detecting a device reboot.
         adb_check(
             serial, ["logcat", "-d"], verbose=True, timeout=ADB_SHORT_LOGCAT_TIME_LIMIT
         )
+
     except subprocess.SubprocessError:
         # If we fail in getting the results directory or log, assume the device has rebooted.
         status = fuzz.STATUS_UNRESPONSIVE

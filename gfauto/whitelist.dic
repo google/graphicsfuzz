@@ -227,3 +227,6 @@ listdir
 RNG
 toplevel
 getpid
+shlex
+apk
+arg1
