@@ -20,7 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,7 +33,7 @@ import java.util.Set;
  * method to check for the feature of interest, and then invoke the trigger function
  * when the feature is found.
  */
-public abstract class CheckAstFeatureVisitor extends ScopeTreeBuilder {
+public abstract class CheckAstFeatureVisitor extends ScopeTrackingVisitor {
 
   private Optional<FunctionDefinition> triggerFunction = Optional.empty();
   private Map<String, Set<String>> callsIndirectly = new HashMap<String, Set<String>>();
@@ -49,7 +49,7 @@ public abstract class CheckAstFeatureVisitor extends ScopeTreeBuilder {
   @Override
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
     super.visitFunctionCallExpr(functionCallExpr);
-    final String enclosingFunctionName = enclosingFunction.getPrototype().getName();
+    final String enclosingFunctionName = getEnclosingFunction().getPrototype().getName();
     final String calledFunctionName = functionCallExpr.getCallee();
     assert callsIndirectly.containsKey(enclosingFunctionName);
     if (!callsIndirectly.containsKey(calledFunctionName)) {
@@ -72,7 +72,7 @@ public abstract class CheckAstFeatureVisitor extends ScopeTreeBuilder {
   /**
    * Use this method to register that the feature of interest has been found.
    */
-  public void trigger() {
-    this.triggerFunction = Optional.of(enclosingFunction);
+  protected void trigger() {
+    this.triggerFunction = Optional.of(getEnclosingFunction());
   }
 }

@@ -17,13 +17,13 @@
 import argparse
 import os
 import random
-import shutil
 import subprocess
 import sys
 import time
 from typing import Optional, List, Union
 
 import runspv
+import gfuzz_common
 
 HERE = os.path.abspath(__file__)
 
@@ -62,24 +62,6 @@ def print(s):
 ################################################################################
 
 
-def write_to_file(content, filename):
-    with runspv.open_helper(filename, 'w') as f:
-        f.write(content)
-
-
-################################################################################
-
-
-def remove(f):
-    if os.path.isdir(f):
-        shutil.rmtree(f)
-    elif os.path.isfile(f):
-        os.remove(f)
-
-
-################################################################################
-
-
 def prepare_vert_file(output_dir: str) -> str:
     vert_file = os.path.join(output_dir, 'test.vert')
     if not os.path.isfile(vert_file):
@@ -89,16 +71,8 @@ void main (void) {
   gl_Position = a_position;
 }
 '''
-        write_to_file(vert_file_default_content, vert_file)
+        gfuzz_common.write_to_file(vert_file_default_content, vert_file)
     return vert_file
-
-
-################################################################################
-
-
-def remove_end(str_in: str, str_end: str):
-    assert str_in.endswith(str_end), 'Expected {} to end with {}'.format(str_in, str_end)
-    return str_in[:-len(str_end)]
 
 
 ################################################################################
@@ -168,12 +142,12 @@ def do_image_job(
     output_dir = os.path.join(work_dir, image_job.name)
 
     # Delete and create output directory.
-    remove(output_dir)
+    gfuzz_common.remove(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
     name = image_job.name
     if name.endswith('.frag'):
-        name = remove_end(name, '.frag')
+        name = gfuzz_common.remove_end(name, '.frag')
     # TODO(324): the worker currently assumes that no vertex shader is present in the image job.
 
     vert_file = prepare_vert_file(output_dir) if args.legacy_worker else None
@@ -193,12 +167,12 @@ def do_image_job(
     res.passSanityCheck = True
     res.log = 'Start: ' + name + '\n'
 
-    write_to_file(image_job.fragmentSource, frag_file)
-    write_to_file(image_job.uniformsInfo, json_file)
+    gfuzz_common.write_to_file(image_job.fragmentSource, frag_file)
+    gfuzz_common.write_to_file(image_job.uniformsInfo, json_file)
 
     # Set runspv logger. Use try-finally to clean up.
 
-    with runspv.open_helper(log_file, 'w') as f:
+    with gfuzz_common.open_helper(log_file, 'w') as f:
         try:
             runspv.log_to_file = f
 
@@ -234,26 +208,26 @@ def do_image_job(
                     force=args.force,
                     is_android=(args.target == 'android'),
                     skip_render=skip_render,
-                    spirv_opt_args=resolved_spirvopt_args,
+                    spirv_opt_args=resolved_spirvopt_args
                 )
         except Exception as ex:
             runspv.log('Exception: ' + str(ex))
             runspv.log('Removing STATUS file.')
-            remove(status_file)
+            gfuzz_common.remove(status_file)
             runspv.log('Continuing.')
         finally:
             runspv.log_to_file = None
 
     if os.path.isfile(log_file):
-        with runspv.open_helper(log_file, 'r') as f:
+        with gfuzz_common.open_helper(log_file, 'r') as f:
             res.log += f.read()
 
     if os.path.isfile(png_file):
-        with runspv.open_bin_helper(png_file, 'rb') as f:
+        with gfuzz_common.open_bin_helper(png_file, 'rb') as f:
             res.PNG = f.read()
 
     if os.path.isfile(status_file):
-        with runspv.open_helper(status_file, 'r') as f:
+        with gfuzz_common.open_helper(status_file, 'r') as f:
             status = f.read().rstrip()
         if status == 'SUCCESS':
             res.status = tt.JobStatus.SUCCESS
@@ -267,9 +241,9 @@ def do_image_job(
             res.status = tt.JobStatus.UNEXPECTED_ERROR
         elif status == 'NONDET':
             res.status = tt.JobStatus.NONDET
-            with runspv.open_bin_helper(nondet_0, 'rb') as f:
+            with gfuzz_common.open_bin_helper(nondet_0, 'rb') as f:
                 res.PNG = f.read()
-            with runspv.open_bin_helper(nondet_1, 'rb') as f:
+            with gfuzz_common.open_bin_helper(nondet_1, 'rb') as f:
                 res.PNG2 = f.read()
         else:
             res.log += '\nUnknown status value: ' + status + '\n'
@@ -296,7 +270,7 @@ def do_compute_job(
     output_dir = os.path.join(work_dir, comp_job.name)
 
     # Delete and create output directory.
-    remove(output_dir)
+    gfuzz_common.remove(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
     tmpcomp = os.path.join(output_dir, 'tmp.comp')
@@ -307,9 +281,9 @@ def do_compute_job(
     # Output files from running the app.
     status_file = os.path.join(output_dir, 'STATUS')
 
-    write_to_file(comp_job.computeSource, tmpcomp)
+    gfuzz_common.write_to_file(comp_job.computeSource, tmpcomp)
 
-    write_to_file(comp_job.computeInfo, tmpjson)
+    gfuzz_common.write_to_file(comp_job.computeInfo, tmpjson)
 
     res = tt.ImageJobResult()
     res.log = '#### Start compute shader\n\n'
@@ -318,7 +292,7 @@ def do_compute_job(
 
     # Set runspv logger. Use try-finally to clean up.
 
-    with runspv.open_helper(log_file, 'w') as f:
+    with gfuzz_common.open_helper(log_file, 'w') as f:
         try:
             runspv.log_to_file = f
 
@@ -329,27 +303,27 @@ def do_compute_job(
                 force=args.force,
                 is_android=(args.target == 'android'),
                 skip_render=comp_job.skipRender,
-                spirv_opt_args=spirv_opt_args,
+                spirv_opt_args=spirv_opt_args
             )
         except Exception as ex:
             runspv.log('Exception: ' + str(ex))
             runspv.log('Removing STATUS file.')
-            remove(status_file)
+            gfuzz_common.remove(status_file)
             runspv.log('Continuing.')
         finally:
             runspv.log_to_file = None
 
     if os.path.isfile(log_file):
-        with runspv.open_helper(log_file, 'r') as f:
+        with gfuzz_common.open_helper(log_file, 'r') as f:
             res.log += f.read()
 
     if os.path.isfile(status_file):
-        with runspv.open_helper(status_file, 'r') as f:
+        with gfuzz_common.open_helper(status_file, 'r') as f:
             status = f.read().rstrip()
         if status == 'SUCCESS':
             res.status = tt.JobStatus.SUCCESS
             assert (os.path.isfile(ssbo_json_file))
-            with runspv.open_helper(ssbo_json_file, 'r') as f:
+            with gfuzz_common.open_helper(ssbo_json_file, 'r') as f:
                 res.computeOutputs = f.read()
 
         elif status == 'CRASH':
@@ -513,7 +487,7 @@ def main():
 
     # Get worker info
     worker_info_file = 'worker_info.json'
-    remove(worker_info_file)
+    gfuzz_common.remove(worker_info_file)
 
     worker_info_json_string = '{}'
 
@@ -529,7 +503,7 @@ def main():
                 'the app permission to write to external storage is enabled.'
             )
 
-        with runspv.open_helper(worker_info_file, 'r') as f:
+        with gfuzz_common.open_helper(worker_info_file, 'r') as f:
             worker_info_json_string = f.read()
 
     except Exception as ex:
@@ -555,23 +529,23 @@ def main():
             assert args.local_shader_job.endswith('.json'), \
                 'Expected local shader job "{}" to end with .json'
 
-            shader_job_prefix = remove_end(args.local_shader_job, '.json')
+            shader_job_prefix = gfuzz_common.remove_end(args.local_shader_job, '.json')
 
             fake_job = tt.ImageJob()
             fake_job.name = os.path.basename(shader_job_prefix)
 
             assert os.path.isfile(args.local_shader_job), \
                 'Shader job {} does not exist'.format(args.local_shader_job)
-            with runspv.open_helper(args.local_shader_job) as f:
+            with gfuzz_common.open_helper(args.local_shader_job, 'r') as f:
                 fake_job.uniformsInfo = f.read()
             if os.path.isfile(shader_job_prefix + '.frag'):
-                with runspv.open_helper(shader_job_prefix + '.frag', 'r') as f:
+                with gfuzz_common.open_helper(shader_job_prefix + '.frag', 'r') as f:
                     fake_job.fragmentSource = f.read()
             if os.path.isfile(shader_job_prefix + '.vert'):
-                with runspv.open_helper(shader_job_prefix + '.vert', 'r') as f:
+                with gfuzz_common.open_helper(shader_job_prefix + '.vert', 'r') as f:
                     fake_job.vertexSource = f.read()
             if os.path.isfile(shader_job_prefix + '.comp'):
-                with runspv.open_helper(shader_job_prefix + '.comp', 'r') as f:
+                with gfuzz_common.open_helper(shader_job_prefix + '.comp', 'r') as f:
                     fake_job.computeSource = f.read()
                 fake_job.computeInfo = fake_job.uniformsInfo
             do_image_job(args, fake_job, spirvopt_args, work_dir='out')

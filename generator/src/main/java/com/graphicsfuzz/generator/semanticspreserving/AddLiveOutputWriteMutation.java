@@ -30,6 +30,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
@@ -63,7 +64,8 @@ public class AddLiveOutputWriteMutation extends AddOutputWriteMutation {
         null, null))));
     stmts.add(new ExprStmt(new BinaryExpr(new VariableIdentifierExpr(backupName),
         new VariableIdentifierExpr(outputVariableName), BinOp.ASSIGN)));
-    final Fuzzer fuzzer = new Fuzzer(new FuzzingContext(), shadingLanguageVersion, random,
+    final Fuzzer fuzzer = new Fuzzer(new FuzzingContext(), shadingLanguageVersion,
+        random,
         generationParams);
     stmts.add(new ExprStmt(new BinaryExpr(
         new VariableIdentifierExpr(outputVariableName),

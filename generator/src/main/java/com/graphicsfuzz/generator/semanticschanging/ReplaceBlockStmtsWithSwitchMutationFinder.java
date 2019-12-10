@@ -128,8 +128,9 @@ public class ReplaceBlockStmtsWithSwitchMutationFinder
 
   private Expr getSwitchCondition() {
     final List<String> candidateVariables = new ArrayList<>();
-    currentScope.namesOfAllVariablesInScope().stream()
-        .filter(item -> currentScope.lookupType(item).getWithoutQualifiers().equals(BasicType.INT))
+    getCurrentScope().namesOfAllVariablesInScope().stream()
+        .filter(item -> getCurrentScope().lookupType(item).getWithoutQualifiers()
+            .equals(BasicType.INT))
         .forEach(candidateVariables::add);
     if (candidateVariables.isEmpty()) {
       return new LiteralFuzzer(generator).fuzz(BasicType.INT).get();

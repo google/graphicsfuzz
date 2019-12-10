@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.MacroNames;
 import java.util.Arrays;
 import java.util.List;
 

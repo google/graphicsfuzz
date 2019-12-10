@@ -75,6 +75,16 @@ final class Essl100 implements ShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedComputeShaders() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedDerivativeFunctions() {
+    return false;
+  }
+
+  @Override
   public boolean supportedDeterminant() {
     return false;
   }
@@ -82,6 +92,11 @@ final class Essl100 implements ShadingLanguageVersion {
   @Override
   public boolean supportedDoStmt() {
     return true;
+  }
+
+  @Override
+  public boolean supportedExplicitDerivativeFunctions() {
+    return false;
   }
 
   @Override
@@ -106,6 +121,16 @@ final class Essl100 implements ShadingLanguageVersion {
 
   @Override
   public boolean supportedIntBitsToFloat() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedIntegerFunctions() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedInterpolationFunctions() {
     return false;
   }
 
@@ -256,6 +281,31 @@ final class Essl100 implements ShadingLanguageVersion {
 
   @Override
   public boolean supportedUnsigned() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedAngleAndTrigonometricFunctions() {
+    return true;
+  }
+
+  @Override
+  public boolean supportedHyperbolicAngleAndTrigonometricFunctions() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedModf() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedFrexp() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedLdexp() {
     return false;
   }
 }

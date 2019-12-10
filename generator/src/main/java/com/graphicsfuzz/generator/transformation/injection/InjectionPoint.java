@@ -23,12 +23,15 @@ abstract class InjectionPoint implements IInjectionPoint {
 
   private final FunctionDefinition enclosingFunction;
   private final boolean inLoop;
+  private final boolean inSwitch;
   private final Scope scope;
 
   InjectionPoint(FunctionDefinition enclosingFunction, boolean inLoop,
+      boolean inSwitch,
       Scope scope) {
     this.enclosingFunction = enclosingFunction;
     this.inLoop = inLoop;
+    this.inSwitch = inSwitch;
     this.scope = scope.shallowClone();
   }
 
@@ -40,6 +43,11 @@ abstract class InjectionPoint implements IInjectionPoint {
   @Override
   public final boolean inLoop() {
     return inLoop;
+  }
+
+  @Override
+  public final boolean inSwitch() {
+    return inSwitch;
   }
 
   @Override

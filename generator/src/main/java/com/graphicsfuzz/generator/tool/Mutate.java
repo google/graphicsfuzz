@@ -18,12 +18,15 @@ package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.mutateapi.MutationFinder;
 import com.graphicsfuzz.generator.semanticschanging.AddArrayMutationFinder;
@@ -62,6 +65,7 @@ import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,8 +88,8 @@ public class Mutate {
         .type(File.class);
 
     parser.addArgument("--seed")
-        .help("Seed to initialize random number generator with.")
-        .type(Integer.class);
+        .help("Seed (unsigned 64 bit long integer) for the random number generator.")
+        .type(String.class);
 
     return parser.parseArgs(args);
   }
@@ -123,24 +127,21 @@ public class Mutate {
 
     final File input = ns.get("input");
     final File output = ns.get("output");
-    final int seed = ArgsUtil.getSeedArgument(ns);
+    IRandom random = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
 
     final TranslationUnit tu = ParseHelper.parse(input);
 
-    LOGGER.info("Mutating from " + input + " to " + output + " with seed " + seed);
+    LOGGER.info("Mutating from " + input + " to " + output + " with RNG "
+        + random.getDescription());
 
-    mutate(tu, new RandomWrapper(seed));
+    mutate(tu, random);
 
-    try (PrintStream stream = new PrintStream(new FileOutputStream(output))) {
-      PrettyPrinterVisitor.emitShader(
-          tu,
-          Optional.empty(),
-          stream,
-          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-          false
-      );
-    }
+    final File shaderJobFile = new File(FilenameUtils.removeExtension(output.getName()) + ".json");
+
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+    fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo("{}"),
+        tu), shaderJobFile);
 
   }
 

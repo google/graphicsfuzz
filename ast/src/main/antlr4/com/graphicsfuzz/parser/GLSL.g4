@@ -59,9 +59,6 @@ variable_identifier:
 
 primary_expression:
    variable_identifier
-   {
-      // NEW VARIABLE DECLARATION
-   }
    | INTCONSTANT
    | UINTCONSTANT
    | FLOATCONSTANT
@@ -103,9 +100,8 @@ function_call_header:
    ;
 
 function_identifier:
-   builtin_type_specifier_nonarray // constructor
+   builtin_type_specifier_nonarray // type constructor
    | variable_identifier
-   | FIELD_SELECTION
    ;
 
 method_call_generic:
@@ -123,14 +119,10 @@ method_call_header_with_parameters:
    | method_call_header_with_parameters COMMA assignment_expression
    ;
 
-   // Grammar Note: Constructors look like methods, but lexical
-   // analysis recognized most of them as keywords. They are now
-   // recognized through "type_specifier".
 method_call_header:
    variable_identifier LPAREN
    ;
 
-   // Grammar Note: No traditional style type casts.
 unary_expression:
    postfix_expression
    | INC_OP unary_expression
@@ -138,7 +130,6 @@ unary_expression:
    | unary_operator unary_expression
    ;
 
-   // Grammar Note: No '*' or '&' unary ops. Pointers are not supported.
 unary_operator:
    PLUS_OP
    | MINUS_OP
@@ -555,8 +546,6 @@ declaration_statement:
    declaration
    ;
 
-   // Grammar Note: labeled statements for SWITCH only; 'goto' is not
-   // supported.
 statement:
    compound_statement
    | simple_statement
@@ -603,7 +592,7 @@ selection_statement:
 
 selection_rest_statement:
    statement ELSE statement
-   | statement // REVISIT: binding issue with conditionals
+   | statement
    ;
 
 condition:
@@ -611,10 +600,6 @@ condition:
    | fully_specified_type IDENTIFIER ASSIGN_OP initializer
    ;
 
-///
- // switch_statement grammar is based on the syntax described in the body
- // of the GLSL spec, not in it's appendix!!!
- ///
 switch_statement:
    SWITCH LPAREN expression RPAREN switch_body
    ;
@@ -655,23 +640,17 @@ for_init_statement:
    | declaration_statement
    ;
 
-conditionopt:
-   condition
-   | /// empty ///
-   ;
-
 for_rest_statement:
-   conditionopt SEMICOLON
-   | conditionopt SEMICOLON expression
+   condition? SEMICOLON
+   | condition? SEMICOLON expression
    ;
 
-   // Grammar Note: No 'goto'. Gotos are not supported.
 jump_statement:
    CONTINUE SEMICOLON
    | BREAK SEMICOLON
    | RETURN SEMICOLON
    | RETURN expression SEMICOLON
-   | DISCARD SEMICOLON // Fragment shader only.
+   | DISCARD SEMICOLON
    ;
 
 external_declaration:
@@ -685,14 +664,13 @@ function_definition:
    function_prototype compound_statement_no_new_scope
    ;
 
-/// layout_qualifieropt is packed into this rule ///
 interface_block:
    basic_interface_block
    | layout_qualifier basic_interface_block
    ;
 
 basic_interface_block:
-   interface_qualifier IDENTIFIER LBRACE member_list RBRACE instance_name_opt SEMICOLON
+   interface_qualifier IDENTIFIER LBRACE member_list RBRACE instance_name? SEMICOLON
    ;
 
 interface_qualifier:
@@ -702,10 +680,8 @@ interface_qualifier:
    | BUFFER
    ;
 
-instance_name_opt:
-   /// empty ///
-   | IDENTIFIER
-   | IDENTIFIER array_specifier
+instance_name:
+   IDENTIFIER array_specifier?
    ;
 
 layout_defaults:
@@ -749,7 +725,7 @@ VARYING: 'varying' ;
 READONLY: 'readonly' ;
 WRITEONLY: 'writeonly' ;
 SHARED: 'shared' ;
-LAYOUT_TOK: 'layout' ; // REVISIT
+LAYOUT_TOK: 'layout' ;
 UINTCONSTANT: (DECIMAL_DIGITS | OCTAL_DIGITS | HEX_DIGITS) 'u';
 ROW_MAJOR: 'row_major' ;
 PACKED_TOK: 'packed' ;
@@ -758,7 +734,6 @@ BOOLCONSTANT: 'true' | 'false' ;
 INC_OP: '++' ;
 DEC_OP: '--' ;
 VOID_TOK: 'void' ;
-FIELD_SELECTION: 'C_TODO' ; // REVISIT
 LEFT_OP: '<<' ;
 RIGHT_OP: '>>' ;
 LE_OP: '<=' ;
@@ -782,65 +757,26 @@ FLOAT_TOK: 'float' ;
 INT_TOK: 'int' ;
 UINT_TOK: 'uint' ;
 BOOL_TOK: 'bool' ;
-// VEC: 'TODO' ;
-// BVEC: 'TODO' ;
-// IVEC: 'TODO' ;
-// UVEC: 'TODO' ;
-// MATX: 'TODO' ;
-// SAMPLERD: 'TODO' ;
-// SAMPLERDRECT: 'TODO' ;
 SAMPLERCUBE: 'samplerCube' ;
-SAMPLEREXTERNALOES: 'samplerExternalOES' ; // REVISIT
-// SAMPLERDSHADOW: 'TODO' ;
-// SAMPLERDRECTSHADOW: 'TODO' ;
 SAMPLERCUBESHADOW: 'samplerCubeShadow' ;
-// SAMPLERDARRAY: 'TODO' ;
-// SAMPLERDARRAYSHADOW: 'TODO' ;
 SAMPLERBUFFER: 'samplerBuffer' ;
 SAMPLERCUBEARRAY: 'samplerCubeArray' ;
 SAMPLERCUBEARRAYSHADOW: 'samplerCubeArrayShadow' ;
-// ISAMPLERD: 'TODO' ;
-// ISAMPLERDRECT: 'TODO' ;
 ISAMPLERCUBE: 'isamplerCube' ;
-// ISAMPLERDARRAY: 'TODO' ;
 ISAMPLERBUFFER: 'isamplerBuffer' ;
 ISAMPLERCUBEARRAY: 'isamplerCubeArray' ;
-// USAMPLERD: 'TODO' ;
-// USAMPLERDRECT: 'TODO' ;
 USAMPLERCUBE: 'usamplerCube' ;
-// USAMPLERDARRAY: 'TODO' ;
 USAMPLERBUFFER: 'usamplerBuffer' ;
 USAMPLERCUBEARRAY: 'usamplerCubeArray' ;
-// SAMPLERDMS: 'TODO' ;
-// ISAMPLERDMS: 'TODO' ;
-// USAMPLERDMS: 'TODO' ;
-// SAMPLERDMSARRAY: 'TODO' ;
-// ISAMPLERDMSARRAY: 'TODO' ;
-// USAMPLERDMSARRAY: 'TODO' ;
-// IMAGED: 'TODO' ;
-// IMAGEDRECT: 'TODO' ;
 IMAGECUBE: 'imageCube' ;
 IMAGEBUFFER: 'imageBuffer' ;
-// IMAGEDARRAY: 'TODO' ;
 IMAGECUBEARRAY: 'imageCubeArray' ;
-// IMAGEDMS: 'TODO' ;
-// IMAGEDMSARRAY: 'TODO' ;
-// IIMAGED: 'TODO' ;
-// IIMAGEDRECT: 'TODO' ;
 IIMAGECUBE: 'iimageCube' ;
 IIMAGEBUFFER: 'iimageBuffer' ;
-// IIMAGEDARRAY: 'TODO' ;
 IIMAGECUBEARRAY: 'iimageCubeArray' ;
-// IIMAGEDMS: 'TODO' ;
-// IIMAGEDMSARRAY: 'TODO' ;
-// UIMAGED: 'TODO' ;
-// UIMAGEDRECT: 'TODO' ;
 UIMAGECUBE: 'uimageCube' ;
 UIMAGEBUFFER: 'uimageBuffer' ;
-// UIMAGEDARRAY: 'TODO' ;
 UIMAGECUBEARRAY: 'uimageCubeArray' ;
-// UIMAGEDMS: 'TODO' ;
-// UIMAGEDMSARRAY: 'TODO' ;
 ATOMIC_UINT: 'atomic_uint' ;
 STRUCT: 'struct' ;
 IF: 'if' ;
@@ -889,7 +825,7 @@ SAMPLER1D: 'sampler1D' ;
 SAMPLER2D: 'sampler2D' ;
 SAMPLER3D: 'sampler3D' ;
 SAMPLER2DRECT: 'sampler2DRect' ;
-
+SAMPLEREXTERNALOES: 'samplerExternalOES' ;
 SAMPLER1DSHADOW: 'sampler1DShadow' ;
 SAMPLER2DSHADOW: 'sampler2DShadow' ;
 SAMPLER2DRECTSHADOW: 'sampler2DRectShadow' ;
@@ -968,72 +904,3 @@ COMMENT: ('//' ~('\n'|'\r')* '\r'? '\n' |   '/*' (.)*? '*/') -> skip ;
 WS: [\t\r\u000C ]+ { skip(); } ;
 
 EOL: '\n' { if(ignoreNewLine) { skip(); } ignoreNewLine = true; } ;
-
-/*
-
-%token ATTRIBUTE CONST_TOK BOOL_TOK FLOAT_TOK INT_TOK UINT_TOK
-%token BREAK CONTINUE DO ELSE FOR IF DISCARD RETURN SWITCH CASE DEFAULT
-%token BVEC2 BVEC3 BVEC4 IVEC2 IVEC3 IVEC4 UVEC2 UVEC3 UVEC4 VEC2 VEC3 VEC4
-%token CENTROID IN_TOK OUT_TOK INOUT_TOK UNIFORM VARYING SAMPLE
-%token NOPERSPECTIVE FLAT SMOOTH
-%token MAT2X2 MAT2X3 MAT2X4
-%token MAT3X2 MAT3X3 MAT3X4
-%token MAT4X2 MAT4X3 MAT4X4
-%token SAMPLER1D SAMPLER2D SAMPLER3D SAMPLERCUBE SAMPLER1DSHADOW SAMPLER2DSHADOW
-%token SAMPLERCUBESHADOW SAMPLER1DARRAY SAMPLER2DARRAY SAMPLER1DARRAYSHADOW
-%token SAMPLER2DARRAYSHADOW SAMPLERCUBEARRAY SAMPLERCUBEARRAYSHADOW
-%token ISAMPLER1D ISAMPLER2D ISAMPLER3D ISAMPLERCUBE
-%token ISAMPLER1DARRAY ISAMPLER2DARRAY ISAMPLERCUBEARRAY
-%token USAMPLER1D USAMPLER2D USAMPLER3D USAMPLERCUBE USAMPLER1DARRAY
-%token USAMPLER2DARRAY USAMPLERCUBEARRAY
-%token SAMPLER2DRECT ISAMPLER2DRECT USAMPLER2DRECT SAMPLER2DRECTSHADOW
-%token SAMPLERBUFFER ISAMPLERBUFFER USAMPLERBUFFER
-%token SAMPLER2DMS ISAMPLER2DMS USAMPLER2DMS
-%token SAMPLER2DMSARRAY ISAMPLER2DMSARRAY USAMPLER2DMSARRAY
-%token SAMPLEREXTERNALOES
-%token IMAGE1D IMAGE2D IMAGE3D IMAGE2DRECT IMAGECUBE IMAGEBUFFER
-%token IMAGE1DARRAY IMAGE2DARRAY IMAGECUBEARRAY IMAGE2DMS IMAGE2DMSARRAY
-%token IIMAGE1D IIMAGE2D IIMAGE3D IIMAGE2DRECT IIMAGECUBE IIMAGEBUFFER
-%token IIMAGE1DARRAY IIMAGE2DARRAY IIMAGECUBEARRAY IIMAGE2DMS IIMAGE2DMSARRAY
-%token UIMAGE1D UIMAGE2D UIMAGE3D UIMAGE2DRECT UIMAGECUBE UIMAGEBUFFER
-%token UIMAGE1DARRAY UIMAGE2DARRAY UIMAGECUBEARRAY UIMAGE2DMS UIMAGE2DMSARRAY
-%token IMAGE1DSHADOW IMAGE2DSHADOW IMAGE1DARRAYSHADOW IMAGE2DARRAYSHADOW
-%token COHERENT VOLATILE RESTRICT READONLY WRITEONLY
-%token ATOMIC_UINT
-%token STRUCT VOID_TOK WHILE
-%token IDENTIFIER TYPE_IDENTIFIER IDENTIFIER
-%token FLOATCONSTANT
-%token INTCONSTANT UINTCONSTANT BOOLCONSTANT
-%token FIELD_SELECTION
-%token LEFT_OP RIGHT_OP
-%token INC_OP DEC_OP LE_OP GE_OP EQ_OP NE_OP
-%token AND_OP OR_OP XOR_OP MUL_ASSIGN DIV_ASSIGN ADD_ASSIGN
-%token MOD_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN XOR_ASSIGN OR_ASSIGN
-%token SUB_ASSIGN
-%token INVARIANT PRECISE
-%token LOWP MEDIUMP HIGHP SUPERP PRECISION
-
-%token VERSION EXTENSION LINE COLON EOL INTERFACE OUTPUT
-%token PRAGMA_DEBUG_ON PRAGMA_DEBUG_OFF
-%token PRAGMA_OPTIMIZE_ON PRAGMA_OPTIMIZE_OFF
-%token PRAGMA_INVARIANT_ALL
-%token LAYOUT_TOK
-
-// Reserved words that are not actually used in the grammar.
-%token ASM CLASS UNION ENUM TYPEDEF TEMPLATE THIS PACKED_TOK GOTO
-%token INLINE_TOK NOINLINE PUBLIC_TOK STATIC EXTERN EXTERNAL
-%token LONG_TOK SHORT_TOK DOUBLE_TOK HALF FIXED_TOK UNSIGNED INPUT_TOK
-%token HVEC2 HVEC3 HVEC4 DVEC2 DVEC3 DVEC4 FVEC2 FVEC3 FVEC4
-%token SAMPLER3DRECT
-%token SIZEOF CAST NAMESPACE USING
-%token RESOURCE PATCH
-%token SUBROUTINE
-
-%token ERROR_TOK
-
-%token COMMON PARTITION ACTIVE FILTER ROW_MAJOR
-
-%right THEN ELSE
-%%
-
-*/

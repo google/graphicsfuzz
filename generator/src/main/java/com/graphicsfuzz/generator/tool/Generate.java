@@ -27,7 +27,6 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.PruneUniforms;
@@ -54,6 +53,7 @@ import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
 import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import com.graphicsfuzz.util.ArgsUtil;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
@@ -61,7 +61,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -90,12 +89,8 @@ public class Generate {
         .help("Path of folder of donor shaders.")
         .type(File.class);
 
-    parser.addArgument("glsl-version")
-        .help("Version of GLSL to target.")
-        .type(String.class);
-
     parser.addArgument("output")
-        .help("Output shader job file file (.json.")
+        .help("Output shader job file file (.json).")
         .type(File.class);
 
     addGeneratorCommonArguments(parser);
@@ -106,8 +101,8 @@ public class Generate {
 
   public static void addGeneratorCommonArguments(ArgumentParser parser) {
     parser.addArgument("--seed")
-        .help("Seed to initialize random number generator with.")
-        .type(Integer.class);
+        .help("Seed (unsigned 64 bit long integer) for the random number generator.")
+        .type(String.class);
 
     parser.addArgument("--small")
         .help("Try to generate small shaders.")
@@ -169,9 +164,8 @@ public class Generate {
    */
   public static StringBuilder generateVariant(ShaderJob shaderJob,
                                               GeneratorArguments args,
-                                              int seed) {
+                                              IRandom random) {
     final StringBuilder result = new StringBuilder();
-    final IRandom random = new RandomWrapper(seed);
 
     if (args.getAddInjectionSwitch()) {
       for (TranslationUnit shader : shaderJob.getShaders()) {
@@ -211,7 +205,7 @@ public class Generate {
    * @param referenceShaderJobFile The shader job to be transformed.
    * @param outputShaderJobFile    Output file for the variant.
    * @param generatorArguments     Arguments to control generation.
-   * @param seed                   Seed for random number generation.
+   * @param random                 Random number generator.
    * @param writeProbabilities     Records whether details about probabilities should be written.
    * @throws IOException           if file reading or writing goes wrong.
    * @throws ParseTimeoutException if parsing takes too long.
@@ -219,11 +213,12 @@ public class Generate {
    *                               preprocessor or validator.
    * @throws GlslParserException   if a shader in the job fails to parse.
    */
+  @SuppressWarnings("deprecation")
   public static void generateVariant(ShaderJobFileOperations fileOps,
                                      File referenceShaderJobFile,
                                      File outputShaderJobFile,
                                      GeneratorArguments generatorArguments,
-                                     int seed,
+                                     IRandom random,
                                      boolean writeProbabilities)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     // This is mutated into the variant.
@@ -232,7 +227,7 @@ public class Generate {
     final StringBuilder generationInfo = generateVariant(
         variantShaderJob,
         generatorArguments,
-        seed);
+        random);
 
     fileOps.writeShaderJobFile(
         variantShaderJob,
@@ -253,7 +248,7 @@ public class Generate {
                                                GeneratorArguments args) {
     final ShaderKind shaderKind = shaderToTransform.getShaderKind();
     StringBuilder result = new StringBuilder();
-    result.append("======\n" + shaderKind + ":\n");
+    result.append("======\n").append(shaderKind).append(":\n");
 
     if (args.getReplaceFloatLiterals()) {
       FloatLiteralReplacer.replace(
@@ -310,6 +305,9 @@ public class Generate {
   public static void main(String[] args) {
     try {
       mainHelper(args);
+    } catch (ArgumentParserException exception) {
+      exception.getParser().handleError(exception);
+      System.exit(1);
     } catch (Throwable exception) {
       LOGGER.error("", exception);
       System.exit(1);
@@ -321,17 +319,14 @@ public class Generate {
       GlslParserException {
     final Namespace ns = parse(args);
 
-    Integer seed = ns.get("seed");
-    if (seed == null) {
-      seed = new Random().nextInt();
-    }
+    final IRandom random = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
 
     generateVariant(
         new ShaderJobFileOperations(),
         ns.get("reference_json"),
         ns.get("output"),
         getGeneratorArguments(ns),
-        seed,
+        random,
         ns.getBoolean("write_probabilities"));
   }
 
@@ -418,20 +413,20 @@ public class Generate {
     }
 
     List<ITransformation> nextRoundTransformations = new ArrayList<>();
-    String result = "";
+    final StringBuilder result = new StringBuilder();
     // Keep applying transformations until all transformations cease to be effective, or
     // we get a large enough shader.
     while (!transformations.isEmpty() && !shaderLargeEnough(reference, generator)) {
       ITransformation transformation = transformations.remove(generator.nextInt(
           transformations.size()));
-      result += transformation.getName() + "\n";
+      result.append(transformation.getName()).append("\n");
       if (transformation.apply(reference, probabilities,
           generator.spawnChild(),
           generationParams)) {
         // Keep the size down by stripping unused stuff.
         StripUnusedFunctions.strip(reference);
         StripUnusedGlobals.strip(reference);
-        assert canTypeCheckWithoutFailure(reference, reference.getShadingLanguageVersion());
+        assert canTypeCheckWithoutFailure(reference);
 
         // Only if the transformation applied successfully (i.e., made a change), do we add it
         // to the list of transformations to be applied next round.
@@ -442,14 +437,13 @@ public class Generate {
         nextRoundTransformations = new ArrayList<>();
       }
     }
-    return result;
+    return result.toString();
   }
 
-  private static boolean canTypeCheckWithoutFailure(TranslationUnit reference,
-                                                    ShadingLanguageVersion shadingLanguageVersion) {
+  private static boolean canTypeCheckWithoutFailure(TranslationUnit reference) {
     // Debugging aid: fail early if we end up messing up the translation unit so that type checking
     // does not work.
-    new Typer(reference, shadingLanguageVersion);
+    new Typer(reference);
     return true;
   }
 
@@ -591,7 +585,7 @@ public class Generate {
 
   public static void randomiseUnsetUniforms(TranslationUnit tu, PipelineInfo pipelineInfo,
         IRandom generator) {
-    final Supplier<Float> floatSupplier = () -> generator.nextFloat();
+    final Supplier<Float> floatSupplier = generator::nextFloat;
     final Supplier<Integer> intSupplier = () -> generator.nextInt(1 << 15);
     final Supplier<Integer> uintSupplier = () -> generator.nextInt(1 << 15);
     final Supplier<Integer> boolSupplier = () -> generator.nextInt(2);
@@ -610,14 +604,14 @@ public class Generate {
   private static boolean alreadyDeclaresInjectionSwitch(TranslationUnit tu) {
     return tu.getGlobalVarDeclInfos()
         .stream()
-        .map(item -> item.getName())
+        .map(VariableDeclInfo::getName)
         .collect(Collectors.toList())
         .contains(Constants.INJECTION_SWITCH);
   }
 
   public static void setInjectionSwitch(PipelineInfo pipelineInfo) {
     pipelineInfo.addUniform(Constants.INJECTION_SWITCH, BasicType.VEC2, Optional.empty(),
-          Arrays.asList(new Float(0.0), new Float(1.0)));
+          Arrays.asList(0.0f, 1.0f));
   }
 
 }

@@ -46,8 +46,8 @@ public class VariableDeclReductionOpportunities
   }
 
   private void getReductionOpportunitiesForUnusedGlobals() {
-    for (String name : currentScope.keys()) {
-      ScopeEntry entry = currentScope.lookupScopeEntry(name);
+    for (String name : getCurrentScope().keys()) {
+      ScopeEntry entry = getCurrentScope().lookupScopeEntry(name);
       assert entry.hasVariableDeclInfo();
       assert referencedScopeEntries.peek() != null;
       if (!referencedScopeEntries.peek().contains(entry)) {
@@ -66,8 +66,8 @@ public class VariableDeclReductionOpportunities
 
   @Override
   protected void popScope() {
-    for (String name : currentScope.keys()) {
-      ScopeEntry entry = currentScope.lookupScopeEntry(name);
+    for (String name : getCurrentScope().keys()) {
+      ScopeEntry entry = getCurrentScope().lookupScopeEntry(name);
       if (entry.hasVariableDeclInfo() && !referencedScopeEntries.peek().contains(entry)) {
         if (allowedToReduceLocalDecl(entry.getVariableDeclInfo())) {
           addOpportunity(
@@ -92,9 +92,9 @@ public class VariableDeclReductionOpportunities
       // refer to a variable x in the parent scope, even though the current
       // scope also declares a variable x after the usage of x
       String name = entry.getVariableDeclInfo().getName();
-      assert currentScope.lookupScopeEntry(name) == entry
-          || currentScope.getParent().lookupScopeEntry(name) == entry;
-      if (!currentScope.keys().contains(name)) {
+      assert getCurrentScope().lookupScopeEntry(name) == entry
+          || getCurrentScope().getParent().lookupScopeEntry(name) == entry;
+      if (!getCurrentScope().keys().contains(name)) {
         addReferencedScopeEntry(entry);
       }
     }
@@ -110,7 +110,7 @@ public class VariableDeclReductionOpportunities
   @Override
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    ScopeEntry scopeEntry = currentScope.lookupScopeEntry(variableIdentifierExpr.getName());
+    ScopeEntry scopeEntry = getCurrentScope().lookupScopeEntry(variableIdentifierExpr.getName());
     if (scopeEntry != null) {
       addReferencedScopeEntry(scopeEntry);
     }
@@ -128,15 +128,10 @@ public class VariableDeclReductionOpportunities
     }
     // Fine to remove if in a dead context, a live context, if no initializer, or if
     // initializer does not have side effects.
-    return context.reduceEverywhere() || enclosingFunctionIsDead()
-        || injectionTracker.enclosedByDeadCodeInjection()
-        || isLiveInjection(variableDeclInfo)
+    return context.reduceEverywhere() || currentProgramPointIsDeadCode()
+        || isLiveInjectedVariableName(variableDeclInfo.getName())
         || !variableDeclInfo.hasInitializer()
         || initializerIsScalarAndSideEffectFree(variableDeclInfo);
-  }
-
-  private boolean isLiveInjection(VariableDeclInfo variableDeclInfo) {
-    return variableDeclInfo.getName().startsWith(Constants.LIVE_PREFIX);
   }
 
   /**

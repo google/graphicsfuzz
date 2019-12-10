@@ -1,0 +1,81 @@
+# Copyright 2019 The GraphicsFuzz Project Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is not a TOML file; no quoting.
+
+[flake8]
+filename = */gfauto/*.py, */gfautotests/*.py
+exclude = *_pb2.py*
+max-line-length = 88
+ignore =
+  E203
+  W503
+  E501
+
+  # Missing doc strings.
+  D100
+  D101
+  D103
+  D104
+  D105
+  D107
+  D102
+
+  # Audit url open for permitted schemes.
+  S310
+
+  # Standard pseudo-random generators are not suitable for security/cryptographic purposes.
+  S311
+
+  # Use of subprocess call and run.
+  S404
+  S603
+
+  # Warning: First line should be in imperative mood.
+  # This is the opposite of the Google style.
+  D401
+
+  # Missing trailing comma.
+  C812
+
+  # Missing trailing comma.
+  S101
+
+  # Allow unindexed string format parameters
+  P101
+  P102
+  P103
+
+  # Consider possible security implications associated with pickle module
+  S403
+  # Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.
+  S301
+
+per-file-ignores =
+  # Ignore spelling errors in signatures.
+  gfauto/signature_util.py:SC100,SC200
+
+  # Ignore use of print in coverage code.
+  gfauto/cov_*.py:T001
+
+# For flake8-quotes:
+inline-quotes = "
+
+# Use the formatter provided by flake8_formatter_abspath.
+# This will output the full path of files with warnings so they will be clickable from PyCharm's terminal.
+format = abspath
+
+# For flake8-spellcheck. Default is whitelist.txt but using whitelist.dic means
+# we can add the file to PyCharm/IntelliJ.
+whitelist=whitelist.dic

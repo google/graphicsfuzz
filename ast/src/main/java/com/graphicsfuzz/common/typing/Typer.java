@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.common.typing;
 
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -41,9 +40,9 @@ import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import com.graphicsfuzz.common.util.OpenGlConstants;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,30 +51,22 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class Typer extends ScopeTreeBuilder {
+public class Typer extends ScopeTrackingVisitor {
 
-  private Map<Expr, Type> types;
+  private final TranslationUnit tu;
 
-  private Map<String, Set<FunctionPrototype>> userDefinedFunctions;
+  private final Map<Expr, Type> types;
 
-  private Map<StructNameType, StructDefinitionType> structDeclarationMap;
+  private final Map<String, Set<FunctionPrototype>> userDefinedFunctions;
 
-  private ShadingLanguageVersion shadingLanguageVersion;
+  private final Map<StructNameType, StructDefinitionType> structDeclarationMap;
 
-  public Map<String, Set<FunctionPrototype>> getUserDefinedFunctions() {
-    return userDefinedFunctions;
-  }
-
-  public Typer(IAstNode node, ShadingLanguageVersion shadingLanguageVersion) {
+  public Typer(TranslationUnit tu) {
+    this.tu = tu;
     this.types = new HashMap<>();
     this.userDefinedFunctions = new HashMap<>();
     this.structDeclarationMap = new HashMap<>();
-    this.shadingLanguageVersion = shadingLanguageVersion;
-    visit(node);
-  }
-
-  public Typer(TranslationUnit tu) {
-    this(tu, tu.getShadingLanguageVersion());
+    visit(tu);
   }
 
   @Override
@@ -111,26 +102,32 @@ public class Typer extends ScopeTreeBuilder {
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
     super.visitFunctionCallExpr(functionCallExpr);
 
-    List<FunctionPrototype> candidateBuiltins = TyperHelper.getBuiltins(shadingLanguageVersion)
-        .get(functionCallExpr.getCallee());
-    if (candidateBuiltins != null) {
-      for (FunctionPrototype prototype : candidateBuiltins) {
+    // First, see if there is a builtin with a matching prototype.
+    final Optional<Type> maybeMatchingBuiltinFunctionReturn =
+        lookForMatchingFunction(functionCallExpr,
+        TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), tu.getShaderKind())
+            .get(functionCallExpr.getCallee()));
+    if (maybeMatchingBuiltinFunctionReturn.isPresent()) {
+      types.put(functionCallExpr, maybeMatchingBuiltinFunctionReturn.get());
+      return;
+    }
+
+    // If there was no relevant builtin, see whether there is a user-defined type.
+    lookForMatchingFunction(functionCallExpr,
+        userDefinedFunctions.get(functionCallExpr.getCallee()))
+        .ifPresent(type -> types.put(functionCallExpr, type));
+  }
+
+  private Optional<Type> lookForMatchingFunction(FunctionCallExpr functionCallExpr,
+                                                 Collection<FunctionPrototype> candidateFunctions) {
+    if (candidateFunctions != null) {
+      for (FunctionPrototype prototype : candidateFunctions) {
         if (prototypeMatches(prototype, functionCallExpr)) {
-          types.put(functionCallExpr, prototype.getReturnType());
+          return Optional.of(prototype.getReturnType());
         }
       }
     }
-
-    Set<FunctionPrototype> candidateUserDefined =
-        userDefinedFunctions.get(functionCallExpr.getCallee());
-    if (candidateUserDefined != null) {
-      for (FunctionPrototype prototype : candidateUserDefined) {
-        if (prototypeMatches(prototype, functionCallExpr)) {
-          types.put(functionCallExpr, prototype.getReturnType());
-        }
-      }
-    }
-
+    return Optional.empty();
   }
 
   /**
@@ -155,8 +152,11 @@ public class Typer extends ScopeTreeBuilder {
       if (argType == null) {
         return false;
       }
-      // Not yet worked out how to deal with array info
-      assert prototype.getParameters().get(i).getArrayInfo() == null;
+      // TODO(https://github.com/google/graphicsfuzz/issues/784) Not yet worked out how to deal with
+      //  array info
+      if (prototype.getParameters().get(i).getArrayInfo() != null) {
+        throw new UnsupportedLanguageFeatureException("Array parameters are not yet supported.");
+      }
       if (!argType.getWithoutQualifiers()
           .equals(prototype.getParameters().get(i).getType().getWithoutQualifiers())) {
         return false;
@@ -168,7 +168,7 @@ public class Typer extends ScopeTreeBuilder {
   @Override
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    Type type = currentScope.lookupType(variableIdentifierExpr.getName());
+    Type type = getCurrentScope().lookupType(variableIdentifierExpr.getName());
     if (type != null) {
       types.put(variableIdentifierExpr, type);
       return;
@@ -345,7 +345,9 @@ public class Typer extends ScopeTreeBuilder {
       case LT:
       case LXOR:
       case NE:
-        types.put(binaryExpr, resolveBooleanResultType(lhsType, rhsType));
+        // The above all yield 'bool', even if (as is allowed in the case of '==' and '!=' they are
+        // applied to vector types.
+        types.put(binaryExpr, BasicType.BOOL);
         return;
       case COMMA:
         // The type of "e1, e2" is the type of "e2".
@@ -438,26 +440,6 @@ public class Typer extends ScopeTreeBuilder {
     }
   }
 
-  private Type resolveBooleanResultType(Type lhsType, Type rhsType) {
-    return maybeComputeBooleanVectorType(lhsType)
-        .orElse(maybeComputeBooleanVectorType(rhsType)
-            .orElse(BasicType.BOOL));
-  }
-
-  private Optional<Type> maybeComputeBooleanVectorType(Type lhsType) {
-    if (lhsType instanceof BasicType) {
-      final int numElements = ((BasicType) lhsType).getNumElements();
-      if (1 < numElements && numElements <= 4) {
-        return Optional.of(BasicType.makeVectorType(BasicType.BOOL, numElements));
-      }
-    }
-    return Optional.empty();
-  }
-
-  public Set<Expr> getTypedExpressions() {
-    return Collections.unmodifiableSet(types.keySet());
-  }
-
   public Type lookupType(Expr expr) {
     return types.get(expr);
   }
@@ -471,8 +453,10 @@ public class Typer extends ScopeTreeBuilder {
     if (userDefinedFunctions.containsKey(name)) {
       result.addAll(userDefinedFunctions.get(name));
     }
-    if (TyperHelper.getBuiltins(shadingLanguageVersion).containsKey(name)) {
-      result.addAll(TyperHelper.getBuiltins(shadingLanguageVersion).get(name));
+    final Map<String, List<FunctionPrototype>> builtins =
+        TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), tu.getShaderKind());
+    if (builtins.containsKey(name)) {
+      result.addAll(builtins.get(name));
     }
     return result;
   }

@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.tester;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -26,32 +24,28 @@ import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.GlslParserException;
-import com.graphicsfuzz.common.util.PipelineInfo;
-import com.graphicsfuzz.reducer.tool.GlslReduce;
-import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.util.ToolHelper;
+import com.graphicsfuzz.common.util.StatsVisitor;
 import com.graphicsfuzz.generator.tool.Generate;
-import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.AddDeadOutputWriteTransformation;
 import com.graphicsfuzz.generator.transformation.AddJumpTransformation;
 import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
-import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
 import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
+import com.graphicsfuzz.generator.transformation.ITransformation;
 import com.graphicsfuzz.generator.transformation.IdentityTransformation;
 import com.graphicsfuzz.generator.transformation.OutlineStatementTransformation;
+import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.reducer.CheckAstFeatureVisitor;
@@ -59,9 +53,14 @@ import com.graphicsfuzz.reducer.CheckAstFeaturesFileJudge;
 import com.graphicsfuzz.reducer.IFileJudge;
 import com.graphicsfuzz.reducer.ReductionDriver;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
+import com.graphicsfuzz.reducer.tool.GlslReduce;
 import com.graphicsfuzz.reducer.tool.RandomFileJudge;
+import com.graphicsfuzz.util.Constants;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
+import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -81,6 +80,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.assertEquals;
 
 public class ReducerUnitTest {
 
@@ -106,29 +107,29 @@ public class ReducerUnitTest {
                                      List<ITransformationSupplier> transformations,
                                      RandomWrapper generator) throws Exception {
 
-    // TODO: We reduced this due to slow shader run time. Consider reverting to 100000 when run
-    //  time is improved.
-    final int maxBytes = 10000;
+    final int maxAstNodes = 2000;
 
     final File referenceImage =
-        Util.renderShader(
-            originalShaderJobFile,
+        Util.validateAndGetImage(originalShaderJobFile,
             temporaryFolder,
             fileOps);
-    final PipelineInfo pipelineInfo = new PipelineInfo(originalShaderJobFile);
-    final TranslationUnit tu = generateSizeLimitedShader(
-        fileOps.getUnderlyingShaderFile(originalShaderJobFile, ShaderKind.FRAGMENT),
-        transformations, generator, maxBytes);
-    Generate.addInjectionSwitchIfNotPresent(tu);
+    final ShaderJob shaderJob = generateSizeLimitedShader(originalShaderJobFile,
+        transformations, generator, maxAstNodes);
+    final PipelineInfo pipelineInfo = shaderJob.getPipelineInfo();
+    final TranslationUnit fragmentShader = shaderJob.getFragmentShader().get();
+    Generate.addInjectionSwitchIfNotPresent(fragmentShader);
     Generate.setInjectionSwitch(pipelineInfo);
-    Generate.randomiseUnsetUniforms(tu, pipelineInfo, generator);
+    Generate.randomiseUnsetUniforms(fragmentShader,
+        pipelineInfo,
+        generator);
 
     final IdGenerator idGenerator = new IdGenerator();
 
     for (int step = 0; step < 10; step++) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
-          new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu),
-          new ReducerContext(false, tu.getShadingLanguageVersion(), generator, idGenerator, true),
+          new GlslShaderJob(Optional.empty(), pipelineInfo,
+              fragmentShader),
+          new ReducerContext(false, fragmentShader.getShadingLanguageVersion(), generator, idGenerator),
           fileOps);
       if (ops.isEmpty()) {
         break;
@@ -136,12 +137,10 @@ public class ReducerUnitTest {
       LOGGER.info("Step: {}; ops: {}", step, ops.size());
       ops.get(generator.nextInt(ops.size())).applyReduction();
 
-      final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), pipelineInfo, tu);
-
       final File variantImage =
           Util.validateAndGetImage(
               shaderJob,
-              originalShaderJobFile.getName() + "_reduced_" + step + ".frag",
+              originalShaderJobFile.getName() + "_reduced_" + step + ".json",
               temporaryFolder,
               fileOps);
       Util.assertImagesSimilar(referenceImage, variantImage);
@@ -149,31 +148,24 @@ public class ReducerUnitTest {
 
   }
 
-  private TranslationUnit generateSizeLimitedShader(
-      File fragmentShader,
+  private ShaderJob generateSizeLimitedShader(
+      File shaderJobFile,
       List<ITransformationSupplier> transformations,
       IRandom generator,
-      final int maxBytes
+      final int maxAstNodes
   ) throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     while (true) {
       List<ITransformationSupplier> transformationsCopy = new ArrayList<>();
       transformationsCopy.addAll(transformations);
-      final TranslationUnit tu = ParseHelper.parse(fragmentShader);
+      final ShaderJob shaderJob = fileOps.readShaderJobFile(shaderJobFile);
+      final TranslationUnit fragmentShader = shaderJob.getFragmentShader().get();
       for (int i = 0; i < 4; i++) {
         getTransformation(transformationsCopy, generator).apply(
-            tu, TransformationProbabilities.DEFAULT_PROBABILITIES,
+            fragmentShader, TransformationProbabilities.DEFAULT_PROBABILITIES,
             generator, GenerationParams.normal(ShaderKind.FRAGMENT, true));
       }
-      File tempFile = temporaryFolder.newFile();
-      PrettyPrinterVisitor.emitShader(tu, Optional.empty(),
-          new PrintStream(
-              new FileOutputStream(tempFile)),
-          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-          true
-      );
-      if (tempFile.length() <= maxBytes) {
-        return tu;
+      if (new StatsVisitor(fragmentShader).getNumNodes() <= maxAstNodes) {
+        return shaderJob;
       }
     }
   }
@@ -228,7 +220,7 @@ public class ReducerUnitTest {
 
       new ReductionDriver(new ReducerContext(false,
           shadingLanguageVersion, generator,
-            new IdGenerator(), true), false, fileOps,
+            new IdGenerator()), false, fileOps,
           new RandomFileJudge(generator, threshold, throwExceptionOnInvalid, fileOps),
           workDir)
             .doReduction(initialState, shaderJobShortName, 0,
@@ -392,7 +384,7 @@ public class ReducerUnitTest {
     fileOps.copyShaderJobFileTo(shaderJobFile, new File(temporaryFolder.getRoot(),
         shaderJobFile.getName()), false);
     return new ReductionDriver(new ReducerContext(false, version, generator,
-        new IdGenerator(), true), false, fileOps,
+        new IdGenerator()), false, fileOps,
         fileJudge, temporaryFolder.getRoot())
         .doReduction(state, shaderJobShortName, 0, -1);
   }

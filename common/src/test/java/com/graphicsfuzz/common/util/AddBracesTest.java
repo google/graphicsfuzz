@@ -62,17 +62,6 @@ public class AddBracesTest {
   public TemporaryFolder testFolder = new TemporaryFolder();
 
   @Test
-  public void testMain() throws Exception {
-    File input = testFolder.newFile("input.frag");
-    String program = "void main() { for (a; b; c) while (d) do e; while (f); }";
-    BufferedWriter bw = new BufferedWriter(new FileWriter(input));
-    bw.write(program);
-    bw.flush();
-    bw.close();
-    AddBraces.main(new String[] { input.getAbsolutePath() });
-  }
-
-  @Test
   public void testIsUtilityClass() throws Exception {
     CheckUtilityClass.assertUtilityClassWellDefined(AddBraces.class);
   }

@@ -30,8 +30,8 @@ public class IfInjectionPoint extends InjectionPoint {
   private boolean chooseThen;
 
   public IfInjectionPoint(IfStmt ifStmt, boolean chooseThen, FunctionDefinition enclosingFunction,
-      boolean inLoop, Scope scope) {
-    super(enclosingFunction, inLoop, scope);
+      boolean inLoop, boolean inSwitch, Scope scope) {
+    super(enclosingFunction, inLoop, inSwitch, scope);
     this.ifStmt = ifStmt;
     this.chooseThen = chooseThen;
   }

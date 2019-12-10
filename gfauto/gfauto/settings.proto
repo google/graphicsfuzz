@@ -1,0 +1,53 @@
+// Copyright 2019 The GraphicsFuzz Project Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package gfauto;
+
+import "gfauto/common.proto";
+import "gfauto/device.proto";
+
+
+// A fuzzing session requires a Settings proto stored in "settings.json".
+// Default values are defined in settings_util.py.
+message Settings {
+  // A list of devices, including the list of active devices names that will actually be used in this session.
+  DeviceList device_list = 1;
+
+  // A list of custom binary versions; this should rarely be set, but can be used, for example, if you want to override
+  // the default versions of some binaries for all devices. It is probably more common to specify binaries for certain
+  // devices.
+  repeated Binary custom_binaries = 2;
+
+  // Allow at most this many duplicate crashes per device.
+  // If 0 (the protobuf default value), a different default value will actually be used, as determined by gfauto.
+  uint32 maximum_duplicate_crashes = 3;
+
+  // Store at most this many fuzzing failure files.
+  uint32 maximum_fuzz_failures = 4;
+
+  // Reduce tool crashes. E.g. spirv-opt or glslangValidator crashes. You can disable this if you would rather focus on
+  // bugs in your actual test device.
+  bool reduce_tool_crashes = 5;
+
+  // Reduce crashes. E.g. shader compilation errors, shader compilation crashes, runtime crashes.
+  bool reduce_crashes = 6;
+
+  // Reduce bad images. E.g. your test device renders an incorrect image.
+  bool reduce_bad_images = 7;
+
+  // A list of built-in binary versions that will be generated automatically.
+  repeated Binary latest_binary_versions = 8;
+}

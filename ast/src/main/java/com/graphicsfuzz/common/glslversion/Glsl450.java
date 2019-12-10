@@ -31,6 +31,11 @@ final class Glsl450 extends CompositeShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedExplicitDerivativeFunctions() {
+    return true;
+  }
+
+  @Override
   public boolean supportedMixNonfloatBool() {
     return true;
   }

@@ -23,12 +23,15 @@ import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.GlslParserException;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.util.Constants;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
@@ -197,13 +200,12 @@ public class InlineUniformReductionOpportunitiesTest {
 
   private ShaderJob checkCanReduceToTarget(ShaderJob shaderJob, int expectedSize, String target)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    boolean found = false;
     for (int i = 0; i < expectedSize; i++) {
       final ShaderJob temp = shaderJob.clone();
       List<SimplifyExprReductionOpportunity> ops =
           InlineUniformReductionOpportunities.findOpportunities(temp,
-              new ReducerContext(false,
-                  ShadingLanguageVersion.ESSL_100, new RandomWrapper(), null, true));
+              new ReducerContext(true,
+                  ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
       assertEquals(expectedSize, ops.size());
       ops.get(i).applyReduction();
       if (CompareAsts.isEqualAsts(target, temp.getShaders().get(0))) {
@@ -212,6 +214,166 @@ public class InlineUniformReductionOpportunitiesTest {
     }
     assertTrue(false);
     return null;
+  }
+
+  @Test
+  public void testDoNotInlineWhenPreservingSemantics() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "uniform int u;\n"
+        + "void main() {\n"
+        + "  u;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("u", BasicType.INT, Optional.empty(), Collections.singletonList(2));
+    final List<SimplifyExprReductionOpportunity> opportunities =
+        InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
+            pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+        new RandomWrapper(0), new IdGenerator()));
+    assertTrue(opportunities.isEmpty());
+  }
+
+  @Test
+  public void testDoInlineWhenPreservingSemanticsDeadCode() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "uniform int u;\n"
+        + "void main() {\n"
+        + "  u;\n"
+        + "  if(" + Constants.GLF_DEAD + "(" + Constants.GLF_FALSE + "(false, false))) {\n"
+        + "    u;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "uniform int u;\n"
+        + "void main() {\n"
+        + "  u;\n"
+        + "  if(" + Constants.GLF_DEAD + "(" + Constants.GLF_FALSE + "(false, false))) {\n"
+        + "    2;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("u", BasicType.INT, Optional.empty(), Collections.singletonList(2));
+    final List<SimplifyExprReductionOpportunity> opportunities =
+        InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
+            pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()));
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReduction();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testDoInlineWhenPreservingSemanticsDeadFunction() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "uniform int u;\n"
+        + "void " + Constants.GLF_DEAD + "_foo() {\n"
+        + "  u;\n"
+        + "}\n"
+        + "void main() {\n"
+        + "  u;\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "uniform int u;\n"
+        + "void " + Constants.GLF_DEAD + "_foo() {\n"
+        + "  2;\n"
+        + "}\n"
+        + "void main() {\n"
+        + "  u;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("u", BasicType.INT, Optional.empty(), Collections.singletonList(2));
+    final List<SimplifyExprReductionOpportunity> opportunities =
+        InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
+            pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()));
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReduction();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testDoInlineWhenPreservingSemanticsUnreachableSwitchCase() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "uniform int u;\n"
+        + "void main() {\n"
+        + "  switch(" + Constants.GLF_SWITCH + "(0)) {\n"
+        + "    case 2:\n"
+        + "    u;\n"
+        + "    case 3:\n"
+        + "    u;\n"
+        + "    case 0:\n"
+        + "    u;\n"
+        + "    case 5:\n"
+        + "    u;\n"
+        + "    break;\n"
+        + "    case 6:\n"
+        + "    u;\n"
+        + "    default:\n"
+        + "    u;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "uniform int u;\n"
+        + "void main() {\n"
+        + "  switch(" + Constants.GLF_SWITCH + "(0)) {\n"
+        + "    case 2:\n"
+        + "    2;\n"
+        + "    case 3:\n"
+        + "    2;\n"
+        + "    case 0:\n"
+        + "    u;\n"
+        + "    case 5:\n"
+        + "    u;\n"
+        + "    break;\n"
+        + "    case 6:\n"
+        + "    2;\n"
+        + "    default:\n"
+        + "    2;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("u", BasicType.INT, Optional.empty(), Collections.singletonList(2));
+    final List<SimplifyExprReductionOpportunity> opportunities =
+        InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
+            pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()));
+    assertEquals(4, opportunities.size());
+    for (SimplifyExprReductionOpportunity op : opportunities) {
+      op.applyReduction();
+    }
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testDoInlineWhenPreservingSemanticsLiveCode() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "uniform int u;\n"
+        + "uniform int " + Constants.LIVE_PREFIX + "v;\n"
+        + "void main() {\n"
+        + "  u;\n"
+        + "  " + Constants.LIVE_PREFIX + "v;\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "uniform int u;\n"
+        + "uniform int " + Constants.LIVE_PREFIX + "v;\n"
+        + "void main() {\n"
+        + "  u;\n"
+        + "  3;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("u", BasicType.INT, Optional.empty(), Collections.singletonList(2));
+    pipelineInfo.addUniform(Constants.LIVE_PREFIX + "v", BasicType.INT, Optional.empty(), Collections.singletonList(3));
+    final List<SimplifyExprReductionOpportunity> opportunities =
+        InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
+            pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()));
+    assertEquals(1, opportunities.size());
+    opportunities.get(0).applyReduction();
+    CompareAsts.assertEqualAsts(expected, tu);
   }
 
 }

@@ -20,7 +20,6 @@ layout (std140, binding = 0) uniform bufferVals {
        float f;
 } myBufferVals;
 layout (location = 0) in vec4 pos;
-layout (location = 1) in vec4 inColor;
 void main() {
    gl_Position = pos;
 }

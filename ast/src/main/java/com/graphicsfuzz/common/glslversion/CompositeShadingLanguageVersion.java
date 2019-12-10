@@ -74,6 +74,16 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   }
 
   @Override
+  public boolean supportedComputeShaders() {
+    return prototype.supportedComputeShaders();
+  }
+
+  @Override
+  public boolean supportedDerivativeFunctions() {
+    return prototype.supportedDerivativeFunctions();
+  }
+
+  @Override
   public boolean supportedDeterminant() {
     return prototype.supportedDeterminant();
   }
@@ -81,6 +91,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   @Override
   public boolean supportedDoStmt() {
     return prototype.supportedDoStmt();
+  }
+
+  @Override
+  public boolean supportedExplicitDerivativeFunctions() {
+    return prototype.supportedExplicitDerivativeFunctions();
   }
 
   @Override
@@ -106,6 +121,16 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   @Override
   public boolean supportedIntBitsToFloat() {
     return prototype.supportedIntBitsToFloat();
+  }
+
+  @Override
+  public boolean supportedIntegerFunctions() {
+    return prototype.supportedIntegerFunctions();
+  }
+
+  @Override
+  public boolean supportedInterpolationFunctions() {
+    return prototype.supportedInterpolationFunctions();
   }
 
   @Override
@@ -258,4 +283,28 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
     return prototype.supportedUnsigned();
   }
 
+  @Override
+  public boolean supportedAngleAndTrigonometricFunctions() {
+    return prototype.supportedAngleAndTrigonometricFunctions();
+  }
+
+  @Override
+  public boolean supportedHyperbolicAngleAndTrigonometricFunctions() {
+    return prototype.supportedHyperbolicAngleAndTrigonometricFunctions();
+  }
+
+  @Override
+  public boolean supportedModf() {
+    return prototype.supportedModf();
+  }
+
+  @Override
+  public boolean supportedFrexp() {
+    return prototype.supportedFrexp();
+  }
+
+  @Override
+  public boolean supportedLdexp() {
+    return prototype.supportedLdexp();
+  }
 }

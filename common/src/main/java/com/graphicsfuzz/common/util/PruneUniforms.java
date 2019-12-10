@@ -20,7 +20,6 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.Initializer;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -124,18 +123,18 @@ public final class PruneUniforms {
                                              ArrayInfo arrayInfo,
                                              List<Number> args) {
     if (arrayInfo != null) {
-      assert arrayInfo.getSize() * baseType.getNumElements() == args.size();
+      assert arrayInfo.getConstantSize() * baseType.getNumElements() == args.size();
       List<Expr> argExprs = new ArrayList<>();
-      for (int index = 0; index < arrayInfo.getSize(); index++) {
+      for (int index = 0; index < arrayInfo.getConstantSize(); index++) {
         argExprs.add(getBasicTypeLiteralExpr(baseType,
             args.subList(index * baseType.getNumElements(),
                 (index + 1) * baseType.getNumElements())));
       }
-      return new ScalarInitializer(new ArrayConstructorExpr(
+      return new Initializer(new ArrayConstructorExpr(
           new ArrayType(baseType.getWithoutQualifiers(), arrayInfo.clone()),
           argExprs));
     }
-    return new ScalarInitializer(getBasicTypeLiteralExpr(baseType, args));
+    return new Initializer(getBasicTypeLiteralExpr(baseType, args));
   }
 
   public static Expr getBasicTypeLiteralExpr(BasicType baseType, List<Number> args) {

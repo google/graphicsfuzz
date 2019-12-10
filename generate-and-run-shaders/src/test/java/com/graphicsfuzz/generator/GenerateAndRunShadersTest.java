@@ -44,8 +44,7 @@ public class GenerateAndRunShadersTest {
                 donors.getAbsolutePath(),
                 outputDir,
                 "dummy_server",
-                "dummy_worker",
-                "100"
+                "dummy_worker"
             }
       );
       throw new RuntimeException("Exception expected.");
@@ -70,8 +69,7 @@ public class GenerateAndRunShadersTest {
                 donors.getAbsolutePath(),
                 outputDir,
                 "dummy_server",
-                "dummy_worker",
-                "100"
+                "dummy_worker"
             }
       );
       throw new RuntimeException("Exception expected.");
@@ -95,8 +93,7 @@ public class GenerateAndRunShadersTest {
                 donors.getAbsolutePath(),
                 outputDir,
                 "dummy_server",
-                "dummy_worker",
-                "100"
+                "dummy_worker"
             }
       );
       throw new RuntimeException("Exception expected.");

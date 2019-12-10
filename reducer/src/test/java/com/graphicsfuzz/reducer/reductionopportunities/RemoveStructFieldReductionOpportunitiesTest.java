@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
@@ -47,7 +48,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(program);
 
     assertEquals(2, RemoveStructFieldReductionOpportunities
-          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true)).size());
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator())).size());
 
   }
 
@@ -67,7 +68,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(program);
 
     assertEquals(0, RemoveStructFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, null, null, null, true)).size());
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator())).size());
 
   }
 
@@ -99,7 +100,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveStructFieldReductionOpportunity> ops = RemoveStructFieldReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-              new ReducerContext(true, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
+              new ReducerContext(true, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)));
@@ -132,7 +133,7 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(program);
 
     final List<RemoveStructFieldReductionOpportunity> ops = RemoveStructFieldReductionOpportunities
-          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(2, ops
           .size());
     ops.stream().filter(item -> item.getFieldToRemove().equals("_f0"))

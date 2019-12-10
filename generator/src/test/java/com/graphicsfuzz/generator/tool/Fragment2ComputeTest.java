@@ -21,11 +21,12 @@ import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class Fragment2ComputeTest {
 
@@ -40,7 +41,11 @@ public class Fragment2ComputeTest {
 
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-    for (File reference : referencesDir.listFiles((dir, name) -> name.endsWith(".json"))) {
+    String[] blacklist = {"trigonometric_strip", "mergesort_mosaic"};
+
+    for (File reference :
+        referencesDir.listFiles((dir, name) -> name.endsWith(".json")
+            && Arrays.stream(blacklist).noneMatch(s -> name.contains(s)))) {
       File outputShaderJob = temporaryFolder.newFile(reference.getName());
       Fragment2Compute.mainHelper(reference.getAbsolutePath(), outputShaderJob.getAbsolutePath());
       assertTrue(fileOps.getUnderlyingShaderFile(outputShaderJob, ShaderKind.COMPUTE)

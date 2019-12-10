@@ -17,9 +17,7 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
-import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
@@ -27,12 +25,12 @@ import com.graphicsfuzz.common.ast.stmt.LoopStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.MacroNames;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class UnwrapReductionOpportunities
       extends ReductionOpportunitiesBase<UnwrapReductionOpportunity> {
@@ -120,7 +118,8 @@ public class UnwrapReductionOpportunities
     final Set<String> namesDeclaredDirectlyByParentOrInScopeAlready = new HashSet<>();
     namesDeclaredDirectlyByParentOrInScopeAlready.addAll(
         UnwrapReductionOpportunity.getNamesDeclaredDirectlyByBlock(block));
-    namesDeclaredDirectlyByParentOrInScopeAlready.addAll(currentScope.namesOfAllVariablesInScope());
+    namesDeclaredDirectlyByParentOrInScopeAlready.addAll(getCurrentScope()
+        .namesOfAllVariablesInScope());
     final Set<String> namesDeclaredDirectlyByChild =
         UnwrapReductionOpportunity.getNamesDeclaredDirectlyByBlock(childAsBlock);
     if (Collections.disjoint(namesDeclaredDirectlyByParentOrInScopeAlready,

@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.generator.semanticspreserving;
 
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -102,7 +102,7 @@ public class SplitForLoopMutation implements Mutation {
         + (loopSplitInfo.getIncreasing() ? 1 : -1) * numIterationsToSplitAfter;
 
     VariablesDeclaration varDecl = ((DeclarationStmt) loop.getInit()).getVariablesDeclaration();
-    varDecl.getDeclInfo(0).setInitializer(new ScalarInitializer(new IntConstantExpr(
+    varDecl.getDeclInfo(0).setInitializer(new Initializer(new IntConstantExpr(
         String.valueOf(newStart))));
   }
 
@@ -179,12 +179,12 @@ public class SplitForLoopMutation implements Mutation {
     }
 
     // Now we grab the initial value, which needs to be an integer.
-    if (!(declInfo.getInitializer() instanceof ScalarInitializer)) {
+    if (!(declInfo.getInitializer() instanceof Initializer)) {
       return Optional.empty();
     }
 
     // Now we get its integer value, if it has one
-    final Optional<Integer> maybeStartValue = maybeGetIntegerValue(((ScalarInitializer) declInfo
+    final Optional<Integer> maybeStartValue = maybeGetIntegerValue((declInfo
         .getInitializer()).getExpr());
     if (!maybeStartValue.isPresent()) {
       return Optional.empty();

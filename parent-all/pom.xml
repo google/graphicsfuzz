@@ -42,7 +42,7 @@ limitations under the License.
 
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <jettyVersion>9.4.12.v20180830</jettyVersion>
+    <jettyVersion>9.4.18.v20190429</jettyVersion>
   </properties>
 
   <!-- Dependency versions -->
@@ -123,12 +123,12 @@ limitations under the License.
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.5</version>
+        <version>2.6</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.5</version>
+        <version>3.9</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -224,7 +224,22 @@ limitations under the License.
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.9</version>
+        <version>1.12</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-rng-simple</artifactId>
+        <version>1.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-rng-sampling</artifactId>
+        <version>1.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-rng-client-api</artifactId>
+        <version>1.2</version>
       </dependency>
 
       <!-- third party open source projects -->
@@ -253,22 +268,12 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>com.graphicsfuzz</groupId>
-        <artifactId>assembly-public</artifactId>
-        <version>1.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.graphicsfuzz</groupId>
         <artifactId>assembly-webglfuzz</artifactId>
         <version>1.0</version>
       </dependency>
       <dependency>
         <groupId>com.graphicsfuzz</groupId>
         <artifactId>ast</artifactId>
-        <version>1.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.graphicsfuzz</groupId>
-        <artifactId>astfuzzer</artifactId>
         <version>1.0</version>
       </dependency>
       <dependency>
@@ -482,7 +487,7 @@ limitations under the License.
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.6.1</version>
+          <version>3.8.1</version>
           <configuration>
             <!-- DEFINED AS PROPERTIES INSTEAD:-->
             <!--<source>1.8</source>-->
@@ -500,7 +505,7 @@ limitations under the License.
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.0.2</version>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -530,7 +535,7 @@ limitations under the License.
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
               <artifactId>checkstyle</artifactId>
-              <version>8.14</version>
+              <version>8.20</version>
             </dependency>
           </dependencies>
         </plugin>

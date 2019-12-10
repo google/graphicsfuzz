@@ -17,7 +17,7 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
@@ -33,7 +33,9 @@ import com.graphicsfuzz.generator.transformation.donation.DonationContext;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
-import com.graphicsfuzz.generator.util.RemoveImmediateBreakAndContinueStatements;
+import com.graphicsfuzz.generator.util.RemoveImmediateBreakStatements;
+import com.graphicsfuzz.generator.util.RemoveImmediateCaseLabels;
+import com.graphicsfuzz.generator.util.RemoveImmediateContinueStatements;
 import com.graphicsfuzz.generator.util.RemoveReturnStatements;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.util.Constants;
@@ -58,7 +60,7 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
   }
 
   @Override
-  public Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
+  Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
                                 DonationContext donationContext,
                                 TransformationProbabilities probabilities,
                                 IRandom generator, ShadingLanguageVersion shadingLanguageVersion) {
@@ -72,13 +74,13 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
       }
       type = dropQualifiersThatCannotBeUsedForLocalVariable(type);
 
-      ScalarInitializer initializer;
+      Initializer initializer;
       // We fuzz a const expression because we need to ensure we don't generate side-effects to
       // non-injected code
       if (isLoopLimiter(vars.getKey(), type.getWithoutQualifiers())) {
-        initializer = new ScalarInitializer(new IntConstantExpr("0"));
+        initializer = new Initializer(new IntConstantExpr("0"));
       } else {
-        initializer = getScalarInitializer(injectionPoint, donationContext, type, true,
+        initializer = getInitializer(injectionPoint, donationContext, type, true,
             generator, shadingLanguageVersion);
       }
       donatedStmts.add(new DeclarationStmt(
@@ -87,7 +89,9 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
     }
     donatedStmts.add(donationContext.getDonorFragment());
     BlockStmt donatedStmt = new BlockStmt(donatedStmts, true);
-    new RemoveImmediateBreakAndContinueStatements(donatedStmt);
+    new RemoveImmediateBreakStatements(donatedStmt);
+    new RemoveImmediateContinueStatements(donatedStmt);
+    new RemoveImmediateCaseLabels(donatedStmt);
     new RemoveReturnStatements(donatedStmt);
     new RemoveDiscardStatements(donatedStmt);
     return donatedStmt;
@@ -101,7 +105,7 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
   @Override
   void adaptTranslationUnitForSpecificDonation(TranslationUnit tu, IRandom generator) {
     if (!allowLongLoops) {
-      new TruncateLoops(3 + generator.nextInt(5), addPrefix(""), tu, false);
+      new TruncateLoops(3 + generator.nextInt(5), addPrefix(""), tu);
     }
   }
 

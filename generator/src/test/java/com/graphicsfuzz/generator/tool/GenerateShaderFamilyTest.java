@@ -42,7 +42,7 @@ public class GenerateShaderFamilyTest {
   @Test
   public void testGenerateSmall100ShaderFamily() throws Exception {
     final String samplesSubdir = "100";
-    final String referenceShaderName = "bubblesort_flag";
+    final String referenceShaderName = "stable_bubblesort_flag";
     final int numVariants = 3;
     int seed = 0;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
@@ -62,7 +62,7 @@ public class GenerateShaderFamilyTest {
   @Test
   public void testGenerateSmall300esShaderFamily() throws Exception {
     final String samplesSubdir = "300es";
-    final String referenceShaderName = "mandelbrot_blurry";
+    final String referenceShaderName = "mandelbrot_zoom";
     final int numVariants = 3;
     int seed = 2;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
@@ -136,7 +136,7 @@ public class GenerateShaderFamilyTest {
   @Test
   public void testGenerateSmallVulkanShaderFamilyMultiPass() throws Exception {
     final String samplesSubdir = "310es";
-    final String referenceShaderName = "bubblesort_flag";
+    final String referenceShaderName = "stable_bubblesort_flag";
     final int numVariants = 3;
     int seed = 9;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,

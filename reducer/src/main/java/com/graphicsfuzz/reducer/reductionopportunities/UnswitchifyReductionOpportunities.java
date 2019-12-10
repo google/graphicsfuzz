@@ -20,13 +20,14 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.MacroNames;
 import java.util.Arrays;
 import java.util.List;
 
 public class UnswitchifyReductionOpportunities
       extends ReductionOpportunitiesBase<UnswitchifyReductionOpportunity> {
 
-  public UnswitchifyReductionOpportunities(
+  private UnswitchifyReductionOpportunities(
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);

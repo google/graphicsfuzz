@@ -44,11 +44,12 @@ public class SwapVariableIdentifiersMutationFinder extends Expr2ExprMutationFind
       return;
     }
 
-    if (currentScope.lookupType(variableIdentifierExpr.getName()) == null) {
+    if (getCurrentScope().lookupType(variableIdentifierExpr.getName()) == null) {
       return;
     }
 
-    assert currentScope.lookupType(variableIdentifierExpr.getName()).getWithoutQualifiers() != null;
+    assert getCurrentScope().lookupType(variableIdentifierExpr.getName()).getWithoutQualifiers()
+        != null;
 
     final List<String> candidateVariables = getCandidateVariables(variableIdentifierExpr.getName());
 
@@ -65,11 +66,11 @@ public class SwapVariableIdentifiersMutationFinder extends Expr2ExprMutationFind
   }
 
   private List<String> getCandidateVariables(String varIdentifier) {
-    return currentScope.namesOfAllVariablesInScope().stream()
+    return getCurrentScope().namesOfAllVariablesInScope().stream()
         .filter(item -> !item.equals(varIdentifier)
-            && currentScope.lookupType(item) != null
-            && currentScope.lookupType(varIdentifier).getWithoutQualifiers().equals(
-            currentScope.lookupType(item).getWithoutQualifiers()))
+            && getCurrentScope().lookupType(item) != null
+            && getCurrentScope().lookupType(varIdentifier).getWithoutQualifiers().equals(
+            getCurrentScope().lookupType(item).getWithoutQualifiers()))
         .collect(Collectors.toList());
   }
 

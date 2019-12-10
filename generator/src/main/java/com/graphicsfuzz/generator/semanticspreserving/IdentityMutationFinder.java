@@ -17,9 +17,8 @@
 package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ArrayInitializer;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -77,14 +76,13 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
     }
     final BasicType basicType = (BasicType) type;
 
-    final Scope clonedScope = currentScope.shallowClone();
+    final Scope clonedScope = getCurrentScope().shallowClone();
     if (getTranslationUnit().getShadingLanguageVersion().restrictedForLoops()) {
       for (Set<String> iterators : forLoopIterators) {
         iterators.forEach(clonedScope::remove);
       }
     }
-    if (BasicType.allScalarTypes().contains(basicType)
-        || BasicType.allVectorTypes().contains(basicType)
+    if (basicType.isScalar() || basicType.isVector()
         || BasicType.allSquareMatrixTypes().contains(basicType)) {
       // TODO: add support for non-square matrices.
       addMutation(new Expr2ExprMutation(parentMap.getParent(expr),
@@ -229,18 +227,10 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
   }
 
   @Override
-  public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
+  public void visitInitializer(Initializer initializer) {
     assert !inInitializer;
     inInitializer = true;
-    super.visitScalarInitializer(scalarInitializer);
-    inInitializer = false;
-  }
-
-  @Override
-  public void visitArrayInitializer(ArrayInitializer arrayInitializer) {
-    assert !inInitializer;
-    inInitializer = true;
-    super.visitArrayInitializer(arrayInitializer);
+    super.visitInitializer(initializer);
     inInitializer = false;
   }
 

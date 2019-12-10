@@ -19,15 +19,14 @@ package com.graphicsfuzz.common.ast.visitors;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
-import com.graphicsfuzz.common.ast.decl.ArrayInitializer;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.DefaultLayout;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -163,13 +162,8 @@ public abstract class StandardVisitor implements IAstVisitor {
   }
 
   @Override
-  public void visitArrayInitializer(ArrayInitializer arrayInitializer) {
-    throw new RuntimeException();
-  }
-
-  @Override
-  public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-    visitChildFromParent(scalarInitializer.getExpr(), scalarInitializer);
+  public void visitInitializer(Initializer initializer) {
+    visitChildFromParent(initializer.getExpr(), initializer);
   }
 
   @Override

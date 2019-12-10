@@ -38,4 +38,9 @@ public class ZeroCannedRandom implements IRandom {
     throw new UnsupportedOperationException();
   }
 
+  @Override
+  public String getDescription() {
+    return "ZeroCannedRandom";
+  }
+
 }

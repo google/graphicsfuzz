@@ -24,6 +24,6 @@ public interface ExpressionIdentity {
 
   Expr apply(Expr expr, BasicType type, boolean constContext, final int depth, Fuzzer fuzzer);
 
-  boolean preconditionHolds(Expr expr, BasicType basicType);
+  boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext);
 
 }

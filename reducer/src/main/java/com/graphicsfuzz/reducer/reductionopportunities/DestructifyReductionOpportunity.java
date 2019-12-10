@@ -19,7 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
@@ -33,7 +33,7 @@ import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;
@@ -84,22 +84,22 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
     return findOriginalVariableInfo(
         (StructNameType) declaration.getVariablesDeclaration().getBaseType()
             .getWithoutQualifiers(),
-        Optional.ofNullable((ScalarInitializer) declaration.getVariablesDeclaration()
+        Optional.ofNullable(declaration.getVariablesDeclaration()
             .getDeclInfo(0).getInitializer()))
         .get();
   }
 
   private Optional<StructifiedVariableInfo> findOriginalVariableInfo(
       StructNameType type,
-      Optional<ScalarInitializer> initializer) {
+      Optional<Initializer> initializer) {
 
     final StructDefinitionType structDefinitionType = tu.getStructDefinition(type);
 
     for (int i = 0; i < structDefinitionType.getNumFields(); i++) {
 
       final int currentIndex = i;
-      final Optional<ScalarInitializer> componentInitializer = initializer.map(item ->
-          new ScalarInitializer(((TypeConstructorExpr) item.getExpr())
+      final Optional<Initializer> componentInitializer = initializer.map(item ->
+          new Initializer(((TypeConstructorExpr) item.getExpr())
               .getArg(currentIndex)));
 
       if (structDefinitionType.getFieldName(i).startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
@@ -133,7 +133,7 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
 
     final IParentMap parentMap = IParentMap.createParentMap(tu);
 
-    new ScopeTreeBuilder() {
+    new ScopeTrackingVisitor() {
 
       @Override
       public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
@@ -170,7 +170,7 @@ public class DestructifyReductionOpportunity extends AbstractReductionOpportunit
         }
         VariableIdentifierExpr structVariable = ((VariableIdentifierExpr) memberLookupExpr
             .getStructure());
-        ScopeEntry se = currentScope.lookupScopeEntry(structVariable.getName());
+        ScopeEntry se = getCurrentScope().lookupScopeEntry(structVariable.getName());
         if (se == null) {
           return;
         }

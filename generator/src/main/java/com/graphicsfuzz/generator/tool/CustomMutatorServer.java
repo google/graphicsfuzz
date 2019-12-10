@@ -130,8 +130,7 @@ public class CustomMutatorServer {
             Optional.empty(),
             stream,
             INDENTATION_WIDTH,
-            PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
-            false);
+            PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER);
       }
       final String outputShader =
           new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);

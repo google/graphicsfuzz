@@ -16,7 +16,7 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.type.Type;
 import java.util.Optional;
 
@@ -24,9 +24,9 @@ class StructifiedVariableInfo {
 
   private final String name;
   private final Type type;
-  private final Optional<ScalarInitializer> initializer;
+  private final Optional<Initializer> initializer;
 
-  StructifiedVariableInfo(String name, Type type, Optional<ScalarInitializer> initializer) {
+  StructifiedVariableInfo(String name, Type type, Optional<Initializer> initializer) {
     this.name = name;
     this.type = type;
     this.initializer = initializer;
@@ -40,7 +40,7 @@ class StructifiedVariableInfo {
     return type;
   }
 
-  public Optional<ScalarInitializer> getInitializer() {
+  public Optional<Initializer> getInitializer() {
     return initializer;
   }
 }

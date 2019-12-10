@@ -29,6 +29,7 @@ import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,8 +49,8 @@ public class OutlinedStatementReductionOpportunities extends StandardVisitor {
         ReducerContext context) {
     return shaderJob.getShaders()
         .stream()
-        .map(item -> findOpportunitiesForShader(item))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
+        .map(OutlinedStatementReductionOpportunities::findOpportunitiesForShader)
+        .reduce(Collections.emptyList(), ListConcat::concatenate);
   }
 
   private static List<OutlinedStatementReductionOpportunity> findOpportunitiesForShader(

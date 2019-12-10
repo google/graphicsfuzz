@@ -163,9 +163,40 @@ public interface ShadingLanguageVersion {
 
   boolean supportedClampUint();
 
+  /**
+   * GLSL versions 4.3+ and ESSL versions 3.1+ support compute shaders.
+   * @return true if the shading language version allows compute shaders - false otherwise.
+   */
+  boolean supportedComputeShaders();
+
+  /**
+   * Derivative Functions are a subset of fragment processing functions that compute
+   * the rate of change between pixels in a given fragment.
+   * GLSL versions 1.1+ and ESSL versions 3.0+ support these functions.
+   *
+   * @return true if explicit derivative functions are supported - false otherwise.
+   */
+  boolean supportedDerivativeFunctions();
+
+  /**
+   * Determinant Function calculates the determinant of a given square matrix.
+   * GLSL versions 1.5+ and ESSL versions 3.0+ support this function.
+   *
+   * @return true if Determinant Function is supported - false otherwise.
+   */
   boolean supportedDeterminant();
 
   boolean supportedDoStmt();
+
+  /**
+   * In recent GLSL specifications, new derivative functions were added that allow a user to
+   * specify how much precision the user wants in the calculation, instead of leaving the choice
+   * to the compiler.
+   * GLSL versions 4.5+ support these explicit derivative functions.
+   *
+   * @return true if explicit derivative functions are supported - false otherwise.
+   */
+  boolean supportedExplicitDerivativeFunctions();
 
   boolean supportedFloatBitsToInt();
 
@@ -177,6 +208,31 @@ public interface ShadingLanguageVersion {
 
   boolean supportedIntBitsToFloat();
 
+  /**
+   * Integer Functions are a set of built-in functions that allow manipulation of integers and
+   * their corresponding vectors in ways difficult or impossible with normal GLSL syntax - for
+   * example, summing two unsigned integers where the result causes an overflow.
+   * GLSL versions 4.0+ and ESSL versions 3.1+ support these functions.
+   *
+   * @return true if Integer Functions are supported - false otherwise.
+   */
+  boolean supportedIntegerFunctions();
+
+  /**
+   * Interpolation Functions are a subset of fragment processing functions that
+   * compute an interpolated value of a fragment shader input variable at a specific location.
+   * GLSL versions 4.0+ and ESSL versions 3.2+ support these functions.
+   *
+   * @return true if Interpolation Functions are supported - false otherwise.
+   */
+  boolean supportedInterpolationFunctions();
+
+  /**
+   * Inverse Function returns the matrix that is the inverse of the given square matrix.
+   * GLSL versions 1.5+ and ESSL versions 3.0+ support this function.
+   *
+   * @return true if Inverse Function is supported - false otherwise.
+   */
   boolean supportedInverse();
 
   boolean supportedIsinf();
@@ -199,6 +255,12 @@ public interface ShadingLanguageVersion {
 
   boolean supportedNonSquareMatrices();
 
+  /**
+   * OuterProduct Function does a linear algebraic matrix multiplication of two given vectors.
+   * GLSL versions 1.2+ and ESSL versions 3.0+ support this function.
+   *
+   * @return true if OuterProduct Function is supported - false otherwise.
+   */
   boolean supportedOuterProduct();
 
   boolean supportedPackHalf2x16();
@@ -219,6 +281,12 @@ public interface ShadingLanguageVersion {
 
   boolean supportedSwitchStmt();
 
+  /**
+   * Transpose Function returns the transposed matrix of the given matrix.
+   * GLSL versions 1.2+ and ESSL versions 3.0+ support this function.
+   *
+   * @return true if Transpose Function is supported - false otherwise.
+   */
   boolean supportedTranspose();
 
   boolean supportedTrunc();
@@ -237,4 +305,28 @@ public interface ShadingLanguageVersion {
 
   boolean supportedUnsigned();
 
+  boolean supportedModf();
+
+  boolean supportedFrexp();
+
+  boolean supportedLdexp();
+
+  /**
+   * Angle and Trigonometric Functions are a set of built-in functions related to the calculation
+   * of an angle. For example, sin(angle) - computes the sine value of the angle provided.
+   * GLSL versions 1.1+ and ESSL versions 1.0+ support these functions.
+   *
+   * @return true if Angle and Trigonometric Functions are supported - false otherwise.
+   */
+  boolean supportedAngleAndTrigonometricFunctions();
+
+  /**
+   * Hyperbolic Angle and Trigonometric Functions are a set of built-in functions that
+   * computes the hyperbolic trigonometric functions. For example, sinh() - calculate the
+   * hyperbolic sine function of the given value.
+   * GLSL versions 1.3+ and ESSL versions 3.0+ support these functions.
+   *
+   * @return true if Hyperbolic Angle and Trigonometric Functions are supported - false otherwise.
+   */
+  boolean supportedHyperbolicAngleAndTrigonometricFunctions();
 }

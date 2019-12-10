@@ -89,8 +89,7 @@ public class ShaderProducer implements Runnable {
             !ns.getBoolean("no_injection_switch")
         );
 
-    final int outerSeed = ArgsUtil.getSeedArgument(ns);
-    final IRandom generator = new RandomWrapper(outerSeed);
+    final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
 
     int sent = 0;
     for (int counter = 0; sent < limit; counter++) {
@@ -107,8 +106,9 @@ public class ShaderProducer implements Runnable {
         new RemoveDiscardStatements(shaderJob.getFragmentShader().get());
 
         // Create a variant.
-        Generate.generateVariant(shaderJob, generatorArguments,
-            generator.nextInt(Integer.MAX_VALUE));
+        IRandom childRandom = generator.spawnChild();
+        LOGGER.info("Calling generateVariant with RNG: {}", childRandom.getDescription());
+        Generate.generateVariant(shaderJob, generatorArguments, childRandom);
 
         // Restrict the colors that the variant can emit.
         final float probabilityOfAddingNewColorWrite = 0.01f;

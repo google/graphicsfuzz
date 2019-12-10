@@ -22,7 +22,7 @@ import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.ZeroCannedRandom;
@@ -52,12 +52,12 @@ public class FuzzerTest {
 
     TranslationUnit tu = ParseHelper.parse(shader);
 
-    new ScopeTreeBuilder() {
+    new ScopeTrackingVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
         if (variableIdentifierExpr.getName().equals("doitWhenYouReachMyUse")) {
-          Expr expr = new Fuzzer(new FuzzingContext(currentScope), ShadingLanguageVersion.ESSL_100,
+          Expr expr = new Fuzzer(new FuzzingContext(getCurrentScope()), ShadingLanguageVersion.ESSL_100,
               new ZeroCannedRandom(), GenerationParams.normal(ShaderKind.FRAGMENT, true), "prefix")
               .fuzzExpr(new StructNameType("B"), false, false, 0);
           assertTrue(expr instanceof TypeConstructorExpr);

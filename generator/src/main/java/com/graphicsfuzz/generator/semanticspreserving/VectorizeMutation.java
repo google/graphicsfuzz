@@ -28,7 +28,7 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.transformreduce.MergeSet;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import java.util.ArrayList;
@@ -61,7 +61,7 @@ public class VectorizeMutation implements Mutation {
         mergeSet.getMergedType(), new VariableDeclInfo(mergeSet.getMergedName(), null, null))));
   }
 
-  private class VectorizerVisitor extends ScopeTreeBuilder {
+  private class VectorizerVisitor extends ScopeTrackingVisitor {
 
     private boolean inDeclarationOfTargetVariable = false;
     private final ScopeEntry currentComponent;
@@ -96,19 +96,20 @@ public class VectorizeMutation implements Mutation {
     }
 
     private boolean isCurrentComponentVariable(String name) {
-      ScopeEntry entry = currentScope.lookupScopeEntry(name);
+      ScopeEntry entry = getCurrentScope().lookupScopeEntry(name);
       return entry != null && entry.hasVariableDeclInfo()
           && currentComponent.getVariableDeclInfo() == entry.getVariableDeclInfo();
     }
 
     @Override
     public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
-      List<String> existingKeys = new ArrayList<>();
-      existingKeys.addAll(currentScope.keys());
+      List<String> existingKeys = new ArrayList<>(getCurrentScope().keys());
       super.visitDeclarationStmt(declarationStmt);
-      List<String> newKeys = currentScope.keys().stream().filter(key -> !existingKeys.contains(key))
+      List<String> newKeys = getCurrentScope().keys()
+          .stream()
+          .filter(key -> !existingKeys.contains(key))
+          .sorted(String::compareTo)
           .collect(Collectors.toList());
-      newKeys.sort(String::compareTo);
       for (String newKey : newKeys) {
         if (isCurrentComponentVariable(newKey)) {
           final ExprStmt insertedStmt = new ExprStmt(

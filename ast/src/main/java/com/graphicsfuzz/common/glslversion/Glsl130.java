@@ -115,4 +115,13 @@ final class Glsl130 extends CompositeShadingLanguageVersion {
     return true;
   }
 
+  @Override
+  public boolean supportedHyperbolicAngleAndTrigonometricFunctions() {
+    return true;
+  }
+
+  @Override
+  public boolean supportedModf() {
+    return true;
+  }
 }

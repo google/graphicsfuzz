@@ -24,7 +24,9 @@ path = os.path.join
 
 
 def exclude_dirname(f: str):
-    return f in [
+    return (
+        f.endswith(".egg-info") or
+        f in [
         "target",
         ".git",
         ".idea",
@@ -38,8 +40,9 @@ def exclude_dirname(f: str):
         "cmake-build-debug",
         "cmake-build-release",
         ".pytest_cache",
-
-    ]
+        ".venv",
+        ]
+    )
 
 
 def exclude_dirpath(f: str):
@@ -110,6 +113,7 @@ def exclude_filename(f: str):
         f.endswith(".primitives") or \
         f.endswith(".jar") or \
         f.endswith(".spv") or \
+        f.endswith(".dic") or \
         f in [
             ".editorconfig",
             ".gitmodules",
@@ -128,13 +132,14 @@ def exclude_filename(f: str):
             "gradlew.bat",
             "dependency-reduced-pom.xml",
             "gradle-wrapper.properties",
-
+            "Pipfile.lock",
         ]
 
 
 def go():
     fail = False
     copyright_pattern = re.compile(r"Copyright (2018|2019) The GraphicsFuzz Project Authors")
+    generated_pattern = re.compile(r"(g|G)enerated")
 
     for (dirpath, dirnames, filenames) in os.walk(os.curdir, topdown=True):
 
@@ -153,13 +158,13 @@ def go():
                 with io.open(file, "r") as fin:
                     contents = fin.read()
 
-                    # Generated files don't need a header.
-                    if contents.split("\n")[0].find("generated") > -1:
-                        # This file is OK. Continue to the next file.
-                        continue
 
                     first_lines = "\n".join(contents.split("\n")[:10])
-                    # Other files must contain a header for any year within the first few lines.
+                    # OK if the generated pattern is found within the first few lines.
+                    if generated_pattern.search(first_lines):
+                        continue
+
+                    # Must contain a header for any year within the first few lines.
                     if copyright_pattern.search(first_lines) is None:
                         fail = True
                         print("Missing license header " + file)

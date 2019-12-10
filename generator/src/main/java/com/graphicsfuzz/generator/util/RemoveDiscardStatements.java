@@ -18,14 +18,12 @@ package com.graphicsfuzz.generator.util;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
-import com.graphicsfuzz.common.ast.stmt.NullStmt;
-import java.util.Optional;
 
 public class RemoveDiscardStatements extends RemoveStatements {
 
   public RemoveDiscardStatements(IAstNode node) {
     super(item -> item instanceof DiscardStmt,
-        item -> Optional.of(new NullStmt()), node);
+        item -> makeIntConstantExprStmt(), node);
   }
 
 }

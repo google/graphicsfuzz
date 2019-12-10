@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
@@ -47,14 +48,17 @@ public class LiteralFuzzer {
     }
     if (type == BasicType.INT) {
       return Optional.of(new IntConstantExpr(
-            String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN)));
+          String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN)));
+    }
+    if (type == BasicType.UINT) {
+      return Optional.of(new UIntConstantExpr(
+          String.valueOf(Math.abs(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN) + "u")));
     }
     if (type == BasicType.FLOAT) {
-      return Optional.of(new FloatConstantExpr(
-            randomFloatString()));
+      return Optional.of(new FloatConstantExpr(LiteralFuzzer.randomFloatString(generator)));
     }
     if (type == BasicType.VEC2 || type == BasicType.VEC3 || type == BasicType.VEC4
-          || BasicType.allMatrixTypes().contains(type)) {
+        || BasicType.allMatrixTypes().contains(type)) {
       final List<Expr> args = new ArrayList<>();
       for (int i = 0; i < ((BasicType) type).getNumElements(); i++) {
         args.add(fuzz(((BasicType) type).getElementType()).get());
@@ -64,7 +68,7 @@ public class LiteralFuzzer {
     return Optional.empty();
   }
 
-  private String randomFloatString() {
+  public static String randomFloatString(IRandom generator) {
     final int maxDigitsEitherSide = 5;
     StringBuilder sb = new StringBuilder();
     sb.append(generator.nextBoolean() ? "-" : "");
