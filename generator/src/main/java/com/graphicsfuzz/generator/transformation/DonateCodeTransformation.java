@@ -148,16 +148,27 @@ public abstract class DonateCodeTransformation implements ITransformation {
     //   layout(location = 0) out vec4 name;
     // to:
     //   vec4 name;
-    tu.getTopLevelDeclarations().stream().filter(item -> item instanceof VariablesDeclaration)
-        .map(item -> (VariablesDeclaration) item)
-        .filter(item -> item.getBaseType() instanceof QualifiedType)
-        .forEach(item -> item.setBaseType(
-            new QualifiedType(item.getBaseType().getWithoutQualifiers(),
-              ((QualifiedType) item.getBaseType()).getQualifiers()
-                  .stream()
-                  .filter(qualifier -> !(qualifier instanceof LayoutQualifierSequence)
-                      && qualifier != TypeQualifier.SHADER_INPUT
-                      && qualifier != TypeQualifier.SHADER_OUTPUT).collect(Collectors.toList()))));
+    for (VariablesDeclaration variablesDeclarationWithQualifiers :
+        tu.getTopLevelDeclarations().stream().filter(item -> item instanceof VariablesDeclaration)
+            .map(item -> (VariablesDeclaration) item)
+            .filter(item -> item.getBaseType() instanceof QualifiedType)
+            .collect(Collectors.toList())) {
+      // Get an unqualified version of the base type.
+      final Type baseTypeWithoutQualifiers =
+          variablesDeclarationWithQualifiers.getBaseType().getWithoutQualifiers();
+      // Get all the original qualifiers except the ones we wish to remove.
+      final List<TypeQualifier> strippedQualifiers =
+          ((QualifiedType) variablesDeclarationWithQualifiers.getBaseType()).getQualifiers()
+              .stream()
+              .filter(qualifier -> !(qualifier instanceof LayoutQualifierSequence)
+                  && qualifier != TypeQualifier.SHADER_INPUT
+                  && qualifier != TypeQualifier.SHADER_OUTPUT)
+              .collect(Collectors.toList());
+      // Set the base type to be qualified with only these qualifiers.
+      variablesDeclarationWithQualifiers.setBaseType(new QualifiedType(
+          baseTypeWithoutQualifiers,
+          strippedQualifiers));
+    }
     adaptTranslationUnitForSpecificDonation(tu, generator);
 
     translationUnitCount++;
