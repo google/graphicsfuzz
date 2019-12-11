@@ -154,6 +154,21 @@ def fuzz_glsl(
             break
 
 
+def add_spirv_shader_test_binaries(
+    test: Test,
+    spirv_opt_args: Optional[List[str]],
+    binary_manager: binaries_util.BinaryManager,
+) -> Test:
+    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-dis")])
+    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-val")])
+    if spirv_opt_args:
+        test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-opt")])
+    test.binaries.extend([binary_manager.get_binary_by_name(name="amber")])
+    test.binaries.extend([binary_manager.get_binary_by_name(name="amber_apk")])
+    test.binaries.extend([binary_manager.get_binary_by_name(name="amber_apk_test")])
+    return test
+
+
 def make_test(
     base_source_dir: Path,
     subtest_dir: Path,
@@ -166,10 +181,7 @@ def make_test(
     test = Test(glsl=TestGlsl(spirv_opt_args=spirv_opt_args))
 
     test.binaries.extend([binary_manager.get_binary_by_name(name="glslangValidator")])
-    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-dis")])
-    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-val")])
-    if spirv_opt_args:
-        test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-opt")])
+    add_spirv_shader_test_binaries(test, spirv_opt_args, binary_manager)
 
     # Write the test metadata.
     test_util.metadata_write(test, subtest_dir)
@@ -420,8 +432,6 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
     with util.file_open_text(output_dir / "log.txt", "w") as log_file:
         try:
             gflogging.push_stream_for_logging(log_file)
-
-            # TODO: Find amber path. NDK or host.
 
             # TODO: If Amber is going to be used, check if Amber can use Vulkan debug layers now, and if not, pass that
             #  info down via a bool.

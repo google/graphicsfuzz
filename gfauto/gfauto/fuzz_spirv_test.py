@@ -58,10 +58,7 @@ def make_test(
 
     test = Test(spirv_fuzz=TestSpirvFuzz(spirv_opt_args=spirv_opt_args))
 
-    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-dis")])
-    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-val")])
-    if spirv_opt_args:
-        test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-opt")])
+    fuzz_glsl_test.add_spirv_shader_test_binaries(test, spirv_opt_args, binary_manager)
 
     # Write the test metadata.
     test_util.metadata_write(test, subtest_dir)
