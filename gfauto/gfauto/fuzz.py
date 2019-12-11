@@ -34,6 +34,7 @@ from gfauto import (
     fuzz_glsl_test,
     fuzz_spirv_test,
     gflogging,
+    interrupt_util,
     settings_util,
     shader_job_util,
     test_util,
@@ -182,6 +183,8 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
 
     util.update_gcov_environment_variable_if_needed()
 
+    interrupt_util.override_sigint()
+
     try:
         artifact_util.artifact_path_get_root()
     except FileNotFoundError:
@@ -233,6 +236,8 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     ).get_child_binary_manager(list(settings.custom_binaries), prepend=True)
 
     while True:
+
+        interrupt_util.interrupt_if_needed()
 
         # We have to use "is not None" because the seed could be 0.
         if iteration_seed_override is not None:
