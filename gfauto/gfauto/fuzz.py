@@ -39,6 +39,7 @@ from gfauto import (
     test_util,
     util,
 )
+from gfauto.device_pb2 import Device, DevicePreprocess
 from gfauto.gflogging import log
 from gfauto.util import check_dir_exists
 
@@ -193,6 +194,11 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     settings = settings_util.read_or_create(settings_path)
 
     active_devices = devices_util.get_active_devices(settings.device_list)
+    # Add host_preprocessor device if it is missing.
+    if not active_devices[0].HasField("preprocess"):
+        active_devices.insert(
+            0, Device(name="host_preprocessor", preprocess=DevicePreprocess())
+        )
 
     reports_dir = Path() / "reports"
     fuzz_failures_dir = reports_dir / FUZZ_FAILURES_DIR_NAME
