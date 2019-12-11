@@ -20,7 +20,7 @@ Used for accessing files, file system operations like creating directories, copy
 of a tool on the PATH, removing the beginning and/or end of string, and custom assert functions like check,
 check_check_field_truthy, check_file_exists, etc.
 """
-
+import hashlib
 import os
 import pathlib
 import platform
@@ -29,7 +29,7 @@ import uuid
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, BinaryIO, Iterator, List, Optional, TextIO, cast
+from typing import Any, BinaryIO, Dict, Iterator, List, Optional, TextIO, Tuple, cast
 
 import attr
 
@@ -348,3 +348,89 @@ def update_gcov_environment_variable_if_needed() -> None:
             )
             gcov_prefix = gcov_prefix.replace("PROC_ID", pid)
             os.environ["GCOV_PREFIX"] = gcov_prefix
+
+
+HASH_CHUNK_SIZE = 1 << 27  # A few MBs.
+
+
+def hash_file_str(file_path: Path, hashlib_hash: Optional[Any] = None) -> str:
+    if not hashlib_hash:
+        hashlib_hash = hashlib.sha256()
+    hash_file(file_path, hashlib_hash)
+    return hashlib_hash.hexdigest()
+
+
+def hash_file(file_path: Path, hashlib_hash: Any) -> None:
+    with file_open_binary(file_path, "rb") as f:
+        while True:
+            chunk = f.read(HASH_CHUNK_SIZE)
+            if not chunk:
+                break
+            hashlib_hash.update(chunk)
+
+
+class HashedCommand:
+    """
+    For creating a command (a list of str for subprocess) as well as a "hashed" version.
+
+    The hashed version has each input file path replaced with the hash of its contents.
+    This can be used with CommandCache to cache an output of running some program.
+    """
+
+    def __init__(self) -> None:
+        self.cmd: List[str] = []
+        self.hashed_cmd: List[str] = []
+
+    def append_str(self, arg_str: str) -> None:
+        self.cmd.append(arg_str)
+        self.hashed_cmd.append(arg_str)
+
+    def extend_str(self, arg_str: List[str]) -> None:
+        self.cmd.extend(arg_str)
+        self.hashed_cmd.extend(arg_str)
+
+    def append_program_path(self, program_path: Path) -> None:
+        # We can just store the path of the program.
+        self.append_str(str(program_path))
+
+    def append_input_file(self, input_file: Path) -> None:
+        self.cmd.append(str(input_file))
+        # The file extension (suffix) could be "part of the input".
+        self.hashed_cmd.append(hash_file_str(input_file) + input_file.suffix)
+
+    def append_output_file(self, output_file: Path) -> None:
+        self.cmd.append(str(output_file))
+        # The file extension (suffix) could be "part of the input".
+        self.hashed_cmd.append("output" + output_file.suffix)
+
+
+class CommandCache:
+    """For caching the output of running a program."""
+
+    def __init__(self) -> None:
+        self.cache: Dict[Tuple[str, ...], Path] = {}
+
+    def write_cached_output_file(
+        self, cmd: HashedCommand, new_output_path: Path
+    ) -> Optional[Path]:
+        """
+        Returns |new_output_path| if |cmd| was found in the cache and the cached output file was written to |new_output_path|.
+
+        Otherwise, returns None.
+        """
+        cmd_tuple = tuple(cmd.hashed_cmd)
+        try:
+            gflogging.log(f"Preprocessor cache: {cmd_tuple}")
+            cached_output_file_path = self.cache[cmd_tuple]
+            gflogging.log(
+                f"Preprocessor cache: hit {str(cached_output_file_path)} -> {str(new_output_path)}"
+            )
+            copy_file(cached_output_file_path, new_output_path)
+            return new_output_path
+        except KeyError:
+            pass
+        return None
+
+    def add_output_to_cache(self, cmd: HashedCommand, output_path: Path) -> None:
+        cmd_tuple = tuple(cmd.hashed_cmd)
+        self.cache[cmd_tuple] = output_path
