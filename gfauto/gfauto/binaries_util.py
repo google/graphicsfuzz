@@ -72,13 +72,13 @@ PLATFORM_SUFFIXES_RELWITHDEBINFO = [
     "Mac_x64_RelWithDebInfo",
 ]
 
-DEFAULT_SPIRV_TOOLS_VERSION = "f1e5cd73f658abcc23ee96d78f2dc27c4b7028c1"
+DEFAULT_SPIRV_TOOLS_VERSION = "983b5b4fccea17cab053de24d51403efb4829158"
 
 DEFAULT_BINARIES = [
     Binary(
         name="glslangValidator",
         tags=["Debug"],
-        version="18d6b6b63e9adc2aa2cce1ce85d1c348f9475118",
+        version="1afa2b8cc57b92c6b769eb44a6854510b6921a0b",
     ),
     Binary(name="spirv-opt", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
     Binary(name="spirv-dis", tags=["Debug"], version=DEFAULT_SPIRV_TOOLS_VERSION),
@@ -89,7 +89,7 @@ DEFAULT_BINARIES = [
     Binary(
         name="swift_shader_icd",
         tags=["Debug"],
-        version="aaa64b76c0b40c2958a18cfdc623157c8c6e1b7d",
+        version="cf79a622ec5c993fa48f8557c28e23b8407d1efd",
     ),
     Binary(
         name="amber", tags=["Debug"], version="f231728f60cb3b0f21d7423aed24fd3b317f38c9"
@@ -107,12 +107,12 @@ DEFAULT_BINARIES = [
     Binary(
         name="graphicsfuzz-tool",
         tags=[],
-        version="2584a469d121aa0b1304115a8640cc4e7aedfcf4",
+        version="7b143bcb3ad38b64ddc17d132886636b229b6684",
     ),
     Binary(
         name="amdllpc",
         tags=["Debug"],
-        version="06e4d24336a16ed10d305931804d75a4104dce35",
+        version="c21d76dceaf26361f9b6b3838a955ec3301506b5",
     ),
 ]
 
