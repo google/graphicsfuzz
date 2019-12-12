@@ -98,7 +98,8 @@ from gfauto.util import check_dir_exists
 #                 - shader/ shader_reduction_001/
 #                 (these are the result directories for each step, containing STATUS, etc.)
 #
-
+DONORS_DIR = "donors"
+REFERENCES_DIR = "references"
 
 REFERENCE_IMAGE_FILE_NAME = "reference.png"
 VARIANT_IMAGE_FILE_NAME = "variant.png"
@@ -148,7 +149,7 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--force_no_stack_traces",
+        "--allow_no_stack_traces",
         help="Continue even if we cannot get stack traces (using catchsegv or cdb).",
         action="store_true",
     )
@@ -160,13 +161,13 @@ def main() -> None:
         parsed_args.iteration_seed
     )
     use_spirv_fuzz: bool = parsed_args.use_spirv_fuzz
-    force_no_stack_traces: bool = parsed_args.force_no_stack_traces
+    allow_no_stack_traces: bool = parsed_args.allow_no_stack_traces
 
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
         try:
             main_helper(
-                settings_path, iteration_seed, use_spirv_fuzz, force_no_stack_traces
+                settings_path, iteration_seed, use_spirv_fuzz, allow_no_stack_traces
             )
         except settings_util.NoSettingsFile as exception:
             log(str(exception))
@@ -176,14 +177,16 @@ def main() -> None:
 
 def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many-statements;
     settings_path: Path,
-    iteration_seed_override: Optional[int],
-    use_spirv_fuzz: bool,
-    force_no_stack_traces: bool,
+    iteration_seed_override: Optional[int] = None,
+    use_spirv_fuzz: bool = False,
+    allow_no_stack_traces: bool = False,
+    override_sigint: bool = True,
 ) -> None:
 
     util.update_gcov_environment_variable_if_needed()
 
-    interrupt_util.override_sigint()
+    if override_sigint:
+        interrupt_util.override_sigint()
 
     try:
         artifact_util.artifact_path_get_root()
@@ -206,13 +209,13 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     reports_dir = Path() / "reports"
     fuzz_failures_dir = reports_dir / FUZZ_FAILURES_DIR_NAME
     temp_dir = Path() / "temp"
-    references_dir = Path() / "references"
-    donors_dir = Path() / "donors"
+    references_dir = Path() / REFERENCES_DIR
+    donors_dir = Path() / DONORS_DIR
     spirv_fuzz_shaders_dir = Path() / "spirv_fuzz_shaders"
 
     # Log a warning if there is no tool on the PATH for printing stack traces.
     prepended = util.prepend_catchsegv_if_available([], log_warning=True)
-    if not force_no_stack_traces and not prepended:
+    if not allow_no_stack_traces and not prepended:
         raise AssertionError("Stopping because we cannot get stack traces.")
 
     spirv_fuzz_shaders: List[Path] = []
@@ -289,11 +292,10 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
                 binary_manager,
             )
 
-        shutil.rmtree(staging_dir)
-
         if iteration_seed_override is not None:
             log("Stopping due to iteration_seed")
             break
+        shutil.rmtree(staging_dir)
 
 
 def create_summary_and_reproduce(

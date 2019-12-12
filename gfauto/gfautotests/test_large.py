@@ -1,0 +1,207 @@
+# -*- coding: utf-8 -*-
+
+# Copyright 2019 The GraphicsFuzz Project Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+import shutil
+from pathlib import Path
+from typing import Callable
+
+from gfauto import binaries_util, fuzz, settings_util, util
+from gfauto.common_pb2 import Binary
+from gfauto.device_pb2 import (
+    Device,
+    DeviceList,
+    DeviceShaderCompiler,
+    DeviceSwiftShader,
+)
+from gfauto.settings_pb2 import Settings
+
+PREPROCESSOR_CACHE_HIT_STRING = "Preprocessor cache: hit"
+
+
+def test_fuzz_and_reduce_llpc_bug_no_opt() -> None:
+    def check_result() -> None:
+        bucket = Path() / "reports" / "crashes" / "no_signature"
+        assert bucket.is_dir()
+        test_dirs = list(bucket.iterdir())
+        assert len(test_dirs) == 1
+        assert "no_opt" in test_dirs[0].name
+        summary_dir = test_dirs[0] / "summary"
+        reduced_dir = summary_dir / "reduced"
+        assert reduced_dir.is_dir()
+        log = test_dirs[0] / "results" / "amdllpc" / "result" / "log.txt"
+        assert (
+            util.file_read_text(log).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
+        ), f"{log}"
+
+    fuzz_and_reduce_bug(
+        active_device="amdllpc",
+        seed=113850571166867052450985985234950340261823086165340926462238356578814719718087,
+        check_result=check_result,
+    )
+
+
+def test_fuzz_and_reduce_llpc_bug_opt() -> None:
+    def check_result() -> None:
+        bucket = Path() / "reports" / "crashes" / "no_signature"
+        assert bucket.is_dir()
+        test_dirs = list(bucket.iterdir())
+        assert len(test_dirs) == 1
+        assert "opt_O" in test_dirs[0].name
+        summary_dir = test_dirs[0] / "summary"
+        reduced_dir = summary_dir / "reduced"
+        assert reduced_dir.is_dir()
+        log = test_dirs[0] / "results" / "amdllpc" / "result" / "log.txt"
+        assert (
+            util.file_read_text(log).count(PREPROCESSOR_CACHE_HIT_STRING) == 4
+        ), f"{log}"
+
+    fuzz_and_reduce_bug(
+        active_device="amdllpc",
+        seed=99929706048223329039220273236588800138087812135322921806045517555377829572971,
+        check_result=check_result,
+    )
+
+
+def test_fuzz_and_reduce_swift_shader_bug_no_opt() -> None:
+    def check_result() -> None:
+        bucket = Path() / "reports" / "crashes" / "vkGetInstanceProcAddr"
+        assert bucket.is_dir()
+        test_dirs = list(bucket.iterdir())
+        assert len(test_dirs) == 1
+        assert "no_opt" in test_dirs[0].name
+        summary_dir = test_dirs[0] / "summary"
+        reduced_dir = summary_dir / "reduced"
+        assert reduced_dir.is_dir()
+        log = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
+        assert (
+            util.file_read_text(log).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
+        ), f"{log}"
+
+    fuzz_and_reduce_bug(
+        active_device="swift_shader",
+        seed=35570251875691207436044799625964330634240739187615728715101271237388241843323,
+        check_result=check_result,
+    )
+
+
+def fuzz_and_reduce_bug(
+    active_device: str, seed: int, check_result: Callable[[], None]
+) -> None:
+    """
+    Fuzz, find a bug, reduce it.
+
+    Linux only.
+    """
+    # Test only works on Linux.
+    if util.get_platform() != "Linux":
+        return
+
+    here = util.norm_path(Path(__file__).absolute()).parent
+    temp_dir: Path = here.parent / "temp"
+
+    assert temp_dir.is_dir()
+
+    work_dir = temp_dir / fuzz.get_random_name()[:8]
+    util.mkdir_p_new(work_dir)
+    os.chdir(work_dir)
+
+    settings = Settings()
+    settings.CopyFrom(settings_util.DEFAULT_SETTINGS)
+
+    settings.device_list.CopyFrom(
+        DeviceList(
+            active_device_names=[active_device],
+            devices=[
+                Device(
+                    name="amdllpc",
+                    shader_compiler=DeviceShaderCompiler(
+                        binary="amdllpc",
+                        args=["-gfxip=9.0.0", "-verify-ir", "-auto-layout-desc"],
+                    ),
+                    binaries=[
+                        Binary(
+                            name="amdllpc",
+                            tags=["Release"],
+                            version="c21d76dceaf26361f9b6b3838a955ec3301506b5",
+                        ),
+                    ],
+                ),
+                Device(
+                    name="swift_shader",
+                    swift_shader=DeviceSwiftShader(),
+                    binaries=[
+                        Binary(
+                            name="swift_shader_icd",
+                            tags=["Release"],
+                            version="6d69aae0e1ab49190ea46cd1c999fd3d02e016b9",
+                        ),
+                    ],
+                ),
+            ],
+        )
+    )
+
+    spirv_tools_version = "983b5b4fccea17cab053de24d51403efb4829158"
+
+    settings.latest_binary_versions.extend(
+        [
+            Binary(
+                name="glslangValidator",
+                tags=["Release"],
+                version="1afa2b8cc57b92c6b769eb44a6854510b6921a0b",
+            ),
+            Binary(name="spirv-opt", tags=["Release"], version=spirv_tools_version),
+            Binary(name="spirv-dis", tags=["Release"], version=spirv_tools_version),
+            Binary(name="spirv-as", tags=["Release"], version=spirv_tools_version),
+            Binary(name="spirv-val", tags=["Release"], version=spirv_tools_version),
+            Binary(name="spirv-fuzz", tags=["Release"], version=spirv_tools_version),
+            Binary(name="spirv-reduce", tags=["Release"], version=spirv_tools_version),
+            Binary(
+                name="graphicsfuzz-tool",
+                tags=[],
+                version="7b143bcb3ad38b64ddc17d132886636b229b6684",
+            ),
+        ]
+    )
+    # Add default binaries; the ones above have priority.
+    settings.latest_binary_versions.extend(binaries_util.DEFAULT_BINARIES)
+
+    settings.extra_graphics_fuzz_generate_args.append("--small")
+    settings.extra_graphics_fuzz_generate_args.append("--single-pass")
+
+    settings.extra_graphics_fuzz_reduce_args.append("--max-steps")
+    settings.extra_graphics_fuzz_reduce_args.append("2")
+
+    settings_util.write(settings, settings_util.DEFAULT_SETTINGS_FILE_PATH)
+
+    # Add shaders.
+    binary_manager = binaries_util.get_default_binary_manager(settings)
+    graphicsfuzz_tool = binary_manager.get_binary_path_by_name("graphicsfuzz-tool")
+    sample_shaders_path: Path = graphicsfuzz_tool.path.parent.parent.parent / "shaders" / "samples" / "310es"
+    util.copy_dir(sample_shaders_path, Path() / fuzz.REFERENCES_DIR)
+    util.copy_dir(sample_shaders_path, Path() / fuzz.DONORS_DIR)
+
+    fuzz.main_helper(
+        settings_path=settings_util.DEFAULT_SETTINGS_FILE_PATH,
+        iteration_seed_override=seed,
+        override_sigint=False,
+    )
+
+    check_result()
+
+    os.chdir(here)
+    shutil.rmtree(work_dir)
