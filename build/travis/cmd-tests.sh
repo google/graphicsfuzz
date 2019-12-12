@@ -55,9 +55,9 @@ export "PATH=$(pwd)/graphicsfuzz/bin/${platform}:$PATH"
 
 ### Generate examples.
 cp -r graphicsfuzz/shaders/samples .
-glsl-generate --seed 0 samples/300es samples/donors 10 family_300es work/shaderfamilies >/dev/null
-glsl-generate --seed 0 samples/100 samples/donors 10 family_100 work/shaderfamilies >/dev/null
-glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 family_vulkan work/shaderfamilies >/dev/null
+glsl-generate --seed 0 samples/300es samples/300es 10 family_300es work/shaderfamilies >/dev/null
+glsl-generate --seed 0 samples/100 samples/100 10 family_100 work/shaderfamilies >/dev/null
+glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/310es 10 family_vulkan work/shaderfamilies >/dev/null
 
 test -d "work/shaderfamilies/family_100_stable_bubblesort_flag"
 test -d "work/shaderfamilies/family_300es_stable_bubblesort_flag"

@@ -138,10 +138,39 @@ public abstract class DonateCodeTransformation implements ITransformation {
     tu.addDeclaration(new VariablesDeclaration(
         new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
         new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
-    tu.addDeclaration(new VariablesDeclaration(
-        new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
-        new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
+    if (tu.getShadingLanguageVersion().supportedGlFragColor()) {
+      tu.addDeclaration(new VariablesDeclaration(
+          new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
+    }
+    // Remove 'in', 'out' and 'layout' qualifiers from global variables.  This means that, for
+    // instance, the output colour variable of a donated fragment shader will change from:
+    //   layout(location = 0) out vec4 name;
+    // to:
+    //   vec4 name;
+    for (VariablesDeclaration variablesDeclarationWithQualifiers :
+        tu.getTopLevelDeclarations().stream().filter(item -> item instanceof VariablesDeclaration)
+            .map(item -> (VariablesDeclaration) item)
+            .filter(item -> item.getBaseType() instanceof QualifiedType)
+            .collect(Collectors.toList())) {
+      // Get an unqualified version of the base type.
+      final Type baseTypeWithoutQualifiers =
+          variablesDeclarationWithQualifiers.getBaseType().getWithoutQualifiers();
+      // Get all the original qualifiers except the ones we wish to remove.
+      final List<TypeQualifier> strippedQualifiers =
+          ((QualifiedType) variablesDeclarationWithQualifiers.getBaseType()).getQualifiers()
+              .stream()
+              .filter(qualifier -> !(qualifier instanceof LayoutQualifierSequence)
+                  && qualifier != TypeQualifier.SHADER_INPUT
+                  && qualifier != TypeQualifier.SHADER_OUTPUT)
+              .collect(Collectors.toList());
+      // Set the base type to be qualified with only these qualifiers.
+      variablesDeclarationWithQualifiers.setBaseType(new QualifiedType(
+          baseTypeWithoutQualifiers,
+          strippedQualifiers));
+    }
     adaptTranslationUnitForSpecificDonation(tu, generator);
+
     translationUnitCount++;
     return tu;
   }

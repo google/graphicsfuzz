@@ -186,7 +186,7 @@ public class GenerateShaderFamilyTest {
     FileUtils.writeStringToFile(referenceJsonFile, "{}", StandardCharsets.UTF_8);
 
     final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
-        "donors").toString();
+        "webgl1").toString();
     // Disable shader_translator, so we should still get family generated
     checkShaderFamilyGeneration(2, 0, Collections.singletonList("--disable-shader-translator"),
         referenceJsonFile.getAbsolutePath(),
@@ -197,7 +197,7 @@ public class GenerateShaderFamilyTest {
   public void testIgnoreGlslangValidator() throws Exception {
     // shader_translator will not be invoked on this shader, and glslangValidator would reject it
     // due to it using a made up extension.
-    final String reference = "#version 440\n"
+    final String reference = "#version 310 es\n"
         + "#extension does_not_exist : nothing\n"
         + "\n"
         + "precision mediump float;\n"
@@ -209,7 +209,7 @@ public class GenerateShaderFamilyTest {
     FileUtils.writeStringToFile(referenceJsonFile, "{}", StandardCharsets.UTF_8);
 
     final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
-        "donors").toString();
+        "310es").toString();
     // Disabling glslangValidator should lead to a family being generated, as the rest of the tool
     // chain will just ignore the imaginary extension.
     checkShaderFamilyGeneration(2, 0,
@@ -226,7 +226,7 @@ public class GenerateShaderFamilyTest {
         samplesSubdir, referenceShaderName
         + ".json").toString();
     final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
-        "donors").toString();
+        samplesSubdir).toString();
 
     checkShaderFamilyGeneration(numVariants, seed, extraOptions, reference, donors);
   }
