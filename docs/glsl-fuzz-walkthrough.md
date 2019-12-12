@@ -191,24 +191,27 @@ cp -r graphicsfuzz/shaders/samples .
 # Placing the generated shaders under work/shaderfamilies will allow the server to find the shaders later.
 # Synopsis:
 # glsl-generate [options] references donors num_variants prefix output_folder
+#
+# In all cases below, we use the same directory for references and donors
 
 # Generate some GLSL version 300 es fragment shaders.
-glsl-generate --seed 0 samples/300es samples/donors 10 family_300es work/shaderfamilies
+glsl-generate --seed 0 samples/300es samples/300es 10 family_300es work/shaderfamilies
 
 # Generate some GLSL version 100 fragment shaders.
-glsl-generate --seed 0 samples/100 samples/donors 10 family_100 work/shaderfamilies
+glsl-generate --seed 0 samples/100 samples/100 10 family_100 work/shaderfamilies
 
 # Generate some "Vulkan-compatible" GLSL version 310 es fragment shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/donors 10 family_vulkan work/shaderfamilies
+glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/310es 10 family_vulkan work/shaderfamilies
 
 # Generate some "Vulkan-compatible" GLSL version 310 es compute shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/compute/310es samples/donors 10 family_vulkan_compute work/shaderfamilies
+glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/compute/310es samples/compute/310es 10 family_vulkan_compute work/shaderfamilies
 
 # Each line above will take approx. 1 minute, and will generate a shader family for every
 # shader in samples/300es, samples/100, samples/310es and samples/compute/310es:
 ls work/shaderfamilies
 
-# Output:
+# Output (this will differ according to changes in the sample shaders that are
+# provided in practice):
 
 # family_100_bubblesort_flag
 # family_100_mandelbrot_blurry

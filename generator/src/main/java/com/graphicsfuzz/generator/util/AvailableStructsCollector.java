@@ -19,12 +19,12 @@ package com.graphicsfuzz.generator.util;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class AvailableStructsCollector extends ScopeTreeBuilder {
+public class AvailableStructsCollector extends ScopeTrackingVisitor {
 
   private final List<StructDefinitionType> structDefinitionTypes;
   private final IAstNode donorFragment;
@@ -39,8 +39,8 @@ public class AvailableStructsCollector extends ScopeTreeBuilder {
   public void visit(IAstNode node) {
     if (node == donorFragment) {
       assert structDefinitionTypes.isEmpty();
-      for (String structName : currentScope.namesOfAllStructDefinitionsInScope()) {
-        structDefinitionTypes.add(currentScope.lookupStructName(structName));
+      for (String structName : getCurrentScope().namesOfAllStructDefinitionsInScope()) {
+        structDefinitionTypes.add(getCurrentScope().lookupStructName(structName));
       }
     }
     super.visit(node);

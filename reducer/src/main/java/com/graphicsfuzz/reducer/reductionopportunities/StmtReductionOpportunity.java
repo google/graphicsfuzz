@@ -16,15 +16,18 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.CaseLabel;
+import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
+import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.util.StatsVisitor;
 
 public final class StmtReductionOpportunity extends AbstractReductionOpportunity {
 
+  private final FunctionDefinition enclosingFunction;
   private final BlockStmt blockStmt;
   private final Stmt childOfBlockStmt;
 
@@ -33,17 +36,22 @@ public final class StmtReductionOpportunity extends AbstractReductionOpportunity
   // due to the effects of other opportunities).
   private final int numRemovableNodes;
 
-  public StmtReductionOpportunity(BlockStmt blockStmt,
+  /**
+   * Creates an opportunity to remove childOfBlockStmt from blockStmt.
+   * @param enclosingFunction A function that encloses the statement to be removed
+   * @param blockStmt A block that directly encloses the statement to be removed
+   * @param childOfBlockStmt The statement to be removed
+   * @param depth The depth at which this opportunity was found
+   */
+  public StmtReductionOpportunity(FunctionDefinition enclosingFunction,
+                                  BlockStmt blockStmt,
                                   Stmt childOfBlockStmt,
                                   VisitationDepth depth) {
     super(depth);
+    this.enclosingFunction = enclosingFunction;
     this.blockStmt = blockStmt;
     this.childOfBlockStmt = childOfBlockStmt;
     this.numRemovableNodes = new StatsVisitor(childOfBlockStmt).getNumNodes();
-  }
-
-  public Stmt getChild() {
-    return childOfBlockStmt;
   }
 
   @Override
@@ -94,11 +102,66 @@ public final class StmtReductionOpportunity extends AbstractReductionOpportunity
       return false;
     }
 
+    if (removalCouldLeadToLackOfReturnFromNonVoidFunction(enclosingFunction, blockStmt,
+        childOfBlockStmt)) {
+      return false;
+    }
+
     return true;
   }
 
   public int getNumRemovableNodes() {
     return numRemovableNodes;
+  }
+
+  static boolean removalCouldLeadToLackOfReturnFromNonVoidFunction(
+      FunctionDefinition enclosingFunction, BlockStmt block, Stmt childOfBlockStmt) {
+    if (!containsNonVoidReturn(childOfBlockStmt)) {
+      return false;
+    }
+    if (statementIsPrecededByReturn(block, childOfBlockStmt)) {
+      return false;
+    }
+    if (functionEndsWithReturn(enclosingFunction) && !isLastStatementInFunction(enclosingFunction,
+        childOfBlockStmt)) {
+      return false;
+    }
+    return true;
+  }
+
+  private static boolean containsNonVoidReturn(Stmt stmt) {
+    return new CheckPredicateVisitor() {
+      @Override
+      public void visitReturnStmt(ReturnStmt returnStmt) {
+        if (returnStmt.hasExpr()) {
+          predicateHolds();
+        }
+      }
+    }.test(stmt);
+  }
+
+  private static boolean statementIsPrecededByReturn(BlockStmt block, Stmt childOfBlockStmt) {
+    for (Stmt stmt : block.getStmts()) {
+      if (stmt == childOfBlockStmt) {
+        return false;
+      }
+      if (stmt instanceof ReturnStmt) {
+        return true;
+      }
+    }
+    throw new RuntimeException("Should be unreachable.");
+  }
+
+  private static boolean functionEndsWithReturn(FunctionDefinition functionDefinition) {
+    return functionDefinition.getBody().getNumStmts() > 0
+        && functionDefinition.getBody().getLastStmt()
+        instanceof ReturnStmt;
+  }
+
+  private static boolean isLastStatementInFunction(FunctionDefinition functionDefinition,
+                                                   Stmt stmt) {
+    return functionDefinition.getBody().getNumStmts() > 0
+        && functionDefinition.getBody().getLastStmt() == stmt;
   }
 
 }

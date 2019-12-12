@@ -17,12 +17,13 @@
 package com.graphicsfuzz.generator.util;
 
 import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.LoopStmt;
-import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
@@ -35,12 +36,12 @@ import java.util.function.Predicate;
 public abstract class RemoveStatements extends StandardVisitor {
 
   private final Predicate<Stmt> shouldRemove;
-  private final Function<Stmt, Optional<Stmt>> maybeReplaceWith;
+  private final Function<Stmt, Stmt> replaceWith;
 
   public RemoveStatements(Predicate<Stmt> shouldRemove,
-      Function<Stmt, Optional<Stmt>> maybeReplaceWith, IAstNode node) {
+      Function<Stmt, Stmt> replaceWith, IAstNode node) {
     this.shouldRemove = shouldRemove;
-    this.maybeReplaceWith = maybeReplaceWith;
+    this.replaceWith = replaceWith;
     visit(node);
   }
 
@@ -49,10 +50,7 @@ public abstract class RemoveStatements extends StandardVisitor {
     List<Stmt> newStmts = new ArrayList<>();
     for (Stmt s : stmt.getStmts()) {
       if (shouldRemove.test(s)) {
-        Optional<Stmt> possibleReplacement = maybeReplaceWith.apply(s);
-        if (possibleReplacement.isPresent()) {
-          newStmts.add(possibleReplacement.get());
-        }
+        newStmts.add(getReplacementStmt(s));
         continue;
       }
       newStmts.add(s);
@@ -101,8 +99,14 @@ public abstract class RemoveStatements extends StandardVisitor {
   }
 
   private Stmt getReplacementStmt(Stmt stmt) {
-    Optional<Stmt> possibleReplacement = maybeReplaceWith.apply(stmt);
-    return possibleReplacement.isPresent() ? possibleReplacement.get() : new NullStmt();
+    return replaceWith.apply(stmt);
+  }
+
+  /**
+   * Provides a statement of the form "1;", which is what most statements are replaced with.
+   */
+  static Stmt makeIntConstantExprStmt() {
+    return new ExprStmt(new IntConstantExpr("1"));
   }
 
 }

@@ -58,6 +58,16 @@ public class BlockStmt extends Stmt {
     return stmts.size();
   }
 
+  /**
+   * Requires the block to be non-empty.
+   * Yields the final statement in the block.
+   * @return The final statement of the block.
+   */
+  public Stmt getLastStmt() {
+    assert !stmts.isEmpty();
+    return stmts.get(stmts.size() - 1);
+  }
+
   public boolean introducesNewScope() {
     return introducesNewScope;
   }
@@ -154,6 +164,10 @@ public class BlockStmt extends Stmt {
     throw new IllegalArgumentException("Should be unreachable.");
   }
 
+  /**
+   * Adds the given statement to the end of the block.
+   * @param stmt A statement to be added to the block
+   */
   public void addStmt(Stmt stmt) {
     stmts.add(stmt);
   }

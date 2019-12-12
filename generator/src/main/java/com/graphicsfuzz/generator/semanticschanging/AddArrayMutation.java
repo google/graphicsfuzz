@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 
@@ -40,7 +41,9 @@ public class AddArrayMutation implements Mutation {
   @Override
   public void apply() {
     tu.addDeclaration(new VariablesDeclaration(
-        baseType, new VariableDeclInfo(name, new ArrayInfo(numElements), null)));
+        baseType, new VariableDeclInfo(name,
+        new ArrayInfo(new IntConstantExpr(Integer.toString(numElements))),
+        null)));
   }
 
 }

@@ -21,16 +21,19 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
+import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
+import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
+import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import java.io.BufferedWriter;
@@ -104,7 +107,7 @@ public class ParseHelperTest {
   public void testParseCurrentHeaderNoMacros() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps);
+    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps, ShadingLanguageVersion.ESSL_310);
     ps.println(TEST_PROGRAM);
     ps.close();
     TranslationUnit tu = ParseHelper.parse(tempFile);
@@ -115,7 +118,7 @@ public class ParseHelperTest {
   public void testParseCurrentHeaderWithMacros() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps);
+    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps, ShadingLanguageVersion.ESSL_310);
     ps.println(TEST_PROGRAM);
     ps.close();
     TranslationUnit tu = ParseHelper.parse(tempFile);
@@ -381,10 +384,10 @@ public class ParseHelperTest {
     assertTrue(
       new CheckPredicateVisitor() {
         @Override
-        public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-          super.visitScalarInitializer(scalarInitializer);
-          if (scalarInitializer.getExpr() instanceof IntConstantExpr
-            && ((IntConstantExpr) scalarInitializer.getExpr()).getValue().equals("031")) {
+        public void visitInitializer(Initializer initializer) {
+          super.visitInitializer(initializer);
+          if (initializer.getExpr() instanceof IntConstantExpr
+            && ((IntConstantExpr) initializer.getExpr()).getValue().equals("031")) {
             predicateHolds();
           }
         }
@@ -401,10 +404,10 @@ public class ParseHelperTest {
     assertTrue(
         new CheckPredicateVisitor() {
           @Override
-          public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-            super.visitScalarInitializer(scalarInitializer);
-            if (scalarInitializer.getExpr() instanceof IntConstantExpr
-                && ((IntConstantExpr) scalarInitializer.getExpr()).getValue().equals("0xa03b")) {
+          public void visitInitializer(Initializer initializer) {
+            super.visitInitializer(initializer);
+            if (initializer.getExpr() instanceof IntConstantExpr
+                && ((IntConstantExpr) initializer.getExpr()).getValue().equals("0xa03b")) {
               predicateHolds();
             }
           }
@@ -421,10 +424,10 @@ public class ParseHelperTest {
     assertTrue(
         new CheckPredicateVisitor() {
           @Override
-          public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-            super.visitScalarInitializer(scalarInitializer);
-            if (scalarInitializer.getExpr() instanceof UIntConstantExpr
-                && ((UIntConstantExpr) scalarInitializer.getExpr()).getValue().equals("031u")) {
+          public void visitInitializer(Initializer initializer) {
+            super.visitInitializer(initializer);
+            if (initializer.getExpr() instanceof UIntConstantExpr
+                && ((UIntConstantExpr) initializer.getExpr()).getValue().equals("031u")) {
               predicateHolds();
             }
           }
@@ -441,10 +444,10 @@ public class ParseHelperTest {
     assertTrue(
         new CheckPredicateVisitor() {
           @Override
-          public void visitScalarInitializer(ScalarInitializer scalarInitializer) {
-            super.visitScalarInitializer(scalarInitializer);
-            if (scalarInitializer.getExpr() instanceof UIntConstantExpr
-                && ((UIntConstantExpr) scalarInitializer.getExpr()).getValue().equals("0xA03Bu")) {
+          public void visitInitializer(Initializer initializer) {
+            super.visitInitializer(initializer);
+            if (initializer.getExpr() instanceof UIntConstantExpr
+                && ((UIntConstantExpr) initializer.getExpr()).getValue().equals("0xA03Bu")) {
               predicateHolds();
             }
           }
@@ -517,8 +520,8 @@ public class ParseHelperTest {
         variablesDeclaration.getBaseType();
     assertTrue(baseType.hasQualifier(TypeQualifier.MEDIUMP));
     assertEquals("1.00f",
-        ((FloatConstantExpr) ((ScalarInitializer) variablesDeclaration.getDeclInfo(0)
-            .getInitializer()).getExpr()).getValue());
+        ((FloatConstantExpr) variablesDeclaration.getDeclInfo(0)
+            .getInitializer().getExpr()).getValue());
   }
 
   @Test
@@ -562,6 +565,219 @@ public class ParseHelperTest {
     StringWriter writer = new StringWriter();
     IOUtils.copy(strippedIs, writer, StandardCharsets.UTF_8);
     return writer.toString();
+  }
+
+  /**
+   * Validate folding in testSupportedArrayLength. We know that the array is the last statement
+   * in the function, but it may not be the first.
+   * @param shaderSource Source code for the shader to test
+   * @param expectedSize Expected size of the array
+   * @throws Exception Producing the AST may throw exceptions
+   */
+  private void
+  validateFolding(String shaderSource, int expectedSize) throws Exception
+  {
+    final BlockStmt block = ParseHelper.parse(shaderSource)
+        .getMainFunction().getBody();
+    assertTrue(((DeclarationStmt)block.getStmt(block.getNumStmts()-1)).getVariablesDeclaration()
+        .getDeclInfo(0).getArrayInfo().getConstantSize() == expectedSize);
+  }
+
+  /**
+   * Test various forms of statements that may occur inside array size declaration
+   * @throws Exception Producing the AST may throw exceptions
+   */
+  @Test
+  public void
+  testSupportedArrayLength() throws Exception {
+    try {
+      validateFolding("void main() {\n"
+          + "  int A[3 + 4];\n"
+          + "}\n",7);
+      validateFolding("void main() {\n"
+          + "  int A[4 - 3];\n"
+          + "}\n",1);
+      validateFolding("void main() {\n"
+          + "  int A[3 * 4];\n"
+          + "}\n", 12);
+      validateFolding("void main() {\n"
+          + "  int A[4 / 2];\n"
+          + "}\n", 2);
+      validateFolding("void main() {\n"
+          + "  int A[3 << 2];\n"
+          + "}\n", 12);
+      validateFolding("void main() {\n"
+          + "  int A[8 >> 2];\n"
+          + "}\n", 2);
+      validateFolding("void main() {\n"
+          + "  int A[(3 + 4)];\n"
+          + "}\n", 7);
+      validateFolding("void main() {\n"
+          + "  int A[3 && 4];\n"
+          + "}\n", 1);
+      validateFolding("void main() {\n"
+          + "  int A[3 & 5];\n"
+          + "}\n", 1);
+      validateFolding("void main() {\n"
+          + "  int A[3 || 4];\n"
+          + "}\n", 1);
+      validateFolding("void main() {\n"
+          + "  int A[3 | 4];\n"
+          + "}\n", 7);
+      validateFolding("void main() {\n"
+          + "  int A[3 ^^ 4];\n"
+          + "}\n", 0);
+      validateFolding("void main() {\n"
+          + "  int A[3 ^ 4];\n"
+          + "}\n", 7);
+      validateFolding("void main() {\n"
+          + "  int A[3 + 4 + 5];\n"
+          + "}\n", 12);
+      validateFolding("void main() {\n"
+          + "  const int v = 5;\n"
+          + "  int A[3 + v];\n"
+          + "}\n", 8);
+      validateFolding("void main() {\n"
+          + "  const int v = 5;\n"
+          + "  int A[(((3 + 4) * v) >> 2) && 7];\n"
+          + "}\n", 1);
+    } catch (UnsupportedLanguageFeatureException exception) {
+      fail(exception.getMessage());
+    }
+  }
+
+  @Test
+  public void testUnsupportedMultiDimensionalArrays() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("void main() {\n"
+          + "  int A[3][4];\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Not yet supporting multi-dimensional arrays"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedArrayInBaseType() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("void main() {\n"
+          + "  int[2] A, B[3];\n"
+          + "  B[2][1] = 3;\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Array information specified at the base type"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedDeclarationInCondition() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("void main() {\n"
+          + "  while(bool b = true) {\n"
+          + "    if(b) {\n"
+          + "      break;\n"
+          + "    }\n"
+          + "  }\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("We do not yet support the case where the "
+          + "condition of a 'for' or 'while' introduces a new variable"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedInitializerList() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("#version 440\n"
+          + "\n"
+          + "void main() {\n"
+          + "\n"
+          + "  int A[4] = { 1, 2, 3, 4 };\n"
+          + "\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Initializer lists are not currently supported"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedMethodCall1() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("#version 310 es\n"
+          + "\n"
+          + "void main() {\n"
+          + "\n"
+          + "  int A[4];\n"
+          + "  A.length();\n"
+          + "\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Method calls are not currently supported"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedMethodCall2() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("#version 310 es\n"
+          + "\n"
+          + "void main() {\n"
+          + "\n"
+          + "  int A[4];\n"
+          + "  A.length(void);\n"
+          + "\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Method calls are not currently supported"));
+    }
+  }
+
+  @Test
+  public void testUnsupportedMethodCall3() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("#version 320 es\n"
+          + "\n"
+          + "precision highp float;\n"
+          + "\n"
+          + "struct S { int A[4]; };\n"
+          + "\n"
+          + "void main() {\n"
+          + "\n"
+          + "  S s = S(int[4](1,2,3,4));\n"
+          + "  s.A.length();\n"
+          + "\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Method calls are not currently supported"));
+    }
   }
 
 }

@@ -30,4 +30,9 @@ final class Essl320 extends CompositeShadingLanguageVersion {
     return "320 es";
   }
 
+  @Override
+  public boolean supportedInterpolationFunctions() {
+    return true;
+  }
+
 }

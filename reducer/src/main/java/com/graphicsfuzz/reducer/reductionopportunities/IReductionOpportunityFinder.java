@@ -123,17 +123,17 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
-  static IReductionOpportunityFinder<CompoundToBlockReductionOpportunity> compoundToBlockFinder() {
-    return new IReductionOpportunityFinder<CompoundToBlockReductionOpportunity>() {
+  static IReductionOpportunityFinder<AbstractReductionOpportunity> flattenControlFlowFinder() {
+    return new IReductionOpportunityFinder<AbstractReductionOpportunity>() {
       @Override
-      public List<CompoundToBlockReductionOpportunity> findOpportunities(ShaderJob shaderJob,
-            ReducerContext context) {
-        return CompoundToBlockReductionOpportunities.findOpportunities(shaderJob, context);
+      public List<AbstractReductionOpportunity> findOpportunities(ShaderJob shaderJob,
+                                                                  ReducerContext context) {
+        return FlattenControlFlowReductionOpportunities.findOpportunities(shaderJob, context);
       }
 
       @Override
       public String getName() {
-        return "compoundToBlock";
+        return "flattenControlFlow";
       }
     };
   }
@@ -458,6 +458,82 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
       @Override
       public String getName() {
         return "largestCompoundExprToSubExpr";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<RemoveRedundantUniformMetadataReductionOpportunity>
+      redundantUniformMetadataFinder() {
+    return new IReductionOpportunityFinder<RemoveRedundantUniformMetadataReductionOpportunity>() {
+      @Override
+      public List<RemoveRedundantUniformMetadataReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        return RemoveRedundantUniformMetadataReductionOpportunities.findOpportunities(
+            shaderJob,
+            context);
+      }
+
+      @Override
+      public String getName() {
+        return "redundantUniformMetadata";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<VariableDeclToExprReductionOpportunity>
+      variableDeclToExprFinder() {
+    return new IReductionOpportunityFinder<VariableDeclToExprReductionOpportunity>() {
+      @Override
+      public List<VariableDeclToExprReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        return VariableDeclToExprReductionOpportunities.findOpportunities(
+            shaderJob,
+            context);
+      }
+
+      @Override
+      public String getName() {
+        return "variableDeclToExpr";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<SwitchToLoopReductionOpportunity>
+      switchToLoopFinder() {
+    return new IReductionOpportunityFinder<SwitchToLoopReductionOpportunity>() {
+      @Override
+      public List<SwitchToLoopReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        return SwitchToLoopReductionOpportunities.findOpportunities(
+            shaderJob,
+            context);
+      }
+
+      @Override
+      public String getName() {
+        return "switchToLoop";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<GlobalVariableDeclToExprReductionOpportunity>
+      globalVariableDeclToExprFinder() {
+    return new IReductionOpportunityFinder<GlobalVariableDeclToExprReductionOpportunity>() {
+      @Override
+      public List<GlobalVariableDeclToExprReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        return GlobalVariableDeclToExprReductionOpportunities.findOpportunities(
+            shaderJob,
+            context);
+      }
+
+      @Override
+      public String getName() {
+        return "globalVariableDeclToExpr";
       }
     };
   }

@@ -145,7 +145,10 @@ public class GlslReduceTest {
   @Test
   public void testAlwaysReduceJudgeMaximallyReduces() throws Exception {
     final File jsonFile = getShaderJobReady();
-    final File emptyFile = temporaryFolder.newFile();
+    // We make this a .bat file to avoid a "what application would you like to use to open this
+    // file?" pop-up on Windows.  (On other platforms the fact that it has the .bat extension does
+    // not matter.)
+    final File emptyFile = temporaryFolder.newFile("judge.bat");
     emptyFile.setExecutable(true);
     GlslReduce.mainHelper(new String[]{
         jsonFile.getAbsolutePath(),

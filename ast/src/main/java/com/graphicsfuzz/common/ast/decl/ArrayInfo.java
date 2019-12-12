@@ -17,27 +17,102 @@
 package com.graphicsfuzz.common.ast.decl;
 
 import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import java.util.Optional;
 
 public class ArrayInfo implements IAstNode {
 
-  private Optional<Integer> size;
+  /**
+   * Size, set after folding.
+   */
+  private Optional<Integer> constantSize;
+  /**
+   * Original size expression before folding, for pretty printing.
+   */
+  private Optional<Expr> sizeExpr;
 
-  public ArrayInfo(Integer size) {
-    this.size = Optional.of(size);
+  /**
+   * "originalSize" is the expression in the original shader representing the array size,
+   * and is empty if no size was given. If "originalSize" is present, constant folding can
+   * be used to turn the expression into an integer value, which can be stored in
+   * "constantSize". It is useful to keep "originalSize" around to allow the shader to
+   * be pretty-printed in its original form.
+   * @param originalSize Array size expression
+   */
+  public ArrayInfo(Expr originalSize) {
+    this.constantSize = Optional.empty();
+    this.sizeExpr = Optional.of(originalSize);
   }
 
+  /**
+   * Private constructor for cloning, needed since the constant size expression may have been
+   * folded by the time the expression is cloned.
+   * @param constantSize Possible constant-folded size
+   * @param originalSize Original size, for pretty printing
+   */
+  private ArrayInfo(Optional<Integer> constantSize, Optional<Expr> originalSize) {
+    this.constantSize = constantSize;
+    this.sizeExpr = originalSize;
+  }
+
+  /**
+   * Default constructor, for arrays with no size definition.
+   */
   public ArrayInfo() {
-    this.size = Optional.empty();
+    this.constantSize = Optional.empty();
+    this.sizeExpr = Optional.empty();
   }
 
-  public boolean hasSize() {
-    return size.isPresent();
+  /**
+   * Query for whether this array has a size definition.
+   * @return true if size definition is available
+   */
+  public boolean hasConstantSize() {
+    return constantSize.isPresent();
   }
 
-  public Integer getSize() {
-    return size.get();
+  /**
+   * Query whether this array has a size expression
+   * @return Size expression
+   */
+  public boolean hasSizeExpr() {
+    return sizeExpr.isPresent();
+  }
+
+  /**
+   * Get the constant size.
+   * If constant folding was not performed yet (for example, the AST is stil being built) or if
+   * the array has no size declaration, calling this function will throw an exception.
+   * @return Integer value of the array size
+   * @throws UnsupportedLanguageFeatureException if folding was not done
+   */
+  public Integer getConstantSize() throws UnsupportedLanguageFeatureException {
+    if (hasConstantSize()) {
+      return constantSize.get();
+    }
+    // TODO(https://github.com/google/graphicsfuzz/issues/784) Until array parameter support
+    //  is overhauled there could be array parameters to which constant folding has not been
+    //  applied.
+    throw new UnsupportedLanguageFeatureException("Not a constant expression");
+  }
+
+  /**
+   * Set constant expression after folding.
+   * @param foldedSize Completely folded size
+   */
+  public void setConstantSizeExpr(int foldedSize) {
+    constantSize = Optional.of(foldedSize);
+  }
+
+  /**
+   * Get the original expression for pretty printing.
+   * @return Original, non-folded size expression
+   */
+  public Expr getSizeExpr() {
+    return sizeExpr.get();
   }
 
   @Override
@@ -47,17 +122,17 @@ public class ArrayInfo implements IAstNode {
 
   @Override
   public ArrayInfo clone() {
-    return hasSize() ? new ArrayInfo(getSize()) : new ArrayInfo();
+    return new ArrayInfo(constantSize, sizeExpr);
   }
 
   @Override
   public boolean equals(Object obj) {
-    return obj instanceof ArrayInfo && size.equals(((ArrayInfo) obj).size);
+    return obj instanceof ArrayInfo && sizeExpr.equals(((ArrayInfo) obj).sizeExpr);
   }
 
   @Override
   public int hashCode() {
-    return size.hashCode();
+    return sizeExpr.hashCode();
   }
 
 }

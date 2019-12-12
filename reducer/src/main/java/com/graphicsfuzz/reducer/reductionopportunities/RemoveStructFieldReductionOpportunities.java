@@ -22,14 +22,14 @@ import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-public class RemoveStructFieldReductionOpportunities extends ScopeTreeBuilder {
+public class RemoveStructFieldReductionOpportunities extends ScopeTrackingVisitor {
 
   private final List<RemoveStructFieldReductionOpportunity> opportunities;
   private final TranslationUnit translationUnit;
@@ -76,7 +76,7 @@ public class RemoveStructFieldReductionOpportunities extends ScopeTreeBuilder {
     }
 
     final StructDefinitionType structDefinitionType =
-        currentScope.lookupStructName(structType.getName());
+        getCurrentScope().lookupStructName(structType.getName());
 
     for (String field : structDefinitionType.getFieldNames()) {
       if (!reachesOriginalVariable(structDefinitionType, field)
@@ -109,7 +109,7 @@ public class RemoveStructFieldReductionOpportunities extends ScopeTreeBuilder {
     final StructNameType fieldType =
         (StructNameType) structDefinitionType.getFieldType(field).getWithoutQualifiers();
     final StructDefinitionType nestedStruct =
-        currentScope.lookupStructName(fieldType.getName());
+        getCurrentScope().lookupStructName(fieldType.getName());
     return nestedStruct.getFieldNames().stream()
           .anyMatch(item -> reachesOriginalVariable(nestedStruct, item));
   }

@@ -70,7 +70,10 @@ import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
+import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.util.Constants;
 import java.io.ByteArrayOutputStream;
@@ -128,10 +131,19 @@ public class PrettyPrinterVisitor extends StandardVisitor {
                                 Optional<String> license,
                                 PrintStream stream,
                                 int indentationWidth,
-                                Supplier<String> newlineSupplier,
-                                boolean emitGraphicsFuzzDefines) {
+                                Supplier<String> newlineSupplier) {
+    final boolean usesGraphicsFuzzDefines = new CheckPredicateVisitor() {
+      @Override
+      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        if (MacroNames.isGraphicsFuzzMacro(functionCallExpr)) {
+          predicateHolds();
+        }
+        super.visitFunctionCallExpr(functionCallExpr);
+      }
+    }.test(shader);
+
     new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier,
-        emitGraphicsFuzzDefines, license).visit(shader);
+        usesGraphicsFuzzDefines, license).visit(shader);
   }
 
   private String newLine() {
@@ -163,10 +175,14 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       first = false;
       out.append(vdi.getName());
       if (vdi.hasArrayInfo()) {
-        out.append("[" + vdi.getArrayInfo().getSize() + "]");
+        out.append("[");
+        visit(vdi.getArrayInfo().getSizeExpr());
+        out.append("]");
         assert !(baseType instanceof ArrayType);
       } else if (baseType instanceof ArrayType) {
-        out.append("[" + ((ArrayType) baseType).getArrayInfo().getSize() + "]");
+        out.append("[");
+        visit(((ArrayType) baseType).getArrayInfo().getSizeExpr());
+        out.append("]");
       }
       if (vdi.hasInitializer()) {
         out.append(" = ");
@@ -210,7 +226,9 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       out.append(" " + parameterDecl.getName());
     }
     if (parameterDecl.getArrayInfo() != null) {
-      out.append("[" + parameterDecl.getArrayInfo().getSize() + "]");
+      out.append("[");
+      visit(parameterDecl.getArrayInfo().getSizeExpr());
+      out.append("]");
     }
   }
 
@@ -503,7 +521,9 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
     visit(arrayConstructorExpr.getArrayType());
-    out.append("[" + arrayConstructorExpr.getArrayType().getArrayInfo().getSize() + "](");
+    out.append("[");
+    visit(arrayConstructorExpr.getArrayType().getArrayInfo().getSizeExpr());
+    out.append("](");
     boolean first = true;
     for (Expr e : arrayConstructorExpr.getArgs()) {
       if (!first) {
@@ -541,9 +561,11 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     }
     ArrayType arrayType = (ArrayType) type.getWithoutQualifiers();
     while (true) {
-      out.append("["
-          + (arrayType.getArrayInfo().hasSize() ? arrayType.getArrayInfo().getSize() : "")
-          + "]");
+      out.append("[");
+      if (arrayType.getArrayInfo().hasSizeExpr()) {
+        visit(arrayType.getArrayInfo().getSizeExpr());
+      }
+      out.append("]");
       if (!(arrayType.getBaseType().getWithoutQualifiers() instanceof ArrayType)) {
         break;
       }
@@ -628,7 +650,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     }
 
     if (emitGraphicsFuzzDefines) {
-      emitGraphicsFuzzDefines(out);
+      emitGraphicsFuzzDefines(out, translationUnit.getShadingLanguageVersion());
     }
 
     super.visitTranslationUnit(translationUnit);
@@ -684,20 +706,47 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     return result.toString();
   }
 
-  public static void emitGraphicsFuzzDefines(PrintStream out) {
+  public static void emitGraphicsFuzzDefines(PrintStream out,
+                                             ShadingLanguageVersion shadingLanguageVersion) {
     out.append("\n");
     out.append("#ifndef REDUCER\n");
-    out.append("#define " + Constants.GLF_ZERO + "(X, Y)          (Y)\n");
-    out.append("#define " + Constants.GLF_ONE + "(X, Y)           (Y)\n");
-    out.append("#define " + Constants.GLF_FALSE + "(X, Y)         (Y)\n");
-    out.append("#define " + Constants.GLF_TRUE + "(X, Y)          (Y)\n");
-    out.append("#define " + Constants.GLF_IDENTITY + "(X, Y)      (Y)\n");
-    out.append("#define " + Constants.GLF_DEAD + "(X)             (X)\n");
-    out.append("#define " + Constants.GLF_FUZZED + "(X)           (X)\n");
-    out.append("#define " + Constants.GLF_WRAPPED_LOOP + "(X)     X\n");
-    out.append("#define " + Constants.GLF_WRAPPED_IF_TRUE + "(X)  X\n");
-    out.append("#define " + Constants.GLF_WRAPPED_IF_FALSE + "(X) X\n");
-    out.append("#define " + Constants.GLF_SWITCH + "(X)           X\n");
+    out.append("#define " + Constants.GLF_ZERO + "(X, Y)                   (Y)\n");
+    out.append("#define " + Constants.GLF_ONE + "(X, Y)                    (Y)\n");
+    out.append("#define " + Constants.GLF_FALSE + "(X, Y)                  (Y)\n");
+    out.append("#define " + Constants.GLF_TRUE + "(X, Y)                   (Y)\n");
+    out.append("#define " + Constants.GLF_IDENTITY + "(X, Y)               (Y)\n");
+    out.append("#define " + Constants.GLF_DEAD + "(X)                      (X)\n");
+    out.append("#define " + Constants.GLF_FUZZED + "(X)                    (X)\n");
+    out.append("#define " + Constants.GLF_WRAPPED_LOOP + "(X)              X\n");
+    out.append("#define " + Constants.GLF_WRAPPED_IF_TRUE + "(X)           X\n");
+    out.append("#define " + Constants.GLF_WRAPPED_IF_FALSE + "(X)          X\n");
+    out.append("#define " + Constants.GLF_SWITCH + "(X)                    X\n");
+
+    // The preferred way to make array accesses in bounds is to use 'clamp'.  However, 'clamp'
+    // on integer types is not available in all shading language versions.  When it is not
+    // available, we resort to a solution based on the ternary operator.  This has the disadvantage
+    // of evaluating the array index multiple times, so that if it has side effects these will
+    // occur multiple times (potentially leading to the access ending up being out of bounds if the
+    // side effects change the index).  If deemed worth prioritizing, this could be worked around
+    // by declaring appropriate 'clamp' functions (but with appropriately obfuscated names to avoid
+    // collisions with user-defined integer clamp functions).
+
+    if (shadingLanguageVersion.supportedClampInt()) {
+      out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_INT + "(IDX, SZ)  clamp(IDX, 0, SZ - 1)"
+          + "\n");
+    } else {
+      out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_INT + "(IDX, SZ)  ((IDX) < 0 ? 0 : ("
+          + "(IDX) >= SZ ? SZ - 1 : (IDX)))\n");
+    }
+
+    if (shadingLanguageVersion.supportedClampUint()) {
+      out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_UINT + "(IDX, SZ) clamp(IDX, 0u, SZ - "
+          + "1u)\n");
+    } else {
+      out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_UINT + "(IDX, SZ)  ((IDX) >= SZ ? SZ - "
+          + "1u : (IDX))\n");
+    }
+
     out.append("#endif\n");
     out.append("\n");
     out.append(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES + "\n");

@@ -59,13 +59,17 @@ public final class ReductionOpportunities {
         IReductionOpportunityFinder.exprToConstantFinder(),
         IReductionOpportunityFinder.compoundExprToSubExprFinder(),
         IReductionOpportunityFinder.mutationFinder(),
-        IReductionOpportunityFinder.compoundToBlockFinder(),
+        IReductionOpportunityFinder.flattenControlFlowFinder(),
         IReductionOpportunityFinder.inlineInitializerFinder(),
         IReductionOpportunityFinder.inlineFunctionFinder(),
         IReductionOpportunityFinder.liveFragColorWriteFinder(),
         IReductionOpportunityFinder.unusedParamFinder(),
         IReductionOpportunityFinder.foldConstantFinder(),
-        IReductionOpportunityFinder.inlineUniformFinder())) {
+        IReductionOpportunityFinder.inlineUniformFinder(),
+        IReductionOpportunityFinder.redundantUniformMetadataFinder(),
+        IReductionOpportunityFinder.variableDeclToExprFinder(),
+        IReductionOpportunityFinder.switchToLoopFinder(),
+        IReductionOpportunityFinder.globalVariableDeclToExprFinder())) {
       final List<? extends IReductionOpportunity> currentOpportunities = ros
             .findOpportunities(shaderJob, context);
       if (ReductionDriver.DEBUG_REDUCER) {

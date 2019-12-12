@@ -22,8 +22,8 @@ import com.graphicsfuzz.common.util.IdGenerator;
 
 public class ReducerContext {
 
-  static final int DEFAULT_MAX_PERCENTAGE_TO_REDUCE = 50;
-  static final int DEFAULT_AGGRESSION_DECREASE_STEP = 5;
+  private static final int DEFAULT_MAX_PERCENTAGE_TO_REDUCE = 50;
+  private static final int DEFAULT_AGGRESSION_DECREASE_STEP = 5;
 
   private final boolean reduceEverywhere;
   private final ShadingLanguageVersion shadingLanguageVersion;
@@ -31,27 +31,24 @@ public class ReducerContext {
   private final IdGenerator idGenerator;
   private final int maxPercentageToReduce;
   private final int aggressionDecreaseStep;
-  private final boolean emitGraphicsFuzzDefines;
 
   public ReducerContext(boolean reduceEverywhere,
                         ShadingLanguageVersion shadingLanguageVersion,
                         IRandom random, IdGenerator idGenerator, int maxPercentageToReduce,
-                        int aggressionDecreaseStep, boolean emitGraphicsFuzzDefines) {
+                        int aggressionDecreaseStep) {
     this.reduceEverywhere = reduceEverywhere;
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.random = random;
     this.idGenerator = idGenerator;
     this.maxPercentageToReduce = maxPercentageToReduce;
     this.aggressionDecreaseStep = aggressionDecreaseStep;
-    this.emitGraphicsFuzzDefines = emitGraphicsFuzzDefines;
   }
 
   public ReducerContext(boolean reduceEverywhere,
                         ShadingLanguageVersion shadingLanguageVersion,
-                        IRandom random, IdGenerator idGenerator, boolean emitGraphicsFuzzDefines) {
+                        IRandom random, IdGenerator idGenerator) {
     this(reduceEverywhere, shadingLanguageVersion, random, idGenerator,
-        DEFAULT_MAX_PERCENTAGE_TO_REDUCE, DEFAULT_AGGRESSION_DECREASE_STEP,
-        emitGraphicsFuzzDefines);
+        DEFAULT_MAX_PERCENTAGE_TO_REDUCE, DEFAULT_AGGRESSION_DECREASE_STEP);
   }
 
   public boolean reduceEverywhere() {
@@ -79,10 +76,6 @@ public class ReducerContext {
 
   public int getAggressionDecreaseStep() {
     return aggressionDecreaseStep;
-  }
-
-  public boolean getEmitGraphicsFuzzDefines() {
-    return emitGraphicsFuzzDefines;
   }
 
 }

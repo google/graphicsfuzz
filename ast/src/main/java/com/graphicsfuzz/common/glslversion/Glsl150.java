@@ -27,7 +27,16 @@ final class Glsl150 extends CompositeShadingLanguageVersion {
 
   @Override
   public String getVersionString() {
-    return "140";
+    return "150";
   }
 
+  @Override
+  public boolean supportedDeterminant() {
+    return true;
+  }
+
+  @Override
+  public boolean supportedInverse() {
+    return true;
+  }
 }

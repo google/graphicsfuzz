@@ -20,7 +20,6 @@ import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.ConstantExpr;
@@ -35,7 +34,9 @@ import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
+import com.graphicsfuzz.common.util.MacroNames;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.SideEffectChecker;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
@@ -43,16 +44,18 @@ import java.util.List;
 
 public abstract class ReductionOpportunitiesBase
       <ReductionOpportunityT extends IReductionOpportunity>
-      extends ScopeTreeBuilder {
+      extends ScopeTrackingVisitor {
 
   private final List<ReductionOpportunityT> opportunities;
-  protected final InjectionTracker injectionTracker;
-  protected final NotReferencedFromLiveContext notReferencedFromLiveContext;
+  final InjectionTracker injectionTracker;
+  final NotReferencedFromLiveContext notReferencedFromLiveContext;
   protected final IParentMap parentMap;
 
   protected final ReducerContext context;
 
-  protected String enclosingFunctionName;
+  final ShaderKind shaderKind;
+
+  private String enclosingFunctionName;
 
   private int numEnclosingLValues;
 
@@ -66,9 +69,10 @@ public abstract class ReductionOpportunitiesBase
     this.opportunities = new ArrayList<>();
     this.injectionTracker = new InjectionTracker();
     this.notReferencedFromLiveContext = new NotReferencedFromLiveContext(tu);
-    this.context = context;
-    this.enclosingFunctionName = null;
     this.parentMap = IParentMap.createParentMap(tu);
+    this.context = context;
+    this.shaderKind = tu.getShaderKind();
+    this.enclosingFunctionName = null;
     this.numEnclosingLValues = 0;
   }
 
@@ -77,7 +81,7 @@ public abstract class ReductionOpportunitiesBase
     assert enclosingFunctionName == null;
     enclosingFunctionName = functionDefinition.getPrototype().getName();
     super.visitFunctionDefinition(functionDefinition);
-    assert enclosingFunctionName == functionDefinition.getPrototype().getName();
+    assert enclosingFunctionName.equals(functionDefinition.getPrototype().getName());
     enclosingFunctionName = null;
   }
 
@@ -90,8 +94,10 @@ public abstract class ReductionOpportunitiesBase
 
   @Override
   public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
-    super.visitExprCaseLabel(exprCaseLabel);
-    injectionTracker.notifySwitchCase(exprCaseLabel);
+    // Do *not* invoke super.visitExprCaseLabel(...), as we do not wish to look for opportunities
+    // to simplify the literal expression that is used as a case label.  Literals are simple enough
+    // already, and attempting to change the value of a case label literal runs the risk of
+    // introducing duplicate case labels.
   }
 
   protected void visitChildOfBlock(BlockStmt block, int childIndex) {
@@ -104,37 +110,45 @@ public abstract class ReductionOpportunitiesBase
 
     for (int i = 0; i < block.getNumStmts(); i++) {
 
-      visitChildOfBlock(block, i);
-
       final Stmt child = block.getStmt(i);
+
+      if (child instanceof ExprCaseLabel) {
+        // It is important to notify the injection tracker of a switch case *before* we visit the
+        // switch case so that we can identify when we have entered the reachable part of an
+        // injected switch statement.
+        injectionTracker.notifySwitchCase((ExprCaseLabel) child);
+      }
+
+      visitChildOfBlock(block, i);
 
       if (child instanceof BreakStmt && parentMap.getParent(block) instanceof SwitchStmt) {
         injectionTracker.notifySwitchBreak();
       }
 
-      if (isDeadCodeInjection(child)) {
-        injectionTracker.enterDeadCodeInjection();
-      }
       visit(child);
-      if (isDeadCodeInjection(child)) {
-        injectionTracker.exitDeadCodeInjection();
-      }
+
     }
     leaveBlockStmt(block);
   }
 
-  public static boolean isDeadCodeInjection(Stmt stmt) {
+  static boolean isDeadCodeInjection(Stmt stmt) {
     return stmt instanceof IfStmt && MacroNames
         .isDeadByConstruction(((IfStmt) stmt).getCondition());
   }
 
-  protected boolean enclosingFunctionIsDead() {
+  private boolean enclosingFunctionIsDead() {
     if (enclosingFunctionName == null) {
       // We are in global scope
       return false;
     }
     return enclosingFunctionName.startsWith(Constants.DEAD_PREFIX)
         || notReferencedFromLiveContext.neverCalledFromLiveContext(enclosingFunctionName);
+  }
+
+  boolean currentProgramPointIsDeadCode() {
+    return injectionTracker.enclosedByDeadCodeInjection()
+        || injectionTracker.underUnreachableSwitchCase()
+        || enclosingFunctionIsDead();
   }
 
   @Override
@@ -166,15 +180,33 @@ public abstract class ReductionOpportunitiesBase
     if (MacroNames.isFuzzed(functionCallExpr)) {
       injectionTracker.enterFuzzedMacro();
     }
-    if (MacroNames.isDeadByConstruction(functionCallExpr)) {
-      injectionTracker.enterDeadMacro();
-    }
     super.visitFunctionCallExpr(functionCallExpr);
-    if (MacroNames.isDeadByConstruction(functionCallExpr)) {
-      injectionTracker.exitDeadMacro();
-    }
     if (MacroNames.isFuzzed(functionCallExpr)) {
       injectionTracker.exitFuzzedMacro();
+    }
+  }
+
+  @Override
+  public void visitIfStmt(IfStmt ifStmt) {
+    // This method is overridden in order to allow tracking of when we are inside a dead code
+    // injection.
+
+    // Even for an "if(_GLF_DEAD(...))", the condition itself is not inside the dead code injection,
+    // so we visit it as usual first.
+    visitChildFromParent(ifStmt.getCondition(), ifStmt);
+
+    if (isDeadCodeInjection(ifStmt)) {
+      // This is a dead code injection, so update the injection tracker appropriately before
+      // visiting the 'then' and (possibly) 'else' branches.
+      injectionTracker.enterDeadCodeInjection();
+    }
+    visit(ifStmt.getThenStmt());
+    if (ifStmt.hasElseStmt()) {
+      visit(ifStmt.getElseStmt());
+    }
+    if (isDeadCodeInjection(ifStmt)) {
+      // Update the injection tracker to indicate that we have left this dead code injection.
+      injectionTracker.exitDeadCodeInjection();
     }
   }
 
@@ -207,12 +239,10 @@ public abstract class ReductionOpportunitiesBase
     if (!variableDeclInfo.hasInitializer()) {
       return false;
     }
-    if (!(variableDeclInfo.getInitializer() instanceof ScalarInitializer)) {
-      return false;
-    }
     return SideEffectChecker.isSideEffectFree(
-        ((ScalarInitializer) variableDeclInfo.getInitializer()).getExpr(),
-        context.getShadingLanguageVersion());
+        (variableDeclInfo.getInitializer()).getExpr(),
+        context.getShadingLanguageVersion(),
+        shaderKind);
   }
 
   boolean typeIsReducibleToConst(Type type) {
@@ -246,6 +276,10 @@ public abstract class ReductionOpportunitiesBase
       // does not hold -- this would lead to a reduction loop.
       opportunities.add(opportunity);
     }
+  }
+
+  static boolean isLiveInjectedVariableName(String name) {
+    return name.startsWith(Constants.LIVE_PREFIX);
   }
 
 }

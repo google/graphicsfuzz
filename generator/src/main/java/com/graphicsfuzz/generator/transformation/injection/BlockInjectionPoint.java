@@ -27,8 +27,8 @@ public class BlockInjectionPoint extends InjectionPoint {
   private Stmt nextStmt; // null if there is no next statement
 
   public BlockInjectionPoint(BlockStmt blockStmt, Stmt nextStmt,
-      FunctionDefinition enclosingFunction, boolean inLoop, Scope scope) {
-    super(enclosingFunction, inLoop, scope);
+      FunctionDefinition enclosingFunction, boolean inLoop, boolean inSwitch, Scope scope) {
+    super(enclosingFunction, inLoop, inSwitch, scope);
     this.blockStmt = blockStmt;
     this.nextStmt = nextStmt;
   }

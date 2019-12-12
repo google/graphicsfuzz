@@ -17,26 +17,28 @@
 package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.transformation.DonateLiveCodeTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,7 +50,7 @@ import static org.junit.Assert.fail;
 
 public class GenerateTest {
 
-  public static final String A_VERTEX_SHADER = "#version 300 es\n" +
+  private static final String A_VERTEX_SHADER = "#version 300 es\n" +
       "layout(location=0) in highp vec4 a_position;" +
       "float foo(float b) {" +
       "  for (int i = 0; i < 10; i++) {" +
@@ -76,8 +78,7 @@ public class GenerateTest {
   @Test
   public void testSynthetic() throws Exception {
 
-    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    // TODO: Use fileOps more.
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
     final String program = "#version 300 es\n"
         + "precision highp float;\n"
@@ -137,21 +138,18 @@ public class GenerateTest {
         + "  }\n"
         + "}";
 
-    File shaderFile = temporaryFolder.newFile("shader.frag");
-    File jsonFile = temporaryFolder.newFile("shader.json");
-    fileOps.writeStringToFile(shaderFile, program);
-    fileOps.writeStringToFile(jsonFile, json);
+    final File shaderJobFile = temporaryFolder.newFile("shader.json");
+    fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(),
+            ParseHelper.parse(program, ShaderKind.FRAGMENT)),
+        shaderJobFile);
 
-    File outputDir = temporaryFolder.getRoot();
-
-    File outputShaderJobFile = new File(outputDir, "output.json");
-
-    File donors = temporaryFolder.newFolder("donors");
+    final File outputDir = temporaryFolder.getRoot();
+    final File outputShaderJobFile = new File(outputDir, "output.json");
+    final File donors = temporaryFolder.newFolder("donors");
 
     Generate.mainHelper(new String[]{"--seed", "0",
-        jsonFile.toString(),
+        shaderJobFile.toString(),
         donors.toString(),
-        "300 es",
         outputShaderJobFile.toString(),
     });
 
@@ -161,17 +159,16 @@ public class GenerateTest {
 
   @Test
   public void testStructDonation() throws Exception {
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     final String usesStruct = "struct A { int x; }; void main() { { A a = A(1); a.x = 2; } }";
-    File donorsFolder = temporaryFolder.newFolder();
+    final File donorsFolder = temporaryFolder.newFolder();
     for (int i = 0; i < 10; i++) {
-      File donor = new File(
+      final File donor = new File(
           Paths.get(donorsFolder.getAbsolutePath(), "donor" + i + ".frag").toString());
-      BufferedWriter bw = new BufferedWriter(new FileWriter(donor));
-      bw.write(usesStruct);
-      bw.close();
+      fileOps.writeStringToFile(donor, usesStruct);
     }
-    String reference = "void main() { ; { ; ; ; }; ; { ; ; ; }; ; ; ; ; ; ; }";
-    TranslationUnit tu = ParseHelper.parse(reference);
+    final String reference = "void main() { ; { ; ; ; }; ; { ; ; ; }; ; ; ; ; ; ; }";
+    final TranslationUnit tu = ParseHelper.parse(reference);
     new DonateLiveCodeTransformation(TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
         donorsFolder, GenerationParams.normal(ShaderKind.FRAGMENT, true), false)
         .apply(tu,
@@ -183,35 +180,25 @@ public class GenerateTest {
   @Test
   public void testFragVertAndUniformsPassedThrough() throws Exception {
 
-    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    // TODO: Use fileOps more.
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-    final String dummyFragment = "precision mediump float;\n"
+    final TranslationUnit fragmentShader = ParseHelper.parse("precision mediump float;\n"
         + "void main()\n"
         + "{\n"
         + "  float iAmAFragmentShader;"
-        + "}\n";
+        + "}\n", ShaderKind.FRAGMENT);
 
-    final String dummyVertex = "void main()\n"
+    final TranslationUnit vertexShader = ParseHelper.parse("void main()\n"
         + "{\n"
         + "  float iAmAVertexShader;"
-        + "}\n";
+        + "}\n", ShaderKind.VERTEX);
 
-    final String json = "{\n"
-        + "}";
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), new PipelineInfo(),
+        vertexShader, fragmentShader);
 
-    File fragmentShaderFile = temporaryFolder.newFile("shader.frag");
-    File vertexShaderFile = temporaryFolder.newFile("shader.vert");
-    File jsonFile = temporaryFolder.newFile("shader.json");
-    BufferedWriter bw = new BufferedWriter(new FileWriter(fragmentShaderFile));
-    bw.write(dummyFragment);
-    bw.close();
-    bw = new BufferedWriter(new FileWriter(vertexShaderFile));
-    bw.write(dummyVertex);
-    bw.close();
-    bw = new BufferedWriter(new FileWriter(jsonFile));
-    bw.write(json);
-    bw.close();
+    final File shaderJobFile = temporaryFolder.newFile("shader.json");
+
+    fileOps.writeShaderJobFile(shaderJob, shaderJobFile);
 
     File outputDir = temporaryFolder.getRoot();
 
@@ -220,9 +207,8 @@ public class GenerateTest {
     File donors = temporaryFolder.newFolder("donors");
 
     Generate.mainHelper(new String[]{"--seed", "0",
-        jsonFile.toString(),
+        shaderJobFile.toString(),
         donors.toString(),
-        "100",
         outputShaderJobFile.toString()
     });
 
@@ -254,13 +240,13 @@ public class GenerateTest {
 
   private void testValidityOfVertexShaderTransformations(List<String> extraArgs, int repeatCount) throws IOException, InterruptedException, ParseTimeoutException, ArgumentParserException, GlslParserException {
 
-    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    // TODO: Use fileOps more.
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-    File vertexShaderFile = temporaryFolder.newFile("shader.vert");
-    File jsonFile = temporaryFolder.newFile("shader.json");
-    fileOps.writeStringToFile(vertexShaderFile, A_VERTEX_SHADER);
-    fileOps.writeStringToFile(jsonFile, EMPTY_JSON);
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        new PipelineInfo(), ParseHelper.parse(A_VERTEX_SHADER, ShaderKind.VERTEX));
+
+    final File shaderJobFile = temporaryFolder.newFile("shader.json");
+    fileOps.writeShaderJobFile(shaderJob, shaderJobFile);
 
     final File outputDir = temporaryFolder.getRoot();
     final File outputShaderJobFile = new File(outputDir, "output.json");
@@ -271,9 +257,8 @@ public class GenerateTest {
       args.addAll(
           Arrays.asList(
               "--seed", Integer.toString(seed),
-              jsonFile.toString(),
+              shaderJobFile.toString(),
               donors.toString(),
-              "300 es",
               outputShaderJobFile.toString()
           )
       );
@@ -303,31 +288,30 @@ public class GenerateTest {
         "  x = x + i;" +
         " }" +
         "}";
-    final String uniforms = "{}";
-    final File json = temporaryFolder.newFile("shader.json");
-    final File frag = temporaryFolder.newFile("shader.frag");
-    fileOps.writeStringToFile(frag, program);
-    fileOps.writeStringToFile(json, uniforms);
+    final File shaderJobFile = temporaryFolder.newFile("shader.json");
+    fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(),
+        new PipelineInfo(), ParseHelper.parse(program, ShaderKind.FRAGMENT)),
+        shaderJobFile);
 
     final File donors = temporaryFolder.newFolder();
     final File output = temporaryFolder.newFile("output.json");
 
-    Generate.mainHelper(new String[] { json.getAbsolutePath(), donors.getAbsolutePath(), "100",
+    Generate.mainHelper(new String[] { shaderJobFile.getAbsolutePath(), donors.getAbsolutePath(),
         output.getAbsolutePath(), "--seed", "0" });
 
-    final ShaderJob shaderJob = fileOps.readShaderJobFile(output);
+    final ShaderJob outputShaderJob = fileOps.readShaderJobFile(output);
 
-    assertTrue(shaderJob.getPipelineInfo().hasUniform("injectionSwitch"));
+    assertTrue(outputShaderJob.getPipelineInfo().hasUniform("injectionSwitch"));
 
     assertTrue(fileOps.areShadersValid(output, false));
 
-    assertTrue(shaderJob.getShaders().get(0).getTopLevelDeclarations()
+    assertTrue(outputShaderJob.getShaders().get(0).getTopLevelDeclarations()
         .stream()
         .filter(item -> item instanceof VariablesDeclaration)
         .map(item -> ((VariablesDeclaration) item).getDeclInfos())
         .reduce(new ArrayList<>(), ListConcat::concatenate)
         .stream()
-        .map(item -> item.getName())
+        .map(VariableDeclInfo::getName)
         .anyMatch(item -> item.equals("injectionSwitch")));
 
   }
@@ -343,31 +327,30 @@ public class GenerateTest {
         "  x = x + i;" +
         " }" +
         "}";
-    final String uniforms = "{}";
-    final File json = temporaryFolder.newFile("shader.json");
-    final File frag = temporaryFolder.newFile("shader.frag");
-    fileOps.writeStringToFile(frag, program);
-    fileOps.writeStringToFile(json, uniforms);
+    final File shaderJobFile = temporaryFolder.newFile("shader.json");
+    fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(),
+            ParseHelper.parse(program, ShaderKind.FRAGMENT)),
+        shaderJobFile);
 
     final File donors = temporaryFolder.newFolder();
     final File output = temporaryFolder.newFile("output.json");
 
-    Generate.mainHelper(new String[] { json.getAbsolutePath(), donors.getAbsolutePath(), "100",
+    Generate.mainHelper(new String[] { shaderJobFile.getAbsolutePath(), donors.getAbsolutePath(),
         output.getAbsolutePath(), "--no-injection-switch", "--seed", "0" });
 
-    final ShaderJob shaderJob = fileOps.readShaderJobFile(output);
+    final ShaderJob outputShaderJob = fileOps.readShaderJobFile(output);
 
-    assertFalse(shaderJob.getPipelineInfo().hasUniform("injectionSwitch"));
+    assertFalse(outputShaderJob.getPipelineInfo().hasUniform("injectionSwitch"));
 
     assertTrue(fileOps.areShadersValid(output, false));
 
-    assertFalse(shaderJob.getShaders().get(0).getTopLevelDeclarations()
+    assertFalse(outputShaderJob.getShaders().get(0).getTopLevelDeclarations()
         .stream()
         .filter(item -> item instanceof VariablesDeclaration)
         .map(item -> ((VariablesDeclaration) item).getDeclInfos())
         .reduce(new ArrayList<>(), ListConcat::concatenate)
         .stream()
-        .map(item -> item.getName())
+        .map(VariableDeclInfo::getName)
         .anyMatch(item -> item.equals("injectionSwitch")));
 
   }
@@ -377,18 +360,16 @@ public class GenerateTest {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     final String program = "#version 100\n" +
         "void main() { }";
-    final String uniforms = "{}";
-
-    final File json = temporaryFolder.newFile("shader.json");
-    final File frag = temporaryFolder.newFile("shader.frag");
-    fileOps.writeStringToFile(frag, program);
-    fileOps.writeStringToFile(json, uniforms);
+    final File shaderJobFile = temporaryFolder.newFile("shader.json");
+    fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(),
+            ParseHelper.parse(program, ShaderKind.FRAGMENT)),
+        shaderJobFile);
 
     final File donors = new File(temporaryFolder.getRoot(), "does_not_exist");
     final File output = temporaryFolder.newFile("output.json");
 
     try {
-      Generate.mainHelper(new String[]{json.getAbsolutePath(), donors.getAbsolutePath(), "100",
+      Generate.mainHelper(new String[]{shaderJobFile.getAbsolutePath(), donors.getAbsolutePath(),
           output.getAbsolutePath(), "--seed", "0"});
       fail("An exception should have been thrown.");
     } catch (RuntimeException runtimeException) {
@@ -397,6 +378,7 @@ public class GenerateTest {
     }
   }
 
+  @Test
   public void testStructUniform() throws Exception {
     // Checks that the generator does not fall over when presented with struct uniforms.
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
@@ -405,16 +387,15 @@ public class GenerateTest {
         + "uniform S myS;"
         + "uniform struct T { int y; } myT;"
         + "void main() {}";
-    final String uniforms = "{}";
-    final File json = temporaryFolder.newFile("shader.json");
-    final File frag = temporaryFolder.newFile("shader.frag");
-    fileOps.writeStringToFile(frag, program);
-    fileOps.writeStringToFile(json, uniforms);
+    final File shaderJobFile = temporaryFolder.newFile("shader.json");
+    fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(),
+            ParseHelper.parse(program, ShaderKind.FRAGMENT)),
+        shaderJobFile);
     final File donors = temporaryFolder.newFolder();
     final File output = temporaryFolder.newFile("output.json");
 
-    Generate.mainHelper(new String[] { json.getAbsolutePath(), donors.getAbsolutePath(),
-        "310 es", output.getAbsolutePath(), "--seed", "0" });
+    Generate.mainHelper(new String[] { shaderJobFile.getAbsolutePath(), donors.getAbsolutePath(),
+        output.getAbsolutePath(), "--seed", "0" });
   }
 
 }

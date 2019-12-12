@@ -40,4 +40,10 @@ public interface IRandom {
    */
   IRandom spawnChild();
 
+
+  /**
+   * @return A description of the random number generator, ideally including the seed.
+   */
+  String getDescription();
+
 }

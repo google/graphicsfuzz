@@ -16,13 +16,8 @@
 
 package com.graphicsfuzz.tester;
 
-import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.FileHelper;
-import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ImageUtil;
-import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
@@ -33,10 +28,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Optional;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.junit.Assert;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
@@ -48,99 +39,37 @@ public final class Util {
     // Utility class
   }
 
-  static File renderShader(File originalShader,
-                           TemporaryFolder temporaryFolder, ShaderJobFileOperations fileOps)
-      throws IOException, InterruptedException, ParseTimeoutException, GlslParserException {
-    final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShader);
-
-    return validateAndGetImage(
-            shaderJob,
-            originalShader.getName() + ".reference.frag",
-            temporaryFolder,
-            fileOps);
-  }
-
   static File validateAndGetImage(
-      File shaderFile,
+      File shaderJobFile,
       TemporaryFolder temporaryFolder,
       ShaderJobFileOperations fileOps)
       throws IOException, InterruptedException {
-
-    validate(shaderFile);
-    return getImage(shaderFile, temporaryFolder, fileOps);
-  }
-
-  static File getImage(
-      File shaderFile,
-      TemporaryFolder temporaryFolder,
-      ShaderJobFileOperations fileOps) throws IOException, InterruptedException {
-
-    final Optional<String> shaderTranslatorArg = getShaderTranslatorArg(shaderFile, fileOps);
-    if (shaderTranslatorArg.isPresent()) {
-      final ExecResult shaderTranslatorResult = ToolHelper
-            .runShaderTranslatorOnShader(RedirectType.TO_LOG, shaderFile,
-                  shaderTranslatorArg.get());
-      assertEquals(0, shaderTranslatorResult.res);
-    }
-    return getImageUsingSwiftshader(shaderFile, temporaryFolder);
-  }
-
-  static void validate(File shaderFile) throws IOException, InterruptedException {
-    final ExecResult validatorResult = ToolHelper
-          .runValidatorOnShader(RedirectType.TO_LOG, shaderFile);
-    assertEquals(validatorResult.res, 0);
-  }
-
-  private static Optional<String> getShaderTranslatorArg(
-      File shaderFile,
-      ShaderJobFileOperations fileOps) throws IOException {
-    Optional<String> shaderTranslatorArgs;
-
-    // Using fileOps here, even though the rest of the code does not use it yet.
-    Assert.assertTrue(shaderFile.getName().endsWith(".frag"));
-    final File shaderJobFile = FileHelper.replaceExtension(shaderFile, ".json");
-
-    final ShadingLanguageVersion shadingLanguageVersionFromShader =
-        ShadingLanguageVersion.getGlslVersionFromFirstTwoLines(
-            fileOps.getFirstTwoLinesOfShader(shaderJobFile, ShaderKind.FRAGMENT));
-    // TODO: Use fileOps.
-
-    if (shadingLanguageVersionFromShader == ShadingLanguageVersion.ESSL_300
-        || shadingLanguageVersionFromShader == ShadingLanguageVersion.WEBGL2_SL) {
-      shaderTranslatorArgs = Optional.of("-s=w2");
-    } else if(shadingLanguageVersionFromShader == ShadingLanguageVersion.WEBGL_SL) {
-      shaderTranslatorArgs = Optional.of("-s=w");
-    } else {
-      shaderTranslatorArgs = Optional.empty();
-    }
-    return shaderTranslatorArgs;
+    assertTrue(fileOps.areShadersValid(shaderJobFile, false));
+    assertTrue(fileOps.areShadersValidShaderTranslator(shaderJobFile, false));
+    return getImage(shaderJobFile, temporaryFolder, fileOps);
   }
 
   static File validateAndGetImage(
       ShaderJob shaderJob,
-      String fileName,
+      String shaderJobFilename,
       TemporaryFolder temporaryFolder,
       ShaderJobFileOperations fileOps)
       throws IOException, InterruptedException {
-
-    final File shaderJobFileOutput = new File(
+    final File shaderJobFile = new File(
         temporaryFolder.getRoot(),
-        FilenameUtils.removeExtension(fileName) + ".json");
-
-    fileOps.writeShaderJobFile(shaderJob, shaderJobFileOutput);
-
-    // TODO: Use fileOps more.
-
-    final File tempFile = FileHelper.replaceExtension(shaderJobFileOutput, ".frag");
-
-    return validateAndGetImage(tempFile, temporaryFolder, fileOps);
+        shaderJobFilename);
+    fileOps.writeShaderJobFile(shaderJob, shaderJobFile);
+    return validateAndGetImage(shaderJobFile, temporaryFolder, fileOps);
   }
 
-  static File getImageUsingSwiftshader(File shaderFile, TemporaryFolder temporaryFolder) throws IOException, InterruptedException {
+  static File getImage(
+      File shaderJobFile,
+      TemporaryFolder temporaryFolder,
+      ShaderJobFileOperations fileOps) throws IOException, InterruptedException {
     File imageFile = temporaryFolder.newFile();
     ExecResult res =
         ToolHelper.runSwiftshaderOnShader(RedirectType.TO_LOG,
-            shaderFile,
+            fileOps.getUnderlyingShaderFile(shaderJobFile, ShaderKind.FRAGMENT),
             imageFile,
             false,
             32,

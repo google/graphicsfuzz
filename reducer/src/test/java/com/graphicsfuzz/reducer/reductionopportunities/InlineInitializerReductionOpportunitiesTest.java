@@ -17,12 +17,15 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.util.Constants;
 import java.util.List;
 import org.junit.Test;
 
@@ -35,10 +38,14 @@ public class InlineInitializerReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops =
           InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-          ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
+          ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);
+
+    // If we are preserving semantics, we do not want to apply this transformation.
+    assertTrue(InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+        ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator())).isEmpty());
   }
 
   @Test
@@ -53,12 +60,12 @@ public class InlineInitializerReductionOpportunitiesTest {
 
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(largeProgramTu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(0, ops.size());
 
     ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(smallProgramTu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(3, ops.size());
     ops.get(0).applyReduction();
     ops.get(1).applyReduction();
@@ -85,23 +92,7 @@ public class InlineInitializerReductionOpportunitiesTest {
   }
 
   @Test
-  public void testCanInlineAllExceptLValueIfReducingEverywhere() throws Exception {
-
-    final String program = "void main() { int i = 4 + 2; i += i + i + i; i -= i * i; }";
-    final String expected = "void main() { int i = 4 + 2; i += (4 + 2) + (4 + 2) + (4 + 2); i -= (4 + 2) * (4 + 2); }";
-
-    final TranslationUnit tu = ParseHelper.parse(program);
-
-    List<SimplifyExprReductionOpportunity> ops =
-        InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
-    assertEquals(5, ops.size());
-    ops.forEach(SimplifyExprReductionOpportunity::applyReduction);
-    CompareAsts.assertEqualAsts(expected, tu);
-  }
-
-  @Test
-  public void testNoInliningIfLValueUsageExistsWhenPreservingSemantics() throws Exception {
+  public void testDoNotInlineWhenPreservingSemantics() throws Exception {
 
     final String program = "void main() { int i = 4 + 2; i += i + i + i; i -= i * i; }";
 
@@ -109,19 +100,32 @@ public class InlineInitializerReductionOpportunitiesTest {
 
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
-    assertEquals(0, ops.size());
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    assertTrue(ops.isEmpty());
   }
 
   @Test
-  public void testNoInliningIfPartsOfInitializerAreModifiedWhenPreservingSemantics() throws Exception {
+  public void testDoNotInlineWhenPreservingSemantics2() throws Exception {
+
+    final String program = "void main() { int i = 4 + 2; i += i + i + i; i -= i * i; }";
+
+    final TranslationUnit tu = ParseHelper.parse(program);
+
+    List<SimplifyExprReductionOpportunity> ops =
+        InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    assertTrue(ops.isEmpty());
+  }
+
+  @Test
+  public void testDoNotInlineWhenPreservingSemantics3() throws Exception {
     final String program  = "void main() { int x = 2; int y = x; x = 3; y; }";
     final TranslationUnit tu = ParseHelper.parse(program);
 
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
-    assertEquals(0, ops.size());
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    assertTrue(ops.isEmpty());
   }
 
   @Test
@@ -131,7 +135,7 @@ public class InlineInitializerReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(0, ops.size());
   }
 
@@ -143,8 +147,61 @@ public class InlineInitializerReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<SimplifyExprReductionOpportunity> ops =
         InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null, true));
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(0, ops.size());
+  }
+
+  @Test
+  public void testInliningInDeadCodeWithPreserveSemantics() throws Exception {
+    // We do want to be able to inline an initializer if we are in dead code, when preserving
+    // semantics
+    final String program = "void main() {\n"
+        + "  if(" + Constants.GLF_DEAD + "(" + Constants.GLF_FALSE + "(false, false))) {\n"
+        + "    int do_inline_me = 5 + 2;\n"
+        + "    do_inline_me * do_inline_me;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "void main() {\n"
+        + "  if(" + Constants.GLF_DEAD + "(" + Constants.GLF_FALSE + "(false, false))) {\n"
+        + "    int do_inline_me = 5 + 2;\n"
+        + "    (5 + 2) * (5 + 2);\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<SimplifyExprReductionOpportunity> ops =
+        InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    assertEquals(2, ops.size());
+    ops.get(0).applyReduction();
+    ops.get(1).applyReduction();
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testInliningInLiveCodeWithPreserveSemantics() throws Exception {
+    // We do want to be able to inline an initializer if we are in live code, when preserving
+    // semantics
+    final String variableName = Constants.LIVE_PREFIX + "do_inline_me";
+    final String program = "void main() {\n"
+        + "  {\n"
+        + "    int " + variableName + " = 5 + 2;\n"
+        + "    " + variableName + " * " + variableName + ";\n"
+        + "  }\n"
+        + "}\n";
+    final String expected = "void main() {\n"
+        + "  {\n"
+        + "    int " + variableName + " = 5 + 2;\n"
+        + "    (5 + 2) * (5 + 2);\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<SimplifyExprReductionOpportunity> ops =
+        InlineInitializerReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    assertEquals(2, ops.size());
+    ops.get(0).applyReduction();
+    ops.get(1).applyReduction();
+    CompareAsts.assertEqualAsts(expected, tu);
   }
 
 }

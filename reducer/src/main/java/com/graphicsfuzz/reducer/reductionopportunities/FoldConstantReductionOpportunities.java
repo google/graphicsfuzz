@@ -52,6 +52,10 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
   @Override
   void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
 
+    if (!allowedToReduceExpr(parent, child)) {
+      return;
+    }
+
     Optional<FunctionCallExpr> maybeFce = asFunctionCallExpr(child);
     if (maybeFce.isPresent()) {
       switch (maybeFce.get().getCallee()) {
@@ -223,14 +227,14 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       return;
     }
     final BasicType basicType = (BasicType) structureType;
-    if (!BasicType.allVectorTypes().contains(basicType)) {
+    if (!basicType.isVector()) {
       return;
     }
     if (basicType.getNumElements() != tce.getNumArgs()) {
       // We could handle cases such as vec2(0.0).x resolving to 0.0; but for now we do not.
       return;
     }
-    if (!SideEffectChecker.isSideEffectFree(tce, context.getShadingLanguageVersion())) {
+    if (!SideEffectChecker.isSideEffectFree(tce, context.getShadingLanguageVersion(), shaderKind)) {
       // We mustn't eliminate side-effects from elements of the vector that we are not popping out.
       return;
     }

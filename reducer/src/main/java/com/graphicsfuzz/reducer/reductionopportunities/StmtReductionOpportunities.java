@@ -34,12 +34,12 @@ import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.LoopStmt;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
-import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.common.util.SideEffectChecker;
 import com.graphicsfuzz.common.util.StructUtils;
 import com.graphicsfuzz.util.Constants;
@@ -79,7 +79,8 @@ public class StmtReductionOpportunities
     final Stmt child = block.getStmt(index);
     if (isEmptyBlockStmt(child) || isDeadCodeInjection(child)
           || allowedToReduceStmt(block, index)) {
-      addOpportunity(new StmtReductionOpportunity(block, child, getVistitationDepth()));
+      addOpportunity(new StmtReductionOpportunity(getEnclosingFunction(), block, child,
+          getVistitationDepth()));
     }
   }
 
@@ -110,15 +111,11 @@ public class StmtReductionOpportunities
       return true;
     }
 
-    if (SideEffectChecker.isSideEffectFree(stmt, context.getShadingLanguageVersion())) {
+    if (SideEffectChecker.isSideEffectFree(stmt, context.getShadingLanguageVersion(), shaderKind)) {
       return true;
     }
 
-    if (injectionTracker.enclosedByDeadCodeInjection()) {
-      return true;
-    }
-
-    if (injectionTracker.underUnreachableSwitchCase() && !isZeroSwitchCase(stmt)) {
+    if (currentProgramPointIsDeadCode()) {
       return true;
     }
 
@@ -126,35 +123,16 @@ public class StmtReductionOpportunities
       return true;
     }
 
-    // We cannot remove non-void return statements without special care, unless we are inside an
-    // injected block
-    if (containsNonVoidReturn(stmt)) {
-      if (!isReturnFollowedBySubsequentReturn(block, childIndex)) {
-        return false;
-      }
+    // Unless we are in an injected dead code block, we need to be careful about removing
+    // non-void return statements, so as to avoid making the shader invalid.
+    if (StmtReductionOpportunity
+        .removalCouldLeadToLackOfReturnFromNonVoidFunction(getEnclosingFunction(), block, stmt)) {
+      return false;
     }
 
     return context.reduceEverywhere()
-          || (isLiveCodeInjection(stmt) && !referencesLoopLimiter(stmt))
-          || enclosingFunctionIsDead();
+          || (isLiveCodeInjection(stmt) && !referencesLoopLimiter(stmt));
 
-  }
-
-  /**
-   * Returns true if and only if the statement at childIndex is a return statement, and the block
-   * has another return statement at a later index.
-   */
-  private boolean isReturnFollowedBySubsequentReturn(BlockStmt block, int childIndex) {
-    if (!(block.getStmt(childIndex) instanceof ReturnStmt)) {
-      return false;
-    }
-    for (int subsequentChildIndex = childIndex + 1; subsequentChildIndex < block.getNumStmts();
-         subsequentChildIndex++) {
-      if (block.getStmt(subsequentChildIndex) instanceof ReturnStmt) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private boolean isLoopLimiterBlock(Stmt stmt) {
@@ -190,11 +168,6 @@ public class StmtReductionOpportunities
         }
       }
     }.test(stmt);
-  }
-
-  private boolean isZeroSwitchCase(Stmt stmt) {
-    return stmt instanceof ExprCaseLabel
-          && ((IntConstantExpr) ((ExprCaseLabel) stmt).getExpr()).getValue().equals("0");
   }
 
   /**
@@ -276,10 +249,6 @@ public class StmtReductionOpportunities
     return isLiveInjectedVariableName(name);
   }
 
-  private static boolean isLiveInjectedVariableName(String name) {
-    return name.startsWith(Constants.LIVE_PREFIX);
-  }
-
   /**
    * <p>
    * Determines whether the given statement came from a live code injection.
@@ -321,17 +290,6 @@ public class StmtReductionOpportunities
       return false;
     }
     return isLiveInjectedVariableName(((VariableIdentifierExpr) lhs).getName());
-  }
-
-  private boolean containsNonVoidReturn(Stmt stmt) {
-    return new CheckPredicateVisitor() {
-      @Override
-      public void visitReturnStmt(ReturnStmt returnStmt) {
-        if (returnStmt.hasExpr()) {
-          predicateHolds();
-        }
-      }
-    }.test(stmt);
   }
 
   private boolean isRedundantCopy(Stmt stmt) {

@@ -19,7 +19,7 @@ package com.graphicsfuzz.common.ast.inliner;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -170,7 +170,7 @@ public class ReturnRemover {
     fd.getBody().insertStmt(0, new DeclarationStmt(
           new VariablesDeclaration(BasicType.BOOL,
                 new VariableDeclInfo(makeHasReturnedName(), null,
-                      new ScalarInitializer(new BoolConstantExpr(false))))));
+                      new Initializer(new BoolConstantExpr(false))))));
   }
 
   private void addReturnInstrumentation() {

@@ -78,7 +78,7 @@ public class MiscellaneousGenerateThenReduceTest {
           .getReductionOpportunities(new GlslShaderJob(Optional.empty(),
                   new PipelineInfo(), tu),
                 new ReducerContext(false, shadingLanguageVersion,
-              new SameValueRandom(false, 0), new IdGenerator(), true), fileOps);
+              new SameValueRandom(false, 0), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
         break;
       }

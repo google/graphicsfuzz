@@ -45,7 +45,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.OpenGlConstants;
@@ -56,6 +56,7 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.SsboFieldData;
 import com.graphicsfuzz.generator.util.RemoveDiscardStatements;
+import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -63,7 +64,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -99,8 +99,8 @@ public class Fragment2Compute {
         .type(File.class);
 
     parser.addArgument("--seed")
-        .help("Seed for random number generator.")
-        .type(Integer.class);
+        .help("Seed (unsigned 64 bit long integer) for random number generator.")
+        .type(String.class);
 
     parser.addArgument("--generate-uniform-bindings")
         .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
@@ -179,7 +179,7 @@ public class Fragment2Compute {
    * Replace all references to gl_FragCoord with gl_GlobalInvocationID.
    */
   private static void replaceFragCoordWithIdLookup(TranslationUnit computeTu) {
-    new ScopeTreeBuilder() {
+    new ScopeTrackingVisitor() {
 
       private IParentMap parentMap = IParentMap.createParentMap(computeTu);
 
@@ -188,7 +188,7 @@ public class Fragment2Compute {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
         if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_COORD)) {
           // It has the right name.
-          if (currentScope.lookupScopeEntry(OpenGlConstants.GL_FRAG_COORD) == null) {
+          if (getCurrentScope().lookupScopeEntry(OpenGlConstants.GL_FRAG_COORD) == null) {
             // It has no scope; i.e., it is built-in - so it is the real gl_FragCoord.
             // Replace it with something made from gl_GlobalInvocationID.
             parentMap.getParent(variableIdentifierExpr).replaceChild(variableIdentifierExpr,
@@ -307,8 +307,7 @@ new MemberLookupExpr(new VariableIdentifierExpr(OpenGlConstants.GL_NUM_WORK_GROU
       InterruptedException, GlslParserException, ParseTimeoutException, IOException {
     final Namespace ns = parse(args);
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    final IRandom generator = new RandomWrapper(ns.getInt("seed") == null
-        ? new Random().nextInt() : ns.getInt("seed"));
+    final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
 
     final ShaderJob transformedShaderJob = transform(
         fileOps.readShaderJobFile(ns.get("fragment_json")), generator);

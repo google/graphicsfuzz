@@ -17,7 +17,10 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.OpenGlConstants;
@@ -48,7 +51,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities
-              .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
+              .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+                  new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(reducedProgram, tu);
@@ -69,7 +73,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
         LiveOutputVariableWriteReductionOpportunities
-            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(
+                    false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(reducedProgram, tu);
@@ -94,7 +99,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
       LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, null, null, null, true));
+            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);
@@ -115,7 +121,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, null, null, null, true));
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);
@@ -137,7 +144,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, null, null, null, true));
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);

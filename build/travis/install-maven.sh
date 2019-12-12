@@ -20,7 +20,7 @@ set -u
 
 MAVEN_VERSION="3.6.0"
 MAVEN_FILE="apache-maven-${MAVEN_VERSION}-bin.zip"
-MAVEN_URL="https://www-us.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/${MAVEN_FILE}"
+MAVEN_URL="https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/${MAVEN_FILE}"
 
 echo "Installing maven ${MAVEN_VERSION} to $(pwd)/apache-maven-${MAVEN_VERSION}"
 

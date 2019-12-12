@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,7 +63,8 @@ public class FunctionCallExprTemplate extends AbstractExprTemplate {
   @Override
   public boolean requiresLValueForArgument(int index) {
     assert index >= 0 && index < getNumArguments();
-    return false;
+    return argTypes.get(index).hasQualifier(TypeQualifier.OUT_PARAM)
+        || argTypes.get(index).hasQualifier(TypeQualifier.INOUT_PARAM);
   }
 
   @Override

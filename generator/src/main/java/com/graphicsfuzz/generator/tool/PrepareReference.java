@@ -18,6 +18,7 @@ package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.AddBraces;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.PipelineInfo;
@@ -150,6 +151,11 @@ public final class PrepareReference {
     if (replaceFloatLiterals) {
       FloatLiteralReplacer.replace(tu, pipelineInfo);
     }
+
+    // Ensure that all if-then-else statements have braces.  This makes the reference easier to
+    // compare with a reduced variant.
+    AddBraces.transform(tu);
+
   }
 
 }

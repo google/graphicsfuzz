@@ -18,7 +18,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import static org.junit.Assert.assertEquals;
 
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -30,10 +30,6 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.junit.Test;
 
@@ -61,9 +57,9 @@ public class RemoveStructFieldReductionOpportunityTest {
             barConstructor.clone(), barConstructor.clone()));
 
     VariableDeclInfo v1 = new VariableDeclInfo("v1", null,
-        new ScalarInitializer(fooConstructor.clone()));
+        new Initializer(fooConstructor.clone()));
     VariableDeclInfo v2 = new VariableDeclInfo("v2", null,
-        new ScalarInitializer(fooConstructor.clone()));
+        new Initializer(fooConstructor.clone()));
 
     DeclarationStmt declarationStmt = new DeclarationStmt(new VariablesDeclaration(foo.getStructNameType(),
         Arrays.asList(v1, v2)));
@@ -73,7 +69,7 @@ public class RemoveStructFieldReductionOpportunityTest {
             declarationStmt), false);
 
     assertEquals("foo v1 = foo(1.0, bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0))), v2 = foo(1.0, bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)));\n",
-        getString(declarationStmt));
+        declarationStmt.getText());
 
     IReductionOpportunity ro1 = new RemoveStructFieldReductionOpportunity(foo, "a", b,
         new VisitationDepth(0));
@@ -87,31 +83,25 @@ public class RemoveStructFieldReductionOpportunityTest {
 
     ro1.applyReduction();
     assertEquals("foo v1 = foo(bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0))), v2 = foo(bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)));\n",
-        getString(declarationStmt));
+        declarationStmt.getText());
 
     assertEquals(2, bar.getNumFields());
     assertEquals(2, foo.getNumFields());
 
     ro2.applyReduction();
     assertEquals("foo v1 = foo(bar(vec3(0.0, 0.0, 0.0)), bar(vec3(0.0, 0.0, 0.0))), v2 = foo(bar(vec3(0.0, 0.0, 0.0)), bar(vec3(0.0, 0.0, 0.0)));\n",
-        getString(declarationStmt));
+        declarationStmt.getText());
 
     assertEquals(1, bar.getNumFields());
     assertEquals(2, foo.getNumFields());
 
     ro3.applyReduction();
     assertEquals("foo v1 = foo(bar(vec3(0.0, 0.0, 0.0))), v2 = foo(bar(vec3(0.0, 0.0, 0.0)));\n",
-        getString(declarationStmt));
+        declarationStmt.getText());
 
     assertEquals(1, bar.getNumFields());
     assertEquals(1, foo.getNumFields());
 
-  }
-
-  private String getString(DeclarationStmt declarationStmt) {
-    ByteArrayOutputStream output = new ByteArrayOutputStream();
-    new PrettyPrinterVisitor(new PrintStream(output)).visit(declarationStmt);
-    return new String(output.toByteArray(), StandardCharsets.UTF_8);
   }
 
 }

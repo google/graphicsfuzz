@@ -47,7 +47,7 @@ limitations under the License.
       <groupId>com.graphicsfuzz</groupId>
       <artifactId>server-thrift-gen</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>

@@ -18,6 +18,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
@@ -36,7 +37,7 @@ public class UnswitchifyReductionOpportunitiesTest {
               new ReducerContext(false,
               ShadingLanguageVersion.GLSL_130,
                     new RandomWrapper(0),
-                    null, true));
+                    new IdGenerator()));
     assertEquals(0, ops.size());
   }
 

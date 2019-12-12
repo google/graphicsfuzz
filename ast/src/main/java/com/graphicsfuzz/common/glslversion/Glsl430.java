@@ -29,4 +29,10 @@ final class Glsl430 extends CompositeShadingLanguageVersion {
   public String getVersionString() {
     return "430";
   }
+
+  @Override
+  public boolean supportedComputeShaders() {
+    return true;
+  }
+
 }

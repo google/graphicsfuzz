@@ -16,46 +16,46 @@
 
 package com.graphicsfuzz.common.util;
 
-import java.util.Random;
+import org.apache.commons.rng.UniformRandomProvider;
+import org.apache.commons.rng.simple.RandomSource;
 
 /**
- * Random generator that uses java.util.Random, to be used when genuine pseudo-random generation
- * is required (as opposed to mocking for testing).
+ * Random generator to be used when genuine pseudo-random generation is required (as opposed to
+ * mocking for testing).
  */
 public class RandomWrapper implements IRandom {
 
-  private final Random generator;
+  private final long seed;
+  private final UniformRandomProvider provider;
 
-  public RandomWrapper(int seed) {
-    this.generator = new Random(seed);
-  }
-
-  public RandomWrapper() {
-    this.generator = new Random();
+  public RandomWrapper(long seed) {
+    this.seed = seed;
+    this.provider = RandomSource.create(RandomSource.ISAAC, seed);
   }
 
   @Override
   public int nextInt(int bound) {
-    return generator.nextInt(bound);
+    return provider.nextInt(bound);
   }
 
   @Override
   public Float nextFloat() {
-    return generator.nextFloat();
+    return provider.nextFloat();
   }
 
   @Override
   public boolean nextBoolean() {
-    return generator.nextBoolean();
+    return provider.nextBoolean();
   }
 
   @Override
   public IRandom spawnChild() {
-    return new RandomWrapper(generator.nextInt());
+    return new RandomWrapper(provider.nextLong());
   }
 
-  public void setSeed(int seed) {
-    generator.setSeed(seed);
+  @Override
+  public String getDescription() {
+    return "RandomWrapper with seed: " + Long.toUnsignedString(seed);
   }
 
 }

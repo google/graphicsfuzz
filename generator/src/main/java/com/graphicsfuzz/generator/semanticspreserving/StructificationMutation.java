@@ -18,7 +18,7 @@ package com.graphicsfuzz.generator.semanticspreserving;
 
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.Expr;
@@ -33,7 +33,7 @@ import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.typing.SupportedTypes;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -177,9 +177,9 @@ public class StructificationMutation implements Mutation {
     declInfo.setName(enclosingStructVariableName);
     if (declInfo.hasInitializer()) {
       declInfo.setInitializer(
-            new ScalarInitializer(
+            new Initializer(
                   makeInitializationExpr(enclosingStructType,
-                        ((ScalarInitializer) declInfo.getInitializer()).getExpr())
+                        (declInfo.getInitializer()).getExpr())
             )
       );
     }
@@ -207,11 +207,11 @@ public class StructificationMutation implements Mutation {
 
     final IParentMap parentMap = IParentMap.createParentMap(block);
 
-    new ScopeTreeBuilder() {
+    new ScopeTrackingVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
-        ScopeEntry se = currentScope.lookupScopeEntry(variableIdentifierExpr.getName());
+        ScopeEntry se = getCurrentScope().lookupScopeEntry(variableIdentifierExpr.getName());
         if (se == null) {
           // We are traversing a block in isolation, so we won't have a scope entry for any variable
           // declared outside the block.

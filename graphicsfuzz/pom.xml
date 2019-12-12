@@ -29,6 +29,23 @@ limitations under the License.
     <relativePath>../parent-all/pom.xml</relativePath>
   </parent>
 
+  <properties>
+    <excludeBinariesPattern>**/*.pdb</excludeBinariesPattern>
+    <excludeJarsPattern/>
+    <compressZip>false</compressZip>
+  </properties>
+
+  <profiles>
+    <profile>
+      <id>lite</id>
+      <properties>
+        <excludeBinariesPattern>**/*.pdb,**/swiftshader/**,**/angle/**</excludeBinariesPattern>
+        <excludeJarsPattern>**/opencv-4*</excludeJarsPattern>
+        <compressZip>true</compressZip>
+      </properties>
+    </profile>
+  </profiles>
+
 
   <dependencies>
 
@@ -210,6 +227,10 @@ limitations under the License.
             <configuration>
               <target>
                 <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
+                <property name="exclude-binaries-pattern" value="${excludeBinariesPattern}"/>
+                <property name="exclude-jars-pattern" value="${excludeJarsPattern}"/>
+                <property name="compress-zip" value="${compressZip}"/>
+
                 <property name="touched-file" value="${project.build.directory}/touched.txt"/>
 
                 <property name="assembly-zip" value="${project.build.directory}/${project.artifactId}.zip"/>
@@ -246,8 +267,8 @@ limitations under the License.
                   <targetfiles path="${touched-file}"/>
                   <sequential>
                     <delete file="${assembly-zip}" dir="${assembly-dir}"/>
-                    <zip destfile="${assembly-zip}" compress="false">
-                      <zipfileset src="${com.graphicsfuzz:assembly-binaries:zip}"/>
+                    <zip destfile="${assembly-zip}" compress="${compress-zip}">
+                      <zipfileset src="${com.graphicsfuzz:assembly-binaries:zip}" excludes="${exclude-binaries-pattern}"/>
                       <zipfileset src="${com.graphicsfuzz:python:zip}" prefix="python"/>
                       <zipfileset src="${com.graphicsfuzz.thirdparty:thrift-py:zip}" prefix="python/thrift"/>
                       <zipfileset src="${com.graphicsfuzz.thirdparty:thrift-js:zip}" prefix="server-static/thrift"/>
@@ -260,7 +281,7 @@ limitations under the License.
                       <zipfileset src="${com.graphicsfuzz.thirdparty:semantic-ui:zip}" prefix="server-static/semantic"/>
                       <zipfileset dir="${project.basedir}/src/main/scripts" excludes="examples/**"/>
                       <zipfileset dir="${project.basedir}/src/main/scripts" includes="examples/**" filemode="755"/>
-                      <zipfileset dir="${project.build.directory}/dependency" prefix="jar"/>
+                      <zipfileset dir="${project.build.directory}/dependency" prefix="jar" excludes="${exclude-jars-pattern}"/>
                       <zipfileset dir="${project.build.directory}/sources" prefix="sources"/>
                       <file file="${git-file}"/>
                     </zip>

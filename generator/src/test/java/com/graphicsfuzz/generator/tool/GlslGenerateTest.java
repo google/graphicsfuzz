@@ -49,13 +49,11 @@ public class GlslGenerateTest {
   public void testSmall100ShaderFamilies() throws Exception {
     final String references = Paths.get(ToolPaths.getShadersDirectory(),
         "samples", "100").toString();
-    final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
-        "donors").toString();
     final int numVariants = 3;
     final String prefix = "someprefix";
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
     final int seed = 0;
-    checkFragmentShaderFamilyGeneration(references, donors, numVariants, prefix,
+    checkFragmentShaderFamilyGeneration(references, references, numVariants, prefix,
         outputDir, seed, Collections.singletonList("--stop-on-fail"));
   }
 
@@ -63,13 +61,11 @@ public class GlslGenerateTest {
   public void testVulkanShaderFamilies() throws Exception {
     final String references = Paths.get(ToolPaths.getShadersDirectory(),
         "samples", "310es").toString();
-    final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
-        "donors").toString();
     final int numVariants = 3;
     final String prefix = "someprefix";
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
     final int seed = 1;
-    checkFragmentShaderFamilyGeneration(references, donors, numVariants, prefix,
+    checkFragmentShaderFamilyGeneration(references, references, numVariants, prefix,
         outputDir, seed, Arrays.asList("--generate-uniform-bindings", "--max-uniforms",
             String.valueOf(10), "--stop-on-fail", "--max-factor", String.valueOf(100f),
             "--max-bytes", String.valueOf(500000), "--disable",
@@ -90,13 +86,12 @@ public class GlslGenerateTest {
     FileUtils.writeStringToFile(goodReferenceFrag, goodFragmentSource, StandardCharsets.UTF_8);
     FileUtils.writeStringToFile(goodReferenceJson, "{}", StandardCharsets.UTF_8);
 
-    final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
-        "donors").toString();
-
     final File outputDir = temporaryFolder.newFolder();
 
     final int numVariants = 2;
     final String prefix = "family";
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(),
+        "samples", "100").toString();
     generateShaderFamily(references.getAbsolutePath(), donors, numVariants, prefix,
         outputDir.getAbsolutePath(),
         0, new ArrayList<>(), false);
@@ -124,13 +119,11 @@ public class GlslGenerateTest {
   public void testGenerateComputeShaderFamily() throws Exception {
     final String references = Paths.get(ToolPaths.getShadersDirectory(),
         "samples", "compute", "310es").toString();
-    final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
-        "donors").toString();
     final int numVariants = 3;
     final String prefix = "someprefix";
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
     final int seed = 10;
-    checkComputeShaderFamilyGeneration(references, donors, numVariants, prefix,
+    checkComputeShaderFamilyGeneration(references, references, numVariants, prefix,
         outputDir, seed, Arrays.asList("--generate-uniform-bindings", "--max-uniforms",
             String.valueOf(10), "--stop-on-fail"));
 
@@ -150,8 +143,8 @@ public class GlslGenerateTest {
 
     generateShaderFamily(references, donors, numVariants, prefix, outputDir, seed, extraArgs, true);
 
-    for (String reference : Arrays.asList("bubblesort_flag", "colorgrid_modulo",
-        "mandelbrot_blurry", "prefix_sum", "squares")) {
+    for (String reference : Arrays.asList("stable_bubblesort_flag", "colorgrid_modulo",
+        "mandelbrot_zoom", "prefix_sum", "squares")) {
       final File expectedOutputDirectory = new File(temporaryFolder.getRoot(), prefix
           + "_" + reference);
       assertTrue(expectedOutputDirectory.isDirectory());

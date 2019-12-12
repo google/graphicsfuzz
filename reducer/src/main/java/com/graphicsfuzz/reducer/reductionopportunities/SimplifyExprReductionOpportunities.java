@@ -41,7 +41,7 @@ abstract class SimplifyExprReductionOpportunities
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);
-    this.typer = new Typer(tu, context.getShadingLanguageVersion());
+    this.typer = new Typer(tu);
     this.inLiveInjectedStmtOrDeclaration = false;
   }
 
@@ -74,8 +74,8 @@ abstract class SimplifyExprReductionOpportunities
   boolean allowedToReduceExpr(IAstNode parent, Expr child) {
 
     if (child instanceof VariableIdentifierExpr) {
-      String name = ((VariableIdentifierExpr) child).getName();
-      if (name.startsWith(Constants.LIVE_PREFIX)
+      final String name = ((VariableIdentifierExpr) child).getName();
+      if (isLiveInjectedVariableName(name)
             && !StmtReductionOpportunities.isLooplimiter(name)) {
         return true;
       }
@@ -102,16 +102,11 @@ abstract class SimplifyExprReductionOpportunities
       return true;
     }
 
-    if (enclosingFunctionIsDead()) {
+    if (currentProgramPointIsDeadCode()) {
       return true;
     }
 
     if (injectionTracker.underFuzzedMacro()) {
-      return true;
-    }
-
-    if (injectionTracker.enclosedByDeadCodeInjection() && !injectionTracker.underDeadMacro()) {
-      // We want to reduce expressions in dead code blocks, but not inside the dead macro itself
       return true;
     }
 

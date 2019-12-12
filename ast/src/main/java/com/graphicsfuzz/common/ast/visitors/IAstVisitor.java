@@ -19,14 +19,13 @@ package com.graphicsfuzz.common.ast.visitors;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
-import com.graphicsfuzz.common.ast.decl.ArrayInitializer;
 import com.graphicsfuzz.common.ast.decl.DefaultLayout;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
-import com.graphicsfuzz.common.ast.decl.ScalarInitializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
@@ -90,9 +89,7 @@ public interface IAstVisitor {
 
   void visitPrecisionDeclaration(PrecisionDeclaration precisionDeclaration);
 
-  void visitArrayInitializer(ArrayInitializer arrayInitializer);
-
-  void visitScalarInitializer(ScalarInitializer scalarInitializer);
+  void visitInitializer(Initializer initializer);
 
   void visitBinaryExpr(BinaryExpr binaryExpr);
 

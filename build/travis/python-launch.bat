@@ -16,14 +16,18 @@
 @REM  limitations under the License.
 @REM
 
-where /q py
-IF ERRORLEVEL 0 (
-  py -3 %*
+IF DEFINED PYTHON_GF (
+  "%PYTHON_GF%" %*
 ) ELSE (
-  where /q python3
-  IF ERRORLEVEL 0 (
-    python3 %*
+  where /q py
+  IF %ERRORLEVEL% EQU 0 (
+    py -3 %*
   ) ELSE (
-    python %*
+    where /q python3
+    IF %ERRORLEVEL% EQU 0 (
+      python3 %*
+    ) ELSE (
+      python %*
+    )
   )
 )

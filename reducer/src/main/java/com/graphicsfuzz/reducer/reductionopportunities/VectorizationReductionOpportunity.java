@@ -31,7 +31,7 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.transformreduce.MergedVariablesComponentData;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-import com.graphicsfuzz.common.typing.ScopeTreeBuilder;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
 import java.util.List;
@@ -96,12 +96,12 @@ public final class VectorizationReductionOpportunity extends AbstractReductionOp
 
     // Look for cases where we are accessing the component we want to remove, and replace
     // those with the component variable.
-    new ScopeTreeBuilder() {
+    new ScopeTrackingVisitor() {
 
       @Override
       public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
         super.visitMemberLookupExpr(memberLookupExpr);
-        if (isComponentAccess(memberLookupExpr, currentScope)) {
+        if (isComponentAccess(memberLookupExpr, getCurrentScope())) {
           try {
             parentMap.getParent(memberLookupExpr).replaceChild(memberLookupExpr,
                   new VariableIdentifierExpr(getComponentName()));
@@ -153,13 +153,13 @@ public final class VectorizationReductionOpportunity extends AbstractReductionOp
   }
 
   private boolean componentIsUsed() {
-    return new ScopeTreeBuilder() {
+    return new ScopeTrackingVisitor() {
       private boolean isUsed = false;
 
       @Override
       public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
         super.visitMemberLookupExpr(memberLookupExpr);
-        isUsed |= isComponentAccess(memberLookupExpr, currentScope);
+        isUsed |= isComponentAccess(memberLookupExpr, getCurrentScope());
       }
 
       public boolean componentIsUsed() {
@@ -206,7 +206,7 @@ public final class VectorizationReductionOpportunity extends AbstractReductionOp
 
   private boolean vectorIsUsedWithoutFieldLookup() {
     return
-      new ScopeTreeBuilder() {
+      new ScopeTrackingVisitor() {
         private boolean vectorUsedDirectly = false;
         @Override
         public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
@@ -217,7 +217,8 @@ public final class VectorizationReductionOpportunity extends AbstractReductionOp
           if (!variableIdentifierExpr.getName().equals(vectorVariableDeclInfo.getName())) {
             return;
           }
-          final ScopeEntry se = currentScope.lookupScopeEntry(variableIdentifierExpr.getName());
+          final ScopeEntry se = getCurrentScope().lookupScopeEntry(variableIdentifierExpr
+              .getName());
           if (se != null && se.hasVariableDeclInfo()
                 && se.getVariableDeclInfo() == vectorVariableDeclInfo) {
             vectorUsedDirectly = true;

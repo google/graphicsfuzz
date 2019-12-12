@@ -98,10 +98,4 @@ public final class AddBraces {
 
   }
 
-  public static void main(String[] args) throws IOException, ParseTimeoutException,
-      InterruptedException, GlslParserException {
-    TranslationUnit tu = ParseHelper.parse(new File(args[0]));
-    new PrettyPrinterVisitor(System.out).visit(transform(tu));
-  }
-
 }

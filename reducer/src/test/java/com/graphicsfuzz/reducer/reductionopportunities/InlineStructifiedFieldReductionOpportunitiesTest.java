@@ -17,10 +17,16 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.PipelineInfo;
+import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.ParseHelper;
-import com.graphicsfuzz.reducer.TestUtils;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
 import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
@@ -34,8 +40,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class InlineStructifiedFieldReductionOpportunitiesTest {
+
+  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
   @Rule
   public TemporaryFolder testFolder = new TemporaryFolder();
@@ -72,9 +81,11 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program);
-    assertEquals(1, InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true)).size());
+    assertEquals(1,
+        InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator())).size());
     InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, null, null, null, true)).get(0).applyReduction();
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+              new IdGenerator())).get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter)),
       PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
@@ -108,7 +119,8 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program).clone();
 
-    List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, null, null, null, true));
+    List<InlineStructifiedFieldReductionOpportunity> ops =
+        InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(3, ops.size());
 
     File tempFile = testFolder.newFile("temp.frag");
@@ -118,16 +130,10 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
       }
       op.applyReduction();
 
-      new PrettyPrinterVisitor(System.out).visit(tu);
-
-      PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-      PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(ps,
-          PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER, true, Optional.empty());
-      ppv.visit(tu);
-      ps.close();
-      ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, tempFile);
-      assertEquals(result.stderr.toString() + result.stdout.toString(), 0, result.res);
+      final File shaderJobFile = testFolder.newFile("temp.json");
+      fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu),
+          shaderJobFile);
+      assertTrue(fileOps.areShadersValid(shaderJobFile, false));
       break;
     }
 
@@ -151,11 +157,16 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(program).clone();
 
     List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, null, null, null, true));
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+              new IdGenerator()));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();
-    TestUtils.checkValid(testFolder, tu);
+
+    final File shaderJobFile = testFolder.newFile("temp.json");
+    fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu),
+        shaderJobFile);
+    assertTrue(fileOps.areShadersValid(shaderJobFile, false));
 
   }
 

@@ -1,0 +1,18 @@
+{
+  "polynomial": {
+    "func": "glUniform3f",
+    "args": [
+      1.0,
+      3.0,
+      2.0
+    ]
+  },
+  "initial_xvalues": {
+    "func": "glUniform3f",
+    "args": [
+      5.0,
+      3.0,
+      1.0
+    ]
+  }
+}

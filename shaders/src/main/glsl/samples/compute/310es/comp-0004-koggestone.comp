@@ -23,7 +23,9 @@
 layout(std430, binding = 0) buffer theSSBO {
   float data_in[N];
   float data_out[N];
-  bool is_exclusive;
+  // Amber only supports one type in a given buffer, hence the 'is_exclusive'
+  // bool field is declared as a float
+  float is_exclusive;
 };
 
 layout(local_size_x=N, local_size_y=1, local_size_z=1) in;
@@ -38,7 +40,7 @@ void main() {
 
   barrier();
 
-  for (uint offset = 1u; offset < uint(N); offset <<= 1u) 
+  for (uint offset = 1u; offset < uint(N); offset <<= 1u)
   {
     if (tid >= offset)
     {
@@ -55,7 +57,7 @@ void main() {
     barrier();
   }
 
-  if (is_exclusive) {
+  if (bool(is_exclusive)) {
     data_out[tid] = (tid == 0u) ? 0.0 : result[tid - 1u];
   } else {
     data_out[tid] = result[tid];

@@ -25,15 +25,20 @@ public class ReturnStmt extends Stmt {
   private Expr expr;
 
   public ReturnStmt(Expr expr) {
+    assert expr != null;
     this.expr = expr;
   }
 
   public ReturnStmt() {
-    this(null);
+    this.expr = null;
   }
 
   public Expr getExpr() {
     return expr;
+  }
+
+  public void setExpr(Expr expr) {
+    this.expr = expr;
   }
 
   public boolean hasExpr() {
