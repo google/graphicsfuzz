@@ -193,6 +193,7 @@ def run(
     test_dir: Path,
     binary_manager: binaries_util.BinaryManager,
     device: Optional[Device] = None,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> str:
 
     test: Test = test_util.metadata_read(test_dir)
@@ -204,6 +205,7 @@ def run(
         output_dir=test_util.get_results_directory(test_dir, device.name),
         binary_manager=binary_manager,
         device=device,
+        preprocessor_cache=preprocessor_cache,
     )
 
     return result_util.get_status(result_output_dir)
@@ -378,10 +380,13 @@ def handle_test(
 
     report_paths: List[Path] = []
     issue_found = False
+    preprocessor_cache = util.CommandCache()
 
     # Run on all devices.
     for device in active_devices:
-        status = run(test_dir, binary_manager, device)
+        status = run(
+            test_dir, binary_manager, device, preprocessor_cache=preprocessor_cache
+        )
         if status in (
             fuzz.STATUS_CRASH,
             fuzz.STATUS_TOOL_CRASH,
@@ -424,6 +429,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
     shader_job_shader_overrides: Optional[
         tool.ShaderJobNameToShaderOverridesMap
     ] = None,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> Path:
 
     if not shader_job_shader_overrides:
@@ -489,6 +495,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                             binary_paths=binary_manager,
                             spirv_opt_args=spirv_opt_args,
                             shader_overrides=shader_overrides,
+                            preprocessor_cache=preprocessor_cache,
                         )
                     )
                 except subprocess.CalledProcessError:

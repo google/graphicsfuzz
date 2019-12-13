@@ -230,3 +230,6 @@ getpid
 shlex
 apk
 arg1
+hashlib
+sha256
+hexdigest
