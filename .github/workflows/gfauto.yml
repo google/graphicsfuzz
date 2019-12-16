@@ -1,0 +1,51 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+on:
+  push:
+    paths:
+      - '.github/workflows/gfauto.yml'
+      - 'gfauto/**'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-16.04
+          - windows-2016
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - name: checkout
+        run: |
+          git clone https://github.com/${GITHUB_REPOSITORY}.git .
+          git checkout $GITHUB_SHA
+        shell: bash
+
+      - name: get_actions
+        run: |
+          mkdir -p .github/actions/
+          pushd .github/actions/
+            git clone https://github.com/actions/setup-python.git
+            pushd setup-python/
+              git checkout 28a6c1b915d5808acb3da49af7063544ebfbe085
+            popd
+          popd
+
+      - name: build_step
+        run: |
+          .github/workflows/gfauto.sh
+        shell: bash
