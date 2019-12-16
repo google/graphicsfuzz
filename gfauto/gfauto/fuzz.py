@@ -175,6 +175,17 @@ def main() -> None:
             gflogging.pop_stream_for_logging()
 
 
+def try_get_root_file() -> Path:
+    try:
+        return artifact_util.artifact_path_get_root()
+    except FileNotFoundError:
+        log(
+            "Could not find ROOT file (in the current directory or above) to mark where binaries should be stored. "
+            "Creating a ROOT file in the current directory."
+        )
+        return util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
+
+
 def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many-statements;
     settings_path: Path,
     iteration_seed_override: Optional[int] = None,
@@ -188,14 +199,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     if override_sigint:
         interrupt_util.override_sigint()
 
-    try:
-        artifact_util.artifact_path_get_root()
-    except FileNotFoundError:
-        log(
-            "Could not find ROOT file (in the current directory or above) to mark where binaries should be stored. "
-            "Creating a ROOT file in the current directory."
-        )
-        util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
+    try_get_root_file()
 
     settings = settings_util.read_or_create(settings_path)
 

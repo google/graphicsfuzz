@@ -115,6 +115,11 @@ def fuzz_and_reduce_bug(
 
     assert temp_dir.is_dir()
 
+    os.chdir(temp_dir)
+
+    # Create ROOT file in temp/ if needed.
+    fuzz.try_get_root_file()
+
     work_dir = temp_dir / fuzz.get_random_name()[:8]
     util.mkdir_p_new(work_dir)
     os.chdir(work_dir)
