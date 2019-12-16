@@ -33,13 +33,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertTrue;
+
 public class CheckDonorVersionMatchesTest {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  @Test(expected = RuntimeException.class)
-  public void testBasic() throws Exception {
+  @Test
+  public void testVersionMismatch() throws Exception {
     final File donors = temporaryFolder.newFolder();
     final File exampleDonor = new File(donors, "donor.json");
     final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
@@ -56,7 +59,8 @@ public class CheckDonorVersionMatchesTest {
     final File reference = temporaryFolder.newFile("reference.json");
     fileOperations.writeShaderJobFile(es310ShaderJob, reference);
 
-    final GenerationParams normalGenerationParams = GenerationParams.normal(ShaderKind.FRAGMENT, false);
+    final GenerationParams normalGenerationParams = GenerationParams.normal(ShaderKind.FRAGMENT,
+        false);
     final DonateLiveCodeTransformation transformation = new DonateLiveCodeTransformation(
         TransformationProbabilities.ALWAYS::donateLiveCodeAtStmt,
         donors,
@@ -64,10 +68,52 @@ public class CheckDonorVersionMatchesTest {
         false);
 
     TranslationUnit tu = es310ShaderJob.getFragmentShader().get();
-    transformation.apply(tu,
-        TransformationProbabilities.ALWAYS,
-        new RandomWrapper(0), normalGenerationParams);
-
+    try {
+      transformation.apply(tu,
+          TransformationProbabilities.ALWAYS,
+          new RandomWrapper(0), normalGenerationParams);
+      fail("An exception should have been thrown");
+    } catch (RuntimeException runtimeException)
+    {
+      assertTrue(runtimeException.getMessage().startsWith("Incompatible versions"));
+    }
   }
 
+    @Test
+    public void testShaderKindMismatch() throws Exception {
+      final File donors = temporaryFolder.newFolder();
+      final File exampleDonor = new File(donors, "donor.json");
+      final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+      final ShaderJob es100ShaderJob = new GlslShaderJob(Optional.empty(),
+          new PipelineInfo(), ParseHelper.parse("#version 310 es\nvec4 foo(bool t) {\nif (t) "
+          + "return vec4(1,0,1,1);\nreturn vec4(0,1,1,1);\n}\nout vec4 fc;\nvoid main() "
+          + "{\nfc = foo(true);\n "
+          + "}\n"));
+      fileOperations.writeShaderJobFile(es100ShaderJob, exampleDonor);
+
+      final ShaderJob es310ShaderJob = new GlslShaderJob(Optional.empty(),
+          new PipelineInfo(), ParseHelper.parse("#version 310 es\nout vec4 pix;\nvoid main() { "
+          + "pix = vec4(1,0,0,1);}\n"));
+      final File reference = temporaryFolder.newFile("reference.json");
+      fileOperations.writeShaderJobFile(es310ShaderJob, reference);
+
+      final GenerationParams normalGenerationParams = GenerationParams.normal(ShaderKind.VERTEX,
+          false);
+      final DonateLiveCodeTransformation transformation = new DonateLiveCodeTransformation(
+          TransformationProbabilities.ALWAYS::donateLiveCodeAtStmt,
+          donors,
+          normalGenerationParams,
+          false);
+
+      TranslationUnit tu = es310ShaderJob.getFragmentShader().get();
+      try {
+        transformation.apply(tu,
+            TransformationProbabilities.ALWAYS,
+            new RandomWrapper(0), normalGenerationParams);
+        fail("An exception should have been thrown");
+      } catch (RuntimeException runtimeException)
+      {
+        assertTrue(runtimeException.getMessage().startsWith("Incompatible shader types"));
+      }
+    }
 }

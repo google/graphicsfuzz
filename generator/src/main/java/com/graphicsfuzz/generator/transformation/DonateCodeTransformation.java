@@ -256,11 +256,11 @@ public abstract class DonateCodeTransformation implements ITransformation {
         return new NullStmt();
       } else {
         if (shadingLanguageVersion != maybeDonor.get().getShadingLanguageVersion()) {
-          throw new RuntimeException("Incompatible versions: ref=" + shadingLanguageVersion
+          throw new RuntimeException("Incompatible versions: reference=" + shadingLanguageVersion
               + " donor=" + maybeDonor.get().getShadingLanguageVersion());
         }
         if (this.generationParams.getShaderKind() != maybeDonor.get().getShaderKind()) {
-          throw new RuntimeException("Incompatible shader types: ref="
+          throw new RuntimeException("Incompatible shader types: reference="
               + this.generationParams.getShaderKind() + " donor="
               + maybeDonor.get().getShaderKind());
         }
