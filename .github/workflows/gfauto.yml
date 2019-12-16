@@ -49,11 +49,13 @@ jobs:
             popd
           popd
 
-      - name: build_step
-        uses: actions/setup-python@v1
+      - name: setup_python
+        uses: ./.github/actions/setup-python
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
+
+      - name: build_step
         run: |
           .github/workflows/gfauto.sh
         shell: bash
