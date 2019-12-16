@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2019 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,14 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-16.04
           - windows-2016
+        python-version:
+          - 3.6
+          - 3.7
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -46,6 +50,10 @@ jobs:
           popd
 
       - name: build_step
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
         run: |
           .github/workflows/gfauto.sh
         shell: bash
