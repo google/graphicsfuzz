@@ -32,6 +32,7 @@ from gfauto import (
     gflogging,
     glsl_generate_util,
     host_device_util,
+    interrupt_util,
     result_util,
     shader_compiler_util,
     shader_job_util,
@@ -149,6 +150,7 @@ def fuzz_glsl(
     ]
 
     for test_dir in test_dirs:
+        interrupt_util.interrupt_if_needed()
         if handle_test(test_dir, reports_dir, active_devices, binary_manager, settings):
             # If we generated a report, don't bother trying other optimization combinations.
             break
@@ -393,8 +395,13 @@ def handle_test(
             fuzz.STATUS_UNRESPONSIVE,
         ):
             issue_found = True
+
+        # No need to run further on real devices if the pre-processing step failed.
         if status == fuzz.STATUS_TOOL_CRASH:
-            # No need to run further on real devices if the pre-processing step failed.
+            break
+
+        # Skip devices if interrupted, but finish reductions, if needed.
+        if interrupt_util.interrupted():
             break
 
     # For each device that saw a crash, copy the test to reports_dir, adding the signature and device info to the test

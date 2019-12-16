@@ -233,3 +233,6 @@ arg1
 hashlib
 sha256
 hexdigest
+sigint
+SIGINT
+signum
