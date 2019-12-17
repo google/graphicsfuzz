@@ -37,12 +37,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
 
-      - name: checkout
-        run: |
-          git clone https://github.com/${GITHUB_REPOSITORY}.git .
-          git checkout $GITHUB_SHA
-        shell: bash
-
       - name: get_actions
         run: |
           mkdir -p .github/actions/
@@ -51,7 +45,15 @@ jobs:
             pushd setup-python/
               git checkout 28a6c1b915d5808acb3da49af7063544ebfbe085
             popd
+            git clone https://github.com/actions/checkout.git
+            pushd checkout/
+              git checkout 722adc63f1aa60a57ec37892e133b1d319cae598
+            popd
           popd
+        shell: bash
+
+      - name: checkout
+        uses: ./.github/actions/checkout
 
       - name: setup_python
         uses: ./.github/actions/setup-python
