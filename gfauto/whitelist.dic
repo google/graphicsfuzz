@@ -236,3 +236,4 @@ hexdigest
 sigint
 SIGINT
 signum
+pathsep

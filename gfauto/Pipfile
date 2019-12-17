@@ -45,6 +45,7 @@ mypy = "*"
 
 # Testing.
 pytest = "*"
+atomicwrites = "*"  # PyTest depends on this, but only on Windows, which gets missed.
 
 # PyLint linter.
 pylint = "*"

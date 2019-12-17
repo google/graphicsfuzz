@@ -20,6 +20,7 @@ The main entry point to GraphicsFuzz Auto.
 """
 
 import argparse
+import os
 import random
 import secrets
 import shutil
@@ -98,7 +99,8 @@ from gfauto.util import check_dir_exists
 #                 - shader/ shader_reduction_001/
 #                 (these are the result directories for each step, containing STATUS, etc.)
 #
-
+DONORS_DIR = "donors"
+REFERENCES_DIR = "references"
 
 REFERENCE_IMAGE_FILE_NAME = "reference.png"
 VARIANT_IMAGE_FILE_NAME = "variant.png"
@@ -148,7 +150,7 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--force_no_stack_traces",
+        "--allow_no_stack_traces",
         help="Continue even if we cannot get stack traces (using catchsegv or cdb).",
         action="store_true",
     )
@@ -160,13 +162,13 @@ def main() -> None:
         parsed_args.iteration_seed
     )
     use_spirv_fuzz: bool = parsed_args.use_spirv_fuzz
-    force_no_stack_traces: bool = parsed_args.force_no_stack_traces
+    allow_no_stack_traces: bool = parsed_args.allow_no_stack_traces
 
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
         try:
             main_helper(
-                settings_path, iteration_seed, use_spirv_fuzz, force_no_stack_traces
+                settings_path, iteration_seed, use_spirv_fuzz, allow_no_stack_traces
             )
         except settings_util.NoSettingsFile as exception:
             log(str(exception))
@@ -174,25 +176,32 @@ def main() -> None:
             gflogging.pop_stream_for_logging()
 
 
-def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many-statements;
-    settings_path: Path,
-    iteration_seed_override: Optional[int],
-    use_spirv_fuzz: bool,
-    force_no_stack_traces: bool,
-) -> None:
-
-    util.update_gcov_environment_variable_if_needed()
-
-    interrupt_util.override_sigint()
-
+def try_get_root_file() -> Path:
     try:
-        artifact_util.artifact_path_get_root()
+        return artifact_util.artifact_path_get_root()
     except FileNotFoundError:
         log(
             "Could not find ROOT file (in the current directory or above) to mark where binaries should be stored. "
             "Creating a ROOT file in the current directory."
         )
-        util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
+        return util.file_write_text(Path(artifact_util.ARTIFACT_ROOT_FILE_NAME), "")
+
+
+def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many-statements;
+    settings_path: Path,
+    iteration_seed_override: Optional[int] = None,
+    use_spirv_fuzz: bool = False,
+    allow_no_stack_traces: bool = False,
+    override_sigint: bool = True,
+    use_amber_vulkan_loader: bool = False,
+) -> None:
+
+    util.update_gcov_environment_variable_if_needed()
+
+    if override_sigint:
+        interrupt_util.override_sigint()
+
+    try_get_root_file()
 
     settings = settings_util.read_or_create(settings_path)
 
@@ -206,13 +215,13 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     reports_dir = Path() / "reports"
     fuzz_failures_dir = reports_dir / FUZZ_FAILURES_DIR_NAME
     temp_dir = Path() / "temp"
-    references_dir = Path() / "references"
-    donors_dir = Path() / "donors"
+    references_dir = Path() / REFERENCES_DIR
+    donors_dir = Path() / DONORS_DIR
     spirv_fuzz_shaders_dir = Path() / "spirv_fuzz_shaders"
 
     # Log a warning if there is no tool on the PATH for printing stack traces.
     prepended = util.prepend_catchsegv_if_available([], log_warning=True)
-    if not force_no_stack_traces and not prepended:
+    if not allow_no_stack_traces and not prepended:
         raise AssertionError("Stopping because we cannot get stack traces.")
 
     spirv_fuzz_shaders: List[Path] = []
@@ -234,6 +243,12 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     binary_manager = binaries_util.get_default_binary_manager(
         settings=settings
     ).get_child_binary_manager(list(settings.custom_binaries), prepend=True)
+
+    if use_amber_vulkan_loader:
+        library_path = binary_manager.get_binary_path_by_name(
+            binaries_util.AMBER_VULKAN_LOADER_NAME
+        ).path.parent
+        util.add_library_paths_to_environ([library_path], os.environ)
 
     while True:
 
@@ -289,11 +304,10 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
                 binary_manager,
             )
 
-        shutil.rmtree(staging_dir)
-
         if iteration_seed_override is not None:
             log("Stopping due to iteration_seed")
             break
+        shutil.rmtree(staging_dir)
 
 
 def create_summary_and_reproduce(

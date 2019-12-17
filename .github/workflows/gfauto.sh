@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2019 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,33 +14,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-trigger:
-- gfauto
+set -x
+set -e
+set -u
 
-pr:
-- dev
-- master
+case "$(uname)" in
+"Linux")
+  ACTIVATE_PATH=".venv/bin/activate"
+  ;;
 
-pool:
-  vmImage: 'ubuntu-latest'
-strategy:
-  matrix:
-    Python36:
-      python.version: '3.6'
-    Python37:
-      python.version: '3.7'
+"Darwin")
+  ACTIVATE_PATH=".venv/bin/activate"
+  ;;
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-  displayName: 'Use Python $(python.version)'
+"MINGW"*)
+  ACTIVATE_PATH=".venv/Scripts/activate"
+  ;;
 
-- script: |
-    cd gfauto
-    export PYTHON=python
-    export SKIP_SHELL=1
-    ./dev_shell.sh.template
-    source .venv/bin/activate
-    ./check_all.sh
-  displayName: 'Install dependencies'
+*)
+  echo "Unknown OS"
+  exit 1
+  ;;
+esac
+
+cd gfauto
+export PYTHON=python
+export SKIP_SHELL=1
+./dev_shell.sh.template
+# shellcheck disable=SC1090
+source "${ACTIVATE_PATH}"
+./check_all.sh

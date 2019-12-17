@@ -20,6 +20,7 @@ Used for accessing files, file system operations like creating directories, copy
 of a tool on the PATH, removing the beginning and/or end of string, and custom assert functions like check,
 check_check_field_truthy, check_file_exists, etc.
 """
+
 import hashlib
 import os
 import pathlib
@@ -434,3 +435,16 @@ class CommandCache:
     def add_output_to_cache(self, cmd: HashedCommand, output_path: Path) -> None:
         cmd_tuple = tuple(cmd.hashed_cmd)
         self.cache[cmd_tuple] = output_path
+
+
+def add_library_paths_to_environ(library_paths: List[Path], environ: Any) -> None:
+    # E.g "C:\Windows;C:\Program Files" (Windows) or "/usr/bin:/bin" (POSIX).
+    library_path_joined = os.path.pathsep.join([str(p) for p in library_paths])
+    env_variable = "PATH" if get_platform() == "Windows" else "LD_LIBRARY_PATH"
+
+    if env_variable in environ:
+        environ[env_variable] = (
+            library_path_joined + os.path.pathsep + environ[env_variable]
+        )
+    else:
+        environ[env_variable] = library_path_joined

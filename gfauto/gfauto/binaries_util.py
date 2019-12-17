@@ -45,6 +45,7 @@ SPIRV_VAL_NAME = "spirv-val"
 SPIRV_DIS_NAME = "spirv-dis"
 SWIFT_SHADER_NAME = "swift_shader_icd"
 AMBER_NAME = "amber"
+AMBER_VULKAN_LOADER_NAME = "amber_vulkan_loader"
 
 SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG = "no-validate-after-all"
 
@@ -74,6 +75,8 @@ PLATFORM_SUFFIXES_RELWITHDEBINFO = [
 
 DEFAULT_SPIRV_TOOLS_VERSION = "983b5b4fccea17cab053de24d51403efb4829158"
 
+DEFAULT_AMBER_VERSION = "4c57c691fe34c82d3e8954e1c2ac5d6b0aa9497d"
+
 DEFAULT_BINARIES = [
     Binary(
         name="glslangValidator",
@@ -91,19 +94,10 @@ DEFAULT_BINARIES = [
         tags=["Debug"],
         version="cf79a622ec5c993fa48f8557c28e23b8407d1efd",
     ),
-    Binary(
-        name="amber", tags=["Debug"], version="f231728f60cb3b0f21d7423aed24fd3b317f38c9"
-    ),
-    Binary(
-        name="amber_apk",
-        tags=["Debug"],
-        version="f231728f60cb3b0f21d7423aed24fd3b317f38c9",
-    ),
-    Binary(
-        name="amber_apk_test",
-        tags=["Debug"],
-        version="f231728f60cb3b0f21d7423aed24fd3b317f38c9",
-    ),
+    Binary(name="amber", tags=["Debug"], version=DEFAULT_AMBER_VERSION),
+    Binary(name="amber_apk", tags=["Debug"], version=DEFAULT_AMBER_VERSION),
+    Binary(name="amber_apk_test", tags=["Debug"], version=DEFAULT_AMBER_VERSION),
+    Binary(name="amber_vulkan_loader", tags=["Debug"], version=DEFAULT_AMBER_VERSION),
     Binary(
         name="graphicsfuzz-tool",
         tags=[],
@@ -522,7 +516,7 @@ def binary_name_to_project_name(binary_name: str) -> str:
         project_name = "SPIRV-Tools"
     elif binary_name == "swift_shader_icd":
         project_name = "swiftshader"
-    elif binary_name in ("amber", "amber_apk", "amber_apk_test"):
+    elif binary_name in ("amber", "amber_apk", "amber_apk_test", "amber_vulkan_loader"):
         project_name = "amber"
     elif binary_name == "graphicsfuzz-tool":
         project_name = "graphicsfuzz"
@@ -536,7 +530,7 @@ def binary_name_to_project_name(binary_name: str) -> str:
     return project_name
 
 
-def get_github_release_recipe(  # pylint: disable=too-many-branches;
+def get_github_release_recipe(  # pylint: disable=too-many-branches,too-many-statements;
     binary: Binary,
 ) -> recipe_wrap.RecipeWrap:
 
@@ -663,13 +657,30 @@ def get_github_release_recipe(  # pylint: disable=too-many-branches;
                 ),
             ]
         else:
+            if platform == "Linux":
+                vulkan_loader_name = "libvulkan.so.1"
+            elif platform == "Mac":
+                vulkan_loader_name = "libvulkan.1.dylib"
+            elif platform == "Windows":
+                vulkan_loader_name = "vulkan-1.dll"
+            else:
+                raise AssertionError(
+                    f"Unknown platform for Amber's Vulkan loader: {platform}"
+                )
+
             binaries = [
                 Binary(
                     name="amber",
                     tags=tags,
                     path=f"{project_name}/bin/amber{executable_suffix}",
                     version=version,
-                )
+                ),
+                Binary(
+                    name=AMBER_VULKAN_LOADER_NAME,
+                    tags=tags,
+                    path=f"{project_name}/lib/{vulkan_loader_name}",
+                    version=version,
+                ),
             ]
     elif project_name == "graphicsfuzz":
         binaries = [
