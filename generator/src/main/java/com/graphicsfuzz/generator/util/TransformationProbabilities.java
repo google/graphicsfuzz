@@ -130,6 +130,24 @@ public class TransformationProbabilities {
           0,
           0);
 
+  // Useful for testing; add similar for others when needed
+  public static TransformationProbabilities ALWAYS =
+      new TransformationProbabilities(
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100);
+
   public static TransformationProbabilities onlySplitLoops() {
     TransformationProbabilities result = ZERO;
     result.probSplitLoops = 100;

@@ -248,11 +248,22 @@ public abstract class DonateCodeTransformation implements ITransformation {
     final int maxTries = 10;
     int tries = 0;
     while (true) {
-      final Optional<TranslationUnit> maybeDonor = chooseDonor(generator);
+      final Optional<TranslationUnit> maybeDonor = chooseDonor(generator, shadingLanguageVersion);
+
       if (!maybeDonor.isPresent()) {
         // No compatible donors were found, thus we cannot do serious code donation here;
         // we return a null statement instead.
         return new NullStmt();
+      } else {
+        if (shadingLanguageVersion != maybeDonor.get().getShadingLanguageVersion()) {
+          throw new RuntimeException("Incompatible versions: reference=" + shadingLanguageVersion
+              + " donor=" + maybeDonor.get().getShadingLanguageVersion());
+        }
+        if (this.generationParams.getShaderKind() != maybeDonor.get().getShaderKind()) {
+          throw new RuntimeException("Incompatible shader types: reference="
+              + this.generationParams.getShaderKind() + " donor="
+              + maybeDonor.get().getShaderKind());
+        }
       }
       DonationContext donationContext = new DonationContextFinder(maybeDonor.get(), generator)
           .getDonationContext();
@@ -626,7 +637,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
     return !fs.stream().filter(item -> fp.matches(item)).collect(Collectors.toList()).isEmpty();
   }
 
-  Optional<TranslationUnit> chooseDonor(IRandom generator) {
+  Optional<TranslationUnit> chooseDonor(IRandom generator,
+                                        ShadingLanguageVersion shadingLanguageVersion) {
     // The donors that we have previously selected during this donation pass are captured via
     // 'donorsToTranslationUnits'.  Furthermore, there is a maximum number of distinct donors we
     // are allowed to use per donation pass.  So first check whether the donors we have already
@@ -645,7 +657,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
       try {
         return Optional.of(getDonorTranslationUnit(sortedKeys.get(generator.nextInt(sortedKeys
                 .size())),
-            generator));
+            generator, shadingLanguageVersion));
       } catch (IncompatibleDonorException exception) {
         throw new RuntimeException(previouslyUsedDonorFoundToBeIncompatibleMessage);
       }
@@ -658,7 +670,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
       final File candidateDonorFile = donorFiles
           .get(generator.nextInt(donorFiles.size()));
       try {
-        return Optional.of(getDonorTranslationUnit(candidateDonorFile, generator));
+        return Optional.of(getDonorTranslationUnit(candidateDonorFile, generator,
+            shadingLanguageVersion));
       } catch (IncompatibleDonorException exception) {
         if (donorsToTranslationUnits.containsKey(candidateDonorFile)) {
           throw new RuntimeException(previouslyUsedDonorFoundToBeIncompatibleMessage);
@@ -671,12 +684,13 @@ public abstract class DonateCodeTransformation implements ITransformation {
     return Optional.empty();
   }
 
-  private TranslationUnit getDonorTranslationUnit(File donorFile, IRandom generator)
+  private TranslationUnit getDonorTranslationUnit(File donorFile, IRandom generator,
+                                                  ShadingLanguageVersion shadingLanguageVersion)
       throws IncompatibleDonorException {
     if (!donorsToTranslationUnits.containsKey(donorFile)) {
       try {
         TranslationUnit donor = prepareTranslationUnit(donorFile, generator);
-        if (!compatibleDonor(donor)) {
+        if (!compatibleDonor(donor, shadingLanguageVersion)) {
           throw new IncompatibleDonorException();
         }
         functionPrototypes.addAll(AstUtil.getFunctionPrototypesFromShader(donor));
@@ -691,13 +705,13 @@ public abstract class DonateCodeTransformation implements ITransformation {
     return donorsToTranslationUnits.get(donorFile);
   }
 
-  private boolean compatibleDonor(TranslationUnit donor) {
+  private boolean compatibleDonor(TranslationUnit donor,
+                                  ShadingLanguageVersion shadingLanguageVersion) {
     final List<String> usedFunctionNames = functionPrototypes.stream()
         .map(FunctionPrototype::getName)
         .collect(Collectors.toList());
     final Set<String> usedGlobalVariableNames = globalVariables.keySet();
     final Set<String> usedStructNames = structNames;
-
     for (FunctionPrototype donorPrototype : AstUtil.getFunctionPrototypesFromShader(donor)) {
       if (usedGlobalVariableNames.contains(donorPrototype.getName())
           || usedStructNames.contains(donorPrototype.getName())) {
