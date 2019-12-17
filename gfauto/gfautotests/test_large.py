@@ -204,6 +204,7 @@ def fuzz_and_reduce_bug(
         settings_path=settings_util.DEFAULT_SETTINGS_FILE_PATH,
         iteration_seed_override=seed,
         override_sigint=False,
+        use_amber_vulkan_loader=True,
     )
 
     check_result()

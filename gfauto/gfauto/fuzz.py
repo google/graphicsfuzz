@@ -20,6 +20,7 @@ The main entry point to GraphicsFuzz Auto.
 """
 
 import argparse
+import os
 import random
 import secrets
 import shutil
@@ -192,6 +193,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     use_spirv_fuzz: bool = False,
     allow_no_stack_traces: bool = False,
     override_sigint: bool = True,
+    use_amber_vulkan_loader: bool = False,
 ) -> None:
 
     util.update_gcov_environment_variable_if_needed()
@@ -241,6 +243,12 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     binary_manager = binaries_util.get_default_binary_manager(
         settings=settings
     ).get_child_binary_manager(list(settings.custom_binaries), prepend=True)
+
+    if use_amber_vulkan_loader:
+        library_path = binary_manager.get_binary_path_by_name(
+            binaries_util.AMBER_VULKAN_LOADER_NAME
+        ).path.parent
+        util.add_library_paths_to_environ([library_path], os.environ)
 
     while True:
 
