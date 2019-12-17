@@ -39,8 +39,8 @@ jobs:
 
       - name: get_actions
         run: |
-          mkdir -p ../.github/actions/
-          pushd ../.github/actions/
+          mkdir -p ./../.github/actions/
+          pushd ./../.github/actions/
             git clone https://github.com/actions/setup-python.git
             pushd setup-python/
               git checkout 28a6c1b915d5808acb3da49af7063544ebfbe085
@@ -53,10 +53,10 @@ jobs:
         shell: bash
 
       - name: checkout
-        uses: ../.github/actions/checkout
+        uses: ./../.github/actions/checkout
 
       - name: setup_python
-        uses: ../.github/actions/setup-python
+        uses: ./../.github/actions/setup-python
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
