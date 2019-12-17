@@ -103,7 +103,7 @@ public class Typer extends ScopeTrackingVisitor {
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
     super.visitFunctionCallExpr(functionCallExpr);
 
-    // First, see whether this is an invocation of a GraphicsFuzz macro.  If it does, we handle it
+    // First, see whether this is an invocation of a GraphicsFuzz macro.  If it is, we handle it
     // by propagating the type of an appropriate macro argument.
     if (functionCallExpr.getCallee().startsWith("_GLF")) {
       switch (functionCallExpr.getCallee()) {
