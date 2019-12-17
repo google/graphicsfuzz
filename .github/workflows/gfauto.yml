@@ -14,15 +14,16 @@
 
 
 on:
-  push:
+  pull_request:
     paths:
       - '.github/workflows/gfauto.yml'
       - 'gfauto/**'
+  branches:
+    - master
 
 jobs:
   build:
     strategy:
-      fail-fast: false
       matrix:
         os:
           - ubuntu-16.04
@@ -30,6 +31,9 @@ jobs:
         python-version:
           - 3.6
           - 3.7
+        exclude:
+          - os: windows-2016
+            python-version: 3.6
     runs-on: ${{ matrix.os }}
     steps:
 
