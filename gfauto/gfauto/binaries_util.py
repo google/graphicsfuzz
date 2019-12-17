@@ -74,6 +74,8 @@ PLATFORM_SUFFIXES_RELWITHDEBINFO = [
 
 DEFAULT_SPIRV_TOOLS_VERSION = "983b5b4fccea17cab053de24d51403efb4829158"
 
+DEFAULT_AMBER_VERSION = "4c57c691fe34c82d3e8954e1c2ac5d6b0aa9497d"
+
 DEFAULT_BINARIES = [
     Binary(
         name="glslangValidator",
@@ -91,19 +93,9 @@ DEFAULT_BINARIES = [
         tags=["Debug"],
         version="cf79a622ec5c993fa48f8557c28e23b8407d1efd",
     ),
-    Binary(
-        name="amber", tags=["Debug"], version="f231728f60cb3b0f21d7423aed24fd3b317f38c9"
-    ),
-    Binary(
-        name="amber_apk",
-        tags=["Debug"],
-        version="f231728f60cb3b0f21d7423aed24fd3b317f38c9",
-    ),
-    Binary(
-        name="amber_apk_test",
-        tags=["Debug"],
-        version="f231728f60cb3b0f21d7423aed24fd3b317f38c9",
-    ),
+    Binary(name="amber", tags=["Debug"], version=DEFAULT_AMBER_VERSION),
+    Binary(name="amber_apk", tags=["Debug"], version=DEFAULT_AMBER_VERSION),
+    Binary(name="amber_apk_test", tags=["Debug"], version=DEFAULT_AMBER_VERSION),
     Binary(
         name="graphicsfuzz-tool",
         tags=[],
