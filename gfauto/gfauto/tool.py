@@ -314,6 +314,7 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
     comment_text: str,
     copyright_year: str,
     extra_commands: str,
+    is_coverage_gap: bool = False,
 ) -> Path:
     """Converts a GLSL shader job to an Amber script suitable for adding to the CTS."""
     return glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
@@ -324,6 +325,7 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
         comment_text=comment_text,
         copyright_year=copyright_year,
         extra_commands=extra_commands,
+        is_coverage_gap=is_coverage_gap,
     )
 
 
@@ -385,6 +387,7 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
     comment_text: str,
     copyright_year: str,
     extra_commands: str,
+    is_coverage_gap: bool = False,
 ) -> Path:
     """Converts a GLSL shader job of a wrong image case to an Amber script suitable for adding to the CTS."""
     shader_jobs = get_shader_jobs(source_dir)
@@ -441,5 +444,6 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
             spirv_opt_args=spirv_opt_args,
             spirv_opt_hash=spirv_opt_hash,
             extra_commands=extra_commands,
+            is_coverage_gap=is_coverage_gap,
         ),
     )
