@@ -42,6 +42,7 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import com.graphicsfuzz.common.util.OpenGlConstants;
+import com.graphicsfuzz.util.Constants;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -102,7 +103,59 @@ public class Typer extends ScopeTrackingVisitor {
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
     super.visitFunctionCallExpr(functionCallExpr);
 
-    // First, see if there is a builtin with a matching prototype.
+    // First, see whether this is an invocation of a GraphicsFuzz macro.  If it is, we handle it
+    // by propagating the type of an appropriate macro argument.
+    if (functionCallExpr.getCallee().startsWith("_GLF")) {
+      switch (functionCallExpr.getCallee()) {
+        case Constants.GLF_DEAD:
+        case Constants.GLF_FUZZED:
+        case Constants.GLF_SWITCH:
+          // These macros take 1 argument, and it can be of various types.
+          types.put(functionCallExpr, types.get(functionCallExpr.getArg(0)));
+          return;
+        case Constants.GLF_WRAPPED_LOOP:
+        case Constants.GLF_WRAPPED_IF_FALSE:
+        case Constants.GLF_WRAPPED_IF_TRUE:
+          // These macros similarly take 1 argument, but it must have type 'bool' (possibly with
+          // qualifiers).
+          assert types.get(functionCallExpr.getArg(0)).getWithoutQualifiers() == BasicType.BOOL;
+          types.put(functionCallExpr, types.get(functionCallExpr.getArg(0)));
+          return;
+        case Constants.GLF_IDENTITY:
+        case Constants.GLF_ONE:
+        case Constants.GLF_ZERO:
+          // These macros take 2 arguments, and the 'real' argument (the one to which the macro
+          // expands) is the second of these.  It can have one of various types.
+          types.put(functionCallExpr, types.get(functionCallExpr.getArg(1)));
+          return;
+        case Constants.GLF_FALSE:
+        case Constants.GLF_TRUE:
+          // These macros also take 2 arguments with the 'real' argument being the second one.  It
+          // must have type 'bool' (possibly with qualifiers).
+          assert types.get(functionCallExpr.getArg(1)).getWithoutQualifiers() == BasicType.BOOL;
+          types.put(functionCallExpr, types.get(functionCallExpr.getArg(1)));
+          return;
+        case Constants.GLF_MAKE_IN_BOUNDS_INT:
+          // This macro takes 2 arguments.  The first is the real array bound and it must be 'int'
+          // (possibly with qualifiers).
+          assert types.get(functionCallExpr.getArg(0)).getWithoutQualifiers() == BasicType.INT;
+          types.put(functionCallExpr, types.get(functionCallExpr.getArg(0)));
+          return;
+        case Constants.GLF_MAKE_IN_BOUNDS_UINT:
+          // This macro takes 2 arguments.  The first is the real array bound and it must be 'uint'
+          // (possibly with qualifiers).
+          assert types.get(functionCallExpr.getArg(0)).getWithoutQualifiers() == BasicType.UINT;
+          types.put(functionCallExpr, types.get(functionCallExpr.getArg(0)));
+          return;
+        default:
+          // That's all the macros.  But there may be other functions that start '_GLF', e.g.
+          // '_GLF_outlined...'.  These are handled by the code below.
+          break;
+      }
+    }
+
+
+    // Next, see if there is a builtin with a matching prototype.
     final Optional<Type> maybeMatchingBuiltinFunctionReturn =
         lookForMatchingFunction(functionCallExpr,
         TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), tu.getShaderKind())
