@@ -75,7 +75,7 @@ test "${EXIT_CODE}" -eq 2
 # Interestingness test succeeds.
 ./glsl-reduce-walkthrough/interestingness_test glsl-reduce-walkthrough/colorgrid_modulo.json >/dev/null
 # Reducer succeeds.
-glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/interestingness_test --output reduction_results >/dev/null
+glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json glsl-reduce-walkthrough/interestingness_test --output reduction_results >/dev/null
 # Interestingness test still succeeds.
 ./glsl-reduce-walkthrough/interestingness_test reduction_results/colorgrid_modulo_reduced_final.json >/dev/null
 # Fake compiler still fails.
@@ -86,7 +86,7 @@ test "${EXIT_CODE}" -eq 2
 # Weak interestingness test succeeds.
 ./glsl-reduce-walkthrough/weak_interestingness_test glsl-reduce-walkthrough/colorgrid_modulo.json >/dev/null
 # Reducer succeeds.
-glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/weak_interestingness_test --output slipped_reduction_results >/dev/null
+glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json glsl-reduce-walkthrough/weak_interestingness_test --output slipped_reduction_results >/dev/null
 # Weak interesting test succeeds.
 ./glsl-reduce-walkthrough/weak_interestingness_test slipped_reduction_results/colorgrid_modulo_reduced_final.json >/dev/null
 # Interestingness test (non-weak) fails.
