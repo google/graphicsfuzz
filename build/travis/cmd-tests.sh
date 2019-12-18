@@ -109,5 +109,3 @@ shader_translator "${SHADER}" >/dev/null
 spirv-as -h >/dev/null
 spirv-dis -h >/dev/null
 spirv-val -h >/dev/null
-"graphicsfuzz/bin/${platform}/swiftshader/get_image_egl" "${SHADER}" >/dev/null
-test -f output.png
