@@ -42,6 +42,7 @@ class AmberfySettings:  # pylint: disable=too-many-instance-attributes
     copyright_header_text: Optional[str] = None
     add_generated_comment: bool = False
     add_graphics_fuzz_comment: bool = False
+    is_coverage_gap: bool = False
     short_description: Optional[str] = None
     comment_text: Optional[str] = None
     use_default_fence_timeout: bool = False
@@ -483,7 +484,10 @@ def get_amber_script_header(amberfy_settings: AmberfySettings) -> str:
         result += "\n# Generated.\n\n"
 
     if amberfy_settings.add_graphics_fuzz_comment:
-        result += "\n# A test for a bug found by GraphicsFuzz.\n"
+        if amberfy_settings.is_coverage_gap:
+            result += "\n# A test for a coverage-gap found by GraphicsFuzz.\n"
+        else:
+            result += "\n# A test for a bug found by GraphicsFuzz.\n"
 
     if amberfy_settings.short_description:
         result += f"\n# Short description: {amberfy_settings.short_description}\n"
