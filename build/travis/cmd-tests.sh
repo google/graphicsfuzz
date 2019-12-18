@@ -67,31 +67,33 @@ test -d "work/shaderfamilies/family_vulkan_stable_bubblesort_flag"
 ### Reduce examples.
 cp -r graphicsfuzz/examples/glsl-reduce-walkthrough .
 
+export PATH="$(pwd)/glsl-reduce-walkthrough:${PATH}"
+
 # Fake compiler fails.
 EXIT_CODE=0
-glsl-reduce-walkthrough/fake_compiler glsl-reduce-walkthrough/colorgrid_modulo.frag || EXIT_CODE=$?
+fake_compiler glsl-reduce-walkthrough/colorgrid_modulo.frag || EXIT_CODE=$?
 test "${EXIT_CODE}" -eq 2
 
 # Interestingness test succeeds.
-./glsl-reduce-walkthrough/interestingness_test glsl-reduce-walkthrough/colorgrid_modulo.json >/dev/null
+interestingness_test glsl-reduce-walkthrough/colorgrid_modulo.json >/dev/null
 # Reducer succeeds.
-glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json glsl-reduce-walkthrough/interestingness_test --output reduction_results >/dev/null
+glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json --output reduction_results interestingness_test >/dev/null
 # Interestingness test still succeeds.
-./glsl-reduce-walkthrough/interestingness_test reduction_results/colorgrid_modulo_reduced_final.json >/dev/null
+interestingness_test reduction_results/colorgrid_modulo_reduced_final.json >/dev/null
 # Fake compiler still fails.
 EXIT_CODE=0
-glsl-reduce-walkthrough/fake_compiler reduction_results/colorgrid_modulo_reduced_final.frag || EXIT_CODE=$? >/dev/null
+fake_compiler reduction_results/colorgrid_modulo_reduced_final.frag || EXIT_CODE=$? >/dev/null
 test "${EXIT_CODE}" -eq 2
 
 # Weak interestingness test succeeds.
-./glsl-reduce-walkthrough/weak_interestingness_test glsl-reduce-walkthrough/colorgrid_modulo.json >/dev/null
+weak_interestingness_test glsl-reduce-walkthrough/colorgrid_modulo.json >/dev/null
 # Reducer succeeds.
-glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json glsl-reduce-walkthrough/weak_interestingness_test --output slipped_reduction_results >/dev/null
+glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json --output slipped_reduction_results weak_interestingness_test >/dev/null
 # Weak interesting test succeeds.
-./glsl-reduce-walkthrough/weak_interestingness_test slipped_reduction_results/colorgrid_modulo_reduced_final.json >/dev/null
+weak_interestingness_test slipped_reduction_results/colorgrid_modulo_reduced_final.json >/dev/null
 # Interestingness test (non-weak) fails.
 EXIT_CODE=0
-./glsl-reduce-walkthrough/interestingness_test slipped_reduction_results/colorgrid_modulo_reduced_final.json || EXIT_CODE=$? >/dev/null
+interestingness_test slipped_reduction_results/colorgrid_modulo_reduced_final.json || EXIT_CODE=$? >/dev/null
 test "${EXIT_CODE}" -eq 1
 
 
