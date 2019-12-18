@@ -71,8 +71,11 @@ use the Git Bash shell.
 # Copy the sample files into the current directory:
 cp -r graphicsfuzz/examples/glsl-reduce-walkthrough .
 
+# For simplicity, add the directory to your PATH.
+export PATH="$(pwd)/glsl-reduce-walkthrough:${PATH}"
+
 # Run the fake shader compiler on the fragment shader file:
-glsl-reduce-walkthrough/fake_compiler glsl-reduce-walkthrough/colorgrid_modulo.frag
+fake_compiler glsl-reduce-walkthrough/colorgrid_modulo.frag
 
 # Output:
 # Fatal error: too much indexing.
@@ -95,13 +98,13 @@ cat glsl-reduce-walkthrough/colorgrid_modulo.frag
 # <contents of the original shader>
 
 # Run glsl-reduce, putting the tool's output in the 'reduction_results' directory (created if it does not exist)
-glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/interestingness_test --output reduction_results
+glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json interestingness_test --output reduction_results
 
 # Output:
 # <lots of messages about the reducer's progress>
 
 # Confirm that the reduced fragment shader file still reproduces the issue
-glsl-reduce-walkthrough/fake_compiler reduction_results/colorgrid_modulo_reduced_final.frag
+fake_compiler reduction_results/colorgrid_modulo_reduced_final.frag
 
 # Output:
 # Fatal error: too much indexing.
@@ -148,7 +151,7 @@ Let's use it to perform a reduction:
 
 ```sh
 # Run glsl-reduce
-glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json ./glsl-reduce-walkthrough/weak_interestingness_test --output slipped_reduction_results
+glsl-reduce glsl-reduce-walkthrough/colorgrid_modulo.json weak_interestingness_test --output slipped_reduction_results
 
 # Output:
 # <lots of messages about the reducer's progress>
@@ -160,7 +163,7 @@ cat slipped_reduction_results/colorgrid_modulo_reduced_final.frag
 # <a shader with an empty main>
 
 # Does it still give us the fatal error?
-glsl-reduce-walkthrough/fake_compiler slipped_reduction_results/colorgrid_modulo_reduced_final.frag
+fake_compiler slipped_reduction_results/colorgrid_modulo_reduced_final.frag
 
 # Output:
 # Internal error: something went wrong inlining 'floor'.

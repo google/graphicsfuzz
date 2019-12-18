@@ -20,15 +20,15 @@ set -u
 
 case "$(uname)" in
 "Linux")
-  ACTIVATE_PATH=".venv/bin/activate"
   ;;
 
 "Darwin")
-  ACTIVATE_PATH=".venv/bin/activate"
+  brew install coreutils
+  PATH="/usr/local/opt/coreutils/libexec/gnubin:${PATH}"
+  export PATH
   ;;
 
 "MINGW"*)
-  ACTIVATE_PATH=".venv/Scripts/activate"
   ;;
 
 *)
@@ -37,11 +37,5 @@ case "$(uname)" in
   ;;
 esac
 
-python build/travis/check_headers.py
-cd gfauto
-export PYTHON=python
-export SKIP_SHELL=1
-./dev_shell.sh.template
-# shellcheck disable=SC1090
-source "${ACTIVATE_PATH}"
-./check_all.sh
+time build/travis/build-graphicsfuzz-fast.sh
+time build/travis/build-graphicsfuzz-medium.sh
