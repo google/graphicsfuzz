@@ -18,5 +18,24 @@ set -x
 set -e
 set -u
 
+case "$(uname)" in
+"Linux")
+  ;;
+
+"Darwin")
+  brew install coreutils
+  PATH="/usr/local/opt/coreutils/libexec/gnubin:${PATH}"
+  export PATH
+  ;;
+
+"MINGW"*)
+  ;;
+
+*)
+  echo "Unknown OS"
+  exit 1
+  ;;
+esac
+
 time build/travis/build-graphicsfuzz-fast.sh
 time build/travis/build-graphicsfuzz-medium.sh
