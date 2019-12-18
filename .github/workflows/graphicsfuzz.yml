@@ -16,8 +16,10 @@
 on:
   pull_request:
     paths:
-      - '.github/workflows/gfauto**'
-      - 'gfauto/**'
+      - '**'
+      - '!gfauto/**'
+      - '!.github/workflows/**'
+      - '.github/workflows/graphicsfuzz**'
     branches:
       - master
 
@@ -28,12 +30,12 @@ jobs:
         os:
           - ubuntu-16.04
           - windows-2016
+          - macOS-10.14
         python-version:
-          - 3.6
-          - 3.7
-        exclude:
-          - os: windows-2016
-            python-version: 3.6
+          - 3.5
+        java-version:
+          - 8
+          - 9
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -49,6 +51,10 @@ jobs:
             pushd checkout/
               git checkout 722adc63f1aa60a57ec37892e133b1d319cae598
             popd
+            git clone https://github.com/actions/setup-java.git
+            pushd setup-java/
+              git checkout 081536e071ff3a163d5f6b0a4ffdcd2745e0e2f6
+            popd
           popd
         shell: bash
 
@@ -61,7 +67,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: x64
 
+      - name: setup_java
+        uses: ./../.github/actions/setup-java
+        with:
+          java-version: ${{ matrix.java-version }}
+          java-package: jdk
+          architecture: x64
+
+
       - name: build_step
         run: |
-          .github/workflows/gfauto.sh
+          .github/workflows/graphicsfuzz.sh
         shell: bash
