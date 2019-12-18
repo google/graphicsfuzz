@@ -46,7 +46,7 @@ public class CustomFileJudge implements IFileJudge {
       final ExecResult execResult = new ExecHelper().exec(
           ExecHelper.RedirectType.TO_LOG,
           null,
-          false,
+          true,
           scriptPlusShaderArg.toArray(new String[0])
       );
       LOGGER.info("Custom file judge result: " + execResult.res);
