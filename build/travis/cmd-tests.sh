@@ -67,7 +67,8 @@ test -d "work/shaderfamilies/family_vulkan_stable_bubblesort_flag"
 ### Reduce examples.
 cp -r graphicsfuzz/examples/glsl-reduce-walkthrough .
 
-export PATH="$(pwd)/glsl-reduce-walkthrough:${PATH}"
+PATH="$(pwd)/glsl-reduce-walkthrough:${PATH}"
+export PATH
 
 # Fake compiler fails.
 EXIT_CODE=0
