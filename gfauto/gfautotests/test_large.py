@@ -17,7 +17,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 
 from gfauto import binaries_util, fuzz, settings_util, util
 from gfauto.common_pb2 import Binary
@@ -27,6 +27,7 @@ from gfauto.device_pb2 import (
     DeviceShaderCompiler,
     DeviceSwiftShader,
 )
+from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 
 PREPROCESSOR_CACHE_HIT_STRING = "Preprocessor cache: hit"
@@ -42,10 +43,10 @@ def test_fuzz_and_reduce_llpc_bug_no_opt() -> None:
         summary_dir = test_dirs[0] / "summary"
         reduced_dir = summary_dir / "reduced"
         assert reduced_dir.is_dir()
-        log = test_dirs[0] / "results" / "amdllpc" / "result" / "log.txt"
+        log_path = test_dirs[0] / "results" / "amdllpc" / "result" / "log.txt"
         assert (
-            util.file_read_text(log).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
-        ), f"{log}"
+            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
+        ), f"{log_path}"
 
     fuzz_and_reduce_bug(
         active_device="amdllpc",
@@ -64,10 +65,10 @@ def test_fuzz_and_reduce_llpc_bug_opt() -> None:
         summary_dir = test_dirs[0] / "summary"
         reduced_dir = summary_dir / "reduced"
         assert reduced_dir.is_dir()
-        log = test_dirs[0] / "results" / "amdllpc" / "result" / "log.txt"
+        log_path = test_dirs[0] / "results" / "amdllpc" / "result" / "log.txt"
         assert (
-            util.file_read_text(log).count(PREPROCESSOR_CACHE_HIT_STRING) == 4
-        ), f"{log}"
+            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 4
+        ), f"{log_path}"
 
     fuzz_and_reduce_bug(
         active_device="amdllpc",
@@ -86,10 +87,10 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt() -> None:
         summary_dir = test_dirs[0] / "summary"
         reduced_dir = summary_dir / "reduced"
         assert reduced_dir.is_dir()
-        log = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
+        log_path = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
         assert (
-            util.file_read_text(log).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
-        ), f"{log}"
+            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
+        ), f"{log_path}"
 
     fuzz_and_reduce_bug(
         active_device="swift_shader",
@@ -98,8 +99,65 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt() -> None:
     )
 
 
+def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex() -> None:
+    def check_result() -> None:
+        bucket = Path() / "reports" / "crashes" / "vkGetInstanceProcAddr"
+        assert bucket.is_dir()
+        test_dirs = list(bucket.iterdir())
+        assert len(test_dirs) == 1
+        assert "no_opt" in test_dirs[0].name
+        summary_dir = test_dirs[0] / "summary"
+        reduced_dir = summary_dir / "reduced"
+        assert reduced_dir.is_dir()
+        log_path = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
+        assert (
+            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
+        ), f"{log_path}"
+
+    settings = Settings()
+    settings.CopyFrom(settings_util.DEFAULT_SETTINGS)
+    settings.only_reduce_signature_regex = "vkGetInstanceProcAddr"
+
+    fuzz_and_reduce_bug(
+        active_device="swift_shader",
+        seed=35570251875691207436044799625964330634240739187615728715101271237388241843323,
+        check_result=check_result,
+        settings=settings,
+    )
+
+
+def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex_miss() -> None:
+    def check_result() -> None:
+        bucket = Path() / "reports" / "crashes" / "vkGetInstanceProcAddr"
+        assert bucket.is_dir()
+        test_dirs = list(bucket.iterdir())
+        assert len(test_dirs) == 1
+        assert "no_opt" in test_dirs[0].name
+        summary_dir = test_dirs[0] / "summary"
+        reduced_dir = summary_dir / "reduced"
+        assert not reduced_dir.is_dir()  # No reduction because of regex below.
+        log_path = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
+        assert (
+            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
+        ), f"{log_path}"
+
+    settings = Settings()
+    settings.CopyFrom(settings_util.DEFAULT_SETTINGS)
+    settings.only_reduce_signature_regex = "vk"  # Does not match.
+
+    fuzz_and_reduce_bug(
+        active_device="swift_shader",
+        seed=35570251875691207436044799625964330634240739187615728715101271237388241843323,
+        check_result=check_result,
+        settings=settings,
+    )
+
+
 def fuzz_and_reduce_bug(
-    active_device: str, seed: int, check_result: Callable[[], None]
+    active_device: str,
+    seed: int,
+    check_result: Callable[[], None],
+    settings: Optional[Settings] = None,
 ) -> None:
     """
     Fuzz, find a bug, reduce it.
@@ -124,8 +182,11 @@ def fuzz_and_reduce_bug(
     util.mkdir_p_new(work_dir)
     os.chdir(work_dir)
 
-    settings = Settings()
-    settings.CopyFrom(settings_util.DEFAULT_SETTINGS)
+    log(f"Changed to {str(work_dir)}")
+
+    if settings is None:
+        settings = Settings()
+        settings.CopyFrom(settings_util.DEFAULT_SETTINGS)
 
     settings.device_list.CopyFrom(
         DeviceList(

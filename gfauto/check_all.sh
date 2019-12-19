@@ -26,4 +26,6 @@ mypy --strict --show-absolute-path gfauto gfautotests
 pylint gfauto gfautotests
 # Flake checks formatting via black.
 flake8 .
-pytest gfautotests
+# Run tests, but run test_large.py last.
+pytest gfautotests --ignore=gfautotests/test_large.py
+pytest gfautotests/test_large.py

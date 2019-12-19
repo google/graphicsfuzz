@@ -20,6 +20,7 @@ Functions for handling GLSL shader job tests.
 """
 
 import random
+import re
 import subprocess
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -325,6 +326,12 @@ def should_reduce_report(settings: Settings, test_dir: Path) -> bool:
         not settings.reduce_bad_images
         and status == fuzz.STATUS_CRASH
         and signature == signature_util.BAD_IMAGE_SIGNATURE
+    ):
+        return False
+
+    if (
+        settings.only_reduce_signature_regex
+        and re.fullmatch(settings.only_reduce_signature_regex, signature) is None
     ):
         return False
 
