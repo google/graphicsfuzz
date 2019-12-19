@@ -28,4 +28,4 @@ pylint gfauto gfautotests
 flake8 .
 # Run tests, but run test_large.py last.
 pytest gfautotests --ignore=gfautotests/test_large.py
-pytest gfautotests/test_large.py
+pytest -n 8 gfautotests/test_large.py
