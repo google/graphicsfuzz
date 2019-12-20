@@ -46,6 +46,7 @@ mypy = "*"
 # Testing.
 pytest = "*"
 atomicwrites = "*"  # PyTest depends on this, but only on Windows, which gets missed.
+pytest-xdist = "*"  # For running tests in parallel.
 
 # PyLint linter.
 pylint = "*"

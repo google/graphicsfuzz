@@ -56,4 +56,7 @@ message Settings {
 
   // Extra arguments to pass to the GraphicsFuzz reducer.
   repeated string extra_graphics_fuzz_reduce_args = 10;
+
+  // If non-empty, only reduce a report if the crash signature matches this regular expression.
+  string only_reduce_signature_regex = 11;
 }
