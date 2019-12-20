@@ -232,9 +232,7 @@ def fuzz_and_reduce_bug(
                             version="6d69aae0e1ab49190ea46cd1c999fd3d02e016b9",
                         ),
                     ],
-                    ignored_crash_signatures=ignored_signatures
-                    if ignored_signatures
-                    else None,
+                    ignored_crash_signatures=ignored_signatures,
                 ),
             ],
         )
