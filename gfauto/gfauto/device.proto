@@ -42,6 +42,9 @@ message Device {
 
   // The Vulkan device properties, most likely obtained by running "amber -d -V".
   string device_properties = 9;
+
+  // A list of crash signatures that will be ignored during fuzzing for this device.
+  repeated string ignored_crash_signatures = 10;
 }
 
 message DeviceSwiftShader {

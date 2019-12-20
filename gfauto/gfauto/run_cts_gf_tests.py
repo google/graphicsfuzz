@@ -17,23 +17,26 @@
 """Runs GraphicsFuzz AmberScript tests."""
 
 import argparse
+import subprocess
 import sys
 from pathlib import Path
-from subprocess import CalledProcessError, TimeoutExpired
-from typing import Optional
+from typing import Optional, Set
 
 from gfauto import (
     android_device,
     binaries_util,
     devices_util,
     fuzz,
+    gflogging,
     host_device_util,
     result_util,
     settings_util,
     shader_compiler_util,
+    signature_util,
     spirv_opt_util,
     util,
 )
+from gfauto.gflogging import log
 
 DEFAULT_TIMEOUT = 30
 
@@ -41,7 +44,8 @@ DEFAULT_TIMEOUT = 30
 def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements;
     parser = argparse.ArgumentParser(
         description="Runs GraphicsFuzz AmberScript tests on the active devices listed in "
-        "the settings.json file."
+        "the settings.json file.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     parser.add_argument(
@@ -53,7 +57,20 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
     parser.add_argument(
         "--tests",
         help="Path to the directory of AmberScript tests with shaders extracted.",
-        default=str("graphicsfuzz"),
+        default="graphicsfuzz",
+    )
+
+    parser.add_argument(
+        "--update_ignored_signatures",
+        help="As the tests are run for each device, add any crash signatures to the device's ignored_crash_signatures "
+        "property and write out the updated settings.json file.",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--results_out",
+        help="Output file path for the CSV results table.",
+        default="results.csv",
     )
 
     parsed_args = parser.parse_args(sys.argv[1:])
@@ -61,6 +78,8 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
     # Args.
     tests_dir: Path = Path(parsed_args.tests)
     settings_path: Path = Path(parsed_args.settings)
+    update_ignored_signatures: bool = parsed_args.update_ignored_signatures
+    results_out_path: Path = Path(parsed_args.results_out)
 
     # Settings and devices.
     settings = settings_util.read_or_create(settings_path)
@@ -73,16 +92,16 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
 
     util.mkdirs_p(work_dir)
 
-    with util.file_open_text(Path("results.txt"), "w") as log_handle:
+    with util.file_open_text(results_out_path, "w") as results_handle:
 
         def write_entry(entry: str) -> None:
-            log_handle.write(entry)
-            log_handle.write(", ")
-            log_handle.flush()
+            results_handle.write(entry)
+            results_handle.write(", ")
+            results_handle.flush()
 
         def write_newline() -> None:
-            log_handle.write("\n")
-            log_handle.flush()
+            results_handle.write("\n")
+            results_handle.flush()
 
         spirv_opt_path: Optional[Path] = None
         swift_shader_path: Optional[Path] = None
@@ -126,76 +145,129 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
             for device in active_devices:
                 test_run_dir = work_dir / f"{test_name}_{device.name}"
                 util.mkdirs_p(test_run_dir)
-                try:
-                    # Confusingly, some functions below will raise on an error; others will write e.g. CRASH to the
-                    # STATUS file in the output directory. In the latter case, we update |status|. We check |status| at
-                    # the end of this if-else chain and raise fake exceptions if appropriate.
-                    status = fuzz.STATUS_SUCCESS
+                ignored_signatures_set: Set[str] = set(device.ignored_crash_signatures)
 
-                    if device.HasField("preprocess"):
-                        # This just means spirv-op for now.
-
-                        assert spirv_opt_path  # noqa
-                        for spirv_shader in spirv_shaders:
-                            spirv_opt_util.run_spirv_opt_on_spirv_shader(
-                                spirv_shader, test_run_dir, ["-O"], spirv_opt_path
+                with util.file_open_text(test_run_dir / "log.txt", "w") as log_stream:
+                    try:
+                        gflogging.push_stream_for_logging(log_stream)
+                        if device.HasField("preprocess"):
+                            # This just means spirv-op for now.
+                            assert spirv_opt_path  # noqa
+                            try:
+                                for spirv_shader in spirv_shaders:
+                                    spirv_opt_util.run_spirv_opt_on_spirv_shader(
+                                        spirv_shader,
+                                        test_run_dir,
+                                        ["-O"],
+                                        spirv_opt_path,
+                                    )
+                                result_util.write_status(
+                                    test_run_dir, fuzz.STATUS_SUCCESS,
+                                )
+                            except subprocess.CalledProcessError:
+                                result_util.write_status(
+                                    test_run_dir, fuzz.STATUS_TOOL_CRASH,
+                                )
+                            except subprocess.TimeoutExpired:
+                                result_util.write_status(
+                                    test_run_dir, fuzz.STATUS_TOOL_TIMEOUT,
+                                )
+                        elif device.HasField("shader_compiler"):
+                            try:
+                                for spirv_shader in spirv_shaders:
+                                    shader_compiler_util.run_shader(
+                                        shader_compiler_device=device.shader_compiler,
+                                        shader_path=spirv_shader,
+                                        output_dir=test_run_dir,
+                                        compiler_path=binaries.get_binary_path_by_name(
+                                            device.shader_compiler.binary
+                                        ).path,
+                                        timeout=DEFAULT_TIMEOUT,
+                                    )
+                                result_util.write_status(
+                                    test_run_dir, fuzz.STATUS_SUCCESS,
+                                )
+                            except subprocess.CalledProcessError:
+                                result_util.write_status(
+                                    test_run_dir, fuzz.STATUS_CRASH,
+                                )
+                            except subprocess.TimeoutExpired:
+                                result_util.write_status(
+                                    test_run_dir, fuzz.STATUS_TIMEOUT,
+                                )
+                        elif device.HasField("swift_shader"):
+                            assert swift_shader_path  # noqa
+                            assert amber_path  # noqa
+                            host_device_util.run_amber(
+                                test,
+                                test_run_dir,
+                                amber_path=amber_path,
+                                dump_image=False,
+                                dump_buffer=False,
+                                icd=swift_shader_path,
                             )
-                    elif device.HasField("shader_compiler"):
-                        for spirv_shader in spirv_shaders:
-                            shader_compiler_util.run_shader(
-                                shader_compiler_device=device.shader_compiler,
-                                shader_path=spirv_shader,
-                                output_dir=test_run_dir,
-                                compiler_path=binaries.get_binary_path_by_name(
-                                    device.shader_compiler.binary
-                                ).path,
-                                timeout=DEFAULT_TIMEOUT,
+                        elif device.HasField("host"):
+                            assert amber_path  # noqa
+                            host_device_util.run_amber(
+                                test,
+                                test_run_dir,
+                                amber_path=amber_path,
+                                dump_image=False,
+                                dump_buffer=False,
                             )
-                    elif device.HasField("swift_shader"):
-                        assert swift_shader_path  # noqa
-                        assert amber_path  # noqa
-                        host_device_util.run_amber(
-                            test,
-                            test_run_dir,
-                            amber_path=amber_path,
-                            dump_image=False,
-                            dump_buffer=False,
-                            icd=swift_shader_path,
-                        )
-                        status = result_util.get_status(test_run_dir)
-                    elif device.HasField("host"):
-                        assert amber_path  # noqa
-                        host_device_util.run_amber(
-                            test,
-                            test_run_dir,
-                            amber_path=amber_path,
-                            dump_image=False,
-                            dump_buffer=False,
-                        )
-                        status = result_util.get_status(test_run_dir)
-                    elif device.HasField("android"):
-                        android_device.run_amber_on_device(
-                            test,
-                            test_run_dir,
-                            dump_image=False,
-                            dump_buffer=False,
-                            serial=device.android.serial,
-                        )
-                        status = result_util.get_status(test_run_dir)
-                    else:
-                        raise AssertionError(f"Unsupported device {device.name}")
+                        elif device.HasField("android"):
+                            android_device.run_amber_on_device(
+                                test,
+                                test_run_dir,
+                                dump_image=False,
+                                dump_buffer=False,
+                                serial=device.android.serial,
+                            )
+                        else:
+                            raise AssertionError(f"Unsupported device {device.name}")
 
-                    if status in (fuzz.STATUS_CRASH, fuzz.STATUS_TOOL_CRASH):
-                        raise CalledProcessError(1, "??")
-                    if status != fuzz.STATUS_SUCCESS:
-                        raise TimeoutExpired("??", fuzz.AMBER_RUN_TIME_LIMIT)
+                    finally:
+                        gflogging.pop_stream_for_logging()
 
+                status = result_util.get_status(test_run_dir)
+
+                if status == fuzz.STATUS_SUCCESS:
                     write_entry("P")
-                except CalledProcessError:
-                    write_entry("F")
-                except TimeoutExpired:
+                elif status in (fuzz.STATUS_TIMEOUT, fuzz.STATUS_TOOL_TIMEOUT):
                     write_entry("T")
+                else:
+                    write_entry("F")
+
+                # Update ignored signatures.
+                if (
+                    status
+                    in (
+                        fuzz.STATUS_TOOL_CRASH,
+                        fuzz.STATUS_CRASH,
+                        fuzz.STATUS_UNRESPONSIVE,
+                    )
+                    and update_ignored_signatures
+                ):
+                    log_contents = util.file_read_text(
+                        result_util.get_log_path(test_run_dir)
+                    )
+                    signature = signature_util.get_signature_from_log_contents(
+                        log_contents
+                    )
+                    if signature == signature_util.NO_SIGNATURE:
+                        log(
+                            f"NOT adding ignored signature (because it is always interesting): {signature}"
+                        )
+                    elif signature in ignored_signatures_set:
+                        log(f"Signature is already ignored: {signature}")
+                    else:
+                        log(f"Adding ignored signature: {signature}")
+                        device.ignored_crash_signatures.append(signature)
+
             write_newline()
+
+        if update_ignored_signatures:
+            settings_util.write(settings, settings_path)
 
 
 if __name__ == "__main__":
