@@ -217,7 +217,7 @@ def run(
     return result_util.get_status(result_output_dir)
 
 
-def maybe_add_report(  # pylint: disable=too-many-locals;
+def maybe_add_report(  # pylint: disable=too-many-locals,too-many-branches;
     test_dir: Path, reports_dir: Path, device: Device, settings: Settings
 ) -> Optional[Path]:
 
@@ -243,13 +243,22 @@ def maybe_add_report(  # pylint: disable=too-many-locals;
 
     signature_dir = reports_dir / report_subdirectory_name / signature
 
-    util.mkdirs_p(signature_dir)
-
     # If the signature_dir contains a NOT_INTERESTING file, then don't bother creating a report.
-    if (signature_dir / "NOT_INTERESTING").exists():
+    if (signature_dir / "NOT_INTERESTING").is_file():
+        log(
+            f'Discarding test because of file: {str(signature_dir / "NOT_INTERESTING")}'
+        )
         return None
 
-    if signature != signature_util.BAD_IMAGE_SIGNATURE:
+    # Don't create a report for ignored signatures (specified by the device).
+    ignored_signatures = set(device.ignored_crash_signatures)
+    if signature in ignored_signatures:
+        log(
+            f"Discarding test; signature is in the device's ignored_crash_signatures: {signature}"
+        )
+        return None
+
+    if signature_dir.is_dir() and signature != signature_util.BAD_IMAGE_SIGNATURE:
         # If we have reached the maximum number of crashes per signature for this device, don't create a report.
         num_duplicates = [
             report_dir
