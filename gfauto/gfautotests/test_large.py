@@ -17,7 +17,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 from gfauto import binaries_util, fuzz, settings_util, util
 from gfauto.common_pb2 import Binary
@@ -35,6 +35,7 @@ PREPROCESSOR_CACHE_HIT_STRING = "Preprocessor cache: hit"
 
 def test_fuzz_and_reduce_llpc_bug_no_opt() -> None:
     def check_result() -> None:
+        # no_signature because we use a Release build.
         bucket = Path() / "reports" / "crashes" / "no_signature"
         assert bucket.is_dir()
         test_dirs = list(bucket.iterdir())
@@ -57,6 +58,7 @@ def test_fuzz_and_reduce_llpc_bug_no_opt() -> None:
 
 def test_fuzz_and_reduce_llpc_bug_opt() -> None:
     def check_result() -> None:
+        # no_signature because we use a Release build.
         bucket = Path() / "reports" / "crashes" / "no_signature"
         assert bucket.is_dir()
         test_dirs = list(bucket.iterdir())
@@ -153,11 +155,25 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex_miss() -> None:
     )
 
 
+def test_fuzz_and_reduce_swift_shader_bug_ignored_signature() -> None:
+    def check_result() -> None:
+        bucket = Path() / "reports" / "crashes" / "vkGetInstanceProcAddr"
+        assert not bucket.is_dir()  # No report because signature is ignored below.
+
+    fuzz_and_reduce_bug(
+        active_device="swift_shader",
+        seed=35570251875691207436044799625964330634240739187615728715101271237388241843323,
+        check_result=check_result,
+        ignored_signatures=["vkGetInstanceProcAddr"],
+    )
+
+
 def fuzz_and_reduce_bug(
     active_device: str,
     seed: int,
     check_result: Callable[[], None],
     settings: Optional[Settings] = None,
+    ignored_signatures: Optional[List[str]] = None,
 ) -> None:
     """
     Fuzz, find a bug, reduce it.
@@ -216,6 +232,9 @@ def fuzz_and_reduce_bug(
                             version="6d69aae0e1ab49190ea46cd1c999fd3d02e016b9",
                         ),
                     ],
+                    ignored_crash_signatures=ignored_signatures
+                    if ignored_signatures
+                    else None,
                 ),
             ],
         )
