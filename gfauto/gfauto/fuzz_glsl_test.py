@@ -818,6 +818,25 @@ def create_summary_and_reproduce(
     reduced_test_dir = test_util.get_reduced_test_dir(
         test_dir, test_metadata.device.name, fuzz.BEST_REDUCTION_NAME
     )
+
+    stage_one_reduction_dir = test_util.get_reduced_test_dir(
+        test_dir, test_metadata.device.name, "1"
+    )
+
+    stage_two_reduction_dir = test_util.get_reduced_test_dir(
+        test_dir, test_metadata.device.name, "2"
+    )
+
+    stage_one_reduced: Optional[Path] = None
+
+    if stage_one_reduction_dir.is_dir() and stage_two_reduction_dir.is_dir():
+        # This reduction had two stages. Save the first stage in addition to the second.
+        stage_one_reduced_source = test_util.get_source_dir(stage_one_reduction_dir)
+        if stage_one_reduced_source.is_dir():
+            stage_one_reduced = util.copy_dir(
+                stage_one_reduced_source, summary_dir / "reduced_stage_one"
+            )
+
     reduced_source_dir = test_util.get_source_dir(reduced_test_dir)
     reduced: Optional[Path] = None
     if reduced_source_dir.exists():
@@ -834,6 +853,13 @@ def create_summary_and_reproduce(
         variant_reduced_glsl_result = run_shader_job(
             source_dir=reduced,
             output_dir=(summary_dir / "reduced_result"),
+            binary_manager=binary_manager,
+        )
+
+    if stage_one_reduced:
+        variant_reduced_glsl_result = run_shader_job(
+            source_dir=stage_one_reduced,
+            output_dir=(summary_dir / "reduced_stage_one_result"),
             binary_manager=binary_manager,
         )
 

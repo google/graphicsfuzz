@@ -33,6 +33,13 @@ from gfauto.settings_pb2 import Settings
 PREPROCESSOR_CACHE_HIT_STRING = "Preprocessor cache: hit"
 
 
+def check_common_summary_files(summary_dir: Path) -> None:
+    reduced_dir = summary_dir / "reduced"
+    assert reduced_dir.is_dir()
+    stage_one_reduced_result = summary_dir / "reduced_stage_one_result" / "STATUS"
+    assert stage_one_reduced_result.is_file()
+
+
 def test_fuzz_and_reduce_llpc_bug_no_opt() -> None:
     def check_result() -> None:
         # no_signature because we use a Release build.
@@ -41,13 +48,12 @@ def test_fuzz_and_reduce_llpc_bug_no_opt() -> None:
         test_dirs = list(bucket.iterdir())
         assert len(test_dirs) == 1
         assert "no_opt" in test_dirs[0].name
-        summary_dir = test_dirs[0] / "summary"
-        reduced_dir = summary_dir / "reduced"
-        assert reduced_dir.is_dir()
         log_path = test_dirs[0] / "results" / "amdllpc" / "result" / "log.txt"
         assert (
             util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
         ), f"{log_path}"
+        summary_dir = test_dirs[0] / "summary"
+        check_common_summary_files(summary_dir)
 
     fuzz_and_reduce_bug(
         active_device="amdllpc",
@@ -64,13 +70,12 @@ def test_fuzz_and_reduce_llpc_bug_opt() -> None:
         test_dirs = list(bucket.iterdir())
         assert len(test_dirs) == 1
         assert "opt_O" in test_dirs[0].name
-        summary_dir = test_dirs[0] / "summary"
-        reduced_dir = summary_dir / "reduced"
-        assert reduced_dir.is_dir()
         log_path = test_dirs[0] / "results" / "amdllpc" / "result" / "log.txt"
         assert (
             util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 4
         ), f"{log_path}"
+        summary_dir = test_dirs[0] / "summary"
+        check_common_summary_files(summary_dir)
 
     fuzz_and_reduce_bug(
         active_device="amdllpc",
@@ -86,13 +91,12 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt() -> None:
         test_dirs = list(bucket.iterdir())
         assert len(test_dirs) == 1
         assert "no_opt" in test_dirs[0].name
-        summary_dir = test_dirs[0] / "summary"
-        reduced_dir = summary_dir / "reduced"
-        assert reduced_dir.is_dir()
         log_path = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
         assert (
             util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
         ), f"{log_path}"
+        summary_dir = test_dirs[0] / "summary"
+        check_common_summary_files(summary_dir)
 
     fuzz_and_reduce_bug(
         active_device="swift_shader",
@@ -109,12 +113,12 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex() -> None:
         assert len(test_dirs) == 1
         assert "no_opt" in test_dirs[0].name
         summary_dir = test_dirs[0] / "summary"
-        reduced_dir = summary_dir / "reduced"
-        assert reduced_dir.is_dir()
         log_path = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
         assert (
             util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
         ), f"{log_path}"
+        summary_dir = test_dirs[0] / "summary"
+        check_common_summary_files(summary_dir)
 
     settings = Settings()
     settings.CopyFrom(settings_util.DEFAULT_SETTINGS)
@@ -135,13 +139,13 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex_miss() -> None:
         test_dirs = list(bucket.iterdir())
         assert len(test_dirs) == 1
         assert "no_opt" in test_dirs[0].name
-        summary_dir = test_dirs[0] / "summary"
-        reduced_dir = summary_dir / "reduced"
-        assert not reduced_dir.is_dir()  # No reduction because of regex below.
         log_path = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
         assert (
             util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
         ), f"{log_path}"
+        summary_dir = test_dirs[0] / "summary"
+        reduced_dir = summary_dir / "reduced"
+        assert not reduced_dir.is_dir()  # No reduction because of regex below.
 
     settings = Settings()
     settings.CopyFrom(settings_util.DEFAULT_SETTINGS)
