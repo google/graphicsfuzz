@@ -155,6 +155,16 @@ def main() -> None:
         action="store_true",
     )
 
+    parser.add_argument(
+        "--active_device",
+        help="Add an active device name, overriding those in the settings.json file. "
+        "Can be used multiple times to add multiple devices. "
+        "E.g. --active_device host --active_device host_with_alternative_icd. "
+        "This allows sharing a single settings.json file between multiple instances of gfauto_fuzz. "
+        "Note that a host_preprocessor device will automatically be added as the first active device, if it is missing. ",
+        action="append",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     settings_path = Path(parsed_args.settings)
@@ -163,12 +173,17 @@ def main() -> None:
     )
     use_spirv_fuzz: bool = parsed_args.use_spirv_fuzz
     allow_no_stack_traces: bool = parsed_args.allow_no_stack_traces
+    active_device_names: Optional[List[str]] = parsed_args.active_device
 
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
         try:
             main_helper(
-                settings_path, iteration_seed, use_spirv_fuzz, allow_no_stack_traces
+                settings_path,
+                iteration_seed,
+                use_spirv_fuzz,
+                allow_no_stack_traces,
+                active_device_names=active_device_names,
             )
         except settings_util.NoSettingsFile as exception:
             log(str(exception))
@@ -194,6 +209,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     allow_no_stack_traces: bool = False,
     override_sigint: bool = True,
     use_amber_vulkan_loader: bool = False,
+    active_device_names: Optional[List[str]] = None,
 ) -> None:
 
     util.update_gcov_environment_variable_if_needed()
@@ -205,7 +221,9 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
 
     settings = settings_util.read_or_create(settings_path)
 
-    active_devices = devices_util.get_active_devices(settings.device_list)
+    active_devices = devices_util.get_active_devices(
+        settings.device_list, active_device_names=active_device_names
+    )
     # Add host_preprocessor device if it is missing.
     if not active_devices[0].HasField("preprocess"):
         active_devices.insert(

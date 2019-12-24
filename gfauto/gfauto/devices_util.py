@@ -141,8 +141,12 @@ def get_device_list(
     return device_list
 
 
-def get_active_devices(device_list: DeviceList) -> List[Device]:
+def get_active_devices(
+    device_list: DeviceList, active_device_names: Optional[List[str]] = None
+) -> List[Device]:
     device_map: Dict[str, Device] = {}
     for device in device_list.devices:
         device_map[device.name] = device
-    return [device_map[device] for device in device_list.active_device_names]
+    if not active_device_names:
+        active_device_names = list(device_list.active_device_names)
+    return [device_map[device] for device in active_device_names]
