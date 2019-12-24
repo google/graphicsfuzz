@@ -133,7 +133,7 @@ def get_device_list(
         shader_compiler=DeviceShaderCompiler(
             binary="amdllpc", args=["-gfxip=9.0.0", "-verify-ir", "-auto-layout-desc"]
         ),
-        binaries=[binary_manager.get_binary_path_by_name("amdllpc").binary],
+        binaries=[binary_manager.get_binary_by_name("amdllpc")],
     )
     device_list.devices.extend([device])
     # Don't add to active devices, since this is mostly just an example.
