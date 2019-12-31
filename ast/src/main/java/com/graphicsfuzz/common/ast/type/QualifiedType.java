@@ -56,6 +56,17 @@ public class QualifiedType extends Type {
     qualifiers.remove(qualifier);
   }
 
+  public void replaceQualifier(TypeQualifier oldQualifier, TypeQualifier newQualifier) {
+    if (!hasQualifier(oldQualifier)) {
+      throw new UnsupportedOperationException("Attempt to remove absent qualifier " + oldQualifier);
+    }
+    qualifiers.remove(oldQualifier);
+    if (hasQualifier(newQualifier)) {
+      throw new UnsupportedOperationException("Attempt to add existing qualifier " + newQualifier);
+    }
+    qualifiers.add(newQualifier);
+  }
+
   @Override
   public boolean hasQualifier(TypeQualifier qualifier) {
     return qualifiers.contains(qualifier);

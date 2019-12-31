@@ -24,7 +24,7 @@ import org.junit.Test;
 public class UpgradeShadingLanguageVersionTest {
 
   @Test
-  public void testTrivialUpgrade() throws Exception {
+  public void testFragcoordUpgrade() throws Exception {
     final String shader = "#version 100\n"
         + "precision mediump float;\n"
         + "void main() {\n"
@@ -39,7 +39,43 @@ public class UpgradeShadingLanguageVersionTest {
     final TranslationUnit tu = ParseHelper.parse(shader);
     UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
     CompareAstsDuplicate.assertEqualAsts(expected, tu);
-
   }
 
+  @Test
+  public void testVaryingUpgrade() throws Exception {
+    final String shader = "#version 100\n"
+        + "precision mediump float;\n"
+        + "varying vec4 inp;\n"
+        + "void main() {\n"
+        + "  gl_FragColor = inp;\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "precision mediump float;\n"
+        + "layout(location = 0) out vec4 _GLF_color;\n"
+        + "in vec4 inp;\n"
+        + "void main() {\n"
+        + "  _GLF_color = inp;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
+    CompareAstsDuplicate.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testTextureUpgrade() throws Exception {
+    final String shader = "#version 100\n"
+        + "precision mediump float;\n"
+        + "void main() {\n"
+        + "  gl_FragColor = texture2D(vec2(0.0,1.0));\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "precision mediump float;\n"
+        + "layout(location = 0) out vec4 _GLF_color;\n"
+        + "void main() {\n"
+        + "  _GLF_color = texture(vec2(0.0,1.0));\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
+    CompareAstsDuplicate.assertEqualAsts(expected, tu);
+  }
 }
