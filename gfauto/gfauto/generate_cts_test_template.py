@@ -48,6 +48,7 @@ def main() -> None:
         comment_text="""The test passes because TODO""",
         copyright_year="2019",
         extra_commands=tool.AMBER_COMMAND_EXPECT_RED,
+        is_coverage_gap=False,
     )
 
 

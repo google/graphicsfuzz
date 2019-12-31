@@ -121,6 +121,7 @@ def spirv_opt_shader_job(
     spirv_opt_args: List[str],
     output_json: Path,
     binary_paths: binaries_util.BinaryGetter,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> Path:
     spirv_opt_binary = binary_paths.get_binary_path_by_name(
         binaries_util.SPIRV_OPT_NAME
@@ -132,16 +133,21 @@ def spirv_opt_shader_job(
         spirv_opt_binary.path,
         binaries_util.SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG
         in spirv_opt_binary.binary.tags,
+        preprocessor_cache=preprocessor_cache,
     )
 
 
 def glslang_glsl_shader_job_to_spirv(
-    input_json: Path, output_json: Path, binary_paths: binaries_util.BinaryGetter
+    input_json: Path,
+    output_json: Path,
+    binary_paths: binaries_util.BinaryGetter,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> Path:
     return glslang_validator_util.run_glslang_glsl_to_spirv_job(
         input_json,
         output_json,
         binary_paths.get_binary_path_by_name(binaries_util.GLSLANG_VALIDATOR_NAME).path,
+        preprocessor_cache=preprocessor_cache,
     )
 
 
@@ -179,13 +185,14 @@ class SpirvCombinedShaderJob:
         return iter((self.spirv_asm_shader_job, self.spirv_shader_job))
 
 
-def compile_shader_job(
+def compile_shader_job(  # pylint: disable=too-many-locals;
     name: str,
     input_json: Path,
     work_dir: Path,
     binary_paths: binaries_util.BinaryGetter,
     spirv_opt_args: Optional[List[str]] = None,
     shader_overrides: Optional[ShaderSuffixToShaderOverride] = None,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> SpirvCombinedShaderJob:
 
     result = input_json
@@ -210,7 +217,10 @@ def compile_shader_job(
             raise AssertionError("Shader overrides are not supported for GLSL")
 
         result = glslang_glsl_shader_job_to_spirv(
-            result, work_dir / "1_spirv" / result.name, binary_paths
+            result,
+            work_dir / "1_spirv" / result.name,
+            binary_paths,
+            preprocessor_cache=preprocessor_cache,
         )
     # If SPIR-V:
     elif spirv_suffixes:
@@ -275,7 +285,11 @@ def compile_shader_job(
     if spirv_opt_args:
         result = result_spirv
         result = spirv_opt_shader_job(
-            result, spirv_opt_args, work_dir / "2_spirv_opt" / result.name, binary_paths
+            result,
+            spirv_opt_args,
+            work_dir / "2_spirv_opt" / result.name,
+            binary_paths,
+            preprocessor_cache=preprocessor_cache,
         )
         result_spirv = result
         result = spirv_dis_shader_job(
@@ -300,6 +314,7 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
     comment_text: str,
     copyright_year: str,
     extra_commands: str,
+    is_coverage_gap: bool = False,
 ) -> Path:
     """Converts a GLSL shader job to an Amber script suitable for adding to the CTS."""
     return glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
@@ -310,6 +325,7 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
         comment_text=comment_text,
         copyright_year=copyright_year,
         extra_commands=extra_commands,
+        is_coverage_gap=is_coverage_gap,
     )
 
 
@@ -371,6 +387,7 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
     comment_text: str,
     copyright_year: str,
     extra_commands: str,
+    is_coverage_gap: bool = False,
 ) -> Path:
     """Converts a GLSL shader job of a wrong image case to an Amber script suitable for adding to the CTS."""
     shader_jobs = get_shader_jobs(source_dir)
@@ -427,5 +444,6 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
             spirv_opt_args=spirv_opt_args,
             spirv_opt_hash=spirv_opt_hash,
             extra_commands=extra_commands,
+            is_coverage_gap=is_coverage_gap,
         ),
     )

@@ -30,6 +30,8 @@ from gfauto import subprocess_util, util
 # .* does not match newlines
 # (?:   ) non-group parentheses
 
+NO_SIGNATURE = "no_signature"
+
 HEX_LIKE = r"(?:0x)?[0-9a-fA-F]"
 
 # 06-15 21:17:00.039  7517  7517 F DEBUG   :     #00 pc 00000000009d9c34  /my/library.so ((anonymous namespace)::Bar::Baz(aaa::MyInstr*, void* (*)(unsigned int))+456)
@@ -313,11 +315,14 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
     if "Resource deadlock would occur" in log_contents:
         return "Resource_deadlock_would_occur"
 
+    if "pure virtual method called" in log_contents:
+        return "pure_virtual_method_called"
+
     match = re.search(PATTERN_AMBER_TOLERANCE_ERROR, log_contents)
     if match:
         return BAD_IMAGE_SIGNATURE
 
-    return "no_signature"
+    return NO_SIGNATURE
 
 
 def get_signature_from_catchsegv_frame_address(log_contents: str) -> Optional[str]:

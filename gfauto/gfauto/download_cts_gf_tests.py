@@ -93,6 +93,7 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
         "--verbose",
         "--unsafe-paths",
         f"--directory={cts_dir_name}",
+        f"--exclude={cts_dir_name}/external/vulkancts/data/vulkan/amber/graphicsfuzz/index.txt",
         f"--include={cts_dir_name}/external/vulkancts/data/vulkan/amber/graphicsfuzz/*",
     ]
 

@@ -14,6 +14,7 @@ from google.protobuf.descriptor import (
 
 from google.protobuf.internal.containers import (
     RepeatedCompositeFieldContainer as google___protobuf___internal___containers___RepeatedCompositeFieldContainer,
+    RepeatedScalarFieldContainer as google___protobuf___internal___containers___RepeatedScalarFieldContainer,
 )
 
 from google.protobuf.message import (
@@ -23,6 +24,7 @@ from google.protobuf.message import (
 from typing import (
     Iterable as typing___Iterable,
     Optional as typing___Optional,
+    Text as typing___Text,
 )
 
 from typing_extensions import (
@@ -30,13 +32,22 @@ from typing_extensions import (
 )
 
 
+builtin___bool = bool
+builtin___bytes = bytes
+builtin___float = float
+builtin___int = int
+
+
 class Settings(google___protobuf___message___Message):
     DESCRIPTOR: google___protobuf___descriptor___Descriptor = ...
-    maximum_duplicate_crashes = ... # type: int
-    maximum_fuzz_failures = ... # type: int
-    reduce_tool_crashes = ... # type: bool
-    reduce_crashes = ... # type: bool
-    reduce_bad_images = ... # type: bool
+    maximum_duplicate_crashes = ... # type: builtin___int
+    maximum_fuzz_failures = ... # type: builtin___int
+    reduce_tool_crashes = ... # type: builtin___bool
+    reduce_crashes = ... # type: builtin___bool
+    reduce_bad_images = ... # type: builtin___bool
+    extra_graphics_fuzz_generate_args = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
+    extra_graphics_fuzz_reduce_args = ... # type: google___protobuf___internal___containers___RepeatedScalarFieldContainer[typing___Text]
+    only_reduce_signature_regex = ... # type: typing___Text
 
     @property
     def device_list(self) -> gfauto___device_pb2___DeviceList: ...
@@ -51,20 +62,23 @@ class Settings(google___protobuf___message___Message):
         *,
         device_list : typing___Optional[gfauto___device_pb2___DeviceList] = None,
         custom_binaries : typing___Optional[typing___Iterable[gfauto___common_pb2___Binary]] = None,
-        maximum_duplicate_crashes : typing___Optional[int] = None,
-        maximum_fuzz_failures : typing___Optional[int] = None,
-        reduce_tool_crashes : typing___Optional[bool] = None,
-        reduce_crashes : typing___Optional[bool] = None,
-        reduce_bad_images : typing___Optional[bool] = None,
+        maximum_duplicate_crashes : typing___Optional[builtin___int] = None,
+        maximum_fuzz_failures : typing___Optional[builtin___int] = None,
+        reduce_tool_crashes : typing___Optional[builtin___bool] = None,
+        reduce_crashes : typing___Optional[builtin___bool] = None,
+        reduce_bad_images : typing___Optional[builtin___bool] = None,
         latest_binary_versions : typing___Optional[typing___Iterable[gfauto___common_pb2___Binary]] = None,
+        extra_graphics_fuzz_generate_args : typing___Optional[typing___Iterable[typing___Text]] = None,
+        extra_graphics_fuzz_reduce_args : typing___Optional[typing___Iterable[typing___Text]] = None,
+        only_reduce_signature_regex : typing___Optional[typing___Text] = None,
         ) -> None: ...
     @classmethod
-    def FromString(cls, s: bytes) -> Settings: ...
+    def FromString(cls, s: builtin___bytes) -> Settings: ...
     def MergeFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     def CopyFrom(self, other_msg: google___protobuf___message___Message) -> None: ...
     if sys.version_info >= (3,):
-        def HasField(self, field_name: typing_extensions___Literal[u"device_list"]) -> bool: ...
-        def ClearField(self, field_name: typing_extensions___Literal[u"custom_binaries",u"device_list",u"latest_binary_versions",u"maximum_duplicate_crashes",u"maximum_fuzz_failures",u"reduce_bad_images",u"reduce_crashes",u"reduce_tool_crashes"]) -> None: ...
+        def HasField(self, field_name: typing_extensions___Literal[u"device_list"]) -> builtin___bool: ...
+        def ClearField(self, field_name: typing_extensions___Literal[u"custom_binaries",u"device_list",u"extra_graphics_fuzz_generate_args",u"extra_graphics_fuzz_reduce_args",u"latest_binary_versions",u"maximum_duplicate_crashes",u"maximum_fuzz_failures",u"only_reduce_signature_regex",u"reduce_bad_images",u"reduce_crashes",u"reduce_tool_crashes"]) -> None: ...
     else:
-        def HasField(self, field_name: typing_extensions___Literal[u"device_list",b"device_list"]) -> bool: ...
-        def ClearField(self, field_name: typing_extensions___Literal[u"custom_binaries",b"custom_binaries",u"device_list",b"device_list",u"latest_binary_versions",b"latest_binary_versions",u"maximum_duplicate_crashes",b"maximum_duplicate_crashes",u"maximum_fuzz_failures",b"maximum_fuzz_failures",u"reduce_bad_images",b"reduce_bad_images",u"reduce_crashes",b"reduce_crashes",u"reduce_tool_crashes",b"reduce_tool_crashes"]) -> None: ...
+        def HasField(self, field_name: typing_extensions___Literal[u"device_list",b"device_list"]) -> builtin___bool: ...
+        def ClearField(self, field_name: typing_extensions___Literal[u"custom_binaries",b"custom_binaries",u"device_list",b"device_list",u"extra_graphics_fuzz_generate_args",b"extra_graphics_fuzz_generate_args",u"extra_graphics_fuzz_reduce_args",b"extra_graphics_fuzz_reduce_args",u"latest_binary_versions",b"latest_binary_versions",u"maximum_duplicate_crashes",b"maximum_duplicate_crashes",u"maximum_fuzz_failures",b"maximum_fuzz_failures",u"only_reduce_signature_regex",b"only_reduce_signature_regex",u"reduce_bad_images",b"reduce_bad_images",u"reduce_crashes",b"reduce_crashes",u"reduce_tool_crashes",b"reduce_tool_crashes"]) -> None: ...

@@ -20,6 +20,7 @@ Functions for handling GLSL shader job tests.
 """
 
 import random
+import re
 import subprocess
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -32,6 +33,7 @@ from gfauto import (
     gflogging,
     glsl_generate_util,
     host_device_util,
+    interrupt_util,
     result_util,
     shader_compiler_util,
     shader_job_util,
@@ -100,6 +102,9 @@ def fuzz_glsl(
                     donors_dir,
                     template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
                     seed=str(random.getrandbits(glsl_generate_util.GENERATE_SEED_BITS)),
+                    other_args=list(settings.extra_graphics_fuzz_generate_args)
+                    if settings.extra_graphics_fuzz_generate_args
+                    else None,
                 )
             finally:
                 gflogging.pop_stream_for_logging()
@@ -149,9 +154,25 @@ def fuzz_glsl(
     ]
 
     for test_dir in test_dirs:
+        interrupt_util.interrupt_if_needed()
         if handle_test(test_dir, reports_dir, active_devices, binary_manager, settings):
             # If we generated a report, don't bother trying other optimization combinations.
             break
+
+
+def add_spirv_shader_test_binaries(
+    test: Test,
+    spirv_opt_args: Optional[List[str]],
+    binary_manager: binaries_util.BinaryManager,
+) -> Test:
+    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-dis")])
+    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-val")])
+    if spirv_opt_args:
+        test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-opt")])
+    test.binaries.extend([binary_manager.get_binary_by_name(name="amber")])
+    test.binaries.extend([binary_manager.get_binary_by_name(name="amber_apk")])
+    test.binaries.extend([binary_manager.get_binary_by_name(name="amber_apk_test")])
+    return test
 
 
 def make_test(
@@ -166,10 +187,7 @@ def make_test(
     test = Test(glsl=TestGlsl(spirv_opt_args=spirv_opt_args))
 
     test.binaries.extend([binary_manager.get_binary_by_name(name="glslangValidator")])
-    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-dis")])
-    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-val")])
-    if spirv_opt_args:
-        test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-opt")])
+    add_spirv_shader_test_binaries(test, spirv_opt_args, binary_manager)
 
     # Write the test metadata.
     test_util.metadata_write(test, subtest_dir)
@@ -181,6 +199,7 @@ def run(
     test_dir: Path,
     binary_manager: binaries_util.BinaryManager,
     device: Optional[Device] = None,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> str:
 
     test: Test = test_util.metadata_read(test_dir)
@@ -192,12 +211,13 @@ def run(
         output_dir=test_util.get_results_directory(test_dir, device.name),
         binary_manager=binary_manager,
         device=device,
+        preprocessor_cache=preprocessor_cache,
     )
 
     return result_util.get_status(result_output_dir)
 
 
-def maybe_add_report(  # pylint: disable=too-many-locals;
+def maybe_add_report(  # pylint: disable=too-many-locals,too-many-branches;
     test_dir: Path, reports_dir: Path, device: Device, settings: Settings
 ) -> Optional[Path]:
 
@@ -223,13 +243,22 @@ def maybe_add_report(  # pylint: disable=too-many-locals;
 
     signature_dir = reports_dir / report_subdirectory_name / signature
 
-    util.mkdirs_p(signature_dir)
-
     # If the signature_dir contains a NOT_INTERESTING file, then don't bother creating a report.
-    if (signature_dir / "NOT_INTERESTING").exists():
+    if (signature_dir / "NOT_INTERESTING").is_file():
+        log(
+            f'Discarding test because of file: {str(signature_dir / "NOT_INTERESTING")}'
+        )
         return None
 
-    if signature != signature_util.BAD_IMAGE_SIGNATURE:
+    # Don't create a report for ignored signatures (specified by the device).
+    ignored_signatures = set(device.ignored_crash_signatures)
+    if signature in ignored_signatures:
+        log(
+            f"Discarding test; signature is in the device's ignored_crash_signatures: {signature}"
+        )
+        return None
+
+    if signature_dir.is_dir() and signature != signature_util.BAD_IMAGE_SIGNATURE:
         # If we have reached the maximum number of crashes per signature for this device, don't create a report.
         num_duplicates = [
             report_dir
@@ -309,11 +338,20 @@ def should_reduce_report(settings: Settings, test_dir: Path) -> bool:
     ):
         return False
 
+    if (
+        settings.only_reduce_signature_regex
+        and re.fullmatch(settings.only_reduce_signature_regex, signature) is None
+    ):
+        return False
+
     return True
 
 
 def run_reduction_on_report(
-    test_dir: Path, reports_dir: Path, binary_manager: binaries_util.BinaryManager
+    test_dir: Path,
+    reports_dir: Path,
+    binary_manager: binaries_util.BinaryManager,
+    settings: Settings,
 ) -> None:
     test = test_util.metadata_read(test_dir)
 
@@ -324,6 +362,7 @@ def run_reduction_on_report(
             test_dir_to_reduce=reduced_test,
             preserve_semantics=True,
             binary_manager=binary_manager,
+            settings=settings,
             reduction_name="1",
         )
 
@@ -333,6 +372,7 @@ def run_reduction_on_report(
                 test_dir_to_reduce=reduced_test,
                 preserve_semantics=False,
                 binary_manager=binary_manager,
+                settings=settings,
                 reduction_name="2",
             )
 
@@ -366,18 +406,26 @@ def handle_test(
 
     report_paths: List[Path] = []
     issue_found = False
+    preprocessor_cache = util.CommandCache()
 
     # Run on all devices.
     for device in active_devices:
-        status = run(test_dir, binary_manager, device)
+        status = run(
+            test_dir, binary_manager, device, preprocessor_cache=preprocessor_cache
+        )
         if status in (
             fuzz.STATUS_CRASH,
             fuzz.STATUS_TOOL_CRASH,
             fuzz.STATUS_UNRESPONSIVE,
         ):
             issue_found = True
+
+        # No need to run further on real devices if the pre-processing step failed.
         if status == fuzz.STATUS_TOOL_CRASH:
-            # No need to run further on real devices if the pre-processing step failed.
+            break
+
+        # Skip devices if interrupted, but finish reductions, if needed.
+        if interrupt_util.interrupted():
             break
 
     # For each device that saw a crash, copy the test to reports_dir, adding the signature and device info to the test
@@ -390,7 +438,9 @@ def handle_test(
     # For each report, run a reduction on the target device with the device-specific crash signature.
     for test_dir_in_reports in report_paths:
         if should_reduce_report(settings, test_dir_in_reports):
-            run_reduction_on_report(test_dir_in_reports, reports_dir, binary_manager)
+            run_reduction_on_report(
+                test_dir_in_reports, reports_dir, binary_manager, settings
+            )
         else:
             log("Skipping reduction due to settings.")
 
@@ -412,6 +462,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
     shader_job_shader_overrides: Optional[
         tool.ShaderJobNameToShaderOverridesMap
     ] = None,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> Path:
 
     if not shader_job_shader_overrides:
@@ -420,8 +471,6 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
     with util.file_open_text(output_dir / "log.txt", "w") as log_file:
         try:
             gflogging.push_stream_for_logging(log_file)
-
-            # TODO: Find amber path. NDK or host.
 
             # TODO: If Amber is going to be used, check if Amber can use Vulkan debug layers now, and if not, pass that
             #  info down via a bool.
@@ -479,6 +528,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                             binary_paths=binary_manager,
                             spirv_opt_args=spirv_opt_args,
                             shader_overrides=shader_overrides,
+                            preprocessor_cache=preprocessor_cache,
                         )
                     )
                 except subprocess.CalledProcessError:
@@ -627,6 +677,7 @@ def run_reduction(
     test_dir_to_reduce: Path,
     preserve_semantics: bool,
     binary_manager: binaries_util.BinaryManager,
+    settings: Settings,
     reduction_name: str = "reduction1",
 ) -> Path:
     test = test_util.metadata_read(test_dir_to_reduce)
@@ -672,6 +723,9 @@ def run_reduction(
         ),
         binary_manager=binary_manager,
         preserve_semantics=preserve_semantics,
+        extra_args=list(settings.extra_graphics_fuzz_reduce_args)
+        if settings.extra_graphics_fuzz_reduce_args
+        else None,
     )
 
     final_reduced_shader_job_path = get_final_reduced_shader_job_path(
@@ -703,6 +757,7 @@ def run_glsl_reduce(
     output_dir: Path,
     binary_manager: binaries_util.BinaryManager,
     preserve_semantics: bool = False,
+    extra_args: Optional[List[str]] = None,
 ) -> Path:
 
     input_shader_job = source_dir / name_of_shader_to_reduce / test_util.SHADER_JOB
@@ -717,17 +772,25 @@ def run_glsl_reduce(
         str(input_shader_job),
         "--output",
         str(output_dir),
-        # This ensures the arguments that follow are all positional arguments.
-        "--",
-        "gfauto_interestingness_test",
-        str(source_dir),
-        # --override_shader_job requires two parameters to follow; the second will be added by glsl-reduce (the shader.json file).
-        "--override_shader_job",
-        str(name_of_shader_to_reduce),
     ]
 
     if preserve_semantics:
-        cmd.insert(1, "--preserve-semantics")
+        cmd.append("--preserve-semantics")
+
+    if extra_args:
+        cmd.extend(extra_args)
+
+    cmd.extend(
+        [
+            # This ensures the arguments that follow are all positional arguments.
+            "--",
+            "gfauto_interestingness_test",
+            str(source_dir),
+            # --override_shader_job requires two parameters to follow; the second will be added by glsl-reduce (the shader.json file).
+            "--override_shader_job",
+            str(name_of_shader_to_reduce),
+        ]
+    )
 
     # Log the reduction.
     with util.file_open_text(output_dir / "command.log", "w") as f:
@@ -755,6 +818,25 @@ def create_summary_and_reproduce(
     reduced_test_dir = test_util.get_reduced_test_dir(
         test_dir, test_metadata.device.name, fuzz.BEST_REDUCTION_NAME
     )
+
+    stage_one_reduction_dir = test_util.get_reduced_test_dir(
+        test_dir, test_metadata.device.name, "1"
+    )
+
+    stage_two_reduction_dir = test_util.get_reduced_test_dir(
+        test_dir, test_metadata.device.name, "2"
+    )
+
+    stage_one_reduced: Optional[Path] = None
+
+    if stage_one_reduction_dir.is_dir() and stage_two_reduction_dir.is_dir():
+        # This reduction had two stages. Save the first stage in addition to the second.
+        stage_one_reduced_source = test_util.get_source_dir(stage_one_reduction_dir)
+        if stage_one_reduced_source.is_dir():
+            stage_one_reduced = util.copy_dir(
+                stage_one_reduced_source, summary_dir / "reduced_stage_one"
+            )
+
     reduced_source_dir = test_util.get_source_dir(reduced_test_dir)
     reduced: Optional[Path] = None
     if reduced_source_dir.exists():
@@ -771,6 +853,13 @@ def create_summary_and_reproduce(
         variant_reduced_glsl_result = run_shader_job(
             source_dir=reduced,
             output_dir=(summary_dir / "reduced_result"),
+            binary_manager=binary_manager,
+        )
+
+    if stage_one_reduced:
+        variant_reduced_glsl_result = run_shader_job(
+            source_dir=stage_one_reduced,
+            output_dir=(summary_dir / "reduced_stage_one_result"),
             binary_manager=binary_manager,
         )
 

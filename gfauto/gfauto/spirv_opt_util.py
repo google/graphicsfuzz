@@ -71,6 +71,7 @@ def run_spirv_opt_on_spirv_shader(
     spirv_opt_file_path: Optional[pathlib.Path] = None,
     spirv_opt_no_validate_after_all: bool = False,
     time_limit: int = SPIRV_OPT_DEFAULT_TIME_LIMIT,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> pathlib.Path:
 
     if not spirv_opt_file_path:
@@ -80,21 +81,25 @@ def run_spirv_opt_on_spirv_shader(
 
     util.file_mkdirs_parent(output_spirv_file_path)
 
-    cmd = [
-        str(spirv_opt_file_path),
-        str(input_spirv_file_path),
-        "-o",
-        str(output_spirv_file_path),
-    ]
-
+    cmd = util.HashedCommand()
+    cmd.append_program_path(spirv_opt_file_path)
+    cmd.append_input_file(input_spirv_file_path)
+    cmd.append_str("-o")
+    cmd.append_output_file(output_spirv_file_path)
     if not spirv_opt_no_validate_after_all:
-        cmd.append("--validate-after-all")
+        cmd.append_str("--validate-after-all")
+    cmd.extend_str(spirv_opt_args)
 
-    cmd += spirv_opt_args
+    if preprocessor_cache and preprocessor_cache.write_cached_output_file(
+        cmd, output_spirv_file_path
+    ):
+        return output_spirv_file_path
 
-    cmd = util.prepend_catchsegv_if_available(cmd)
+    cmd_str = util.prepend_catchsegv_if_available(cmd.cmd)
+    subprocess_util.run(cmd_str, timeout=time_limit)
 
-    subprocess_util.run(cmd, timeout=time_limit)
+    if preprocessor_cache:
+        preprocessor_cache.add_output_to_cache(cmd, output_spirv_file_path)
 
     return output_spirv_file_path
 
@@ -105,6 +110,7 @@ def run_spirv_opt_on_spirv_shader_job(
     spirv_opt_args: List[str],
     spirv_opt_file_path: Optional[pathlib.Path] = None,
     spirv_opt_no_validate_after_all: bool = False,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> pathlib.Path:
 
     if not spirv_opt_file_path:
@@ -126,6 +132,7 @@ def run_spirv_opt_on_spirv_shader_job(
             spirv_opt_args,
             spirv_opt_file_path,
             spirv_opt_no_validate_after_all,
+            preprocessor_cache=preprocessor_cache,
         )
 
     return output_spirv_shader_job_json_file_path

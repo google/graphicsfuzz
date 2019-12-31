@@ -18,14 +18,30 @@ set -x
 set -e
 set -u
 
-if [ -z ${VIRTUAL_ENV+x} ]; then
-  source .venv/bin/activate
-fi
+case "$(uname)" in
+"Linux")
+  ACTIVATE_PATH=".venv/bin/activate"
+  ;;
 
-mypy --strict --show-absolute-path gfauto gfautotests
-pylint gfauto gfautotests
-# Flake checks formatting via black.
-flake8 .
-# Run tests, but run test_large.py last and in parallel workers.
-pytest gfautotests --ignore=gfautotests/test_large.py
-pytest -n 8 gfautotests/test_large.py
+"Darwin")
+  ACTIVATE_PATH=".venv/bin/activate"
+  ;;
+
+"MINGW"*)
+  ACTIVATE_PATH=".venv/Scripts/activate"
+  ;;
+
+*)
+  echo "Unknown OS"
+  exit 1
+  ;;
+esac
+
+python build/travis/check_headers.py
+cd gfauto
+export PYTHON=python
+export SKIP_SHELL=1
+./dev_shell.sh.template
+# shellcheck disable=SC1090
+source "${ACTIVATE_PATH}"
+./check_all.sh

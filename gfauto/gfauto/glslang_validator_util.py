@@ -32,6 +32,7 @@ def run_glslang_glsl_shader_to_spirv_shader(
     output_dir_path: pathlib.Path,
     glslang_validator_file_path: Optional[pathlib.Path] = None,
     time_limit: int = GLSLANG_DEFAULT_TIME_LIMIT,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> pathlib.Path:
 
     if not glslang_validator_file_path:
@@ -43,18 +44,25 @@ def run_glslang_glsl_shader_to_spirv_shader(
 
     util.file_mkdirs_parent(output_spirv_file_path)
 
+    cmd = util.HashedCommand()
+    cmd.append_program_path(glslang_validator_file_path)
+    cmd.append_str("-V")
+    cmd.append_str("-o")
+    cmd.append_output_file(output_spirv_file_path)
+    cmd.append_input_file(glsl_shader_path)
+
+    if preprocessor_cache and preprocessor_cache.write_cached_output_file(
+        cmd, output_spirv_file_path
+    ):
+        return output_spirv_file_path
+
+    cmd_str = util.prepend_catchsegv_if_available(cmd.cmd)
     subprocess_util.run(
-        util.prepend_catchsegv_if_available(
-            [
-                str(glslang_validator_file_path),
-                "-V",
-                "-o",
-                str(output_spirv_file_path),
-                str(glsl_shader_path),
-            ]
-        ),
-        timeout=time_limit,
+        cmd_str, timeout=time_limit,
     )
+
+    if preprocessor_cache:
+        preprocessor_cache.add_output_to_cache(cmd, output_spirv_file_path)
 
     return output_spirv_file_path
 
@@ -63,6 +71,7 @@ def run_glslang_glsl_to_spirv_job(
     glsl_shader_job_json_file_path: pathlib.Path,
     spirv_shader_job_json_file_path: pathlib.Path,
     glslang_validator_file_path: Optional[pathlib.Path] = None,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> pathlib.Path:
 
     if not glslang_validator_file_path:
@@ -81,6 +90,7 @@ def run_glslang_glsl_to_spirv_job(
             glsl_shader_file,
             spirv_shader_job_json_file_path.parent,
             glslang_validator_file_path,
+            preprocessor_cache=preprocessor_cache,
         )
 
     return spirv_shader_job_json_file_path

@@ -29,6 +29,7 @@ from gfauto import (
     fuzz,
     fuzz_glsl_test,
     gflogging,
+    interrupt_util,
     result_util,
     shader_job_util,
     signature_util,
@@ -58,10 +59,7 @@ def make_test(
 
     test = Test(spirv_fuzz=TestSpirvFuzz(spirv_opt_args=spirv_opt_args))
 
-    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-dis")])
-    test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-val")])
-    if spirv_opt_args:
-        test.binaries.extend([binary_manager.get_binary_by_name(name="spirv-opt")])
+    fuzz_glsl_test.add_spirv_shader_test_binaries(test, spirv_opt_args, binary_manager)
 
     # Write the test metadata.
     test_util.metadata_write(test, subtest_dir)
@@ -73,6 +71,7 @@ def run(
     test_dir: Path,
     binary_manager: binaries_util.BinaryManager,
     device: Optional[Device] = None,
+    preprocessor_cache: Optional[util.CommandCache] = None,
 ) -> str:
 
     test: Test = test_util.metadata_read(test_dir)
@@ -84,6 +83,7 @@ def run(
         output_dir=test_util.get_results_directory(test_dir, device.name),
         binary_manager=binary_manager,
         device=device,
+        preprocessor_cache=preprocessor_cache,
     )
 
     return result_util.get_status(result_output_dir)
@@ -364,18 +364,26 @@ def handle_test(
 ) -> bool:
     report_paths: List[Path] = []
     issue_found = False
+    preprocessor_cache = util.CommandCache()
 
     # Run on all devices.
     for device in active_devices:
-        status = run(test_dir, binary_manager, device)
+        status = run(
+            test_dir, binary_manager, device, preprocessor_cache=preprocessor_cache
+        )
         if status in (
             fuzz.STATUS_CRASH,
             fuzz.STATUS_TOOL_CRASH,
             fuzz.STATUS_UNRESPONSIVE,
         ):
             issue_found = True
+
+        # No need to run further on real devices if the pre-processing step failed.
         if status == fuzz.STATUS_TOOL_CRASH:
-            # No need to run further on real devices if the pre-processing step failed.
+            break
+
+        # Skip devices if interrupted, but finish reductions, if needed.
+        if interrupt_util.interrupted():
             break
 
     # For each device that saw a crash, copy the test to reports_dir, adding the signature and device info to the test
@@ -482,6 +490,7 @@ def fuzz_spirv(
     ]
 
     for test_dir in test_dirs:
+        interrupt_util.interrupt_if_needed()
         if handle_test(test_dir, reports_dir, active_devices, binary_manager, settings):
             # If we generated a report, don't bother trying other optimization combinations.
             break

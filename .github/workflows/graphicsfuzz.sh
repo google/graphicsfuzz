@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2019 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,33 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-trigger:
-- gfauto
+set -x
+set -e
+set -u
 
-pr:
-- dev
-- master
+case "$(uname)" in
+"Linux")
+  ;;
 
-pool:
-  vmImage: 'ubuntu-latest'
-strategy:
-  matrix:
-    Python36:
-      python.version: '3.6'
-    Python37:
-      python.version: '3.7'
+"Darwin")
+  brew install coreutils
+  PATH="/usr/local/opt/coreutils/libexec/gnubin:${PATH}"
+  export PATH
+  ;;
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-  displayName: 'Use Python $(python.version)'
+"MINGW"*)
+  ;;
 
-- script: |
-    cd gfauto
-    export PYTHON=python
-    export SKIP_SHELL=1
-    ./dev_shell.sh.template
-    source .venv/bin/activate
-    ./check_all.sh
-  displayName: 'Install dependencies'
+*)
+  echo "Unknown OS"
+  exit 1
+  ;;
+esac
+
+time build/travis/build-graphicsfuzz-fast.sh
+time build/travis/build-graphicsfuzz-medium.sh

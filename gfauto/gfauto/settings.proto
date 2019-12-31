@@ -50,4 +50,13 @@ message Settings {
 
   // A list of built-in binary versions that will be generated automatically.
   repeated Binary latest_binary_versions = 8;
+
+  // Extra arguments to pass to the GraphicsFuzz generator.
+  repeated string extra_graphics_fuzz_generate_args = 9;
+
+  // Extra arguments to pass to the GraphicsFuzz reducer.
+  repeated string extra_graphics_fuzz_reduce_args = 10;
+
+  // If non-empty, only reduce a report if the crash signature matches this regular expression.
+  string only_reduce_signature_regex = 11;
 }
