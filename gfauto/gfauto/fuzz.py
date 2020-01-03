@@ -20,6 +20,7 @@ The main entry point to GraphicsFuzz Auto.
 """
 
 import argparse
+import enum
 import os
 import random
 import secrets
@@ -124,13 +125,39 @@ ITERATION_SEED_BITS = 256
 FUZZ_FAILURES_DIR_NAME = "fuzz_failures"
 
 
+class FuzzingTool(enum.Enum):
+    GLSL_FUZZ = "GLSL_FUZZ"
+    SPIRV_FUZZ = "SPIRV_FUZZ"
+
+
 def get_random_name() -> str:
     # TODO: could change to human-readable random name or the date.
     return util.get_random_name()
 
 
+def get_fuzzing_tool_pattern(
+    glsl_fuzz_iterations: int, spirv_fuzz_iterations: int
+) -> List[FuzzingTool]:
+
+    fuzzing_tool_pattern = [FuzzingTool.GLSL_FUZZ] * glsl_fuzz_iterations
+    fuzzing_tool_pattern += [FuzzingTool.SPIRV_FUZZ] * spirv_fuzz_iterations
+
+    # If empty, we default to just running GLSL_FUZZ repeatedly.
+    if not fuzzing_tool_pattern:
+        fuzzing_tool_pattern = [FuzzingTool.GLSL_FUZZ]
+
+    return fuzzing_tool_pattern
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Fuzz")
+    parser = argparse.ArgumentParser(
+        description="Fuzz devices using glsl-fuzz and/or spirv-fuzz to generate tests. "
+        "By default, repeatedly generates tests using glsl-fuzz. "
+        "You can instead specify the number of times each tool will run; "
+        "glsl-fuzz runs G times, then spirv-fuzz runs S times, then the pattern repeats. "
+        "By default, G=0 and S=0, in which case glsl-fuzz is hardcoded to run. "
+        'Each run of glsl-fuzz/spirv-fuzz uses a random "iteration seed", which can be used to replay the invocation of the tool and the steps that follow. '
+    )
 
     parser.add_argument(
         "--settings",
@@ -144,9 +171,21 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--use_spirv_fuzz",
-        help="Do fuzzing using spirv-fuzz, which must be on your PATH.",
-        action="store_true",
+        "--glsl_fuzz_iterations",
+        metavar="G",
+        help="Run glsl-fuzz G times to generate some tests, before moving on to the next tool.",
+        action="store",
+        default=0,
+        type=int,
+    )
+
+    parser.add_argument(
+        "--spirv_fuzz_iterations",
+        metavar="S",
+        help="Run spirv-fuzz S times to generate some tests, before moving on to the next tool.",
+        action="store",
+        default=0,
+        type=int,
     )
 
     parser.add_argument(
@@ -171,9 +210,16 @@ def main() -> None:
     iteration_seed: Optional[int] = None if parsed_args.iteration_seed is None else int(
         parsed_args.iteration_seed
     )
-    use_spirv_fuzz: bool = parsed_args.use_spirv_fuzz
+    glsl_fuzz_iterations: int = parsed_args.glsl_fuzz_iterations
+    spirv_fuzz_iterations: int = parsed_args.spirv_fuzz_iterations
     allow_no_stack_traces: bool = parsed_args.allow_no_stack_traces
     active_device_names: Optional[List[str]] = parsed_args.active_device
+
+    # E.g. [GLSL_FUZZ, GLSL_FUZZ, SPIRV_FUZZ] will run glsl-fuzz twice, then spirv-fuzz once, then repeat.
+    fuzzing_tool_pattern = get_fuzzing_tool_pattern(
+        glsl_fuzz_iterations=glsl_fuzz_iterations,
+        spirv_fuzz_iterations=spirv_fuzz_iterations,
+    )
 
     with util.file_open_text(Path(f"log_{get_random_name()}.txt"), "w") as log_file:
         gflogging.push_stream_for_logging(log_file)
@@ -181,7 +227,7 @@ def main() -> None:
             main_helper(
                 settings_path,
                 iteration_seed,
-                use_spirv_fuzz,
+                fuzzing_tool_pattern,
                 allow_no_stack_traces,
                 active_device_names=active_device_names,
             )
@@ -205,12 +251,15 @@ def try_get_root_file() -> Path:
 def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many-statements;
     settings_path: Path,
     iteration_seed_override: Optional[int] = None,
-    use_spirv_fuzz: bool = False,
+    fuzzing_tool_pattern: Optional[List[FuzzingTool]] = None,
     allow_no_stack_traces: bool = False,
     override_sigint: bool = True,
     use_amber_vulkan_loader: bool = False,
     active_device_names: Optional[List[str]] = None,
 ) -> None:
+
+    if not fuzzing_tool_pattern:
+        fuzzing_tool_pattern = [FuzzingTool.GLSL_FUZZ]
 
     util.update_gcov_environment_variable_if_needed()
 
@@ -245,10 +294,11 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     spirv_fuzz_shaders: List[Path] = []
     references: List[Path] = []
 
-    if use_spirv_fuzz:
+    if FuzzingTool.SPIRV_FUZZ in fuzzing_tool_pattern:
         check_dir_exists(spirv_fuzz_shaders_dir)
         spirv_fuzz_shaders = sorted(spirv_fuzz_shaders_dir.rglob("*.json"))
-    else:
+
+    if FuzzingTool.GLSL_FUZZ in fuzzing_tool_pattern:
         check_dir_exists(references_dir)
         check_dir_exists(donors_dir)
         # TODO: make GraphicsFuzz find donors recursively.
@@ -267,6 +317,8 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
             binaries_util.AMBER_VULKAN_LOADER_NAME
         ).path.parent
         util.add_library_paths_to_environ([library_path], os.environ)
+
+    fuzzing_tool_index = 0
 
     while True:
 
@@ -300,7 +352,10 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
         #  - Reduce each report (on the given device).
         #  - Produce a summary for each report.
 
-        if use_spirv_fuzz:
+        fuzzing_tool = fuzzing_tool_pattern[fuzzing_tool_index]
+        fuzzing_tool_index = (fuzzing_tool_index + 1) % len(fuzzing_tool_pattern)
+
+        if fuzzing_tool == FuzzingTool.SPIRV_FUZZ:
             fuzz_spirv_test.fuzz_spirv(
                 staging_dir,
                 reports_dir,
@@ -310,7 +365,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
                 settings,
                 binary_manager,
             )
-        else:
+        elif fuzzing_tool == FuzzingTool.GLSL_FUZZ:
             fuzz_glsl_test.fuzz_glsl(
                 staging_dir,
                 reports_dir,
@@ -321,6 +376,8 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
                 settings,
                 binary_manager,
             )
+        else:
+            raise AssertionError(f"Unknown fuzzing tool: {fuzzing_tool}")
 
         if iteration_seed_override is not None:
             log("Stopping due to iteration_seed")
