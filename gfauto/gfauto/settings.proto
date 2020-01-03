@@ -59,4 +59,7 @@ message Settings {
 
   // If non-empty, only reduce a report if the crash signature matches this regular expression.
   string only_reduce_signature_regex = 11;
+
+  // Comment that links to documentation for this proto.
+  string _comment = 12;
 }
