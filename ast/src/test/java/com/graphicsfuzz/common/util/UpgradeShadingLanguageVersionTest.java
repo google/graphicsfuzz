@@ -78,4 +78,30 @@ public class UpgradeShadingLanguageVersionTest {
     UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
     CompareAstsDuplicate.assertEqualAsts(expected, tu);
   }
+
+  @Test
+  public void testGlobalInitializer() throws Exception {
+    final String shader = "#version 100\n"
+        + "precision mediump float;\n"
+        + "vec2 foo = vec2(0.0,1.0);\n"
+        + "const float notpi = 3.2;\n"
+        + "vec2 bar = vec2(1.0,0.0);\n"
+        + "void main() {\n"
+        + "  gl_FragColor = texture2D(foo);\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "precision mediump float;\n"
+        + "layout(location = 0) out vec4 _GLF_color;\n"
+        + "vec2 foo;\n"
+        + "const float notpi = 3.2;\n"
+        + "vec2 bar;\n"
+        + "void main() {\n"
+        + "  foo  = vec2(0.0,1.0);\n"
+        + "  bar  = vec2(1.0,0.0);\n"
+        + "  _GLF_color = texture(foo);\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
+    CompareAstsDuplicate.assertEqualAsts(expected, tu);
+  }
 }

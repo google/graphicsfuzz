@@ -18,13 +18,17 @@ package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
+import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
@@ -41,7 +45,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -54,6 +60,9 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
 
   // The shading language version to upgrade to.
   private final ShadingLanguageVersion newVersion;
+
+  // Globals with initializers; move the initialization to start of main().
+  private List<Stmt> globals = new ArrayList<>();
 
   private static Namespace parse(String[] args) throws ArgumentParserException {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("PrettyPrint")
@@ -117,6 +126,11 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
 
     if (tu.getShaderKind() == ShaderKind.FRAGMENT) {
 
+      // We only consider shaders with main() to be valid.
+      if (!tu.hasMainFunction()) {
+        throw new RuntimeException("Shader has no main() function");
+      }
+
       // Declare 'layout(location = 0) out vec4 _GLF_color;' at the start of the translation unit,
       // but after any initial precision declarations.
 
@@ -139,6 +153,11 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
               TypeQualifier.SHADER_OUTPUT
           )), new VariableDeclInfo(Constants.GLF_COLOR, null, null)),
           firstNonPrecisionDeclaration);
+
+      // Add global non-const initializers (if any) to start of main
+      for (int i = 0; i < globals.size(); i++) {
+        tu.getMainFunction().getBody().insertStmt(i, globals.get(i));
+      }
     }
 
     // Modify the claimed shading language version of the translation unit.
@@ -170,6 +189,12 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
       }
       if (vdi.hasInitializer()) {
         visit(vdi.getInitializer());
+        // If not constant and has initializer, move the initializer to main.
+        if (!baseType.hasQualifier(TypeQualifier.CONST)) {
+          globals.add(new ExprStmt(new BinaryExpr(new VariableIdentifierExpr(vdi.getName()),
+              vdi.getInitializer().getExpr(), BinOp.ASSIGN)));
+          vdi.setInitializer(null);
+        }
       }
     }
   }
