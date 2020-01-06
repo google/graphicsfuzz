@@ -21,7 +21,7 @@ Used to run Amber on the host machine.
 
 import subprocess
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from gfauto import (
     devices_util,
@@ -35,19 +35,25 @@ from gfauto import (
 from gfauto.gflogging import log
 
 
-def get_driver_details(amber_path: Path, icd: Optional[Path] = None) -> str:
+def get_driver_details(
+    amber_path: Path,
+    icd: Optional[Path] = None,
+    custom_launcher: Optional[List[str]] = None,
+) -> str:
 
     env: Optional[Dict[str, str]] = None
 
     if icd:
         env = {"VK_ICD_FILENAMES": str(icd)}
 
+    cmd = [str(amber_path), "-d", "-V"]
+
+    if custom_launcher:
+        cmd = custom_launcher + cmd
+
     try:
         result = subprocess_util.run(
-            [str(amber_path), "-d", "-V"],
-            timeout=fuzz.AMBER_RUN_TIME_LIMIT,
-            verbose=True,
-            env=env,
+            cmd, timeout=fuzz.AMBER_RUN_TIME_LIMIT, verbose=True, env=env,
         )
     except subprocess.SubprocessError as ex:
         raise devices_util.GetDeviceDetailsError() from ex
@@ -71,6 +77,7 @@ def run_amber(
     skip_render: bool = False,
     debug_layers: bool = False,
     icd: Optional[Path] = None,
+    custom_launcher: Optional[List[str]] = None,
 ) -> Path:
     with util.file_open_text(
         result_util.get_amber_log_path(output_dir), "w"
@@ -87,6 +94,7 @@ def run_amber(
                 skip_render,
                 debug_layers,
                 icd,
+                custom_launcher,
             )
         finally:
             gflogging.pop_stream_for_logging()
@@ -94,7 +102,7 @@ def run_amber(
     return output_dir
 
 
-def run_amber_helper(
+def run_amber_helper(  # pylint: disable=too-many-locals;
     amber_script_file: Path,
     output_dir: Path,
     dump_image: bool,
@@ -103,6 +111,7 @@ def run_amber_helper(
     skip_render: bool = False,
     debug_layers: bool = False,
     icd: Optional[Path] = None,
+    custom_launcher: Optional[List[str]] = None,
 ) -> Path:
 
     variant_image_file = output_dir / fuzz.VARIANT_IMAGE_FILE_NAME
@@ -147,6 +156,9 @@ def run_amber_helper(
 
     if icd:
         env = {"VK_ICD_FILENAMES": str(icd)}
+
+    if custom_launcher:
+        cmd = custom_launcher + cmd
 
     try:
         result = subprocess_util.run(

@@ -634,6 +634,11 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                         binaries_util.SWIFT_SHADER_NAME
                     ).path
 
+                custom_launcher: Optional[List[str]] = None
+
+                if device.HasField("host"):
+                    custom_launcher = list(device.host.custom_launcher)
+
                 # Run the test on the host using Amber.
                 host_device_util.run_amber(
                     amber_script_file,
@@ -644,6 +649,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                     dump_image=(not is_compute),
                     dump_buffer=is_compute,
                     icd=icd,
+                    custom_launcher=custom_launcher,
                 )
                 return output_dir
 

@@ -502,6 +502,10 @@ def get_config_from_binary(binary: Binary) -> str:
     return config
 
 
+def is_built_in_binary_name(binary_name: str) -> bool:
+    return binary_name in (b.name for b in DEFAULT_BINARIES)
+
+
 def binary_name_to_project_name(binary_name: str) -> str:
     if binary_name == "glslangValidator":
         project_name = "glslang"
