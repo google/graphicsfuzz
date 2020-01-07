@@ -86,8 +86,12 @@ public class UpgradeShadingLanguageVersionTest {
         + "vec2 foo = vec2(0.0,1.0);\n"
         + "const float notpi = 3.2;\n"
         + "vec2 bar = vec2(1.0,0.0);\n"
+        + "vec2 rot(vec2 p) {\n"
+        + "  vec2 r = vec2(p.y, p.x);\n"
+        + "  return r;\n"
+        + "}\n"
         + "void main() {\n"
-        + "  gl_FragColor = texture2D(foo);\n"
+        + "  gl_FragColor = texture2D(rot(foo));\n"
         + "}\n";
     final String expected = "#version 310 es\n"
         + "precision mediump float;\n"
@@ -95,13 +99,18 @@ public class UpgradeShadingLanguageVersionTest {
         + "vec2 foo;\n"
         + "const float notpi = 3.2;\n"
         + "vec2 bar;\n"
+        + "vec2 rot(vec2 p) {\n"
+        + "  vec2 r = vec2(p.y, p.x);\n"
+        + "  return r;\n"
+        + "}\n"
         + "void main() {\n"
-        + "  foo  = vec2(0.0,1.0);\n"
-        + "  bar  = vec2(1.0,0.0);\n"
-        + "  _GLF_color = texture(foo);\n"
+        + "  foo = vec2(0.0,1.0);\n"
+        + "  bar = vec2(1.0,0.0);\n"
+        + "  _GLF_color = texture(rot(foo));\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
     UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
     CompareAstsDuplicate.assertEqualAsts(expected, tu);
   }
+
 }

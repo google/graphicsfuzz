@@ -38,6 +38,7 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
@@ -189,8 +190,8 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
       }
       if (vdi.hasInitializer()) {
         visit(vdi.getInitializer());
-        // If not constant and has initializer, move the initializer to main.
-        if (!baseType.hasQualifier(TypeQualifier.CONST)) {
+        // If not constant, at global scope and has initializer, move the initializer to main.
+        if (!baseType.hasQualifier(TypeQualifier.CONST) && !getCurrentScope().hasParent()) {
           globals.add(new ExprStmt(new BinaryExpr(new VariableIdentifierExpr(vdi.getName()),
               vdi.getInitializer().getExpr(), BinOp.ASSIGN)));
           vdi.setInitializer(null);
