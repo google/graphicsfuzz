@@ -34,6 +34,7 @@ DEFAULT_SETTINGS = Settings(
     reduce_tool_crashes=True,
     reduce_crashes=True,
     reduce_bad_images=True,
+    _comment="https://github.com/google/graphicsfuzz/blob/master/gfauto/gfauto/settings.proto",
 )
 
 
