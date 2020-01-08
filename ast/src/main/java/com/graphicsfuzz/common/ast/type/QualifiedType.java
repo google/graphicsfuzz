@@ -49,6 +49,11 @@ public class QualifiedType extends Type {
     return Collections.unmodifiableList(qualifiers);
   }
 
+  /**
+   * Remove qualifier from variable type.
+   *
+   * @param qualifier Qualifier to remove. Qualifier must exist.
+   */
   public void removeQualifier(TypeQualifier qualifier) {
     if (!hasQualifier(qualifier)) {
       throw new UnsupportedOperationException("Attempt to remove absent qualifier " + qualifier);
@@ -56,19 +61,57 @@ public class QualifiedType extends Type {
     qualifiers.remove(qualifier);
   }
 
+  /**
+   * Replaces a qualifier with another. Useful when converting between shader versions.
+   *
+   * @param oldQualifier Old qualifier which has to exist
+   * @param newQualifier New qualfiier which must not exist
+   */
+  public void replaceQualifier(TypeQualifier oldQualifier, TypeQualifier newQualifier) {
+    if (!hasQualifier(oldQualifier)) {
+      throw new UnsupportedOperationException("Attempt to remove absent qualifier " + oldQualifier);
+    }
+    if (hasQualifier(newQualifier)) {
+      throw new UnsupportedOperationException("Attempt to add existing qualifier " + newQualifier);
+    }
+    qualifiers.remove(oldQualifier);
+    qualifiers.add(newQualifier);
+  }
+
+  /**
+   * Check for the existence of a qualifier
+   *
+   * @param qualifier Qualifier to check for
+   * @return boolean of whether the qualifier was found
+   */
   @Override
   public boolean hasQualifier(TypeQualifier qualifier) {
     return qualifiers.contains(qualifier);
   }
 
+  /**
+   * Check for the existence of qualifiers
+   *
+   * @return boolean of whether any qualifiers exist
+   */
   public boolean hasQualifiers() {
     return !qualifiers.isEmpty();
   }
 
+  /**
+   * Returns the target type
+   *
+   * @return The target type
+   */
   public Type getTargetType() {
     return targetType;
   }
 
+  /**
+   * Set the target type. Replaces any previously set target type.
+   *
+   * @param targetType Type to set as the target type
+   */
   public void setTargetType(Type targetType) {
     this.targetType = targetType;
   }

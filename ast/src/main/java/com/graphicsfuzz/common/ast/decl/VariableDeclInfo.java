@@ -39,24 +39,56 @@ public class VariableDeclInfo implements IAstNode {
     this.name = name;
   }
 
+  /**
+   * Get array info
+   *
+   * @return array info of the variable declaration
+   */
   public ArrayInfo getArrayInfo() {
     return arrayInfo;
   }
 
+  /**
+   * Get the current initializer
+   *
+   * @return Current initializer, null if no initializer is set
+   */
   public Initializer getInitializer() {
     return initializer;
   }
 
+  /**
+   * Check whether variable declaration includes array information
+   *
+   * @return boolean whether array information exists
+   */
   public boolean hasArrayInfo() {
     return getArrayInfo() != null;
   }
 
+  /**
+   * Check whether variable declaration includes initializer
+   *
+   * @return boolean whether initializer exists
+   */
   public boolean hasInitializer() {
     return getInitializer() != null;
   }
 
+  /**
+   * Sets a new initializer.
+   *
+   * @param initializer Initializer to use
+   */
   public void setInitializer(Initializer initializer) {
     this.initializer = initializer;
+  }
+
+  /**
+   * Removes current initializer.
+   */
+  public void removeInitializer() {
+    this.initializer = null;
   }
 
   @Override
