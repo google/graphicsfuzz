@@ -18,7 +18,6 @@ package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
-import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -38,7 +37,6 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
@@ -62,8 +60,19 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
   // The shading language version to upgrade to.
   private final ShadingLanguageVersion newVersion;
 
-  // Globals with initializers; move the initialization to start of main().
-  private List<Stmt> globals = new ArrayList<>();
+  /*
+   * Non-const globals with initializers; move the initialization to start of main().
+   *
+   * For example, if we have in global scope:
+   *   vec2 foo = vec2(1.0, 0.0);
+   *
+   * That will be converted to:
+   *   vec2 foo;
+   *
+   * And in main(), we add:
+   *   foo = vec2(1.0, 0.0);
+   */
+  private List<Stmt> globalVariableInitializers = new ArrayList<>();
 
   private static Namespace parse(String[] args) throws ArgumentParserException {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("PrettyPrint")
@@ -156,8 +165,8 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
           firstNonPrecisionDeclaration);
 
       // Add global non-const initializers (if any) to start of main
-      for (int i = 0; i < globals.size(); i++) {
-        tu.getMainFunction().getBody().insertStmt(i, globals.get(i));
+      for (int i = 0; i < globalVariableInitializers.size(); i++) {
+        tu.getMainFunction().getBody().insertStmt(i, globalVariableInitializers.get(i));
       }
     }
 
@@ -177,10 +186,18 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
   @Override
   public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
     final Type baseType = variablesDeclaration.getBaseType();
+    /*
+     Convert 'varying' variables to 'in' variables. Both are shader input
+     variable types, 'varying' is the old name, 'in' is the more generic new name.
+    */
     if (baseType.hasQualifier(TypeQualifier.VARYING)) {
       ((QualifiedType) baseType).replaceQualifier(TypeQualifier.VARYING,
           TypeQualifier.SHADER_INPUT);
     }
+    /*
+     Make sure we visit the variable declaration hierarchy. We need to loop through
+     all the variables, array declarations and initializers.
+    */
     visit(baseType);
     for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
       if (vdi.hasArrayInfo()) {
@@ -192,9 +209,10 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
         visit(vdi.getInitializer());
         // If not constant, at global scope and has initializer, move the initializer to main.
         if (!baseType.hasQualifier(TypeQualifier.CONST) && !getCurrentScope().hasParent()) {
-          globals.add(new ExprStmt(new BinaryExpr(new VariableIdentifierExpr(vdi.getName()),
-              vdi.getInitializer().getExpr(), BinOp.ASSIGN)));
-          vdi.setInitializer(null);
+          globalVariableInitializers.add(new ExprStmt(new BinaryExpr(
+              new VariableIdentifierExpr(vdi.getName()), vdi.getInitializer().getExpr(),
+              BinOp.ASSIGN)));
+          vdi.removeInitializer();
         }
       }
     }
@@ -202,6 +220,12 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
 
   @Override
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+    /*
+     Replace legacy function names with current ones.
+     Originally texture fetch functions included information about the kind of sampler
+     to be used, but later on these were simplified and the remaining texture fetch
+     functions work with various samplers.
+    */
     switch (functionCallExpr.getCallee()) {
       case "shadow1D":
       case "shadow2D":
