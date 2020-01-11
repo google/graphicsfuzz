@@ -154,7 +154,12 @@ def get_device_driver_details(serial: str) -> str:
     ]
 
     try:
-        result = adb_check(serial, cmd, verbose=True)
+        adb_check(serial, cmd, verbose=True)
+        result = adb_check(
+            serial,
+            ["shell", "cat", f"{ANDROID_DEVICE_RESULT_DIR}/amber_stdout.txt"],
+            verbose=True,
+        )
     except subprocess.SubprocessError as ex:
         raise devices_util.GetDeviceDetailsError() from ex
 
@@ -178,6 +183,36 @@ def ensure_amber_installed(
     adb_can_fail(device_serial, ["uninstall", "com.google.amber.test"])
     adb_check(device_serial, ["install", "-r", str(amber_apk_binary.path)])
     adb_check(device_serial, ["install", "-r", str(amber_apk_test_binary.path)])
+
+
+def update_details(binary_manager: binaries_util.BinaryManager, device: Device) -> None:
+
+    check(
+        device.HasField("android"),
+        AssertionError(f"Expected Android device: {device}"),
+    )
+
+    build_fingerprint = ""
+    try:
+        adb_fingerprint_result = adb_check(
+            device.android.serial,
+            ["shell", "getprop ro.build.fingerprint"],
+            verbose=True,
+        )
+        build_fingerprint = adb_fingerprint_result.stdout
+        build_fingerprint = build_fingerprint.strip()
+    except subprocess.CalledProcessError:
+        log("Failed to get device fingerprint")
+
+    device_properties = ""
+    ensure_amber_installed(device.android.serial, binary_manager)
+    try:
+        device_properties = get_device_driver_details(device.android.serial)
+    except devices_util.GetDeviceDetailsError as ex:
+        log(f"WARNING: Failed to get device driver details: {ex}")
+
+    device.android.build_fingerprint = build_fingerprint
+    device.device_properties = device_properties
 
 
 def get_all_android_devices(  # pylint: disable=too-many-locals;
@@ -211,34 +246,16 @@ def get_all_android_devices(  # pylint: disable=too-many-locals;
                 device_model = util.remove_start(fields[field_index], "model:")
                 break
 
-        build_fingerprint: str = ""
-        try:
-            adb_fingerprint_result = adb_check(
-                device_serial, ["shell", "getprop ro.build.fingerprint"]
-            )
-            build_fingerprint = adb_fingerprint_result.stdout
-            build_fingerprint = build_fingerprint.strip()
-        except subprocess.CalledProcessError:
-            log("Failed to get device fingerprint")
-
-        ensure_amber_installed(device_serial, binary_manager)
-
-        driver_details = ""
-        try:
-            driver_details = get_device_driver_details(device_serial)
-        except devices_util.GetDeviceDetailsError as ex:
-            log(f"WARNING: Failed to get device driver details: {ex}")
+        log(f"Found Android device: {device_model}, {device_serial}")
 
         device = Device(
             name=f"{device_model}_{device_serial}",
-            android=DeviceAndroid(
-                serial=device_serial,
-                model=device_model,
-                build_fingerprint=build_fingerprint,
-            ),
-            device_properties=driver_details,
+            android=DeviceAndroid(serial=device_serial, model=device_model),
         )
-        log(f"Found Android device:\n{str(device)}")
+
+        update_details(binary_manager, device)
+
+        log(f"Android device details:\n{str(device)}")
         result.append(device)
 
     return result

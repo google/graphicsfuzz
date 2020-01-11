@@ -59,6 +59,13 @@ message DevicePreprocess {
 // The host machine on which we are running gfauto.
 message DeviceHost {
 
+  // A custom launcher program that will be used to run Amber. Typically, the launcher program will modify the
+  // environment and then execute the program that was passed as a command line argument, forwarding all subsequent arguments.
+  // E.g.
+  // custom_launcher = ["/data/mesa_intel.sh"]
+  // gfauto will run: /data/mesa_intel.sh /data/binaries/amber -d -V
+  // The launcher should modify environment variables and then run: /data/binaries/amber -d -V
+  repeated string custom_launcher = 1;
 }
 
 message DeviceAndroid {

@@ -57,5 +57,6 @@ setup(
         "gfauto_cov_new = gfauto.cov_new:main",
         "gfauto_cov_to_source = gfauto.cov_to_source:main",
         "gfauto_cov_from_gcov = gfauto.cov_from_gcov:main",
+        "gfauto_settings_update = gfauto.settings_update:main",
     ]},
 )

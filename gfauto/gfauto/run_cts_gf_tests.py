@@ -214,6 +214,7 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
                                 amber_path=amber_path,
                                 dump_image=False,
                                 dump_buffer=False,
+                                custom_launcher=list(device.host.custom_launcher),
                             )
                         elif device.HasField("android"):
                             android_device.run_amber_on_device(
