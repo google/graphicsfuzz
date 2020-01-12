@@ -55,6 +55,8 @@ ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE = re.compile(
     r"|com.android.runtime(?:/lib(?:64)?)?/"
     r"|anonymous namespace"
     r"|\(BuildId: " + HEX_LIKE + r"+\)"
+    r"|.*\.apk!"
+    r"|offset"
     r")"
 )
 
@@ -280,9 +282,9 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
             group = match.group(1)
             # Remove common text.
             group = re.sub(ANDROID_BACKTRACE_COMMON_TEXT_TO_REMOVE, "", group)
-            # Remove hex-like chunks.
-            group = remove_hex_like(group)
-            group = clean_up(group)
+            # Don't remove hex-like chunks, nor numbers because we want to fallback to any hex offsets in this case.
+            # group = remove_hex_like(group)
+            group = clean_up(group, remove_numbers=False)
             group = reduce_length(group)
             return group
 
