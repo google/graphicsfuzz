@@ -106,7 +106,7 @@ PATTERN_SWIFT_SHADER_ABORT = re.compile(r":\d+ ABORT:(.*)")
 
 PATTERN_SWIFT_SHADER_WARNING = re.compile(r":\d+ WARNING:(.*)")
 
-PATTERN_CATCH_ALL_ERROR = re.compile(r"\nERROR: (.*)")
+PATTERN_CATCH_ALL_ERROR = re.compile(r"\nERROR: (.*)", flags=re.IGNORECASE)
 
 # [\s\S] matches anything, including newlines.
 PATTERN_LLVM_FATAL_ERROR = re.compile(
