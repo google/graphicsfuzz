@@ -18,6 +18,8 @@ package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
+import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -38,6 +40,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
+import com.graphicsfuzz.common.typing.TyperHelper;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -46,13 +49,22 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
+
+  // flag for disabling renames
+  static final int NORENAME = 1;
+
+  // Conversion flags
+  private int flags;
 
   // The translation unit being upgraded
   private final TranslationUnit tu;
@@ -74,19 +86,61 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
    */
   private List<Stmt> globalVariableInitializers = new ArrayList<>();
 
+  // Variable name renaming map
+  private Map<String, String> variableRename = new HashMap<>();
+
+  // Function name renaming map
+  private Map<String, String> functionRename = new HashMap<>();
+
+  /*
+   * Originally texture fetch functions included information about the kind of sampler
+   * to be used, but later on these were simplified and the remaining texture fetch
+   * functions work with various samplers.
+   */
+  private final String[][] textureFunctionRenames = {
+      {"shadow1D","texture"},
+      {"shadow2D","texture"},
+      {"texture1D","texture"},
+      {"texture2D","texture"},
+      {"texture3D","texture"},
+      {"textureCube","texture"},
+      {"shadow1DProj","textureProj"},
+      {"shadow2DProj","textureProj"},
+      {"texture1DProj","textureProj"},
+      {"texture2DProj","textureProj"},
+      {"texture3DProj","textureProj"},
+      {"shadow1DLod","textureLod"},
+      {"shadow2DLod","textureLod"},
+      {"texture1DLod","textureLod"},
+      {"texture2DLod","textureLod"},
+      {"texture3DLod","textureLod"},
+      {"textureCubeLod","textureLod"},
+      {"shadow1DProjLod","textureProjLod"},
+      {"shadow2DProjLod","textureProjLod"},
+      {"texture1DProjLod","textureProjLod"},
+      {"texture2DProjLod","textureProjLod"},
+      {"texture3DProjLod","textureProjLod"}
+  };
+
+
   private static Namespace parse(String[] args) throws ArgumentParserException {
-    ArgumentParser parser = ArgumentParsers.newArgumentParser("PrettyPrint")
+    ArgumentParser parser = ArgumentParsers.newArgumentParser("UpgradeShadingLanguageVersion")
         .defaultHelp(true)
-        .description("Pretty print a shader.");
+        .description("Upgrade shading language version.");
 
     // Required arguments
     parser.addArgument("shader")
-        .help("Path of shader to be pretty-printed.")
+        .help("Path of shader to be upgraded.")
         .type(File.class);
 
     parser.addArgument("output")
         .help("Target file name.")
         .type(String.class);
+
+    // Optional arguments
+    parser.addArgument("--norename")
+        .help("Do not rename user-defined variables and functions")
+        .action(Arguments.storeTrue());
 
     return parser.parseArgs(args);
   }
@@ -95,16 +149,21 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
 
     try {
       Namespace ns = parse(args);
+      int flags = 0;
+      if (ns.getBoolean("norename")) {
+        flags |= NORENAME;
+      }
       long startTime = System.currentTimeMillis();
       TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")));
       long endTime = System.currentTimeMillis();
       System.err.println("Time for parsing: " + (endTime - startTime));
 
       startTime = System.currentTimeMillis();
-      upgrade(tu, ShadingLanguageVersion.ESSL_310);
+      upgrade(tu, ShadingLanguageVersion.ESSL_310, flags);
       endTime = System.currentTimeMillis();
       System.err.println("Time for upgrading: " + (endTime - startTime));
 
+      // After upgrading, pretty print the shader for output
       prettyPrintShader(ns, tu);
     } catch (Throwable exception) {
       exception.printStackTrace();
@@ -121,15 +180,25 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
     }
   }
 
-  private UpgradeShadingLanguageVersion(TranslationUnit tu, ShadingLanguageVersion newVersion) {
+  private UpgradeShadingLanguageVersion(TranslationUnit tu, ShadingLanguageVersion newVersion,
+                                        int flags) {
     this.tu = tu;
     this.newVersion = newVersion;
+    this.flags = flags;
     if (newVersion != ShadingLanguageVersion.ESSL_310) {
       throw new RuntimeException("Only upgrading to ESSL 310 supported at present.");
     }
     if (tu.getShadingLanguageVersion() != ShadingLanguageVersion.ESSL_100) {
       throw new RuntimeException("Only upgrading from ESSL 100 supported at present.");
     }
+
+    // Replace legacy function names with current ones.
+    for (String[] x : textureFunctionRenames) {
+      functionRename.put(x[0], x[1]);
+    }
+
+    // Rename occurrences of gl_FragColor.
+    variableRename.put(OpenGlConstants.GL_FRAG_COLOR, Constants.GLF_COLOR);
 
     // Traverse the translation unit to apply the upgrade to its content.
     visit(tu);
@@ -165,6 +234,7 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
           firstNonPrecisionDeclaration);
 
       // Add global non-const initializers (if any) to start of main
+      // (taking care of doing them in the same order they were introduced)
       for (int i = 0; i < globalVariableInitializers.size(); i++) {
         tu.getMainFunction().getBody().insertStmt(i, globalVariableInitializers.get(i));
       }
@@ -177,9 +247,9 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
   @Override
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    // Rename occurrences of gl_FragColor.
-    if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_COLOR)) {
-      variableIdentifierExpr.setName(Constants.GLF_COLOR);
+    // If a new name is in the map, rename the variable
+    if (variableRename.containsKey(variableIdentifierExpr.getName())) {
+      variableIdentifierExpr.setName(variableRename.get(variableIdentifierExpr.getName()));
     }
   }
 
@@ -200,6 +270,13 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
     */
     visit(baseType);
     for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
+      if ((flags & NORENAME) == 0) {
+        // To avoid collisions with builtins, add underscore to variable names
+        final String newname = vdi.getName() + "_";
+        // Rename any occurrences of the variable name too
+        variableRename.put(vdi.getName(), newname);
+        vdi.setName(newname);
+      }
       if (vdi.hasArrayInfo()) {
         visit(vdi.getArrayInfo().getSizeExpr());
       } else if (baseType instanceof ArrayType) {
@@ -207,6 +284,8 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
       }
       if (vdi.hasInitializer()) {
         visit(vdi.getInitializer());
+        // TODO: only rename if name collides with builtin (TyperHelper.getBuiltins())
+        // https://github.com/google/graphicsfuzz/issues/842
         // If not constant, at global scope and has initializer, move the initializer to main.
         if (!baseType.hasQualifier(TypeQualifier.CONST) && !getCurrentScope().hasParent()) {
           globalVariableInitializers.add(new ExprStmt(new BinaryExpr(
@@ -220,53 +299,61 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
 
   @Override
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-    /*
-     Replace legacy function names with current ones.
-     Originally texture fetch functions included information about the kind of sampler
-     to be used, but later on these were simplified and the remaining texture fetch
-     functions work with various samplers.
-    */
-    switch (functionCallExpr.getCallee()) {
-      case "shadow1D":
-      case "shadow2D":
-      case "texture1D":
-      case "texture2D":
-      case "texture3D":
-      case "textureCube":
-        functionCallExpr.setCallee("texture");
-        break;
-      case "shadow1DProj":
-      case "shadow2DProj":
-      case "texture1DProj":
-      case "texture2DProj":
-      case "texture3DProj":
-        functionCallExpr.setCallee("textureProj");
-        break;
-      case "shadow1DLod":
-      case "shadow2DLod":
-      case "texture1DLod":
-      case "texture2DLod":
-      case "texture3DLod":
-      case "textureCubeLod":
-        functionCallExpr.setCallee("textureLod");
-        break;
-      case "shadow1DProjLod":
-      case "shadow2DProjLod":
-      case "texture1DProjLod":
-      case "texture2DProjLod":
-      case "texture3DProjLod":
-        functionCallExpr.setCallee("textureProjLod");
-        break;
-      default:
-        break;
+    // If a new name is in the map, rename the function
+    if (functionRename.containsKey(functionCallExpr.getCallee())) {
+      functionCallExpr.setCallee(functionRename.get(functionCallExpr.getCallee()));
     }
     for (Expr e : functionCallExpr.getArgs()) {
       visit(e);
     }
   }
 
+  @Override
+  public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
+
+    // TODO: only rename if name collides with builtin (TyperHelper.getBuiltins())
+    // https://github.com/google/graphicsfuzz/issues/842
+    // Rename all user-defined functions (except main) to avoid collisions with builtins
+    if (!functionPrototype.getName().equals("main")) {
+      if ((flags & NORENAME) == 0) {
+        final String newname = functionPrototype.getName() + "_";
+        // Rename any occurrences of the function name too
+        functionRename.put(functionPrototype.getName(), newname);
+        functionPrototype.setName(newname);
+      }
+    }
+    // Traverse the rest of the hierarchy
+    visit(functionPrototype.getReturnType());
+    for (ParameterDecl p : functionPrototype.getParameters()) {
+      visit(p);
+    }
+  }
+
+  @Override
+  public void visitParameterDecl(ParameterDecl parameterDecl) {
+    visit(parameterDecl.getType());
+    if (parameterDecl.getName() != null) {
+      if ((flags & NORENAME) == 0) {
+        // TODO: only rename if name collides with builtin (TyperHelper.getBuiltins())
+        // https://github.com/google/graphicsfuzz/issues/842
+        // Rename all variables to avoid collisions with builtins
+        final String newname = parameterDecl.getName() + "_";
+        // Rename any occurrences of the variable name too
+        variableRename.put(parameterDecl.getName(), newname);
+        parameterDecl.setName(newname);
+      }
+    }
+    if (parameterDecl.getArrayInfo() != null) {
+      visit(parameterDecl.getArrayInfo().getSizeExpr());
+    }
+  }
+
+  public static void upgrade(TranslationUnit tu, ShadingLanguageVersion newVersion, int flags) {
+    new UpgradeShadingLanguageVersion(tu, newVersion, flags);
+  }
+
   public static void upgrade(TranslationUnit tu, ShadingLanguageVersion newVersion) {
-    new UpgradeShadingLanguageVersion(tu, newVersion);
+    new UpgradeShadingLanguageVersion(tu, newVersion, 0);
   }
 
 }
