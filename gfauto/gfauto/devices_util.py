@@ -31,7 +31,7 @@ from gfauto.device_pb2 import (
     DeviceSwiftShader,
 )
 from gfauto.gflogging import log
-from gfauto.util import ToolNotOnPathError
+from gfauto.util import ToolNotOnPathError, check
 
 # [\s\S] matches anything, including newlines.
 # *? is non-greedy.
@@ -46,27 +46,8 @@ class GetDeviceDetailsError(Exception):
 
 
 def swift_shader_device(binary_manager: binaries_util.BinaryManager) -> Device:
-
-    amber_path = binary_manager.get_binary_path_by_name(binaries_util.AMBER_NAME).path
-    swift_shader_binary_and_path = binary_manager.get_binary_path_by_name(
-        binaries_util.SWIFT_SHADER_NAME
-    )
-
-    driver_details = ""
-    try:
-        driver_details = host_device_util.get_driver_details(
-            amber_path, swift_shader_binary_and_path.path
-        )
-    except GetDeviceDetailsError as ex:
-        log(f"WARNING: Failed to get device driver details: {ex}")
-
-    device = Device(
-        name="swift_shader",
-        swift_shader=DeviceSwiftShader(),
-        binaries=[swift_shader_binary_and_path.binary],
-        device_properties=driver_details,
-    )
-
+    device = Device(name="swift_shader", swift_shader=DeviceSwiftShader())
+    update_device(binary_manager, device)
     return device
 
 
@@ -79,15 +60,105 @@ def device_preprocessor() -> Device:
 
 
 def device_host(binary_manager: binaries_util.BinaryManager) -> Device:
+    device = Device(name="host", host=DeviceHost())
+    update_device(binary_manager, device)
+    return device
+
+
+def _update_device_swiftshader(
+    binary_manager: binaries_util.BinaryManager, device: Device
+) -> None:
+
+    check(
+        device.HasField("swift_shader"),
+        AssertionError(f"Expected SwiftShader device: {device}"),
+    )
+
+    amber_path = binary_manager.get_binary_path_by_name(binaries_util.AMBER_NAME).path
+
+    swift_shader_binary_and_path = binary_manager.get_binary_path_by_name(
+        binaries_util.SWIFT_SHADER_NAME
+    )
+    driver_details = ""
+    try:
+        driver_details = host_device_util.get_driver_details(
+            amber_path, swift_shader_binary_and_path.path
+        )
+    except GetDeviceDetailsError as ex:
+        log(f"WARNING: Failed to get device driver details: {ex}")
+
+    device.device_properties = driver_details
+
+    del device.binaries[:]
+    device.binaries.extend([swift_shader_binary_and_path.binary])
+
+
+def _update_device_host(
+    binary_manager: binaries_util.BinaryManager, device: Device
+) -> None:
+    check(
+        device.HasField("host"), AssertionError(f"Expected host device: {device}"),
+    )
+
     amber_path = binary_manager.get_binary_path_by_name(binaries_util.AMBER_NAME).path
 
     driver_details = ""
     try:
-        driver_details = host_device_util.get_driver_details(amber_path)
+        driver_details = host_device_util.get_driver_details(
+            amber_path, custom_launcher=list(device.host.custom_launcher)
+        )
     except GetDeviceDetailsError as ex:
         log(f"WARNING: Failed to get device driver details: {ex}")
 
-    return Device(name="host", host=DeviceHost(), device_properties=driver_details)
+    device.device_properties = driver_details
+
+
+def _update_device_shader_compiler(
+    binary_manager: binaries_util.BinaryManager, device: Device
+) -> None:
+    check(
+        device.HasField("shader_compiler"),
+        AssertionError(f"Expected shader_compiler device: {device}"),
+    )
+
+    # The only thing we can do is update the shader compiler binary if it is a built-in binary.
+
+    if binaries_util.is_built_in_binary_name(device.shader_compiler.binary):
+        # Remove existing binaries with this name from the device's binaries list.
+        binaries = list(device.binaries)
+        binaries = [b for b in binaries if b.name != device.shader_compiler.binary]
+        del device.binaries[:]
+        device.binaries.extend(binaries)
+
+        # Add our latest version of the binary.
+        device.binaries.extend(
+            [binary_manager.get_binary_by_name(device.shader_compiler.binary)]
+        )
+
+
+def update_device(binary_manager: binaries_util.BinaryManager, device: Device) -> None:
+    """
+    Updates a device.
+
+    This mostly just means setting the "device_properties" field of the device to the output of "amber -d -V".
+    Android devices will also have their build_fingerprint updated.
+
+    :param binary_manager:
+    :param device:
+    :return:
+    """
+    if device.HasField("preprocess"):
+        pass
+    elif device.HasField("swift_shader"):
+        _update_device_swiftshader(binary_manager, device)
+    elif device.HasField("host"):
+        _update_device_host(binary_manager, device)
+    elif device.HasField("android"):
+        android_device.update_details(binary_manager, device)
+    elif device.HasField("shader_compiler"):
+        _update_device_shader_compiler(binary_manager, device)
+    else:
+        raise AssertionError(f"Unrecognized device type: {device}")
 
 
 def get_device_list(
