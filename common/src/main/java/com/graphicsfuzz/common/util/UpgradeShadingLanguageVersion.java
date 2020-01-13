@@ -60,10 +60,10 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
 
-  // flag for disabling renames
+  // Flag for disabling renames. Used in a bit mask for conversion options.
   static final int NORENAME = 1;
 
-  // Conversion flags
+  // Conversion flags. Used as a bit mask.
   private int flags;
 
   // The translation unit being upgraded
@@ -86,10 +86,10 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
    */
   private List<Stmt> globalVariableInitializers = new ArrayList<>();
 
-  // Variable name renaming map
+  // Variable name renaming map. Maps original names with new names.
   private Map<String, String> variableRename = new HashMap<>();
 
-  // Function name renaming map
+  // Function name renaming map. Maps original names with new names.
   private Map<String, String> functionRename = new HashMap<>();
 
   /*
@@ -149,10 +149,13 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
 
     try {
       Namespace ns = parse(args);
+
+      // Convert command line flags to bit mask
       int flags = 0;
       if (ns.getBoolean("norename")) {
         flags |= NORENAME;
       }
+
       long startTime = System.currentTimeMillis();
       TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")));
       long endTime = System.currentTimeMillis();
@@ -271,6 +274,8 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
     visit(baseType);
     for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
       if ((flags & NORENAME) == 0) {
+        // TODO(https://github.com/google/graphicsfuzz/issues/842): only rename if name collides
+        //  with builtin (TyperHelper.getBuiltins())
         // To avoid collisions with builtins, add underscore to variable names
         final String newname = vdi.getName() + "_";
         // Rename any occurrences of the variable name too
@@ -284,8 +289,6 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
       }
       if (vdi.hasInitializer()) {
         visit(vdi.getInitializer());
-        // TODO: only rename if name collides with builtin (TyperHelper.getBuiltins())
-        // https://github.com/google/graphicsfuzz/issues/842
         // If not constant, at global scope and has initializer, move the initializer to main.
         if (!baseType.hasQualifier(TypeQualifier.CONST) && !getCurrentScope().hasParent()) {
           globalVariableInitializers.add(new ExprStmt(new BinaryExpr(
@@ -311,8 +314,8 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
   @Override
   public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
 
-    // TODO: only rename if name collides with builtin (TyperHelper.getBuiltins())
-    // https://github.com/google/graphicsfuzz/issues/842
+    // TODO(https://github.com/google/graphicsfuzz/issues/842): only rename if name collides
+    //  with builtin (TyperHelper.getBuiltins())
     // Rename all user-defined functions (except main) to avoid collisions with builtins
     if (!functionPrototype.getName().equals("main")) {
       if ((flags & NORENAME) == 0) {
@@ -334,8 +337,8 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
     visit(parameterDecl.getType());
     if (parameterDecl.getName() != null) {
       if ((flags & NORENAME) == 0) {
-        // TODO: only rename if name collides with builtin (TyperHelper.getBuiltins())
-        // https://github.com/google/graphicsfuzz/issues/842
+        // TODO(https://github.com/google/graphicsfuzz/issues/842): only rename if name collides
+        //  with builtin (TyperHelper.getBuiltins())
         // Rename all variables to avoid collisions with builtins
         final String newname = parameterDecl.getName() + "_";
         // Rename any occurrences of the variable name too
