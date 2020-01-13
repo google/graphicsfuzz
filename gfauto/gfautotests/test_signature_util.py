@@ -42,3 +42,13 @@ ERROR: reports/.../part_1_preserve_semantics/reduction_work/variant/shader_reduc
 """
     signature = signature_util.get_signature_from_log_contents(log)
     assert signature == "cannot_convert_from_const_component_vector_of_bool"
+
+
+def test_crash_offset_in_apk_lib() -> None:
+    log = """
+11-09 13:36:16.577 18975 18975 F DEBUG   : backtrace:
+11-09 13:36:16.578 18975 18975 F DEBUG   :       #00 pc 00000000001a1234  /data/app/a.b.c-AAaa11==/base.apk!a-b.so (offset 0x123000) (!!!0000!1234abcd1234abcd!123abc!+1234) (BuildId: 1234abcde123abcd)
+11-09 13:36:16.578 18975 18975 F DEBUG   :       #01 pc 00000000004cb460  /data/app/a.b.c-AAaa11==/base.apk!a-b.so (offset 0x111000) (!!!0000!aa11abc1111!11aaa!+122) (BuildId: 1234abcde123abcd)
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "abso_0x123000_00001234abcd1234abcd123abc1234"
