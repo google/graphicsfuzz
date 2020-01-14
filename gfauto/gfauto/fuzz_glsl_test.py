@@ -357,7 +357,7 @@ def run_reduction(
     reduced_source_dir = source_dir_to_reduce
 
     reduced_source_dir = run_reduction_part(
-        test_dir_reduction_output=reduction_output_dir / "1",
+        reduction_part_output_dir=reduction_output_dir / "1",
         source_dir_to_reduce=reduced_source_dir,
         preserve_semantics=True,
         binary_manager=binary_manager,
@@ -366,7 +366,7 @@ def run_reduction(
 
     if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
         reduced_source_dir = run_reduction_part(
-            test_dir_reduction_output=reduction_output_dir / "2",
+            reduction_part_output_dir=reduction_output_dir / "2",
             source_dir_to_reduce=reduced_source_dir,
             preserve_semantics=False,
             binary_manager=binary_manager,
@@ -696,7 +696,7 @@ def get_final_reduced_shader_job_path(reduction_work_shader_dir: Path) -> Path:
 
 
 def run_reduction_part(
-    test_dir_reduction_output: Path,
+    reduction_part_output_dir: Path,
     source_dir_to_reduce: Path,
     preserve_semantics: bool,
     binary_manager: binaries_util.BinaryManager,
@@ -732,7 +732,9 @@ def run_reduction_part(
     reduction_work_variant_dir = run_glsl_reduce(
         source_dir=source_dir_to_reduce,
         name_of_shader_to_reduce=name_of_shader_to_reduce,
-        output_dir=test_dir_reduction_output,
+        output_dir=test_util.get_reduction_work_directory(
+            reduction_part_output_dir, name_of_shader_to_reduce
+        ),
         binary_manager=binary_manager,
         preserve_semantics=preserve_semantics,
         extra_args=list(settings.extra_graphics_fuzz_reduce_args)
@@ -752,17 +754,17 @@ def run_reduction_part(
     # Finally, create the output source_dir.
 
     util.copy_dir(
-        source_dir_to_reduce, test_util.get_source_dir(test_dir_reduction_output)
+        source_dir_to_reduce, test_util.get_source_dir(reduction_part_output_dir)
     )
 
     shader_job_util.copy(
         final_reduced_shader_job_path,
         test_util.get_shader_job_path(
-            test_dir_reduction_output, name_of_shader_to_reduce
+            reduction_part_output_dir, name_of_shader_to_reduce
         ),
     )
 
-    return test_util.get_source_dir(test_dir_reduction_output)
+    return test_util.get_source_dir(reduction_part_output_dir)
 
 
 def run_glsl_reduce(
