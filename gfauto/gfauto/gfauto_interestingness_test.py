@@ -24,9 +24,10 @@ See |setup.py| to see how this module is added to the entry_points/console_scrip
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Match, Optional, Pattern, Tuple
 
 from gfauto import (
     binaries_util,
@@ -197,6 +198,19 @@ def main() -> None:  # pylint: disable=too-many-statements, too-many-locals, too
     log(f"Actual   signature: {signature}")
 
     log("")
+
+    # The |crash_regex_override| overrides all other checks.
+    if test.crash_regex_override:
+        log(f"Testing crash_regex_override: {test.crash_regex_override}")
+        override_pattern: Pattern[str] = re.compile(log_contents)
+        match: Optional[Match[str]] = override_pattern.fullmatch(log_contents)
+        if match:
+            log("Match!")
+            log("Interesting")
+            sys.exit(0)
+        else:
+            log("No match; not interesting")
+            sys.exit(1)
 
     if test.expected_status:
         if status != test.expected_status:

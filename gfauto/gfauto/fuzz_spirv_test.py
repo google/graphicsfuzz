@@ -41,7 +41,6 @@ from gfauto import (
     util,
 )
 from gfauto.device_pb2 import Device
-from gfauto.fuzz_glsl_test import ReductionFailedError
 from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 from gfauto.test_pb2 import Test, TestSpirvFuzz
@@ -204,7 +203,7 @@ def run_reduction_part(
 
     check(
         final_shader_path.exists(),
-        ReductionFailedError("Reduction failed.", output_dir),
+        fuzz_glsl_test.ReductionFailedError("Reduction failed.", output_dir),
     )
 
     # Finally, create the source_dir so the returned directory can be used as a test_dir.
@@ -332,7 +331,7 @@ def run_reduction_on_report(  # pylint: disable=too-many-locals;
             ),
             binary_manager=binary_manager,
         )
-    except ReductionFailedError as ex:
+    except fuzz_glsl_test.ReductionFailedError as ex:
         # Create a symlink to the failed reduction so it is easy to investigate failed reductions.
         link_to_failed_reduction_path = (
             reports_dir
