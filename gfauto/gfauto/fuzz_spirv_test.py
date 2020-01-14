@@ -222,7 +222,7 @@ def run_reduction(
 
     check(
         final_shader_path.exists(),
-        ReductionFailedError("Reduction failed.", reduction_name, output_dir),
+        ReductionFailedError("Reduction failed.", output_dir),
     )
 
     # Finally, create the source_dir so the returned directory can be used as a test_dir.
@@ -347,7 +347,9 @@ def run_reduction_on_report(  # pylint: disable=too-many-locals;
     except ReductionFailedError as ex:
         # Create a symlink to the failed reduction so it is easy to investigate failed reductions.
         link_to_failed_reduction_path = (
-            reports_dir / "failed_reductions" / f"{test_dir.name}_{ex.reduction_name}"
+            reports_dir
+            / "failed_reductions"
+            / f"{test_dir.name}_{ex.reduction_work_dir.name}"
         )
         util.make_directory_symlink(
             new_symlink_file_path=link_to_failed_reduction_path,
