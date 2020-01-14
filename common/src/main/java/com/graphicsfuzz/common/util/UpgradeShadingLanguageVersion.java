@@ -60,11 +60,8 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
 
-  // Flag for disabling renames. Used in a bit mask for conversion options.
-  static final int NORENAME = 1;
-
-  // Conversion flags. Used as a bit mask.
-  private int flags;
+  // Flag whether to rename user defined variables and functions.
+  private boolean renameUserDefined = true;
 
   // The translation unit being upgraded
   private final TranslationUnit tu;
@@ -92,36 +89,36 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
   // Function name renaming map. Maps original names with new names.
   private Map<String, String> functionRename = new HashMap<>();
 
-  /*
+  /**
+   * Populate functionRename with texture function rename data
    * Originally texture fetch functions included information about the kind of sampler
    * to be used, but later on these were simplified and the remaining texture fetch
    * functions work with various samplers.
    */
-  private final String[][] textureFunctionRenames = {
-      {"shadow1D","texture"},
-      {"shadow2D","texture"},
-      {"texture1D","texture"},
-      {"texture2D","texture"},
-      {"texture3D","texture"},
-      {"textureCube","texture"},
-      {"shadow1DProj","textureProj"},
-      {"shadow2DProj","textureProj"},
-      {"texture1DProj","textureProj"},
-      {"texture2DProj","textureProj"},
-      {"texture3DProj","textureProj"},
-      {"shadow1DLod","textureLod"},
-      {"shadow2DLod","textureLod"},
-      {"texture1DLod","textureLod"},
-      {"texture2DLod","textureLod"},
-      {"texture3DLod","textureLod"},
-      {"textureCubeLod","textureLod"},
-      {"shadow1DProjLod","textureProjLod"},
-      {"shadow2DProjLod","textureProjLod"},
-      {"texture1DProjLod","textureProjLod"},
-      {"texture2DProjLod","textureProjLod"},
-      {"texture3DProjLod","textureProjLod"}
-  };
-
+  private void populateTextureFunctionRenames() {
+    functionRename.put("shadow1D","texture");
+    functionRename.put("shadow2D","texture");
+    functionRename.put("texture1D","texture");
+    functionRename.put("texture2D","texture");
+    functionRename.put("texture3D","texture");
+    functionRename.put("textureCube","texture");
+    functionRename.put("shadow1DProj","textureProj");
+    functionRename.put("shadow2DProj","textureProj");
+    functionRename.put("texture1DProj","textureProj");
+    functionRename.put("texture2DProj","textureProj");
+    functionRename.put("texture3DProj","textureProj");
+    functionRename.put("shadow1DLod","textureLod");
+    functionRename.put("shadow2DLod","textureLod");
+    functionRename.put("texture1DLod","textureLod");
+    functionRename.put("texture2DLod","textureLod");
+    functionRename.put("texture3DLod","textureLod");
+    functionRename.put("textureCubeLod","textureLod");
+    functionRename.put("shadow1DProjLod","textureProjLod");
+    functionRename.put("shadow2DProjLod","textureProjLod");
+    functionRename.put("texture1DProjLod","textureProjLod");
+    functionRename.put("texture2DProjLod","textureProjLod");
+    functionRename.put("texture3DProjLod","textureProjLod");
+  }
 
   private static Namespace parse(String[] args) throws ArgumentParserException {
     ArgumentParser parser = ArgumentParsers.newArgumentParser("UpgradeShadingLanguageVersion")
@@ -150,19 +147,13 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
     try {
       Namespace ns = parse(args);
 
-      // Convert command line flags to bit mask
-      int flags = 0;
-      if (ns.getBoolean("norename")) {
-        flags |= NORENAME;
-      }
-
       long startTime = System.currentTimeMillis();
       TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")));
       long endTime = System.currentTimeMillis();
       System.err.println("Time for parsing: " + (endTime - startTime));
 
       startTime = System.currentTimeMillis();
-      upgrade(tu, ShadingLanguageVersion.ESSL_310, flags);
+      upgrade(tu, ShadingLanguageVersion.ESSL_310, ns.getBoolean("norename"));
       endTime = System.currentTimeMillis();
       System.err.println("Time for upgrading: " + (endTime - startTime));
 
@@ -184,10 +175,10 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
   }
 
   private UpgradeShadingLanguageVersion(TranslationUnit tu, ShadingLanguageVersion newVersion,
-                                        int flags) {
+                                        boolean renameUserDefined) {
     this.tu = tu;
     this.newVersion = newVersion;
-    this.flags = flags;
+    this.renameUserDefined = renameUserDefined;
     if (newVersion != ShadingLanguageVersion.ESSL_310) {
       throw new RuntimeException("Only upgrading to ESSL 310 supported at present.");
     }
@@ -195,10 +186,8 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
       throw new RuntimeException("Only upgrading from ESSL 100 supported at present.");
     }
 
-    // Replace legacy function names with current ones.
-    for (String[] x : textureFunctionRenames) {
-      functionRename.put(x[0], x[1]);
-    }
+    // Populate function renaming map with the texture function renames
+    populateTextureFunctionRenames();
 
     // Rename occurrences of gl_FragColor.
     variableRename.put(OpenGlConstants.GL_FRAG_COLOR, Constants.GLF_COLOR);
@@ -273,7 +262,7 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
     */
     visit(baseType);
     for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
-      if ((flags & NORENAME) == 0) {
+      if (renameUserDefined) {
         // TODO(https://github.com/google/graphicsfuzz/issues/842): only rename if name collides
         //  with builtin (TyperHelper.getBuiltins())
         // To avoid collisions with builtins, add underscore to variable names
@@ -318,7 +307,7 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
     //  with builtin (TyperHelper.getBuiltins())
     // Rename all user-defined functions (except main) to avoid collisions with builtins
     if (!functionPrototype.getName().equals("main")) {
-      if ((flags & NORENAME) == 0) {
+      if (renameUserDefined) {
         final String newname = functionPrototype.getName() + "_";
         // Rename any occurrences of the function name too
         functionRename.put(functionPrototype.getName(), newname);
@@ -336,7 +325,7 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
   public void visitParameterDecl(ParameterDecl parameterDecl) {
     visit(parameterDecl.getType());
     if (parameterDecl.getName() != null) {
-      if ((flags & NORENAME) == 0) {
+      if (renameUserDefined) {
         // TODO(https://github.com/google/graphicsfuzz/issues/842): only rename if name collides
         //  with builtin (TyperHelper.getBuiltins())
         // Rename all variables to avoid collisions with builtins
@@ -351,12 +340,13 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
     }
   }
 
-  public static void upgrade(TranslationUnit tu, ShadingLanguageVersion newVersion, int flags) {
-    new UpgradeShadingLanguageVersion(tu, newVersion, flags);
+  public static void upgrade(TranslationUnit tu, ShadingLanguageVersion newVersion,
+                             boolean renameUserDefined) {
+    new UpgradeShadingLanguageVersion(tu, newVersion, renameUserDefined);
   }
 
   public static void upgrade(TranslationUnit tu, ShadingLanguageVersion newVersion) {
-    new UpgradeShadingLanguageVersion(tu, newVersion, 0);
+    new UpgradeShadingLanguageVersion(tu, newVersion, true);
   }
 
 }

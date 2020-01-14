@@ -164,8 +164,7 @@ public class UpgradeShadingLanguageVersionTest {
         + "  _GLF_color = texture(texture);\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310,
-        UpgradeShadingLanguageVersion.NORENAME);
+    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310, false);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
