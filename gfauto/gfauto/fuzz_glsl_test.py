@@ -354,18 +354,20 @@ def run_reduction(
 ) -> Path:
     test = test_util.metadata_read_from_source_dir(source_dir_to_reduce)
 
-    reduction_part_output_dir = run_reduction_part(
+    reduced_source_dir = source_dir_to_reduce
+
+    reduced_source_dir = run_reduction_part(
         test_dir_reduction_output=reduction_output_dir / "1",
-        source_dir_to_reduce=source_dir_to_reduce,
+        source_dir_to_reduce=reduced_source_dir,
         preserve_semantics=True,
         binary_manager=binary_manager,
         settings=settings,
     )
 
     if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
-        reduction_part_output_dir = run_reduction_part(
+        reduced_source_dir = run_reduction_part(
             test_dir_reduction_output=reduction_output_dir / "2",
-            source_dir_to_reduce=test_util.get_source_dir(reduction_part_output_dir),
+            source_dir_to_reduce=reduced_source_dir,
             preserve_semantics=False,
             binary_manager=binary_manager,
             settings=settings,
@@ -374,7 +376,7 @@ def run_reduction(
     # Create and return a symlink to the "best" reduction part directory.
     return util.make_directory_symlink(
         new_symlink_file_path=reduction_output_dir / fuzz.BEST_REDUCTION_NAME,
-        existing_dir=reduction_part_output_dir,
+        existing_dir=reduced_source_dir.parent,
     )
 
 
@@ -760,7 +762,7 @@ def run_reduction_part(
         ),
     )
 
-    return test_dir_reduction_output
+    return test_util.get_source_dir(test_dir_reduction_output)
 
 
 def run_glsl_reduce(
