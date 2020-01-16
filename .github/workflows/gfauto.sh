@@ -18,6 +18,8 @@ set -x
 set -e
 set -u
 
+help | head
+
 uname
 
 case "$(uname)" in
