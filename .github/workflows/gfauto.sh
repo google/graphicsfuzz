@@ -18,6 +18,8 @@ set -x
 set -e
 set -u
 
+uname
+
 case "$(uname)" in
 "Linux")
   ACTIVATE_PATH=".venv/bin/activate"
