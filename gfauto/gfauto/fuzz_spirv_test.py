@@ -41,7 +41,6 @@ from gfauto import (
     util,
 )
 from gfauto.device_pb2 import Device
-from gfauto.fuzz_glsl_test import ReductionFailedError
 from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 from gfauto.test_pb2 import Test, TestSpirvFuzz
@@ -165,76 +164,60 @@ def run_spirv_reduce_or_shrink(
     return final_shader
 
 
-def run_reduction(
-    test_dir_reduction_output: Path,
-    test_dir_to_reduce: Path,
+def run_reduction_part(
+    reduction_part_output_dir: Path,
+    source_dir_to_reduce: Path,
     shader_job_name_to_reduce: str,
     extension_to_reduce: str,
     preserve_semantics: bool,
     binary_manager: binaries_util.BinaryManager,
-    reduction_name: str = "reduction1",
 ) -> Path:
-    test = test_util.metadata_read(test_dir_to_reduce)
+    test = test_util.metadata_read_from_source_dir(source_dir_to_reduce)
 
     check(
         bool(test.device and test.device.name),
         AssertionError(
-            f"Cannot reduce {str(test_dir_to_reduce)}; "
-            f"device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
+            f"Cannot reduce {str(source_dir_to_reduce)}; device must be specified"
         ),
     )
 
     check(
         bool(test.crash_signature),
         AssertionError(
-            f"Cannot reduce {str(test_dir_to_reduce)} because there is no crash string specified."
+            f"Cannot reduce {str(source_dir_to_reduce)} because there is no crash string specified."
         ),
     )
 
-    # E.g. reports/crashes/no_signature/d50c96e8_opt_rand2_test_phone_ABC/results/phone_ABC/reductions/1
-    # Will contain work/ and source/
-    reduced_test_dir = test_util.get_reduced_test_dir(
-        test_dir_reduction_output, test.device.name, reduction_name
+    output_dir = test_util.get_reduction_work_directory(
+        reduction_part_output_dir, shader_job_name_to_reduce
     )
 
-    source_dir = test_util.get_source_dir(test_dir_to_reduce)
-    output_dir = test_util.get_reduction_work_directory(
-        reduced_test_dir, shader_job_name_to_reduce
+    final_shader_path = run_spirv_reduce_or_shrink(
+        source_dir=source_dir_to_reduce,
+        name_of_shader_job_to_reduce=shader_job_name_to_reduce,
+        extension_to_reduce=extension_to_reduce,
+        output_dir=output_dir,
+        preserve_semantics=preserve_semantics,
+        binary_manager=binary_manager,
     )
-    if preserve_semantics:
-        final_shader_path = run_spirv_reduce_or_shrink(
-            source_dir=source_dir,
-            name_of_shader_job_to_reduce=shader_job_name_to_reduce,
-            extension_to_reduce=extension_to_reduce,
-            output_dir=output_dir,
-            preserve_semantics=preserve_semantics,
-            binary_manager=binary_manager,
-        )
-    else:
-        final_shader_path = run_spirv_reduce_or_shrink(
-            source_dir=source_dir,
-            name_of_shader_job_to_reduce=shader_job_name_to_reduce,
-            extension_to_reduce=extension_to_reduce,
-            output_dir=output_dir,
-            preserve_semantics=preserve_semantics,
-            binary_manager=binary_manager,
-        )
 
     check(
         final_shader_path.exists(),
-        ReductionFailedError("Reduction failed.", reduction_name, output_dir),
+        fuzz_glsl_test.ReductionFailedError("Reduction failed.", output_dir),
     )
 
     # Finally, create the source_dir so the returned directory can be used as a test_dir.
 
     # Copy the original source directory.
-    util.copy_dir(source_dir, test_util.get_source_dir(reduced_test_dir))
+    util.copy_dir(
+        source_dir_to_reduce, test_util.get_source_dir(reduction_part_output_dir)
+    )
 
     # And then replace the shader.
 
     # Destination file. E.g. reductions/source/variant/shader.frag.spv
     output_shader_prefix = (
-        test_util.get_source_dir(reduced_test_dir)
+        test_util.get_source_dir(reduction_part_output_dir)
         / shader_job_name_to_reduce
         / test_util.SHADER_JOB
     ).with_suffix(extension_to_reduce + shader_job_util.SUFFIX_SPIRV)
@@ -257,32 +240,16 @@ def run_reduction(
             ),
         )
 
-    return reduced_test_dir
+    return test_util.get_source_dir(reduction_part_output_dir)
 
 
-def run_reduction_on_report(  # pylint: disable=too-many-locals;
-    test_dir: Path, reports_dir: Path, binary_manager: binaries_util.BinaryManager
-) -> None:
-    test = test_util.metadata_read(test_dir)
-
-    check(
-        bool(test.device and test.device.name),
-        AssertionError(
-            f"Cannot reduce {str(test_dir)}; "
-            f"device must be specified in {str(test_util.get_metadata_path(test_dir))}"
-        ),
-    )
-
-    check(
-        bool(test.crash_signature),
-        AssertionError(
-            f"Cannot reduce {str(test_dir)} because there is no crash string specified."
-        ),
-    )
-
-    source_dir = test_util.get_source_dir(test_dir)
-
-    shader_jobs = tool.get_shader_jobs(source_dir)
+def run_reduction(
+    source_dir_to_reduce: Path,
+    reduction_output_dir: Path,
+    binary_manager: binaries_util.BinaryManager,
+) -> Path:
+    test = test_util.metadata_read_from_source_dir(source_dir_to_reduce)
+    shader_jobs = tool.get_shader_jobs(source_dir_to_reduce)
 
     # TODO: if needed, this could become a parameter to this function.
     shader_job_to_reduce = shader_jobs[0]
@@ -305,49 +272,71 @@ def run_reduction_on_report(  # pylint: disable=too-many-locals;
         shader_job_to_reduce.shader_job, language_suffix=(shader_job_util.SUFFIX_SPIRV,)
     )
 
-    try:
-        reduced_test = test_dir
+    reduced_source_dir = source_dir_to_reduce
 
-        for index, suffix in enumerate(shader_transformation_suffixes):
-            # E.g. .frag.transformations -> .frag
+    for index, suffix in enumerate(shader_transformation_suffixes):
+        # E.g. .frag.transformations -> .frag
+        extension_to_reduce = str(Path(suffix).with_suffix(""))
+        reduced_source_dir = run_reduction_part(
+            reduction_part_output_dir=reduction_output_dir
+            / f"0_{index}_{suffix.split('.')[1]}",
+            source_dir_to_reduce=reduced_source_dir,
+            shader_job_name_to_reduce=shader_job_to_reduce.name,
+            extension_to_reduce=extension_to_reduce,
+            preserve_semantics=True,
+            binary_manager=binary_manager,
+        )
+
+    if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
+        for index, suffix in enumerate(shader_spv_suffixes):
+            # E.g. .frag.spv -> .frag
             extension_to_reduce = str(Path(suffix).with_suffix(""))
-            reduced_test = run_reduction(
-                test_dir_reduction_output=test_dir,
-                test_dir_to_reduce=reduced_test,
+            reduced_source_dir = run_reduction_part(
+                reduction_part_output_dir=reduction_output_dir
+                / f"1_{index}_{suffix.split('.')[1]}",
+                source_dir_to_reduce=reduced_source_dir,
                 shader_job_name_to_reduce=shader_job_to_reduce.name,
                 extension_to_reduce=extension_to_reduce,
-                preserve_semantics=True,
+                preserve_semantics=False,
                 binary_manager=binary_manager,
-                reduction_name=f"0_{index}_{suffix.split('.')[1]}",
             )
 
-        if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
-            for index, suffix in enumerate(shader_spv_suffixes):
-                # E.g. .frag.spv -> .frag
-                extension_to_reduce = str(Path(suffix).with_suffix(""))
-                reduced_test = run_reduction(
-                    test_dir_reduction_output=test_dir,
-                    test_dir_to_reduce=reduced_test,
-                    shader_job_name_to_reduce=shader_job_to_reduce.name,
-                    extension_to_reduce=extension_to_reduce,
-                    preserve_semantics=False,
-                    binary_manager=binary_manager,
-                    reduction_name=f"1_{index}_{suffix.split('.')[1]}",
-                )
+    # Create and return a symlink to the "best" reduction.
+    return util.make_directory_symlink(
+        new_symlink_file_path=reduction_output_dir / fuzz.BEST_REDUCTION_NAME,
+        existing_dir=reduced_source_dir.parent,
+    )
 
-        device_name = test.device.name
 
-        # Create a symlink to the "best" reduction.
-        best_reduced_test_link = test_util.get_reduced_test_dir(
-            test_dir, device_name, fuzz.BEST_REDUCTION_NAME
+def run_reduction_on_report(  # pylint: disable=too-many-locals;
+    test_dir: Path, reports_dir: Path, binary_manager: binaries_util.BinaryManager
+) -> None:
+    test = test_util.metadata_read(test_dir)
+
+    check(
+        bool(test.device and test.device.name),
+        AssertionError(
+            f"Cannot reduce {str(test_dir)}; "
+            f"device must be specified in {str(test_util.get_metadata_path(test_dir))}"
+        ),
+    )
+
+    source_dir = test_util.get_source_dir(test_dir)
+
+    try:
+        run_reduction(
+            source_dir_to_reduce=source_dir,
+            reduction_output_dir=test_util.get_reductions_dir(
+                test_dir, test.device.name
+            ),
+            binary_manager=binary_manager,
         )
-        util.make_directory_symlink(
-            new_symlink_file_path=best_reduced_test_link, existing_dir=reduced_test
-        )
-    except ReductionFailedError as ex:
+    except fuzz_glsl_test.ReductionFailedError as ex:
         # Create a symlink to the failed reduction so it is easy to investigate failed reductions.
         link_to_failed_reduction_path = (
-            reports_dir / "failed_reductions" / f"{test_dir.name}_{ex.reduction_name}"
+            reports_dir
+            / "failed_reductions"
+            / f"{test_dir.name}_{ex.reduction_work_dir.name}"
         )
         util.make_directory_symlink(
             new_symlink_file_path=link_to_failed_reduction_path,

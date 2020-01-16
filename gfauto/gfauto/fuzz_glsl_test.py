@@ -52,9 +52,8 @@ from gfauto.util import check
 
 
 class ReductionFailedError(Exception):
-    def __init__(self, message: str, reduction_name: str, reduction_work_dir: Path):
+    def __init__(self, message: str, reduction_work_dir: Path):
         super().__init__(message)
-        self.reduction_name = reduction_name
         self.reduction_work_dir = reduction_work_dir
 
 
@@ -347,6 +346,40 @@ def should_reduce_report(settings: Settings, test_dir: Path) -> bool:
     return True
 
 
+def run_reduction(
+    source_dir_to_reduce: Path,
+    reduction_output_dir: Path,
+    binary_manager: binaries_util.BinaryManager,
+    settings: Settings,
+) -> Path:
+    test = test_util.metadata_read_from_source_dir(source_dir_to_reduce)
+
+    reduced_source_dir = source_dir_to_reduce
+
+    reduced_source_dir = run_reduction_part(
+        reduction_part_output_dir=reduction_output_dir / "1",
+        source_dir_to_reduce=reduced_source_dir,
+        preserve_semantics=True,
+        binary_manager=binary_manager,
+        settings=settings,
+    )
+
+    if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
+        reduced_source_dir = run_reduction_part(
+            reduction_part_output_dir=reduction_output_dir / "2",
+            source_dir_to_reduce=reduced_source_dir,
+            preserve_semantics=False,
+            binary_manager=binary_manager,
+            settings=settings,
+        )
+
+    # Create and return a symlink to the "best" reduction part directory.
+    return util.make_directory_symlink(
+        new_symlink_file_path=reduction_output_dir / fuzz.BEST_REDUCTION_NAME,
+        existing_dir=reduced_source_dir.parent,
+    )
+
+
 def run_reduction_on_report(
     test_dir: Path,
     reports_dir: Path,
@@ -355,40 +388,24 @@ def run_reduction_on_report(
 ) -> None:
     test = test_util.metadata_read(test_dir)
 
+    if not test.device or not test.device.name:
+        raise AssertionError(f"Cannot reduce {str(test_dir)}; device must be specified")
+
     try:
-        reduced_test = test_dir
-        reduced_test = run_reduction(
-            test_dir_reduction_output=test_dir,
-            test_dir_to_reduce=reduced_test,
-            preserve_semantics=True,
+        run_reduction(
+            source_dir_to_reduce=test_util.get_source_dir(test_dir),
+            reduction_output_dir=test_util.get_reductions_dir(
+                test_dir, test.device.name
+            ),
             binary_manager=binary_manager,
             settings=settings,
-            reduction_name="1",
-        )
-
-        if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
-            reduced_test = run_reduction(
-                test_dir_reduction_output=test_dir,
-                test_dir_to_reduce=reduced_test,
-                preserve_semantics=False,
-                binary_manager=binary_manager,
-                settings=settings,
-                reduction_name="2",
-            )
-
-        device_name = test.device.name
-
-        # Create a symlink to the "best" reduction.
-        best_reduced_test_link = test_util.get_reduced_test_dir(
-            test_dir, device_name, fuzz.BEST_REDUCTION_NAME
-        )
-        util.make_directory_symlink(
-            new_symlink_file_path=best_reduced_test_link, existing_dir=reduced_test
         )
     except ReductionFailedError as ex:
         # Create a symlink to the failed reduction so it is easy to investigate failed reductions.
         link_to_failed_reduction_path = (
-            reports_dir / "failed_reductions" / f"{test_dir.name}_{ex.reduction_name}"
+            reports_dir
+            / "failed_reductions"
+            / f"{test_dir.name}_{ex.reduction_work_dir.name}"
         )
         util.make_directory_symlink(
             new_symlink_file_path=link_to_failed_reduction_path,
@@ -678,36 +695,27 @@ def get_final_reduced_shader_job_path(reduction_work_shader_dir: Path) -> Path:
     return reduction_work_shader_dir / "shader_reduced_final.json"
 
 
-def run_reduction(
-    test_dir_reduction_output: Path,
-    test_dir_to_reduce: Path,
+def run_reduction_part(
+    reduction_part_output_dir: Path,
+    source_dir_to_reduce: Path,
     preserve_semantics: bool,
     binary_manager: binaries_util.BinaryManager,
     settings: Settings,
-    reduction_name: str = "reduction1",
 ) -> Path:
-    test = test_util.metadata_read(test_dir_to_reduce)
+    test = test_util.metadata_read_from_source_dir(source_dir_to_reduce)
 
     if not test.device or not test.device.name:
         raise AssertionError(
-            f"Cannot reduce {str(test_dir_to_reduce)}; "
-            f"device must be specified in {str(test_util.get_metadata_path(test_dir_to_reduce))}"
+            f"Cannot reduce {str(source_dir_to_reduce)}; "
+            f"device must be specified in {str(test_util.get_metadata_path_from_source_dir(source_dir_to_reduce))}"
         )
 
     if not test.crash_signature:
         raise AssertionError(
-            f"Cannot reduce {str(test_dir_to_reduce)} because there is no crash string specified."
+            f"Cannot reduce {str(source_dir_to_reduce)} because there is no crash string specified."
         )
 
-    # E.g. reports/crashes/no_signature/d50c96e8_opt_rand2_test_phone_ABC/results/phone_ABC/reductions/1
-    # Will contain work/ and source/
-    reduced_test_dir = test_util.get_reduced_test_dir(
-        test_dir_reduction_output, test.device.name, reduction_name
-    )
-
-    source_dir = test_util.get_source_dir(test_dir_to_reduce)
-
-    shader_jobs = tool.get_shader_jobs(source_dir)
+    shader_jobs = tool.get_shader_jobs(source_dir_to_reduce)
 
     # TODO: if needed, this could become a parameter to this function.
     name_of_shader_to_reduce = shader_jobs[0].name
@@ -722,10 +730,10 @@ def run_reduction(
         name_of_shader_to_reduce = shader_jobs[1].name
 
     reduction_work_variant_dir = run_glsl_reduce(
-        source_dir=source_dir,
+        source_dir=source_dir_to_reduce,
         name_of_shader_to_reduce=name_of_shader_to_reduce,
         output_dir=test_util.get_reduction_work_directory(
-            reduced_test_dir, name_of_shader_to_reduce
+            reduction_part_output_dir, name_of_shader_to_reduce
         ),
         binary_manager=binary_manager,
         preserve_semantics=preserve_semantics,
@@ -740,21 +748,23 @@ def run_reduction(
 
     check(
         final_reduced_shader_job_path.exists(),
-        ReductionFailedError(
-            "Reduction failed.", reduction_name, reduction_work_variant_dir
-        ),
+        ReductionFailedError("Reduction failed.", reduction_work_variant_dir),
     )
 
-    # Finally, create the source_dir so the returned directory can be used as a test_dir.
+    # Finally, create the output source_dir.
 
-    util.copy_dir(source_dir, test_util.get_source_dir(reduced_test_dir))
+    util.copy_dir(
+        source_dir_to_reduce, test_util.get_source_dir(reduction_part_output_dir)
+    )
 
     shader_job_util.copy(
         final_reduced_shader_job_path,
-        test_util.get_shader_job_path(reduced_test_dir, name_of_shader_to_reduce),
+        test_util.get_shader_job_path(
+            reduction_part_output_dir, name_of_shader_to_reduce
+        ),
     )
 
-    return reduced_test_dir
+    return test_util.get_source_dir(reduction_part_output_dir)
 
 
 def run_glsl_reduce(

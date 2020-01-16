@@ -32,6 +32,11 @@ message Test {
   repeated Binary binaries = 4;
   // The expected status when running the test. E.g. CRASH, TOOL_CRASH, TIMEOUT. See fuzz.py.
   string expected_status = 6;
+
+  // If set, this Python regular expression will be used instead of the crash_signature. The regular expression
+  // will be matched against the log from running the test. E.g. ".*some_error_string.*"
+  // This is useful for nondeterministic bugs.
+  string crash_regex_override = 7;
 }
 
 message TestGlsl {
