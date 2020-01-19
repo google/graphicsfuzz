@@ -122,6 +122,7 @@ def spirv_opt_shader_job(
     output_json: Path,
     binary_paths: binaries_util.BinaryGetter,
     preprocessor_cache: Optional[util.CommandCache] = None,
+    skip_validation: bool = False,
 ) -> Path:
     spirv_opt_binary = binary_paths.get_binary_path_by_name(
         binaries_util.SPIRV_OPT_NAME
@@ -131,7 +132,8 @@ def spirv_opt_shader_job(
         output_json,
         spirv_opt_args,
         spirv_opt_binary.path,
-        binaries_util.SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG
+        skip_validation
+        or binaries_util.SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG
         in spirv_opt_binary.binary.tags,
         preprocessor_cache=preprocessor_cache,
     )
@@ -193,6 +195,7 @@ def compile_shader_job(  # pylint: disable=too-many-locals;
     spirv_opt_args: Optional[List[str]] = None,
     shader_overrides: Optional[ShaderSuffixToShaderOverride] = None,
     preprocessor_cache: Optional[util.CommandCache] = None,
+    skip_validation: bool = False,
 ) -> SpirvCombinedShaderJob:
 
     result = input_json
@@ -280,7 +283,8 @@ def compile_shader_job(  # pylint: disable=too-many-locals;
         result, work_dir / "1_spirv_asm" / result.name, binary_paths
     )
 
-    validate_spirv_shader_job(result_spirv, binary_paths)
+    if not skip_validation:
+        validate_spirv_shader_job(result_spirv, binary_paths)
 
     if spirv_opt_args:
         result = result_spirv
@@ -290,13 +294,15 @@ def compile_shader_job(  # pylint: disable=too-many-locals;
             work_dir / "2_spirv_opt" / result.name,
             binary_paths,
             preprocessor_cache=preprocessor_cache,
+            skip_validation=skip_validation,
         )
         result_spirv = result
         result = spirv_dis_shader_job(
             result, work_dir / "2_spirv_opt_asm" / result.name, binary_paths
         )
 
-        validate_spirv_shader_job(result_spirv, binary_paths)
+        if not skip_validation:
+            validate_spirv_shader_job(result_spirv, binary_paths)
 
     return SpirvCombinedShaderJob(
         name=name,
@@ -416,6 +422,7 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
                 work_dir / shader_job.name,
                 binary_manager,
                 spirv_opt_args=spirv_opt_args,
+                skip_validation=test.skip_validation,
             ).spirv_asm_shader_job,
             shader_job.shader_job,
             "",

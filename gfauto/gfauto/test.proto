@@ -37,6 +37,11 @@ message Test {
   // will be matched against the log from running the test. E.g. ".*some_error_string.*"
   // This is useful for nondeterministic bugs.
   string crash_regex_override = 7;
+
+  // If true, don't run spirv-val to validate SPIR-V at every stage. This can be useful if the validator rejects the
+  // SPIR-V you want to test, but you want to continue anyway e.g. because the validator is buggy or because you know
+  // the tool under test should handle the invalid SPIR-V.
+  bool skip_validation = 8;
 }
 
 message TestGlsl {

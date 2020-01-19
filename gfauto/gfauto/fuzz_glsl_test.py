@@ -546,6 +546,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                             spirv_opt_args=spirv_opt_args,
                             shader_overrides=shader_overrides,
                             preprocessor_cache=preprocessor_cache,
+                            skip_validation=test.skip_validation,
                         )
                     )
                 except subprocess.CalledProcessError:
