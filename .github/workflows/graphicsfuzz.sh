@@ -33,7 +33,7 @@ case "$(uname)" in
   export PATH
   ;;
 
-"MINGW"*|"MSYS_NT"*)
+"MINGW"*)
   ;;
 
 *)

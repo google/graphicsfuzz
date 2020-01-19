@@ -76,7 +76,16 @@ jobs:
           architecture: x64
 
 
-      - name: build_step
+      - name: build_step_nix
         run: |
-          .github/workflows/graphicsfuzz.sh
+          ./build.sh
         shell: bash
+        if: |
+          !startsWith(matrix.os, 'windows')
+      - name: build_step_windows
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          "C:\Program Files\Git\bin\bash.EXE" --noprofile --norc -e -o pipefail build.sh
+        shell: cmd
+        if: |
+          startsWith(matrix.os, 'windows')
