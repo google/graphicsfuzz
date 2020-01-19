@@ -31,7 +31,7 @@ case "$(uname)" in
   ACTIVATE_PATH=".venv/bin/activate"
   ;;
 
-"MSYS_NT"*)
+"MINGW"*|"MSYS_NT"*)
   ACTIVATE_PATH=".venv/Scripts/activate"
   ;;
 
