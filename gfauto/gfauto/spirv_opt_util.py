@@ -51,6 +51,30 @@ OPT_OPTIONS: List[str] = [
 ]
 
 
+# These are the -O optimization passes, with some of the aggressive passes removed, plus -O at the end.
+# This combination can help reveal bugs that require (or are more easily exposed when) certain
+# passes run consecutively without aggressive passes running between.
+OPT_INTERESTING_SUBSET_OF_PASSES = [
+    "--wrap-opkill",
+    "--private-to-local",
+    "--convert-local-access-chains",
+    "--ssa-rewrite",
+    "--ccp",
+    "--redundancy-elimination",
+    "--combine-access-chains",
+    "--simplify-instructions",
+    "--vector-dce",
+    "--eliminate-dead-inserts",
+    "--simplify-instructions",
+    "--if-conversion",
+    "--copy-propagate-arrays",
+    "--reduce-load-size",
+    "--redundancy-elimination",
+    "--simplify-instructions",
+    "-O",
+]
+
+
 def random_spirv_opt_args(max_num_args: int = 30) -> List[str]:
     result: List[str] = []
     num_args = random.randint(1, max_num_args)
