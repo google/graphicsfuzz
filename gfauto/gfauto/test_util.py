@@ -38,7 +38,11 @@ def get_source_dir(test_dir: Path) -> Path:
 
 
 def get_metadata_path(test_dir: Path) -> Path:
-    return get_source_dir(test_dir) / TEST_METADATA
+    return get_metadata_path_from_source_dir(get_source_dir(test_dir))
+
+
+def get_metadata_path_from_source_dir(source_dir: Path) -> Path:
+    return source_dir / TEST_METADATA
 
 
 def metadata_write(metadata: Test, test_dir: Path) -> Path:
@@ -48,6 +52,10 @@ def metadata_write(metadata: Test, test_dir: Path) -> Path:
 
 def metadata_read(test_dir: Path) -> Test:
     return metadata_read_from_path(get_metadata_path(test_dir))
+
+
+def metadata_read_from_source_dir(source_dir: Path) -> Test:
+    return metadata_read_from_path(get_metadata_path_from_source_dir(source_dir))
 
 
 def metadata_read_from_path(test_metadata_path: Path) -> Test:
@@ -75,8 +83,12 @@ def get_results_directory(test_dir: Path, device_name: str) -> Path:
     return get_device_directory(test_dir, device_name) / "result"
 
 
+def get_reductions_dir(test_dir: Path, device_name: str) -> Path:
+    return get_device_directory(test_dir, device_name) / "reductions"
+
+
 def get_reduced_test_dir(test_dir: Path, device_name: str, reduction_name: str) -> Path:
-    return get_device_directory(test_dir, device_name) / "reductions" / reduction_name
+    return get_reductions_dir(test_dir, device_name) / reduction_name
 
 
 def get_reduction_work_directory(reduced_test_dir: Path, name_of_shader: str) -> Path:

@@ -27,12 +27,12 @@ jobs:
       matrix:
         os:
           - ubuntu-16.04
-          - windows-2016
+          - windows-latest
         python-version:
           - 3.6
           - 3.7
         exclude:
-          - os: windows-2016
+          - os: windows-latest
             python-version: 3.6
     runs-on: ${{ matrix.os }}
     steps:

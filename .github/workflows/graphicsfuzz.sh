@@ -18,17 +18,22 @@ set -x
 set -e
 set -u
 
+help | head
+
+uname
+
 case "$(uname)" in
 "Linux")
   ;;
 
 "Darwin")
+  # Install coreutils for "time".
   brew install coreutils
   PATH="/usr/local/opt/coreutils/libexec/gnubin:${PATH}"
   export PATH
   ;;
 
-"MINGW"*)
+"MINGW"*|"MSYS_NT"*)
   ;;
 
 *)
