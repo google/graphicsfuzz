@@ -133,7 +133,7 @@ limitations under the License.
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.18</version>
+        <version>1.19</version>
       </dependency>
 
       <dependency>
@@ -229,17 +229,17 @@ limitations under the License.
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-rng-simple</artifactId>
-        <version>1.2</version>
+        <version>1.3</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-rng-sampling</artifactId>
-        <version>1.2</version>
+        <version>1.3</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-rng-client-api</artifactId>
-        <version>1.2</version>
+        <version>1.3</version>
       </dependency>
 
       <!-- third party open source projects -->
