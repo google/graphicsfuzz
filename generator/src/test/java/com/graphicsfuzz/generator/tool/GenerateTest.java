@@ -321,6 +321,7 @@ public class GenerateTest {
   public void testNoInjectionSwitchIfDisabled() throws Exception {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
     final String program = "#version 100\n" +
+        "precision highp float;" +
         "void main() {" +
         " int x = 0;" +
         " for (int i = 0; i < 100; i++) {" +
