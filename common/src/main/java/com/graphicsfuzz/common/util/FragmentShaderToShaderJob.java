@@ -17,12 +17,37 @@
 package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
+import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.stmt.BlockStmt;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
+import com.graphicsfuzz.common.ast.type.LocationLayoutQualifier;
+import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.type.VoidType;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.util.ArgsUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -36,27 +61,133 @@ public final class FragmentShaderToShaderJob {
     // Utility class
   }
 
+  private static Optional<Integer> maybeGetArrayCount(VariableDeclInfo vdi) {
+    if (vdi.hasArrayInfo()) {
+      return Optional.of(vdi.getArrayInfo().getConstantSize());
+    }
+    return Optional.empty();
+  }
+
   /**
    * Creates a shader job with the given translation unit as its fragment shader, a pipeline state
    * that provides a random value for every uniform declared in the shader, and if needed a vertex
    * shader that provides outputs for the fragment shader's inputs.
+   *
    * @param tu A fragment shader.
    * @return A shader job that includes the fragment shader.
    */
-  public static ShaderJob createShaderJob(TranslationUnit tu, IRandom generator) {
+  public static ShaderJob createShaderJob(TranslationUnit tu, IRandom generator) throws Exception {
     assert (tu.getShaderKind() == ShaderKind.FRAGMENT);
     final PipelineInfo pipelineInfo = new PipelineInfo();
     final List<TranslationUnit> shaders = new ArrayList<>();
     shaders.add(tu);
 
-    // TODO(https://github.com/google/graphicsfuzz/issues/837): Iterate through all uniforms in
-    //  'tu'.  For each, add an entry to 'pipelineInfo' with a randomized value (using 'generator'
-    //  as the source of randomness).
+    // Iterate through all uniforms in 'tu'.  For each, add an entry to 'pipelineInfo' with a
+    // randomized value (using 'generator' as the source of randomness).
+    for (VariablesDeclaration vd : tu.getUniformDecls()) {
+      if (!(vd.getBaseType().getWithoutQualifiers() instanceof BasicType)) {
+        throw new RuntimeException("Non-basic types not implemented, found "
+            + vd.getBaseType().toString());
+      }
+      BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
+      for (VariableDeclInfo vdi : vd.getDeclInfos()) {
+        int arrayLength;
+        if (vdi.hasArrayInfo()) {
+          arrayLength = vdi.getArrayInfo().getConstantSize();
+        } else {
+          arrayLength = 1;
+        }
+        List<Number> values = new ArrayList<>();
+        for (int i = 0; i < basicType.getNumElements() * arrayLength; i++) {
+          if (basicType.getElementType() == BasicType.FLOAT) {
+            values.add(generator.nextFloat());
+          } else if (basicType.getElementType() == BasicType.INT) {
+            values.add(generator.nextInt(0xffffff));
+          } else if (basicType.getElementType() == BasicType.UINT) {
+            values.add(generator.nextPositiveInt(0xffffff));
+          } else {
+            assert basicType.getElementType() == BasicType.BOOL;
+            values.add(generator.nextBoolean() ? 1 : 0);
+          }
+        }
+        pipelineInfo.addUniform(vdi.getName(), basicType, maybeGetArrayCount(vdi), values);
+      }
+    }
 
-    // TODO(https://github.com/google/graphicsfuzz/issues/837): If the translation unit uses 'in'
-    //  global variables, declare a vertex shader TranslationUnit with corresponding 'out' variables
-    //  and add it to 'shaders'.
 
+    // If the translation unit uses 'in' global variables, declare a vertex shader
+    // TranslationUnit with corresponding 'out' variables and add it to 'shaders'.
+    boolean hasInputs = false;
+    TranslationUnit vertexShader = null;
+
+    for (VariablesDeclaration vd : tu.getGlobalVariablesDeclarations()) {
+      if (vd.getBaseType().hasQualifier(TypeQualifier.SHADER_INPUT)) {
+        BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
+        // Create clone of the variables declaration and change the input to output:
+        QualifiedType varType = (QualifiedType) vd.getBaseType().clone();
+        varType.replaceQualifier(TypeQualifier.SHADER_INPUT, TypeQualifier.SHADER_OUTPUT);
+        // Check if this is the first input we're handling
+        if (!hasInputs) {
+          // Since we're going to need it, initialize vertexShader with
+          // skeleton definition
+          vertexShader = new TranslationUnit(ShaderKind.VERTEX,
+              Optional.of(ShadingLanguageVersion.ESSL_310), Arrays.asList(
+              new PrecisionDeclaration("precision mediump float;"),
+              new FunctionDefinition(
+                  new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
+                  new BlockStmt(new ArrayList<>(), false))));
+          hasInputs = true;
+        }
+
+        for (VariableDeclInfo vdi : vd.getDeclInfos()) {
+          if (vdi.hasArrayInfo()) {
+            throw new RuntimeException("Arrays not implemented with " + vd.getBaseType().toString()
+                + " " + vdi.getName());
+          }
+          // Add variables one by one, so the initialization code is more convenient
+          vertexShader.addDeclarationBefore(
+              new VariablesDeclaration(varType, new VariableDeclInfo(vdi.getName(),
+                  vdi.getArrayInfo(), null)),
+              vertexShader.getMainFunction());
+          // Figure out the initializer
+          Expr initExpr = null;
+          if (basicType == BasicType.FLOAT) {
+            initExpr = new FloatConstantExpr(Float.toString(generator.nextFloat()));
+          } else if (basicType == BasicType.INT) {
+            initExpr = new IntConstantExpr(Integer.toString(generator.nextInt(0xffffff)));
+          } else if (basicType == BasicType.UINT) {
+            initExpr = new IntConstantExpr(Integer.toString(generator.nextPositiveInt(0xffffff)));
+          } else if (basicType == BasicType.VEC2) {
+            initExpr = new TypeConstructorExpr("vec2", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.VEC3) {
+            initExpr = new TypeConstructorExpr("vec3", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.VEC4) {
+            initExpr = new TypeConstructorExpr("vec4", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else {
+            throw new RuntimeException("Unimplemented variable type with "
+                + vd.getBaseType().toString() + " " + vdi.getName());
+          }
+          vertexShader.getMainFunction().getBody().insertStmt(0,
+              new ExprStmt(new BinaryExpr(
+                  new VariableIdentifierExpr(vdi.getName()),
+                  initExpr,
+                  BinOp.ASSIGN)));
+        }
+      }
+    }
+
+    if (hasInputs) {
+      shaders.add(vertexShader);
+    }
     return new GlslShaderJob(Optional.empty(), pipelineInfo, shaders);
   }
 
