@@ -36,9 +36,13 @@ from gfauto import (
     spirv_opt_util,
     util,
 )
+from gfauto.device_pb2 import Device
 from gfauto.gflogging import log
 
 DEFAULT_TIMEOUT = 30
+SPIRV_OPT_O = "spirv-opt -O"
+SPIRV_OPT_OS = "spirv-opt -Os"
+SPIRV_OPT_CUSTOM = "spirv-opt -Oconfig=custom"
 
 
 def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements;
@@ -107,15 +111,27 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
         swift_shader_path: Optional[Path] = None
         amber_path: Optional[Path] = None
 
+        # Small hack to ensure we have three devices for spirv-opt, each with a different name.
+        main_spirv_opt_device: Optional[Device] = None
+
+        if active_devices and active_devices[0].name == "host_preprocessor":
+            main_spirv_opt_device = active_devices[0]
+            main_spirv_opt_device.name = SPIRV_OPT_O
+
+            spirv_opt_custom = Device()
+            spirv_opt_custom.CopyFrom(main_spirv_opt_device)
+            spirv_opt_custom.name = SPIRV_OPT_CUSTOM
+            active_devices.insert(1, spirv_opt_custom)
+
+            spirv_opt_os = Device()
+            spirv_opt_os.CopyFrom(main_spirv_opt_device)
+            spirv_opt_os.name = SPIRV_OPT_OS
+            active_devices.insert(1, spirv_opt_os)
+
         # Enumerate active devices, writing their name and storing binary paths if needed.
         write_entry("test")
         for device in active_devices:
-
-            if device.name == "host_preprocessor":
-                # We are actually just running spirv-opt on the SPIR-V shaders.
-                write_entry("spirv-opt")
-            else:
-                write_entry(device.name)
+            write_entry(device.name)
 
             if device.HasField("preprocess"):
                 spirv_opt_path = binaries.get_binary_path_by_name(
@@ -151,14 +167,38 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
                     try:
                         gflogging.push_stream_for_logging(log_stream)
                         if device.HasField("preprocess"):
-                            # This just means spirv-op for now.
+                            # This just means spirv-opt for now.
+
                             assert spirv_opt_path  # noqa
+                            assert main_spirv_opt_device  # noqa
+
+                            # Pick spirv-opt arguments based on device name.
+                            if device.name == SPIRV_OPT_O:
+                                spirv_opt_args = ["-O"]
+                            elif device.name == SPIRV_OPT_OS:
+                                spirv_opt_args = ["-Os"]
+                            elif device.name == SPIRV_OPT_CUSTOM:
+                                spirv_opt_args = (
+                                    spirv_opt_util.OPT_INTERESTING_SUBSET_OF_PASSES
+                                )
+                            else:
+                                raise AssertionError(
+                                    f"Can't tell how to run device {device.name}; "
+                                    f"must be named host_preprocessor and be the first active device."
+                                )
+
+                            # Reset device and ignored_crash_signatures.
+                            device = main_spirv_opt_device
+                            ignored_signatures_set = set(
+                                device.ignored_crash_signatures
+                            )
+
                             try:
                                 for spirv_shader in spirv_shaders:
                                     spirv_opt_util.run_spirv_opt_on_spirv_shader(
                                         spirv_shader,
                                         test_run_dir,
-                                        ["-O"],
+                                        spirv_opt_args,
                                         spirv_opt_path,
                                     )
                                 result_util.write_status(
@@ -256,9 +296,7 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
                         log_contents
                     )
                     if signature == signature_util.NO_SIGNATURE:
-                        log(
-                            f"NOT adding ignored signature (because it is always interesting): {signature}"
-                        )
+                        log(f"NOT updating ignored signatures to include {signature}")
                     elif signature in ignored_signatures_set:
                         log(f"Signature is already ignored: {signature}")
                     else:
@@ -268,6 +306,9 @@ def main() -> None:  # pylint: disable=too-many-locals,too-many-branches,too-man
             write_newline()
 
         if update_ignored_signatures:
+            # Reset main_spirv_opt_device name before writing it back out.
+            if main_spirv_opt_device:
+                main_spirv_opt_device.name = "host_preprocessor"
             settings_util.write(settings, settings_path)
 
 
