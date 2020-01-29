@@ -112,7 +112,8 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
 
 
 GERRIT_COOKIE_ARGUMENT_DESCRIPTION = (
-    "The Gerrit cookie used for authentication. To get this, log in to the Khronos Gerrit page in your "
+    "The Gerrit cookie used for authentication. Requires Khronos membership. "
+    "To get this, log in to the Khronos Gerrit page in your "
     "browser and paste the following into the JavaScript console (F12) to copy the cookie to your clipboard: "
     "copy(document.cookie.match(/GerritAccount=([^;]*)/)[1])"
 )
@@ -136,7 +137,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Downloads the latest GraphicsFuzz AmberScript tests from vk-gl-cts, "
         "including those in pending CLs. "
-        "Requires Git."
+        "Requires Git. Requires Khronos membership."
     )
 
     parser.add_argument("gerrit_cookie", help=GERRIT_COOKIE_ARGUMENT_DESCRIPTION)
