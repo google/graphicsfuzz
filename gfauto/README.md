@@ -44,65 +44,7 @@ Install and configure plugins:
 
 Add `whitelist.dic` as a custom dictionary (search for "Spelling" in Actions). Do not add words via PyCharm's "Quick Fixes" feature, as the word will only be added to your personal dictionary. Instead, manually add the word to `whitelist.dic`.
 
-## Imports
-
-We use the `black` Python code formatter and `isort` for sorting imports.
-
-We also use the following import style, which is not automatically checked: use the package name (e.g. `gfauto`) and only import modules, not functions. For example:
-
-
-```python
-# Good: importing a module
-from gfauto import binaries_util
-
-binaries_util.add_common_tags_from_platform_suffix(...)  # using a function
-b = binaries_util.BinaryManager()  # using a class
-d = binaries_util.DEFAULT_BINARIES  # using a variable
-
-
-# Bad: directly importing a function, class, variable
-from gfauto.binaries_util import add_common_tags_from_platform_suffix, BinaryManager, DEFAULT_BINARIES
-
-add_common_tags_from_platform_suffix(...)
-b = BinaryManager()
-d = DEFAULT_BINARIES
-
-
-# Bad: importing from "."
-from . import binaries_util
-
-
-# Bad: import from "." AND importing a function
-from .binaries_util import add_common_tags_from_platform_suffix
-
-
-# OK: importing "check" and "log" functions directly
-from gfauto.gflogging import log
-from gfauto.util import check
-
-log("Running")
-check(1 + 1 == 2, AssertionError("1 + 1 should be 2"))
-
-
-# OK: importing types for type annotations
-from typing import Dict, List, Optional, Union
-
-def prepend_catchsegv_if_available(cmd: List[str]) -> List[str]:
-    ...
-
-
-# OK: importing Path
-from pathlib import Path
-
-def tool_path(tool: str) -> Path:
-    return Path(tool)
-
-
-# OK: importing generated protobuf types
-from gfauto.settings_pb2 import Settings
-
-DEFAULT_SETTINGS = Settings()
-```
+## [Coding conventions](docs/conventions.md)
 
 ## Symlinking other scripts
 
