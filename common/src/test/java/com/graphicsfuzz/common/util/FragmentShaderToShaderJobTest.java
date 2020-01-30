@@ -73,23 +73,23 @@ public class FragmentShaderToShaderJobTest {
     final String jsondata = fileOperations.readFileToString(jsonFile);
     final String vertdata = fileOperations.readFileToString(vertFile);
 
-    assertTrue(jsondata.indexOf("\"u_f\"") > -1);
-    assertTrue(jsondata.indexOf("\"u_v2\"") > -1);
-    assertTrue(jsondata.indexOf("\"u_v3\"") > -1);
-    assertTrue(jsondata.indexOf("\"u_v4\"") > -1);
-    assertTrue(jsondata.indexOf("\"glUniform1f\"") > -1);
-    assertTrue(jsondata.indexOf("\"glUniform2f\"") > -1);
-    assertTrue(jsondata.indexOf("\"glUniform3f\"") > -1);
-    assertTrue(jsondata.indexOf("\"glUniform4f\"") > -1);
+    assertTrue(jsondata.contains("\"u_f\""));
+    assertTrue(jsondata.contains("\"u_v2\""));
+    assertTrue(jsondata.contains("\"u_v3\""));
+    assertTrue(jsondata.contains("\"u_v4\""));
+    assertTrue(jsondata.contains("\"glUniform1f\""));
+    assertTrue(jsondata.contains("\"glUniform2f\""));
+    assertTrue(jsondata.contains("\"glUniform3f\""));
+    assertTrue(jsondata.contains("\"glUniform4f\""));
 
-    assertTrue(vertdata.indexOf("in_f = ") > -1);
-    assertTrue(vertdata.indexOf("in_v2 = vec2(") > -1);
-    assertTrue(vertdata.indexOf("in_v3 = vec3(") > -1);
-    assertTrue(vertdata.indexOf("in_v4 = vec4(") > -1);
-    assertTrue(vertdata.indexOf("out float in_f;") > -1);
-    assertTrue(vertdata.indexOf("out vec2 in_v2;") > -1);
-    assertTrue(vertdata.indexOf("out vec3 in_v3;") > -1);
-    assertTrue(vertdata.indexOf("out vec4 in_v4;") > -1);
+    assertTrue(vertdata.contains("in_f = "));
+    assertTrue(vertdata.contains("in_v2 = vec2("));
+    assertTrue(vertdata.contains("in_v3 = vec3("));
+    assertTrue(vertdata.contains("in_v4 = vec4("));
+    assertTrue(vertdata.contains("out float in_f;"));
+    assertTrue(vertdata.contains("out vec2 in_v2;"));
+    assertTrue(vertdata.contains("out vec3 in_v3;"));
+    assertTrue(vertdata.contains("out vec4 in_v4;"));
   }
 
 }
