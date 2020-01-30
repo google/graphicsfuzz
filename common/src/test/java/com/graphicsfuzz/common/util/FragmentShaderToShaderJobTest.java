@@ -16,13 +16,9 @@
 
 package com.graphicsfuzz.common.util;
 
+import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -56,14 +52,15 @@ public class FragmentShaderToShaderJobTest {
     + "  GLF_color = vec4(0.0,0.0,0.0,1.0);\n"
     + "}\n";
 
-    final File fragFile = temporaryFolder.newFile("shader.frag");
     final File jsonFile = temporaryFolder.newFile("shader.json");
     final File vertFile = temporaryFolder.newFile("shader.vert");
 
-    FileUtils.writeStringToFile(fragFile, frag, StandardCharsets.UTF_8);
+    final TranslationUnit tu = ParseHelper.parse(frag);
+    final ShaderJob result = FragmentShaderToShaderJob.createShaderJob(tu,
+        new RandomWrapper(0));
 
-    final String[] params = {fragFile.getAbsolutePath(), jsonFile.getAbsolutePath()};
-    FragmentShaderToShaderJob.main(params);
+    final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+    fileOperations.writeShaderJobFile(result, jsonFile);
 
     /* The result files contain random values so we can't do a
        simple 1:1 comparison. So, check if the files exist,
@@ -73,9 +70,8 @@ public class FragmentShaderToShaderJobTest {
 
     assertTrue(jsonFile.isFile());
     assertTrue(vertFile.isFile());
-
-    final String jsondata = new String(Files.readAllBytes(Paths.get(jsonFile.getAbsolutePath())));
-    final String vertdata = new String(Files.readAllBytes(Paths.get(vertFile.getAbsolutePath())));
+    final String jsondata = fileOperations.readFileToString(jsonFile);
+    final String vertdata = fileOperations.readFileToString(vertFile);
 
     assertTrue(jsondata.indexOf("\"u_f\"") > -1);
     assertTrue(jsondata.indexOf("\"u_v2\"") > -1);
@@ -85,7 +81,7 @@ public class FragmentShaderToShaderJobTest {
     assertTrue(jsondata.indexOf("\"glUniform2f\"") > -1);
     assertTrue(jsondata.indexOf("\"glUniform3f\"") > -1);
     assertTrue(jsondata.indexOf("\"glUniform4f\"") > -1);
-    
+
     assertTrue(vertdata.indexOf("in_f = ") > -1);
     assertTrue(vertdata.indexOf("in_v2 = vec2(") > -1);
     assertTrue(vertdata.indexOf("in_v3 = vec3(") > -1);

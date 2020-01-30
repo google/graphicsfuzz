@@ -31,12 +31,8 @@ import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
-import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
-import com.graphicsfuzz.common.ast.type.LocationLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
-import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -76,7 +72,7 @@ public final class FragmentShaderToShaderJob {
    * @param tu A fragment shader.
    * @return A shader job that includes the fragment shader.
    */
-  public static ShaderJob createShaderJob(TranslationUnit tu, IRandom generator) throws Exception {
+  public static ShaderJob createShaderJob(TranslationUnit tu, IRandom generator) {
     assert (tu.getShaderKind() == ShaderKind.FRAGMENT);
     final PipelineInfo pipelineInfo = new PipelineInfo();
     final List<TranslationUnit> shaders = new ArrayList<>();
@@ -91,13 +87,9 @@ public final class FragmentShaderToShaderJob {
       }
       BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
       for (VariableDeclInfo vdi : vd.getDeclInfos()) {
-        int arrayLength;
-        if (vdi.hasArrayInfo()) {
-          arrayLength = vdi.getArrayInfo().getConstantSize();
-        } else {
-          arrayLength = 1;
-        }
-        List<Number> values = new ArrayList<>();
+        // Non-array uniforms are handled as single-element arrays.
+        final int arrayLength = vdi.hasArrayInfo() ? vdi.getArrayInfo().getConstantSize() : 1;
+        final List<Number> values = new ArrayList<>();
         for (int i = 0; i < basicType.getNumElements() * arrayLength; i++) {
           if (basicType.getElementType() == BasicType.FLOAT) {
             values.add(generator.nextFloat());
@@ -117,26 +109,24 @@ public final class FragmentShaderToShaderJob {
 
     // If the translation unit uses 'in' global variables, declare a vertex shader
     // TranslationUnit with corresponding 'out' variables and add it to 'shaders'.
-    boolean hasInputs = false;
-    TranslationUnit vertexShader = null;
+    Optional<TranslationUnit> vertexShader = Optional.empty();
 
     for (VariablesDeclaration vd : tu.getGlobalVariablesDeclarations()) {
       if (vd.getBaseType().hasQualifier(TypeQualifier.SHADER_INPUT)) {
-        BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
+        final BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
         // Create clone of the variables declaration and change the input to output:
-        QualifiedType varType = (QualifiedType) vd.getBaseType().clone();
+        final QualifiedType varType = (QualifiedType) vd.getBaseType().clone();
         varType.replaceQualifier(TypeQualifier.SHADER_INPUT, TypeQualifier.SHADER_OUTPUT);
         // Check if this is the first input we're handling
-        if (!hasInputs) {
+        if (!vertexShader.isPresent()) {
           // Since we're going to need it, initialize vertexShader with
           // skeleton definition
-          vertexShader = new TranslationUnit(ShaderKind.VERTEX,
+          vertexShader = Optional.of(new TranslationUnit(ShaderKind.VERTEX,
               Optional.of(ShadingLanguageVersion.ESSL_310), Arrays.asList(
               new PrecisionDeclaration("precision mediump float;"),
               new FunctionDefinition(
                   new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
-                  new BlockStmt(new ArrayList<>(), false))));
-          hasInputs = true;
+                  new BlockStmt(Collections.emptyList(), false)))));
         }
 
         for (VariableDeclInfo vdi : vd.getDeclInfos()) {
@@ -145,10 +135,10 @@ public final class FragmentShaderToShaderJob {
                 + " " + vdi.getName());
           }
           // Add variables one by one, so the initialization code is more convenient
-          vertexShader.addDeclarationBefore(
+          vertexShader.get().addDeclarationBefore(
               new VariablesDeclaration(varType, new VariableDeclInfo(vdi.getName(),
                   vdi.getArrayInfo(), null)),
-              vertexShader.getMainFunction());
+              vertexShader.get().getMainFunction());
           // Figure out the initializer
           Expr initExpr = null;
           if (basicType == BasicType.FLOAT) {
@@ -176,7 +166,7 @@ public final class FragmentShaderToShaderJob {
             throw new RuntimeException("Unimplemented variable type with "
                 + vd.getBaseType().toString() + " " + vdi.getName());
           }
-          vertexShader.getMainFunction().getBody().insertStmt(0,
+          vertexShader.get().getMainFunction().getBody().insertStmt(0,
               new ExprStmt(new BinaryExpr(
                   new VariableIdentifierExpr(vdi.getName()),
                   initExpr,
@@ -185,8 +175,8 @@ public final class FragmentShaderToShaderJob {
       }
     }
 
-    if (hasInputs) {
-      shaders.add(vertexShader);
+    if (vertexShader.isPresent()) {
+      shaders.add(vertexShader.get());
     }
     return new GlslShaderJob(Optional.empty(), pipelineInfo, shaders);
   }
@@ -218,7 +208,7 @@ public final class FragmentShaderToShaderJob {
     try {
       Namespace ns = parse(args);
       long startTime = System.currentTimeMillis();
-      TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")));
+      final TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")));
       long endTime = System.currentTimeMillis();
       System.err.println("Time for parsing: " + (endTime - startTime));
 
