@@ -35,8 +35,8 @@ from gfauto import (
 
 
 def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
-    git_tool: Path, cookie: str, binaries: binaries_util.BinaryManager
-) -> None:
+    git_tool: Path, cookie: str, output_shaders_dir: Path,
+) -> Path:
     work_dir = Path() / "temp" / ("cts_" + fuzz.get_random_name())
 
     latest_change = gerrit_util.get_latest_deqp_change(cookie)
@@ -99,7 +99,7 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
 
     subprocess_util.run(cmd, verbose=True, working_dir=work_dir)
 
-    shader_dir = util.copy_dir(
+    return util.copy_dir(
         cts_out
         / "external"
         / "vulkancts"
@@ -107,9 +107,19 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
         / "vulkan"
         / "amber"
         / "graphicsfuzz",
-        Path() / "graphicsfuzz",
+        output_shaders_dir,
     )
 
+
+GERRIT_COOKIE_ARGUMENT_DESCRIPTION = (
+    "The Gerrit cookie used for authentication. Requires Khronos membership. "
+    "To get this, log in to the Khronos Gerrit page in your "
+    "browser and paste the following into the JavaScript console (F12) to copy the cookie to your clipboard: "
+    "copy(document.cookie.match(/GerritAccount=([^;]*)/)[1])"
+)
+
+
+def extract_shaders(shader_dir: Path, binaries: binaries_util.BinaryManager) -> None:
     for amber_file in shader_dir.glob("*.amber"):
         amber_converter.extract_shaders(
             amber_file, output_dir=amber_file.parent, binaries=binaries
@@ -123,18 +133,11 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
         util.create_zip(amber_file.with_suffix(".zip"), zip_files)
 
 
-GERRIT_COOKIE_ARGUMENT_DESCRIPTION = (
-    "The Gerrit cookie used for authentication. To get this, log in to the Khronos Gerrit page in your "
-    "browser and paste the following into the JavaScript console (F12) to copy the cookie to your clipboard: "
-    "copy(document.cookie.match(/GerritAccount=([^;]*)/)[1])"
-)
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Downloads the latest GraphicsFuzz AmberScript tests from vk-gl-cts, "
         "including those in pending CLs. "
-        "Requires Git."
+        "Requires Git. Requires Khronos membership."
     )
 
     parser.add_argument("gerrit_cookie", help=GERRIT_COOKIE_ARGUMENT_DESCRIPTION)
@@ -157,7 +160,9 @@ def main() -> None:
 
     binaries = binaries_util.get_default_binary_manager(settings=settings)
 
-    download_cts_graphicsfuzz_tests(git_tool, cookie, binaries)
+    shaders_dir = Path() / "graphicsfuzz"
+    download_cts_graphicsfuzz_tests(git_tool, cookie, shaders_dir)
+    extract_shaders(shaders_dir, binaries)
 
 
 if __name__ == "__main__":

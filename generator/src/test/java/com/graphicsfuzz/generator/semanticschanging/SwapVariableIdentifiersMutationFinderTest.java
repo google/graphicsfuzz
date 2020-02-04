@@ -45,18 +45,25 @@ public class SwapVariableIdentifiersMutationFinderTest {
         + "}";
 
     final String expected = "#version 300 es\n"
-        + "int foo(int x) {"
-        + "  int s = 5;"
-        + "  x += s * s + x * 3;"
-        + "}"
-        + "void main () {"
-        + "  float a;"
-        + "  int b;"
-        + "  int c;"
-        + "  for(int i = 0; i < 10; i++) {"
-        + "    a = i + b;"
-        + "  }"
-        + "}";
+        + "int foo(int x)\n"
+        + "{\n"
+        + " int s = 5;\n"
+        + " x += s * s + x * 3;\n"
+        + "}\n"
+        + "void main()\n"
+        + "{\n"
+        + " float a;\n"
+        + " int b;\n"
+        + " int c;\n"
+        + " for(\n"
+        + "     int i = 0;\n"
+        + "     i < 10;\n"
+        + "     i ++\n"
+        + " )\n"
+        + "  {\n"
+        + "   a = i + i;\n"
+        + "  }\n"
+        + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program);
 
