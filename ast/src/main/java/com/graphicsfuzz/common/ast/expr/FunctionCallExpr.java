@@ -18,7 +18,6 @@ package com.graphicsfuzz.common.ast.expr;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

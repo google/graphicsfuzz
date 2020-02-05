@@ -75,7 +75,7 @@ public class ArrayInfo implements IAstNode {
   }
 
   /**
-   * Query whether this array has a size expression
+   * Query whether this array has a size expression.
    * @return Size expression
    */
   public boolean hasSizeExpr() {

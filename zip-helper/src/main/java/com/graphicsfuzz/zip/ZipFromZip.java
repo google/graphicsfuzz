@@ -37,7 +37,9 @@ import org.apache.commons.io.IOUtils;
  */
 public final class ZipFromZip {
 
-  private ZipFromZip() {}
+  private ZipFromZip() {
+
+  }
 
   public static void main(String[] args) {
 
