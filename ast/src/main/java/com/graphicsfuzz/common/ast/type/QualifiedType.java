@@ -79,7 +79,7 @@ public class QualifiedType extends Type {
   }
 
   /**
-   * Check for the existence of a qualifier
+   * Check for the existence of a qualifier.
    *
    * @param qualifier Qualifier to check for
    * @return boolean of whether the qualifier was found
@@ -90,7 +90,7 @@ public class QualifiedType extends Type {
   }
 
   /**
-   * Check for the existence of qualifiers
+   * Check for the existence of qualifiers.
    *
    * @return boolean of whether any qualifiers exist
    */
@@ -99,7 +99,7 @@ public class QualifiedType extends Type {
   }
 
   /**
-   * Returns the target type
+   * Returns the target type.
    *
    * @return The target type
    */

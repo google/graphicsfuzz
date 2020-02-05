@@ -199,7 +199,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   /**
-   * Performs constant folding for array size fields
+   * Performs constant folding for array size fields.
    * @param tu Parsed syntax tree to scan and modify
    * @return Modified syntax tree
    */
@@ -208,7 +208,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     new ScopeTrackingVisitor() {
       /**
        * Attempt to reduce expression, or throw exception if failed.
-       * @param Expression to fold
+       * @param expr Expression to fold
        * @return Folded expression
        */
       public Expr reduce(Expr expr) {

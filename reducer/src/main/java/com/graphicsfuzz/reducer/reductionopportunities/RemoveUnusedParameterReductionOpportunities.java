@@ -23,7 +23,6 @@ import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
-
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.ArrayList;
 import java.util.Arrays;

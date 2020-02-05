@@ -117,7 +117,7 @@ public class ImageUtil {
         getHistogram(file2.getAbsolutePath()));
   }
 
-  public static double comparePSNR(File file1, File file2) throws FileNotFoundException {
+  public static double comparePsnr(File file1, File file2) throws FileNotFoundException {
     opencv_core.Mat image1 = getImage(file1);
     opencv_core.Mat image2 = getImage(file2);
     return opencv_core.PSNR(image1, image2);
