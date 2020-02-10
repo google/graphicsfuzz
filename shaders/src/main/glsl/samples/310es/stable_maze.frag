@@ -28,8 +28,9 @@ void main() {
   ivec2 ipos = ivec2(int(pos.x * 16.0), int(pos.y * 16.0));
 
   int i;
-  for (i = 0; i < 16 * 16; i++)
+  for (i = 0; i < 16 * 16; i++) {
     map[i] = 0;
+  }
 
   ivec2 p = ivec2(0, 0);
   bool canwalk = true;
@@ -38,14 +39,18 @@ void main() {
     v++;
     int directions = 0;
 
-    if (p.x > 0 && map[(p.x - 2) + (p.y) * 16] == 0)
+    if (p.x > 0 && map[(p.x - 2) + (p.y) * 16] == 0) {
       directions += 1;
-    if (p.y > 0 && map[(p.x) + (p.y - 2) * 16] == 0)
+    }
+    if (p.y > 0 && map[(p.x) + (p.y - 2) * 16] == 0) {
       directions += 1;
-    if (p.x < 14 && map[(p.x + 2) + (p.y) * 16] == 0)
+    }
+    if (p.x < 14 && map[(p.x + 2) + (p.y) * 16] == 0) {
       directions += 1;
-    if (p.y < 14 && map[(p.x) + (p.y + 2) * 16] == 0)
+    }
+    if (p.y < 14 && map[(p.x) + (p.y + 2) * 16] == 0) {
       directions += 1;
+    }
 
     if (directions == 0) {
       canwalk = false;
@@ -97,7 +102,6 @@ void main() {
       _GLF_color = vec4(1.0, 1.0, 1.0, 1.0);
       return;
     }
-
   }
   while (canwalk);
 
