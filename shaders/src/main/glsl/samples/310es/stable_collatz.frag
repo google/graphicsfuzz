@@ -43,10 +43,12 @@ const vec4 pal[16] = vec4[16](
 int collatz(int v) {
   int count = 0;
   while (v > 1) {
-    if ((v & 1) == 1)
+    if ((v & 1) == 1) {
       v = 3 * v + 1;
-    else
+    }
+    else {
       v /= 2;
+    }
     count++;
   }
   return count;

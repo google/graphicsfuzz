@@ -41,10 +41,12 @@ const vec4 pal[16] = vec4[16](
   vec4(1.0, 1.0, 1.0, 1.0));
 
 ivec2 iter(ivec2 p) {
-  if (p.x > 0)
+  if (p.x > 0) {
     p.y--;
-  if (p.x < 0)
+  }
+  if (p.x < 0) {
     p.y++;
+  }
   p.x += p.y / 2;
   return p;
 }
@@ -56,11 +58,17 @@ void main() {
   int w = (ipos.y & 5) | (ipos.x & 10);
   ivec2 p = ivec2(v * 8 + w, 0);
   int i;
-  for (i = 0; i < 100; i++)
+  for (i = 0; i < 100; i++) {
     p = iter(p);
+  }
 
-  if (p.x < 0) p.x = -p.x;
-  while (p.x > 15) p.x -= 16;
+  if (p.x < 0) {
+    p.x = -p.x;
+  }
+  
+  while (p.x > 15) {
+    p.x -= 16;
+  }
 
   _GLF_color = pal[p.x];
 }

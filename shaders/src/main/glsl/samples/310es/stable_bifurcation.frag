@@ -46,7 +46,8 @@ void main() {
   int iters = lin.x + lin.y * 10;
   int v = 100;
   int i;
-  for (i = 0; i < iters; i++)
+  for (i = 0; i < iters; i++) {
     v = (4 * v * (1000 - v)) / 1000;
+  }
   _GLF_color = pal[v % 16];
 }

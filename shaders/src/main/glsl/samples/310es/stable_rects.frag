@@ -55,19 +55,29 @@ int index;
 int state[16];
 
 bool collision(vec2 pos, vec4 quad) {
-  if (pos.x < quad.x) return false;
-  if (pos.y < quad.y) return false;
-  if (pos.x > quad.x + quad.z) return false;
-  if (pos.y > quad.y + quad.w) return false;
+  if (pos.x < quad.x) {
+    return false;
+  }
+  if (pos.y < quad.y) {
+    return false;
+  }
+  if (pos.x > quad.x + quad.z) {
+    return false;
+  }
+  if (pos.y > quad.y + quad.w) {
+    return false;
+  }
   return true;
 }
 
 vec4 match(vec2 pos) {
   int i;
   vec4 res = vec4(0.5, 0.5, 1.0, 1.0);
-  for (i = 0; i < 8; i++)
-    if (collision(pos, picdata[i]))
+  for (i = 0; i < 8; i++) {
+    if (collision(pos, picdata[i])) {
       res = pal[(int(picdata[i].x) * int(picdata[i].y) + i * 9 + 11) % 16];
+    }
+  }
   return res;
 }
 
