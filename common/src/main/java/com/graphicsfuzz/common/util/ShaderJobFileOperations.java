@@ -121,7 +121,7 @@ public class ShaderJobFileOperations {
         break;
       }
       case PSNR: {
-        final double diff = ImageUtil.comparePSNR(reference, variant);
+        final double diff = ImageUtil.comparePsnr(reference, variant);
         result = (aboveThresholdIsInteresting ? diff > threshold : diff <= threshold);
         comparisonValue = String.valueOf(diff);
         break;

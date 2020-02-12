@@ -40,7 +40,7 @@ public class VariableDeclInfo implements IAstNode {
   }
 
   /**
-   * Get array info
+   * Get array info.
    *
    * @return array info of the variable declaration
    */
@@ -49,7 +49,7 @@ public class VariableDeclInfo implements IAstNode {
   }
 
   /**
-   * Get the current initializer
+   * Get the current initializer.
    *
    * @return Current initializer, null if no initializer is set
    */
@@ -58,7 +58,7 @@ public class VariableDeclInfo implements IAstNode {
   }
 
   /**
-   * Check whether variable declaration includes array information
+   * Check whether variable declaration includes array information.
    *
    * @return boolean whether array information exists
    */
@@ -67,7 +67,7 @@ public class VariableDeclInfo implements IAstNode {
   }
 
   /**
-   * Check whether variable declaration includes initializer
+   * Check whether variable declaration includes initializer.
    *
    * @return boolean whether initializer exists
    */

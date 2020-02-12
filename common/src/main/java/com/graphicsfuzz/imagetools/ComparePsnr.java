@@ -42,7 +42,7 @@ public class ComparePsnr {
 
     final Namespace ns = parser.parseArgs(args);
 
-    System.out.println(ImageUtil.comparePSNR(ns.get("image1"), ns.get("image2")));
+    System.out.println(ImageUtil.comparePsnr(ns.get("image1"), ns.get("image2")));
 
   }
 
