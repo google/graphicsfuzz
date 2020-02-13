@@ -426,7 +426,7 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
         for suffix in shader_job_util.get_related_suffixes_that_exist(
             donor_shader_job, shader_job_util.EXT_ALL, [shader_job_util.SUFFIX_SPIRV],
         ):
-            donor_shaders.append(str(donor_shader_job.with_suffix(suffix)))
+            donor_shaders.append(str(donor_shader_job.with_suffix(suffix)) + "\n")
 
     donors_list = staging_dir / "donors.txt"
     with util.file_open_text(donors_list, "w") as donors_file:
