@@ -420,6 +420,12 @@ def fuzz_spirv(
         language_suffix=shader_job_util.SUFFIXES_SPIRV_FUZZ_INPUT,
     )
 
+    # Create list of donor file names from the given shaders
+    donors_list = staging_dir / "donors.txt"
+    with util.file_open_text(donors_list, "w") as donors_file:
+        donors_file.write("\n".join([str(donor_path.with_suffix(shader_job_util.SUFFIX_SPIRV))
+                                     for donor_path in spirv_fuzz_shaders]))
+
     # TODO: Allow using downloaded spirv-fuzz.
     try:
         with util.file_open_text(staging_dir / "log.txt", "w") as log_file:
@@ -430,6 +436,7 @@ def fuzz_spirv(
                     reference_spirv_shader_job,
                     template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
                     seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
+                    other_args=["--donors=" + str(donors_list)],
                 )
             finally:
                 gflogging.pop_stream_for_logging()
