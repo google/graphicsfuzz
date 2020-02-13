@@ -400,7 +400,7 @@ def handle_test(
     return issue_found
 
 
-def fuzz_spirv(
+def fuzz_spirv(  # pylint: disable=too-many-locals;
     staging_dir: Path,
     reports_dir: Path,
     fuzz_failures_dir: Path,
@@ -421,16 +421,16 @@ def fuzz_spirv(
     )
 
     # Create list of donor file names from the given shaders
+    donor_shaders = []
+    for donor_shader_job in spirv_fuzz_shaders:
+        for suffix in shader_job_util.get_related_suffixes_that_exist(
+            donor_shader_job, shader_job_util.EXT_ALL, [shader_job_util.SUFFIX_SPIRV],
+        ):
+            donor_shaders.append(str(donor_shader_job.with_suffix(suffix)))
+
     donors_list = staging_dir / "donors.txt"
-    print(spirv_fuzz_shaders[0].with_suffix(shader_job_util.SUFFIX_SPIRV))
     with util.file_open_text(donors_list, "w") as donors_file:
-        donors_file.write("\n".join(
-            ["\n".join([str(donor_shader_job.with_suffix(suffix)) for suffix in
-                        shader_job_util.get_related_suffixes_that_exist(
-                                      donor_shader_job,
-                                      shader_job_util.EXT_ALL,
-                                      [shader_job_util.SUFFIX_SPIRV])
-                        ]) for donor_shader_job in spirv_fuzz_shaders]))
+        donors_file.writelines(donor_shaders)
 
     # TODO: Allow using downloaded spirv-fuzz.
     try:
