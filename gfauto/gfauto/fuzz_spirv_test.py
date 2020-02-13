@@ -422,9 +422,15 @@ def fuzz_spirv(
 
     # Create list of donor file names from the given shaders
     donors_list = staging_dir / "donors.txt"
+    print(spirv_fuzz_shaders[0].with_suffix(shader_job_util.SUFFIX_SPIRV))
     with util.file_open_text(donors_list, "w") as donors_file:
-        donors_file.write("\n".join([str(donor_path.with_suffix(shader_job_util.SUFFIX_SPIRV))
-                                     for donor_path in spirv_fuzz_shaders]))
+        donors_file.write("\n".join(
+            ["\n".join([str(donor_shader_job.with_suffix(suffix)) for suffix in
+                        shader_job_util.get_related_suffixes_that_exist(
+                                      donor_shader_job,
+                                      shader_job_util.EXT_ALL,
+                                      [shader_job_util.SUFFIX_SPIRV])
+                        ]) for donor_shader_job in spirv_fuzz_shaders]))
 
     # TODO: Allow using downloaded spirv-fuzz.
     try:
