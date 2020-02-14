@@ -420,19 +420,6 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
         language_suffix=shader_job_util.SUFFIXES_SPIRV_FUZZ_INPUT,
     )
 
-    # Create list of donor file names from the given shaders
-    donor_shaders = []
-    for donor_shader_job in spirv_fuzz_shaders:
-        for suffix in shader_job_util.get_related_suffixes_that_exist(
-            donor_shader_job, shader_job_util.EXT_ALL, [shader_job_util.SUFFIX_SPIRV],
-        ):
-            donor_shaders.append(str(donor_shader_job.with_suffix(suffix)) + "\n")
-
-    donors_list = staging_dir / "donors.txt"
-    with util.file_open_text(donors_list, "w") as donors_file:
-        donors_file.writelines(donor_shaders)
-
-    # TODO: Allow using downloaded spirv-fuzz.
     try:
         with util.file_open_text(staging_dir / "log.txt", "w") as log_file:
             try:
@@ -441,8 +428,8 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
                     binary_manager.get_binary_path_by_name("spirv-fuzz").path,
                     reference_spirv_shader_job,
                     template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
+                    donor_shader_job_paths=spirv_fuzz_shaders,
                     seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
-                    other_args=["--donors=" + str(donors_list)],
                 )
             finally:
                 gflogging.pop_stream_for_logging()
