@@ -196,7 +196,7 @@ set -x
 set -e
 set -u
 
-SHADER="${1}"
+SHADER="\${1}"
 
 cat >simple.amber <<HERE
 #!amber
@@ -206,7 +206,7 @@ SHADER vertex vertex_shader PASSTHROUGH
 SHADER fragment fragment_shader SPIRV-ASM
 HERE
 
-spirv-dis --raw-id "${SHADER}" >>simple.amber
+spirv-dis --raw-id "\${SHADER}" >>simple.amber
 
 cat >>simple.amber <<HERE
 
@@ -259,7 +259,22 @@ echo bash_kernel: saved image data to: output.png
 ```
 
 ```bash
-cat >almost_interesting.asm <<HERE
+# Create an empty donors list.
+touch donors.txt
+
+# Run spirv-fuzz to generate a mutated shader "fuzzed.spv".
+spirv-fuzz shader.spv -o fuzzed.spv --donors=donors.txt
+
+# Run the shader.
+./run_shader.sh fuzzed.spv
+
+echo bash_kernel: saved image data to: output.png
+```
+
+
+
+```bash
+spirv-as --preserve-numeric-ids --target-env spv1.0 -o almost_interesting.spv <<HERE
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
@@ -348,3 +363,93 @@ HERE
 ```bash
 
 ```
+
+
+```bash
+spirv-fuzz almost_interesting.spv -o fuzzed.spv --donors=donors.txt --seed=211
+./run_shader.sh fuzzed.spv
+```
+
+```bash
+spirv-val fuzzed.spv
+```
+
+
+
+```bash
+./run_shader.sh fuzzed.spv
+echo $?
+```
+
+
+
+```bash
+cat >run_shader_expect_segfault.sh <<RUN_SHADER_END
+#!/usr/bin/env bash
+
+set -x
+set -e
+set -u
+
+SHADER="\${1}"
+
+cat >simple.amber <<HERE
+#!amber
+
+SHADER vertex vertex_shader PASSTHROUGH
+
+SHADER fragment fragment_shader SPIRV-ASM
+HERE
+
+spirv-dis --raw-id "\${SHADER}" >>simple.amber
+
+cat >>simple.amber <<HERE
+
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics pipeline
+  ATTACH vertex_shader
+  ATTACH fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR pipeline 0 0 0 255
+
+CLEAR pipeline
+RUN pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+HERE
+
+# Allow non-zero exit status.
+set +e
+
+amber -d simple.amber -i output.png
+AMBER_EXIT_STATUS="\${?}"
+
+set -e
+
+# This line will exit with status 1 if Amber's exit status was anything other
+# than 139 (segfault).
+test "\${AMBER_EXIT_STATUS}" -eq 139
+RUN_SHADER_END
+
+```
+
+```bash
+chmod +x run_shader_expect_segfault.sh
+```
+
+```bash
+./run_shader_expect_segfault.sh fuzzed.spv
+echo $?
+```
+
+```bash
+./run_shader_expect_segfault.sh almost_interesting.spv
+echo $?
+```
+
+
+
