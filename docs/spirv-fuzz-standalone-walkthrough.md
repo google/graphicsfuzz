@@ -361,7 +361,8 @@ HERE
 
 
 ```bash
-
+spirv-fuzz almost_interesting.spv -o fuzzed.spv --donors=donors.txt
+./run_shader.sh fuzzed.spv
 ```
 
 
@@ -374,6 +375,7 @@ spirv-fuzz almost_interesting.spv -o fuzzed.spv --donors=donors.txt --seed=211
 spirv-val fuzzed.spv
 ```
 
+There are 44 transformations in `fuzzed.transformations_json`.
 
 
 ```bash
@@ -450,6 +452,12 @@ echo $?
 ./run_shader_expect_segfault.sh almost_interesting.spv
 echo $?
 ```
+
+```bash
+spirv-fuzz almost_interesting.spv -o reduced.spv --shrink=fuzzed.transformations -- ./run_shader_expect_segfault.sh
+```
+
+33 attempts. Only 3 transformations were necessary.
 
 
 
