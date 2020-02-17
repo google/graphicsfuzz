@@ -35,6 +35,7 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DoStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
+import com.graphicsfuzz.common.ast.stmt.LoopStmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
@@ -73,9 +74,10 @@ public class GloballyTruncateLoops {
         firstNonPrecisionDeclaration = decl;
         break;
       }
+      assert firstNonPrecisionDeclaration != null;
       // Add loop bound variable
       tu.addDeclarationBefore(new VariablesDeclaration(new QualifiedType(BasicType.INT,
-              Arrays.asList(TypeQualifier.CONST)),new VariableDeclInfo(loopBoundName,null,
+              Arrays.asList(TypeQualifier.CONST)), new VariableDeclInfo(loopBoundName,null,
               new Initializer(new IntConstantExpr(new Integer(loopLimit).toString())))),
           firstNonPrecisionDeclaration);
       // Add loop count variable
@@ -86,7 +88,7 @@ public class GloballyTruncateLoops {
       // Traverse tree for the rest of the transformations
       new StandardVisitor() {
         // Converts loop condition from "x" to "(x) && (lc<lb)"
-        Expr buildCondition(Expr originalCondition) {
+        private Expr buildCondition(Expr originalCondition) {
           return new BinaryExpr(
               new ParenExpr(originalCondition),
               new ParenExpr(
@@ -97,54 +99,41 @@ public class GloballyTruncateLoops {
         }
 
         // Check if the loop condition is just "false"
-        boolean isTrueLoop(Expr conditionExpr) {
+        private boolean isTrueLoop(Expr conditionExpr) {
           return !(conditionExpr instanceof BoolConstantExpr
               && !((BoolConstantExpr)conditionExpr).getIsTrue());
         }
 
-        @Override
-        public void visitForStmt(ForStmt forStmt) {
-          if (isTrueLoop(forStmt.getCondition())) {
-            forStmt.setCondition(buildCondition(forStmt.getCondition()));
+        // Common code for all loop structures
+        private void handleLoopStmt(LoopStmt loopStmt, boolean newScope) {
+          if (isTrueLoop(loopStmt.getCondition())) {
+            loopStmt.setCondition(buildCondition(loopStmt.getCondition()));
             // Add block statement if it's missing
-            if (!(forStmt.getBody() instanceof BlockStmt)) {
-              forStmt.setBody(new BlockStmt(Arrays.asList(forStmt.getBody()), true));
+            if (!(loopStmt.getBody() instanceof BlockStmt)) {
+              loopStmt.setBody(new BlockStmt(Arrays.asList(loopStmt.getBody()), newScope));
             }
             // Add loop count increment a start of body block
-            ((BlockStmt) forStmt.getBody()).insertStmt(0,
+            ((BlockStmt) loopStmt.getBody()).insertStmt(0,
                 new ExprStmt(new UnaryExpr(new VariableIdentifierExpr(loopCountName),
                     UnOp.POST_INC)));
           }
+        }
+
+        @Override
+        public void visitForStmt(ForStmt forStmt) {
+          handleLoopStmt(forStmt, true);
           super.visitForStmt(forStmt);
         }
 
         @Override
         public void visitWhileStmt(WhileStmt whileStmt) {
-          if (isTrueLoop(whileStmt.getCondition())) {
-            whileStmt.setCondition(buildCondition(whileStmt.getCondition()));
-            // Add block statement if it's missing. Note that in while loops new scope starts
-            // before the braces, so the braces do not introduce new scope.
-            if (!(whileStmt.getBody() instanceof BlockStmt)) {
-              whileStmt.setBody(new BlockStmt(Arrays.asList(whileStmt.getBody()), false));
-            }
-            // Add loop count increment a start of body block
-            ((BlockStmt) whileStmt.getBody()).insertStmt(0,
-                new ExprStmt(new UnaryExpr(new VariableIdentifierExpr(loopCountName),
-                    UnOp.POST_INC)));
-          }
+          handleLoopStmt(whileStmt, false);
           super.visitWhileStmt(whileStmt);
         }
 
         @Override
         public void visitDoStmt(DoStmt doStmt) {
-          if (isTrueLoop(doStmt.getCondition())) {
-            doStmt.setCondition(buildCondition(doStmt.getCondition()));
-            // Do statement always has a block statement, so it's not checked for here
-            // Add loop count increment a start of body block
-            ((BlockStmt) doStmt.getBody()).insertStmt(0,
-                new ExprStmt(new UnaryExpr(new VariableIdentifierExpr(loopCountName),
-                    UnOp.POST_INC)));
-          }
+          handleLoopStmt(doStmt, true);
           super.visitDoStmt(doStmt);
         }
       }.visit(tu);
