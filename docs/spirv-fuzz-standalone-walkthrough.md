@@ -24,7 +24,7 @@ unzip -d SPIRV-Tools SPIRV-Tools.zip
 
 ```bash
 export PATH="$(pwd)/glslang/bin:$(pwd)/SPIRV-Tools/bin:$(pwd)/amber/bin:${PATH}"
-export LD_LIBRARY_PATH="$(pwd)/amber/lib/libvulkan.so:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="$(pwd)/amber/lib:${LD_LIBRARY_PATH}"
 export VK_ICD_FILENAMES="$(pwd)/swiftshader/lib/vk_swiftshader_icd.json"
 ```
 
@@ -359,6 +359,11 @@ spirv-as --preserve-numeric-ids --target-env spv1.0 -o almost_interesting.spv <<
 HERE
 ```
 
+```bash
+# Run the shader.
+./run_shader.sh almost_interesting.spv
+echo bash_kernel: saved image data to: output.png
+```
 
 ```bash
 spirv-fuzz almost_interesting.spv -o fuzzed.spv --donors=donors.txt
@@ -373,6 +378,7 @@ spirv-fuzz almost_interesting.spv -o fuzzed.spv --donors=donors.txt --seed=211
 
 ```bash
 spirv-val fuzzed.spv
+echo $?
 ```
 
 There are 44 transformations in `fuzzed.transformations_json`.
