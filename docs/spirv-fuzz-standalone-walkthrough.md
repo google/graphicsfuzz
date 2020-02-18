@@ -8,7 +8,8 @@ e.g. render an incorrect image.
 
 If you just want to find bugs in Vulkan drivers
 as quickly as possible
-then your best bet is probably to run [gfauto](),
+then your best bet is probably to
+run [gfauto](https://github.com/google/graphicsfuzz/tree/master/gfauto#graphicsfuzz-auto),
 which can use `spirv-fuzz` (as well as other tools) to do continuous fuzzing of
 desktop and Android Vulkan drivers.
 However, `spirv-fuzz` can also be used as a standalone command line tool
@@ -27,7 +28,8 @@ and is suitable for reporting to the driver developers.
 ## Getting the tools
 
 This walkthrough can be run interactively in your browser by
-clicking [here](); you can use Shift+Enter to execute Bash snippets.
+clicking
+[here](https://mybinder.org/v2/gh/google/graphicsfuzz/paul_jupyter_test?filepath=docs%2Fspirv-fuzz-standalone-walkthrough.md); you can use Shift+Enter to execute Bash snippets.
 Alternatively, you can copy and paste the Bash snippets
 into your terminal on a Linux x86 64-bit machine.
 You can also just read it,
