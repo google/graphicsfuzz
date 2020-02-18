@@ -911,8 +911,8 @@ that crashes SwiftShader.
 Thus,
 we can simplify `shrunk.spv` further by removing
 chunks of code,
-_even if this changes the semantics of the shader_ (i.e it might no longer be guaranteed to render red
-on correct Vulkan implementations).
+_even if this changes the semantics of the shader_ (i.e the shader might
+be changed to no longer render red).
 We just have to ensure the shader remains valid
 and still crashes SwiftShader.
 
