@@ -19,8 +19,9 @@ In this walkthrough,
 we will write a simple application (in AmberScript)
 that uses the Vulkan API
 to render a red square.
-We will then run `spirv-fuzz` with our application to find a bug in a Vulkan driver
-and then use the "shrink" mode of `spirv-fuzz` to reduce
+We will then run `spirv-fuzz` to find a bug in a Vulkan driver
+and then use the "shrink" mode of `spirv-fuzz`,
+plus `spirv-reduce`, to reduce
 the bug-inducing input.
 We will end up with a much simpler input that still triggers the bug
 and is suitable for reporting to the driver developers.
@@ -29,7 +30,9 @@ and is suitable for reporting to the driver developers.
 
 This walkthrough can be run interactively in your browser by
 clicking
-[here](https://mybinder.org/v2/gh/google/graphicsfuzz/paul_jupyter_test?filepath=docs%2Fspirv-fuzz-standalone-walkthrough.md); you can use Shift+Enter to execute Bash snippets.
+[here](https://mybinder.org/v2/gh/google/graphicsfuzz/paul_jupyter_test?filepath=docs%2Fspirv-fuzz-standalone-walkthrough.md);
+you can use Shift+Enter to execute the Bash snippets
+and see the output.
 Alternatively, you can copy and paste the Bash snippets
 into your terminal on a Linux x86 64-bit machine.
 You can also just read it,
@@ -59,6 +62,7 @@ suitable for use in our Vulkan program.
 
 * SPIRV-Tools: a suite of tools for SPIR-V files. We will use:
   * `spirv-fuzz`: the fuzzer itself.
+  * `spirv-reduce`: a tool that simplifies SPIR-V by repeatedly removing SPIR-V instructions.
   * `spirv-val`: a validator for SPIR-V that finds issues with your SPIR-V.
   * `spirv-dis`: a SPIR-V disassembler that converts a SPIR-V (which is a binary format) to human-readable assembly text.
   * `spirv-as`: a SPIR-V assembler that converts SPIR-V assembly text back to SPIR-V.
@@ -421,7 +425,7 @@ You can modify and re-execute the snippet above.
 
 The `spirv-fuzz` tool takes
 as input a SPIR-V file,
-applies many _semantics preserving transformations_,
+applies many *semantics preserving transformations*,
 and outputs a transformed SPIR-V file
 that should be more complex than (but otherwise have the same semantics
 as) the original input SPIR-V file.
@@ -432,11 +436,11 @@ as) the original input SPIR-V file.
 Thus,
 using the transformed shader in place of the original should not change
 the rendered image.
-If the image _does_ change, or the Vulkan driver crashes,
+If the image *does* change, or the Vulkan driver crashes,
 then we have found a bug in the Vulkan driver.
 
 > The fact that the transformed shader has the same semantics as the original
-is the key novelty of the _metamorphic testing_ fuzzing approach.
+is the key novelty of the *metamorphic testing* fuzzing approach.
 You can read more about the general approach on the
 [GraphicsFuzz](https://github.com/google/graphicsfuzz) page,
 which includes links to our [papers](https://github.com/google/graphicsfuzz#academic-publications)
@@ -453,7 +457,7 @@ We also don't know what a crash means because the arbitrary SPIR-V file
 might be invalid, and Vulkan drivers are allowed to crash when given
 invalid SPIR-V.
 
-The `spirv-fuzz` tool also takes a list of _donor_ SPIR-V files;
+The `spirv-fuzz` tool also takes a list of *donor* SPIR-V files;
 it can use chunks of code from the donors to make the transformed output file
 more interesting.
 You can also provide a _facts file_ alongside the input SPIR-V file
@@ -522,7 +526,7 @@ finding a bug in our Vulkan driver (SwiftShader) is non-trivial.
 Furthermore,
 because our input shader is very simple
 and we are not using donors nor shader facts,
-we are very unlikely to be able to find a bug in _any_ Vulkan driver.
+we are very unlikely to be able to find a bug in *any* Vulkan driver.
 Instead,
 here is a slightly more interesting shader we made earlier.
 Execute the following snippet to create the shader `almost_interesting.spv`.
@@ -650,7 +654,7 @@ spirv-fuzz almost_interesting.spv -o fuzzed.spv --donors=donors.txt --seed=211
 ./run_shader.sh fuzzed.spv
 ```
 
-You should see the following output:
+You should see output similar to the following:
 
 ```
 ../src/Pipeline/SpirvShader.hpp:991 WARNING: ASSERT(obj.kind == SpirvShader::Object::Kind::Constant)
@@ -662,7 +666,7 @@ Amber segfaulted due to a bug in our Vulkan driver (SwiftShader).
 The `output.png` file was not produced.
 Congratulations! You just found a bug in a Vulkan driver!
 
-...probably. The shader _might_ violate the requirements of the Vulkan or SPIR-V specification,
+...probably. The shader *might* violate the requirements of the Vulkan or SPIR-V specification,
 in which case the issue is with our shader and not the Vulkan driver.
 This can happen if the original shader violates the spec or if there is a bug in `spirv-fuzz`.
 The `spirv-val` tool can validate certain properties of our SPIR-V shader;
@@ -678,7 +682,7 @@ indicating that validation succeeded.
 Thus,
 our shader still might be triggering a driver bug.
 
-> Spoiler: the bug really _is_ in SwiftShader but our point is that,
+> Spoiler: the bug really *is* in SwiftShader but our point is that,
 in general,
 we try to be careful. We do not assume that our tools are bug-free.
 
@@ -702,11 +706,11 @@ shader that still induces the bug.
 We should do this before doing further investigation or reporting the bug
 to the driver developers.
 
-> We (and others) normally use the term _reducing_ or _reduction_ instead of shrinking.
+> We (and others) normally use the term *reducing* or *reduction* instead of shrinking.
 However, with `spirv-fuzz`, we use the term shrinking
 to refer to reducing the list of transformations
-and _reduction_ to refer to
-reducing the SPIR-V shader itself by removing chunks of code (which we will cover
+and *reduction* to refer to
+reducing SPIR-V by just removing chunks of code (which we will cover
 in the next section).
 
 
@@ -817,7 +821,7 @@ The inputs are:
 spirv-fuzz almost_interesting.spv -o shrunk.spv --shrink=fuzzed.transformations -- ./run_shader_expect_segfault.sh
 ```
 
-The shrink mode of `spirv-fuzz` repeatedly tries applying a _subset_ of the transformations (`fuzzed.transformations`)
+The shrink mode of `spirv-fuzz` repeatedly tries applying a *subset* of the transformations `fuzzed.transformations`
 to `almost_interesting.spv`.
 For the `i`th attempt,
 the transformed shader is written to `temp_i.spv` and the interestingness test is invoked (`./run_shader_expect_segfault.sh temp_i.spv`) to see if the shader still triggers the bug.
@@ -854,7 +858,7 @@ shrunk.spv  shrunk.transformations  shrunk.transformations_json
 `shrunk.transformations_json` contains just 3 transformations,
 down from 44 transformations before shrinking. Success!
 
-We can also compare the number of SPIR-V assembly lines:
+We can also compare the number of lines of SPIR-V assembly:
 
 ```bash
 spirv-dis fuzzed.spv --raw-id | wc -l
@@ -887,7 +891,7 @@ Imagine if, instead of crashing,
 the `shrunk.spv` shader rendered green when using SwiftShader
 (due to a bug in SwiftShader).
 In that case,
-the _pair_ of shaders would form a valuable bug report and debugging aid:
+the *pair* of shaders would form a valuable bug report and debugging aid:
 the shaders are almost identical
 except for three small changes that should not change the color
 that is rendered.
@@ -907,7 +911,8 @@ that crashes SwiftShader.
 Thus,
 we can simplify `shrunk.spv` further by removing
 chunks of code,
-_even if this changes the semantics of the shader_ (i.e it may no longer render red).
+_even if this changes the semantics of the shader_ (i.e it might no longer be guaranteed to render red
+on correct Vulkan implementations).
 We just have to ensure the shader remains valid
 and still crashes SwiftShader.
 
@@ -960,7 +965,7 @@ Output:
 ```
 
 We can compare how the shrinking and reduction have affected the
-number of SPIR-V assembly lines:
+number of lines of SPIR-V assembly:
 
 ```bash
 spirv-dis fuzzed.spv --raw-id  | wc -l
