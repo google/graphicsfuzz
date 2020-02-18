@@ -1,6 +1,63 @@
 # `spirv-fuzz` standalone walkthrough
 
-`spirv-fuzz`
+`spirv-fuzz` is a tool that automatically finds bugs
+in Vulkan drivers, specifically the SPIR-V shader compiler component of the driver.
+The result is an input that, when run on the Vulkan driver,
+causes the driver to crash or (more generally) "do the wrong thing";
+e.g. render an incorrect image.
+
+If you just want to find bugs in Vulkan drivers
+then your best bet is probably to run [gfauto](),
+which can use `spirv-fuzz` (as well as other tools) to do continuous fuzzing of
+desktop and Android Vulkan drivers.
+However, `spirv-fuzz` can also be used as a standalone command line tool
+or integrated into other workflows.
+
+In this walkthrough,
+we will run `spirv-fuzz` to find a bug in a Vulkan driver
+and then use the "shrink" mode of `spirv-fuzz` to reduce
+the bug-inducing input.
+We will end up with a much simpler input that still triggers the bug
+and is suitable for reporting to the driver developers.
+
+## Getting the tools
+
+This walkthrough can be run interactively in your browser by
+clicking [here](); you can use Shift+Enter to execute Bash snippets.
+Alternatively, you can copy and paste the Bash snippets
+into your terminal on a Linux x86 64-bit machine.
+You can also just read it,
+but that might be less fun!
+
+The following snippet downloads and extracts
+prebuilt versions of the following tools:
+
+* Amber: a tool that executes AmberScript files. An
+AmberScript file (written in AmberScript) allows you to
+concisely provide
+a list of graphics commands that can be executed on graphics APIs,
+like Vulkan.
+We will use AmberScript to write a simple "Vulkan program"
+that draws a rectangle,
+without having to write thousands of lines of C++.
+
+* SwiftShader: a Vulkan driver that uses your CPU to render
+graphics (no GPU required!).
+
+* Glslang: a tool that compiles shaders
+written in GLSL (the OpenGL Shading Language).
+Shaders are essentially programs that are compiled and run
+on the GPU (or CPU in the case of SwiftShader)
+to render hardware-accelerated graphics.
+We will use Glslang to compile a GLSL shader into SPIR-V
+(the binary intermediate representation used by Vulkan)
+suitable for use in our Vulkan program.
+
+* SPIRV-Tools: a suite of tools for SPIR-V modules. We will use:
+  * `spirv-fuzz`: the fuzzer itself.
+  * `spirv-val`: a validator for SPIR-V that finds statically-checkable issues.
+
+
 
 
 ```bash
@@ -24,6 +81,7 @@ unzip -d SPIRV-Tools SPIRV-Tools.zip
 
 ```bash
 export PATH="$(pwd)/glslang/bin:$(pwd)/SPIRV-Tools/bin:$(pwd)/amber/bin:${PATH}"
+# Note for the curious: this prebuilt Amber comes with a prebuilt Vulkan loader for convenience, which we add to LD_LIBRARY_PATH.
 export LD_LIBRARY_PATH="$(pwd)/amber/lib:${LD_LIBRARY_PATH}"
 export VK_ICD_FILENAMES="$(pwd)/swiftshader/lib/vk_swiftshader_icd.json"
 ```
