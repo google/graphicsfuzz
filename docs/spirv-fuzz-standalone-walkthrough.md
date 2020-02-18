@@ -662,7 +662,7 @@ Congratulations! You just found a bug in a Vulkan driver!
 
 ...probably. The shader _might_ violate the requirements of the Vulkan or SPIR-V specification,
 in which case the issue is with our shader and not the Vulkan driver.
-This can happen if there is a bug in `spirv-fuzz`.
+This can happen if the original shader violates the spec or if there is a bug in `spirv-fuzz`.
 The `spirv-val` tool can validate certain properties of our SPIR-V shader;
 if validation fails, then the shader is definitely the problem (modulo bugs in `spirv-val`).
 
@@ -676,7 +676,7 @@ indicating that validation succeeded.
 Thus,
 our shader still might be triggering a driver bug.
 
-> Spoiler: the shader does indeed trigger a SwiftShader bug but our point is that,
+> Spoiler: the bug really _is_ in SwiftShader but our point is that,
 in general,
 we try to be careful. We do not assume that our tools are bug-free.
 
@@ -703,7 +703,9 @@ to the driver developers.
 > We (and others) normally use the term _reducing_ or _reduction_ instead of shrinking.
 However, with `spirv-fuzz`, we use the term shrinking
 to refer to reducing the list of transformations
-and _reduction_ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+and _reduction_ to refer to
+reducing the SPIR-V shader itself by removing chunks of code (which we will cover
+in the next section).
 
 
 > Note that there are 44 transformations in `fuzzed.transformations_json`;
@@ -870,4 +872,109 @@ In practice, the difference could be much larger.
 
 ## Reducing
 
+Consider the pair of shaders:
 
+* `almost_interesting.spv`: the original, untransformed shader that should render
+red on any correct Vulkan implementation.
+* `shrunk.spv`: a shader that is the same as `almost_interesting.spv` except it has
+three small changes that should not change the semantics of the shader.
+It should render red on
+any correct Vulkan implementation.
+
+Imagine if, instead of crashing,
+the `shrunk.spv` shader rendered green when using SwiftShader
+(due to a bug in SwiftShader).
+In that case,
+the _pair_ of shaders would form a valuable bug report and debugging aid:
+the shaders are almost identical
+except for three small changes that should not change the color
+that is rendered.
+Both shaders should render the same image
+and it is easy for a developer see this,
+even if it is not obvious that the shaders should render red.
+A developer could investigate the three small changes
+and try to understand why they cause the shaders to render different images
+(red vs. green).
+
+In reality,
+our `shrunk.spv` shader causes a crash;
+the fact that it should render the same image as `almost_interesting.spv`
+is not particularly helpful.
+The most useful bug report will typically be the smallest possible shader
+that crashes SwiftShader.
+Thus,
+we can simplify `shrunk.spv` further by removing
+chunks of code,
+_even if this changes the semantics of the shader_ (i.e it may no longer render red).
+We just have to ensure the shader remains valid
+and still crashes SwiftShader.
+
+To do this,
+we can use `spirv-reduce`,
+which repeatedly removes instructions from a SPIR-V file,
+as long as the shader remains valid and still passes the supplied interesting test.
+We can use the same interestingness test as before.
+
+The following snippet executes `spirv-reduce` on `shrunk.spv`:
+
+```bash
+spirv-reduce shrunk.spv -o reduced.spv -- ./run_shader_expect_segfault.sh
+```
+
+Similar to with the shrinking process,
+you should be able to see the temporary shaders:
+
+```bash
+ls temp*
+```
+
+```
+temp_0000.spv  temp_0008.spv  temp_0016.spv  temp_0024.spv  temp_0032.spv  temp_0040.spv  temp_0048.spv  temp_0056.spv
+temp_0001.spv  temp_0009.spv  temp_0017.spv  temp_0025.spv  temp_0033.spv  temp_0041.spv  temp_0049.spv
+temp_0002.spv  temp_0010.spv  temp_0018.spv  temp_0026.spv  temp_0034.spv  temp_0042.spv  temp_0050.spv
+temp_0003.spv  temp_0011.spv  temp_0019.spv  temp_0027.spv  temp_0035.spv  temp_0043.spv  temp_0051.spv
+temp_0004.spv  temp_0012.spv  temp_0020.spv  temp_0028.spv  temp_0036.spv  temp_0044.spv  temp_0052.spv
+temp_0005.spv  temp_0013.spv  temp_0021.spv  temp_0029.spv  temp_0037.spv  temp_0045.spv  temp_0053.spv
+temp_0006.spv  temp_0014.spv  temp_0022.spv  temp_0030.spv  temp_0038.spv  temp_0046.spv  temp_0054.spv
+temp_0007.spv  temp_0015.spv  temp_0023.spv  temp_0031.spv  temp_0039.spv  temp_0047.spv  temp_0055.spv
+```
+
+The final output shader is `reduced.spv`,
+which still passes our interestingness test (i.e. causes a segfault):
+
+```bash
+./run_shader_expect_segfault.sh reduced.spv
+echo $?
+```
+
+Output:
+
+```
+../src/Pipeline/SpirvShader.hpp:991 WARNING: ASSERT(obj.kind == SpirvShader::Object::Kind::Constant)
+
+./run_shader.sh: line 38: 252516 Segmentation fault      amber -d simple.amber -i output.png
+
+0
+```
+
+We can compare how the shrinking and reduction have affected the
+number of SPIR-V assembly lines:
+
+```bash
+spirv-dis fuzzed.spv --raw-id  | wc -l
+spirv-dis shrunk.spv --raw-id  | wc -l
+spirv-dis reduced.spv --raw-id | wc -l
+```
+
+Output:
+
+```
+116
+84
+53
+```
+
+Again, with this small example the difference is ~30 lines each time,
+which is a useful reduction.
+With larger shaders, the difference could be much greater
+and so even more useful.
