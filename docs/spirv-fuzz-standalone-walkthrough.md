@@ -1,12 +1,13 @@
-# `spirv-fuzz` standalone walkthrough
+# Let's find a Vulkan driver bug using `spirv-fuzz`!
 
 `spirv-fuzz` is a tool that automatically finds bugs
 in Vulkan drivers, specifically the SPIR-V shader compiler component of the driver.
 The result is an input that, when run on the Vulkan driver,
-causes the driver to crash or (more generally) "do the wrong thing";
+causes the driver to crash or, more generally, "do the wrong thing";
 e.g. render an incorrect image.
 
 If you just want to find bugs in Vulkan drivers
+as quickly as possible
 then your best bet is probably to run [gfauto](),
 which can use `spirv-fuzz` (as well as other tools) to do continuous fuzzing of
 desktop and Android Vulkan drivers.
@@ -17,7 +18,7 @@ In this walkthrough,
 we will write a simple application (in AmberScript)
 that uses the Vulkan API
 to render a red square.
-We will then run `spirv-fuzz` to find a bug in a Vulkan driver
+We will then run `spirv-fuzz` with our application to find a bug in a Vulkan driver
 and then use the "shrink" mode of `spirv-fuzz` to reduce
 the bug-inducing input.
 We will end up with a much simpler input that still triggers the bug
@@ -37,15 +38,13 @@ prebuilt versions of the following tools:
 
 * Amber: a tool that executes AmberScript files. An
 AmberScript file (written in AmberScript) allows you to
-concisely provide
-a list of graphics commands that can be executed on graphics APIs,
+concisely list graphics commands that will execute on graphics APIs,
 like Vulkan.
 We will use AmberScript to write a simple "Vulkan program"
 that draws a square,
 without having to write thousands of lines of C++.
 
-* SwiftShader: a Vulkan driver that uses your CPU to render
-graphics (no GPU required!).
+* SwiftShader: a Vulkan driver that uses your CPU (no GPU required!).
 
 * `glslangValidator`: a tool that compiles shaders
 written in GLSL (the OpenGL Shading Language).
@@ -58,8 +57,8 @@ suitable for use in our Vulkan program.
 
 * SPIRV-Tools: a suite of tools for SPIR-V files. We will use:
   * `spirv-fuzz`: the fuzzer itself.
-  * `spirv-val`: a validator for SPIR-V that finds issues with your SPIR-V file.
-  * `spirv-dis`: a SPIR-V disassembler that converts a SPIR-V file (which is a binary format) to human-readable assembly text.
+  * `spirv-val`: a validator for SPIR-V that finds issues with your SPIR-V.
+  * `spirv-dis`: a SPIR-V disassembler that converts a SPIR-V (which is a binary format) to human-readable assembly text.
   * `spirv-as`: a SPIR-V assembler that converts SPIR-V assembly text back to SPIR-V.
 
 
@@ -127,7 +126,7 @@ We start by writing a simple Vulkan application (using AmberScript)
 that will render a red square.
 To do that, we first need to write a fragment shader.
 We will write the shader in GLSL (a high-level language)
-and compile it to SPIR-V (a binary intermediate representation for Vulkan).
+and compile it to SPIR-V (a low-level, binary, intermediate representation for Vulkan).
 
 The fragment shader is essentially a program that will run on the graphics device
 (normally your GPU, but in this case SwiftShader)
@@ -150,7 +149,7 @@ void main()
 You do not need to understand all the details.
 The `main` function will be executed for every pixel that is rendered
 and the output is a vector of 4 elements `(1.0, 0.0, 0.0, 1.0)`, where each element represents
-the red, green, blue, and alpha color components respectively (within the range `0.0` to `1.0`).
+the red, green, blue, and alpha color components respectively (each in the range `0.0` to `1.0`).
 In this case, the output from `main` is always the color red.
 
 The following snippet writes our shader to `shader.frag`.
@@ -227,8 +226,8 @@ but you can get an idea of the low-level nature of SPIR-V:
 We could now write a C/C++ application that uses the Vulkan API
 and loads `shader.spv` to render a red square.
 However, this would typically require about 1000 lines of code.
-Instead, we will write an AmberScript file that renders a red square
-using our shader.
+Instead, we will use AmberScript,
+which lets us do same thing more concisely.
 One thing to note is that AmberScript files
 are designed to be self-contained
 so that they can be used as
@@ -325,8 +324,8 @@ We want to be able to run a SPIR-V fragment shader like `shader.spv`
 without having to manually write an AmberScript file each time.
 
 The following snippet creates a Bash script that
-takes a SPIR-V fragment shader as its only command line argument,
-writes out an AmberScript file that embeds the disassembled shader,
+takes a SPIR-V fragment shader file as its only command line argument,
+writes out an AmberScript file that embeds the shader assembly,
 and runs Amber on the AmberScript file,
 writing the rendered image to `output.png`.
 
@@ -419,17 +418,22 @@ You can modify and re-execute the snippet above.
 ## Running `spirv-fuzz` on our shader
 
 The `spirv-fuzz` tool takes
-as input a SPIR-V file
+as input a SPIR-V file,
+applies many _semantics preserving transformations_,
 and outputs a transformed SPIR-V file
-that should be more complex but otherwise have the same semantics
-as the original file.
+that should be more complex than (but otherwise have the same semantics
+as) the original input SPIR-V file.
+
+> An example of one (very) simple transformation that could be applied is: add the following code (expressed as GLSL):
+> * `if(false) { return; }`.
+
 Thus,
 using the transformed shader in place of the original should not change
 the rendered image.
 If the image _does_ change, or the Vulkan driver crashes,
 then we have found a bug in the Vulkan driver.
 
-> The fact that the transformed shader has the same behavior as the original
+> The fact that the transformed shader has the same semantics as the original
 is the key novelty of the _metamorphic testing_ fuzzing approach.
 You can read more about the general approach on the
 [GraphicsFuzz](https://github.com/google/graphicsfuzz) page,
@@ -460,12 +464,33 @@ However, we will not use any donors or facts in this walkthough.
 # Create an empty donors list.
 touch donors.txt
 
-# Run spirv-fuzz to generate a mutated shader "fuzzed.spv".
+# Run spirv-fuzz to generate a transformed shader "fuzzed.spv".
 spirv-fuzz shader.spv -o fuzzed.spv --donors=donors.txt
 ```
 
-The output `fuzzed.spv` SPIR-V file will be different each time.
-You can run the shader using our "run shader" script:
+There should be some output files:
+
+```bash
+ls fuzzed.*
+```
+
+The output files are:
+
+  * `fuzzed.spv`: the transformed SPIR-V file.
+  * `fuzzed.transformations`: the list of semantics preserving transformations that were applied to `shader.spv` to get to `fuzzed.spv`. The file is in a binary (protobuf) format.
+  * `fuzzed.transformations_json`: the same as `fuzzed.transformations` but in a human-readable JSON format.
+
+You can see the transformations that were applied:
+
+```bash
+cat fuzzed.transformations_json
+```
+
+You do not need to understand the encoding of the transformations,
+but know that the list of transformations
+was applied in order to get to `shader.spv`.
+
+You can run the transformed shader using our "run shader" script:
 
 ```bash
 # Run the shader.
@@ -486,6 +511,8 @@ spirv-fuzz shader.spv -o fuzzed.spv --donors=donors.txt
 echo bash_kernel: saved image data to: output.png
 ```
 
+The outputs from `spirv-fuzz` will be different every time.
+
 ## Finding a Vulkan driver bug using `spirv-fuzz`
 
 Unfortunately for this walkthrough (but fortunately for the Vulkan ecosystem),
@@ -495,7 +522,7 @@ because our input shader is very simple
 and we are not using donors nor shader facts,
 we are very unlikely to be able to find a bug in _any_ Vulkan driver.
 Instead,
-here is a slightly more interesting shader I made earlier.
+here is a slightly more interesting shader we made earlier.
 Execute the following snippet to create the shader `almost_interesting.spv`.
 
 
@@ -605,27 +632,100 @@ spirv-fuzz almost_interesting.spv -o fuzzed.spv --donors=donors.txt
 Even if you execute the above snippet hundreds of times, you may not find the bug,
 or you may find a different bug to the one assumed by this walkthrough.
 We can set the random number generator seed to get a deterministic
-result, which will cause always expose the bug.
+result, which will cause `spirv-fuzz` to generate
+a specific shader that exposes the bug.
 
+First, let's remove `output.png`.
+
+```bash
+rm output.png
+```
+
+And now execute the following snippet to find the bug-inducing shader and trigger the bug:
 
 ```bash
 spirv-fuzz almost_interesting.spv -o fuzzed.spv --donors=donors.txt --seed=211
 ./run_shader.sh fuzzed.spv
 ```
 
+You should see the following output:
+
+```
+../src/Pipeline/SpirvShader.hpp:991 WARNING: ASSERT(obj.kind == SpirvShader::Object::Kind::Constant)
+
+./run_shader.sh: line 38: 252516 Segmentation fault      amber -d simple.amber -i output.png
+```
+
+Amber segfaulted due to a bug in our Vulkan driver (SwiftShader).
+The `output.png` file was not produced.
+Congratulations! You just found a bug in a Vulkan driver!
+
+...probably. The shader _might_ violate the requirements of the Vulkan or SPIR-V specification,
+in which case the issue is with our shader and not the Vulkan driver.
+This can happen if there is a bug in `spirv-fuzz`.
+The `spirv-val` tool can validate certain properties of our SPIR-V shader;
+if validation fails, then the shader is definitely the problem (modulo bugs in `spirv-val`).
+
 ```bash
 spirv-val fuzzed.spv
 echo $?
 ```
 
-There are 44 transformations in `fuzzed.transformations_json`.
+You should see an output of `0`, the exit status of `spirv-val`,
+indicating that validation succeeded.
+Thus,
+our shader still might be triggering a driver bug.
 
+> Spoiler: the shader does indeed trigger a SwiftShader bug but our point is that,
+in general,
+we try to be careful. We do not assume that our tools are bug-free.
+
+## Shrinking
+
+In this walkthrough,
+`fuzzed.spv` is a fairly small shader.
+In practice,
+our fuzzed shaders can be very large
+due to the large number of transformations applied,
+nearly all of which add code.
+Trying to investigate/debug the fuzzed shaders
+would be difficult.
+More importantly,
+in most cases,
+only a tiny subset of the transformations
+are needed to get the bug-inducing shader.
+Thus,
+we should "shrink" the list of transformations applied to get a much simpler
+shader that still induces the bug.
+We should do this before doing further investigation or reporting the bug
+to the driver developers.
+
+> We (and others) normally use the term _reducing_ or _reduction_ instead of shrinking.
+However, with `spirv-fuzz`, we use the term shrinking
+to refer to reducing the list of transformations
+and _reduction_ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+
+> Note that there are 44 transformations in `fuzzed.transformations_json`;
+we will see how many are left after shrinking.
+
+To use the shrink mode of `spirv-fuzz`,
+we need a script that can be used to execute a shader
+and that
+gives an exit status of 0 if and only if the shader is still "interesting"; i.e.
+if and only if the shader causes a segfault.
+Unfortunately,
+our shader runner script is close to the opposite of this:
 
 ```bash
 ./run_shader.sh fuzzed.spv
 echo $?
 ```
 
+The output is `139`,
+which is the exit status for a segfault.
+The following snippet creates a modified shader runner, `run_shader_expect_segfault.sh`,
+that exits with a status of `0` if and only if the shader causes a segfault:
 
 
 ```bash
@@ -682,25 +782,92 @@ RUN_SHADER_END
 
 ```
 
-```bash
-chmod +x run_shader_expect_segfault.sh
-```
+Let's see if it works on the bug-inducing shader:
 
 ```bash
+chmod +x run_shader_expect_segfault.sh
+
 ./run_shader_expect_segfault.sh fuzzed.spv
 echo $?
 ```
+
+The output should be `0`. Now let's try the original shader
+that does not trigger a segfault:
 
 ```bash
 ./run_shader_expect_segfault.sh almost_interesting.spv
 echo $?
 ```
 
+The output should be `1`.
+
+We can now run `spirv-fuzz` in its shrink mode.
+The inputs are:
+
+* `almost_interesting.spv`: the original (non-transformed) shader.
+* `fuzzed.transformations`: the list of transformations that produces the bug-inducing shader.
+* `./run_shader_expect_segfault.sh`: the "interestingness test" script that will be invoked by `spirv-fuzz` to determine whether a shader is still "interesting"; i.e. still crashes SwiftShader.
+
+
 ```bash
-spirv-fuzz almost_interesting.spv -o reduced.spv --shrink=fuzzed.transformations -- ./run_shader_expect_segfault.sh
+spirv-fuzz almost_interesting.spv -o shrunk.spv --shrink=fuzzed.transformations -- ./run_shader_expect_segfault.sh
 ```
 
-33 attempts. Only 3 transformations were necessary.
+The shrink mode of `spirv-fuzz` repeatedly tries applying a _subset_ of the transformations (`fuzzed.transformations`)
+to `almost_interesting.spv`.
+For the `i`th attempt,
+the transformed shader is written to `temp_i.spv` and the interestingness test is invoked (`./run_shader_expect_segfault.sh temp_i.spv`) to see if the shader still triggers the bug.
 
+After 33 attempts,
+no further transformations could be removed (without failing the interestingness test),
+so the final shrunk shader is written to `shrunk.spv`.
+
+You should see the temporary shaders:
+
+```bash
+ls temp*
+```
+
+```
+temp_0000.spv  temp_0005.spv  temp_0010.spv  temp_0015.spv  temp_0020.spv  temp_0025.spv  temp_0030.spv
+temp_0001.spv  temp_0006.spv  temp_0011.spv  temp_0016.spv  temp_0021.spv  temp_0026.spv  temp_0031.spv
+temp_0002.spv  temp_0007.spv  temp_0012.spv  temp_0017.spv  temp_0022.spv  temp_0027.spv  temp_0032.spv
+temp_0003.spv  temp_0008.spv  temp_0013.spv  temp_0018.spv  temp_0023.spv  temp_0028.spv  temp_0033.spv
+temp_0004.spv  temp_0009.spv  temp_0014.spv  temp_0019.spv  temp_0024.spv  temp_0029.spv
+```
+
+As with the fuzz mode of `spirv-fuzz`,
+the transformations that were applied to the final shader are also output:
+
+```bash
+ls shrunk.*
+```
+
+```
+shrunk.spv  shrunk.transformations  shrunk.transformations_json
+```
+
+`shrunk.transformations_json` contains just 3 transformations,
+down from 44 transformations before shrinking. Success!
+
+We can also compare the number of SPIR-V assembly lines:
+
+```bash
+spirv-dis fuzzed.spv --raw-id | wc -l
+spirv-dis shrunk.spv --raw-id | wc -l
+```
+
+
+Output:
+
+```
+116
+84
+```
+
+Not a huge difference for this small example, but still worthwhile.
+In practice, the difference could be much larger.
+
+## Reducing
 
 
