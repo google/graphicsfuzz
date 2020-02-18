@@ -28,9 +28,9 @@ and is suitable for reporting to the driver developers.
 
 ## Getting the tools
 
-This walkthrough can be run interactively in your browser by
+This walkthrough can be [run interactively in your browser by
 clicking
-[here](https://mybinder.org/v2/gh/google/graphicsfuzz/paul_jupyter_test?filepath=docs%2Fspirv-fuzz-standalone-walkthrough.md);
+here](https://mybinder.org/v2/gh/google/graphicsfuzz/paul_jupyter_test?filepath=docs%2Fspirv-fuzz-standalone-walkthrough.md);
 you can use Shift+Enter to execute the Bash snippets
 and see the output.
 Alternatively, you can copy and paste the Bash snippets
