@@ -66,30 +66,20 @@ public class GloballyTruncateLoops {
    */
   public static void truncate(ShaderJob shaderJob, int loopLimit, String loopCountName,
                               String loopBoundName) {
+
+    // Consider each shader in the shader job.
     for (TranslationUnit tu : shaderJob.getShaders()) {
-      Declaration firstNonPrecisionDeclaration = null;
-      for (Declaration decl : tu.getTopLevelDeclarations()) {
-        if (decl instanceof PrecisionDeclaration) {
-          continue;
-        }
-        firstNonPrecisionDeclaration = decl;
-        break;
-      }
-      assert firstNonPrecisionDeclaration != null;
-      // Add loop bound variable
-      tu.addDeclarationBefore(new VariablesDeclaration(new QualifiedType(BasicType.INT,
-              Collections.singletonList(TypeQualifier.CONST)),
-              new VariableDeclInfo(loopBoundName, null,
-              new Initializer(new IntConstantExpr(Integer.toString(loopLimit))))),
-          firstNonPrecisionDeclaration);
-      // Add loop count variable
-      tu.addDeclarationBefore(new VariablesDeclaration(BasicType.INT,
-              new VariableDeclInfo(loopCountName, null,
-              new Initializer(new IntConstantExpr("0")))),
-          firstNonPrecisionDeclaration);
-      // Traverse tree for the rest of the transformations
-      new StandardVisitor() {
-        // Converts loop condition from "x" to "(x) && (lc<lb)"
+
+      // Truncate any non-trivial loop in the translation unit, and record whether any truncation
+      // was in fact necessary.
+      final boolean globalDeclarationsAreNecessary = new StandardVisitor() {
+
+        // This field gets set to true when a truncation is applied.  Its final value tells us
+        // whether we need to add global declarations for the loop limiter (we don't if there is no
+        // truncation).
+        private boolean appliedAtLeastOneTruncation = false;
+
+        // Converts loop condition from "x" to "(x) && (lc<lb)".
         private Expr buildCondition(Expr originalCondition) {
           return new BinaryExpr(
               new ParenExpr(originalCondition),
@@ -100,22 +90,25 @@ public class GloballyTruncateLoops {
               BinOp.LAND);
         }
 
-        // Check if the loop condition is just "false"
-        private boolean isTrueLoop(Expr conditionExpr) {
+        // Check if the loop condition is just "false".
+        private boolean isFalseLiteral(Expr conditionExpr) {
           return !(conditionExpr instanceof BoolConstantExpr
               && !((BoolConstantExpr)conditionExpr).getIsTrue());
         }
 
         // Common code for all loop structures
         private void handleLoopStmt(LoopStmt loopStmt, boolean newScope) {
-          if (isTrueLoop(loopStmt.getCondition())) {
+          if (isFalseLiteral(loopStmt.getCondition())) {
+            // We are truncating a loop - record the fact that at least one truncation has been
+            // applied.
+            appliedAtLeastOneTruncation = true;
             loopStmt.setCondition(buildCondition(loopStmt.getCondition()));
-            // Add block statement if it's missing
+            // Add block statement if it's missing.
             if (!(loopStmt.getBody() instanceof BlockStmt)) {
               loopStmt.setBody(new BlockStmt(Collections.singletonList(loopStmt.getBody()),
                   newScope));
             }
-            // Add loop count increment a start of body block
+            // Add loop count increment a start of body block.
             ((BlockStmt) loopStmt.getBody()).insertStmt(0,
                 new ExprStmt(new UnaryExpr(new VariableIdentifierExpr(loopCountName),
                     UnOp.POST_INC)));
@@ -139,7 +132,43 @@ public class GloballyTruncateLoops {
           handleLoopStmt(doStmt, true);
           super.visitDoStmt(doStmt);
         }
-      }.visit(tu);
+
+        private boolean truncate(TranslationUnit tu) {
+          // Traverse the shader, truncating loops as needed, and return true if and only if at
+          // least one loop was truncated.
+          visit(tu);
+          return appliedAtLeastOneTruncation;
+        }
+
+      }.truncate(tu);
+
+      if (globalDeclarationsAreNecessary) {
+        // Some loop was truncated, so we need to declare the global loop limiter variable and loop
+        // bound constant.
+
+        // We want to add the new declarations at the top of the module, but after any leading
+        // precision declarations.
+        Declaration firstNonPrecisionDeclaration = null;
+        for (Declaration decl : tu.getTopLevelDeclarations()) {
+          if (decl instanceof PrecisionDeclaration) {
+            continue;
+          }
+          firstNonPrecisionDeclaration = decl;
+          break;
+        }
+        assert firstNonPrecisionDeclaration != null;
+        // Add loop bound variable.
+        tu.addDeclarationBefore(new VariablesDeclaration(new QualifiedType(BasicType.INT,
+                Arrays.asList(TypeQualifier.CONST)), new VariableDeclInfo(loopBoundName,null,
+                new Initializer(new IntConstantExpr(new Integer(loopLimit).toString())))),
+            firstNonPrecisionDeclaration);
+        // Add loop count variable.
+        tu.addDeclarationBefore(new VariablesDeclaration(BasicType.INT,
+                new VariableDeclInfo(loopCountName,null,
+                    new Initializer(new IntConstantExpr("0")))),
+            firstNonPrecisionDeclaration);
+
+      }
     }
   }
 }
