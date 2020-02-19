@@ -559,7 +559,7 @@ public class WebUi extends HttpServlet {
     htmlAppendLn("<table class='worker-info invisible ui celled compact table'>",
         "<thead><tr><th>Attribute</th><th>Value</th></tr></thead>",
         "<tbody>");
-    for (Map.Entry<String,JsonElement> entry: info.entrySet()) {
+    for (Map.Entry<String, JsonElement> entry: info.entrySet()) {
       htmlAppendLn("<tr><td>", entry.getKey(), "</td><td>");
       JsonElement value = entry.getValue();
       // we consider values are either array of primitives, or just a primitive
@@ -1394,7 +1394,7 @@ public class WebUi extends HttpServlet {
           commands.add("processing/" + worker + "/" + shaderFamily);
           commands.add(WebUiConstants.SHADER_FAMILIES_DIR + "/" + shaderFamily);
           fuzzerServiceManagerProxy.queueCommand("run_shader_family: " + shaderFamily, commands,
-              worker,"processing/" + worker + "/" + shaderFamily + "/command.log");
+              worker, "processing/" + worker + "/" + shaderFamily + "/command.log");
           msg.append(" started successfully!\\n");
         }
       }

@@ -61,13 +61,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
 
   // Flag whether to rename user defined variables and functions.
-  private boolean renameUserDefined = true;
-
-  // The translation unit being upgraded
-  private final TranslationUnit tu;
-
-  // The shading language version to upgrade to.
-  private final ShadingLanguageVersion newVersion;
+  private boolean renameUserDefined;
 
   /*
    * Non-const globals with initializers; move the initialization to start of main().
@@ -96,28 +90,28 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
    * functions work with various samplers.
    */
   private void populateTextureFunctionRenames() {
-    functionRename.put("shadow1D","texture");
-    functionRename.put("shadow2D","texture");
-    functionRename.put("texture1D","texture");
-    functionRename.put("texture2D","texture");
-    functionRename.put("texture3D","texture");
-    functionRename.put("textureCube","texture");
-    functionRename.put("shadow1DProj","textureProj");
-    functionRename.put("shadow2DProj","textureProj");
-    functionRename.put("texture1DProj","textureProj");
-    functionRename.put("texture2DProj","textureProj");
-    functionRename.put("texture3DProj","textureProj");
-    functionRename.put("shadow1DLod","textureLod");
-    functionRename.put("shadow2DLod","textureLod");
-    functionRename.put("texture1DLod","textureLod");
-    functionRename.put("texture2DLod","textureLod");
-    functionRename.put("texture3DLod","textureLod");
-    functionRename.put("textureCubeLod","textureLod");
-    functionRename.put("shadow1DProjLod","textureProjLod");
-    functionRename.put("shadow2DProjLod","textureProjLod");
-    functionRename.put("texture1DProjLod","textureProjLod");
-    functionRename.put("texture2DProjLod","textureProjLod");
-    functionRename.put("texture3DProjLod","textureProjLod");
+    functionRename.put("shadow1D", "texture");
+    functionRename.put("shadow2D", "texture");
+    functionRename.put("texture1D", "texture");
+    functionRename.put("texture2D", "texture");
+    functionRename.put("texture3D", "texture");
+    functionRename.put("textureCube", "texture");
+    functionRename.put("shadow1DProj", "textureProj");
+    functionRename.put("shadow2DProj", "textureProj");
+    functionRename.put("texture1DProj", "textureProj");
+    functionRename.put("texture2DProj", "textureProj");
+    functionRename.put("texture3DProj", "textureProj");
+    functionRename.put("shadow1DLod", "textureLod");
+    functionRename.put("shadow2DLod", "textureLod");
+    functionRename.put("texture1DLod", "textureLod");
+    functionRename.put("texture2DLod", "textureLod");
+    functionRename.put("texture3DLod", "textureLod");
+    functionRename.put("textureCubeLod", "textureLod");
+    functionRename.put("shadow1DProjLod", "textureProjLod");
+    functionRename.put("shadow2DProjLod", "textureProjLod");
+    functionRename.put("texture1DProjLod", "textureProjLod");
+    functionRename.put("texture2DProjLod", "textureProjLod");
+    functionRename.put("texture3DProjLod", "textureProjLod");
   }
 
   private static Namespace parse(String[] args) throws ArgumentParserException {
@@ -176,8 +170,6 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
 
   private UpgradeShadingLanguageVersion(TranslationUnit tu, ShadingLanguageVersion newVersion,
                                         boolean renameUserDefined) {
-    this.tu = tu;
-    this.newVersion = newVersion;
     this.renameUserDefined = renameUserDefined;
     if (newVersion != ShadingLanguageVersion.ESSL_310) {
       throw new RuntimeException("Only upgrading to ESSL 310 supported at present.");

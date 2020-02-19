@@ -43,6 +43,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.util.Arrays;
+import java.util.Collections;
 
 public class GloballyTruncateLoops {
 
@@ -77,8 +78,9 @@ public class GloballyTruncateLoops {
       assert firstNonPrecisionDeclaration != null;
       // Add loop bound variable
       tu.addDeclarationBefore(new VariablesDeclaration(new QualifiedType(BasicType.INT,
-              Arrays.asList(TypeQualifier.CONST)), new VariableDeclInfo(loopBoundName, null,
-              new Initializer(new IntConstantExpr(new Integer(loopLimit).toString())))),
+              Collections.singletonList(TypeQualifier.CONST)),
+              new VariableDeclInfo(loopBoundName, null,
+              new Initializer(new IntConstantExpr(Integer.toString(loopLimit))))),
           firstNonPrecisionDeclaration);
       // Add loop count variable
       tu.addDeclarationBefore(new VariablesDeclaration(BasicType.INT,
@@ -110,7 +112,8 @@ public class GloballyTruncateLoops {
             loopStmt.setCondition(buildCondition(loopStmt.getCondition()));
             // Add block statement if it's missing
             if (!(loopStmt.getBody() instanceof BlockStmt)) {
-              loopStmt.setBody(new BlockStmt(Arrays.asList(loopStmt.getBody()), newScope));
+              loopStmt.setBody(new BlockStmt(Collections.singletonList(loopStmt.getBody()),
+                  newScope));
             }
             // Add loop count increment a start of body block
             ((BlockStmt) loopStmt.getBody()).insertStmt(0,
