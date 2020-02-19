@@ -25,10 +25,7 @@ import org.junit.Test;
 
 public class GloballyTruncateLoopsTest {
 
-  // TODO(https://github.com/google/graphicsfuzz/issues/866) Enable once global loop limiting logic
-  //  is implemented.
   @Test
-  @Ignore
   public void basicTest() throws Exception {
 
     final String shader = "#version 310 es\n"
@@ -60,7 +57,7 @@ public class GloballyTruncateLoopsTest {
         new PipelineInfo(), ParseHelper.parse(shader, ShaderKind.VERTEX),
         ParseHelper.parse(shader, ShaderKind.FRAGMENT));
 
-    GloballyTruncateLoops.truncate(shaderJob, 100, "LOOP_COUNT", "LOOP_LIMIT");
+    GloballyTruncateLoops.truncate(shaderJob, 100, "LOOP_COUNT", "LOOP_BOUND");
 
     final String expectedShader = "#version 310 es\n"
         + "const int LOOP_BOUND = 100;\n"
