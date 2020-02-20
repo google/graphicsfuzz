@@ -43,10 +43,10 @@ import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
-import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ListConcat;
+import com.graphicsfuzz.common.util.MakeArrayAccessesInBounds;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -58,7 +58,6 @@ import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.transformation.donation.DonationContext;
 import com.graphicsfuzz.generator.transformation.donation.DonationContextFinder;
 import com.graphicsfuzz.generator.transformation.donation.IncompatibleDonorException;
-import com.graphicsfuzz.generator.transformation.donation.MakeArrayAccessesInBounds;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -128,9 +127,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
   private TranslationUnit prepareTranslationUnit(File donorFile, IRandom generator)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final TranslationUnit tu = ParseHelper.parse(donorFile);
-    final Typer typer = new Typer(tu);
     // To avoid undefined behaviours, make all array access in bounds for every donor.
-    MakeArrayAccessesInBounds.makeInBounds(tu, typer, tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     addPrefixes(tu, getDeclaredFunctionNames(tu));
     // Add prefixed versions of these builtins, in case they are used.
     // Use explicit precision qualifier to avoid introducing errors if there are no float precision

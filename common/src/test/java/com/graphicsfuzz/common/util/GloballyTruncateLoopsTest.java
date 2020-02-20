@@ -20,7 +20,6 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.util.Optional;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class GloballyTruncateLoopsTest {
@@ -94,6 +93,30 @@ public class GloballyTruncateLoopsTest {
 
     for (TranslationUnit tu : shaderJob.getShaders()) {
       CompareAsts.assertEqualAsts(expectedShader, tu);
+    }
+
+  }
+
+  @Test
+  public void doNotAddDeclarationsIfNothingToTruncate() throws Exception {
+
+    // If no loop truncation is required, the loop bound and loop count declarations
+    // should not be emitted.
+
+    final String shader = "#version 310 es\n"
+        + "void main() {\n"
+        + "  do {\n"
+        + "  } while(false);\n"
+        + "}\n";
+
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        new PipelineInfo(), ParseHelper.parse(shader, ShaderKind.VERTEX),
+        ParseHelper.parse(shader, ShaderKind.FRAGMENT));
+
+    GloballyTruncateLoops.truncate(shaderJob, 100, "LOOP_COUNT", "LOOP_BOUND");
+
+    for (TranslationUnit tu : shaderJob.getShaders()) {
+      CompareAsts.assertEqualAsts(shader, tu);
     }
 
   }
