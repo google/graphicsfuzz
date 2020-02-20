@@ -235,7 +235,7 @@ We could now write a C/C++ application that uses the Vulkan API
 and loads `shader.spv` to render a red square.
 However, this would typically require about 1000 lines of code.
 Instead, we will use AmberScript,
-which lets us do same thing more concisely.
+which lets us do the same thing more concisely.
 One thing to note is that AmberScript files
 are designed to be self-contained
 so that they can be used as
