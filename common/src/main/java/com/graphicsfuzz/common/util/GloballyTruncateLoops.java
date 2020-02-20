@@ -159,12 +159,12 @@ public class GloballyTruncateLoops {
         assert firstNonPrecisionDeclaration != null;
         // Add loop bound variable.
         tu.addDeclarationBefore(new VariablesDeclaration(new QualifiedType(BasicType.INT,
-                Arrays.asList(TypeQualifier.CONST)), new VariableDeclInfo(loopBoundName,null,
+                Arrays.asList(TypeQualifier.CONST)), new VariableDeclInfo(loopBoundName, null,
                 new Initializer(new IntConstantExpr(new Integer(loopLimit).toString())))),
             firstNonPrecisionDeclaration);
         // Add loop count variable.
         tu.addDeclarationBefore(new VariablesDeclaration(BasicType.INT,
-                new VariableDeclInfo(loopCountName,null,
+                new VariableDeclInfo(loopCountName, null,
                     new Initializer(new IntConstantExpr("0")))),
             firstNonPrecisionDeclaration);
 
