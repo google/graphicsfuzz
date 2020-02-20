@@ -463,26 +463,20 @@ public class ReductionDriverTest {
 
   @Test
   public void testVertexShaderIsCarriedThroughReduction() throws Exception {
-    String frag = "void main() {"
-        + "  int shouldBeRemoved;"
-        + "}";
-    String vert = "void main() {"
-        + "  int shouldNotBeRemoved;"
-        + "}";
+    String frag = "void main() {\n"
+        + "  int shouldBeRemoved = 1;\n"
+        + "}\n";
+    String vert = "void main() {\n"
+        + "  int shouldNotBeRemoved = 1;\n"
+        + "}\n";
     String json = "{ }";
-    final IRandom generator = new RandomWrapper(0);
 
-    final IFileJudge checkVertexShader = new IFileJudge() {
-      @Override
-      public boolean isInteresting(
-          File shaderJobFile,
-          File shaderResultFileOutput) throws FileJudgeException {
-        try {
-          String vertexContents = fileOps.getShaderContents(shaderJobFile, ShaderKind.VERTEX);
-          return vertexContents.contains("shouldNotBeRemoved");
-        } catch (IOException e) {
-          throw new FileJudgeException(e);
-        }
+    final IFileJudge checkVertexShader = (shaderJobFile, shaderResultFileOutput) -> {
+      try {
+        String vertexContents = fileOps.getShaderContents(shaderJobFile, ShaderKind.VERTEX);
+        return vertexContents.contains("shouldNotBeRemoved");
+      } catch (IOException e) {
+        throw new FileJudgeException(e);
       }
     };
 
@@ -496,12 +490,12 @@ public class ReductionDriverTest {
 
   @Test
   public void testReductionOfVertexShader() throws Exception {
-    String frag = "void main() {"
-        + "  int shouldNotBeRemoved;"
-        + "}";
-    String vert = "void main() {"
-        + "  int shouldBeRemoved;"
-        + "}";
+    String frag = "void main() {\n"
+        + "  int shouldNotBeRemoved = 1;\n"
+        + "}\n";
+    String vert = "void main() {\n"
+        + "  int shouldBeRemoved = 1;\n"
+        + "}\n";
     String json = "{ }";
     final IRandom generator = new RandomWrapper(0);
 
