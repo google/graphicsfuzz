@@ -28,10 +28,12 @@ and is suitable for reporting to the driver developers.
 
 ## Getting the tools
 
-This walkthrough can be [run interactively in your browser by
+
+[![Binder](https://mybinder.org/badge_logo.svg) This walkthrough can be run interactively in your browser by
 clicking
-here](https://mybinder.org/v2/gh/google/graphicsfuzz/paul_jupyter_test?filepath=docs%2Fspirv-fuzz-standalone-walkthrough.md);
-you can use Shift+Enter to execute the Bash snippets
+here](https://mybinder.org/v2/gh/google/graphicsfuzz/master?filepath=docs%2Fspirv-fuzz-standalone-walkthrough.md).
+
+You can use Shift+Enter to execute the Bash snippets
 and see the output.
 Alternatively, you can copy and paste the Bash snippets
 into your terminal on a Linux x86 64-bit machine.
@@ -41,7 +43,7 @@ but that might be less fun!
 The following snippet downloads and extracts
 prebuilt versions of the following tools:
 
-* Amber: a tool that executes AmberScript files. An
+* [Amber](https://github.com/google/amber): a tool that executes AmberScript files. An
 AmberScript file (written in AmberScript) allows you to
 concisely list graphics commands that will execute on graphics APIs,
 like Vulkan.
@@ -49,9 +51,9 @@ We will use AmberScript to write a simple "Vulkan program"
 that draws a square,
 without having to write thousands of lines of C++.
 
-* SwiftShader: a Vulkan driver that uses your CPU (no GPU required!).
+* [SwiftShader](https://github.com/google/swiftshader): a Vulkan driver that uses your CPU (no GPU required!).
 
-* `glslangValidator`: a tool that compiles shaders
+* [glslangValidator](https://github.com/KhronosGroup/glslang): a tool that compiles shaders
 written in GLSL (the OpenGL Shading Language).
 Shaders are essentially programs that are compiled and run
 on the GPU (or CPU in the case of SwiftShader)
@@ -60,10 +62,10 @@ We will use `glslangValidator` to compile a GLSL shader into SPIR-V
 (the binary intermediate representation used by Vulkan)
 suitable for use in our Vulkan program.
 
-* SPIRV-Tools: a suite of tools for SPIR-V files. We will use:
+* [SPIRV-Tools](https://github.com/KhronosGroup/SPIRV-Tools): a suite of tools for SPIR-V files. We will use:
   * `spirv-fuzz`: the fuzzer itself.
   * `spirv-reduce`: a tool that simplifies SPIR-V by repeatedly removing SPIR-V instructions.
-  * `spirv-val`: a validator for SPIR-V that finds issues with your SPIR-V.
+  * `spirv-val`: a validator that finds issues with your SPIR-V.
   * `spirv-dis`: a SPIR-V disassembler that converts a SPIR-V (which is a binary format) to human-readable assembly text.
   * `spirv-as`: a SPIR-V assembler that converts SPIR-V assembly text back to SPIR-V.
 
