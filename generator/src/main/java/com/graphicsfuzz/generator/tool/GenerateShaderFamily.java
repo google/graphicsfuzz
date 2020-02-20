@@ -283,7 +283,7 @@ public class GenerateShaderFamily {
     infoLog.addProperty("seed", generator.getDescription());
 
     // Pretty-print the info log.
-    FileUtils.writeStringToFile(new File(outputDir,"infolog.json"),
+    FileUtils.writeStringToFile(new File(outputDir, "infolog.json"),
         new GsonBuilder().setPrettyPrinting().create()
             .toJson(infoLog), StandardCharsets.UTF_8);
 
