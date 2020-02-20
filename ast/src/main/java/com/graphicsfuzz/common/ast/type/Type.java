@@ -18,16 +18,26 @@ package com.graphicsfuzz.common.ast.type;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.typing.Scope;
 import java.util.List;
+import java.util.Optional;
 
 public abstract class Type implements IAstNode {
 
   @Override
   public abstract Type clone();
 
-  public abstract boolean hasCanonicalConstant();
+  public abstract boolean hasCanonicalConstant(Optional<Scope> scope);
 
-  public abstract Expr getCanonicalConstant();
+  public final boolean hasCanonicalConstant() {
+    return hasCanonicalConstant(Optional.empty());
+  }
+
+  public abstract Expr getCanonicalConstant(Optional<Scope> scope);
+
+  public final Expr getCanonicalConstant() {
+    return getCanonicalConstant(Optional.empty());
+  }
 
   public abstract Type getWithoutQualifiers();
 

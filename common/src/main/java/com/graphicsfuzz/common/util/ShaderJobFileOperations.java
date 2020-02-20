@@ -321,7 +321,7 @@ public class ShaderJobFileOperations {
   }
 
   /**
-   * This the given shaderJob a compute shader job?
+   * Is the given shaderJob a compute shader job?
    * @param shaderJobFile A shader job to check.
    * @return true if and only if this is a compute shader job.
    */

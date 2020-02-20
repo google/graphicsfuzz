@@ -23,9 +23,11 @@ import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import com.graphicsfuzz.common.typing.Scope;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class BasicType extends BuiltinType {
 
@@ -146,12 +148,12 @@ public class BasicType extends BuiltinType {
   }
 
   @Override
-  public boolean hasCanonicalConstant() {
+  public boolean hasCanonicalConstant(Optional<Scope> scope) {
     return true;
   }
 
   @Override
-  public Expr getCanonicalConstant() {
+  public Expr getCanonicalConstant(Optional<Scope> scope) {
     if (this == FLOAT) {
       return new FloatConstantExpr("1.0");
     }
@@ -164,7 +166,8 @@ public class BasicType extends BuiltinType {
     if (this == BOOL) {
       return new BoolConstantExpr(true);
     }
-    return new TypeConstructorExpr(toString().toString(), getElementType().getCanonicalConstant());
+    return new TypeConstructorExpr(toString(),
+        getElementType().getCanonicalConstant(scope));
   }
 
   public BasicType getElementType() {
