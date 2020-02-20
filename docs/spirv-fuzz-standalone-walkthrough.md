@@ -6,7 +6,7 @@ The result is an input that, when run on the Vulkan driver,
 causes the driver to crash or, more generally, "do the wrong thing";
 e.g. render an incorrect image.
 
-If you just want to find bugs in Vulkan drivers
+> If you just want to find bugs in Vulkan drivers
 as quickly as possible
 then your best bet is probably to
 run [gfauto](https://github.com/google/graphicsfuzz/tree/master/gfauto#graphicsfuzz-auto),
