@@ -132,7 +132,7 @@ public class ExprToConstantReductionOpportunitiesTest {
         + "  mat4x3(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0);\n"
         + "  mat4x4(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, "
              + "130.0, 140.0, 150.0, 160.0);\n"
-        + "  S(6.0, 2.0);\n"
+        + "  S(6, 2.0);\n"
         + "}";
     final String expected = "#version 310 es\n"
         + "struct S {\n"
@@ -165,7 +165,7 @@ public class ExprToConstantReductionOpportunitiesTest {
         + "  mat4x2(1.0);\n"
         + "  mat4x3(1.0);\n"
         + "  mat4(1.0);\n"
-        + "  S(1.0, 1.0);\n"
+        + "  S(1, 1.0);\n"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),

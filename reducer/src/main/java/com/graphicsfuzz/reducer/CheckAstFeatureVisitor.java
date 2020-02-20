@@ -73,6 +73,9 @@ public abstract class CheckAstFeatureVisitor extends ScopeTrackingVisitor {
    * Use this method to register that the feature of interest has been found.
    */
   protected void trigger() {
-    this.triggerFunction = Optional.of(getEnclosingFunction());
+    if (!atGlobalScope()) {
+      // Only set the trigger function if we are in some function.
+      this.triggerFunction = Optional.of(getEnclosingFunction());
+    }
   }
 }
