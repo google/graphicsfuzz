@@ -18,10 +18,12 @@ package com.graphicsfuzz.common.ast.type;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import com.graphicsfuzz.common.typing.Scope;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -164,13 +166,13 @@ public class QualifiedType extends Type {
   }
 
   @Override
-  public boolean hasCanonicalConstant() {
-    return targetType.hasCanonicalConstant();
+  public boolean hasCanonicalConstant(Optional<Scope> scope) {
+    return targetType.hasCanonicalConstant(scope);
   }
 
   @Override
-  public Expr getCanonicalConstant() {
-    return targetType.getCanonicalConstant();
+  public Expr getCanonicalConstant(Optional<Scope> scope) {
+    return targetType.getCanonicalConstant(scope);
   }
 
   @Override

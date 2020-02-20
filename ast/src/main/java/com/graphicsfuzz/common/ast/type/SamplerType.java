@@ -18,6 +18,8 @@ package com.graphicsfuzz.common.ast.type;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import com.graphicsfuzz.common.typing.Scope;
+import java.util.Optional;
 
 public class SamplerType extends BuiltinType {
 
@@ -197,13 +199,13 @@ public class SamplerType extends BuiltinType {
   }
 
   @Override
-  public Expr getCanonicalConstant() {
-    assert !hasCanonicalConstant();
+  public Expr getCanonicalConstant(Optional<Scope> scope) {
+    assert !hasCanonicalConstant(scope);
     throw new RuntimeException("No canonical constant for " + this);
   }
 
   @Override
-  public boolean hasCanonicalConstant() {
+  public boolean hasCanonicalConstant(Optional<Scope> scope) {
     return false;
   }
 
