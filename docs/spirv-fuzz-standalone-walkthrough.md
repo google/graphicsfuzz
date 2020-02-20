@@ -309,7 +309,7 @@ amber -d simple.amber -i output.png
 
 # If you are running this walkthrough in your browser using Jupyter, the
 # following will display the image.
-# Otherwise, open output.png in your editor of choice.
+# Otherwise, open output.png in your image viewer of choice.
 echo bash_kernel: saved image data to: output.png
 ```
 
