@@ -174,7 +174,7 @@ public class Fuzzer {
     }
     if (targetType instanceof ArrayType) {
       // TODO: we should use in-scope variables and functions to make arrays
-      if (!shadingLanguageVersion.restrictedArrayIndexing()) {
+      if (shadingLanguageVersion.supportedArrayConstructors()) {
         ArrayType arrayType = (ArrayType) targetType;
         List<Expr> args = new ArrayList<>();
         for (int i = 0; i < arrayType.getArrayInfo().getConstantSize(); i++) {

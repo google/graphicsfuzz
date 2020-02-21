@@ -31,6 +31,11 @@ final class Essl300 extends CompositeShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedArrayConstructors() {
+    return true;
+  }
+
+  @Override
   public boolean restrictedForLoops() {
     return false;
   }

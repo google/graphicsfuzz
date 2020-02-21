@@ -31,6 +31,11 @@ final class Glsl120 extends CompositeShadingLanguageVersion {
   }
 
   @Override
+  public boolean supportedArrayConstructors() {
+    return true;
+  }
+
+  @Override
   public boolean supportedMatrixCompMultNonSquare() {
     return true;
   }

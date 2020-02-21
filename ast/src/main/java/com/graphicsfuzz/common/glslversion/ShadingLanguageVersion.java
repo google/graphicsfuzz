@@ -151,7 +151,11 @@ public interface ShadingLanguageVersion {
 
   boolean isWebGl();
 
-  boolean restrictedArrayIndexing();
+  /**
+   * GLSL versions 1.2+ and ESSL versions 3.0+ support array constructors.
+   * @return true if and only if array constructors are supported.
+   */
+  boolean supportedArrayConstructors();
 
   boolean restrictedForLoops();
 
