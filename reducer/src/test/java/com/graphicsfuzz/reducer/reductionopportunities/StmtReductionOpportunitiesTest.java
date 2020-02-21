@@ -370,6 +370,47 @@ public class StmtReductionOpportunitiesTest {
   }
 
   @Test
+  public void testRemoveNonVoidDeadReturn() throws Exception {
+    // The return in the dead conditional is a candidate for removal.
+    final String program = "int foo() {\n"
+        + "  if ( " + Constants.GLF_DEAD + "(false)) {\n"
+        + "    return 0;\n"
+        + "  }\n"
+        + "  {\n"
+        + "    return 0;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected1 = "int foo() {\n"
+        + "  if ( " + Constants.GLF_DEAD + "(false)) {\n"
+        + "  }\n"
+        + "  {\n"
+        + "    return 0;\n"
+        + "  }\n"
+        + "}\n";
+    final String expected2 = "int foo() {\n"
+        + "  {\n"
+        + "    return 0;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final ReducerContext context = new ReducerContext(true, ShadingLanguageVersion.ESSL_300,
+        new RandomWrapper(0), new IdGenerator());
+    final ShaderJob shaderJob = MakeShaderJobFromFragmentShader.make(tu);
+    List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
+        shaderJob,
+        context);
+    assertEquals(2, ops.size());
+    ops.get(1).applyReduction();
+    CompareAsts.assertEqualAsts(expected1, tu);
+    ops.get(0).applyReduction();
+    CompareAsts.assertEqualAsts(expected2, tu);
+    ops = StmtReductionOpportunities.findOpportunities(
+        shaderJob,
+        context);
+    assertTrue(ops.isEmpty());
+  }
+
+  @Test
   public void testDoNotRemoveReturnThatWouldChangeSemantics() throws Exception {
     final String program = "layout(location = 0) out vec4 color;\n"
         + "void main() {\n"
