@@ -12,11 +12,14 @@ then your best bet is probably to
 run [gfauto](https://github.com/google/graphicsfuzz/tree/master/gfauto#graphicsfuzz-auto),
 which can use `spirv-fuzz` (as well as other tools) to do continuous fuzzing of
 desktop and Android Vulkan drivers.
-However, `spirv-fuzz` can also be used as a standalone command line tool
-or integrated into other workflows.
+However,
+this walkthrough explores using `spirv-fuzz` and `spirv-reduce`
+as standalone command line tools.
+As well as being a supported use-case,
+this also shows what is going on behind-the-scenes when you use `gfauto`.
 
 In this walkthrough,
-we will write a simple application (in AmberScript)
+we will write a simple application (in [AmberScript](https://github.com/google/amber/blob/master/docs/amber_script.md))
 that uses the Vulkan API
 to render a red square.
 We will then run `spirv-fuzz` to find a bug in a Vulkan driver
@@ -44,12 +47,12 @@ The following snippet downloads and extracts
 prebuilt versions of the following tools:
 
 * [Amber](https://github.com/google/amber): a tool that executes AmberScript files. An
-AmberScript file (written in AmberScript) allows you to
+AmberScript file (written in [AmberScript](https://github.com/google/amber/blob/master/docs/amber_script.md)) allows you to
 concisely list graphics commands that will execute on graphics APIs,
 like Vulkan.
 We will use AmberScript to write a simple "Vulkan program"
 that draws a square,
-without having to write thousands of lines of C++.
+without having to write ~1000 lines of C++.
 
 * [SwiftShader](https://github.com/google/swiftshader): a Vulkan driver that uses your CPU (no GPU required!).
 
@@ -154,8 +157,8 @@ void main()
 }
 ```
 
-You do not need to understand all the details.
-The `main` function will be executed for every pixel that is rendered
+You do not need to understand all the details, but in brief:
+the `main` function will be executed for every pixel that is rendered
 and the output is a vector of 4 elements `(1.0, 0.0, 0.0, 1.0)`, where each element represents
 the red, green, blue, and alpha color components respectively (each in the range `0.0` to `1.0`).
 In this case, the output from `main` is always the color red.
@@ -224,7 +227,7 @@ The output should be:
 ```
 
 You do not need to try to understand all of the SPIR-V assembly,
-but you can get an idea of the low-level nature of SPIR-V:
+but you can get an idea of the low-level nature of SPIR-V; for example:
 
 * The `%4 = OpFunction %2 None %3` instruction is the `main` function entry point.
 * The `OpStore %9 %12` instruction writes the color red (`%12`) to the output variable (`%9`).
@@ -233,7 +236,7 @@ but you can get an idea of the low-level nature of SPIR-V:
 
 We could now write a C/C++ application that uses the Vulkan API
 and loads `shader.spv` to render a red square.
-However, this would typically require about 1000 lines of code.
+However, this would typically require ~1000 lines of code.
 Instead, we will use AmberScript,
 which lets us do the same thing more concisely.
 One thing to note is that AmberScript files
@@ -987,3 +990,30 @@ Again, with this small example the difference is ~30 lines each time,
 which is a useful reduction.
 With larger shaders, the difference could be much greater
 and so even more useful.
+
+## Conclusion
+
+In this walkthrough,
+we used `spirv-fuzz` to find a bug in a Vulkan driver (SwiftShader)
+and used the shrink mode of `spirv-fuzz`,
+plus `spirv-reduce`, to reduce
+the bug-inducing input to
+a much simpler input that still triggers the bug
+and is suitable for reporting to the driver developers.
+
+We do _not_ wish to imply that SwiftShader's shader compiler
+is full of bugs; on the contrary,
+we are happy to report that it is
+hard to find crash bugs in the latest builds of SwiftShader using our fuzzers.
+This is one of the reasons why the walkthrough uses a shader that we prepared in advance;
+the other reason is it avoids having to go into details about
+donor shaders and shader facts,
+which _were_ used to find the example bug originally.
+
+As hinted earlier,
+if you wish to try fuzzing some Vulkan drivers,
+the best way is to
+use [gfauto](https://github.com/google/graphicsfuzz/tree/master/gfauto#graphicsfuzz-auto),
+which uses both [glsl-fuzz](https://github.com/google/graphicsfuzz#glsl-fuzz) and `spirv-fuzz` (and other tools) to do continuous fuzzing of
+desktop and Android Vulkan drivers.
+
