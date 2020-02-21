@@ -38,7 +38,7 @@ abstract class SimplifyExprReductionOpportunities
 
   private boolean inLiveInjectedStmtOrDeclaration;
 
-  // Tracks whether we are visiting the components of a loop limiter's declaration (Which includes
+  // Tracks whether we are visiting the components of a loop limiter's declaration (which includes
   // its initializer).  We do not wish to mess with these.
   private boolean inLoopLimiterVariableDeclInfo;
 

@@ -99,6 +99,24 @@ public class ExprToConstantReductionOpportunitiesTest {
   }
 
   @Test
+  public void testSwitchMultipleCases() throws Exception {
+    final String program = "#version 310 es\n"
+        + "void main() {\n"
+        + "  switch(1) {\n"
+        + "    case 1:\n"
+        + "    case 2:\n"
+        + "    case 3:\n"
+        + "      1;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(true, ShadingLanguageVersion.ESSL_310, new RandomWrapper(0),
+            new IdGenerator()));
+    assertEquals(0, ops.size());
+  }
+
+  @Test
   public void testSimplifyLiterals() throws Exception {
     final String program = "#version 310 es\n"
         + "struct S {\n"
