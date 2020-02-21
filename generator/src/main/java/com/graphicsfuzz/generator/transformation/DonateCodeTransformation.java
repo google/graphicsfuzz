@@ -31,7 +31,6 @@ import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
@@ -741,12 +740,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
   }
 
   Type dropQualifiersThatCannotBeUsedForLocalVariable(Type type) {
-    if (type instanceof ArrayType) {
-      return new ArrayType(
-          dropQualifiersThatCannotBeUsedForLocalVariable(((ArrayType) type).getBaseType()),
-          ((ArrayType) type).getArrayInfo());
-    }
-
     if (!(type instanceof QualifiedType)) {
       return type;
     }
@@ -776,16 +769,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
   String addPrefix(String name) {
     return getPrefix() + translationUnitCount + name;
-  }
-
-  boolean typeRefersToUniform(Type type) {
-    if (type.hasQualifier(TypeQualifier.UNIFORM)) {
-      return true;
-    }
-    if (!(type.getWithoutQualifiers() instanceof ArrayType)) {
-      return false;
-    }
-    return typeRefersToUniform(((ArrayType) type.getWithoutQualifiers()).getBaseType());
   }
 
 }

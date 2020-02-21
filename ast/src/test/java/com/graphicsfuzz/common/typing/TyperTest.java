@@ -21,11 +21,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -39,11 +42,14 @@ import com.graphicsfuzz.common.ast.expr.TernaryExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -683,6 +689,32 @@ public class TyperTest {
         }
       }
     }.visit(tu);
+  }
+
+  @Test
+  public void testConstArrayCorrectlyTyped() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 310 es\n"
+        + "int main() {\n"
+        + "  const int A[2] = int[2](1, 2);\n"
+        + "  A;\n"
+        + "}\n");
+    new NullCheckTyper(tu) {
+      @Override
+      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        super.visitVariableIdentifierExpr(variableIdentifierExpr);
+        assert(variableIdentifierExpr.getName().equals("A"));
+        final Type type = lookupType(variableIdentifierExpr);
+        assertTrue(type.hasQualifier(TypeQualifier.CONST));
+        assertTrue(type.getWithoutQualifiers() instanceof ArrayType);
+        final ArrayType withoutQualifiers = (ArrayType) type.getWithoutQualifiers();
+        assertSame(withoutQualifiers.getBaseType(), BasicType.INT);
+        try {
+          assertEquals(2, withoutQualifiers.getArrayInfo().getConstantSize().intValue());
+        } catch (UnsupportedLanguageFeatureException exception) {
+          fail();
+        }
+      }
+    };
   }
 
   private void checkComputeShaderBuiltin(String builtin, String builtinConstant, BasicType baseType,

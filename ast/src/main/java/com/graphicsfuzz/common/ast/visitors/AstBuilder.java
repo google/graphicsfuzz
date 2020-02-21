@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.common.ast.visitors;
 
-import com.graphicsfuzz.common.ast.IAstNode;
-import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
@@ -555,8 +553,11 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         if (declarators.struct_declarator().array_specifier() == null) {
           fieldTypes.addFirst(baseType);
         } else {
-          fieldTypes.addFirst(new ArrayType(baseType,
-              getArrayInfo(declarators.struct_declarator().array_specifier())));
+          final ArrayType arrayType = new ArrayType(baseType.getWithoutQualifiers(),
+              getArrayInfo(declarators.struct_declarator().array_specifier()));
+          fieldTypes.addFirst(baseType instanceof QualifiedType
+              ? new QualifiedType(arrayType, ((QualifiedType) baseType).getQualifiers())
+              : arrayType);
         }
       }
     }
