@@ -100,6 +100,8 @@ public class ExprToConstantReductionOpportunitiesTest {
 
   @Test
   public void testSwitchMultipleCases() throws Exception {
+    // This test checks that switch cases are not simplified to canonical literals, because in the
+    // following we do not want multiple identical cases:
     final String program = "#version 310 es\n"
         + "void main() {\n"
         + "  switch(1) {\n"
