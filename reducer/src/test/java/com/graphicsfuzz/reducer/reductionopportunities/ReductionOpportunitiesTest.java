@@ -551,7 +551,7 @@ public class ReductionOpportunitiesTest {
   @Test
   public void testReduceToConstantInLiveCode() throws Exception {
     TranslationUnit tu = ParseHelper.parse("void main() {"
-          + "  float GLF_live3x = sin(4.0);"
+          + "  float GLF_live3x = sin(1.0);"
           + "  float GLF_live3y = GLF_live3x + GLF_live3x;"
           + "}");
     List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
@@ -589,7 +589,7 @@ public class ReductionOpportunitiesTest {
     final String expected = "void main() {"
           + "    int GLF_live3_looplimiter0 = 0;\n"
           + "    for(\n"
-          + "      float GLF_live3sphereNo = 0.0;\n"
+          + "      float GLF_live3sphereNo = 1.0;\n"
           + "      1.0 < 10.0;\n"
           + "      GLF_live3sphereNo ++\n"
           + "  )\n"
@@ -601,8 +601,7 @@ public class ReductionOpportunitiesTest {
           + "    GLF_live3_looplimiter0 ++;\n"
           + "  }"
           + "}\n";
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
-          PrettyPrinterVisitor.prettyPrintAsString(tu));
+    CompareAsts.assertEqualAsts(expected, tu);
 
   }
 
