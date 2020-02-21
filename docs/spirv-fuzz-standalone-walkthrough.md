@@ -69,7 +69,7 @@ suitable for use in our Vulkan program.
   * `spirv-fuzz`: the fuzzer itself.
   * `spirv-reduce`: a tool that simplifies SPIR-V by repeatedly removing SPIR-V instructions.
   * `spirv-val`: a validator that finds issues with your SPIR-V.
-  * `spirv-dis`: a SPIR-V disassembler that converts a SPIR-V (which is a binary format) to human-readable assembly text.
+  * `spirv-dis`: a SPIR-V disassembler that converts SPIR-V (which is a binary format) to human-readable assembly text.
   * `spirv-as`: a SPIR-V assembler that converts SPIR-V assembly text back to SPIR-V.
 
 
