@@ -9,7 +9,7 @@ e.g. render an incorrect image.
 > If you just want to find bugs in Vulkan drivers
 as quickly as possible
 then your best bet is probably to
-run [gfauto](https://github.com/google/graphicsfuzz/tree/master/gfauto#graphicsfuzz-auto),
+run [gfauto](https://github.com/google/graphicsfuzz/tree/master/gfauto#gfauto),
 which can use `spirv-fuzz` (as well as other tools) to do continuous fuzzing of
 desktop and Android Vulkan drivers.
 However,
@@ -1013,7 +1013,7 @@ which _were_ used to find the example bug originally.
 As hinted earlier,
 if you wish to try fuzzing some Vulkan drivers,
 the best way is to
-use [gfauto](https://github.com/google/graphicsfuzz/tree/master/gfauto#graphicsfuzz-auto),
+use [gfauto](https://github.com/google/graphicsfuzz/tree/master/gfauto#gfauto),
 which uses both [glsl-fuzz](https://github.com/google/graphicsfuzz#glsl-fuzz) and `spirv-fuzz` (and other tools) to do continuous fuzzing of
 desktop and Android Vulkan drivers.
 
