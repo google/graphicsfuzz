@@ -1,4 +1,4 @@
-# Let's find a Vulkan driver bug using `spirv-fuzz`!
+# Finding a Vulkan driver bug using `spirv-fuzz`
 
 `spirv-fuzz` is a tool that automatically finds bugs
 in Vulkan drivers, specifically the SPIR-V shader compiler component of the driver.
