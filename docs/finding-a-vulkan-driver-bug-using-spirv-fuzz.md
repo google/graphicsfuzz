@@ -34,7 +34,7 @@ and is suitable for reporting to the driver developers.
 
 [![Binder](https://mybinder.org/badge_logo.svg) This walkthrough can be run interactively in your browser by
 clicking
-here](https://mybinder.org/v2/gh/google/graphicsfuzz/master?filepath=docs%2Fspirv-fuzz-standalone-walkthrough.md).
+here](https://mybinder.org/v2/gh/google/graphicsfuzz/master?filepath=docs%2Ffinding-a-vulkan-driver-bug-using-spirv-fuzz.md).
 
 You can use Shift+Enter to execute the Bash snippets
 and see the output.

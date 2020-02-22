@@ -50,14 +50,14 @@ them as standalone command line tools.
 
 * spirv-fuzz is developed in the [SPIRV-Tools repo](https://github.com/KhronosGroup/SPIRV-Tools)
 * **[Nightly builds of SPIRV-Tools](https://github.com/google/gfbuild-SPIRV-Tools/releases)**
-* Try our [spirv-fuzz walkthrough](docs/spirv-fuzz-standalone-walkthrough.md) that can be run from your browser
+* Try our [spirv-fuzz walkthrough](docs/finding-a-vulkan-driver-bug-using-spirv-fuzz.md) that can be run from your browser
 
 
 ### spirv-reduce
 
 * spirv-reduce is developed in the [SPIRV-Tools repo](https://github.com/KhronosGroup/SPIRV-Tools)
 * **[Nightly builds of SPIRV-Tools](https://github.com/google/gfbuild-SPIRV-Tools/releases)**
-* Try our [spirv-fuzz walkthrough](docs/spirv-fuzz-standalone-walkthrough.md) (includes use of spirv-reduce) that can be run from your browser
+* Try our [spirv-fuzz walkthrough](docs/finding-a-vulkan-driver-bug-using-spirv-fuzz.md) (includes use of spirv-reduce) that can be run from your browser
 
 
 ## Contribute
