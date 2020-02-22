@@ -6,7 +6,7 @@
 ## GraphicsFuzz is a set of tools for testing shader compilers
 
 GraphicsFuzz provides tools for automatically finding and simplifying bugs in graphics drivers,
-specifically graphics shader compilers. The glsl-fuzz tools manipulate GLSL shaders, targeting SPIR-V compilers via translation.
+specifically graphics shader compilers. The glsl-fuzz and glsl-reduce tools manipulate GLSL shaders, targeting SPIR-V compilers via translation.
 The spirv-fuzz and spirv-reduce tools directly manipulate SPIR-V shaders.
 
 ## Download and run
