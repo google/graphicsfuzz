@@ -1,21 +1,20 @@
-# GraphicsFuzz auto
+# gfauto
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Build Status](https://paulthomson.visualstudio.com/gfauto/_apis/build/status/google.graphicsfuzz?branchName=master)](https://paulthomson.visualstudio.com/gfauto/_build/latest?definitionId=2&branchName=master)
+[![Build Status](https://github.com/google/graphicsfuzz/workflows/.github/workflows/gfauto.yml/badge.svg)](https://github.com/google/graphicsfuzz/actions)
 
 
-## GraphicsFuzz auto is a set of Python scripts for running GraphicsFuzz
+gfauto is a set of tools for using the fuzzers and reducers from the [GraphicsFuzz project](https://github.com/google/graphicsfuzz) (including spirv-fuzz and spirv-reduce) in a "push-button" fashion with minimal interaction.
 
-[GraphicsFuzz](https://github.com/google/graphicsfuzz) provides tools that automatically find and simplify bugs in graphics shader compilers.
-GraphicsFuzz auto (this project) provides scripts for running these tools with minimal interaction.
+**Note: 64-bit Linux is currently the only supported platform. Windows and Mac may work, but there will likely be issues.**
 
-## Development setup
+## Setup
 
-> Optional: if you have just done `git pull` to get a more recent version of GraphicsFuzz auto, consider deleting `.venv/` to start from a fresh virtual environment. This is rarely needed.
+> Optional: if you have just done `git pull` to get a more recent version of gfauto, consider deleting `.venv/` to start from a fresh virtual environment. This is rarely needed.
 
 > On Windows, you can use the Git Bash shell, or adapt the commands (including those inside `dev_shell.sh.template`) to the Windows command prompt.
 
-Execute `./dev_shell.sh.template`. If the default settings don't work, make a copy of the file called `dev_shell.sh` and modify according to the comments before executing. `pip` must be installed for the version of Python you wish to use. Note that you can do e.g. `export PYTHON=python3.6.8` to set your preferred Python binary. We currently target Python 3.6.
+Clone this repo and enter the `gfauto/` directory that contains this README file. Execute `./dev_shell.sh.template`. If the default settings don't work, make a copy of the file called `dev_shell.sh` and modify according to the comments before executing. `pip` must be installed for the version of Python you wish to use. Note that you can do e.g. `export PYTHON=python3.6.8` to set your preferred Python binary. We currently target Python 3.6.
 
 > Pip for Python 3.6 may be broken on certain Debian distributions.
 > You can just use the newer Python 3.7+ version provided by your
@@ -24,13 +23,17 @@ Execute `./dev_shell.sh.template`. If the default settings don't work, make a co
 
 The script generates and activates a Python virtual environment (located at `.venv/`) with all dependencies installed.
 
+Skip to [Fuzzing](#fuzzing) to start fuzzing Vulkan devices and tools.
+
+### Presubmit checks
+
 * Execute `./check_all.sh` to run various presubmit checks, linters, etc.
 * Execute `./fix_all.sh` to automatically fix certain issues, such as formatting.
 
 
 ### PyCharm
 
-Use PyCharm to open the top-level `gfauto` directory.
+Use PyCharm to open the top-level `gfauto/` directory (that contains this README file).
 It should pick up the Python virtual environment (at `.venv/`) automatically
 for both the code
 and when you open a `Terminal` or `Python Console` tab.
@@ -48,7 +51,7 @@ Add `whitelist.dic` as a custom dictionary (search for "Spelling" in Actions). D
 
 ## Symlinking other scripts
 
-GraphicsFuzz auto moves fast and so it is useful to add symlinks to other repositories that contain Python scripts that depend on GraphicsFuzz auto. This allows you to search for all references before changing a function. A `temp/` directory exists for this purpose. For example:
+gfauto moves fast and so it is useful to add symlinks to other repositories that contain Python scripts that depend on gfauto. This allows you to search for all references before changing a function. A `temp/` directory exists for this purpose. For example:
 
 ```sh
 cd temp
@@ -72,7 +75,7 @@ You can alternatively execute the `./dev_shell.sh` script, but this is fairly sl
 ## Fuzzing
 
 To start fuzzing, create and change to a directory outside the `gfauto/` directory. E.g. `/data/temp/gfauto_fuzzing/2019_06_24`. From here, create `references/` and `donors/` directories containing GLSL shader jobs as used by GraphicsFuzz.
-You can get some samples from the GraphicsFuzz project.
+You can get some samples from a [nightly GraphicsFuzz build](https://github.com/google/gfbuild-graphicsfuzz/releases).
 
 ```sh
 mkdir references/ donors/

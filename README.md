@@ -1,49 +1,70 @@
 # GraphicsFuzz
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Build Status](https://travis-ci.org/google/graphicsfuzz.svg?branch=master)](https://travis-ci.org/google/graphicsfuzz)
+[![Build Status](https://github.com/google/graphicsfuzz/workflows/.github/workflows/graphicsfuzz.yml/badge.svg)](https://github.com/google/graphicsfuzz/actions)
 
-## GraphicsFuzz is a testing framework for shader compilers
+## GraphicsFuzz is a set of tools for testing shader compilers
 
-GraphicsFuzz provides tools to automatically find and simplify bugs in graphics
-shader compilers. It operates on GLSL shaders, and uses
-glslangValidator and spirv-tools to additionally target SPIR-V.
+GraphicsFuzz provides tools for automatically finding and simplifying bugs in graphics drivers,
+specifically graphics shader compilers. The glsl-fuzz and glsl-reduce tools manipulate GLSL shaders, targeting SPIR-V compilers via translation.
+The spirv-fuzz and spirv-reduce tools directly manipulate SPIR-V shaders.
 
-## Tools
+## Download and run
 
-* **glsl-reduce**: a stand-alone GLSL shader reducer
-* **spirv-reduce**: a stand-alone SPIR-V shader reducer
+Follow the [gfauto README](https://github.com/google/graphicsfuzz/tree/master/gfauto#gfauto).
+The [gfauto](https://github.com/google/graphicsfuzz/tree/master/gfauto#gfauto) command line
+tool is the
+recommended way of automatically downloading and running our fuzzers to test Vulkan drivers in a "push-button" fashion with minimal interaction. See below if you want to read about
+individual tools and/or use
+them as standalone command line tools.
+
+
+## Tool documentation
+
+* **[gfauto](https://github.com/google/graphicsfuzz/tree/master/gfauto#gfauto)**: the recommended way of automatically downloading and running our fuzzers to test Vulkan drivers in a "push-button" fashion with minimal interaction
 * **glsl-fuzz**: a family of tools for testing GLSL shader compilers using randomized metamorphic testing
-
-### glsl-reduce
-
-* [Introduction: my shader is being weird, now what?](docs/glsl-reduce-intro.md)
-* [glsl-reduce walkthrough](docs/glsl-reduce-walkthrough.md)
-* [glsl-reduce manual](docs/glsl-reduce.md)
-
-### spirv-reduce
-
-* [spirv-reduce is provided as a component of SPIRV-Tools](https://github.com/KhronosGroup/SPIRV-Tools)
+* **glsl-reduce**: a stand-alone GLSL shader reducer
+* **spirv-fuzz**: a stand-alone SPIR-V shader fuzzer and shrinker that uses randomized metamorphic testing
+* **spirv-reduce**: a stand-alone SPIR-V shader reducer
 
 ### glsl-fuzz
 
+* The glsl-fuzz tools are developed in this repo
 * [How it works (high-level): metamorphic testing using glsl-fuzz](docs/glsl-fuzz-intro.md)
 * [glsl-fuzz walkthrough](docs/glsl-fuzz-walkthrough.md)
 * [glsl-generate manual](docs/glsl-fuzz-generate.md)
 * [glsl-reduce manual (for reducing fuzzed shaders)](docs/glsl-fuzz-reduce.md)
-
-## Get the GraphicsFuzz tools
-
-
-* **Pre-built binaries** are available on the [GitHub releases page](docs/glsl-fuzz-releases.md)
+* **Pre-built binaries** are available on the [GitHub releases page of this repo](docs/glsl-fuzz-releases.md)
 * [**Developer documentation with build instructions**](docs/glsl-fuzz-develop.md)
+
+
+### glsl-reduce
+
+* glsl-reduce is developed in this repo
+* [Introduction: my shader is being weird, now what?](docs/glsl-reduce-intro.md)
+* [glsl-reduce walkthrough](docs/glsl-reduce-walkthrough.md)
+* [glsl-reduce manual](docs/glsl-reduce.md)
+* **Pre-built binaries** are available with glsl-fuzz on the [GitHub releases page of this repo](docs/glsl-fuzz-releases.md)
+
+### spirv-fuzz
+
+* spirv-fuzz is developed in the [SPIRV-Tools repo](https://github.com/KhronosGroup/SPIRV-Tools)
+* **[Nightly builds of SPIRV-Tools](https://github.com/google/gfbuild-SPIRV-Tools/releases)**
+* Try our [spirv-fuzz walkthrough](docs/finding-a-vulkan-driver-bug-using-spirv-fuzz.md) that can be run from your browser
+
+
+### spirv-reduce
+
+* spirv-reduce is developed in the [SPIRV-Tools repo](https://github.com/KhronosGroup/SPIRV-Tools)
+* **[Nightly builds of SPIRV-Tools](https://github.com/google/gfbuild-SPIRV-Tools/releases)**
+* Try our [spirv-fuzz walkthrough](docs/finding-a-vulkan-driver-bug-using-spirv-fuzz.md) (includes use of spirv-reduce) that can be run from your browser
 
 
 ## Contribute
 
 * [Contributing (requires Google CLA)](CONTRIBUTING.md)
 * [License (Apache 2.0)](LICENSE)
-* [Developer documentation](docs/glsl-fuzz-develop.md)
+* [Developer documentation for glsl-fuzz](docs/glsl-fuzz-develop.md)
 
 ## Further reading
 
