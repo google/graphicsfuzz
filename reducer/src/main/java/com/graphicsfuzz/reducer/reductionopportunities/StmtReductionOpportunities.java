@@ -79,7 +79,7 @@ public class StmtReductionOpportunities
     final Stmt child = block.getStmt(index);
     if (isEmptyBlockStmt(child) || isDeadCodeInjection(child)
           || allowedToReduceStmt(block, index)) {
-      addOpportunity(new StmtReductionOpportunity(getEnclosingFunction(), block, child,
+      addOpportunity(new StmtReductionOpportunity(tu, getEnclosingFunction(), block, child,
           getVistitationDepth()));
     }
   }
@@ -126,7 +126,8 @@ public class StmtReductionOpportunities
     // Unless we are in an injected dead code block, we need to be careful about removing
     // non-void return statements, so as to avoid making the shader invalid.
     if (StmtReductionOpportunity
-        .removalCouldLeadToLackOfReturnFromNonVoidFunction(getEnclosingFunction(), block, stmt)) {
+        .removalCouldLeadToLackOfReturnFromNonVoidFunction(tu, getEnclosingFunction(), block,
+            stmt)) {
       return false;
     }
 

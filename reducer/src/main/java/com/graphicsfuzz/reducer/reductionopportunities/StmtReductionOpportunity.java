@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import com.graphicsfuzz.common.ast.IAstNode;
+import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.CaseLabel;
@@ -27,6 +29,7 @@ import com.graphicsfuzz.common.util.StatsVisitor;
 
 public final class StmtReductionOpportunity extends AbstractReductionOpportunity {
 
+  private final TranslationUnit translationUnit;
   private final FunctionDefinition enclosingFunction;
   private final BlockStmt blockStmt;
   private final Stmt childOfBlockStmt;
@@ -38,16 +41,19 @@ public final class StmtReductionOpportunity extends AbstractReductionOpportunity
 
   /**
    * Creates an opportunity to remove childOfBlockStmt from blockStmt.
+   * @param translationUnit The translation unit being reduced
    * @param enclosingFunction A function that encloses the statement to be removed
    * @param blockStmt A block that directly encloses the statement to be removed
    * @param childOfBlockStmt The statement to be removed
    * @param depth The depth at which this opportunity was found
    */
-  public StmtReductionOpportunity(FunctionDefinition enclosingFunction,
+  public StmtReductionOpportunity(TranslationUnit translationUnit,
+                                  FunctionDefinition enclosingFunction,
                                   BlockStmt blockStmt,
                                   Stmt childOfBlockStmt,
                                   VisitationDepth depth) {
     super(depth);
+    this.translationUnit = translationUnit;
     this.enclosingFunction = enclosingFunction;
     this.blockStmt = blockStmt;
     this.childOfBlockStmt = childOfBlockStmt;
@@ -102,7 +108,8 @@ public final class StmtReductionOpportunity extends AbstractReductionOpportunity
       return false;
     }
 
-    if (removalCouldLeadToLackOfReturnFromNonVoidFunction(enclosingFunction, blockStmt,
+    if (removalCouldLeadToLackOfReturnFromNonVoidFunction(translationUnit, enclosingFunction,
+        blockStmt,
         childOfBlockStmt)) {
       return false;
     }
@@ -115,8 +122,9 @@ public final class StmtReductionOpportunity extends AbstractReductionOpportunity
   }
 
   static boolean removalCouldLeadToLackOfReturnFromNonVoidFunction(
+      TranslationUnit translationUnit,
       FunctionDefinition enclosingFunction, BlockStmt block, Stmt childOfBlockStmt) {
-    if (!containsNonVoidReturn(childOfBlockStmt)) {
+    if (!containsReachableNonVoidReturn(translationUnit, enclosingFunction, childOfBlockStmt)) {
       return false;
     }
     if (statementIsPrecededByReturn(block, childOfBlockStmt)) {
@@ -129,15 +137,52 @@ public final class StmtReductionOpportunity extends AbstractReductionOpportunity
     return true;
   }
 
-  private static boolean containsNonVoidReturn(Stmt stmt) {
-    return new CheckPredicateVisitor() {
+  private static boolean containsReachableNonVoidReturn(
+      TranslationUnit translationUnit,
+      FunctionDefinition enclosingFunction,
+      Stmt stmt) {
+    return new InjectionTrackingVisitor(translationUnit) {
+
+      private Stmt stmtOfInterest;
+      private boolean inStmtOfInterest = false;
+      private boolean found = false;
+
       @Override
-      public void visitReturnStmt(ReturnStmt returnStmt) {
-        if (returnStmt.hasExpr()) {
-          predicateHolds();
+      public void visit(IAstNode node) {
+        if (node == stmtOfInterest) {
+          assert !inStmtOfInterest;
+          inStmtOfInterest = true;
+        }
+        super.visit(node);
+        if (node == stmtOfInterest) {
+          assert inStmtOfInterest;
+          inStmtOfInterest = false;
         }
       }
-    }.test(stmt);
+
+      @Override
+      public void visitReturnStmt(ReturnStmt returnStmt) {
+        // We have found a relevant non-void return statement if we are inside the statement of
+        // interest, not in dead code, and if this return statement has an associated expression.
+        if (inStmtOfInterest && returnStmt.hasExpr()) {
+          if (!(injectionTracker.enclosedByDeadCodeInjection()
+              || injectionTracker.underUnreachableSwitchCase())) {
+            // Note that we do not ask whether the current program point is dead, as that
+            // includes being in a dead or statically unreachable function, and we don't want to
+            // make the shader invalid by removing a return arbitrarily from one of those.
+            found = true;
+          }
+        }
+      }
+
+      private boolean test(FunctionDefinition enclosingFunction, Stmt stmtOfInterest) {
+        this.stmtOfInterest = stmtOfInterest;
+        visit(enclosingFunction);
+        return found;
+      }
+
+    }.test(enclosingFunction, stmt);
+
   }
 
   private static boolean statementIsPrecededByReturn(BlockStmt block, Stmt childOfBlockStmt) {

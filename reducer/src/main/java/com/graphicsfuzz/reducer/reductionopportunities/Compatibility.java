@@ -91,6 +91,12 @@ public final class Compatibility {
       return false;
     }
 
+    if (matchesEitherDirection(first, second,
+        StmtReductionOpportunity.class::equals,
+        OutlinedStatementReductionOpportunity.class::equals)) {
+      return false;
+    }
+
     return true;
   }
 

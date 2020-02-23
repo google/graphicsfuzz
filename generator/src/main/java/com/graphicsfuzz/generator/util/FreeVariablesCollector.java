@@ -66,7 +66,7 @@ public class FreeVariablesCollector extends ScopeTrackingVisitor {
       Type type = enclosingScope.lookupType(name);
       if (type == null) {
         throw new RuntimeException(
-            "Found variable '" + name + "' that is not typed in current not enclosing scope.");
+            "Found variable '" + name + "' that is not typed in the current scope.");
       }
       //noinspection ConstantConditions
       assert type != null;
