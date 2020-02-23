@@ -30,17 +30,24 @@ import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.util.Constants;
 
+/**
+ * A visitor that tracks information about code injections, to aid in identifying reduction
+ * opportunities related to those injections.
+ */
 public class InjectionTrackingVisitor extends ScopeTrackingVisitor {
 
+  // Used to track e.g. whether traversal is under a dead block or fuzzed macro.
   final InjectionTracker injectionTracker;
+
+  // Provides parent information for the AST.
   final IParentMap parentMap;
-  private String enclosingFunctionName;
+
+  // Records whether functions are referenced from possibly reachable code.
   private final NotReferencedFromLiveContext notReferencedFromLiveContext;
 
   public InjectionTrackingVisitor(TranslationUnit tu) {
     this.injectionTracker = new InjectionTracker();
     this.parentMap = IParentMap.createParentMap(tu);
-    this.enclosingFunctionName = null;
     this.notReferencedFromLiveContext = new NotReferencedFromLiveContext(tu);
   }
 
@@ -79,21 +86,13 @@ public class InjectionTrackingVisitor extends ScopeTrackingVisitor {
   }
 
   @Override
-  public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
-    assert enclosingFunctionName == null;
-    enclosingFunctionName = functionDefinition.getPrototype().getName();
-    super.visitFunctionDefinition(functionDefinition);
-    assert enclosingFunctionName.equals(functionDefinition.getPrototype().getName());
-    enclosingFunctionName = null;
-  }
-
-  @Override
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-    if (MacroNames.isFuzzed(functionCallExpr)) {
+    final boolean isFuzzedMacro = MacroNames.isFuzzed(functionCallExpr);
+    if (isFuzzedMacro) {
       injectionTracker.enterFuzzedMacro();
     }
     super.visitFunctionCallExpr(functionCallExpr);
-    if (MacroNames.isFuzzed(functionCallExpr)) {
+    if (isFuzzedMacro) {
       injectionTracker.exitFuzzedMacro();
     }
   }
@@ -133,10 +132,10 @@ public class InjectionTrackingVisitor extends ScopeTrackingVisitor {
   }
 
   private boolean enclosingFunctionIsDead() {
-    if (enclosingFunctionName == null) {
-      // We are in global scope
+    if (atGlobalScope()) {
       return false;
     }
+    final String enclosingFunctionName = getEnclosingFunction().getPrototype().getName();
     return enclosingFunctionName.startsWith(Constants.DEAD_PREFIX)
         || notReferencedFromLiveContext.neverCalledFromLiveContext(enclosingFunctionName);
   }

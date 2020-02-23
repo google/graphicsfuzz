@@ -93,12 +93,6 @@ public final class Compatibility {
 
     if (matchesEitherDirection(first, second,
         StmtReductionOpportunity.class::equals,
-        UnswitchifyReductionOpportunity.class::equals)) {
-      return false;
-    }
-
-    if (matchesEitherDirection(first, second,
-        StmtReductionOpportunity.class::equals,
         OutlinedStatementReductionOpportunity.class::equals)) {
       return false;
     }
