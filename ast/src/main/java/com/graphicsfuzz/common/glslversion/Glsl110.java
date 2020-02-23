@@ -45,7 +45,7 @@ final class Glsl110 implements ShadingLanguageVersion {
   }
 
   @Override
-  public boolean restrictedArrayIndexing() {
+  public boolean supportedArrayConstructors() {
     return false;
   }
 
