@@ -38,7 +38,9 @@ public class MacroNames {
         || isLoopWrapper(expr)
         || isIfWrapperTrue(expr)
         || isIfWrapperFalse(expr)
-        || isSwitch(expr);
+        || isSwitch(expr)
+        || isMakeInBoundsInt(expr)
+        || isMakeInBoundsUint(expr);
   }
 
   public static boolean isIdentity(Expr expr) {
