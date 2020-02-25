@@ -874,7 +874,7 @@ def create_summary_and_reproduce(
         )
 
     if stage_one_reduced:
-        variant_reduced_glsl_result = run_shader_job(
+        run_shader_job(
             source_dir=stage_one_reduced,
             output_dir=(summary_dir / "reduced_stage_one_result"),
             binary_manager=binary_manager,
@@ -925,6 +925,13 @@ def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
     bug_report_dir = util.copy_dir(
         variant_reduced_glsl_result_dir, output_dir / "bug_report"
     )
+
+    # Create bug_report.zip.
+    zip_files = [
+        util.ZipEntry(f, f.relative_to(bug_report_dir))
+        for f in sorted(bug_report_dir.rglob(f"*"))
+    ]
+    util.create_zip(bug_report_dir.with_suffix(".zip"), zip_files)
 
     shader_files = sorted(bug_report_dir.rglob("shader.*"))
 
