@@ -328,7 +328,12 @@ def create_zip(output_file_path: Path, entries: List[ZipEntry]) -> Path:
     ) as file_handle:
         for entry in entries:
             file_handle.write(entry.path, entry.path_in_archive)
-            gflogging.log(f"Adding: {entry.path} {entry.path_in_archive or ''}")
+            if entry.path_in_archive:
+                gflogging.log(
+                    f"Adding: {entry.path}\n     -> {entry.path_in_archive}\n"
+                )
+            else:
+                gflogging.log(f"Adding: {entry.path}")
     return output_file_path
 
 

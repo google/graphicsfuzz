@@ -86,6 +86,7 @@ disable=C0330,
     cyclic-import,           # We allow cyclic imports, but we should import modules, not functions and variables.
     duplicate-code,          # Unfortunately, disabling this on a case-by-case basis is broken: https://github.com/PyCQA/pylint/issues/214
     unsubscriptable-object,  # False-positives for type hints. E.g. CompletedProcess[Any]. Mypy should cover this.
+    too-many-lines,
 
 
 
