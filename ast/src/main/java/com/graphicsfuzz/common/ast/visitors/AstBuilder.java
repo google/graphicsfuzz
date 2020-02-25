@@ -209,7 +209,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
        * @param expr Expression to fold
        * @return Folded expression
        */
-      public Expr reduce(Expr expr) {
+      private Expr reduce(Expr expr) {
 
         if (expr instanceof IntConstantExpr) {
           return expr;
@@ -337,6 +337,13 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         }
       }
 
+      @Override
+      public void visitParameterDecl(ParameterDecl parameterDecl) {
+        super.visitParameterDecl(parameterDecl);
+        if (parameterDecl.hasArrayInfo()) {
+          handleArrayInfo(parameterDecl.getArrayInfo());
+        }
+      }
     }.visit(tu);
     return tu;
   }

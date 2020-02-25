@@ -225,7 +225,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     if (parameterDecl.getName() != null) {
       out.append(" " + parameterDecl.getName());
     }
-    if (parameterDecl.getArrayInfo() != null) {
+    if (parameterDecl.hasArrayInfo()) {
       out.append("[");
       visit(parameterDecl.getArrayInfo().getSizeExpr());
       out.append("]");

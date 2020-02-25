@@ -205,13 +205,8 @@ public class Typer extends ScopeTrackingVisitor {
       if (argType == null) {
         return false;
       }
-      // TODO(https://github.com/google/graphicsfuzz/issues/784) Not yet worked out how to deal with
-      //  array info
-      if (prototype.getParameters().get(i).getArrayInfo() != null) {
-        throw new UnsupportedLanguageFeatureException("Array parameters are not yet supported.");
-      }
       if (!argType.getWithoutQualifiers()
-          .equals(prototype.getParameters().get(i).getType().getWithoutQualifiers())) {
+          .equals(getTypeForFunctionParameter(prototype.getParameter(i)).getWithoutQualifiers())) {
         return false;
       }
     }

@@ -327,7 +327,7 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
         parameterDecl.setName(newname);
       }
     }
-    if (parameterDecl.getArrayInfo() != null) {
+    if (parameterDecl.hasArrayInfo()) {
       visit(parameterDecl.getArrayInfo().getSizeExpr());
     }
   }

@@ -27,8 +27,6 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
-import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
-import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -51,6 +49,7 @@ import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
@@ -72,6 +71,28 @@ public class TyperTest {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  @Test
+  public void testArrayParameter() throws Exception {
+    final String shader = ""
+        + "int foo(int A[3 + 4])\n"
+        + "{\n"
+        + "  return A[0];\n"
+        + "}\n"
+        + "void main()\n"
+        + "{\n"
+        + " int a[7];\n"
+        + " foo(a);\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(shader);
+    new NullCheckTyper(tu) {
+      @Override
+      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        super.visitFunctionCallExpr(functionCallExpr);
+        assertSame(lookupType(functionCallExpr).getWithoutQualifiers(), BasicType.INT);
+      }
+    }.visit(tu);
+  }
 
   @Test
   public void visitMemberLookupExpr() throws Exception {
@@ -971,8 +992,3 @@ public class TyperTest {
   }
 
 }
-
-
-
-
-

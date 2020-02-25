@@ -58,6 +58,21 @@ public class PrettyPrinterVisitorTest {
   }
 
   @Test
+  public void testArraySizeExpressionInParameter() throws Exception {
+    final String program = ""
+        + "void foo(int A[3 + 4])\n"
+        + "{\n"
+        + "}\n"
+        + "void main()\n"
+        + "{\n"
+        + " int a[7];\n"
+        + " foo(a);\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
+  }
+
+  @Test
   public void testParseAndPrint() throws Exception {
     final String program = ""
         + "struct A {\n"

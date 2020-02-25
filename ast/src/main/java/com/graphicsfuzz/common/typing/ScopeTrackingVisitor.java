@@ -127,16 +127,7 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
       if (!addEncounteredParametersToScope || p.getName() == null) {
         continue;
       }
-      Type type;
-      if (p.getArrayInfo() == null) {
-        type = p.getType();
-      } else {
-        final ArrayType arrayType = new ArrayType(p.getType().getWithoutQualifiers(),
-            p.getArrayInfo());
-        type = p.getType() instanceof QualifiedType
-            ? new QualifiedType(arrayType, ((QualifiedType) p.getType()).getQualifiers())
-            : arrayType;
-      }
+      Type type = getTypeForFunctionParameter(p);
       currentScope.add(p.getName(),
           type,
           Optional.of(p));
@@ -348,6 +339,25 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
    */
   protected FunctionDefinition getEnclosingFunction() {
     return enclosingFunction;
+  }
+
+  /**
+   * Helper method to get the type for a parameter declaration, taking account of the fact that the
+   * declaration may have array information attached.
+   * @param param A function parameter.
+   * @return The type of the function parameter.
+   */
+  static Type getTypeForFunctionParameter(ParameterDecl param) {
+    if (!param.hasArrayInfo()) {
+      return param.getType();
+    }
+    // If the parameter has the form e.g. "const int A[3]" then we want to return a type of the form
+    // QualifiedType(ArrayType(int, 3), const), not ArrayType(QualifierdType(int, const), 3).
+    final ArrayType arrayType = new ArrayType(param.getType().getWithoutQualifiers(),
+        param.getArrayInfo());
+    return param.getType() instanceof QualifiedType
+        ? new QualifiedType(arrayType, ((QualifiedType) param.getType()).getQualifiers())
+        : arrayType;
   }
 
 }
