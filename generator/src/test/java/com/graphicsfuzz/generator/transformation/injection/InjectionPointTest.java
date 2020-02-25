@@ -32,7 +32,7 @@ public class InjectionPointTest {
 
     // Simple test written in response to a stack overflow error
 
-    final Scope scope = new Scope(null);
+    final Scope scope = new Scope();
     assertNotNull(
       new InjectionPoint(null, false, false, scope) {
 
@@ -62,7 +62,7 @@ public class InjectionPointTest {
 
   @Test
   public void testThatScopeIsCloned() {
-    Scope s = new Scope(null);
+    Scope s = new Scope();
     s.add("v", BasicType.INT, Optional.empty());
     IInjectionPoint injectionPoint = new InjectionPoint(null, false, false, s) {
       @Override

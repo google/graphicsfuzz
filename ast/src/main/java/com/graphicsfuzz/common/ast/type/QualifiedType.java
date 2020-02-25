@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -166,12 +165,12 @@ public class QualifiedType extends Type {
   }
 
   @Override
-  public boolean hasCanonicalConstant(Optional<Scope> scope) {
+  public boolean hasCanonicalConstant(Scope scope) {
     return targetType.hasCanonicalConstant(scope);
   }
 
   @Override
-  public Expr getCanonicalConstant(Optional<Scope> scope) {
+  public Expr getCanonicalConstant(Scope scope) {
     return targetType.getCanonicalConstant(scope);
   }
 

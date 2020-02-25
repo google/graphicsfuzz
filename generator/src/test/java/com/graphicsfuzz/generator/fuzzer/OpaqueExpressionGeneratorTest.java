@@ -118,10 +118,10 @@ public class OpaqueExpressionGeneratorTest {
       final OpaqueExpressionGenerator opaqueExpressionGenerator =
           new OpaqueExpressionGenerator(generator,
               generationParams, shadingLanguageVersion);
-      final Fuzzer fuzzer = new Fuzzer(new FuzzingContext(new Scope(null)), shadingLanguageVersion,
+      final Fuzzer fuzzer = new Fuzzer(new FuzzingContext(new Scope()), shadingLanguageVersion,
           generator, generationParams);
       final Expr expr =
-          opaqueExpressionGenerator.applyIdentityFunction(basicType.getCanonicalConstant(),
+          opaqueExpressionGenerator.applyIdentityFunction(basicType.getCanonicalConstant(new Scope()),
               basicType, false, 0, fuzzer);
 
       newStmts.add(new ExprStmt(new BinaryExpr(new VariableIdentifierExpr("x"), expr,
@@ -185,7 +185,7 @@ public class OpaqueExpressionGeneratorTest {
     List<Stmt> result = new ArrayList<>();
     for (OpaqueZeroOneFactory factory : factories) {
       final Optional<Expr> expr = factory.tryMakeOpaque(typeToGenerate, constContext, 0,
-          new Fuzzer(new FuzzingContext(new Scope(null)), shadingLanguageVersion,
+          new Fuzzer(new FuzzingContext(new Scope()), shadingLanguageVersion,
           generator, generationParams), makingZero);
       if (expr.isPresent()) {
         final Type baseType = constContext ? new QualifiedType(typeToGenerate,

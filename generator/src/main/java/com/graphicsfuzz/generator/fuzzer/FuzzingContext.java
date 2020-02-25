@@ -46,7 +46,7 @@ public class FuzzingContext {
   }
 
   public FuzzingContext() {
-    this(new Scope(null));
+    this(new Scope());
   }
 
   public void addGlobal(String name, Type type) {

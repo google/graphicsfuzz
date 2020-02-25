@@ -24,7 +24,6 @@ import com.graphicsfuzz.common.typing.Scope;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 public class ArrayType extends UnqualifiedType {
 
@@ -86,12 +85,12 @@ public class ArrayType extends UnqualifiedType {
   }
 
   @Override
-  public boolean hasCanonicalConstant(Optional<Scope> scope) {
+  public boolean hasCanonicalConstant(Scope scope) {
     return baseType.hasCanonicalConstant(scope) && arrayInfo.hasConstantSize();
   }
 
   @Override
-  public Expr getCanonicalConstant(Optional<Scope> scope) {
+  public Expr getCanonicalConstant(Scope scope) {
     final Expr canonicalConstantForBaseType = baseType.getCanonicalConstant(scope);
     final List<Expr> componentConstants = new ArrayList<>();
     for (int i = 0; i < arrayInfo.getConstantSize(); i++) {

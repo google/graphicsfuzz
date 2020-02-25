@@ -27,7 +27,6 @@ import com.graphicsfuzz.common.typing.Scope;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 public class BasicType extends BuiltinType {
 
@@ -148,12 +147,12 @@ public class BasicType extends BuiltinType {
   }
 
   @Override
-  public boolean hasCanonicalConstant(Optional<Scope> scope) {
+  public boolean hasCanonicalConstant(Scope unused) {
     return true;
   }
 
   @Override
-  public Expr getCanonicalConstant(Optional<Scope> scope) {
+  public Expr getCanonicalConstant(Scope scope) {
     if (this == FLOAT) {
       return new FloatConstantExpr("1.0");
     }

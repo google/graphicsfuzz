@@ -31,13 +31,19 @@ import java.util.Optional;
 
 public class Scope {
 
-  private final Map<String, ScopeEntry> variableMapping;
-  private final Map<String, StructDefinitionType> structMapping;
+  private final Map<String, ScopeEntry> variableMapping = new HashMap<>();
+  private final Map<String, StructDefinitionType> structMapping = new HashMap<>();
   private final Scope parent;
 
+  public Scope() {
+    this.parent = null;
+  }
+
   public Scope(Scope parent) {
-    this.variableMapping = new HashMap<>();
-    this.structMapping = new HashMap<>();
+    if (parent == null) {
+      throw new IllegalArgumentException("Attempt to create scope with null parent.  Use Scope() "
+          + "constructor to create a global scope.");
+    }
     this.parent = parent;
   }
 
@@ -151,8 +157,7 @@ public class Scope {
   }
 
   public List<String> keys() {
-    List<String> result = new ArrayList<>();
-    result.addAll(variableMapping.keySet());
+    List<String> result = new ArrayList<>(variableMapping.keySet());
     result.sort(String::compareTo);
     return Collections.unmodifiableList(result);
   }
@@ -166,7 +171,7 @@ public class Scope {
    * @return Cloned scope
    */
   public Scope shallowClone() {
-    Scope result = new Scope(parent == null ? null : parent.shallowClone());
+    Scope result = hasParent() ? new Scope(parent.shallowClone()) : new Scope();
     for (Entry<String, ScopeEntry> entry : variableMapping.entrySet()) {
       result.variableMapping.put(entry.getKey(), entry.getValue());
     }

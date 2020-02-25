@@ -63,7 +63,7 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
   private boolean addEncounteredParametersToScope;
 
   protected ScopeTrackingVisitor() {
-    this.currentScope = new Scope(null);
+    this.currentScope = new Scope();
     this.enclosingFunction = null;
     this.enclosingBlocks = new LinkedList<>();
     this.encounteredFunctionPrototypes = new ArrayList<>();

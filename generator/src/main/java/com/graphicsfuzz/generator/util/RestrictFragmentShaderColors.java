@@ -132,7 +132,7 @@ public class RestrictFragmentShaderColors {
     }
     final FunctionDefinition mainFunction = shaderJob.getFragmentShader().get()
         .getMainFunction();
-    final Scope emptyScope = new Scope(null);
+    final Scope emptyScope = new Scope();
     mainFunction.getBody().insertStmt(0,
         makeOutputVariableWrite(makeColorVector(BasicType.VEC4, emptyScope)));
   }

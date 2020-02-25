@@ -19,28 +19,38 @@ package com.graphicsfuzz.common.ast.type;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.typing.Scope;
-import java.util.List;
-import java.util.Optional;
 
 public abstract class Type implements IAstNode {
 
   @Override
   public abstract Type clone();
 
-  public abstract boolean hasCanonicalConstant(Optional<Scope> scope);
+  /**
+   * Determines whether a canonical constant exists for the type.
+   * @param scope Used to provide details of struct types.
+   * @return true if and only if the type has a canonical constant.
+   */
+  public abstract boolean hasCanonicalConstant(Scope scope);
 
-  public final boolean hasCanonicalConstant() {
-    return hasCanonicalConstant(Optional.empty());
-  }
+  /**
+   * Requires that hasCanonicalConstant(scope) holds.  Returns the canonical constant for this type.
+   * @param scope Used to provide details of struct types.
+   * @return A constant expression of this type.
+   */
+  public abstract Expr getCanonicalConstant(Scope scope);
 
-  public abstract Expr getCanonicalConstant(Optional<Scope> scope);
-
-  public final Expr getCanonicalConstant() {
-    return getCanonicalConstant(Optional.empty());
-  }
-
+  /**
+   * Yields an unqualified version of the type.
+   * @return A type identical to the original type, but with no qualifiers (which will be the
+   *         original type if it was already unqualified.
+   */
   public abstract Type getWithoutQualifiers();
 
+  /**
+   * Returns true if and only if this is a qualified type that has the given qualifier.
+   * @param qualifier A qualifier to be tested for.
+   * @return true if and only if the type has the given qualifier.
+   */
   public abstract boolean hasQualifier(TypeQualifier qualifier);
 
 }
