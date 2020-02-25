@@ -23,11 +23,13 @@ from pathlib import Path
 from typing import List
 
 from gfauto import binaries_util, settings_util
+from gfauto.gflogging import log
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Runs a binary given the binary name and settings.json file."
+        description="Runs a binary given the binary name and settings.json file. "
+        "Use -- to separate args to run_bin and your binary. "
     )
 
     parser.add_argument(
@@ -57,7 +59,12 @@ def main() -> int:
     binary_name: str = parsed_args.binary_name
     arguments: List[str] = parsed_args.arguments
 
-    settings = settings_util.read_or_create(settings_path)
+    try:
+        settings = settings_util.read_or_create(settings_path)
+    except settings_util.NoSettingsFile:
+        log(f"Settings file {str(settings_path)} was created for you; using this.")
+        settings = settings_util.read_or_create(settings_path)
+
     binary_manager = binaries_util.get_default_binary_manager(settings=settings)
 
     cmd = [str(binary_manager.get_binary_path_by_name(binary_name).path)]
