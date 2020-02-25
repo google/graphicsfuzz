@@ -31,6 +31,10 @@ public class ArrayType extends UnqualifiedType {
   private ArrayInfo arrayInfo;
 
   public ArrayType(Type baseType, ArrayInfo arrayInfo) {
+    if (baseType instanceof QualifiedType) {
+      throw new IllegalArgumentException("Qualifiers should be applied to an array type, not to "
+          + "the array's base type.");
+    }
     this.baseType = baseType;
     this.arrayInfo = arrayInfo;
   }

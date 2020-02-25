@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -24,8 +25,10 @@ import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.TruncateLoops;
@@ -67,7 +70,7 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
     List<Stmt> donatedStmts = new ArrayList<>();
     for (Map.Entry<String, Type> vars : donationContext.getFreeVariables().entrySet()) {
       Type type = vars.getValue();
-      if (typeRefersToUniform(type)) {
+      if (type.hasQualifier(TypeQualifier.UNIFORM)) {
         // A uniform variable has to be globally-scoped.  As a result this variable will be
         // donated as a global, so we should not re-declare it here.
         continue;
@@ -83,9 +86,14 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
         initializer = getInitializer(injectionPoint, donationContext, type, true,
             generator, shadingLanguageVersion);
       }
+
+      final ArrayInfo arrayInfo = type.getWithoutQualifiers() instanceof ArrayType
+          ? ((ArrayType) type.getWithoutQualifiers()).getArrayInfo().clone()
+          : null;
+
       donatedStmts.add(new DeclarationStmt(
           new VariablesDeclaration(type,
-              new VariableDeclInfo(vars.getKey(), null, initializer))));
+              new VariableDeclInfo(vars.getKey(), arrayInfo, initializer))));
     }
     donatedStmts.add(donationContext.getDonorFragment());
     BlockStmt donatedStmt = new BlockStmt(donatedStmts, true);

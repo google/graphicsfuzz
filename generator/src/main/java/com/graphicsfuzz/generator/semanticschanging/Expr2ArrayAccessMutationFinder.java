@@ -53,9 +53,9 @@ public class Expr2ArrayAccessMutationFinder extends Expr2ExprMutationFinder {
       return;
     }
     ScopeEntry se = getCurrentScope().lookupScopeEntry(declInfo.getName());
-    if (se.getType() instanceof ArrayType) {
-      globalArrays.put(declInfo.getName(), ((ArrayType) se.getType()).getBaseType()
-          .getWithoutQualifiers());
+    if (se.getType().getWithoutQualifiers() instanceof ArrayType) {
+      globalArrays.put(declInfo.getName(), ((ArrayType) se.getType().getWithoutQualifiers())
+          .getBaseType());
     }
   }
 
