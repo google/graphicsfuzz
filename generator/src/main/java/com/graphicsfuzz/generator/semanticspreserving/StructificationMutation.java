@@ -32,6 +32,7 @@ import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.typing.SupportedTypes;
@@ -194,7 +195,7 @@ public class StructificationMutation implements Mutation {
         args.add(fieldType instanceof StructNameType
             ? makeInitializationExpr(tu.getStructDefinition((StructNameType) fieldType),
                 originalInitializer)
-            : fieldType.getCanonicalConstant());
+            : fieldType.getCanonicalConstant(new Scope()));
       } else {
         args.add(originalInitializer);
       }

@@ -25,7 +25,6 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
-import java.util.Optional;
 
 public class AddInitializers {
 
@@ -63,14 +62,14 @@ public class AddInitializers {
             if (vdi.hasArrayInfo()) {
               variableType = new ArrayType(variableType, vdi.getArrayInfo());
             }
-            if (!variableType.hasCanonicalConstant(Optional.of(getCurrentScope()))) {
+            if (!variableType.hasCanonicalConstant(getCurrentScope())) {
               // We don't know how to make a constant for this type, so we cannot add an
               // initializer.
               return;
             }
             // Add an initializer for this variable.
             vdi.setInitializer(new Initializer(
-                variableType.getCanonicalConstant(Optional.of(getCurrentScope()))));
+                variableType.getCanonicalConstant(getCurrentScope())));
           }
         }
       }.visit(tu);

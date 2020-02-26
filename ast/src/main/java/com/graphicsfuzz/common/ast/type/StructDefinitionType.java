@@ -155,7 +155,7 @@ public class StructDefinitionType extends UnqualifiedType {
   }
 
   @Override
-  public boolean hasCanonicalConstant(Optional<Scope> scope) {
+  public boolean hasCanonicalConstant(Scope scope) {
     // To give a constant for a struct, the struct needs to have a name and it must be possible
     // to make a constant for every field of the struct.
     return hasStructNameType() && fieldTypes
@@ -164,7 +164,7 @@ public class StructDefinitionType extends UnqualifiedType {
   }
 
   @Override
-  public Expr getCanonicalConstant(Optional<Scope> scope) {
+  public Expr getCanonicalConstant(Scope scope) {
     return new TypeConstructorExpr(getStructNameType().getName(),
         fieldTypes.stream()
             .map(item -> item.getCanonicalConstant(scope))

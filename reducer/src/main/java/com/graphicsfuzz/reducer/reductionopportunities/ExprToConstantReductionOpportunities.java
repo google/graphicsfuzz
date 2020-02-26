@@ -44,7 +44,7 @@ public final class ExprToConstantReductionOpportunities extends SimplifyExprRedu
           && !isFullyReducedConstant(child, typer)) {
       addOpportunity(new SimplifyExprReductionOpportunity(
                   parent,
-                  typer.lookupType(child).getCanonicalConstant(Optional.of(getCurrentScope())),
+                  typer.lookupType(child).getCanonicalConstant(getCurrentScope()),
                   child,
                   getVistitationDepth()));
     }
@@ -69,7 +69,7 @@ public final class ExprToConstantReductionOpportunities extends SimplifyExprRedu
   }
 
   private boolean typeIsReducibleToConst(Type type) {
-    return type != null && type.hasCanonicalConstant(Optional.of(getCurrentScope()));
+    return type != null && type.hasCanonicalConstant(getCurrentScope());
   }
 
   private boolean isFullyReducedConstant(Expr expr, Typer typer) {
@@ -77,13 +77,13 @@ public final class ExprToConstantReductionOpportunities extends SimplifyExprRedu
     if (type == null) {
       return false;
     }
-    if (!type.hasCanonicalConstant(Optional.of(getCurrentScope()))) {
+    if (!type.hasCanonicalConstant(getCurrentScope())) {
       return false;
     }
     // To make the reduced shader as clean as possible, we try reducing every constant to
     // something textually equivalent to its canonical constant.
     return expr.getText()
-        .equals(type.getCanonicalConstant(Optional.of(getCurrentScope())).getText());
+        .equals(type.getCanonicalConstant(getCurrentScope()).getText());
   }
 
 }

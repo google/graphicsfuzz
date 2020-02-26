@@ -20,18 +20,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.graphicsfuzz.common.typing.Scope;
 import org.junit.Test;
 
 public class BasicTypeTest {
 
   @Test
   public void testCanonicalConstant() {
-    assertEquals("1", BasicType.INT.getCanonicalConstant().getText());
-    assertEquals("1u", BasicType.UINT.getCanonicalConstant().getText());
-    assertEquals("1.0", BasicType.FLOAT.getCanonicalConstant().getText());
-    assertEquals("true", BasicType.BOOL.getCanonicalConstant().getText());
-    assertEquals("uvec4(1u)", BasicType.UVEC4.getCanonicalConstant().getText());
-    assertEquals("mat2(1.0)", BasicType.MAT2X2.getCanonicalConstant().getText());
+    assertEquals("1", BasicType.INT.getCanonicalConstant(new Scope()).getText());
+    assertEquals("1u", BasicType.UINT.getCanonicalConstant(new Scope()).getText());
+    assertEquals("1.0", BasicType.FLOAT.getCanonicalConstant(new Scope()).getText());
+    assertEquals("true", BasicType.BOOL.getCanonicalConstant(new Scope()).getText());
+    assertEquals("uvec4(1u)", BasicType.UVEC4.getCanonicalConstant(new Scope()).getText());
+    assertEquals("mat2(1.0)", BasicType.MAT2X2.getCanonicalConstant(new Scope()).getText());
   }
 
   @Test

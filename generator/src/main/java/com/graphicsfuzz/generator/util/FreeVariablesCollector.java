@@ -47,7 +47,7 @@ public class FreeVariablesCollector extends ScopeTrackingVisitor {
   @Override
   public void visit(IAstNode node) {
     if (node == donorFragment) {
-      enclosingScope = swapCurrentScope(new Scope(null));
+      enclosingScope = swapCurrentScope(new Scope());
     }
     super.visit(node);
     if (node == donorFragment) {
