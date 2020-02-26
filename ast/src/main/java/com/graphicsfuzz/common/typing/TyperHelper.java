@@ -316,6 +316,8 @@ public final class TyperHelper {
       ShadingLanguageVersion shadingLanguageVersion, ShaderKind shaderKind) {
     Map<String, List<FunctionPrototype>> builtinsForVersion = new HashMap<>();
 
+    // Section numbers refer to the ESSL 3.2 specification
+
     // 8.1: Angle and Trigonometric Functions
 
     getBuiltinsForGlslVersionAngleAndTrigonometric(shadingLanguageVersion,
@@ -349,13 +351,17 @@ public final class TyperHelper {
 
     getBuiltinsForGlslVersionInteger(builtinsForVersion, shadingLanguageVersion);
 
-    // 8.13: Fragment Processing Functions (only available in fragment shaders)
+    // 8.11: Atomic Memory Functions (only available in compute shaders)
+
+    if (shaderKind == ShaderKind.COMPUTE) {
+      getBuiltinsForGlslVersionAtomicMemory(builtinsForVersion, shadingLanguageVersion);
+    }
+
+    // 8.14: Fragment Processing Functions (only available in fragment shaders)
 
     if (shaderKind == ShaderKind.FRAGMENT) {
       getBuiltinsForGlslVersionFragmentProcessing(builtinsForVersion, shadingLanguageVersion);
     }
-
-    // 8.14: Noise Functions - deprecated, so we do not consider them
 
     return builtinsForVersion;
   }
@@ -757,6 +763,29 @@ public final class TyperHelper {
           addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
           addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
         }
+      }
+    }
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Atomic Memory Functions,
+   * as specified in section 8.11 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
+  private static void getBuiltinsForGlslVersionAtomicMemory(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+    if (shadingLanguageVersion.supportedAtomicMemoryFunctions()) {
+      for (Type t : Arrays.asList(BasicType.INT, BasicType.UINT)) {
+        for (String name : Arrays.asList("atomicAdd", "atomicMin", "atomicMax", "atomicAnd",
+            "atomicOr", "atomicXor", "atomicExchange")) {
+          addBuiltin(builtinsForVersion, name, t, new QualifiedType(t,
+              Collections.singletonList(TypeQualifier.INOUT_PARAM)), t);
+        }
+        addBuiltin(builtinsForVersion, "atomicCompSwap", t, new QualifiedType(t,
+            Collections.singletonList(TypeQualifier.INOUT_PARAM)), t, t);
       }
     }
   }

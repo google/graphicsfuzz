@@ -307,4 +307,10 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   public boolean supportedLdexp() {
     return prototype.supportedLdexp();
   }
+
+  @Override
+  public boolean supportedAtomicMemoryFunctions() {
+    return prototype.supportedAtomicMemoryFunctions();
+  }
+
 }
