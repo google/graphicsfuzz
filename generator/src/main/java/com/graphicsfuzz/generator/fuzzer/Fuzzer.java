@@ -60,6 +60,7 @@ import com.graphicsfuzz.generator.fuzzer.templates.FunctionCallExprTemplate;
 import com.graphicsfuzz.generator.fuzzer.templates.IExprTemplate;
 import com.graphicsfuzz.generator.fuzzer.templates.VariableIdentifierExprTemplate;
 import com.graphicsfuzz.generator.util.GenerationParams;
+import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -174,16 +175,7 @@ public class Fuzzer {
     }
     if (targetType instanceof ArrayType) {
       // TODO: we should use in-scope variables and functions to make arrays
-      if (!shadingLanguageVersion.restrictedArrayIndexing()) {
-        ArrayType arrayType = (ArrayType) targetType;
-        List<Expr> args = new ArrayList<>();
-        for (int i = 0; i < arrayType.getArrayInfo().getConstantSize(); i++) {
-          args.add(makeExpr(arrayType.getBaseType(), isLValue, constContext, depth + 1));
-        }
-        return new ArrayConstructorExpr((ArrayType) stripQualifiers(targetType), args);
-      } else {
-        throw new FuzzedIntoACornerException();
-      }
+      return generateArrayConstructor(targetType, isLValue, constContext, depth);
     }
     if (targetType instanceof StructNameType) {
       final String structName = ((StructNameType) targetType).getName();
@@ -199,6 +191,64 @@ public class Fuzzer {
     }
     throw new RuntimeException("Do not yet know how to make expr of type " + targetType.getClass());
 
+  }
+
+  private Expr generateArrayConstructor(Type targetType, boolean isLValue, boolean constContext,
+                                        int depth) {
+    if (shadingLanguageVersion.supportedArrayConstructors()) {
+      final ArrayType arrayType = (ArrayType) targetType;
+
+      // We want to generate an expression for each array index.  But if the array is
+      // large, there is a high chance we will fail to generate expressions for some
+      // indices, leading to a "fuzzed into a corner" exception.
+      //
+      // What we do is try SIZE_OF_ARRAY times to generate an expression, storing all the
+      // expressions we successfully generate.  If we fail to generate *any* then we throw a
+      // "fuzzed into a corner" exception.  Otherwise, we re-use the set of expressions we did
+      // manage to generate as much as needed in order to get the required number of expressions.
+      //
+      // However, because SIZE_OF_ARRAY could be very large, we bound the number of expressions
+      // we generate by a constant, and resort to re-use to generate very large arrays.
+
+      // These are the expressions we will initially generate.
+      final List<Expr> generatedExprs = new ArrayList<>();
+      for (int i = 0; i < Math.min(Constants.MAX_GENERATED_EXPRESSIONS_FOR_ARRAY_CONSTRUCTOR,
+          arrayType.getArrayInfo().getConstantSize()); i++) {
+        try {
+          generatedExprs.add(makeExpr(arrayType.getBaseType(), isLValue, constContext, depth + 1));
+        } catch (FuzzedIntoACornerException exception) {
+          // Didn't manage to generate an expression this time; move on.
+        }
+      }
+
+      if (generatedExprs.isEmpty()) {
+        // Nothing worked!  Give up.
+        throw new FuzzedIntoACornerException();
+      }
+
+      // 'args' will have the final list of expressions for the array constructor.  We populate
+      // it by repeatedly removing elements from the sequence of expressions we generated, adding
+      // clones of them to 'args', and then using them again and again until 'args' is full.
+      // 'current' and 'next' support this re-use; we move expressions from 'current' to 'next'
+      // until current is empty, and then swap 'current' with 'next'.
+      final List<Expr> args = new ArrayList<>();
+      List<Expr> current = generatedExprs;
+      List<Expr> next = new ArrayList<>();
+      for (int i = 0; i < arrayType.getArrayInfo().getConstantSize(); i++) {
+        assert (!current.isEmpty());
+        final Expr expr = current.remove(generator.nextInt(current.size()));
+        args.add(expr.clone());
+        next.add(expr);
+        if (current.isEmpty()) {
+          List<Expr> temp = current;
+          current = next;
+          next = temp;
+        }
+      }
+      return new ArrayConstructorExpr((ArrayType) stripQualifiers(targetType), args);
+    } else {
+      throw new FuzzedIntoACornerException();
+    }
   }
 
   private boolean isTooDeep(int depth) {

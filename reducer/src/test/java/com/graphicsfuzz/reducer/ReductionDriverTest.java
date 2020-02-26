@@ -463,26 +463,20 @@ public class ReductionDriverTest {
 
   @Test
   public void testVertexShaderIsCarriedThroughReduction() throws Exception {
-    String frag = "void main() {"
-        + "  int shouldBeRemoved;"
-        + "}";
-    String vert = "void main() {"
-        + "  int shouldNotBeRemoved;"
-        + "}";
+    String frag = "void main() {\n"
+        + "  int shouldBeRemoved = 1;\n"
+        + "}\n";
+    String vert = "void main() {\n"
+        + "  int shouldNotBeRemoved = 1;\n"
+        + "}\n";
     String json = "{ }";
-    final IRandom generator = new RandomWrapper(0);
 
-    final IFileJudge checkVertexShader = new IFileJudge() {
-      @Override
-      public boolean isInteresting(
-          File shaderJobFile,
-          File shaderResultFileOutput) throws FileJudgeException {
-        try {
-          String vertexContents = fileOps.getShaderContents(shaderJobFile, ShaderKind.VERTEX);
-          return vertexContents.contains("shouldNotBeRemoved");
-        } catch (IOException e) {
-          throw new FileJudgeException(e);
-        }
+    final IFileJudge checkVertexShader = (shaderJobFile, shaderResultFileOutput) -> {
+      try {
+        String vertexContents = fileOps.getShaderContents(shaderJobFile, ShaderKind.VERTEX);
+        return vertexContents.contains("shouldNotBeRemoved");
+      } catch (IOException e) {
+        throw new FileJudgeException(e);
       }
     };
 
@@ -496,12 +490,12 @@ public class ReductionDriverTest {
 
   @Test
   public void testReductionOfVertexShader() throws Exception {
-    String frag = "void main() {"
-        + "  int shouldNotBeRemoved;"
-        + "}";
-    String vert = "void main() {"
-        + "  int shouldBeRemoved;"
-        + "}";
+    String frag = "void main() {\n"
+        + "  int shouldNotBeRemoved = 1;\n"
+        + "}\n";
+    String vert = "void main() {\n"
+        + "  int shouldBeRemoved = 1;\n"
+        + "}\n";
     String json = "{ }";
     final IRandom generator = new RandomWrapper(0);
 
@@ -619,7 +613,7 @@ public class ReductionDriverTest {
 
     final String expected = "#version 310 es\n"
         + "void main() {\n"
-        + "  mix(0.0, 1.0, 0.0);\n"
+        + "  mix(1.0, 1.0, 1.0);\n"
         + "}\n";
 
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
@@ -852,6 +846,59 @@ public class ReductionDriverTest {
         .doReduction(shaderJob, "temp", 0, 100);
 
     CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+
+  }
+
+  @Test
+  public void testMakingArrayAccessesInBoundsIsValid() throws Exception {
+
+    // Checks that the shaders to which the interestingness test is applied are always valid.  In
+    // particular, this is designed to check that the shader with in-bounds array indices that is
+    // tried at the start of the reduction process, is valid.
+
+    final String shaderSwitch = "#version 310 es\n"
+        + "precision highp float;\n"
+        + "void main() {\n"
+        + "  int A[3];\n"
+        + "  for (int i = 0; i < 12; i++) {\n"
+        + "    A[i] = i;\n"
+        + "  }\n"
+        + "}\n";
+
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  0;\n"
+        + "}\n";
+
+    final IFileJudge customFileJudge = new IFileJudge() {
+      @Override
+      public boolean isInteresting(File shaderJobFile, File shaderResultFileOutput) throws FileJudgeException {
+        try {
+          fileOps.areShadersValid(shaderJobFile, true);
+        } catch (IOException | InterruptedException exception) {
+          throw new FileJudgeException(exception);
+        }
+        return true;
+      }
+    };
+
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        new PipelineInfo(),
+        ParseHelper.parse(shaderSwitch));
+
+    final File workDir = testFolder.getRoot();
+    final File tempShaderJobFile = new File(workDir, "temp.json");
+    fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
+
+    new ReductionDriver(new ReducerContext(true,
+        ShadingLanguageVersion.ESSL_310,
+        new RandomWrapper(0),
+        new IdGenerator()),
+        false,
+        fileOps,
+        customFileJudge,
+        workDir)
+        .doReduction(shaderJob, "temp", 0, 100);
 
   }
 

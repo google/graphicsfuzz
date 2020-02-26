@@ -110,6 +110,9 @@ limitations under the License.
              value="CLASS_DEF, METHOD_DEF, CTOR_DEF, LITERAL_FOR, LITERAL_WHILE, STATIC_INIT,
                     INSTANCE_INIT, ANNOTATION_DEF, ENUM_DEF"/>
         </module>
+        <module name="WhitespaceAfter">
+            <property name="tokens" value="COMMA"/>
+	</module>
         <module name="WhitespaceAround">
             <property name="allowEmptyConstructors" value="true"/>
             <property name="allowEmptyLambdas" value="true"/>

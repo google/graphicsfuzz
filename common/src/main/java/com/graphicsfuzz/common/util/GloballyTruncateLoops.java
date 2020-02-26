@@ -16,7 +16,34 @@
 
 package com.graphicsfuzz.common.util;
 
+import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.Declaration;
+import com.graphicsfuzz.common.ast.decl.Initializer;
+import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
+import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.ParenExpr;
+import com.graphicsfuzz.common.ast.expr.UnOp;
+import com.graphicsfuzz.common.ast.expr.UnaryExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
+import com.graphicsfuzz.common.ast.stmt.BlockStmt;
+import com.graphicsfuzz.common.ast.stmt.DoStmt;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.ForStmt;
+import com.graphicsfuzz.common.ast.stmt.LoopStmt;
+import com.graphicsfuzz.common.ast.stmt.WhileStmt;
+import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.TypeQualifier;
+import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import java.util.Arrays;
+import java.util.Collections;
 
 public class GloballyTruncateLoops {
 
@@ -39,9 +66,109 @@ public class GloballyTruncateLoops {
    */
   public static void truncate(ShaderJob shaderJob, int loopLimit, String loopCountName,
                               String loopBoundName) {
-    // TODO(https://github.com/google/graphicsfuzz/issues/866): Implement loop limiting
-    //  logic.
-    throw new RuntimeException("Not implemented yet.");
-  }
 
+    // Consider each shader in the shader job.
+    for (TranslationUnit tu : shaderJob.getShaders()) {
+
+      // Truncate any non-trivial loop in the translation unit, and record whether any truncation
+      // was in fact necessary.
+      final boolean globalDeclarationsAreNecessary = new StandardVisitor() {
+
+        // This field gets set to true when a truncation is applied.  Its final value tells us
+        // whether we need to add global declarations for the loop limiter (we don't if there is no
+        // truncation).
+        private boolean appliedAtLeastOneTruncation = false;
+
+        // Converts loop condition from "x" to "(x) && (lc<lb)".
+        private Expr buildCondition(Expr originalCondition) {
+          return new BinaryExpr(
+              new ParenExpr(originalCondition),
+              new ParenExpr(
+                  new BinaryExpr(new VariableIdentifierExpr(loopCountName),
+                      new VariableIdentifierExpr(loopBoundName),
+                      BinOp.LT)),
+              BinOp.LAND);
+        }
+
+        // Check if the loop condition is just "false".
+        private boolean isFalseLiteral(Expr conditionExpr) {
+          return !(conditionExpr instanceof BoolConstantExpr
+              && !((BoolConstantExpr)conditionExpr).getIsTrue());
+        }
+
+        // Common code for all loop structures
+        private void handleLoopStmt(LoopStmt loopStmt, boolean newScope) {
+          if (isFalseLiteral(loopStmt.getCondition())) {
+            // We are truncating a loop - record the fact that at least one truncation has been
+            // applied.
+            appliedAtLeastOneTruncation = true;
+            loopStmt.setCondition(buildCondition(loopStmt.getCondition()));
+            // Add block statement if it's missing.
+            if (!(loopStmt.getBody() instanceof BlockStmt)) {
+              loopStmt.setBody(new BlockStmt(Collections.singletonList(loopStmt.getBody()),
+                  newScope));
+            }
+            // Add loop count increment a start of body block.
+            ((BlockStmt) loopStmt.getBody()).insertStmt(0,
+                new ExprStmt(new UnaryExpr(new VariableIdentifierExpr(loopCountName),
+                    UnOp.POST_INC)));
+          }
+        }
+
+        @Override
+        public void visitForStmt(ForStmt forStmt) {
+          handleLoopStmt(forStmt, true);
+          super.visitForStmt(forStmt);
+        }
+
+        @Override
+        public void visitWhileStmt(WhileStmt whileStmt) {
+          handleLoopStmt(whileStmt, false);
+          super.visitWhileStmt(whileStmt);
+        }
+
+        @Override
+        public void visitDoStmt(DoStmt doStmt) {
+          handleLoopStmt(doStmt, true);
+          super.visitDoStmt(doStmt);
+        }
+
+        private boolean truncate(TranslationUnit tu) {
+          // Traverse the shader, truncating loops as needed, and return true if and only if at
+          // least one loop was truncated.
+          visit(tu);
+          return appliedAtLeastOneTruncation;
+        }
+
+      }.truncate(tu);
+
+      if (globalDeclarationsAreNecessary) {
+        // Some loop was truncated, so we need to declare the global loop limiter variable and loop
+        // bound constant.
+
+        // We want to add the new declarations at the top of the module, but after any leading
+        // precision declarations.
+        Declaration firstNonPrecisionDeclaration = null;
+        for (Declaration decl : tu.getTopLevelDeclarations()) {
+          if (decl instanceof PrecisionDeclaration) {
+            continue;
+          }
+          firstNonPrecisionDeclaration = decl;
+          break;
+        }
+        assert firstNonPrecisionDeclaration != null;
+        // Add loop bound variable.
+        tu.addDeclarationBefore(new VariablesDeclaration(new QualifiedType(BasicType.INT,
+                Arrays.asList(TypeQualifier.CONST)), new VariableDeclInfo(loopBoundName, null,
+                new Initializer(new IntConstantExpr(new Integer(loopLimit).toString())))),
+            firstNonPrecisionDeclaration);
+        // Add loop count variable.
+        tu.addDeclarationBefore(new VariablesDeclaration(BasicType.INT,
+                new VariableDeclInfo(loopCountName, null,
+                    new Initializer(new IntConstantExpr("0")))),
+            firstNonPrecisionDeclaration);
+
+      }
+    }
+  }
 }

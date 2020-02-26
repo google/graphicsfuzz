@@ -45,8 +45,8 @@ final class Essl100 implements ShadingLanguageVersion {
   }
 
   @Override
-  public boolean restrictedArrayIndexing() {
-    return true;
+  public boolean supportedArrayConstructors() {
+    return false;
   }
 
   @Override

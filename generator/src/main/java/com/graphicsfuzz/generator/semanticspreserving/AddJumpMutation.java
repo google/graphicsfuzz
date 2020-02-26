@@ -35,6 +35,7 @@ import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import java.util.ArrayList;
+import java.util.Optional;
 
 public class AddJumpMutation implements Mutation {
 
@@ -105,7 +106,7 @@ public class AddJumpMutation implements Mutation {
                                    GenerationParams generationParams) {
     Type returnType = injectionPoint.getEnclosingFunction().getPrototype().getReturnType();
     Stmt stmtToInject;
-    if (returnType.hasCanonicalConstant()) {
+    if (returnType.hasCanonicalConstant(Optional.of(injectionPoint.scopeAtInjectionPoint()))) {
       stmtToInject = new ReturnStmt(returnType.getCanonicalConstant());
     } else if (returnType.getWithoutQualifiers() == VoidType.VOID) {
       stmtToInject = new ReturnStmt();

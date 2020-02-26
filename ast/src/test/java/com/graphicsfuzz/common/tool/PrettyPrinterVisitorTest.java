@@ -191,6 +191,25 @@ public class PrettyPrinterVisitorTest {
   }
 
   @Test
+  public void testParseAndPrintArrayParameter() throws Exception {
+    final String program = "void foo(int A[2])\n"
+        + "{\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
+  }
+
+  @Test
+  public void testParseAndPrintArrayVariable() throws Exception {
+    final String program = "void main()\n"
+        + "{\n"
+        + " int A[2] = int[2](1, 2);\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
+  }
+
+  @Test
   public void testParseAndPrintStructs2() throws Exception {
     // This checks exact layout, so will require maintenance if things change.
     // This is expected and deliberate: do the maintenance :)

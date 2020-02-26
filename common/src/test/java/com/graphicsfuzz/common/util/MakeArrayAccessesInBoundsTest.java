@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.donation;
+package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.typing.Typer;
-import com.graphicsfuzz.common.util.CompareAsts;
-import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.util.Constants;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -36,8 +32,7 @@ public class MakeArrayAccessesInBoundsTest {
     final String expected = "#version 300 es\nvoid main() { int A[5]; int x = 17; A["
     + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 5)] = 2; }";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    final Typer typer = new Typer(tu);
-    MakeArrayAccessesInBounds.makeInBounds(tu, typer, tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
@@ -50,8 +45,7 @@ public class MakeArrayAccessesInBoundsTest {
           + "  /* column */ [" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(y, 4)]"
           + "  /* row */ [" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(z, 2)] = 2.0; }";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    final Typer typer = new Typer(tu);
-    MakeArrayAccessesInBounds.makeInBounds(tu, typer, tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
@@ -81,8 +75,7 @@ public class MakeArrayAccessesInBoundsTest {
           + "  f = v[" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(z, 4)];"
           + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    final Typer typer = new Typer(tu);
-    MakeArrayAccessesInBounds.makeInBounds(tu, typer, tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
@@ -100,8 +93,7 @@ public class MakeArrayAccessesInBoundsTest {
         + "  vec3 f = stuff[" + Constants.GLF_MAKE_IN_BOUNDS_UINT + "(x, 16u)];"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    final Typer typer = new Typer(tu);
-    MakeArrayAccessesInBounds.makeInBounds(tu, typer, tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
@@ -120,8 +112,7 @@ public class MakeArrayAccessesInBoundsTest {
         + "uselessOut), 16u)];"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    final Typer typer = new Typer(tu);
-    MakeArrayAccessesInBounds.makeInBounds(tu, typer, tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
@@ -133,8 +124,7 @@ public class MakeArrayAccessesInBoundsTest {
         + "  stuff[3u] = 1.0;"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    final Typer typer = new Typer(tu);
-    MakeArrayAccessesInBounds.makeInBounds(tu, typer, tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)),
         PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
@@ -162,7 +152,7 @@ public class MakeArrayAccessesInBoundsTest {
         + "  myS.A[" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 3)] = 6;\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    MakeArrayAccessesInBounds.makeInBounds(tu, new Typer(tu), tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -191,7 +181,7 @@ public class MakeArrayAccessesInBoundsTest {
         + "  myS.A[" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 3)] = 6;\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    MakeArrayAccessesInBounds.makeInBounds(tu, new Typer(tu), tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -217,7 +207,7 @@ public class MakeArrayAccessesInBoundsTest {
         + "  foo(A, 7);\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    MakeArrayAccessesInBounds.makeInBounds(tu, new Typer(tu), tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -245,7 +235,7 @@ public class MakeArrayAccessesInBoundsTest {
         + "  foo(A, 7);\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    MakeArrayAccessesInBounds.makeInBounds(tu, new Typer(tu), tu);
+    MakeArrayAccessesInBounds.makeInBounds(tu);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 

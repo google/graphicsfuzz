@@ -18,6 +18,8 @@ package com.graphicsfuzz.common.ast.type;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import com.graphicsfuzz.common.typing.Scope;
+import java.util.Optional;
 
 public final class StructNameType extends UnqualifiedType {
 
@@ -67,13 +69,19 @@ public final class StructNameType extends UnqualifiedType {
   }
 
   @Override
-  public final boolean hasCanonicalConstant() {
-    return false;
+  public final boolean hasCanonicalConstant(Optional<Scope> scope) {
+    if (!scope.isPresent()) {
+      throw new RuntimeException("A scope must be provided when checking whether a struct type "
+          + "has a canonical constant; the parameter is optional in general to ease the case "
+          + "where a canonical constant is required for a type that is guaranteed not to involve "
+          + "a struct.");
+    }
+    return scope.get().lookupStructName(name).hasCanonicalConstant(scope);
   }
 
   @Override
-  public final Expr getCanonicalConstant() {
-    throw new UnsupportedOperationException("Canonical constants not yet supported for structs.");
+  public final Expr getCanonicalConstant(Optional<Scope> scope) {
+    return scope.get().lookupStructName(name).getCanonicalConstant(scope);
   }
 
 }

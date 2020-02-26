@@ -87,4 +87,17 @@ public final class Constants {
   // the buffer.
   public static final String COMPUTE_FIELDS = "fields";
 
+  // The maximum number of total loop iterations when using a global loop limiter.
+  public static final int GLF_GLOBAL_LOOP_BOUND_VALUE = 100;
+
+  // Name of the global loop counter variable when using a global loop limiter.
+  public static final String GLF_GLOBAL_LOOP_COUNT_NAME = "_GLF_global_loop_count";
+
+  // Name of the constant storing the total loop bound when using a global loop limiter.
+  public static final String GLF_GLOBAL_LOOP_BOUND_NAME = "_GLF_global_loop_bound";
+
+  // We do not want to spend too long generating expressions for array constructors, so we set a
+  // limit on how many distinct expressions we will generate for this purpose.
+  public static final int MAX_GENERATED_EXPRESSIONS_FOR_ARRAY_CONSTRUCTOR = 20;
+
 }

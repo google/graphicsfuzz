@@ -44,8 +44,8 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   }
 
   @Override
-  public boolean restrictedArrayIndexing() {
-    return prototype.restrictedArrayIndexing();
+  public boolean supportedArrayConstructors() {
+    return prototype.supportedArrayConstructors();
   }
 
   @Override

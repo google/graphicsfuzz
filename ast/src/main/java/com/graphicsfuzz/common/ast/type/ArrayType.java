@@ -17,8 +17,13 @@
 package com.graphicsfuzz.common.ast.type;
 
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
+import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import com.graphicsfuzz.common.typing.Scope;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class ArrayType extends UnqualifiedType {
 
@@ -26,6 +31,10 @@ public class ArrayType extends UnqualifiedType {
   private ArrayInfo arrayInfo;
 
   public ArrayType(Type baseType, ArrayInfo arrayInfo) {
+    if (baseType instanceof QualifiedType) {
+      throw new IllegalArgumentException("Qualifiers should be applied to an array type, not to "
+          + "the array's base type.");
+    }
     this.baseType = baseType;
     this.arrayInfo = arrayInfo;
   }
@@ -68,13 +77,18 @@ public class ArrayType extends UnqualifiedType {
   }
 
   @Override
-  public boolean hasCanonicalConstant() {
-    return false;
+  public boolean hasCanonicalConstant(Optional<Scope> scope) {
+    return baseType.hasCanonicalConstant(scope) && arrayInfo.hasConstantSize();
   }
 
   @Override
-  public Expr getCanonicalConstant() {
-    throw new RuntimeException("No canonical constant for ArrayType");
+  public Expr getCanonicalConstant(Optional<Scope> scope) {
+    final Expr canonicalConstantForBaseType = baseType.getCanonicalConstant(scope);
+    final List<Expr> componentConstants = new ArrayList<>();
+    for (int i = 0; i < arrayInfo.getConstantSize(); i++) {
+      componentConstants.add(canonicalConstantForBaseType.clone());
+    }
+    return new ArrayConstructorExpr(this.clone(), componentConstants);
   }
 
 }

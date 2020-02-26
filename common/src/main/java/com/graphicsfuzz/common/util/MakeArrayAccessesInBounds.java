@@ -14,31 +14,26 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.transformation.donation;
+package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
-import com.graphicsfuzz.common.ast.expr.BinOp;
-import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
-import com.graphicsfuzz.common.ast.expr.ParenExpr;
-import com.graphicsfuzz.common.ast.expr.TernaryExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.util.Constants;
 
 public class MakeArrayAccessesInBounds extends ScopeTrackingVisitor {
 
-  private Typer typer;
+  private final Typer typer;
 
   private MakeArrayAccessesInBounds(Typer typer) {
     this.typer = typer;
@@ -46,12 +41,18 @@ public class MakeArrayAccessesInBounds extends ScopeTrackingVisitor {
 
   /**
    * Clamp array / vector / matrix accesses to ensure they will be in-bounds.
-   * @param node AST node under which accesses should be made in bound.
-   * @param typer Type info for the AST.
-   * @param tu The translation unit in which node is contained.
+   * @param tu The translation unit in which accesses are to be made in-bounds.
    */
-  public static void makeInBounds(IAstNode node, Typer typer, TranslationUnit tu) {
-    new MakeArrayAccessesInBounds(typer).visit(node);
+  public static void makeInBounds(TranslationUnit tu) {
+    new MakeArrayAccessesInBounds(new Typer(tu)).visit(tu);
+  }
+
+  /**
+   * Clamp accesses in all shaders in a shader job.
+   * @param shaderJob The shader job to be made in-bounds.
+   */
+  public static void makeInBounds(ShaderJob shaderJob) {
+    shaderJob.getShaders().forEach(MakeArrayAccessesInBounds::makeInBounds);
   }
 
   @Override

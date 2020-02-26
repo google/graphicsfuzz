@@ -18,11 +18,16 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public final class ExprToConstantReductionOpportunities extends SimplifyExprReductionOpportunities {
 
@@ -36,10 +41,10 @@ public final class ExprToConstantReductionOpportunities extends SimplifyExprRedu
   void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
     if (allowedToReduceExpr(parent, child) && !inLValueContext()
           && typeIsReducibleToConst(typer.lookupType(child))
-          && !isFullyReducedConstant(child)) {
+          && !isFullyReducedConstant(child, typer)) {
       addOpportunity(new SimplifyExprReductionOpportunity(
                   parent,
-                  typer.lookupType(child).getCanonicalConstant(),
+                  typer.lookupType(child).getCanonicalConstant(Optional.of(getCurrentScope())),
                   child,
                   getVistitationDepth()));
     }
@@ -62,4 +67,23 @@ public final class ExprToConstantReductionOpportunities extends SimplifyExprRedu
     finder.visit(tu);
     return finder.getOpportunities();
   }
+
+  private boolean typeIsReducibleToConst(Type type) {
+    return type != null && type.hasCanonicalConstant(Optional.of(getCurrentScope()));
+  }
+
+  private boolean isFullyReducedConstant(Expr expr, Typer typer) {
+    final Type type = typer.lookupType(expr);
+    if (type == null) {
+      return false;
+    }
+    if (!type.hasCanonicalConstant(Optional.of(getCurrentScope()))) {
+      return false;
+    }
+    // To make the reduced shader as clean as possible, we try reducing every constant to
+    // something textually equivalent to its canonical constant.
+    return expr.getText()
+        .equals(type.getCanonicalConstant(Optional.of(getCurrentScope())).getText());
+  }
+
 }

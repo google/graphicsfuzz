@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
@@ -25,6 +26,7 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
@@ -103,14 +105,17 @@ public class DonateDeadCodeTransformation extends DonateCodeTransformation {
             injectionPoint,
             donationContext,
             type,
-            type instanceof QualifiedType && ((QualifiedType) type)
-                .hasQualifier(TypeQualifier.CONST),
+            type.hasQualifier(TypeQualifier.CONST),
             generator,
             shadingLanguageVersion);
 
+        final ArrayInfo arrayInfo = type.getWithoutQualifiers() instanceof ArrayType
+            ? ((ArrayType) type.getWithoutQualifiers()).getArrayInfo().clone()
+            : null;
+
         donatedStmts.add(new DeclarationStmt(
             new VariablesDeclaration(dropQualifiersThatCannotBeUsedForLocalVariable(type),
-                new VariableDeclInfo(newName, null,
+                new VariableDeclInfo(newName, arrayInfo,
                     initializer))));
       }
     }

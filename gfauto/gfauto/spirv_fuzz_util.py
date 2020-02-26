@@ -33,6 +33,7 @@ def run_generate(
     spirv_fuzz_path: Path,
     reference_shader_spv: Path,
     output_shader_spv: Path,
+    donors_list_path: Path,
     seed: Optional[str] = None,
     other_args: Optional[List[str]] = None,
 ) -> Path:
@@ -48,6 +49,7 @@ def run_generate(
         str(reference_shader_spv),
         "-o",
         str(output_shader_spv),
+        f"--donors={str(donors_list_path)}",
     ]
 
     if seed:
@@ -80,9 +82,13 @@ def run_generate_on_shader_job(
     spirv_fuzz_path: Path,
     reference_shader_json: Path,
     output_shader_json: Path,
+    donor_shader_job_paths: Optional[List[Path]] = None,
     seed: Optional[str] = None,
     other_args: Optional[List[str]] = None,
 ) -> Path:
+
+    if donor_shader_job_paths is None:
+        donor_shader_job_paths = []
 
     util.copy_file(reference_shader_json, output_shader_json)
 
@@ -91,12 +97,24 @@ def run_generate_on_shader_job(
     )
 
     for suffix in suffixes_that_exist:
+
+        # Create a donors list file "donors.{suffix}.txt" containing the file paths to all relevant donor .spv shaders.
+        donor_list_contents = ""
+        for donor_shader_job_path in donor_shader_job_paths:
+            donor_shader_path = donor_shader_job_path.with_suffix(suffix)
+            if donor_shader_path.exists():
+                donor_list_contents += f"{str(donor_shader_path)}\n"
+        donors_list_path = util.file_write_text(
+            reference_shader_json.parent / f"donors{suffix}.txt", donor_list_contents
+        )
+
         run_generate(
             spirv_fuzz_path,
             reference_shader_json.with_suffix(suffix),
             output_shader_json.with_suffix(suffix),
-            seed,
-            other_args,
+            donors_list_path=donors_list_path,
+            seed=seed,
+            other_args=other_args,
         )
 
     return output_shader_json

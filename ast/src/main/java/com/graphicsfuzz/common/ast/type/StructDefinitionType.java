@@ -17,7 +17,9 @@
 package com.graphicsfuzz.common.ast.type;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import com.graphicsfuzz.common.typing.Scope;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -153,15 +155,20 @@ public class StructDefinitionType extends UnqualifiedType {
   }
 
   @Override
-  public boolean hasCanonicalConstant() {
-    // TODO: add generation of canonical constants.
-    return false;
+  public boolean hasCanonicalConstant(Optional<Scope> scope) {
+    // To give a constant for a struct, the struct needs to have a name and it must be possible
+    // to make a constant for every field of the struct.
+    return hasStructNameType() && fieldTypes
+        .stream()
+        .allMatch(item -> item.hasCanonicalConstant(scope));
   }
 
   @Override
-  public Expr getCanonicalConstant() {
-    throw new UnsupportedOperationException("Support for canonical struct constants not yet added"
-        + ".");
+  public Expr getCanonicalConstant(Optional<Scope> scope) {
+    return new TypeConstructorExpr(getStructNameType().getName(),
+        fieldTypes.stream()
+            .map(item -> item.getCanonicalConstant(scope))
+            .collect(Collectors.toList()));
   }
 
 }
