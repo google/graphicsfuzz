@@ -19,6 +19,7 @@ package com.graphicsfuzz.common.typing;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
@@ -43,6 +44,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.util.Constants;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,11 +64,15 @@ public class Typer extends ScopeTrackingVisitor {
 
   private final Map<StructNameType, StructDefinitionType> structDeclarationMap;
 
+  // The interface blocks observed so far during type-checking.
+  private final List<InterfaceBlock> interfaceBlocks;
+
   public Typer(TranslationUnit tu) {
     this.tu = tu;
     this.types = new HashMap<>();
     this.userDefinedFunctions = new HashMap<>();
     this.structDeclarationMap = new HashMap<>();
+    this.interfaceBlocks = new ArrayList<>();
     visit(tu);
   }
 
@@ -221,6 +227,15 @@ public class Typer extends ScopeTrackingVisitor {
       types.put(variableIdentifierExpr, type);
       return;
     }
+    for (InterfaceBlock interfaceBlock : interfaceBlocks) {
+      final Optional<Type> memberType =
+          interfaceBlock.getMemberType(variableIdentifierExpr.getName());
+      if (memberType.isPresent()) {
+        types.put(variableIdentifierExpr, memberType.get());
+        return;
+      }
+    }
+
     maybeGetTypeOfBuiltinVariable(variableIdentifierExpr.getName())
         .ifPresent(item -> types.put(variableIdentifierExpr, item));
   }
@@ -536,6 +551,14 @@ public class Typer extends ScopeTrackingVisitor {
       elementType = ((ArrayType) arrayType).getBaseType();
     }
     types.put(arrayIndexExpr, elementType);
+  }
+
+  @Override
+  public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
+    super.visitInterfaceBlock(interfaceBlock);
+    // Record this interface block is now in scope, so that it can be searched later when resolving
+    // identifier names.
+    interfaceBlocks.add(interfaceBlock);
   }
 
   /**
