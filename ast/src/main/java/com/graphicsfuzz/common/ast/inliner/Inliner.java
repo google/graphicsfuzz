@@ -206,12 +206,12 @@ public class Inliner {
 
   private boolean hasArrayParameter(FunctionDefinition functionDefinition) {
     return functionDefinition.getPrototype().getParameters().stream()
-          .anyMatch(item -> item.getArrayInfo() != null);
+          .anyMatch(ParameterDecl::hasArrayInfo);
   }
 
   private boolean hasOutQualifier(FunctionDefinition functionDefinition) {
     return functionDefinition.getPrototype().getParameters().stream()
-          .map(item -> item.getType())
+          .map(ParameterDecl::getType)
           .anyMatch(item -> item.hasQualifier(TypeQualifier.OUT_PARAM)
                 || item.hasQualifier(TypeQualifier.INOUT_PARAM));
   }

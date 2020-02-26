@@ -23,6 +23,7 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import com.graphicsfuzz.common.typing.Scope;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class ArrayType extends UnqualifiedType {
@@ -60,15 +61,23 @@ public class ArrayType extends UnqualifiedType {
     if (!(that instanceof ArrayType)) {
       return false;
     }
-    ArrayType thatArrayType = (ArrayType) that;
-    return this.baseType.equals(thatArrayType.baseType)
-        && this.arrayInfo.equals(thatArrayType.arrayInfo);
+    final ArrayType thatArrayType = (ArrayType) that;
+    if (!this.baseType.equals(thatArrayType.baseType)) {
+      return false;
+    }
+    if (this.arrayInfo.hasConstantSize()) {
+      return thatArrayType.arrayInfo.hasConstantSize()
+          && this.arrayInfo.getConstantSize().equals(thatArrayType.arrayInfo.getConstantSize());
+    } else {
+      return !thatArrayType.arrayInfo.hasConstantSize();
+    }
   }
 
   @Override
   public int hashCode() {
-    // TODO: revisit if we end up storing large sets of types
-    return baseType.hashCode() + arrayInfo.hashCode();
+    return Objects.hash(baseType, arrayInfo.hasConstantSize()
+        ? arrayInfo.getConstantSize()
+        : arrayInfo.hasConstantSize());
   }
 
   @Override

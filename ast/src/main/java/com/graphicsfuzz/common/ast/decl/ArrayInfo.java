@@ -93,9 +93,6 @@ public class ArrayInfo implements IAstNode {
     if (hasConstantSize()) {
       return constantSize.get();
     }
-    // TODO(https://github.com/google/graphicsfuzz/issues/784) Until array parameter support
-    //  is overhauled there could be array parameters to which constant folding has not been
-    //  applied.
     throw new UnsupportedLanguageFeatureException("Not a constant expression");
   }
 
