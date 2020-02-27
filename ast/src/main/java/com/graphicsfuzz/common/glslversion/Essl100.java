@@ -308,4 +308,10 @@ final class Essl100 implements ShadingLanguageVersion {
   public boolean supportedLdexp() {
     return false;
   }
+
+  @Override
+  public boolean supportedAtomicMemoryFunctions() {
+    return false;
+  }
+
 }

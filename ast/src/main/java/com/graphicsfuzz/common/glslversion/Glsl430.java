@@ -35,4 +35,9 @@ final class Glsl430 extends CompositeShadingLanguageVersion {
     return true;
   }
 
+  @Override
+  public boolean supportedAtomicMemoryFunctions() {
+    return true;
+  }
+
 }
