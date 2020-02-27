@@ -127,9 +127,8 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
       if (!addEncounteredParametersToScope || p.getName() == null) {
         continue;
       }
-      Type type = getTypeForFunctionParameter(p);
       currentScope.add(p.getName(),
-          type,
+          Typer.combineBaseTypeAndArrayInfo(p.getType(), p.getArrayInfo()),
           Optional.of(p));
     }
   }
@@ -151,44 +150,10 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
       // subclasses the flexibility to examine both cases.
       visitVariableDeclInfo(declInfo);
 
-      // We record a type for declInfo.name.  If declInfo is not an array, this is just the base
-      // type for the variables declaration.  But if declInfo *is* an array, we need to promote
-      // any qualifiers applied to the base type to apply to the whole array.  That is, we want to
-      // give A in:
-      //
-      // const int A[3] = ...;
-      //
-      // the type QualifiedType(ArrayType(int, 3), const)
-      //
-      // not:
-      //
-      // ArrayType(QualifiedType(int, const), 3)
-
-      // Get the base type for the variables declaration.
-      final Type variablesDeclarationBaseType = variablesDeclaration.getBaseType();
-
-      // Now get a type for declInfo depending on whether or not it is an array.
-      Type declInfoType;
-      if (declInfo.hasArrayInfo()) {
-        // Make an array type using a qualifier-free version of the variables declaration base type.
-        final ArrayType arrayType = new ArrayType(variablesDeclarationBaseType
-            .getWithoutQualifiers(),
-            declInfo.getArrayInfo());
-        // If the variables declaration base type had qualifiers, apply these to the entire array.
-        if (variablesDeclarationBaseType instanceof QualifiedType) {
-          declInfoType = new QualifiedType(arrayType,
-              ((QualifiedType) variablesDeclarationBaseType).getQualifiers());
-        } else {
-          declInfoType = arrayType;
-        }
-      } else {
-        // This is the easy case: no array, so the type is just the base type for the variables
-        // declaration.
-        declInfoType = variablesDeclarationBaseType;
-      }
-
+      // We record a type for declInfo.name, taking account of the fact that it might be an array.
       currentScope.add(declInfo.getName(),
-          declInfoType,
+          Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
+              declInfo.getArrayInfo()),
           Optional.empty(),
           declInfo, variablesDeclaration);
       visitVariableDeclInfoAfterAddedToScope(declInfo);
@@ -339,25 +304,6 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
    */
   protected FunctionDefinition getEnclosingFunction() {
     return enclosingFunction;
-  }
-
-  /**
-   * Helper method to get the type for a parameter declaration, taking account of the fact that the
-   * declaration may have array information attached.
-   * @param param A function parameter.
-   * @return The type of the function parameter.
-   */
-  static Type getTypeForFunctionParameter(ParameterDecl param) {
-    if (!param.hasArrayInfo()) {
-      return param.getType();
-    }
-    // If the parameter has the form e.g. "const int A[3]" then we want to return a type of the form
-    // QualifiedType(ArrayType(int, 3), const), not ArrayType(QualifierdType(int, const), 3).
-    final ArrayType arrayType = new ArrayType(param.getType().getWithoutQualifiers(),
-        param.getArrayInfo());
-    return param.getType() instanceof QualifiedType
-        ? new QualifiedType(arrayType, ((QualifiedType) param.getType()).getQualifiers())
-        : arrayType;
   }
 
 }

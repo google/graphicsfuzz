@@ -33,13 +33,10 @@ public class VariableIdentifierExprTemplate extends AbstractExprTemplate {
 
   public VariableIdentifierExprTemplate(String name, Type possiblyQualifiedType) {
     this.name = name;
-    if (possiblyQualifiedType instanceof QualifiedType) {
-      this.type = ((QualifiedType) possiblyQualifiedType).getTargetType();
-      this.qualifiers = ((QualifiedType) possiblyQualifiedType).getQualifiers();
-    } else {
-      this.type = possiblyQualifiedType;
-      this.qualifiers = new ArrayList<>();
-    }
+    this.type = possiblyQualifiedType.getWithoutQualifiers();
+    this.qualifiers = possiblyQualifiedType instanceof QualifiedType
+        ? ((QualifiedType) possiblyQualifiedType).getQualifiers()
+        : new ArrayList<>();
   }
 
   @Override

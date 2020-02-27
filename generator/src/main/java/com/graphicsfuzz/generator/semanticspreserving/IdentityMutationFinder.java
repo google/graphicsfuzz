@@ -170,13 +170,10 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
     for (int i = 0; i < functionCallExpr.getNumArgs(); i++) {
       boolean isLValue = false;
       if (bestMatch != null) {
-        Type argType = bestMatch.getParameters().get(i).getType();
-        if (argType instanceof QualifiedType) {
-          QualifiedType qt = (QualifiedType) argType;
-          if (qt.hasQualifier(TypeQualifier.INOUT_PARAM)
-                || qt.hasQualifier(TypeQualifier.OUT_PARAM)) {
-            isLValue = true;
-          }
+        final Type argType = bestMatch.getParameters().get(i).getType();
+        if (argType.hasQualifier(TypeQualifier.INOUT_PARAM)
+            || argType.hasQualifier(TypeQualifier.OUT_PARAM)) {
+          isLValue = true;
         }
       }
       if (!isLValue) {

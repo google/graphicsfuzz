@@ -27,9 +27,11 @@ import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.TruncateLoops;
 import com.graphicsfuzz.generator.transformation.donation.DonationContext;
@@ -47,6 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public class DonateLiveCodeTransformation extends DonateCodeTransformation {
 
@@ -87,13 +90,10 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
             generator, shadingLanguageVersion);
       }
 
-      final ArrayInfo arrayInfo = type.getWithoutQualifiers() instanceof ArrayType
-          ? ((ArrayType) type.getWithoutQualifiers()).getArrayInfo().clone()
-          : null;
-
+      final ImmutablePair<Type, ArrayInfo> baseTypeAndArrayInfo = Typer.getBaseTypeArrayInfo(type);
       donatedStmts.add(new DeclarationStmt(
-          new VariablesDeclaration(type,
-              new VariableDeclInfo(vars.getKey(), arrayInfo, initializer))));
+          new VariablesDeclaration(baseTypeAndArrayInfo.left,
+              new VariableDeclInfo(vars.getKey(), baseTypeAndArrayInfo.right, initializer))));
     }
     donatedStmts.add(donationContext.getDonorFragment());
     BlockStmt donatedStmt = new BlockStmt(donatedStmts, true);
