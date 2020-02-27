@@ -26,11 +26,10 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.ast.type.ArrayType;
-import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.ApplySubstitution;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -55,6 +54,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public class DonateDeadCodeTransformation extends DonateCodeTransformation {
 
@@ -109,14 +109,12 @@ public class DonateDeadCodeTransformation extends DonateCodeTransformation {
             generator,
             shadingLanguageVersion);
 
-        final ArrayInfo arrayInfo = type.getWithoutQualifiers() instanceof ArrayType
-            ? ((ArrayType) type.getWithoutQualifiers()).getArrayInfo().clone()
-            : null;
-
+        final ImmutablePair<Type, ArrayInfo> baseTypeAndArrayInfo =
+            Typer.getBaseTypeArrayInfo(type);
         donatedStmts.add(new DeclarationStmt(
-            new VariablesDeclaration(dropQualifiersThatCannotBeUsedForLocalVariable(type),
-                new VariableDeclInfo(newName, arrayInfo,
-                    initializer))));
+            new VariablesDeclaration(dropQualifiersThatCannotBeUsedForLocalVariable(
+                baseTypeAndArrayInfo.left),
+                new VariableDeclInfo(newName, baseTypeAndArrayInfo.right, initializer))));
       }
     }
 

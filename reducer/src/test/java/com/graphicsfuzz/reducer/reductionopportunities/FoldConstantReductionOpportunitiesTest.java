@@ -307,7 +307,7 @@ public class FoldConstantReductionOpportunitiesTest {
   @Test
   public void testRemoveParens() throws Exception {
     check("void main() {" +
-            "int x;" +
+            "int x, y, z;" +
             "vec2 v;" +
             "(x);" +
             "(x + y) * z;" +
@@ -320,7 +320,7 @@ public class FoldConstantReductionOpportunitiesTest {
             "}",
         6,
         "void main() {" +
-            "int x;" +
+            "int x, y, z;" +
             "vec2 v;" +
             "x;" +
             "(x + y) * z;" +

@@ -17,9 +17,11 @@
 package com.graphicsfuzz.common.typing;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
+import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
@@ -41,7 +43,6 @@ import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
-import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
@@ -53,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public class Typer extends ScopeTrackingVisitor {
 
@@ -211,8 +213,10 @@ public class Typer extends ScopeTrackingVisitor {
       if (argType == null) {
         return false;
       }
+      final ParameterDecl parameter = prototype.getParameter(i);
       if (!argType.getWithoutQualifiers()
-          .equals(getTypeForFunctionParameter(prototype.getParameter(i)).getWithoutQualifiers())) {
+          .equals(Typer.combineBaseTypeAndArrayInfo(parameter.getType(), parameter.getArrayInfo())
+              .getWithoutQualifiers())) {
         return false;
       }
     }
@@ -363,14 +367,8 @@ public class Typer extends ScopeTrackingVisitor {
   @Override
   public void visitBinaryExpr(BinaryExpr binaryExpr) {
     super.visitBinaryExpr(binaryExpr);
-    Type lhsType = types.get(binaryExpr.getLhs());
-    Type rhsType = types.get(binaryExpr.getRhs());
-    if (lhsType instanceof QualifiedType) {
-      lhsType = ((QualifiedType) lhsType).getTargetType();
-    }
-    if (rhsType instanceof QualifiedType) {
-      rhsType = ((QualifiedType) rhsType).getTargetType();
-    }
+    Type lhsType = types.get(binaryExpr.getLhs()).getWithoutQualifiers();
+    Type rhsType = types.get(binaryExpr.getRhs()).getWithoutQualifiers();
     switch (binaryExpr.getOp()) {
       case MUL: {
         Type resolvedType = TyperHelper.resolveTypeOfMul(lhsType, rhsType);
@@ -590,6 +588,69 @@ public class Typer extends ScopeTrackingVisitor {
       default:
         return Optional.empty();
     }
+  }
+
+  /**
+   * After qualifier removal, if t is not an array type, this method returns the pair (t, null),
+   * while if t is an array type, this method returns the pair (b, a), where b is the base type of
+   * t, with all of the qualifiers originally attached to t, and a is the array information relating
+   * to t.  For example, if t is:
+   *
+   * <p>QualifiedType(ArrayType(int, 3), const)
+   *
+   * <p>the method would return the pair:
+   *
+   * <p>(QualifiedType(int, const), ArrayInfo(3))
+   *
+   * <p>This is useful when we want to e.g. turn a variable of the above qualified array type into a
+   * declaration such as:
+   *
+   * <p>const int v[3];
+   *
+   * @param type A type to be considered for splitting into base type an array info
+   * @return A (base-type, array-info) pair.
+   */
+  public static ImmutablePair<Type, ArrayInfo> getBaseTypeArrayInfo(Type type) {
+    ImmutablePair<Type, ArrayInfo> baseTypeAndArrayInfo;
+    if (type.getWithoutQualifiers() instanceof ArrayType) {
+      final ArrayType arrayType = (ArrayType) type.getWithoutQualifiers();
+      baseTypeAndArrayInfo = new ImmutablePair<>(type instanceof QualifiedType
+          ? new QualifiedType(arrayType.getBaseType(), ((QualifiedType) type).getQualifiers())
+          : arrayType.getBaseType(),
+          arrayType.getArrayInfo());
+    } else {
+      baseTypeAndArrayInfo = new ImmutablePair<>(type, null);
+    }
+    return baseTypeAndArrayInfo;
+  }
+
+  /**
+   * Creates a consolidated type from a given type and (possibly null) array info.  If the given
+   * array info is null, the type is returned.  Otherwise an array type is returned, with the
+   * qualifiers of type promoted to the whole array.
+   *
+   * <p>Example: if the type is QualifiedType(int, const) and the array info corresponds to a size 3
+   * array, the method will return a type of the form:
+   *
+   * <p>QualifiedType(ArrayType(int, 3), const)
+   *
+   * <p>not:
+   *
+   * <p>ArrayType(QualifierdType(int, const), 3).
+   *
+   * @param type A type to be potentially combined with array information.
+   * @param arrayInfo Possibly null array information.
+   * @return The combined type.
+   */
+  public static Type combineBaseTypeAndArrayInfo(Type type, ArrayInfo arrayInfo) {
+    if (arrayInfo == null) {
+      return type;
+    }
+    Type result = new ArrayType(type.getWithoutQualifiers(), arrayInfo);
+    if (type instanceof QualifiedType) {
+      result = new QualifiedType(result, ((QualifiedType) type).getQualifiers());
+    }
+    return result;
   }
 
 }
