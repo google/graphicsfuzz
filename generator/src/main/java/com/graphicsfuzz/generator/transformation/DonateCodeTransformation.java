@@ -19,18 +19,22 @@ package com.graphicsfuzz.generator.transformation;
 import com.graphicsfuzz.common.ast.AstUtil;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.Initializer;
+import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
+import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
@@ -49,6 +53,7 @@ import com.graphicsfuzz.common.util.MakeArrayAccessesInBounds;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.StructUtils;
 import com.graphicsfuzz.generator.fuzzer.FuzzedIntoACornerException;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
@@ -61,6 +66,7 @@ import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -75,13 +81,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public abstract class DonateCodeTransformation implements ITransformation {
 
   private final Function<IRandom, Boolean> probabilityOfDonation;
 
   // During a single donation pass, this is populated on demand with the donors that are used.
-  private Map<File, TranslationUnit> donorsToTranslationUnits;
+  private final Map<File, TranslationUnit> donorsToTranslationUnits;
 
   private final List<FunctionPrototype> functionPrototypes;
   private final Map<String, Type> globalVariables;
@@ -107,7 +114,8 @@ public abstract class DonateCodeTransformation implements ITransformation {
     assert donorsDirectory.exists();
     this.donorFiles = new ArrayList<>();
     this.donorFiles.addAll(Arrays.asList(donorsDirectory.listFiles(
-        pathname -> pathname.getName().endsWith(".frag"))));
+        pathname -> pathname.getName().endsWith("."
+            + generationParams.getShaderKind().getFileExtension()))));
     this.donorFiles.sort(Comparator.naturalOrder());
     this.usedDonorFiles = new ArrayList<>();
     this.generationParams = generationParams;
@@ -126,20 +134,38 @@ public abstract class DonateCodeTransformation implements ITransformation {
   private TranslationUnit prepareTranslationUnit(File donorFile, IRandom generator)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final TranslationUnit tu = ParseHelper.parse(donorFile);
-    // To avoid undefined behaviours, make all array access in bounds for every donor.
-    MakeArrayAccessesInBounds.makeInBounds(tu);
     addPrefixes(tu, getDeclaredFunctionNames(tu));
     // Add prefixed versions of these builtins, in case they are used.
-    // Use explicit precision qualifier to avoid introducing errors if there are no float precision
+    // Use explicit precision qualifiers to avoid introducing errors if there are no float precision
     // qualifiers.
-    tu.addDeclaration(new VariablesDeclaration(
-        new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
-        new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
-    if (tu.getShadingLanguageVersion().supportedGlFragColor()) {
+    if (generationParams.getShaderKind() == ShaderKind.FRAGMENT) {
       tu.addDeclaration(new VariablesDeclaration(
           new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
-          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
+      if (tu.getShadingLanguageVersion().supportedGlFragColor()) {
+        tu.addDeclaration(new VariablesDeclaration(
+            new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
+            new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
+      }
+    } else if (generationParams.getShaderKind() == ShaderKind.VERTEX) {
+      tu.addDeclaration(new VariablesDeclaration(
+          new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.HIGHP)),
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_POSITION), null, null)));
+    } else if (generationParams.getShaderKind() == ShaderKind.COMPUTE) {
+      tu.addDeclaration(new VariablesDeclaration(BasicType.UVEC3,
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_GLOBAL_INVOCATION_ID), null, null)));
+      tu.addDeclaration(new VariablesDeclaration(BasicType.UVEC3,
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_LOCAL_INVOCATION_ID), null, null)));
+      tu.addDeclaration(new VariablesDeclaration(BasicType.UVEC3,
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_WORK_GROUP_SIZE), null, null)));
+      tu.addDeclaration(new VariablesDeclaration(BasicType.UVEC3,
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_WORK_GROUP_ID), null, null)));
+      tu.addDeclaration(new VariablesDeclaration(BasicType.UVEC3,
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_NUM_WORK_GROUPS), null, null)));
+      tu.addDeclaration(new VariablesDeclaration(BasicType.UINT,
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_LOCAL_INVOCATION_INDEX), null, null)));
     }
+
     // Remove 'in', 'out' and 'layout' qualifiers from global variables.  This means that, for
     // instance, the output colour variable of a donated fragment shader will change from:
     //   layout(location = 0) out vec4 name;
@@ -166,6 +192,61 @@ public abstract class DonateCodeTransformation implements ITransformation {
           baseTypeWithoutQualifiers,
           strippedQualifiers));
     }
+
+    // Each interface block in a shader needs to be removed, and every previous member of the
+    // interface block replaced with a corresponding global variable.
+    //
+    // Consider every interface block.
+    for (InterfaceBlock interfaceBlock :
+        tu.getTopLevelDeclarations().stream().filter(item -> item instanceof InterfaceBlock)
+            .map(item -> (InterfaceBlock) item)
+            .collect(Collectors.toList())) {
+      // Consider every member of the block.
+      for (String memberName : interfaceBlock.getMemberNames()) {
+        // We will declare a global variable of the member's type with a prefixed version of the
+        // member's name.  However, we need to take care regarding array members, in particular
+        // because interface blocks can have unsized arrays.
+        final Type memberType = interfaceBlock.getMemberType(memberName).get();
+
+        // This will be the array-free base type of the new global variable.
+        Type plainVariableBaseType;
+        // If the member was an array, this will allow a sized array to be declared.
+        ArrayInfo plainVariableArrayInfo;
+        if (memberType.getWithoutQualifiers() instanceof ArrayType) {
+          // The member is an array, so we need to deal with it's size.
+          final ArrayType memberArrayType = ((ArrayType) memberType.getWithoutQualifiers());
+          // The array variable we declare with have the array member's base type as its base type.
+          plainVariableBaseType = memberArrayType.getBaseType();
+          if (memberArrayType.getArrayInfo().hasSizeExpr()) {
+            // The array was already sized; we re-use the size.
+            plainVariableArrayInfo = memberArrayType.getArrayInfo();
+          } else {
+            // The array was unsized, so we give it a made up size.  We set its size expression to
+            // be an expression that yields this size, and also make its known-constant size be the
+            // same integer value.
+            plainVariableArrayInfo = new ArrayInfo(new IntConstantExpr(
+                Integer.toString(Constants.DUMMY_SIZE_FOR_UNSIZED_ARRAY_DONATION)));
+            plainVariableArrayInfo.setConstantSizeExpr(
+                Constants.DUMMY_SIZE_FOR_UNSIZED_ARRAY_DONATION);
+          }
+        } else {
+          plainVariableBaseType = memberType;
+          plainVariableArrayInfo = null;
+        }
+        // Add the global variable corresponding to the member right before the interface block.
+        tu.addDeclarationBefore(
+            new VariablesDeclaration(plainVariableBaseType,
+                new VariableDeclInfo(addPrefix(memberName),
+                    plainVariableArrayInfo, null)),
+            interfaceBlock);
+      }
+      // Now that globals for all members have been added, remove the interface block.
+      tu.removeTopLevelDeclaration(interfaceBlock);
+    }
+
+    // To avoid undefined behaviours, make all array access in bounds for every donor.
+    MakeArrayAccessesInBounds.makeInBounds(tu);
+
     adaptTranslationUnitForSpecificDonation(tu, generator);
 
     translationUnitCount++;
@@ -324,7 +405,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
       donorFiles = usedDonorFiles;
       usedDonorFiles = new ArrayList<>();
     }
-    donorsToTranslationUnits = new HashMap<>();
+    donorsToTranslationUnits.clear();
   }
 
   private boolean incompatible(IInjectionPoint injectionPoint, DonationContext donationContext,

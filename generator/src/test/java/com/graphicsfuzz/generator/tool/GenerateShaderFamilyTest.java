@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +49,8 @@ public class GenerateShaderFamilyTest {
     final int numVariants = 3;
     int seed = 0;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        seed, Arrays.asList("--stop-on-fail", "--single-pass"));
+        seed, Arrays.asList("--stop-on-fail", "--single-pass"),
+        ShadingLanguageVersion.ESSL_100);
   }
 
   @Test
@@ -56,7 +60,8 @@ public class GenerateShaderFamilyTest {
     final int numVariants = 3;
     int seed = 1;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        seed, Arrays.asList("--stop-on-fail", "--single-pass"));
+        seed, Arrays.asList("--stop-on-fail", "--single-pass"),
+        ShadingLanguageVersion.WEBGL_SL);
   }
 
   @Test
@@ -66,7 +71,8 @@ public class GenerateShaderFamilyTest {
     final int numVariants = 3;
     int seed = 2;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        seed, Arrays.asList("--stop-on-fail", "--single-pass"));
+        seed, Arrays.asList("--stop-on-fail", "--single-pass"),
+        ShadingLanguageVersion.ESSL_300);
   }
 
   @Test
@@ -76,7 +82,8 @@ public class GenerateShaderFamilyTest {
     final int numVariants = 3;
     int seed = 3;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        seed, Arrays.asList("--stop-on-fail", "--single-pass"));
+        seed, Arrays.asList("--stop-on-fail", "--single-pass"),
+        ShadingLanguageVersion.WEBGL2_SL);
   }
 
   @Test
@@ -88,7 +95,7 @@ public class GenerateShaderFamilyTest {
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
         seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
             String.valueOf(10),
-            "--generate-uniform-bindings", "--single-pass"));
+            "--generate-uniform-bindings", "--single-pass"), ShadingLanguageVersion.ESSL_310);
   }
 
   @Test
@@ -98,7 +105,7 @@ public class GenerateShaderFamilyTest {
     final int numVariants = 3;
     int seed = 5;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        seed, Arrays.asList("--stop-on-fail"));
+        seed, Arrays.asList("--stop-on-fail"), ShadingLanguageVersion.ESSL_100);
   }
 
   // TODO(172)
@@ -110,7 +117,7 @@ public class GenerateShaderFamilyTest {
     final int numVariants = 3;
     int seed = 6;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        seed, Arrays.asList("--stop-on-fail"));
+        seed, Arrays.asList("--stop-on-fail"), ShadingLanguageVersion.WEBGL_SL);
   }
 
   @Test
@@ -120,7 +127,7 @@ public class GenerateShaderFamilyTest {
     final int numVariants = 3;
     int seed = 7;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        seed, Arrays.asList("--stop-on-fail"));
+        seed, Arrays.asList("--stop-on-fail"), ShadingLanguageVersion.ESSL_300);
   }
 
   @Test
@@ -130,7 +137,7 @@ public class GenerateShaderFamilyTest {
     final int numVariants = 3;
     int seed = 8;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
-        seed, Arrays.asList("--stop-on-fail"));
+        seed, Arrays.asList("--stop-on-fail"), ShadingLanguageVersion.WEBGL2_SL);
   }
 
   @Test
@@ -142,29 +149,7 @@ public class GenerateShaderFamilyTest {
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
         seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
             String.valueOf(10),
-            "--generate-uniform-bindings"));
-  }
-
-  @Test
-  public void testGenerateSmallVulkanShaderFamilyWithReferencesAsDonors() throws Exception {
-    // This is designed to guard against bugs whereby donating 310 es features into a 310 es shader
-    // causes problems
-    final String samplesSubdir = "310es";
-    final String referenceShaderName = "squares";
-    final int numVariants = 3;
-    final int seed = 0;
-    final String reference = Paths.get(ToolPaths.getShadersDirectory(), "samples",
-        "310es", "squares.json").toString();
-    // Note that we are using the 310es samples as donors here.
-    final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
-        "310es").toString();
-
-    final List<String> extraOptions = Arrays.asList(
-        "--stop-on-fail",
-        "--max-uniforms",
-        String.valueOf(10),
-        "--generate-uniform-bindings");
-    checkShaderFamilyGeneration(numVariants, seed, extraOptions, reference, donors);
+            "--generate-uniform-bindings"), ShadingLanguageVersion.ESSL_310);
   }
 
   @Test
@@ -219,16 +204,49 @@ public class GenerateShaderFamilyTest {
   }
 
   private void checkShaderFamilyGeneration(String samplesSubdir, String referenceShaderName,
-                                          int numVariants, int seed,
-                                          List<String> extraOptions) throws ArgumentParserException,
+                                           int numVariants, int seed,
+                                           List<String> extraOptions,
+                                           ShadingLanguageVersion shadingLanguageVersion) throws ArgumentParserException,
       InterruptedException, IOException, ReferencePreparationException {
-    final String reference = Paths.get(ToolPaths.getShadersDirectory(), "samples",
-        samplesSubdir, referenceShaderName
-        + ".json").toString();
-    final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
-        samplesSubdir).toString();
 
-    checkShaderFamilyGeneration(numVariants, seed, extraOptions, reference, donors);
+    final File samplesPrepared = temporaryFolder.newFolder();
+    final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+    for (File shaderJobFile : fileOperations.listShaderJobFiles(Paths.get(ToolPaths.getShadersDirectory(),"samples",
+        samplesSubdir).toFile())) {
+      final File newShaderJobFile = new File(samplesPrepared,
+          shaderJobFile.getName());
+      fileOperations.copyShaderJobFileTo(shaderJobFile, newShaderJobFile, false);
+      maybeAddVertexShaderIfMissing(shadingLanguageVersion, fileOperations, newShaderJobFile);
+    }
+
+    final String reference = Paths.get(samplesPrepared.getAbsolutePath(), referenceShaderName
+        + ".json").toString();
+    checkShaderFamilyGeneration(numVariants, seed, extraOptions, reference, samplesPrepared.getAbsolutePath());
+  }
+
+  /**
+   * If the shading language version is 300 es or higher, and there is a fragment shader but no
+   * vertex shader, a trivial vertex shader is added.  This is to give vertex shader transformation
+   * a workout for these shading language versions, and to ensure that attempts are not made to
+   * donate code between shader kinds.
+   */
+  private void maybeAddVertexShaderIfMissing(ShadingLanguageVersion shadingLanguageVersion, ShaderJobFileOperations fileOperations, File newShaderJobFile) throws IOException {
+    if (!Arrays.asList(ShadingLanguageVersion.ESSL_300, ShadingLanguageVersion.ESSL_310,
+        ShadingLanguageVersion.ESSL_320).contains(shadingLanguageVersion)) {
+      return;
+    }
+    if (fileOperations.doesShaderExist(newShaderJobFile,
+        ShaderKind.FRAGMENT) && !fileOperations.doesShaderExist(newShaderJobFile, ShaderKind.VERTEX)) {
+      final String trivialVertexShader = "#version " + shadingLanguageVersion.getVersionString() + "\n"
+          + "\n"
+          + "layout (location = 0) in vec4 pos;\n"
+          + "\n"
+          + "void main() {\n"
+          + "   gl_Position = pos;\n"
+          + "}\n";
+      fileOperations.writeStringToFile(fileOperations.getUnderlyingShaderFile(newShaderJobFile,
+          ShaderKind.VERTEX), trivialVertexShader);
+    }
   }
 
   private void checkShaderFamilyGeneration(int numVariants, int seed, List<String> extraOptions, String reference,
