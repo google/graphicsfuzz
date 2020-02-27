@@ -100,13 +100,13 @@ public class InterfaceBlock extends Declaration {
     return instanceName.get();
   }
 
-  public Type getMemberType(String name) {
+  public Optional<Type> getMemberType(String name) {
     for (int i = 0; i < memberNames.size(); i++) {
       if (memberNames.get(i).equals(name)) {
-        return memberTypes.get(i);
+        return Optional.of(memberTypes.get(i));
       }
     }
-    throw new RuntimeException("Unknown member " + name);
+    return Optional.empty();
   }
 
   @Override

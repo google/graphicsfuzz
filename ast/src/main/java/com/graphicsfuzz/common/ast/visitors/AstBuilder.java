@@ -344,6 +344,16 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
           handleArrayInfo(parameterDecl.getArrayInfo());
         }
       }
+
+      @Override
+      public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
+        super.visitInterfaceBlock(interfaceBlock);
+        for (Type memberType : interfaceBlock.getMemberTypes()) {
+          if (memberType.getWithoutQualifiers() instanceof ArrayType) {
+            handleArrayInfo(((ArrayType) memberType.getWithoutQualifiers()).getArrayInfo());
+          }
+        }
+      }
     }.visit(tu);
     return tu;
   }
@@ -448,9 +458,10 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     final Basic_interface_blockContext basicCtx = ctx.basic_interface_block();
     final TypeQualifier interfaceQualifier =
         visitInterface_qualifier(basicCtx.interface_qualifier());
-    final Optional<String> maybeInstanceName = basicCtx.instance_name() == null
-        ? Optional.empty()
-        : Optional.of(basicCtx.instance_name().getText());
+    if (basicCtx.instance_name() != null) {
+      throw new UnsupportedLanguageFeatureException("Named interface blocks are not currently "
+          + "supported.");
+    }
     final Pair<List<String>, List<Type>> members = getMembers(basicCtx.member_list());
     return new InterfaceBlock(
         maybeLayoutQualifier,
@@ -458,7 +469,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         basicCtx.IDENTIFIER().getText(),
         members.a,
         members.b,
-        maybeInstanceName);
+        Optional.empty());
   }
 
   @Override

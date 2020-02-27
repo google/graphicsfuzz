@@ -780,4 +780,25 @@ public class ParseHelperTest {
     }
   }
 
+  @Test
+  public void testUnsupportedNamedInterfaceBlock() throws Exception {
+
+    // Change this test to check for support if it is eventually introduced.
+
+    try {
+      ParseHelper.parse("#version 320 es\n"
+          + "\n"
+          + "layout(std430, binding = 0) buffer doesNotMatter {\n"
+          + "  int x;\n"
+          + "  int data[];\n"
+          + "} block_name_not_currently_supported;\n"
+          + "void main() {\nprecision highp float;\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("Named interface blocks are not currently "
+          + "supported"));
+    }
+  }
+
 }
