@@ -100,4 +100,10 @@ public final class Constants {
   // limit on how many distinct expressions we will generate for this purpose.
   public static final int MAX_GENERATED_EXPRESSIONS_FOR_ARRAY_CONSTRUCTOR = 20;
 
+  // When donating one compute shader to another, we may need to donate an unsized array that
+  // appeared in an SSBO of the donor.  We handle this by declaring a sized array, and this
+  // constant provides a size for said array.
+  public static final int DUMMY_SIZE_FOR_UNSIZED_ARRAY_DONATION = 10;
+
+
 }

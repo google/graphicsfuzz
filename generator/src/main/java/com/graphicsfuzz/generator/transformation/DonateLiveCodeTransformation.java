@@ -45,6 +45,7 @@ import com.graphicsfuzz.generator.util.RemoveReturnStatements;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

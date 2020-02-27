@@ -140,7 +140,8 @@ public class GeneratorUnitTest {
     testTransformationMultiVersions(() -> new DonateDeadCodeTransformation(
         TransformationProbabilities.likelyDonateDeadCode()::donateDeadCodeAtStmt,
             Util.getDonorsFolder(),
-            GenerationParams.normal(ShaderKind.FRAGMENT, true)), TransformationProbabilities.likelyDonateDeadCode(),
+            GenerationParams.normal(ShaderKind.FRAGMENT, true)),
+        TransformationProbabilities.likelyDonateDeadCode(),
         "donatedead",
         Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_zoom.json"),
         Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_zoom.json"));
