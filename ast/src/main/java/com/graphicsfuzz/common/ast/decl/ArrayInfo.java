@@ -112,6 +112,15 @@ public class ArrayInfo implements IAstNode {
     return sizeExpr.get();
   }
 
+  /**
+   * Requires that there is a constant size, and sets the size expression to a constant expression
+   * of exactly this size.
+   */
+  public void resetSizeExprToConstant() {
+    assert hasConstantSize();
+    this.sizeExpr = Optional.of(new IntConstantExpr(Integer.toString(getConstantSize())));
+  }
+
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitArrayInfo(this);
