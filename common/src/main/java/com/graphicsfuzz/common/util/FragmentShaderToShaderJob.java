@@ -130,7 +130,7 @@ public final class FragmentShaderToShaderJob {
                   Arrays.asList(new LayoutQualifierSequence(
                       new LocationLayoutQualifier(0)),
                   TypeQualifier.OUT_PARAM)),
-                  new VariableDeclInfo("_GLF_pos",null,null)),
+                  new VariableDeclInfo("_GLF_pos", null, null)),
               new FunctionDefinition(
                   new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
                   new BlockStmt(Arrays.asList(
