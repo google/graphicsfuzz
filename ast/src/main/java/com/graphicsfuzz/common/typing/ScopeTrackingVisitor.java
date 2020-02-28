@@ -63,7 +63,7 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
   private boolean addEncounteredParametersToScope;
 
   protected ScopeTrackingVisitor() {
-    this.currentScope = new Scope(null);
+    this.currentScope = new Scope();
     this.enclosingFunction = null;
     this.enclosingBlocks = new LinkedList<>();
     this.encounteredFunctionPrototypes = new ArrayList<>();
@@ -127,18 +127,8 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
       if (!addEncounteredParametersToScope || p.getName() == null) {
         continue;
       }
-      Type type;
-      if (p.getArrayInfo() == null) {
-        type = p.getType();
-      } else {
-        final ArrayType arrayType = new ArrayType(p.getType().getWithoutQualifiers(),
-            p.getArrayInfo());
-        type = p.getType() instanceof QualifiedType
-            ? new QualifiedType(arrayType, ((QualifiedType) p.getType()).getQualifiers())
-            : arrayType;
-      }
       currentScope.add(p.getName(),
-          type,
+          Typer.combineBaseTypeAndArrayInfo(p.getType(), p.getArrayInfo()),
           Optional.of(p));
     }
   }
@@ -160,44 +150,10 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
       // subclasses the flexibility to examine both cases.
       visitVariableDeclInfo(declInfo);
 
-      // We record a type for declInfo.name.  If declInfo is not an array, this is just the base
-      // type for the variables declaration.  But if declInfo *is* an array, we need to promote
-      // any qualifiers applied to the base type to apply to the whole array.  That is, we want to
-      // give A in:
-      //
-      // const int A[3] = ...;
-      //
-      // the type QualifiedType(ArrayType(int, 3), const)
-      //
-      // not:
-      //
-      // ArrayType(QualifiedType(int, const), 3)
-
-      // Get the base type for the variables declaration.
-      final Type variablesDeclarationBaseType = variablesDeclaration.getBaseType();
-
-      // Now get a type for declInfo depending on whether or not it is an array.
-      Type declInfoType;
-      if (declInfo.hasArrayInfo()) {
-        // Make an array type using a qualifier-free version of the variables declaration base type.
-        final ArrayType arrayType = new ArrayType(variablesDeclarationBaseType
-            .getWithoutQualifiers(),
-            declInfo.getArrayInfo());
-        // If the variables declaration base type had qualifiers, apply these to the entire array.
-        if (variablesDeclarationBaseType instanceof QualifiedType) {
-          declInfoType = new QualifiedType(arrayType,
-              ((QualifiedType) variablesDeclarationBaseType).getQualifiers());
-        } else {
-          declInfoType = arrayType;
-        }
-      } else {
-        // This is the easy case: no array, so the type is just the base type for the variables
-        // declaration.
-        declInfoType = variablesDeclarationBaseType;
-      }
-
+      // We record a type for declInfo.name, taking account of the fact that it might be an array.
       currentScope.add(declInfo.getName(),
-          declInfoType,
+          Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
+              declInfo.getArrayInfo()),
           Optional.empty(),
           declInfo, variablesDeclaration);
       visitVariableDeclInfoAfterAddedToScope(declInfo);

@@ -52,6 +52,10 @@ public class ParameterDecl implements IAstNode {
     return arrayInfo;
   }
 
+  public boolean hasArrayInfo() {
+    return arrayInfo != null;
+  }
+
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitParameterDecl(this);

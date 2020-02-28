@@ -225,7 +225,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     if (parameterDecl.getName() != null) {
       out.append(" " + parameterDecl.getName());
     }
-    if (parameterDecl.getArrayInfo() != null) {
+    if (parameterDecl.hasArrayInfo()) {
       out.append("[");
       visit(parameterDecl.getArrayInfo().getSizeExpr());
       out.append("]");
@@ -610,9 +610,10 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
     for (String memberName : interfaceBlock.getMemberNames()) {
       out.append(indent());
-      visit(interfaceBlock.getMemberType(memberName));
+      final Type memberType = interfaceBlock.getMemberType(memberName).get();
+      visit(memberType);
       out.append(" " + memberName);
-      processArrayInfo(interfaceBlock.getMemberType(memberName));
+      processArrayInfo(memberType);
       out.append(";" + newLine());
     }
 

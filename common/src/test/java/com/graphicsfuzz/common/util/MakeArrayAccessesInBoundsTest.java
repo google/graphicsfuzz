@@ -185,9 +185,6 @@ public class MakeArrayAccessesInBoundsTest {
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
-  // TODO(https://github.com/google/graphicsfuzz/issues/784) Enable once array parameter support is
-  //  overhauled.
-  @Ignore
   @Test
   public void testMakeArrayParameterAccessInBounds1() throws Exception {
     final String shader = "#version 310 es\n"
@@ -211,9 +208,6 @@ public class MakeArrayAccessesInBoundsTest {
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
-  // TODO(https://github.com/google/graphicsfuzz/issues/784) Enable once array parameter support is
-  //  overhauled.
-  @Ignore
   @Test
   public void testMakeArrayParameterAccessInBounds2() throws Exception {
     final String shader = "#version 310 es\n"

@@ -333,4 +333,15 @@ public interface ShadingLanguageVersion {
    * @return true if Hyperbolic Angle and Trigonometric Functions are supported - false otherwise.
    */
   boolean supportedHyperbolicAngleAndTrigonometricFunctions();
+
+  /**
+   * Atomic Memory Functions are a set of built-in functions that perform read-modify-write atomic
+   * operations.  For example, atomicAdd() - atomically increment an integer and return its old
+   * value.
+   * GLSL versions 4.3+ and ESSL versions 3.1+ support these functions.
+   *
+   * @return true if Atomic Memory Functions are supported - false otherwise.
+   */
+  boolean supportedAtomicMemoryFunctions();
+
 }

@@ -64,7 +64,7 @@ public class OutlineStatementMutationTest {
             new VariableIdentifierExpr("y"), BinOp.MUL), new VariableIdentifierExpr("z"),
             BinOp.ADD), BinOp.ASSIGN));
 
-    Scope fakeScope = new Scope(null);
+    Scope fakeScope = new Scope();
     fakeScope.add("x", BasicType.VEC2, Optional.empty());
     fakeScope.add("y", BasicType.FLOAT, Optional.empty());
     fakeScope.add("z", BasicType.VEC2, Optional.empty());
@@ -89,7 +89,7 @@ public class OutlineStatementMutationTest {
         new VariableIdentifierExpr("y"),
         BinOp.ASSIGN));
 
-    Scope fakeScope = new Scope(null);
+    Scope fakeScope = new Scope();
     fakeScope.add("x", BasicType.VEC2, Optional.empty());
     fakeScope.add("y", new QualifiedType(BasicType.VEC2, Arrays.asList(TypeQualifier.UNIFORM)), Optional.empty());
 
@@ -116,7 +116,7 @@ public class OutlineStatementMutationTest {
             BinOp.ADD),
         BinOp.ASSIGN));
 
-    Scope fakeScope = new Scope(null);
+    Scope fakeScope = new Scope();
     fakeScope.add("x", BasicType.VEC2, Optional.empty());
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
@@ -142,7 +142,7 @@ public class OutlineStatementMutationTest {
             BinOp.ADD),
         BinOp.ASSIGN));
 
-    Scope fakeScope = new Scope(null);
+    Scope fakeScope = new Scope();
     fakeScope.add("x", new QualifiedType(BasicType.VEC2, Arrays.asList(TypeQualifier.OUT_PARAM)), Optional.empty());
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
@@ -168,7 +168,7 @@ public class OutlineStatementMutationTest {
             BinOp.ADD),
         BinOp.ASSIGN));
 
-    Scope fakeScope = new Scope(null);
+    Scope fakeScope = new Scope();
     fakeScope.add("x", BasicType.FLOAT, Optional.empty());
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();

@@ -62,6 +62,7 @@ import com.graphicsfuzz.generator.fuzzer.templates.VariableIdentifierExprTemplat
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -132,12 +133,19 @@ public class Fuzzer {
   private Expr makeExpr(Type targetType, boolean isLValue, boolean constContext, final int depth) {
 
     if (targetType instanceof QualifiedType) {
-      QualifiedType qualifiedType = (QualifiedType) targetType;
-      if (qualifiedType.hasQualifier(TypeQualifier.CONST)) {
-        assert constContext;
+      // Check that const and out/inout qualifiers match the expectations of the method call.
+      if (targetType.hasQualifier(TypeQualifier.CONST) && !constContext) {
+        throw new RuntimeException("Attempt to fuzz a not-necessarily-constant expression for "
+            + "constant type.");
       }
-      return makeExpr(qualifiedType.getTargetType(), isLValue, constContext, depth);
+      if ((targetType.hasQualifier(TypeQualifier.OUT_PARAM)
+          || targetType.hasQualifier(TypeQualifier.INOUT_PARAM)) && !isLValue) {
+        throw new RuntimeException("Attempt to fuzz a not-necessarily-lvalue expression when an "
+            + "lvalue is required.");
+      }
+      return makeExpr(targetType.getWithoutQualifiers(), isLValue, constContext, depth);
     }
+
     if (targetType instanceof BasicType) {
       assert SupportedTypes.supported((BasicType) targetType, shadingLanguageVersion);
       List<IExprTemplate> applicableTemplates = availableTemplatesFromContext()
@@ -245,7 +253,7 @@ public class Fuzzer {
           next = temp;
         }
       }
-      return new ArrayConstructorExpr((ArrayType) stripQualifiers(targetType), args);
+      return new ArrayConstructorExpr((ArrayType) targetType.getWithoutQualifiers(), args);
     } else {
       throw new FuzzedIntoACornerException();
     }
@@ -570,18 +578,6 @@ public class Fuzzer {
             + "in order to generate declarations.");
     }
     return fuzzedDeclarationPrefix + "_" + freshId() + temp;
-  }
-
-  private Type stripQualifiers(Type type) {
-    // TODO: when implementing this the only compound type I considered was ArrayType.
-    if (type instanceof QualifiedType) {
-      return stripQualifiers(type.getWithoutQualifiers());
-    }
-    if (type instanceof ArrayType) {
-      return new ArrayType(stripQualifiers(((ArrayType) type).getBaseType()),
-            ((ArrayType) type).getArrayInfo());
-    }
-    return type;
   }
 
   public static void main(String[] args) {

@@ -85,8 +85,7 @@ abstract class AddOutputWriteMutation implements Mutation {
     }
     for (String name : scope.namesOfAllVariablesInScope()) {
       final Type type = scope.lookupType(name);
-      if (type instanceof QualifiedType && ((QualifiedType) type)
-          .hasQualifier(TypeQualifier.SHADER_OUTPUT)) {
+      if (type.hasQualifier(TypeQualifier.SHADER_OUTPUT)) {
         result.put(name, type.getWithoutQualifiers());
       }
     }

@@ -87,8 +87,7 @@ public class VectorizeMutationFinder extends MutationFinderBase<VectorizeMutatio
       return false;
     }
     if (getTranslationUnit().getShadingLanguageVersion().initializersOfConstMustBeConst()) {
-      if (entry.getType() instanceof QualifiedType
-            && ((QualifiedType) entry.getType()).hasQualifier(TypeQualifier.CONST)) {
+      if (entry.getType().hasQualifier(TypeQualifier.CONST)) {
         // Do not merge const variables if the shading language requires the initializers of
         // const variables to be const.  The issue is that if v is const and used in
         // some future initialiser, and we merge v into m, as m.x say, then m.x will appear in the

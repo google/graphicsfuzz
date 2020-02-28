@@ -23,7 +23,7 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import com.graphicsfuzz.common.typing.Scope;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 public class ArrayType extends UnqualifiedType {
 
@@ -60,15 +60,23 @@ public class ArrayType extends UnqualifiedType {
     if (!(that instanceof ArrayType)) {
       return false;
     }
-    ArrayType thatArrayType = (ArrayType) that;
-    return this.baseType.equals(thatArrayType.baseType)
-        && this.arrayInfo.equals(thatArrayType.arrayInfo);
+    final ArrayType thatArrayType = (ArrayType) that;
+    if (!this.baseType.equals(thatArrayType.baseType)) {
+      return false;
+    }
+    if (this.arrayInfo.hasConstantSize()) {
+      return thatArrayType.arrayInfo.hasConstantSize()
+          && this.arrayInfo.getConstantSize().equals(thatArrayType.arrayInfo.getConstantSize());
+    } else {
+      return !thatArrayType.arrayInfo.hasConstantSize();
+    }
   }
 
   @Override
   public int hashCode() {
-    // TODO: revisit if we end up storing large sets of types
-    return baseType.hashCode() + arrayInfo.hashCode();
+    return Objects.hash(baseType, arrayInfo.hasConstantSize()
+        ? arrayInfo.getConstantSize()
+        : arrayInfo.hasConstantSize());
   }
 
   @Override
@@ -77,12 +85,12 @@ public class ArrayType extends UnqualifiedType {
   }
 
   @Override
-  public boolean hasCanonicalConstant(Optional<Scope> scope) {
+  public boolean hasCanonicalConstant(Scope scope) {
     return baseType.hasCanonicalConstant(scope) && arrayInfo.hasConstantSize();
   }
 
   @Override
-  public Expr getCanonicalConstant(Optional<Scope> scope) {
+  public Expr getCanonicalConstant(Scope scope) {
     final Expr canonicalConstantForBaseType = baseType.getCanonicalConstant(scope);
     final List<Expr> componentConstants = new ArrayList<>();
     for (int i = 0; i < arrayInfo.getConstantSize(); i++) {

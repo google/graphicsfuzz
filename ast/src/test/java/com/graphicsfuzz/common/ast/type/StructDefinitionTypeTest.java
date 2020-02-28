@@ -16,15 +16,12 @@
 
 package com.graphicsfuzz.common.ast.type;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-
-import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
+import com.graphicsfuzz.common.typing.Scope;
 import java.util.Arrays;
-import java.util.Optional;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class StructDefinitionTypeTest {
 
@@ -97,9 +94,9 @@ public class StructDefinitionTypeTest {
     StructDefinitionType t = new StructDefinitionType(new StructNameType("astruct"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
-    assertTrue(t.hasCanonicalConstant());
+    assertTrue(t.hasCanonicalConstant(new Scope()));
     assertEquals("astruct(mat4(1.0), vec4(1.0))",
-        t.getCanonicalConstant().getText());
+        t.getCanonicalConstant(new Scope()).getText());
   }
 
 }

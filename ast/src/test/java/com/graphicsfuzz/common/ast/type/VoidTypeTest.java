@@ -18,18 +18,19 @@ package com.graphicsfuzz.common.ast.type;
 
 import static org.junit.Assert.assertFalse;
 
+import com.graphicsfuzz.common.typing.Scope;
 import org.junit.Test;
 
 public class VoidTypeTest {
 
   @Test
   public void hasCanonicalConstant() {
-    assertFalse(VoidType.VOID.hasCanonicalConstant());
+    assertFalse(VoidType.VOID.hasCanonicalConstant(new Scope()));
   }
 
   @Test(expected = RuntimeException.class)
   public void getCanonicalConstant() {
-    VoidType.VOID.getCanonicalConstant();
+    VoidType.VOID.getCanonicalConstant(new Scope());
   }
 
 }
