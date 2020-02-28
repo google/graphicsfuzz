@@ -509,6 +509,9 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     while (fhp.function_header_with_parameters() != null) {
       final ParameterDecl parameterDecl = visitParameter_declaration(fhp.parameter_declaration());
       if (parameterDecl.getType().getWithoutQualifiers() == VoidType.VOID) {
+        // This is a 'void' parameter, and it is not the final parameter under consideration.
+        // That's illegal, because 'void' can only be used in isolation, to indicate that there
+        // are no parameters.
         throw new RuntimeException(badUseOfVoidMessage);
       }
       parameters.add(0, parameterDecl);
@@ -516,6 +519,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     }
     final ParameterDecl parameterDecl = visitParameter_declaration(fhp.parameter_declaration());
     if (parameterDecl.getType().getWithoutQualifiers() == VoidType.VOID) {
+      // If this 'void' parameter is the *only* parameter that's OK; we just ignore it.  Otherwise
+      // it is not OK, as we cannot use 'void' in the context of multiple parameters.
       if (!parameters.isEmpty()) {
         throw new RuntimeException(badUseOfVoidMessage);
       }
