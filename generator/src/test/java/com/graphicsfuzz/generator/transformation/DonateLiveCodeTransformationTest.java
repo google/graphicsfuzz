@@ -40,11 +40,13 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -59,6 +61,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -721,6 +724,97 @@ public class DonateLiveCodeTransformationTest {
       }.visit(referenceShaderJob.getFragmentShader().get());
 
     }
+    // The above code tests donation of live code, but there is still a chance that no code will
+    // be donated. We assert that this happens < 10 times to ensure that we get some test
+    // coverage, but this could fail due to bad luck.
+    Assert.assertTrue(
+        "Donation failure count should be < 10, " + noCodeDonatedCount,
+        noCodeDonatedCount < 10
+    );
+
+  }
+
+  @Test
+  public void testInAndOutParametersDonatedOK() throws Exception {
+    // This checks that donation of code that uses 'in' and 'out' parameters of functions works.
+
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+    final File donors = testFolder.newFolder("donors");
+    final File referenceFile = testFolder.newFile("reference.json");
+
+    {
+      // This donor is designed to have a high chance of leading to an array access getting injected
+      // such that the array indexing expression will be a free variable for which a fuzzed initial
+      // value will be created.
+      final String donorSource =
+          "#version 300 es\n"
+              + "void foo(in int a, out int b, inout int c) {\n"
+              + " {\n"
+              + "  {\n"
+              + "   {\n"
+              + "     b = a;\n"
+              + "     c = c + a;\n"
+              + "   }\n"
+              + "  }\n"
+              + " }\n"
+              + "}\n";
+
+      fileOps.writeShaderJobFile(
+          new GlslShaderJob(
+            Optional.empty(),
+            new PipelineInfo(),
+            ParseHelper.parse(donorSource)),
+          new File(donors, "donor.json")
+      );
+    }
+
+    {
+      final String referenceSource = "#version 300 es\n"
+          + "void main() {\n"
+          + "}\n";
+      fileOps.writeShaderJobFile(
+          new GlslShaderJob(
+              Optional.empty(),
+              new PipelineInfo(),
+              ParseHelper.parse(referenceSource)),
+          referenceFile
+      );
+    }
+
+    int noCodeDonatedCount = 0;
+
+    // Try the following a few times, so that there is a good chance of triggering the issue
+    // this test was used to catch, should it return:
+    for (int seed = 0; seed < 15; seed++) {
+
+      final ShaderJob referenceShaderJob = fileOps.readShaderJobFile(referenceFile);
+
+      // Do live code donation.
+      final DonateLiveCodeTransformation transformation =
+          new DonateLiveCodeTransformation(IRandom::nextBoolean, donors,
+              GenerationParams.normal(ShaderKind.FRAGMENT, true), false);
+
+      assert referenceShaderJob.getFragmentShader().isPresent();
+
+      final boolean result = transformation.apply(
+          referenceShaderJob.getFragmentShader().get(),
+          TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
+          new RandomWrapper(seed),
+          GenerationParams.normal(ShaderKind.FRAGMENT, true)
+      );
+
+      if (result) {
+        final File tempFile = testFolder.newFile("shader" + seed + ".json");
+        fileOps.writeShaderJobFile(referenceShaderJob, tempFile);
+        // This will fail if the shader job turns out to be invalid.
+        fileOps.areShadersValid(tempFile, true);
+      } else {
+        ++noCodeDonatedCount;
+      }
+
+    }
+
     // The above code tests donation of live code, but there is still a chance that no code will
     // be donated. We assert that this happens < 10 times to ensure that we get some test
     // coverage, but this could fail due to bad luck.
