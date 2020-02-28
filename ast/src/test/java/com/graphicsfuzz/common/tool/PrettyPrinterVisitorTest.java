@@ -497,4 +497,58 @@ public class PrettyPrinterVisitorTest {
         + "}").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
+  @Test
+  public void testParseAndPrintVoidFormalParameter() throws Exception {
+
+    // For simplicity, we deliberately chuck away "void" in function formal parameters; this test
+    // captures that intent.
+
+    final String program = ""
+        + "int foo(void)\n"
+        + "{\n"
+        + " return 2;\n"
+        + "}\n"
+        + "void main(void)\n"
+        + "{\n"
+        + "}\n";
+    final String expected = ""
+        + "int foo()\n"
+        + "{\n"
+        + " return 2;\n"
+        + "}\n"
+        + "void main()\n"
+        + "{\n"
+        + "}\n";
+    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
+  }
+
+  @Test
+  public void testParseAndPrintVoidActualParameter() throws Exception {
+
+    // For simplicity, we deliberately chuck away "void" in function actual parameters; this test
+    // captures that intent.
+
+    final String program = ""
+        + "void foo()\n"
+        + "{\n"
+        + " return 2;\n"
+        + "}\n"
+        + "void main()\n"
+        + "{\n"
+        + " foo(void);\n"
+        + "}\n";
+    final String expected = ""
+        + "void foo()\n"
+        + "{\n"
+        + " return 2;\n"
+        + "}\n"
+        + "void main()\n"
+        + "{\n"
+        + " foo();\n"
+        + "}\n";
+    assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
+  }
+
 }

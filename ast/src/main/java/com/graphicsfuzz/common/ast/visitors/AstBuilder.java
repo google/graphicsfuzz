@@ -502,11 +502,31 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     Function_header_with_parametersContext fhp = ctx.function_declarator()
         .function_header_with_parameters();
     List<ParameterDecl> parameters = new LinkedList<>();
+
+    final String badUseOfVoidMessage = "Unexpected use of 'void' in a list of parameters; void "
+        + "should be the only parameter if used to indicate absence of parameters.";
+
     while (fhp.function_header_with_parameters() != null) {
-      parameters.add(0, visitParameter_declaration(fhp.parameter_declaration()));
+      final ParameterDecl parameterDecl = visitParameter_declaration(fhp.parameter_declaration());
+      if (parameterDecl.getType().getWithoutQualifiers() == VoidType.VOID) {
+        // This is a 'void' parameter, and it is not the final parameter under consideration.
+        // That's illegal, because 'void' can only be used in isolation, to indicate that there
+        // are no parameters.
+        throw new RuntimeException(badUseOfVoidMessage);
+      }
+      parameters.add(0, parameterDecl);
       fhp = fhp.function_header_with_parameters();
     }
-    parameters.add(0, visitParameter_declaration(fhp.parameter_declaration()));
+    final ParameterDecl parameterDecl = visitParameter_declaration(fhp.parameter_declaration());
+    if (parameterDecl.getType().getWithoutQualifiers() == VoidType.VOID) {
+      // If this 'void' parameter is the *only* parameter that's OK; we just ignore it.  Otherwise
+      // it is not OK, as we cannot use 'void' in the context of multiple parameters.
+      if (!parameters.isEmpty()) {
+        throw new RuntimeException(badUseOfVoidMessage);
+      }
+    } else {
+      parameters.add(0, parameterDecl);
+    }
     header = fhp.function_header();
     Type returnType =
         visitFully_specified_type(header.fully_specified_type());
