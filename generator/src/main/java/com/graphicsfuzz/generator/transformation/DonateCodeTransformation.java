@@ -81,7 +81,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public abstract class DonateCodeTransformation implements ITransformation {
 
@@ -134,7 +133,15 @@ public abstract class DonateCodeTransformation implements ITransformation {
   private TranslationUnit prepareTranslationUnit(File donorFile, IRandom generator)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final TranslationUnit tu = ParseHelper.parse(donorFile);
+
+    // First, simplify the array info objects used by the shader so that they only refer to const
+    // expressions.  This is to avoid the situation where an array with e.g. a constant SOME_SIZE
+    // as its size expression gets donated into a context where SOME_SIZE is not declared.
+    simplifyArrayInfo(tu);
+
+    // Add a prefix to every identifier used in the shader.
     addPrefixes(tu, getDeclaredFunctionNames(tu));
+
     // Add prefixed versions of these builtins, in case they are used.
     // Use explicit precision qualifiers to avoid introducing errors if there are no float precision
     // qualifiers.
@@ -251,6 +258,23 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
     translationUnitCount++;
     return tu;
+  }
+
+  /**
+   * For every array info object that contains a size expression, replace that size expression with
+   * an integer constant expression reflecting the array's constant-folded size.
+   */
+  private void simplifyArrayInfo(TranslationUnit tu) {
+    new StandardVisitor() {
+      @Override
+      public void visitArrayInfo(ArrayInfo arrayInfo) {
+        super.visitArrayInfo(arrayInfo);
+        if (arrayInfo.hasSizeExpr()) {
+          assert arrayInfo.hasConstantSize();
+          arrayInfo.resetSizeExprToConstant();
+        }
+      }
+    }.visit(tu);
   }
 
   private void addPrefixes(TranslationUnit tu, final Set<String> declaredFunctionNames) {
