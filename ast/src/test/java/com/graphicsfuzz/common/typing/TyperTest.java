@@ -43,6 +43,7 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.SamplerType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -987,7 +988,25 @@ public class TyperTest {
     StringBuilder result = new StringBuilder();
     result.append("#version " + shadingLanguageVersion.getVersionString() + "\n");
     result.append("#ifdef GL_ES\n");
-    result.append("precision mediump float;\n");
+    result.append("precision highp float;\n");
+    result.append("precision highp int;\n");
+    if (shadingLanguageVersion.supportedTexture()) {
+      result.append("precision highp " + SamplerType.SAMPLER2D + ";\n");
+      result.append("precision highp " + SamplerType.ISAMPLER2D + ";\n");
+      result.append("precision highp " + SamplerType.USAMPLER2D + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLER3D + ";\n");
+      result.append("precision highp " + SamplerType.ISAMPLER3D + ";\n");
+      result.append("precision highp " + SamplerType.USAMPLER3D + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLERCUBE + ";\n");
+      result.append("precision highp " + SamplerType.ISAMPLERCUBE + ";\n");
+      result.append("precision highp " + SamplerType.USAMPLERCUBE + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLER2DSHADOW + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLERCUBESHADOW + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLER2DARRAY + ";\n");
+      result.append("precision highp " + SamplerType.ISAMPLER2DARRAY + ";\n");
+      result.append("precision highp " + SamplerType.USAMPLER2DARRAY + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLER2DARRAYSHADOW + ";\n");
+    }
     result.append("#endif\n");
     int counter = 0;
     for (String name : TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind).keySet()) {

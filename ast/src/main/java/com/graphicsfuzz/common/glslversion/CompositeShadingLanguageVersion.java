@@ -313,4 +313,9 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
     return prototype.supportedAtomicMemoryFunctions();
   }
 
+  @Override
+  public boolean supportedTexture() {
+    return prototype.supportedTexture();
+  }
+
 }

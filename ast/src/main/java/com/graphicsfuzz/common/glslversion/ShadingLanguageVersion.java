@@ -344,4 +344,12 @@ public interface ShadingLanguageVersion {
    */
   boolean supportedAtomicMemoryFunctions();
 
+  /**
+   * Indicates whether the shading language supports basic 'texture' functions that were introduced
+   * in GLSL 1.30 and ESSL 3.0.
+   *
+   * @return true if basic texture functions are supported.
+   */
+  boolean supportedTexture();
+
 }

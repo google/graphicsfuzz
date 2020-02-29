@@ -124,4 +124,9 @@ final class Glsl130 extends CompositeShadingLanguageVersion {
   public boolean supportedModf() {
     return true;
   }
+
+  @Override
+  public boolean supportedTexture() {
+    return true;
+  }
 }

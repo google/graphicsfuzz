@@ -16,9 +16,11 @@
 
 package com.graphicsfuzz.common.typing;
 
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.SamplerType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -350,6 +352,9 @@ public final class TyperHelper {
     // 8.8: Integer Functions
 
     getBuiltinsForGlslVersionInteger(builtinsForVersion, shadingLanguageVersion);
+
+    // 8.9. Texture Functions
+    getBuiltinsForGlslVersionTexture(builtinsForVersion, shadingLanguageVersion, shaderKind);
 
     // 8.11: Atomic Memory Functions (only available in compute shaders)
 
@@ -764,6 +769,115 @@ public final class TyperHelper {
           addBuiltin(builtinsForVersion, name, igenType().get(i), ugenType().get(i));
         }
       }
+    }
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Texture Functions,
+   * as specified in section 8.9 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   * @param shaderKind the kind of shader for which builtins are being queried
+   */
+  private static void getBuiltinsForGlslVersionTexture(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion,
+      ShaderKind shaderKind) {
+    if (shadingLanguageVersion.supportedTexture()) {
+      final String name = "texture";
+
+      // The following come from:
+      //   gvec4 texture(gsampler2D sampler, vec2 P, [float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER2D,
+          BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER2D,
+          BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER2D,
+          BasicType.VEC2);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER2D,
+            BasicType.VEC2, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER2D,
+            BasicType.VEC2, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER2D,
+            BasicType.VEC2, BasicType.FLOAT);
+      }
+
+      // The following come from:
+      //   gvec4 texture(gsampler3D sampler, vec3 P, [float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER3D,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER3D,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER3D,
+          BasicType.VEC3);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER3D,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER3D,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER3D,
+            BasicType.VEC3, BasicType.FLOAT);
+      }
+
+      // The following come from:
+      //   gvec4 texture(gsamplerCube sampler, vec3 P, [float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLERCUBE,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLERCUBE,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLERCUBE,
+          BasicType.VEC3);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLERCUBE,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLERCUBE,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLERCUBE,
+            BasicType.VEC3, BasicType.FLOAT);
+      }
+
+      // The following come from:
+      //   float texture(sampler2DShadow sampler, vec3 P, [float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, SamplerType.SAMPLER2DSHADOW,
+          BasicType.VEC3);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, SamplerType.SAMPLER2DSHADOW,
+            BasicType.VEC3, BasicType.FLOAT);
+      }
+
+      // The following come from:
+      //   float texture(samplerCubeShadow sampler, vec4 P, [float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, SamplerType.SAMPLERCUBESHADOW,
+          BasicType.VEC4);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, SamplerType.SAMPLERCUBESHADOW,
+            BasicType.VEC4, BasicType.FLOAT);
+      }
+
+      // The following come from:
+      //   gvec4 texture(gsampler2DArray sampler, vec3 P,[float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER2DARRAY,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER2DARRAY,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER2DARRAY,
+          BasicType.VEC3);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER2DARRAY,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER2DARRAY,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER2DARRAY,
+            BasicType.VEC3, BasicType.FLOAT);
+      }
+
+      // The following comes from:
+      //   float texture(sampler2DArrayShadow sampler, vec4 P);
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, SamplerType.SAMPLER2DARRAYSHADOW,
+          BasicType.VEC4);
+
     }
   }
 

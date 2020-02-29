@@ -314,4 +314,9 @@ final class Essl100 implements ShadingLanguageVersion {
     return false;
   }
 
+  @Override
+  public boolean supportedTexture() {
+    return false;
+  }
+
 }
