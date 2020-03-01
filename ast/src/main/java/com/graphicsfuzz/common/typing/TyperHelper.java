@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.common.typing;
 
-import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
@@ -366,6 +365,16 @@ public final class TyperHelper {
 
     if (shaderKind == ShaderKind.FRAGMENT) {
       getBuiltinsForGlslVersionFragmentProcessing(builtinsForVersion, shadingLanguageVersion);
+    }
+
+    // 8.15: Shader Invocation Control Functions (only available in compute shaders)
+    if (shaderKind == ShaderKind.COMPUTE) {
+      getBuiltinsForGlslVersionShaderInvocationControl(builtinsForVersion, shadingLanguageVersion);
+    }
+
+    // 8.16: Shader Memory Control Functions (only available in compute shaders)
+    if (shaderKind == ShaderKind.COMPUTE) {
+      getBuiltinsForGlslVersionShaderMemoryControl(builtinsForVersion, shadingLanguageVersion);
     }
 
     return builtinsForVersion;
@@ -984,6 +993,43 @@ public final class TyperHelper {
 
     // 8.14.2 Interpolation Functions
     // TODO(550): Support functions that take non-uniform shader input variables as parameters.
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Shader Invocation Control
+   * Functions, as specified in section 8.15 of the ESSL 3.2 specification and section 8.16 of the
+   * GLSL 4.6 specification.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
+  private static void getBuiltinsForGlslVersionShaderInvocationControl(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+    if (shadingLanguageVersion.supportedShaderInvocationControlFunctions()) {
+      addBuiltin(builtinsForVersion, "barrier", VoidType.VOID);
+    }
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Shader Memory Control
+   * Functions, as specified in section 8.16 of the ESSL 3.2 specification and section 8.17 of the
+   * GLSL 4.6 specification.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
+  private static void getBuiltinsForGlslVersionShaderMemoryControl(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+    if (shadingLanguageVersion.supportedShaderInvocationControlFunctions()) {
+      addBuiltin(builtinsForVersion, "memoryBarrier", VoidType.VOID);
+      addBuiltin(builtinsForVersion, "memoryBarrierAtomicCounter", VoidType.VOID);
+      addBuiltin(builtinsForVersion, "memoryBarrierBuffer", VoidType.VOID);
+      addBuiltin(builtinsForVersion, "memoryBarrierShared", VoidType.VOID);
+      addBuiltin(builtinsForVersion, "memoryBarrierImage", VoidType.VOID);
+      addBuiltin(builtinsForVersion, "groupMemoryBarrier", VoidType.VOID);
+    }
   }
 
   /**

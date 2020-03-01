@@ -39,6 +39,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   }
 
   @Override
+  public boolean isEssl() {
+    return prototype.isEssl();
+  }
+
+  @Override
   public boolean isWebGl() {
     return prototype.isWebGl();
   }
@@ -318,4 +323,13 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
     return prototype.supportedTexture();
   }
 
+  @Override
+  public boolean supportedShaderInvocationControlFunctions() {
+    return prototype.supportedShaderInvocationControlFunctions();
+  }
+
+  @Override
+  public boolean supportedShaderMemoryControlFunctions() {
+    return prototype.supportedShaderMemoryControlFunctions();
+  }
 }

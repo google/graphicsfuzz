@@ -149,6 +149,9 @@ public interface ShadingLanguageVersion {
 
   boolean initializersOfConstMustBeConst();
 
+  // Returns true if and only if this is an ES shading language.
+  boolean isEssl();
+
   boolean isWebGl();
 
   /**
@@ -351,5 +354,19 @@ public interface ShadingLanguageVersion {
    * @return true if basic texture functions are supported.
    */
   boolean supportedTexture();
+
+  /**
+   * GLSL versions 4.0+ and ESSL versions 3.1+ support a barrier function to synchronize a
+   * workgroup in a compute shader.
+   * @return true if and only if shader invocation control functions are supported.
+   */
+  boolean supportedShaderInvocationControlFunctions();
+
+  /**
+   * GLSL versions 4.0+ and ESSL versions 3.1+ support various memory barrier functions, such as
+   * memoryBarrier(), in compute shaders.
+   * @return true if and only if shader memory control functions are supported.
+   */
+  boolean supportedShaderMemoryControlFunctions();
 
 }
