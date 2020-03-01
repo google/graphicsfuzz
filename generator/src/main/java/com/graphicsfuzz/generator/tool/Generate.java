@@ -596,8 +596,14 @@ public class Generate {
     if (alreadyDeclaresInjectionSwitch(tu)) {
       return;
     }
+    final List<TypeQualifier> qualifiers = new ArrayList<>();
+    qualifiers.add(TypeQualifier.UNIFORM);
+    if (tu.getShadingLanguageVersion().isEssl()) {
+      qualifiers.add(TypeQualifier.HIGHP);
+    }
+
     tu.addDeclaration(new VariablesDeclaration(new QualifiedType(BasicType.VEC2,
-        Arrays.asList(TypeQualifier.UNIFORM)),
+        qualifiers),
         new VariableDeclInfo(Constants.INJECTION_SWITCH, null, null)));
   }
 
