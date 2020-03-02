@@ -229,4 +229,10 @@ final class Essl300 extends CompositeShadingLanguageVersion {
   public boolean supportedModf() {
     return true;
   }
+
+  @Override
+  public boolean supportedTexture() {
+    return true;
+  }
+
 }

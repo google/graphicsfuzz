@@ -197,7 +197,7 @@ public class Fuzzer {
           .stream().map(item -> makeExpr(item, false, constContext, depth + 1))
           .collect(Collectors.toList()));
     }
-    throw new RuntimeException("Do not yet know how to make expr of type " + targetType.getClass());
+    throw new FuzzedIntoACornerException();
 
   }
 

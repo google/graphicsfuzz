@@ -80,4 +80,14 @@ final class Essl310 extends CompositeShadingLanguageVersion {
     return true;
   }
 
+  @Override
+  public boolean supportedShaderInvocationControlFunctions() {
+    return true;
+  }
+
+  @Override
+  public boolean supportedShaderMemoryControlFunctions() {
+    return true;
+  }
+
 }
