@@ -41,6 +41,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.util.ArgsUtil;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -130,13 +131,13 @@ public final class FragmentShaderToShaderJob {
                   Arrays.asList(new LayoutQualifierSequence(
                       new LocationLayoutQualifier(0)),
                   TypeQualifier.OUT_PARAM)),
-                  new VariableDeclInfo("_GLF_pos", null, null)),
+                  new VariableDeclInfo(Constants.GLF_POS, null, null)),
               new FunctionDefinition(
                   new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
                   new BlockStmt(Arrays.asList(
                       new ExprStmt(new BinaryExpr(
                       new VariableIdentifierExpr(OpenGlConstants.GL_POSITION),
-                      new VariableIdentifierExpr("_GLF_pos"),
+                      new VariableIdentifierExpr(Constants.GLF_POS),
                       BinOp.ASSIGN))), false)))));
         }
 
