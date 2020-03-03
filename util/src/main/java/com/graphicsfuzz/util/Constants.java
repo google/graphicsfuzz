@@ -23,6 +23,7 @@ public final class Constants {
   }
 
   public static final String GLF_COLOR = "_GLF_color";
+  public static final String GLF_POS = "_GLF_pos";
 
   public static final String GLF_OUT_VAR_BACKUP_PREFIX = "_GLF_outVarBackup";
 

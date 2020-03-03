@@ -32,6 +32,8 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
+import com.graphicsfuzz.common.ast.type.LocationLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -39,6 +41,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.util.ArgsUtil;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -124,9 +127,18 @@ public final class FragmentShaderToShaderJob {
           vertexShader = Optional.of(new TranslationUnit(ShaderKind.VERTEX,
               Optional.of(ShadingLanguageVersion.ESSL_310), Arrays.asList(
               new PrecisionDeclaration("precision mediump float;"),
+              new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
+                  Arrays.asList(new LayoutQualifierSequence(
+                      new LocationLayoutQualifier(0)),
+                  TypeQualifier.OUT_PARAM)),
+                  new VariableDeclInfo(Constants.GLF_POS, null, null)),
               new FunctionDefinition(
                   new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
-                  new BlockStmt(Collections.emptyList(), false)))));
+                  new BlockStmt(Arrays.asList(
+                      new ExprStmt(new BinaryExpr(
+                      new VariableIdentifierExpr(OpenGlConstants.GL_POSITION),
+                      new VariableIdentifierExpr(Constants.GLF_POS),
+                      BinOp.ASSIGN))), false)))));
         }
 
         for (VariableDeclInfo vdi : vd.getDeclInfos()) {
