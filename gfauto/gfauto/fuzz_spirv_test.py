@@ -126,6 +126,7 @@ def run_spirv_reduce_or_shrink(
             str(final_shader),
             f"--shrink={str(transformations_file)}",
             f"--shrinker-temp-file-prefix={str(output_dir / 'temp_')}",
+            "--replay-validation",
             # This ensures the arguments that follow are all positional arguments.
             "--",
             "gfauto_interestingness_test",
@@ -142,6 +143,7 @@ def run_spirv_reduce_or_shrink(
             "-o",
             str(final_shader),
             f"--temp-file-prefix={str(output_dir / 'temp_')}",
+            "--replay-validation",
             # This ensures the arguments that follow are all positional arguments.
             "--",
             "gfauto_interestingness_test",

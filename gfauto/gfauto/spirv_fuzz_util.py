@@ -50,6 +50,7 @@ def run_generate(
         "-o",
         str(output_shader_spv),
         f"--donors={str(donors_list_path)}",
+        "--fuzzer-pass-validation",
     ]
 
     if seed:
