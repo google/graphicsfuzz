@@ -308,4 +308,37 @@ public class IdentityMutationFinderTest {
     }
   }
 
+  @Test
+  public void testConstMutations() throws Exception {
+    // This checks that constant initializers are not mutated in a way that makes them non-constant.
+    final String program = "#version 310 es\n"
+        + "precision highp float;\n"
+        + "uniform vec2 injectionSwitch;\n"
+        + "const int a = 1;\n"
+        + "const int b = 2;\n"
+        + "const float c = 3.0;\n"
+        + "const float d = 4.0;\n"
+        + "void main() {"
+        + "  const int x = 2;\n"
+        + "  const int y = 3;\n"
+        + "  const float f = 4.0;\n"
+        + "  const float g = 5.0;\n"
+        + "}";
+    final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+    for (int i = 0; i < 20; i++) {
+      final TranslationUnit tu = ParseHelper.parse(program);
+      new IdentityMutationFinder(tu,
+          new RandomWrapper(i), GenerationParams.normal(ShaderKind.FRAGMENT, true))
+          .findMutations()
+          .forEach(Expr2ExprMutation::apply);
+      final File shaderJobFile = temporaryFolder.newFile("shader" + i + ".json");
+      final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), new PipelineInfo(),
+          tu);
+      fileOperations.writeShaderJobFile(shaderJob, shaderJobFile);
+      // Check that there is no invalidity due to mis-use of constants (in which case an exception
+      // will be thrown, but we assert the result of 'areShadersValid' is true just to be sure.
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, true));
+    }
+  }
+
 }
