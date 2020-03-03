@@ -227,8 +227,8 @@ public final class OpaqueExpressionGenerator {
   private Optional<Expr> opaqueZeroOrOneMatrixDet(BasicType type, boolean constContext,
                                                      final int depth, Fuzzer fuzzer,
                                                      boolean isZero) {
-    // TODO(https://github.com/KhronosGroup/glslang/issues/1865): Workaround for glslangvalidator.
-    //     Remove when #653 is fixed.
+    // As discussed in https://github.com/KhronosGroup/glslang/issues/1865, the determinant function
+    // is not deemed to be compile-time constant.
     if (constContext) {
       return Optional.empty();
     }
@@ -1546,8 +1546,8 @@ public final class OpaqueExpressionGenerator {
 
     @Override
     public boolean preconditionHolds(Expr expr, BasicType basicType, boolean constContext) {
-      // TODO(https://github.com/KhronosGroup/glslang/issues/1865): Workaround for glslangValidator
-      //     issue, remove constContext check when fixed.
+      // As discussed in https://github.com/KhronosGroup/glslang/issues/1865, the transpose
+      // function is not deemed to be compile-time constant.
       return super.preconditionHolds(expr, basicType, constContext)
           && !constContext;
     }
