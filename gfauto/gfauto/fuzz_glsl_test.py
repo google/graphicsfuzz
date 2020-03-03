@@ -21,6 +21,7 @@ Functions for handling GLSL shader job tests.
 
 import random
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -32,6 +33,7 @@ from gfauto import (
     fuzz,
     gflogging,
     glsl_generate_util,
+    glslang_validator_util,
     host_device_util,
     interrupt_util,
     result_util,
@@ -57,7 +59,7 @@ class ReductionFailedError(Exception):
         self.reduction_work_dir = reduction_work_dir
 
 
-def fuzz_glsl(
+def fuzz_glsl(  # pylint: disable=too-many-locals;
     staging_dir: Path,
     reports_dir: Path,
     fuzz_failures_dir: Path,
@@ -80,13 +82,21 @@ def fuzz_glsl(
         str(binary_manager.get_binary_path_by_name("graphicsfuzz-tool").path.parent),
     )
 
+    # We try converting to SPIR-V using glslangValidator now.
+    # If this fails, we treat it as a "fuzz failure", although it could actually be a bug in glslangValidator.
+    glslang_path = Path(
+        binary_manager.get_binary_path_by_name(
+            binaries_util.GLSLANG_VALIDATOR_NAME
+        ).path
+    )
+
     try:
         with util.file_open_text(staging_dir / "log.txt", "w") as log_file:
             try:
                 gflogging.push_stream_for_logging(log_file)
 
                 # Create the prepared (for Vulkan GLSL) reference.
-                glsl_generate_util.run_prepare_reference(
+                output_reference_shader_job = glsl_generate_util.run_prepare_reference(
                     graphicsfuzz_tool_path,
                     unprepared_reference_shader_job,
                     template_source_dir
@@ -94,8 +104,20 @@ def fuzz_glsl(
                     / test_util.SHADER_JOB,
                 )
 
+                # Try converting to a SPIR-V shader job to check if the shader is valid.
+                temp_reference_spirv_dir = (
+                    template_source_dir / f"temp_{test_util.REFERENCE_DIR}_spirv"
+                )
+                glslang_validator_util.run_glslang_glsl_to_spirv_job(
+                    output_reference_shader_job,
+                    temp_reference_spirv_dir / test_util.SHADER_JOB,
+                    glslang_path,
+                )
+                # If successful, delete temp dir.
+                shutil.rmtree(temp_reference_spirv_dir)
+
                 # Generate the variant (GraphicsFuzz requires the unprepared reference as input).
-                glsl_generate_util.run_generate(
+                output_variant_shader_job = glsl_generate_util.run_generate(
                     graphicsfuzz_tool_path,
                     unprepared_reference_shader_job,
                     donors_dir,
@@ -105,6 +127,19 @@ def fuzz_glsl(
                     if settings.extra_graphics_fuzz_generate_args
                     else None,
                 )
+
+                # Try converting to a SPIR-V shader job to check if the shader is valid.
+                temp_variant_spirv_dir = (
+                    template_source_dir / f"temp_{test_util.VARIANT_DIR}_spirv"
+                )
+                glslang_validator_util.run_glslang_glsl_to_spirv_job(
+                    output_variant_shader_job,
+                    temp_variant_spirv_dir / test_util.SHADER_JOB,
+                    glslang_path,
+                )
+                # If successful, delete temp dir.
+                shutil.rmtree(temp_variant_spirv_dir)
+
             finally:
                 gflogging.pop_stream_for_logging()
     except subprocess.CalledProcessError:
