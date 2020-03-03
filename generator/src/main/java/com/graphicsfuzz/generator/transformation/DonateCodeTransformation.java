@@ -138,6 +138,9 @@ public abstract class DonateCodeTransformation implements ITransformation {
       tu.addDeclaration(new VariablesDeclaration(
           new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
           new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
+      tu.addDeclaration(new VariablesDeclaration(
+          BasicType.BOOL,
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRONT_FACING), null, null)));
       if (tu.getShadingLanguageVersion().supportedGlFragColor()) {
         tu.addDeclaration(new VariablesDeclaration(
             new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),

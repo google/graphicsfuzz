@@ -386,6 +386,23 @@ public class TyperTest {
   }
 
   @Test
+  public void testGlFrontFacingTyped() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() { gl_FrontFacing; }");
+    Typer typer = new NullCheckTyper(tu);
+    new StandardVisitor() {
+      @Override
+      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        super.visitVariableIdentifierExpr(variableIdentifierExpr);
+        if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRONT_FACING)) {
+          assertEquals(BasicType.BOOL, typer.lookupType(variableIdentifierExpr));
+        }
+      }
+    }.visit(tu);
+
+  }
+
+  @Test
   public void testGlPositionTyped() throws Exception {
     TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
         + "void main() { gl_Position = vec4(0.0)"

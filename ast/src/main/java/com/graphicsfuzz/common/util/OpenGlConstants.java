@@ -25,6 +25,7 @@ public final class OpenGlConstants {
 
   public static final String GL_FRAG_COLOR = "gl_FragColor";
   public static final String GL_FRAG_COORD = "gl_FragCoord";
+  public static final String GL_FRONT_FACING = "gl_FrontFacing";
   public static final String GL_POSITION = "gl_Position";
   public static final String GL_POINT_SIZE = "gl_PointSize";
 
