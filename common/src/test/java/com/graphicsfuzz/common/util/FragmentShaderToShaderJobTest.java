@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import org.junit.Rule;
 import org.junit.Test;
@@ -90,7 +91,7 @@ public class FragmentShaderToShaderJobTest {
     assertTrue(vertdata.contains("out vec2 in_v2;"));
     assertTrue(vertdata.contains("out vec3 in_v3;"));
     assertTrue(vertdata.contains("out vec4 in_v4;"));
-    assertTrue(vertdata.contains("gl_Position = _GLF_pos;"));
+    assertTrue(vertdata.contains("gl_Position = " + Constants.GLF_POS));
   }
 
 }
