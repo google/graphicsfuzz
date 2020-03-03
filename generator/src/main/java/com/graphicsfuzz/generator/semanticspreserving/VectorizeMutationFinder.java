@@ -54,30 +54,34 @@ public class VectorizeMutationFinder extends MutationFinderBase<VectorizeMutatio
 
   @Override
   protected void popScope() {
-    assert lastExitedBlock != null;
-    if (!(parentMap.getParent(lastExitedBlock) instanceof SwitchStmt)) {
-      List<MergeSet> mergeSetsForThisScope = new ArrayList<>();
-      for (String v : getCurrentScope().keys()) {
-        ScopeEntry entry = getCurrentScope().lookupScopeEntry(v);
-        if (!isCandidateForMerging(entry)) {
-          continue;
-        }
-        List<MergeSet> mergeSetsWithSpace = mergeSetsForThisScope.stream()
+    // Check whether we just exited a block, to avoid acting on a single-statement 'for' or 'while'
+    // loop body.
+    if (lastExitedBlock != null) {
+      if (!(parentMap.getParent(lastExitedBlock) instanceof SwitchStmt)) {
+        List<MergeSet> mergeSetsForThisScope = new ArrayList<>();
+        for (String v : getCurrentScope().keys()) {
+          ScopeEntry entry = getCurrentScope().lookupScopeEntry(v);
+          if (!isCandidateForMerging(entry)) {
+            continue;
+          }
+          List<MergeSet> mergeSetsWithSpace = mergeSetsForThisScope.stream()
               .filter(mergeSet -> mergeSet
-                    .canAccept(entry)).collect(Collectors.toList());
-        int index = generator.nextInt(mergeSetsWithSpace.size() + 1);
-        if (index == mergeSetsWithSpace.size()) {
-          MergeSet newMergeSet = new MergeSet(entry);
-          mergeSetsForThisScope.add(newMergeSet);
-        } else {
-          mergeSetsWithSpace.get(index).add(entry);
+                  .canAccept(entry)).collect(Collectors.toList());
+          int index = generator.nextInt(mergeSetsWithSpace.size() + 1);
+          if (index == mergeSetsWithSpace.size()) {
+            MergeSet newMergeSet = new MergeSet(entry);
+            mergeSetsForThisScope.add(newMergeSet);
+          } else {
+            mergeSetsWithSpace.get(index).add(entry);
+          }
         }
+        mergeSetsForThisScope
+            .stream()
+            .filter(mergeSet -> mergeSet.getNumVars() > 1)
+            .map(mergeSet -> new VectorizeMutation(lastExitedBlock, mergeSet, parentMap))
+            .forEach(this::addMutation);
       }
-      mergeSetsForThisScope
-          .stream()
-          .filter(mergeSet -> mergeSet.getNumVars() > 1)
-          .map(mergeSet -> new VectorizeMutation(lastExitedBlock, mergeSet, parentMap))
-          .forEach(this::addMutation);
+      lastExitedBlock = null;
     }
     super.popScope();
   }

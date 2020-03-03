@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CannedRandom;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutationFinder;
 import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutation;
 import java.util.List;
@@ -154,9 +155,9 @@ public class VectorizeMutationFinderTest {
     final String program =
           "float f()\n"
                 + "{\n"
-                + "    float a = 1;"
-                + "    float b = 2;"
-                + "    float c = 3;"
+                + "    float a = 1.0;"
+                + "    float b = 2.0;"
+                + "    float c = 3.0;"
                 + "    return a;\n"
                 + "}\n";
 
@@ -164,11 +165,11 @@ public class VectorizeMutationFinderTest {
           "float f()\n"
                 + "{\n"
                 + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
-                + "    float a = 1;\n"
+                + "    float a = 1.0;\n"
                 + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = a;\n"
-                + "    float b = 2;\n"
+                + "    float b = 2.0;\n"
                 + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
-                + "    float c = 3;\n"
+                + "    float c = 3.0;\n"
                 + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
                 + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
                 + "}\n";
@@ -179,12 +180,12 @@ public class VectorizeMutationFinderTest {
                 + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
                 + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
                 + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
-                + "    float a = 1;\n"
+                + "    float a = 1.0;\n"
                 + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
                 + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
-                + "    float b = 2;\n"
+                + "    float b = 2.0;\n"
                 + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = b;\n"
-                + "    float c = 3;\n"
+                + "    float c = 3.0;\n"
                 + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = c;\n"
                 + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
                 + "}\n";
@@ -196,13 +197,13 @@ public class VectorizeMutationFinderTest {
                 + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
                 + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
                 + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
-                + "    float a = 1;\n"
+                + "    float a = 1.0;\n"
                 + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
                 + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
-                + "    float b = 2;\n"
+                + "    float b = 2.0;\n"
                 + "    GLF_merged2_0_1_1_1_1_1bc.x = b;\n"
                 + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = GLF_merged2_0_1_1_1_1_1bc.x;\n"
-                + "    float c = 3;\n"
+                + "    float c = 3.0;\n"
                 + "    GLF_merged2_0_1_1_1_1_1bc.y = c;\n"
                 + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = GLF_merged2_0_1_1_1_1_1bc.y;\n"
                 + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
@@ -226,6 +227,45 @@ public class VectorizeMutationFinderTest {
     ops.get(1).apply();
     CompareAsts.assertEqualAsts(expectedThird, tu);
 
+  }
+
+  @Test
+  public void testVectorizationOpportunitiesWithSingleStatementLoops() throws Exception {
+    // This checks that the vectorizer does not fall over when presented with loops containing
+    // single statments.
+    final String program =
+        "float f()\n"
+            + "{\n"
+            + "    float a = 1.0;"
+            + "    while (a > 2.0) float z = 3.0;"
+            + "    float b = 2.0;"
+            + "    float c = 3.0;"
+            + "    for (int i = 0; i < 100; i++) float w = 10.0;"
+            + "    return a;\n"
+            + "}\n";
+
+    final String expectedFirst =
+        "float f()\n"
+            + "{\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1.0;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = a;\n"
+            + "    while (GLF_merged3_0_1_1_1_1_1_2_1_1abc.x > 2.0) float z = 3.0;"
+            + "    float b = 2.0;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
+            + "    float c = 3.0;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
+            + "    for (int i = 0; i < 100; i++) float w = 10.0;"
+            + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "}\n";
+
+    TranslationUnit tu = ParseHelper.parse(program);
+    List<VectorizeMutation> ops =
+        new VectorizeMutationFinder(tu,
+            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
+    assertEquals(1, ops.size());
+    ops.get(0).apply();
+    CompareAsts.assertEqualAsts(expectedFirst, tu);
   }
 
 }
