@@ -50,7 +50,7 @@ def test_fuzz_and_reduce_llpc_bug_no_opt() -> None:
         assert "no_opt" in test_dirs[0].name
         log_path = test_dirs[0] / "results" / "amdllpc" / "result" / "log.txt"
         assert (
-            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
+            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 1
         ), f"{log_path}"
         summary_dir = test_dirs[0] / "summary"
         check_common_summary_files(summary_dir)
@@ -72,7 +72,7 @@ def test_fuzz_and_reduce_llpc_bug_opt() -> None:
         assert "opt_O" in test_dirs[0].name
         log_path = test_dirs[0] / "results" / "amdllpc" / "result" / "log.txt"
         assert (
-            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 4
+            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
         ), f"{log_path}"
         summary_dir = test_dirs[0] / "summary"
         check_common_summary_files(summary_dir)
@@ -93,7 +93,7 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt() -> None:
         assert "no_opt" in test_dirs[0].name
         log_path = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
         assert (
-            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
+            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 1
         ), f"{log_path}"
         summary_dir = test_dirs[0] / "summary"
         check_common_summary_files(summary_dir)
@@ -115,7 +115,7 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex() -> None:
         summary_dir = test_dirs[0] / "summary"
         log_path = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
         assert (
-            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
+            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 1
         ), f"{log_path}"
         summary_dir = test_dirs[0] / "summary"
         check_common_summary_files(summary_dir)
@@ -141,7 +141,7 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex_miss() -> None:
         assert "no_opt" in test_dirs[0].name
         log_path = test_dirs[0] / "results" / "swift_shader" / "result" / "log.txt"
         assert (
-            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 2
+            util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 1
         ), f"{log_path}"
         summary_dir = test_dirs[0] / "summary"
         reduced_dir = summary_dir / "reduced"
