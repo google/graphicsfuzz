@@ -17,10 +17,10 @@ FROM ubuntu:16.04
 
 RUN \
   apt-get update && \
-  apt-get -y install software-properties-common && \
+  apt-get --no-install-recommends -y install software-properties-common && \
   add-apt-repository ppa:orangain/opencv && \
   apt-get update && \
-  apt-get -y install openjdk-8-jdk python python-opencv ipython python-six && \
+  apt-get --no-install-recommends -y install openjdk-8-jdk python python-opencv ipython python-six && \
   apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY . /data/server/
