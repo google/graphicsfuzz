@@ -1,4 +1,4 @@
-# Copyright 2019 The GraphicsFuzz Project Authors
+# Copyright 2020 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +14,18 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-set(SHADER_FUZZER_LAYER_SOURCES
-    layer.h
-    layer.cpp
-    layer_impl.cpp
-    )
+set(VULKAN_LAYERS_COMMON_SOURCES
+        spirv_util.h
+        spirv_util.cpp
+        )
 
-add_library(VkLayer_graphicsfuzz_shader_fuzzer SHARED ${SHADER_FUZZER_LAYER_SOURCES})
+add_library(vulkan_layers_common STATIC ${VULKAN_LAYERS_COMMON_SOURCES})
 
-target_include_directories(VkLayer_graphicsfuzz_shader_fuzzer
+target_include_directories(vulkan_layers_common
         PRIVATE ../external/SPIRV-Tools
         PRIVATE ${CMAKE_BINARY_DIR}/external/SPIRV-Tools
         PRIVATE ..
-        PRIVATE ../agi
-)
+        )
 
-target_link_libraries(VkLayer_graphicsfuzz_shader_fuzzer
-        PUBLIC SPIRV-Tools-fuzz
-        PUBLIC vulkan_layers_common)
+target_link_libraries(vulkan_layers_common
+        PUBLIC SPIRV-Tools-opt)

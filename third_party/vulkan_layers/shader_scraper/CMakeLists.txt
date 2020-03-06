@@ -25,7 +25,7 @@ add_library(VkLayer_graphicsfuzz_shader_scraper SHARED ${SHADER_SCRAPER_LAYER_SO
 target_include_directories(VkLayer_graphicsfuzz_shader_scraper
         PRIVATE ../external/SPIRV-Tools
         PRIVATE ${CMAKE_BINARY_DIR}/external/SPIRV-Tools
-        PRIVATE ../gapid
+        PRIVATE ../agi
 )
 
 target_link_libraries(VkLayer_graphicsfuzz_shader_scraper
