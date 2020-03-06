@@ -25,6 +25,7 @@
 #include <sstream>
 #include <vector>
 
+#include "common/spirv_util.h"
 #include "source/fuzz/fuzzer.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/opt/build_module.h"
@@ -64,47 +65,18 @@ TryFuzzingShader(VkShaderModuleCreateInfo const *pCreateInfo) {
     return std::vector<uint32_t>();
   }
 
-  uint32_t version_word = pCreateInfo->pCode[1];
-  auto major_version = (version_word >> 16) & 0xff;
-  auto minor_version = (version_word >> 8) & 0xff;
-  if (major_version != 1) {
-    std::cerr << "Unknown SPIR-V major version " << major_version
-    << "; shaders will not be fuzzed." << std::endl;
+  auto maybe_target_env = graphicsfuzz_vulkan_layers::GetTargetEnvFromSpirvBinary(pCreateInfo->pCode[1]);
+
+  if (!maybe_target_env.first) {
+    std::cerr << "Unknown SPIR-V version; shaders will not be fuzzed." << std::endl;
     return std::vector<uint32_t>();
-  }
-
-  spv_target_env target_env;
-
-  switch (minor_version) {
-    case 0:
-      target_env = SPV_ENV_UNIVERSAL_1_0;
-      break;
-    case 1:
-      target_env = SPV_ENV_UNIVERSAL_1_1;
-      break;
-    case 2:
-      target_env = SPV_ENV_UNIVERSAL_1_2;
-      break;
-    case 3:
-      target_env = SPV_ENV_UNIVERSAL_1_3;
-      break;
-    case 4:
-      target_env = SPV_ENV_UNIVERSAL_1_4;
-      break;
-    case 5:
-      target_env = SPV_ENV_UNIVERSAL_1_5;
-      break;
-    default:
-      std::cerr << "Unknown SPIR-V minor version " << minor_version
-                << "; shaders will not be fuzzed." << std::endl;
-      return std::vector<uint32_t>();
   }
 
   // |pCreateInfo->codeSize| gives the size in bytes; convert it to words.
   const uint32_t code_size_in_words =
       static_cast<uint32_t>(pCreateInfo->codeSize) / 4;
 
-  spvtools::SpirvTools tools(target_env);
+  spvtools::SpirvTools tools(maybe_target_env.second);
   if (!tools.IsValid()) {
     std::cerr << "Did not manage to create a SPIRV-Tools instance; shaders "
                  "will not be fuzzed."
@@ -113,7 +85,9 @@ TryFuzzingShader(VkShaderModuleCreateInfo const *pCreateInfo) {
   }
 
   // Create a fuzzer and the various parameters required for fuzzing.
-  spvtools::fuzz::Fuzzer fuzzer(target_env);
+  // TODO: a seed of 0 is used here at present.  It should be possible to
+  //  provide a seed via an environment variable.
+  spvtools::fuzz::Fuzzer fuzzer(maybe_target_env.second, 0, false);
   std::vector<uint32_t> binary_in(pCreateInfo->pCode,
                                   pCreateInfo->pCode + code_size_in_words);
   std::vector<uint32_t> result;
@@ -123,7 +97,8 @@ TryFuzzingShader(VkShaderModuleCreateInfo const *pCreateInfo) {
   fuzzer_options.set_random_seed(shader_module_id);
 
   // Fuzz the shader into |result|.
-  auto fuzzer_result_status = fuzzer.Run(binary_in, no_facts, fuzzer_options,
+  // TODO: no donor suppliers are currently provided.
+  auto fuzzer_result_status = fuzzer.Run(binary_in, no_facts, {},
                                          &result, &transformation_sequence);
 
   if (fuzzer_result_status !=

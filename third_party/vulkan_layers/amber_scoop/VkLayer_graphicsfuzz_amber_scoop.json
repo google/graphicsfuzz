@@ -1,0 +1,15 @@
+{
+  "file_format_version" : "1.1.0",
+  "layer": {
+    "name": "VK_LAYER_GRAPHICSFUZZ_amber_scoop",
+    "type": "GLOBAL",
+    "library_path": "libVkLayer_graphicsfuzz_amber_scoop.so",
+    "api_version" : "1.1.126",
+    "implementation_version" : "1",
+    "description" : "Amber Scoop Layer",
+    "functions": {
+      "vkGetDeviceProcAddr": "VK_LAYER_GRAPHICSFUZZ_amber_scoopGetDeviceProcAddr",
+      "vkGetInstanceProcAddr": "VK_LAYER_GRAPHICSFUZZ_amber_scoopGetInstanceProcAddr"
+    }
+  }
+}

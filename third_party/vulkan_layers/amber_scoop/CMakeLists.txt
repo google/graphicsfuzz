@@ -1,4 +1,4 @@
-# Copyright 2019 The GraphicsFuzz Project Authors
+# Copyright 2020 The GraphicsFuzz Project Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +14,23 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-set(SHADER_FUZZER_LAYER_SOURCES
+set(AMBER_SCOOP_LAYER_SOURCES
     layer.h
+    vk_deep_copy.h
     layer.cpp
     layer_impl.cpp
+    vk_deep_copy.cpp
     )
 
-add_library(VkLayer_graphicsfuzz_shader_fuzzer SHARED ${SHADER_FUZZER_LAYER_SOURCES})
+add_library(VkLayer_graphicsfuzz_amber_scoop SHARED ${AMBER_SCOOP_LAYER_SOURCES})
 
-target_include_directories(VkLayer_graphicsfuzz_shader_fuzzer
+target_include_directories(VkLayer_graphicsfuzz_amber_scoop
         PRIVATE ../external/SPIRV-Tools
         PRIVATE ${CMAKE_BINARY_DIR}/external/SPIRV-Tools
-        PRIVATE ..
         PRIVATE ../agi
+        PRIVATE ..
 )
 
-target_link_libraries(VkLayer_graphicsfuzz_shader_fuzzer
-        PUBLIC SPIRV-Tools-fuzz
+target_link_libraries(VkLayer_graphicsfuzz_amber_scoop
+        PUBLIC SPIRV-Tools-opt
         PUBLIC vulkan_layers_common)
