@@ -19,6 +19,7 @@ package com.graphicsfuzz.common.typing;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.SamplerType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -351,6 +352,9 @@ public final class TyperHelper {
 
     getBuiltinsForGlslVersionInteger(builtinsForVersion, shadingLanguageVersion);
 
+    // 8.9. Texture Functions
+    getBuiltinsForGlslVersionTexture(builtinsForVersion, shadingLanguageVersion, shaderKind);
+
     // 8.11: Atomic Memory Functions (only available in compute shaders)
 
     if (shaderKind == ShaderKind.COMPUTE) {
@@ -361,6 +365,16 @@ public final class TyperHelper {
 
     if (shaderKind == ShaderKind.FRAGMENT) {
       getBuiltinsForGlslVersionFragmentProcessing(builtinsForVersion, shadingLanguageVersion);
+    }
+
+    // 8.15: Shader Invocation Control Functions (only available in compute shaders)
+    if (shaderKind == ShaderKind.COMPUTE) {
+      getBuiltinsForGlslVersionShaderInvocationControl(builtinsForVersion, shadingLanguageVersion);
+    }
+
+    // 8.16: Shader Memory Control Functions (only available in compute shaders)
+    if (shaderKind == ShaderKind.COMPUTE) {
+      getBuiltinsForGlslVersionShaderMemoryControl(builtinsForVersion, shadingLanguageVersion);
     }
 
     return builtinsForVersion;
@@ -768,6 +782,115 @@ public final class TyperHelper {
   }
 
   /**
+   * Helper function to register built-in function prototypes for Texture Functions,
+   * as specified in section 8.9 of the GLSL 4.6 and ESSL 3.2 specifications.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   * @param shaderKind the kind of shader for which builtins are being queried
+   */
+  private static void getBuiltinsForGlslVersionTexture(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion,
+      ShaderKind shaderKind) {
+    if (shadingLanguageVersion.supportedTexture()) {
+      final String name = "texture";
+
+      // The following come from:
+      //   gvec4 texture(gsampler2D sampler, vec2 P, [float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER2D,
+          BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER2D,
+          BasicType.VEC2);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER2D,
+          BasicType.VEC2);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER2D,
+            BasicType.VEC2, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER2D,
+            BasicType.VEC2, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER2D,
+            BasicType.VEC2, BasicType.FLOAT);
+      }
+
+      // The following come from:
+      //   gvec4 texture(gsampler3D sampler, vec3 P, [float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER3D,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER3D,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER3D,
+          BasicType.VEC3);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER3D,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER3D,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER3D,
+            BasicType.VEC3, BasicType.FLOAT);
+      }
+
+      // The following come from:
+      //   gvec4 texture(gsamplerCube sampler, vec3 P, [float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLERCUBE,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLERCUBE,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLERCUBE,
+          BasicType.VEC3);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLERCUBE,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLERCUBE,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLERCUBE,
+            BasicType.VEC3, BasicType.FLOAT);
+      }
+
+      // The following come from:
+      //   float texture(sampler2DShadow sampler, vec3 P, [float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, SamplerType.SAMPLER2DSHADOW,
+          BasicType.VEC3);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, SamplerType.SAMPLER2DSHADOW,
+            BasicType.VEC3, BasicType.FLOAT);
+      }
+
+      // The following come from:
+      //   float texture(samplerCubeShadow sampler, vec4 P, [float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, SamplerType.SAMPLERCUBESHADOW,
+          BasicType.VEC4);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.FLOAT, SamplerType.SAMPLERCUBESHADOW,
+            BasicType.VEC4, BasicType.FLOAT);
+      }
+
+      // The following come from:
+      //   gvec4 texture(gsampler2DArray sampler, vec3 P,[float bias]);
+      addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER2DARRAY,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER2DARRAY,
+          BasicType.VEC3);
+      addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER2DARRAY,
+          BasicType.VEC3);
+      if (shaderKind == ShaderKind.FRAGMENT) {
+        addBuiltin(builtinsForVersion, name, BasicType.VEC4, SamplerType.SAMPLER2DARRAY,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.IVEC4, SamplerType.ISAMPLER2DARRAY,
+            BasicType.VEC3, BasicType.FLOAT);
+        addBuiltin(builtinsForVersion, name, BasicType.UVEC4, SamplerType.USAMPLER2DARRAY,
+            BasicType.VEC3, BasicType.FLOAT);
+      }
+
+      // The following comes from:
+      //   float texture(sampler2DArrayShadow sampler, vec4 P);
+      addBuiltin(builtinsForVersion, name, BasicType.FLOAT, SamplerType.SAMPLER2DARRAYSHADOW,
+          BasicType.VEC4);
+
+    }
+  }
+
+  /**
    * Helper function to register built-in function prototypes for Atomic Memory Functions,
    * as specified in section 8.11 of the GLSL 4.6 and ESSL 3.2 specifications.
    *
@@ -870,6 +993,43 @@ public final class TyperHelper {
 
     // 8.14.2 Interpolation Functions
     // TODO(550): Support functions that take non-uniform shader input variables as parameters.
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Shader Invocation Control
+   * Functions, as specified in section 8.15 of the ESSL 3.2 specification and section 8.16 of the
+   * GLSL 4.6 specification.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
+  private static void getBuiltinsForGlslVersionShaderInvocationControl(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+    if (shadingLanguageVersion.supportedShaderInvocationControlFunctions()) {
+      addBuiltin(builtinsForVersion, "barrier", VoidType.VOID);
+    }
+  }
+
+  /**
+   * Helper function to register built-in function prototypes for Shader Memory Control
+   * Functions, as specified in section 8.16 of the ESSL 3.2 specification and section 8.17 of the
+   * GLSL 4.6 specification.
+   *
+   * @param builtinsForVersion the list of builtins to add prototypes to
+   * @param shadingLanguageVersion the version of GLSL in use
+   */
+  private static void getBuiltinsForGlslVersionShaderMemoryControl(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
+      ShadingLanguageVersion shadingLanguageVersion) {
+    if (shadingLanguageVersion.supportedShaderInvocationControlFunctions()) {
+      addBuiltin(builtinsForVersion, "memoryBarrier", VoidType.VOID);
+      addBuiltin(builtinsForVersion, "memoryBarrierAtomicCounter", VoidType.VOID);
+      addBuiltin(builtinsForVersion, "memoryBarrierBuffer", VoidType.VOID);
+      addBuiltin(builtinsForVersion, "memoryBarrierShared", VoidType.VOID);
+      addBuiltin(builtinsForVersion, "memoryBarrierImage", VoidType.VOID);
+      addBuiltin(builtinsForVersion, "groupMemoryBarrier", VoidType.VOID);
+    }
   }
 
   /**

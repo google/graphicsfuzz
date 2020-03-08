@@ -84,4 +84,14 @@ final class Glsl400 extends CompositeShadingLanguageVersion {
   public boolean supportedLdexp() {
     return true;
   }
+
+  @Override
+  public boolean supportedShaderInvocationControlFunctions() {
+    return true;
+  }
+
+  @Override
+  public boolean supportedShaderMemoryControlFunctions() {
+    return true;
+  }
 }

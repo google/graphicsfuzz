@@ -316,4 +316,19 @@ final class Glsl110 implements ShadingLanguageVersion {
   public boolean supportedAtomicMemoryFunctions() {
     return false;
   }
+
+  @Override
+  public boolean supportedTexture() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedShaderInvocationControlFunctions() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedShaderMemoryControlFunctions() {
+    return false;
+  }
 }
