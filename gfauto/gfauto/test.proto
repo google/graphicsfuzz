@@ -42,6 +42,10 @@ message Test {
   // SPIR-V you want to test, but you want to continue anyway e.g. because the validator is buggy or because you know
   // the tool under test should handle the invalid SPIR-V.
   bool skip_validation = 8;
+
+  // If set, this indicates the source of the test. Most often this will be set to a shader name from the shaders
+  // included with GraphicsFuzz that was used as the reference shader. For example, "colorgrid_modulo".
+  string derived_from = 9;
 }
 
 message TestGlsl {
