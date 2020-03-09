@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.generator.tool;
 
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import java.io.File;
 
 public class GeneratorArguments {

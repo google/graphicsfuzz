@@ -28,7 +28,6 @@ import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
@@ -84,7 +83,13 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
     }
     if (basicType.isScalar() || basicType.isVector()
         || BasicType.allSquareMatrixTypes().contains(basicType)) {
+
       // TODO: add support for non-square matrices.
+
+      // Record whether we are currently in a const context, and pass this fact into the lambda
+      // below (otherwise the lambda would query whether the state the finder ends up in is a
+      // const context, which is not right).
+      final boolean isCurrentContextConst = isConstContext();
       addMutation(new Expr2ExprMutation(parentMap.getParent(expr),
           expr,
           () -> new OpaqueExpressionGenerator(
@@ -94,7 +99,7 @@ public class IdentityMutationFinder extends Expr2ExprMutationFinder {
               .applyIdentityFunction(
                   expr,
                   basicType,
-                  isConstContext(),
+                  isCurrentContextConst,
                   0,
                   new Fuzzer(
                       new FuzzingContext(clonedScope),
