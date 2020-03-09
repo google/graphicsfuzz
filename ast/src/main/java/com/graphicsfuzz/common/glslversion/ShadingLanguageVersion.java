@@ -149,6 +149,9 @@ public interface ShadingLanguageVersion {
 
   boolean initializersOfConstMustBeConst();
 
+  // Returns true if and only if this is an ES shading language.
+  boolean isEssl();
+
   boolean isWebGl();
 
   /**

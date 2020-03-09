@@ -40,6 +40,11 @@ final class Essl100 implements ShadingLanguageVersion {
   }
 
   @Override
+  public boolean isEssl() {
+    return true;
+  }
+
+  @Override
   public boolean isWebGl() {
     return false;
   }

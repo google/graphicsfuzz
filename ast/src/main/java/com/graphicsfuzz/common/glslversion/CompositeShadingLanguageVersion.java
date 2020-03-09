@@ -39,6 +39,11 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   }
 
   @Override
+  public boolean isEssl() {
+    return prototype.isEssl();
+  }
+
+  @Override
   public boolean isWebGl() {
     return prototype.isWebGl();
   }

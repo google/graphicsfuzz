@@ -40,6 +40,11 @@ final class Glsl110 implements ShadingLanguageVersion {
   }
 
   @Override
+  public boolean isEssl() {
+    return false;
+  }
+
+  @Override
   public boolean isWebGl() {
     return false;
   }

@@ -110,8 +110,6 @@ public class GlslShaderJob implements ShaderJob {
             continue;
           }
           final QualifiedType qualifiedType = (QualifiedType) variablesDeclaration.getBaseType();
-          // Conservatively assume that uniform is the only qualifier.
-          assert qualifiedType.getQualifiers().size() == 1;
           // For now we are conservative and do not handle multiple declarations per uniform; this
           // should be trivial to handle in due course but we need to write proper tests for it.
           assert variablesDeclaration.getNumDecls() == 1;
