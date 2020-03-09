@@ -389,9 +389,9 @@ public class DonateDeadCodeTransformationTest {
     final File referenceFile = testFolder.newFile("reference.json");
 
     {
-      // This donor is designed to have a high chance of leading to an array access getting injected
-      // such that the array indexing expression will be a free variable for which a fuzzed initial
-      // value will be created.
+      // This donor is designed to have a high chance of leading to an in, out or inout parameter
+      // being used by a donated statement, making it a free variable for which a local variable
+      // will need to be declared.
       final String donorSource =
           "#version 300 es\n"
               + "void foo(in int a, out int b, inout int c) {\n"
