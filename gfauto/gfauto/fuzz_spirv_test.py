@@ -72,7 +72,7 @@ def make_test(
     test_util.metadata_write(test, subtest_dir)
 
     # If the reference shader is "stable" (with respect to floating-point sensitivity)
-    # then this can be a wrong image test. I.e. we will render the reference and variant shaders
+    # then this can be a wrong image test; i.e. we will render the reference and variant shaders
     # and compare the output images.
     # Otherwise, we should just render the variant shader and check for crashes; to do this,
     # we just rename the `reference/` directory to `_reference/` so that the test has no reference shader.
