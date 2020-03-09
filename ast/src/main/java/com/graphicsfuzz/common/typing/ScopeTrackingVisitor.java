@@ -90,7 +90,7 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
     //
     // because it declares 'i' twice in the same scope.
     //
-    // Furthermore, a 'while' statement introduces a new scope regardless of whether its body is
+    // Furthermore, a 'for' statement introduces a new scope regardless of whether its body is
     // a block or a single statement.
     //
     // We thus have to push a new scope before traversing a 'for' statement and pop it afterwards,
