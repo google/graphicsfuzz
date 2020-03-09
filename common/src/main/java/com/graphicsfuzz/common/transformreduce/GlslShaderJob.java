@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
@@ -105,42 +106,38 @@ public class GlslShaderJob implements ShaderJob {
         if (decl instanceof VariablesDeclaration
             && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
           final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
-          if (variablesDeclaration.getNumDecls() == 0) {
-            // No uniforms are actually declared; move on.
-            continue;
-          }
           final QualifiedType qualifiedType = (QualifiedType) variablesDeclaration.getBaseType();
-          // For now we are conservative and do not handle multiple declarations per uniform; this
-          // should be trivial to handle in due course but we need to write proper tests for it.
-          assert variablesDeclaration.getNumDecls() == 1;
           // We cannot yet deal with adding bindings for uniform arrays.
-          assert !variablesDeclaration.getDeclInfo(0).hasArrayInfo();
-          final String uniformName = variablesDeclaration.getDeclInfo(0).getName();
-          assert pipelineInfo.hasUniform(uniformName);
-          if (!pipelineInfo.hasBinding(uniformName)) {
-            pipelineInfo.addUniformBinding(uniformName, nextBinding);
-            do {
-              nextBinding++;
-            } while (usedBindings.contains(nextBinding));
+          assert !(qualifiedType.getWithoutQualifiers() instanceof ArrayType);
+          for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
+            // Again, we cannot yet deal with adding bindings for uniform arrays.
+            assert !declInfo.hasArrayInfo();
+            final String uniformName = declInfo.getName();
+            assert pipelineInfo.hasUniform(uniformName);
+            if (!pipelineInfo.hasBinding(uniformName)) {
+              pipelineInfo.addUniformBinding(uniformName, nextBinding);
+              do {
+                nextBinding++;
+              } while (usedBindings.contains(nextBinding));
+            }
+            final int binding = pipelineInfo.getBinding(uniformName);
+            // Keep any qualifiers apart from "uniform".
+            final QualifiedType memberType = new QualifiedType(qualifiedType.getWithoutQualifiers(),
+                qualifiedType.getQualifiers()
+                    .stream()
+                    .filter(item -> item != TypeQualifier.UNIFORM)
+                    .collect(Collectors.toList()));
+            newTopLevelDeclarations.add(
+                new InterfaceBlock(
+                    Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
+                        new BindingLayoutQualifier(binding))),
+                    TypeQualifier.UNIFORM,
+                    "buf" + binding,
+                    Collections.singletonList(uniformName),
+                    Collections.singletonList(memberType),
+                    Optional.empty())
+            );
           }
-          final int binding = pipelineInfo.getBinding(uniformName);
-
-          // Keep any qualifiers apart from "uniform".
-          final QualifiedType memberType = new QualifiedType(qualifiedType.getWithoutQualifiers(),
-              qualifiedType.getQualifiers()
-                  .stream()
-                  .filter(item -> item != TypeQualifier.UNIFORM)
-                  .collect(Collectors.toList()));
-          newTopLevelDeclarations.add(
-              new InterfaceBlock(
-                  Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
-                      new BindingLayoutQualifier(binding))),
-                  TypeQualifier.UNIFORM,
-                  "buf" + binding,
-                  Arrays.asList(uniformName),
-                  Arrays.asList(qualifiedType.getWithoutQualifiers()),
-                  Optional.empty())
-          );
         } else {
           newTopLevelDeclarations.add(decl);
         }
