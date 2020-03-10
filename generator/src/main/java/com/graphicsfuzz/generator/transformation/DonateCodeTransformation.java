@@ -136,6 +136,9 @@ public abstract class DonateCodeTransformation implements ITransformation {
     // qualifiers.
     if (generationParams.getShaderKind() == ShaderKind.FRAGMENT) {
       tu.addDeclaration(new VariablesDeclaration(
+          new QualifiedType(BasicType.VEC2, Collections.singletonList(TypeQualifier.MEDIUMP)),
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_POINT_COORD), null, null)));
+      tu.addDeclaration(new VariablesDeclaration(
           new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
           new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
       tu.addDeclaration(new VariablesDeclaration(
@@ -147,6 +150,9 @@ public abstract class DonateCodeTransformation implements ITransformation {
             new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
       }
     } else if (generationParams.getShaderKind() == ShaderKind.VERTEX) {
+      tu.addDeclaration(new VariablesDeclaration(
+          new QualifiedType(BasicType.FLOAT, Collections.singletonList(TypeQualifier.HIGHP)),
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_POINT_SIZE), null, null)));
       tu.addDeclaration(new VariablesDeclaration(
           new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.HIGHP)),
           new VariableDeclInfo(addPrefix(OpenGlConstants.GL_POSITION), null, null)));

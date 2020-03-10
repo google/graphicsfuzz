@@ -438,6 +438,23 @@ public class TyperTest {
   }
 
   @Test
+  public void testGlPointCoordTyped() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() { gl_PointCoord; }");
+    Typer typer = new NullCheckTyper(tu);
+    new StandardVisitor() {
+      @Override
+      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        super.visitVariableIdentifierExpr(variableIdentifierExpr);
+        if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_POINT_COORD)) {
+          assertEquals(BasicType.VEC2, typer.lookupType(variableIdentifierExpr));
+        }
+      }
+    }.visit(tu);
+
+  }
+
+  @Test
   public void testGlNumWorkGroupsTyped() throws Exception {
     checkComputeShaderBuiltin(
         "gl_NumWorkGroups",
