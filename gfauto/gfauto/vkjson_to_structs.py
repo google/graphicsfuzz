@@ -24,7 +24,10 @@ import attr
 from pathlib import Path
 from typing import List, Any, TextIO, Dict, Optional
 
+from attr import dataclass
+
 from gfauto import util
+from gfauto.util import check
 
 _HEADER = """/*
  * Copyright (C) 2020 Google Inc.
@@ -85,6 +88,8 @@ def main(argv) -> int:
         json.loads(util.file_read_text(json_file)) for json_file in json_files
     ]
 
+    json_contents = [j["devices"][0] for j in json_contents]
+
     tree = ET.parse(vk_xml)
     root: ET.Element = tree.getroot()
 
@@ -93,11 +98,27 @@ def main(argv) -> int:
         writer.process()
 
 
+@dataclass
+class MemoryHeap:
+    flags: int
+    size: int
+
+
+@dataclass
+class MemoryType:
+    heap_index: int
+    property_flags: int
+
+
+def bits_in(subset: int, bits: int) -> bool:
+    return (subset & bits) == subset
+
+
 @attr.dataclass
 class Processor:
     f: TextIO
     root: ET.Element
-    json_contents: List[Any]
+    device_jsons: List[Any]
 
     indent = 0
     indent_size = 2
@@ -139,6 +160,7 @@ class Processor:
         self.line(_HEADER)
         self._vk_physical_device_features()
         self._vk_get_physical_device_format_properties()
+        self._vk_get_physical_device_memory_properties()
         self.line(_FOOTER)
 
     def _vk_physical_device_features(self) -> None:
@@ -150,8 +172,8 @@ class Processor:
         self.increase_indent()
         for name in names:
             self.line(f"// {name}")
-            values = self.json_contents
-            values = [v["devices"][0]["features"][name] for v in values]
+            values = self.device_jsons
+            values = [v["features"][name] for v in values]
             values = [False if v == 0 else True for v in values]
             value = all(values)
             value_str = "VK_TRUE" if value else "VK_FALSE"
@@ -179,19 +201,15 @@ class Processor:
                 formats_dict[format_number] = format_properties
             return formats_dict
 
-        first_json = self.json_contents[0]
-        remaining_jsons = self.json_contents[1:]
+        first_json = self.device_jsons[0]
+        remaining_jsons = self.device_jsons[1:]
 
         # Start with the formats from the first json.
-        simulated_formats: Dict[int, Any] = formats_json_to_dict(
-            first_json["devices"][0]["formats"]
-        )
+        simulated_formats: Dict[int, Any] = formats_json_to_dict(first_json["formats"])
 
         # Merge the remaining jsons.
         for other_json in remaining_jsons:
-            other_format_dict = formats_json_to_dict(
-                other_json["devices"][0]["formats"]
-            )
+            other_format_dict = formats_json_to_dict(other_json["formats"])
             # We will iterate over simulated_formats because we only want formats that are present in both jsons.
             # Create a copy of the format_numbers so we can modify simulated_formats as we go.
             format_numbers = list(simulated_formats.keys())[:]
@@ -260,6 +278,168 @@ struct VkFormatPropertiesWrapper {
 
         self.decrease_indent()
         self.line("};")
+
+    def _vk_get_physical_device_memory_properties(self) -> None:
+
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT = 0x00000001
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT = 0x00000002
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT = 0x00000004
+        VK_MEMORY_PROPERTY_HOST_CACHED_BIT = 0x00000008
+        VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT = 0x00000010
+        VK_MEMORY_PROPERTY_PROTECTED_BIT = 0x00000020
+        VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD = 0x00000040
+        VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD = 0x00000080
+
+        # Defined in the spec.
+        memory_type_flags_all_possible: List[int] = [
+            0,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            | VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,
+            VK_MEMORY_PROPERTY_PROTECTED_BIT,
+            VK_MEMORY_PROPERTY_PROTECTED_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD
+            | VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD
+            | VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD
+            | VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD
+            | VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            | VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            | VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD
+            | VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+        ]
+
+        heap = MemoryHeap(flags=1, size=(1 << 30))
+
+        # Heap 0 is usually appropriate, so we will just use that.
+        for d in self.device_jsons:
+            heap_0 = d["memory"]["memoryHeaps"][0]
+            check(
+                heap_0["flags"] == heap.flags and int(heap_0["size"], 16) >= heap.size,
+                AssertionError("heap incompatible"),
+            )
+
+        memory_types: List[MemoryType] = []
+        for memory_type_flags in memory_type_flags_all_possible:
+            memory_types.append(
+                MemoryType(heap_index=0, property_flags=memory_type_flags)
+            )
+
+        VK_MEMORY_HEAP_DEVICE_LOCAL_BIT = 0x00000001
+
+        # This property must hold, so filter out memory types where it does not:
+        #   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT iff VK_MEMORY_HEAP_DEVICE_LOCAL_BIT
+        # In other words, we remove all memory types without VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT because our single heap
+        # is always a device local heap.
+        memory_types = [
+            t
+            for t in memory_types
+            if bool(t.property_flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+            == bool(heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        ]
+
+        # Now filter out memory types that we can't achieve on all devices.
+        memory_types = [
+            t for t in memory_types if self._all_devices_handle_memory_type(t)
+        ]
+
+        self.line()
+
+        self.chunk(
+            f"""
+VkMemoryHeap heaps[] = {{
+    {{
+        // size
+        VkDeviceSize({heap.size}),
+        // flags
+        VkMemoryHeapFlags({heap.flags}),
+    }},
+}};
+"""
+        )
+        self.line()
+        self.line("VkMemoryType memory_types[] = {")
+        self.increase_indent()
+        for memory_type in memory_types:
+            self.chunk(
+                f"""
+{{
+    // propertyFlags
+    VkMemoryPropertyFlags({memory_type.property_flags}),
+    // heapIndex
+    uint32_t({memory_type.heap_index}),
+}},"""
+            )
+
+        self.decrease_indent()
+        self.line("};")
+
+    def _all_devices_handle_memory_type(self, memory_type: MemoryType) -> bool:
+        for d in self.device_jsons:
+            device_memory_types = d["memory"]["memoryTypes"]
+            if not Processor._device_handles_memory_type(
+                memory_type, device_memory_types
+            ):
+                return False
+        return True
+
+    @staticmethod
+    def _device_handles_memory_type(
+        memory_type: MemoryType, device_memory_types: Any
+    ) -> bool:
+        for device_memory_type in device_memory_types:
+            if device_memory_type["heapIndex"] == 0 and bits_in(
+                memory_type.property_flags, device_memory_type["propertyFlags"]
+            ):
+                return True
+        return False
 
 
 if __name__ == "__main__":
