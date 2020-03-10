@@ -1017,9 +1017,8 @@ public class DonateLiveCodeTransformationTest {
     final File referenceFile = testFolder.newFile("reference.json");
 
     {
-      // This donor is designed to have a high chance of leading to the write to array A, but not
-      // the declaration of A, being donated.  The array will then need to have explicit size 7,
-      // not size M + N.
+      // This donor is designed to have a high chance of leading to a global struct variable
+      // being used in donated code.
       final String donorSource =
           "#version 300 es\n"
               + "struct S {\n"
