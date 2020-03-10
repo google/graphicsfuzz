@@ -28,6 +28,7 @@ public final class OpenGlConstants {
   public static final String GL_FRONT_FACING = "gl_FrontFacing";
   public static final String GL_POSITION = "gl_Position";
   public static final String GL_POINT_SIZE = "gl_PointSize";
+  public static final String GL_POINT_COORD = "gl_PointCoord";
 
   // Compute shaders
   public static final String GL_NUM_WORK_GROUPS = "gl_NumWorkGroups";
