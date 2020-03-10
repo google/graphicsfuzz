@@ -24,6 +24,8 @@ import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.generator.util.AvailableStructsCollector;
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class DonationContextFinder extends StandardVisitor {
 
@@ -52,6 +55,12 @@ public class DonationContextFinder extends StandardVisitor {
 
   @Override
   public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
+    if (declaresLocalStruct(functionDefinition)) {
+      // This function declares at least one struct.  Local structs are tricky from a code donation
+      // point of view, so for simplicity we do not consider nodes in this function as donation
+      // contexts.
+      return;
+    }
     currentFunction = functionDefinition;
     super.visitFunctionDefinition(functionDefinition);
     currentFunction = null;
@@ -92,7 +101,17 @@ public class DonationContextFinder extends StandardVisitor {
     super.visitForStmt(forStmt);
   }
 
-  public DonationContext getDonationContext() {
+  /**
+   * Yields a donation context at random from the set of collected donor fragments, or empty if no
+   * donor fragments were collected.
+   * @return Empty if there are no donor fragments, otherwise a donation context made from a
+   *         randomly-selected donor fragment.
+   */
+  public Optional<DonationContext> getDonationContext() {
+    if (donorFragments.isEmpty()) {
+      return Optional.empty();
+    }
+
     final Stmt donorFragment = donorFragments.get(generator.nextInt(donorFragments.size()));
     final FreeVariablesCollector fvCollector = new FreeVariablesCollector(donor, donorFragment);
     final AvailableStructsCollector asCollector =
@@ -102,13 +121,25 @@ public class DonationContextFinder extends StandardVisitor {
     final Stmt clonedDonorFragment = donorFragment.clone();
     if (clonedDonorFragment instanceof BlockStmt) {
       // If we got the donor fragment from a function body, it may not introduce a new scope.
-      // We ensure that the donor fragment to be used in the
-      // com.graphicsfuzz.generator.transformation.donation context does.
+      // We ensure that the donor fragment to be used in the donation context does.
       ((BlockStmt) clonedDonorFragment).setIntroducesNewScope(true);
     }
-    return new DonationContext(clonedDonorFragment, fvCollector.getFreeVariables(),
+    return Optional.of(new DonationContext(clonedDonorFragment, fvCollector.getFreeVariables(),
           asCollector.getStructDefinitionTypes(),
-          enclosingFunction.get(donorFragment));
+          enclosingFunction.get(donorFragment)));
+  }
+
+  /**
+   * Checks whether any structs are declared inside the function definition (including in its
+   * parameters).
+   */
+  private boolean declaresLocalStruct(FunctionDefinition functionDefinition) {
+    return new CheckPredicateVisitor() {
+      @Override
+      public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
+        predicateHolds();
+      }
+    }.test(functionDefinition);
   }
 
 }

@@ -379,9 +379,11 @@ public abstract class DonateCodeTransformation implements ITransformation {
               + maybeDonor.get().getShaderKind());
         }
       }
-      DonationContext donationContext = new DonationContextFinder(maybeDonor.get(), generator)
+      Optional<DonationContext> donationContext = new DonationContextFinder(maybeDonor.get(),
+          generator)
           .getDonationContext();
-      if (incompatible(injectionPoint, donationContext, shadingLanguageVersion)) {
+      if (!donationContext.isPresent() || incompatible(injectionPoint, donationContext.get(),
+          shadingLanguageVersion)) {
         tries++;
         if (tries == maxTries) {
           // We have tried and tried to find something compatible to inject but not managed;
@@ -389,7 +391,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
           return new NullStmt();
         }
       } else {
-        return prepareStatementToDonate(injectionPoint, donationContext, probabilities,
+        return prepareStatementToDonate(injectionPoint, donationContext.get(), probabilities,
             generator,
             shadingLanguageVersion);
       }
