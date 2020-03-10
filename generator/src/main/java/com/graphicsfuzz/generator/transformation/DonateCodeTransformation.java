@@ -470,12 +470,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
   private boolean incompatible(IInjectionPoint injectionPoint, DonationContext donationContext,
                                ShadingLanguageVersion shadingLanguageVersion) {
-    // It is a problem if the injection point has an available variable that has the same name
-    // as a function called from the donation context
-    if (injectionPoint.scopeAtInjectionPoint().namesOfAllVariablesInScope().stream().anyMatch(
-        item -> getCalledFunctions(donationContext.getDonorFragment()).contains(item))) {
-      return true;
-    }
     if (shadingLanguageVersion.isWebGl()) {
       // TODO: revisit in case this was just a WebGL 1 restriction; maybe it is OK in WebGL 2
       if (donationContext.indexesArrayUsingFreeVariable()) {
@@ -583,18 +577,20 @@ public abstract class DonateCodeTransformation implements ITransformation {
     final QualifiedType qualifiedType = (QualifiedType) type;
     final List<TypeQualifier> newQualifiers = new ArrayList<>();
     for (TypeQualifier qualifier : qualifiedType.getQualifiers()) {
+
+      // The following qualifiers are only allowed on global variables, and global variables should
+      // not occur as free variables (being global, they are always available).
+      assert qualifier != TypeQualifier.UNIFORM;
+      assert qualifier != TypeQualifier.SHADER_INPUT;
+      assert qualifier != TypeQualifier.SHADER_OUTPUT;
+      assert qualifier != TypeQualifier.SHARED;
+      assert !(qualifier instanceof LayoutQualifierSequence);
+
       // There are probably other qualifiers that are not allowed; move them up as we discover this.
       if (Arrays.asList(
           TypeQualifier.IN_PARAM,
           TypeQualifier.INOUT_PARAM,
-          TypeQualifier.OUT_PARAM,
-          TypeQualifier.UNIFORM,
-          TypeQualifier.SHADER_INPUT,
-          TypeQualifier.SHADER_OUTPUT,
-          TypeQualifier.SHARED).contains(qualifier)) {
-        continue;
-      }
-      if (qualifier instanceof LayoutQualifierSequence) {
+          TypeQualifier.OUT_PARAM).contains(qualifier)) {
         continue;
       }
       newQualifiers.add(qualifier);

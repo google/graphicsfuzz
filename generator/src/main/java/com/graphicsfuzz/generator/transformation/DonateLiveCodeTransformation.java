@@ -71,11 +71,7 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
     List<Stmt> donatedStmts = new ArrayList<>();
     for (Map.Entry<String, Type> vars : donationContext.getFreeVariables().entrySet()) {
       final Type type = vars.getValue();
-      if (type.hasQualifier(TypeQualifier.UNIFORM)) {
-        // A uniform variable has to be globally-scoped.  As a result this variable will be
-        // donated as a global, so we should not re-declare it here.
-        continue;
-      }
+
       final Type typeWithRestrictedQualifiers =
           dropQualifiersThatCannotBeUsedForLocalVariable(type);
 

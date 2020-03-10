@@ -27,15 +27,43 @@ import com.graphicsfuzz.common.util.OpenGlConstants;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public class FreeVariablesCollector extends ScopeTrackingVisitor {
 
+  // A variable v is *used freely* in an AST subtree rooted at node n if:
+  // - v is not a global variable
+  // - v's declaration is outside the subtree rooted at n.
+  //
+  // Example:
+  //
+  // int x;
+  // float y;
+  //
+  // void foo(int p, float q) {
+  //   int x;
+  //   { <----------------------- AST node n
+  //     int a;
+  //     float b;
+  //     a = p + x + int(b); <--- p and x are used freely (x because the reference refers to the
+  //                              declaration of x in foo)
+  //     int x;
+  //     x = float(y) + q; <----- q is used freely; x is not because of the declaration on the
+  //                              previous line; y is not because it is a global
+  //   }
+  // }
+
+  // This is the donor fragment for which we would like to compute free variables.
   private final Stmt donorFragment;
-  private Scope enclosingScope;
+
+  // This is the scope of variables available at the start of the donor fragment.
+  private Scope scopeAtStartOfDonorFragment;
+
+  // The result of the collection.
   private final Map<String, Type> freeVariables;
 
   public FreeVariablesCollector(TranslationUnit donor, Stmt donorFragment) {
     this.donorFragment = donorFragment;
-    this.enclosingScope = null;
+    this.scopeAtStartOfDonorFragment = null;
     this.freeVariables = new HashMap<>();
     visit(donor);
   }
@@ -47,12 +75,46 @@ public class FreeVariablesCollector extends ScopeTrackingVisitor {
   @Override
   public void visit(IAstNode node) {
     if (node == donorFragment) {
-      enclosingScope = swapCurrentScope(new Scope());
+
+      // We have reached the donor fragment.
+      //
+      // We figure out which global variables are in scope at this point (which involves excluding
+      // those globals that are shadowed), and process the donor subtree in the context of only
+      // those globals.  References to other variables are exactly the free variables.
+
+      assert scopeAtStartOfDonorFragment == null;
+
+      // Walk up the scope tree until global scope is reached.
+      Scope tempScope = getCurrentScope();
+      while (tempScope.hasParent()) {
+        tempScope = tempScope.getParent();
+      }
+      assert tempScope != getCurrentScope() : "The donor fragment should not be at global scope.";
+
+      // At this point, 'tempScope' is global scope.
+      //
+      // We create a version of global scope that excludes all names that are shadowed by more
+      // local declarations.
+      final Scope globalScopeWithoutShadows = tempScope.shallowClone();
+      for (String name : tempScope.namesOfAllVariablesInScope()) {
+        if (tempScope.lookupScopeEntry(name) != getCurrentScope().lookupScopeEntry(name)) {
+          // 'name' is shadowed, because we get a different scope entry when we look it up at global
+          // scope vs. at the current scope.
+          globalScopeWithoutShadows.remove(name);
+        }
+      }
+
+      // We process the donor fragment in the context of the global, non-shadowed variables.  Any
+      // declarations that we cannot find in this scope are free variables, and
+      // 'scopeAtStartOfDonorFragmenet' will yield their types.
+      scopeAtStartOfDonorFragment = swapCurrentScope(new Scope(globalScopeWithoutShadows));
     }
     super.visit(node);
     if (node == donorFragment) {
-      swapCurrentScope(enclosingScope);
-      enclosingScope = null;
+      // We are done with the donor fragment, so restore the original scope.
+      assert scopeAtStartOfDonorFragment != null;
+      swapCurrentScope(scopeAtStartOfDonorFragment);
+      scopeAtStartOfDonorFragment = null;
     }
   }
 
@@ -62,14 +124,12 @@ public class FreeVariablesCollector extends ScopeTrackingVisitor {
     if (isBuiltinVariable(name)) {
       return;
     }
-    if (enclosingScope != null && getCurrentScope().lookupType(name) == null) {
-      Type type = enclosingScope.lookupType(name);
+    if (scopeAtStartOfDonorFragment != null && getCurrentScope().lookupType(name) == null) {
+      Type type = scopeAtStartOfDonorFragment.lookupType(name);
       if (type == null) {
         throw new RuntimeException(
             "Found variable '" + name + "' that is not typed in the current scope.");
       }
-      //noinspection ConstantConditions
-      assert type != null;
       freeVariables.put(name, type);
     }
   }
