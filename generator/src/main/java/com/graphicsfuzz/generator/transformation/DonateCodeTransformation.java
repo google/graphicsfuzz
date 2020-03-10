@@ -319,11 +319,17 @@ public abstract class DonateCodeTransformation implements ITransformation {
       @Override
       public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
         super.visitTypeConstructorExpr(typeConstructorExpr);
-        if (!BasicType.allBasicTypes()
+        // Get the standard names of all basic types.
+        final Set<String> basicTypeNames = new HashSet<>(BasicType.allBasicTypes()
             .stream()
-            .map(item -> item.toString())
-            .collect(Collectors.toSet())
-            .contains(typeConstructorExpr.getTypename())) {
+            .map(BasicType::toString).collect(Collectors.toSet()));
+        // Add alternative names for square matrices.
+        basicTypeNames.add("mat2x2");
+        basicTypeNames.add("mat3x3");
+        basicTypeNames.add("mat4x4");
+        if (!basicTypeNames.contains(typeConstructorExpr.getTypename())) {
+          // The type constructor is not one of these names, so it must be a struct; we add its
+          // prefix.
           typeConstructorExpr.setTypename(addPrefix(typeConstructorExpr.getTypename()));
         }
       }

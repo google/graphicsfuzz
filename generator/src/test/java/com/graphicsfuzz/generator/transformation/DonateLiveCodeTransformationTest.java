@@ -919,4 +919,90 @@ public class DonateLiveCodeTransformationTest {
 
   }
 
+  @Test
+  public void testDonationOfFreeTypeConstructors() throws Exception {
+    // This checks that donation of code that uses type constructors leads to valid shaders.
+
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+
+    final File donors = testFolder.newFolder("donors");
+    final File referenceFile = testFolder.newFile("reference.json");
+
+    {
+      final String donorSource =
+          "#version 300 es\n"
+              + "precision highp float;\n"
+              + "void foo(in int a, out int b, inout int c) {\n"
+              + " {\n"
+              + "  mat2x2 m = mat2x2(1.0);\n"
+              + "  vec2 v = vec2(1.0);\n"
+              + "  ivec3 iv = ivec3(3);\n"
+              + " }\n"
+              + "}\n";
+
+      fileOps.writeShaderJobFile(
+          new GlslShaderJob(
+              Optional.empty(),
+              new PipelineInfo(),
+              ParseHelper.parse(donorSource)),
+          new File(donors, "donor.json")
+      );
+    }
+
+    {
+      final String referenceSource = "#version 300 es\n"
+          + "void main() {\n"
+          + "}\n";
+      fileOps.writeShaderJobFile(
+          new GlslShaderJob(
+              Optional.empty(),
+              new PipelineInfo(),
+              ParseHelper.parse(referenceSource)),
+          referenceFile
+      );
+    }
+
+    int noCodeDonatedCount = 0;
+
+    // Try the following a few times, so that there is a good chance of triggering the issue
+    // this test was used to catch, should it return:
+    for (int seed = 0; seed < 15; seed++) {
+
+      final ShaderJob referenceShaderJob = fileOps.readShaderJobFile(referenceFile);
+
+      // Do live code donation.
+      final DonateLiveCodeTransformation transformation =
+          new DonateLiveCodeTransformation(IRandom::nextBoolean, donors,
+              GenerationParams.normal(ShaderKind.FRAGMENT, true), false);
+
+      assert referenceShaderJob.getFragmentShader().isPresent();
+
+      final boolean result = transformation.apply(
+          referenceShaderJob.getFragmentShader().get(),
+          TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
+          new RandomWrapper(seed),
+          GenerationParams.normal(ShaderKind.FRAGMENT, true)
+      );
+
+      if (result) {
+        final File tempFile = testFolder.newFile("shader" + seed + ".json");
+        fileOps.writeShaderJobFile(referenceShaderJob, tempFile);
+        // This will fail if the shader job turns out to be invalid.
+        fileOps.areShadersValid(tempFile, true);
+      } else {
+        ++noCodeDonatedCount;
+      }
+
+    }
+
+    // The above code tests donation of live code, but there is still a chance that no code will
+    // be donated. We assert that this happens < 10 times to ensure that we get some test
+    // coverage, but this could fail due to bad luck.
+    Assert.assertTrue(
+        "Donation failure count should be < 10, " + noCodeDonatedCount,
+        noCodeDonatedCount < 10
+    );
+
+  }
+
 }
