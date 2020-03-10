@@ -341,4 +341,31 @@ public class IdentityMutationFinderTest {
     }
   }
 
+  @Test
+  public void testMutationsWithCommaOperator() throws Exception {
+    // This checks that the _GLF_IDENTITY macro is applied appropriately in the presence of the
+    // comma operator.
+    final String program = "#version 310 es\n"
+        + "precision highp float;\n"
+        + "void main() {"
+        + "  int a, b, c, d, e;\n"
+        + "  a, b, c, d, e, a, b, c, d, e;\n"
+        + "}";
+    final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+    for (int i = 0; i < 20; i++) {
+      final TranslationUnit tu = ParseHelper.parse(program);
+      new IdentityMutationFinder(tu,
+          new RandomWrapper(i), GenerationParams.normal(ShaderKind.FRAGMENT, false))
+          .findMutations()
+          .forEach(Expr2ExprMutation::apply);
+      final File shaderJobFile = temporaryFolder.newFile("shader" + i + ".json");
+      final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), new PipelineInfo(),
+          tu);
+      fileOperations.writeShaderJobFile(shaderJob, shaderJobFile);
+      // Check that there is no invalidity due to mis-use of constants (in which case an exception
+      // will be thrown, but we assert the result of 'areShadersValid' is true just to be sure.
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, true));
+    }
+  }
+
 }

@@ -910,7 +910,8 @@ public final class OpaqueExpressionGenerator {
   }
 
   private Expr identityConstructor(Expr original, Expr withIdentityApplied) {
-    return macroConstructor(Constants.GLF_IDENTITY, original.clone(), withIdentityApplied);
+    return macroConstructor(Constants.GLF_IDENTITY, addParenthesesIfCommaExpr(original.clone()),
+        withIdentityApplied);
   }
 
   private Expr zeroConstructor(Expr expr, BasicType type) {
@@ -1257,11 +1258,16 @@ public final class OpaqueExpressionGenerator {
                       Fuzzer fuzzer) {
       // min(expr, expr)
       assert BasicType.allNumericTypes().contains(type);
+      // We cannot pass a comma expression as an argument to 'min' (as it would look like two
+      // arguments), so add parentheses if needed.
+      final Expr exprWithParenthesesIfNeeded = addParenthesesIfCommaExpr(expr);
       return identityConstructor(
           expr,
           new FunctionCallExpr("min",
-              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
-              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)));
+              applyIdentityFunction(exprWithParenthesesIfNeeded.clone(), type, constContext, depth,
+                  fuzzer),
+              applyIdentityFunction(exprWithParenthesesIfNeeded.clone(), type, constContext, depth,
+                  fuzzer)));
     }
 
   }
@@ -1277,11 +1283,16 @@ public final class OpaqueExpressionGenerator {
                       Fuzzer fuzzer) {
       // max(expr, expr)
       assert BasicType.allNumericTypes().contains(type);
+      // We cannot pass a comma expression as an argument to 'max' (as it would look like two
+      // arguments), so add parentheses if needed.
+      final Expr exprWithParenthesesIfNeeded = addParenthesesIfCommaExpr(expr);
       return identityConstructor(
           expr,
           new FunctionCallExpr("max",
-              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
-              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)));
+              applyIdentityFunction(exprWithParenthesesIfNeeded.clone(), type, constContext, depth,
+                  fuzzer),
+              applyIdentityFunction(exprWithParenthesesIfNeeded.clone(), type, constContext, depth,
+                  fuzzer)));
     }
 
   }
@@ -1297,12 +1308,18 @@ public final class OpaqueExpressionGenerator {
                       Fuzzer fuzzer) {
       // clamp(expr, expr, expr)
       assert BasicType.allNumericTypes().contains(type);
+      // We cannot pass a comma expression as an argument to 'clamp' (as it would look like two
+      // arguments), so add parentheses if needed.
+      final Expr exprWithParenthesesIfNeeded = addParenthesesIfCommaExpr(expr);
       return identityConstructor(
           expr,
           new FunctionCallExpr("clamp",
-              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
-              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer),
-              applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer)));
+              applyIdentityFunction(exprWithParenthesesIfNeeded.clone(), type, constContext, depth,
+                  fuzzer),
+              applyIdentityFunction(exprWithParenthesesIfNeeded.clone(), type, constContext, depth,
+                  fuzzer),
+              applyIdentityFunction(exprWithParenthesesIfNeeded.clone(), type, constContext, depth,
+                  fuzzer)));
     }
 
   }
@@ -1484,9 +1501,12 @@ public final class OpaqueExpressionGenerator {
       assert innerConstructorTypes.contains(type);
       final BasicType randomInnerConstructorType =
           innerConstructorTypes.get(generator.nextInt(innerConstructorTypes.size()));
-      final List<Expr> innerConstructorArgs = new ArrayList<Expr>();
+      final List<Expr> innerConstructorArgs = new ArrayList<>();
+      // We cannot pass a comma expression as an argument to a type constructor (as it would look
+      // like two arguments), so add parentheses if needed.
       innerConstructorArgs.add(
-          applyIdentityFunction(expr.clone(), type, constContext, depth, fuzzer));
+          addParenthesesIfCommaExpr(applyIdentityFunction(expr.clone(), type, constContext, depth,
+              fuzzer)));
       // GLSL won't fill in the blanks of the inner constructor unless a matrix is being constructed
       // from another matrix.
       if (!type.isMatrix()) {
@@ -1596,4 +1616,21 @@ public final class OpaqueExpressionGenerator {
           applyIdentityFunction(binaryMultExpr, type, constContext, depth, fuzzer));
     }
   }
+
+  /**
+   * When creating macro invocations, the comma operator is troublesome.  This is because if a
+   * comma expression 'a, b' is passed as a macro argument, it is processes as two macro arguments.
+   * This helper turns an expression of the form 'a, b' into '(a, b)', and returns expressions of
+   * other forms unchanged.
+   * @param expr An expression to be potentially enclosed in parentheses.
+   * @return The expression unchanged if it is not a comma expression, otherwise the expression in
+   *         parentheses.
+   */
+  private Expr addParenthesesIfCommaExpr(Expr expr) {
+    if (expr instanceof BinaryExpr && ((BinaryExpr) expr).getOp() == BinOp.COMMA) {
+      return new ParenExpr(expr);
+    }
+    return expr;
+  }
+
 }
