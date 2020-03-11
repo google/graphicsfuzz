@@ -360,9 +360,10 @@ struct VkFormatPropertiesWrapper {
 
         # Heap 0 is usually appropriate, so we will just use that.
         for d in self.device_jsons:
-            heap_0 = d["memory"]["memoryHeaps"][0]
+            device_heap_0 = d["memory"]["memoryHeaps"][0]
             check(
-                heap_0["flags"] == heap.flags and int(heap_0["size"], 16) >= heap.size,
+                device_heap_0["flags"] == heap.flags
+                and int(device_heap_0["size"], 16) >= heap.size,
                 AssertionError("heap incompatible"),
             )
 
@@ -392,31 +393,54 @@ struct VkFormatPropertiesWrapper {
 
         self.line()
 
-        self.chunk(
-            f"""
-VkMemoryHeap heaps[] = {{
-    {{
-        // size
-        VkDeviceSize({heap.size}),
-        // flags
-        VkMemoryHeapFlags({heap.flags}),
-    }},
-}};
-"""
+        self.line(
+            "VkPhysicalDeviceMemoryProperties physical_device_memory_properties = {"
         )
-        self.line()
-        self.line("VkMemoryType memory_types[] = {")
+        self.increase_indent()
+
+        self.line("// memoryTypeCount")
+        self.line(f"{len(memory_types)},")
+
+        self.line("// memoryTypes")
+        self.line("{")
         self.increase_indent()
         for memory_type in memory_types:
-            self.chunk(
-                f"""
-{{
-    // propertyFlags
-    VkMemoryPropertyFlags({memory_type.property_flags}),
-    // heapIndex
-    uint32_t({memory_type.heap_index}),
-}},"""
-            )
+            self.line("{")
+            self.increase_indent()
+
+            self.line("// propertyFlags")
+            self.line(f"VkMemoryPropertyFlags({memory_type.property_flags}),")
+
+            self.line("// heapIndex")
+            self.line(f"{memory_type.heap_index},")
+            self.decrease_indent()
+            self.line("},")
+
+        if len(memory_types) < 32:
+            self.line("{},")
+
+        self.decrease_indent()
+        self.line("},")
+
+        self.line("// memoryHeapCount")
+        self.line("1,")
+
+        self.line("// memoryHeaps")
+        self.line("{")
+        self.increase_indent()
+
+        self.line("{")
+        self.increase_indent()
+        self.line("// size")
+        self.line(f"VkDeviceSize({heap.size}),")
+        self.line("// flags")
+        self.line(f"VkMemoryHeapFlags({heap.flags}),")
+        self.decrease_indent()
+        self.line("},")
+        self.line("{},")
+
+        self.decrease_indent()
+        self.line("},")
 
         self.decrease_indent()
         self.line("};")
