@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.generator.transformation;
 
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
@@ -444,8 +443,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
       tu.addDeclaration(maybeInjectionSwitch.get());
     }
 
-
-
     eliminateUsedDonors();
     return !injectionPoints.isEmpty();
 
@@ -513,25 +510,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
       // We simply make do without an initializer, as we didn't manage to fuzz one.
       return null;
     }
-  }
-
-  private Set<String> getCalledFunctions(final IAstNode node) {
-    return new StandardVisitor() {
-
-      private final Set<String> calledFunctions = new HashSet<String>();
-
-      @Override
-      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-        super.visitFunctionCallExpr(functionCallExpr);
-        calledFunctions.add(functionCallExpr.getCallee());
-      }
-
-      private Set<String> calledFunctions() {
-        visit(node);
-        return calledFunctions;
-      }
-
-    }.calledFunctions();
   }
 
   private Optional<TranslationUnit> chooseDonor(IRandom generator,

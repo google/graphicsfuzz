@@ -128,17 +128,7 @@ public class ArrayInfo implements IAstNode {
 
   @Override
   public ArrayInfo clone() {
-    return new ArrayInfo(constantSize, sizeExpr);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    return obj instanceof ArrayInfo && sizeExpr.equals(((ArrayInfo) obj).sizeExpr);
-  }
-
-  @Override
-  public int hashCode() {
-    return sizeExpr.hashCode();
+    return new ArrayInfo(constantSize, sizeExpr.flatMap(item -> Optional.of(item.clone())));
   }
 
 }
