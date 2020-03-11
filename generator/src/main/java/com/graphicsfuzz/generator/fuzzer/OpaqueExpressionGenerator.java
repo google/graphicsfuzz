@@ -1360,8 +1360,9 @@ public final class OpaqueExpressionGenerator {
           index = applyIdentityFunction(index, type.getElementType(), constContext, depth, fuzzer);
         }
 
-        xElements.add(decision ? something : index);
-        yElements.add(decision ? index : something);
+        // Avoid top-level occurrences of the comma operator as type constructor parameters.
+        xElements.add(addParenthesesIfCommaExpr(decision ? something : index));
+        yElements.add(addParenthesesIfCommaExpr(decision ? index : something));
       }
       return identityConstructor(
           expr,
