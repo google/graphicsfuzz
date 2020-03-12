@@ -552,6 +552,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       out.append(";" + newLine());
     }
     decreaseIndent();
+    out.append(indent());
     out.append("}");
   }
 

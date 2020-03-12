@@ -16,21 +16,20 @@
 
 package com.graphicsfuzz.generator.transformation;
 
-import com.graphicsfuzz.common.ast.AstUtil;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
-import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
+import com.graphicsfuzz.common.ast.decl.DefaultLayout;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
-import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.NullStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
@@ -45,23 +44,20 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
-import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
+import com.graphicsfuzz.common.typing.TyperHelper;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.MakeArrayAccessesInBounds;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.StructUtils;
 import com.graphicsfuzz.generator.fuzzer.FuzzedIntoACornerException;
 import com.graphicsfuzz.generator.fuzzer.Fuzzer;
 import com.graphicsfuzz.generator.fuzzer.FuzzingContext;
 import com.graphicsfuzz.generator.fuzzer.OpaqueExpressionGenerator;
 import com.graphicsfuzz.generator.transformation.donation.DonationContext;
 import com.graphicsfuzz.generator.transformation.donation.DonationContextFinder;
-import com.graphicsfuzz.generator.transformation.donation.IncompatibleDonorException;
 import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
@@ -81,7 +77,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public abstract class DonateCodeTransformation implements ITransformation {
 
@@ -89,10 +84,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
   // During a single donation pass, this is populated on demand with the donors that are used.
   private final Map<File, TranslationUnit> donorsToTranslationUnits;
-
-  private final List<FunctionPrototype> functionPrototypes;
-  private final Map<String, Type> globalVariables;
-  private final Set<String> structNames;
 
   // 'donorFiles' contains those donors that have not yet been used for a code donation.  Once a
   // donor has been used, it is moved to 'usedDonorFiles' (unless it is found to be incompatible,
@@ -108,9 +99,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
                                   File donorsDirectory, GenerationParams generationParams) {
     this.probabilityOfDonation = probabilityOfDonation;
     this.donorsToTranslationUnits = new HashMap<>();
-    this.functionPrototypes = new ArrayList<>();
-    this.globalVariables = new HashMap<>();
-    this.structNames = new HashSet<>();
     assert donorsDirectory.exists();
     this.donorFiles = new ArrayList<>();
     this.donorFiles.addAll(Arrays.asList(donorsDirectory.listFiles(
@@ -134,20 +122,37 @@ public abstract class DonateCodeTransformation implements ITransformation {
   private TranslationUnit prepareTranslationUnit(File donorFile, IRandom generator)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final TranslationUnit tu = ParseHelper.parse(donorFile);
-    addPrefixes(tu, getDeclaredFunctionNames(tu));
+
+    // First, simplify the array info objects used by the shader so that they only refer to const
+    // expressions.  This is to avoid the situation where an array with e.g. a constant SOME_SIZE
+    // as its size expression gets donated into a context where SOME_SIZE is not declared.
+    simplifyArrayInfo(tu);
+
+    // Add a prefix to every identifier used in the shader.
+    addPrefixes(tu);
+
     // Add prefixed versions of these builtins, in case they are used.
     // Use explicit precision qualifiers to avoid introducing errors if there are no float precision
     // qualifiers.
     if (generationParams.getShaderKind() == ShaderKind.FRAGMENT) {
       tu.addDeclaration(new VariablesDeclaration(
+          new QualifiedType(BasicType.VEC2, Collections.singletonList(TypeQualifier.MEDIUMP)),
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_POINT_COORD), null, null)));
+      tu.addDeclaration(new VariablesDeclaration(
           new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
           new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COORD), null, null)));
+      tu.addDeclaration(new VariablesDeclaration(
+          BasicType.BOOL,
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRONT_FACING), null, null)));
       if (tu.getShadingLanguageVersion().supportedGlFragColor()) {
         tu.addDeclaration(new VariablesDeclaration(
             new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.MEDIUMP)),
             new VariableDeclInfo(addPrefix(OpenGlConstants.GL_FRAG_COLOR), null, null)));
       }
     } else if (generationParams.getShaderKind() == ShaderKind.VERTEX) {
+      tu.addDeclaration(new VariablesDeclaration(
+          new QualifiedType(BasicType.FLOAT, Collections.singletonList(TypeQualifier.HIGHP)),
+          new VariableDeclInfo(addPrefix(OpenGlConstants.GL_POINT_SIZE), null, null)));
       tu.addDeclaration(new VariablesDeclaration(
           new QualifiedType(BasicType.VEC4, Collections.singletonList(TypeQualifier.HIGHP)),
           new VariableDeclInfo(addPrefix(OpenGlConstants.GL_POSITION), null, null)));
@@ -244,6 +249,16 @@ public abstract class DonateCodeTransformation implements ITransformation {
       tu.removeTopLevelDeclaration(interfaceBlock);
     }
 
+    // Remove all default layouts, such as the local size of workgroups in compute shaders, from
+    // the donor, to avoid clashes with similar information in the reference.
+    for (DefaultLayout defaultLayout : tu.getTopLevelDeclarations()
+        .stream()
+        .filter(item -> item instanceof DefaultLayout)
+        .map(item -> (DefaultLayout) item)
+        .collect(Collectors.toList())) {
+      tu.removeTopLevelDeclaration(defaultLayout);
+    }
+
     // To avoid undefined behaviours, make all array access in bounds for every donor.
     MakeArrayAccessesInBounds.makeInBounds(tu);
 
@@ -253,7 +268,24 @@ public abstract class DonateCodeTransformation implements ITransformation {
     return tu;
   }
 
-  private void addPrefixes(TranslationUnit tu, final Set<String> declaredFunctionNames) {
+  /**
+   * For every array info object that contains a size expression, replace that size expression with
+   * an integer constant expression reflecting the array's constant-folded size.
+   */
+  private void simplifyArrayInfo(TranslationUnit tu) {
+    new StandardVisitor() {
+      @Override
+      public void visitArrayInfo(ArrayInfo arrayInfo) {
+        super.visitArrayInfo(arrayInfo);
+        if (arrayInfo.hasSizeExpr()) {
+          assert arrayInfo.hasConstantSize();
+          arrayInfo.resetSizeExprToConstant();
+        }
+      }
+    }.visit(tu);
+  }
+
+  private void addPrefixes(TranslationUnit tu) {
     new StandardVisitor() {
 
       @Override
@@ -263,6 +295,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
       @Override
       public void visitParameterDecl(ParameterDecl parameterDecl) {
+        super.visitParameterDecl(parameterDecl);
         if (parameterDecl.getName() != null) {
           parameterDecl.setName(addPrefix(parameterDecl.getName()));
         }
@@ -277,41 +310,44 @@ public abstract class DonateCodeTransformation implements ITransformation {
       @Override
       public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
         super.visitFunctionPrototype(functionPrototype);
-        if (!functionPrototype.getName().equals("main")) {
-          functionPrototype.setName(addPrefix(functionPrototype.getName()));
-        }
+        functionPrototype.setName(addPrefix(functionPrototype.getName()));
       }
 
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
         super.visitFunctionCallExpr(functionCallExpr);
-        if (declaredFunctionNames.contains(functionCallExpr.getCallee())) {
+        if (!TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), tu.getShaderKind())
+            .containsKey(functionCallExpr.getCallee())) {
           functionCallExpr.setCallee(addPrefix(functionCallExpr.getCallee()));
         }
       }
 
-    }.visit(tu);
-  }
-
-  private Set<String> getDeclaredFunctionNames(TranslationUnit tu) {
-    return new StandardVisitor() {
-
-      private Set<String> names = new HashSet<>();
+      @Override
+      public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
+        super.visitTypeConstructorExpr(typeConstructorExpr);
+        // Get the standard names of all basic types.
+        final Set<String> basicTypeNames = new HashSet<>(BasicType.allBasicTypes()
+            .stream()
+            .map(BasicType::toString).collect(Collectors.toSet()));
+        // Add alternative names for square matrices.
+        basicTypeNames.add("mat2x2");
+        basicTypeNames.add("mat3x3");
+        basicTypeNames.add("mat4x4");
+        if (!basicTypeNames.contains(typeConstructorExpr.getTypename())) {
+          // The type constructor is not one of these names, so it must be a struct; we add its
+          // prefix.
+          typeConstructorExpr.setTypename(addPrefix(typeConstructorExpr.getTypename()));
+        }
+      }
 
       @Override
-      public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
-        super.visitFunctionPrototype(functionPrototype);
-        names.add(functionPrototype.getName());
+      public void visitStructNameType(StructNameType structNameType) {
+        super.visitStructNameType(structNameType);
+        structNameType.setName(addPrefix(structNameType.getName()));
       }
 
-      Set<String> getDeclaredFunctionNames(TranslationUnit tu) {
-        visit(tu);
-        return names;
-      }
-
-    }.getDeclaredFunctionNames(tu);
+    }.visit(tu);
   }
-
 
   abstract Stmt prepareStatementToDonate(IInjectionPoint injectionPoint,
                                          DonationContext donationContext,
@@ -343,9 +379,11 @@ public abstract class DonateCodeTransformation implements ITransformation {
               + maybeDonor.get().getShaderKind());
         }
       }
-      DonationContext donationContext = new DonationContextFinder(maybeDonor.get(), generator)
+      Optional<DonationContext> donationContext = new DonationContextFinder(maybeDonor.get(),
+          generator)
           .getDonationContext();
-      if (incompatible(injectionPoint, donationContext, shadingLanguageVersion)) {
+      if (!donationContext.isPresent() || incompatible(injectionPoint, donationContext.get(),
+          shadingLanguageVersion)) {
         tries++;
         if (tries == maxTries) {
           // We have tried and tried to find something compatible to inject but not managed;
@@ -353,7 +391,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
           return new NullStmt();
         }
       } else {
-        return prepareStatementToDonate(injectionPoint, donationContext, probabilities,
+        return prepareStatementToDonate(injectionPoint, donationContext.get(), probabilities,
             generator,
             shadingLanguageVersion);
       }
@@ -370,22 +408,46 @@ public abstract class DonateCodeTransformation implements ITransformation {
       return false;
     }
 
-    functionPrototypes.addAll(AstUtil.getFunctionPrototypesFromShader(tu));
-    globalVariables.putAll(getGlobalVariablesFromShader(tu));
-    structNames.addAll(getStructNamesFromShader(tu));
-
     List<IInjectionPoint> injectionPoints = new InjectionPoints(tu, generator, x -> true)
         .getInjectionPoints(probabilityOfDonation);
-
-    final List<Stmt> injectedStmts = new ArrayList<>();
 
     for (IInjectionPoint injectionPoint : injectionPoints) {
       final Stmt injectedStmt = prepareStatementToDonate(injectionPoint, probabilities,
           generator, tu.getShadingLanguageVersion());
       injectionPoint.inject(injectedStmt);
-      injectedStmts.add(injectedStmt);
     }
-    donateFunctionsAndGlobals(tu);
+
+    final List<Declaration> newRecipientTopLevelDeclarations = new ArrayList<>();
+
+    for (TranslationUnit donor : donorFiles
+        .stream()
+        .filter(donorsToTranslationUnits::containsKey)
+        .map(donorsToTranslationUnits::get)
+        .collect(Collectors.toList())) {
+      newRecipientTopLevelDeclarations.addAll(donor.getTopLevelDeclarations());
+    }
+    newRecipientTopLevelDeclarations.addAll(tu.getTopLevelDeclarations());
+
+    tu.setTopLevelDeclarations(newRecipientTopLevelDeclarations);
+
+    // If injectionSwitch is present, move it to the top of the shader.  This is because other
+    // passes may assume that it is available globally and use it in donated functions that appear
+    // earlier than where injectionSwitch originally appeared.
+    final Optional<VariablesDeclaration> maybeInjectionSwitch =
+        tu.getTopLevelDeclarations()
+            .stream()
+            .filter(item -> item instanceof VariablesDeclaration)
+            .map(item -> (VariablesDeclaration) item)
+            .filter(item -> item.getDeclInfos().size() == 1
+                && item.getDeclInfo(0).getName().equals(Constants.INJECTION_SWITCH))
+            .findFirst();
+    if (maybeInjectionSwitch.isPresent()) {
+      tu.removeTopLevelDeclaration(maybeInjectionSwitch.get());
+      tu.addDeclaration(maybeInjectionSwitch.get());
+    }
+
+
+
     eliminateUsedDonors();
     return !injectionPoints.isEmpty();
 
@@ -410,12 +472,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
   private boolean incompatible(IInjectionPoint injectionPoint, DonationContext donationContext,
                                ShadingLanguageVersion shadingLanguageVersion) {
-    // It is a problem if the injection point has an available variable that has the same name
-    // as a function called from the donation context
-    if (injectionPoint.scopeAtInjectionPoint().namesOfAllVariablesInScope().stream().anyMatch(
-        item -> getCalledFunctions(donationContext.getDonorFragment()).contains(item))) {
-      return true;
-    }
     if (shadingLanguageVersion.isWebGl()) {
       // TODO: revisit in case this was just a WebGL 1 restriction; maybe it is OK in WebGL 2
       if (donationContext.indexesArrayUsingFreeVariable()) {
@@ -423,19 +479,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
       }
     }
     return false;
-  }
-
-  private Map<String, Type> getGlobalVariablesFromShader(TranslationUnit shader) {
-    return new ScopeTrackingVisitor() {
-      Map<String, Type> getGlobalsFromShader(TranslationUnit shader) {
-        visit(shader);
-        Map<String, Type> result = new HashMap<>();
-        for (String globalName : getCurrentScope().keys()) {
-          result.put(globalName, getCurrentScope().lookupType(globalName));
-        }
-        return result;
-      }
-    }.getGlobalsFromShader(shader);
   }
 
   final Initializer getInitializer(IInjectionPoint injectionPoint,
@@ -474,168 +517,10 @@ public abstract class DonateCodeTransformation implements ITransformation {
     }
   }
 
-  private List<Declaration> getNecessaryFunctionsAndGlobalsFromDonor(
-      TranslationUnit donor,
-      List<FunctionPrototype> recipientFunctionPrototypes,
-      Set<String> recipientGlobalNames) {
-
-    List<Declaration> declarationsToAdd = new ArrayList<>();
-
-    for (Declaration d : donor.getTopLevelDeclarations()) {
-      if (d instanceof FunctionPrototype) {
-        FunctionPrototype functionPrototype = (FunctionPrototype) d;
-        if (!needToAddDonorFunction(functionPrototype, recipientFunctionPrototypes)) {
-          continue;
-        }
-        declarationsToAdd.add(functionPrototype);
-      }
-      if (d instanceof FunctionDefinition) {
-        FunctionDefinition fd = (FunctionDefinition) d;
-        FunctionPrototype functionPrototype = fd.getPrototype();
-        if (!needToAddDonorFunction(functionPrototype, recipientFunctionPrototypes)) {
-          continue;
-        }
-        declarationsToAdd.add(fd);
-      }
-      if (d instanceof VariablesDeclaration) {
-        List<VariableDeclInfo> declInfo = ((VariablesDeclaration) d).getDeclInfos().stream()
-            .filter(vd -> !recipientGlobalNames.contains(vd.getName()))
-            .collect(Collectors.toList());
-        // It either contains a name not already used in the reference, or declares structs
-        // which the donated code may need.
-        if (declInfo.size() > 0 || !StructUtils.getStructDefinitions(d).isEmpty()) {
-          declarationsToAdd
-              .add(new VariablesDeclaration(((VariablesDeclaration) d).getBaseType(), declInfo));
-        }
-      }
-    }
-    return declarationsToAdd;
-  }
-
-  private void donateFunctionsAndGlobals(TranslationUnit recipient) {
-
-    // We record the number of precision qualifiers in the recipient so that we can check that it
-    // is not changed by donation.
-    final long numPrecisionDeclarationsBeforeDonation = recipient.getTopLevelDeclarations()
-        .stream()
-        .filter(item -> item instanceof PrecisionDeclaration)
-        .count();
-
-    List<Declaration> newRecipientTopLevelDeclarations = recipient.getTopLevelDeclarations()
-        .stream()
-        .filter(d -> !(d instanceof FunctionDefinition)).collect(Collectors.toList());
-
-    List<FunctionPrototype> recipientFunctionPrototypes = AstUtil
-        .getFunctionPrototypesFromShader(recipient);
-    Set<String> recipientGlobalNames = getVariableNames(recipient.getTopLevelDeclarations());
-
-    for (TranslationUnit donor : donorFiles
-        .stream()
-        .filter(item -> donorsToTranslationUnits.containsKey(item))
-        .map(item -> donorsToTranslationUnits.get(item))
-        .collect(Collectors.toList())) {
-      final List<Declaration> newDeclarations = getNecessaryFunctionsAndGlobalsFromDonor(donor,
-          recipientFunctionPrototypes,
-          recipientGlobalNames);
-      checkNoDuplicateStructNames(newDeclarations, newRecipientTopLevelDeclarations);
-      newRecipientTopLevelDeclarations.addAll(newDeclarations);
-      recipientFunctionPrototypes.addAll(AstUtil.getPrototypesForAllFunctions(newDeclarations));
-      recipientGlobalNames.addAll(getVariableNames(newDeclarations));
-    }
-
-    newRecipientTopLevelDeclarations.addAll(recipient.getTopLevelDeclarations().stream()
-        .filter(d -> d instanceof FunctionDefinition).collect(Collectors.toList()));
-
-    newRecipientTopLevelDeclarations =
-        addNecessaryForwardDeclarations(newRecipientTopLevelDeclarations);
-
-    recipient.setTopLevelDeclarations(newRecipientTopLevelDeclarations);
-
-    // Check that the number of precision qualifiers present in the recipient has not changed due
-    // to donation.
-    final long numPrecisionDeclarationsAfterDonation =
-        recipient.getTopLevelDeclarations()
-            .stream()
-            .filter(item -> item instanceof PrecisionDeclaration)
-            .count();
-    assert numPrecisionDeclarationsBeforeDonation == numPrecisionDeclarationsAfterDonation
-        : "Donation should not affect top-level precision qualifiers.";
-
-  }
-
-  private void checkNoDuplicateStructNames(List<Declaration> toBeAdded,
-                                           List<Declaration> existing) {
-    List<String> existingStructNames = getStructNames(existing);
-    for (String name : getStructNames(toBeAdded)) {
-      assert !existingStructNames.contains(name);
-    }
-  }
-
-  private List<String> getStructNames(List<Declaration> toBeAdded) {
-    return toBeAdded
-        .stream()
-        .map(StructUtils::getStructDefinitions)
-        .reduce(new ArrayList<>(), ListConcat::concatenate)
-        .stream()
-        .filter(StructDefinitionType::hasStructNameType)
-        .map(item -> item.getStructNameType().getName())
-        .collect(Collectors.toList());
-  }
-
-  private List<Declaration> addNecessaryForwardDeclarations(List<Declaration> decls) {
-
-    // TODO: this does not take full account of overloading: it assumes that if any function called
-    // foo has been defined then all overloads of foo have also been defined
-    List<Declaration> result = new ArrayList<>();
-    Set<FunctionPrototype> declared = new HashSet<>();
-
-    List<Set<FunctionPrototype>> functionsDefinedAfterDecl = new ArrayList<>();
-    for (int i = 0; i < decls.size(); i++) {
-      functionsDefinedAfterDecl.add(new HashSet<>());
-    }
-    for (int i = decls.size() - 2; i >= 0; i--) {
-      functionsDefinedAfterDecl.get(i).addAll(functionsDefinedAfterDecl.get(i + 1));
-      if (decls.get(i + 1) instanceof FunctionDefinition) {
-        functionsDefinedAfterDecl.get(i)
-            .add(((FunctionDefinition) decls.get(i + 1)).getPrototype());
-      }
-    }
-
-    for (int i = 0; i < decls.size(); i++) {
-      if (decls.get(i) instanceof FunctionDefinition) {
-
-        Set<String> calledFunctionNames =
-            getCalledFunctions(decls.get(i));
-
-        List<FunctionPrototype> toDeclare =
-            functionsDefinedAfterDecl.get(i).stream().filter(item ->
-                calledFunctionNames.contains(item.getName())).filter(item ->
-                !declared.stream().anyMatch(alreadyDeclared -> alreadyDeclared.matches(item)))
-                .collect(Collectors.toList());
-
-        // Make sure we clone the FunctionPrototypes that are added, otherwise each will exist
-        // twice in the AST: first as a top-level declaration, second as part of the
-        // FunctionDefinition.
-        result.addAll(toDeclare.stream().map(Declaration::clone).collect(Collectors.toList()));
-        declared.addAll(toDeclare);
-      }
-      if (decls.get(i) instanceof FunctionDefinition) {
-        declared.add(((FunctionDefinition) decls.get(i)).getPrototype());
-      }
-      if (decls.get(i) instanceof FunctionPrototype) {
-        declared.add((FunctionPrototype) decls.get(i));
-      }
-
-      result.add(decls.get(i));
-
-    }
-    return removeRepeatedFunctionPrototypes(result);
-  }
-
-  Set<String> getCalledFunctions(final IAstNode node) {
+  private Set<String> getCalledFunctions(final IAstNode node) {
     return new StandardVisitor() {
 
-      private Set<String> calledFunctions = new HashSet<String>();
+      private final Set<String> calledFunctions = new HashSet<String>();
 
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
@@ -643,7 +528,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
         calledFunctions.add(functionCallExpr.getCallee());
       }
 
-      public Set<String> calledFunctions() {
+      private Set<String> calledFunctions() {
         visit(node);
         return calledFunctions;
       }
@@ -651,79 +536,12 @@ public abstract class DonateCodeTransformation implements ITransformation {
     }.calledFunctions();
   }
 
-  private List<Declaration> removeRepeatedFunctionPrototypes(List<Declaration> decls) {
-    List<Declaration> result = new ArrayList<>();
-    Set<FunctionPrototype> declared = new HashSet<>();
-    for (Declaration d : decls) {
-      if (d instanceof FunctionPrototype) {
-        if (declared.stream().anyMatch(item -> item.matches((FunctionPrototype) d))) {
-          continue;
-        }
-        declared.add((FunctionPrototype) d);
-      }
-      result.add(d);
-    }
-    return result;
-  }
-
-  private Set<String> getStructNamesFromShader(TranslationUnit tu) {
-    return tu.getStructDefinitions()
-        .stream()
-        .filter(StructDefinitionType::hasStructNameType)
-        .map(item -> item.getStructNameType())
-        .filter(item -> item instanceof StructNameType)
-        .map(item -> ((StructNameType) item).getName())
-        .collect(Collectors.toSet());
-  }
-
-  /**
-   * Gets the names of all variables declared in the given list of declarations.
-   *
-   * @param declarations A list of declarations
-   * @return The names of all variables declared in the list of declarations
-   */
-  private Set<String> getVariableNames(List<Declaration> declarations) {
-    Set<VariablesDeclaration> variablesDeclarations = declarations.stream()
-        .filter(x -> x instanceof VariablesDeclaration)
-        .map(x -> (VariablesDeclaration) x).collect(Collectors.toSet());
-    Set<String> names = new HashSet<>();
-    for (VariablesDeclaration decls : variablesDeclarations) {
-      names.addAll(decls.getDeclInfos().stream().map(x -> x.getName()).collect(Collectors.toSet()));
-    }
-    return names;
-  }
-
-  private boolean needToAddDonorFunction(FunctionPrototype fromDonor,
-                                         List<FunctionPrototype> recipientFunctionPrototypes) {
-    if (fromDonor.getName().equals("main") || prototypeMatches(fromDonor,
-        recipientFunctionPrototypes)) {
-      return false;
-    }
-    if (prototypeClashes(fromDonor, recipientFunctionPrototypes)) {
-      throw new RuntimeException(
-          "Donor and recipient are incompatible as they declare clashing functions named "
-              + fromDonor.getName());
-    }
-    return true;
-  }
-
-  private boolean prototypeClashes(FunctionPrototype fp, List<FunctionPrototype> fs) {
-    return !fs.stream().filter(item -> fp.clashes(item)).collect(Collectors.toList()).isEmpty();
-  }
-
-  private boolean prototypeMatches(FunctionPrototype fp, List<FunctionPrototype> fs) {
-    return !fs.stream().filter(item -> fp.matches(item)).collect(Collectors.toList()).isEmpty();
-  }
-
-  Optional<TranslationUnit> chooseDonor(IRandom generator,
-                                        ShadingLanguageVersion shadingLanguageVersion) {
+  private Optional<TranslationUnit> chooseDonor(IRandom generator,
+                                                ShadingLanguageVersion shadingLanguageVersion) {
     // The donors that we have previously selected during this donation pass are captured via
     // 'donorsToTranslationUnits'.  Furthermore, there is a maximum number of distinct donors we
     // are allowed to use per donation pass.  So first check whether the donors we have already
     // used have hit this maximum.
-
-    final String previouslyUsedDonorFoundToBeIncompatibleMessage = "A donor that was previously "
-        + "used has now been found to be incompatible.  This should not occur.";
 
     if (donorsToTranslationUnits.size() >= generationParams.getMaxDonorsPerDonationPass()) {
       // We have used the maximum number of donors we are allowed to use in this pass, so choose
@@ -732,92 +550,26 @@ public abstract class DonateCodeTransformation implements ITransformation {
       assert donorsToTranslationUnits.size() == generationParams.getMaxDonorsPerDonationPass();
       final List<File> sortedKeys = new ArrayList<>(donorsToTranslationUnits.keySet());
       sortedKeys.sort(Comparator.naturalOrder());
-      try {
-        return Optional.of(getDonorTranslationUnit(sortedKeys.get(generator.nextInt(sortedKeys
-                .size())),
-            generator, shadingLanguageVersion));
-      } catch (IncompatibleDonorException exception) {
-        throw new RuntimeException(previouslyUsedDonorFoundToBeIncompatibleMessage);
-      }
+      return Optional.of(getDonorTranslationUnit(sortedKeys.get(generator.nextInt(sortedKeys
+              .size())),
+          generator));
     }
 
-    // We have not reached the limit.  So we can choose any one of the available donor files.  It
-    // might turn out to be a donor we tried before (in which case it will already be a key to
-    // the 'donorsToTranslationUnits' map), or it may be new.
-    while (!donorFiles.isEmpty()) {
-      final File candidateDonorFile = donorFiles
-          .get(generator.nextInt(donorFiles.size()));
-      try {
-        return Optional.of(getDonorTranslationUnit(candidateDonorFile, generator,
-            shadingLanguageVersion));
-      } catch (IncompatibleDonorException exception) {
-        if (donorsToTranslationUnits.containsKey(candidateDonorFile)) {
-          throw new RuntimeException(previouslyUsedDonorFoundToBeIncompatibleMessage);
-        }
-        donorFiles.remove(candidateDonorFile);
-      }
-    }
-    // We did not manage to find any suitable donor.  This happens if all donors prove to be
-    // incompatible.
-    return Optional.empty();
+    return Optional.of(getDonorTranslationUnit(donorFiles
+            .get(generator.nextInt(donorFiles.size())), generator
+        ));
   }
 
-  private TranslationUnit getDonorTranslationUnit(File donorFile, IRandom generator,
-                                                  ShadingLanguageVersion shadingLanguageVersion)
-      throws IncompatibleDonorException {
+  private TranslationUnit getDonorTranslationUnit(File donorFile, IRandom generator) {
     if (!donorsToTranslationUnits.containsKey(donorFile)) {
       try {
-        TranslationUnit donor = prepareTranslationUnit(donorFile, generator);
-        if (!compatibleDonor(donor, shadingLanguageVersion)) {
-          throw new IncompatibleDonorException();
-        }
-        functionPrototypes.addAll(AstUtil.getFunctionPrototypesFromShader(donor));
-        globalVariables.putAll(getGlobalVariablesFromShader(donor));
-        structNames.addAll(getStructNamesFromShader(donor));
-        donorsToTranslationUnits.put(donorFile, donor);
+        donorsToTranslationUnits.put(donorFile, prepareTranslationUnit(donorFile, generator));
       } catch (IOException | ParseTimeoutException | InterruptedException
           | GlslParserException exception) {
         throw new RuntimeException("An exception occurred during donor parsing.", exception);
       }
     }
     return donorsToTranslationUnits.get(donorFile);
-  }
-
-  private boolean compatibleDonor(TranslationUnit donor,
-                                  ShadingLanguageVersion shadingLanguageVersion) {
-    final List<String> usedFunctionNames = functionPrototypes.stream()
-        .map(FunctionPrototype::getName)
-        .collect(Collectors.toList());
-    final Set<String> usedGlobalVariableNames = globalVariables.keySet();
-    final Set<String> usedStructNames = structNames;
-    for (FunctionPrototype donorPrototype : AstUtil.getFunctionPrototypesFromShader(donor)) {
-      if (usedGlobalVariableNames.contains(donorPrototype.getName())
-          || usedStructNames.contains(donorPrototype.getName())) {
-        return false;
-      }
-      if (functionPrototypes.stream().anyMatch(item -> item.clashes(donorPrototype))) {
-        return false;
-      }
-    }
-    for (Map.Entry<String, Type> global : getGlobalVariablesFromShader(donor).entrySet()) {
-      final String name = global.getKey();
-      final Type type = global.getValue();
-      if (usedFunctionNames.contains(name) || usedStructNames.contains(name)) {
-        return false;
-      }
-      if (globalVariables.containsKey(name) && !globalVariables.get(name).equals(type)) {
-        // We have a global with the same name but a different type, so the shaders are not
-        // compatible
-        return false;
-      }
-    }
-    for (String name : getStructNamesFromShader(donor)) {
-      if (usedFunctionNames.contains(name) || usedGlobalVariableNames.contains(name)
-          || usedStructNames.contains(name)) {
-        return false;
-      }
-    }
-    return true;
   }
 
   Type dropQualifiersThatCannotBeUsedForLocalVariable(Type type) {
@@ -827,18 +579,20 @@ public abstract class DonateCodeTransformation implements ITransformation {
     final QualifiedType qualifiedType = (QualifiedType) type;
     final List<TypeQualifier> newQualifiers = new ArrayList<>();
     for (TypeQualifier qualifier : qualifiedType.getQualifiers()) {
+
+      // The following qualifiers are only allowed on global variables, and global variables should
+      // not occur as free variables (being global, they are always available).
+      assert qualifier != TypeQualifier.UNIFORM;
+      assert qualifier != TypeQualifier.SHADER_INPUT;
+      assert qualifier != TypeQualifier.SHADER_OUTPUT;
+      assert qualifier != TypeQualifier.SHARED;
+      assert !(qualifier instanceof LayoutQualifierSequence);
+
       // There are probably other qualifiers that are not allowed; move them up as we discover this.
       if (Arrays.asList(
           TypeQualifier.IN_PARAM,
           TypeQualifier.INOUT_PARAM,
-          TypeQualifier.OUT_PARAM,
-          TypeQualifier.UNIFORM,
-          TypeQualifier.SHADER_INPUT,
-          TypeQualifier.SHADER_OUTPUT,
-          TypeQualifier.SHARED).contains(qualifier)) {
-        continue;
-      }
-      if (qualifier instanceof LayoutQualifierSequence) {
+          TypeQualifier.OUT_PARAM).contains(qualifier)) {
         continue;
       }
       newQualifiers.add(qualifier);

@@ -18,9 +18,11 @@ package com.graphicsfuzz.common.ast.type;
 
 import com.graphicsfuzz.common.typing.Scope;
 import java.util.Arrays;
+import java.util.Optional;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class StructDefinitionTypeTest {
@@ -97,6 +99,34 @@ public class StructDefinitionTypeTest {
     assertTrue(t.hasCanonicalConstant(new Scope()));
     assertEquals("astruct(mat4(1.0), vec4(1.0))",
         t.getCanonicalConstant(new Scope()).getText());
+  }
+
+  @Test
+  public void testEquals() {
+    StructDefinitionType t1 = new StructDefinitionType(new StructNameType("astruct"),
+        Arrays.asList("x", "y"),
+        Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
+    StructDefinitionType t2 = new StructDefinitionType(new StructNameType("astruct"),
+        Arrays.asList("x", "y"),
+        Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
+    StructDefinitionType t3 = new StructDefinitionType(new StructNameType("anotherstruct"),
+        Arrays.asList("x", "y"),
+        Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
+    StructDefinitionType t4 = new StructDefinitionType(Optional.empty(), Arrays.asList("x", "y"),
+        Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
+    StructDefinitionType t5 = new StructDefinitionType(Optional.empty(), Arrays.asList("x", "y"),
+        Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
+    StructDefinitionType t6 = new StructDefinitionType(Optional.empty(), Arrays.asList("x", "y"),
+        Arrays.asList(BasicType.MAT3X4, BasicType.VEC4));
+
+    assertEquals(t1, t2);
+    assertEquals(t1.hashCode(), t2.hashCode());
+    assertEquals(t4, t5);
+    assertEquals(t4.hashCode(), t5.hashCode());
+    assertNotEquals(t1, t3);
+    assertNotEquals(t1, t4);
+    assertNotEquals(t5, t6);
+
   }
 
 }

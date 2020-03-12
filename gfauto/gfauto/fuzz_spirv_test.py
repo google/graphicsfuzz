@@ -52,16 +52,35 @@ def make_test(
     subtest_dir: Path,
     spirv_opt_args: Optional[List[str]],
     binary_manager: binaries_util.BinaryManager,
+    derived_from: Optional[str],
+    stable_shader: bool,
 ) -> Path:
-    # Create the subtest by copying the base source.
-    util.copy_dir(base_source_dir, test_util.get_source_dir(subtest_dir))
 
-    test = Test(spirv_fuzz=TestSpirvFuzz(spirv_opt_args=spirv_opt_args))
+    source_dir = test_util.get_source_dir(subtest_dir)
+
+    # Create the subtest by copying the base source.
+    util.copy_dir(base_source_dir, source_dir)
+
+    test = Test(
+        spirv_fuzz=TestSpirvFuzz(spirv_opt_args=spirv_opt_args),
+        derived_from=derived_from,
+    )
 
     fuzz_glsl_test.add_spirv_shader_test_binaries(test, spirv_opt_args, binary_manager)
 
     # Write the test metadata.
     test_util.metadata_write(test, subtest_dir)
+
+    # If the reference shader is "stable" (with respect to floating-point sensitivity)
+    # then this can be a wrong image test; i.e. we will render the reference and variant shaders
+    # and compare the output images.
+    # Otherwise, we should just render the variant shader and check for crashes; to do this,
+    # we just rename the `reference/` directory to `_reference/` so that the test has no reference shader.
+    if not stable_shader:
+        util.move_dir(
+            source_dir / test_util.REFERENCE_DIR,
+            source_dir / f"_{test_util.REFERENCE_DIR}",
+        )
 
     return subtest_dir
 
@@ -413,9 +432,11 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
     staging_name = staging_dir.name
     template_source_dir = staging_dir / "source_template"
 
+    reference_spirv_shader_job_orig_path: Path = random.choice(spirv_fuzz_shaders)
+
     # Copy in a randomly chosen reference.
     reference_spirv_shader_job = shader_job_util.copy(
-        random.choice(spirv_fuzz_shaders),
+        reference_spirv_shader_job_orig_path,
         template_source_dir / test_util.REFERENCE_DIR / test_util.SHADER_JOB,
         language_suffix=shader_job_util.SUFFIXES_SPIRV_FUZZ_INPUT,
     )
@@ -439,42 +460,58 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
             util.copy_dir(staging_dir, fuzz_failures_dir / staging_dir.name)
         return
 
+    reference_name = reference_spirv_shader_job_orig_path.stem
+
+    stable_shader = reference_name.startswith("stable_")
+
     test_dirs = [
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_no_opt_test",
             spirv_opt_args=None,
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_O_test",
             spirv_opt_args=["-O"],
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_Os_test",
             spirv_opt_args=["-Os"],
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_rand1_test",
             spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_rand2_test",
             spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_rand3_test",
             spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
     ]
 

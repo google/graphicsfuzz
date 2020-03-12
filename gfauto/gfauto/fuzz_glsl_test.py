@@ -57,7 +57,7 @@ class ReductionFailedError(Exception):
         self.reduction_work_dir = reduction_work_dir
 
 
-def fuzz_glsl(
+def fuzz_glsl(  # pylint: disable=too-many-locals;
     staging_dir: Path,
     reports_dir: Path,
     fuzz_failures_dir: Path,
@@ -71,7 +71,7 @@ def fuzz_glsl(
     template_source_dir = staging_dir / "source_template"
 
     # Pick a randomly chosen reference.
-    unprepared_reference_shader_job = random.choice(references)
+    unprepared_reference_shader_job: Path = random.choice(references)
 
     # The "graphicsfuzz-tool" tool is designed to be on your PATH so that e.g. ".bat" will be appended on Windows.
     # So we use tool_on_path with a custom PATH to get the actual file we want to execute.
@@ -113,42 +113,58 @@ def fuzz_glsl(
             util.copy_dir(staging_dir, fuzz_failures_dir / staging_dir.name)
         return
 
+    reference_name = unprepared_reference_shader_job.stem
+
+    stable_shader = reference_name.startswith("stable_")
+
     test_dirs = [
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_no_opt_test",
             spirv_opt_args=None,
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_O_test",
             spirv_opt_args=["-O"],
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_Os_test",
             spirv_opt_args=["-Os"],
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_rand1_test",
             spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_rand2_test",
             spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
         make_test(
             template_source_dir,
             staging_dir / f"{staging_name}_opt_rand3_test",
             spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
             binary_manager=binary_manager,
+            derived_from=reference_name,
+            stable_shader=stable_shader,
         ),
     ]
 
@@ -179,17 +195,33 @@ def make_test(
     subtest_dir: Path,
     spirv_opt_args: Optional[List[str]],
     binary_manager: binaries_util.BinaryManager,
+    derived_from: Optional[str],
+    stable_shader: bool,
 ) -> Path:
-    # Create the subtest by copying the base source.
-    util.copy_dir(base_source_dir, test_util.get_source_dir(subtest_dir))
 
-    test = Test(glsl=TestGlsl(spirv_opt_args=spirv_opt_args))
+    source_dir = test_util.get_source_dir(subtest_dir)
+
+    # Create the subtest by copying the base source.
+    util.copy_dir(base_source_dir, source_dir)
+
+    test = Test(glsl=TestGlsl(spirv_opt_args=spirv_opt_args), derived_from=derived_from)
 
     test.binaries.extend([binary_manager.get_binary_by_name(name="glslangValidator")])
     add_spirv_shader_test_binaries(test, spirv_opt_args, binary_manager)
 
     # Write the test metadata.
     test_util.metadata_write(test, subtest_dir)
+
+    # If the reference shader is "stable" (with respect to floating-point sensitivity)
+    # then this can be a wrong image test; i.e. we will render the reference and variant shaders
+    # and compare the output images.
+    # Otherwise, we should just render the variant shader and check for crashes; to do this,
+    # we just rename the `reference/` directory to `_reference/` so that the test has no reference shader.
+    if not stable_shader:
+        util.move_dir(
+            source_dir / test_util.REFERENCE_DIR,
+            source_dir / f"_{test_util.REFERENCE_DIR}",
+        )
 
     return subtest_dir
 

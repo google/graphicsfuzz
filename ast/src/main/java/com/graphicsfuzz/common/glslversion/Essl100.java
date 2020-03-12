@@ -40,6 +40,11 @@ final class Essl100 implements ShadingLanguageVersion {
   }
 
   @Override
+  public boolean isEssl() {
+    return true;
+  }
+
+  @Override
   public boolean isWebGl() {
     return false;
   }
@@ -311,6 +316,21 @@ final class Essl100 implements ShadingLanguageVersion {
 
   @Override
   public boolean supportedAtomicMemoryFunctions() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedTexture() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedShaderInvocationControlFunctions() {
+    return false;
+  }
+
+  @Override
+  public boolean supportedShaderMemoryControlFunctions() {
     return false;
   }
 

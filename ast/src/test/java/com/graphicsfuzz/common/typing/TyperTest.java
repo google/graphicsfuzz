@@ -43,6 +43,7 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.SamplerType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -385,6 +386,23 @@ public class TyperTest {
   }
 
   @Test
+  public void testGlFrontFacingTyped() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() { gl_FrontFacing; }");
+    Typer typer = new NullCheckTyper(tu);
+    new StandardVisitor() {
+      @Override
+      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        super.visitVariableIdentifierExpr(variableIdentifierExpr);
+        if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRONT_FACING)) {
+          assertEquals(BasicType.BOOL, typer.lookupType(variableIdentifierExpr));
+        }
+      }
+    }.visit(tu);
+
+  }
+
+  @Test
   public void testGlPositionTyped() throws Exception {
     TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
         + "void main() { gl_Position = vec4(0.0)"
@@ -413,6 +431,23 @@ public class TyperTest {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
         if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_POINT_SIZE)) {
           assertEquals(BasicType.FLOAT, typer.lookupType(variableIdentifierExpr));
+        }
+      }
+    }.visit(tu);
+
+  }
+
+  @Test
+  public void testGlPointCoordTyped() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
+        + "void main() { gl_PointCoord; }");
+    Typer typer = new NullCheckTyper(tu);
+    new StandardVisitor() {
+      @Override
+      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        super.visitVariableIdentifierExpr(variableIdentifierExpr);
+        if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_POINT_COORD)) {
+          assertEquals(BasicType.VEC2, typer.lookupType(variableIdentifierExpr));
         }
       }
     }.visit(tu);
@@ -987,7 +1022,25 @@ public class TyperTest {
     StringBuilder result = new StringBuilder();
     result.append("#version " + shadingLanguageVersion.getVersionString() + "\n");
     result.append("#ifdef GL_ES\n");
-    result.append("precision mediump float;\n");
+    result.append("precision highp float;\n");
+    result.append("precision highp int;\n");
+    if (shadingLanguageVersion.supportedTexture()) {
+      result.append("precision highp " + SamplerType.SAMPLER2D + ";\n");
+      result.append("precision highp " + SamplerType.ISAMPLER2D + ";\n");
+      result.append("precision highp " + SamplerType.USAMPLER2D + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLER3D + ";\n");
+      result.append("precision highp " + SamplerType.ISAMPLER3D + ";\n");
+      result.append("precision highp " + SamplerType.USAMPLER3D + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLERCUBE + ";\n");
+      result.append("precision highp " + SamplerType.ISAMPLERCUBE + ";\n");
+      result.append("precision highp " + SamplerType.USAMPLERCUBE + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLER2DSHADOW + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLERCUBESHADOW + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLER2DARRAY + ";\n");
+      result.append("precision highp " + SamplerType.ISAMPLER2DARRAY + ";\n");
+      result.append("precision highp " + SamplerType.USAMPLER2DARRAY + ";\n");
+      result.append("precision highp " + SamplerType.SAMPLER2DARRAYSHADOW + ";\n");
+    }
     result.append("#endif\n");
     int counter = 0;
     for (String name : TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind).keySet()) {

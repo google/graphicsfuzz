@@ -23,6 +23,7 @@ import com.graphicsfuzz.common.typing.Scope;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,7 @@ public class StructDefinitionType extends UnqualifiedType {
   public StructDefinitionType(Optional<StructNameType> structNameType,
                                List<String> fieldNames,
                                List<Type> fieldTypes) {
+    assert fieldNames.size() == fieldTypes.size();
     this.structNameType = structNameType;
     this.fieldNames = new ArrayList<>();
     this.fieldNames.addAll(fieldNames);
@@ -169,6 +171,54 @@ public class StructDefinitionType extends UnqualifiedType {
         fieldTypes.stream()
             .map(item -> item.getCanonicalConstant(scope))
             .collect(Collectors.toList()));
+  }
+
+  @Override
+  public boolean equals(Object that) {
+    if (this == that) {
+      return true;
+    }
+    if (!(that instanceof StructDefinitionType)) {
+      return false;
+    }
+    final StructDefinitionType thatStructDefinitionType = (StructDefinitionType) that;
+    // The struct definition types must either both have equal struct name types, or both not have
+    // struct name types.
+    if (!this.structNameType.equals(thatStructDefinitionType.structNameType)) {
+      return false;
+    }
+    if (hasStructNameType()) {
+      // We sanity check, in the event that the types have the same struct name type, that the
+      // fields match.
+      assert equalFields(thatStructDefinitionType);
+      return true;
+    }
+    // Unnamed structs are equal if their fields match.
+    return equalFields(thatStructDefinitionType);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(structNameType, fieldNames, fieldTypes);
+  }
+
+  /**
+   * Checks whether this and the given type have the same number of fields, with equal names and
+   * types.
+   */
+  private boolean equalFields(StructDefinitionType that) {
+    if (fieldNames.size() != that.fieldNames.size()) {
+      return false;
+    }
+    for (int i = 0; i < fieldNames.size(); i++) {
+      if (!fieldNames.get(i).equals(that.fieldNames.get(i))) {
+        return false;
+      }
+      if (!fieldTypes.get(i).equals(that.fieldTypes.get(i))) {
+        return false;
+      }
+    }
+    return true;
   }
 
 }

@@ -101,19 +101,21 @@ public class DonateDeadCodeTransformation extends DonateCodeTransformation {
         String newName = "donor_replacement" + name;
         substitution.put(name, newName);
 
+        final Type typeWithRestrictedQualifiers =
+            dropQualifiersThatCannotBeUsedForLocalVariable(type);
+
         final Initializer initializer = getInitializer(
             injectionPoint,
             donationContext,
-            type,
+            typeWithRestrictedQualifiers,
             type.hasQualifier(TypeQualifier.CONST),
             generator,
             shadingLanguageVersion);
 
         final ImmutablePair<Type, ArrayInfo> baseTypeAndArrayInfo =
-            Typer.getBaseTypeArrayInfo(type);
+            Typer.getBaseTypeArrayInfo(typeWithRestrictedQualifiers);
         donatedStmts.add(new DeclarationStmt(
-            new VariablesDeclaration(dropQualifiersThatCannotBeUsedForLocalVariable(
-                baseTypeAndArrayInfo.left),
+            new VariablesDeclaration(baseTypeAndArrayInfo.left,
                 new VariableDeclInfo(newName, baseTypeAndArrayInfo.right, initializer))));
       }
     }

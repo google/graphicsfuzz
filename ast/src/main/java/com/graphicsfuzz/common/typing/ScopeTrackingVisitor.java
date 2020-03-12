@@ -24,10 +24,7 @@ import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
-import com.graphicsfuzz.common.ast.type.ArrayType;
-import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
-import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -90,7 +87,11 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
     //
     // because it declares 'i' twice in the same scope.
     //
-    // We thus have to push a new scope before traversing a 'for' statement and pop it afterwards.
+    // Furthermore, a 'for' statement introduces a new scope regardless of whether its body is
+    // a block or a single statement.
+    //
+    // We thus have to push a new scope before traversing a 'for' statement and pop it afterwards,
+    // and we do this regardless of whether the body is a block.
     pushScope();
     super.visitForStmt(forStmt);
     popScope();
@@ -171,8 +172,11 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
     //
     // because it declares 'b' twice in the same scope.
     //
+    // Furthermore, a 'while' statement introduces a new scope regardless of whether its body is
+    // a block or a single statement.
+    //
     // We thus have to push a new scope before traversing a 'while' statement and pop it
-    // afterwards.
+    // afterwards, and we do this regardless of whether the body is a block.
     pushScope();
     super.visitWhileStmt(whileStmt);
     popScope();

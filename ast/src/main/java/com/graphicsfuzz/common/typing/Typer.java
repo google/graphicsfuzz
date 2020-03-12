@@ -567,6 +567,10 @@ public class Typer extends ScopeTrackingVisitor {
    */
   public static Optional<Type> maybeGetTypeOfBuiltinVariable(String name) {
     switch (name) {
+      case OpenGlConstants.GL_POINT_COORD:
+        return Optional.of(BasicType.VEC2);
+      case OpenGlConstants.GL_FRONT_FACING:
+        return Optional.of(BasicType.BOOL);
       case OpenGlConstants.GL_POINT_SIZE:
         return Optional.of(BasicType.FLOAT);
       case OpenGlConstants.GL_FRAG_COORD:

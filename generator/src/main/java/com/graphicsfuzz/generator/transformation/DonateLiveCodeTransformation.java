@@ -25,9 +25,7 @@ import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -72,25 +70,23 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
                                 IRandom generator, ShadingLanguageVersion shadingLanguageVersion) {
     List<Stmt> donatedStmts = new ArrayList<>();
     for (Map.Entry<String, Type> vars : donationContext.getFreeVariables().entrySet()) {
-      Type type = vars.getValue();
-      if (type.hasQualifier(TypeQualifier.UNIFORM)) {
-        // A uniform variable has to be globally-scoped.  As a result this variable will be
-        // donated as a global, so we should not re-declare it here.
-        continue;
-      }
-      type = dropQualifiersThatCannotBeUsedForLocalVariable(type);
+      final Type type = vars.getValue();
+
+      final Type typeWithRestrictedQualifiers =
+          dropQualifiersThatCannotBeUsedForLocalVariable(type);
 
       Initializer initializer;
       // We fuzz a const expression because we need to ensure we don't generate side-effects to
       // non-injected code
-      if (isLoopLimiter(vars.getKey(), type.getWithoutQualifiers())) {
+      if (isLoopLimiter(vars.getKey(), typeWithRestrictedQualifiers.getWithoutQualifiers())) {
         initializer = new Initializer(new IntConstantExpr("0"));
       } else {
-        initializer = getInitializer(injectionPoint, donationContext, type, true,
-            generator, shadingLanguageVersion);
+        initializer = getInitializer(injectionPoint, donationContext, typeWithRestrictedQualifiers,
+            true, generator, shadingLanguageVersion);
       }
 
-      final ImmutablePair<Type, ArrayInfo> baseTypeAndArrayInfo = Typer.getBaseTypeArrayInfo(type);
+      final ImmutablePair<Type, ArrayInfo> baseTypeAndArrayInfo =
+          Typer.getBaseTypeArrayInfo(typeWithRestrictedQualifiers);
       donatedStmts.add(new DeclarationStmt(
           new VariablesDeclaration(baseTypeAndArrayInfo.left,
               new VariableDeclInfo(vars.getKey(), baseTypeAndArrayInfo.right, initializer))));
