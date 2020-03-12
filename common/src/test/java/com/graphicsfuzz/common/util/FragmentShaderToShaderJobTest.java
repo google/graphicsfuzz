@@ -26,7 +26,6 @@ import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertTrue;
 
-
 public class FragmentShaderToShaderJobTest {
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -36,7 +35,7 @@ public class FragmentShaderToShaderJobTest {
     final String frag =  "#version 310 es\n"
     + "precision mediump float;\n"
     + "\n"
-    + "layout(location = 0) out vec4 _GLF_color;\n"
+    + "layout(location = 0) out vec4 " + Constants.GLF_COLOR + ";\n"
     + "\n"
     + "uniform float u_f;\n"
     + "uniform vec2 u_v2;\n"
@@ -45,16 +44,17 @@ public class FragmentShaderToShaderJobTest {
     + "\n"
     + "in float in_f;\n"
     + "in vec2 in_v2;\n"
-    + "in vec3 in_v3;\n"
+    + "layout(location = 78) in vec3 in_v3;\n"
     + "in vec4 in_v4;\n"
     + "\n"
     + "void main(void)\n"
     + "{\n"
-    + "  GLF_color = vec4(0.0,0.0,0.0,1.0);\n"
+    + "  " + Constants.GLF_COLOR + " = vec4(0.0, 0.0, 0.0, 1.0);\n"
     + "}\n";
 
     final File jsonFile = temporaryFolder.newFile("shader.json");
     final File vertFile = temporaryFolder.newFile("shader.vert");
+    final File fragFile = temporaryFolder.newFile("shader.frag");
 
     final TranslationUnit tu = ParseHelper.parse(frag);
     final ShaderJob result = FragmentShaderToShaderJob.createShaderJob(tu,
@@ -71,8 +71,10 @@ public class FragmentShaderToShaderJobTest {
 
     assertTrue(jsonFile.isFile());
     assertTrue(vertFile.isFile());
+    assertTrue(fragFile.isFile());
     final String jsondata = fileOperations.readFileToString(jsonFile);
     final String vertdata = fileOperations.readFileToString(vertFile);
+    final String fragdata = fileOperations.readFileToString(fragFile);
 
     assertTrue(jsondata.contains("\"u_f\""));
     assertTrue(jsondata.contains("\"u_v2\""));
@@ -87,11 +89,22 @@ public class FragmentShaderToShaderJobTest {
     assertTrue(vertdata.contains("in_v2 = vec2("));
     assertTrue(vertdata.contains("in_v3 = vec3("));
     assertTrue(vertdata.contains("in_v4 = vec4("));
-    assertTrue(vertdata.contains("out float in_f;"));
-    assertTrue(vertdata.contains("out vec2 in_v2;"));
-    assertTrue(vertdata.contains("out vec3 in_v3;"));
-    assertTrue(vertdata.contains("out vec4 in_v4;"));
+
+    assertTrue(vertdata.contains("layout(location = 1) out float in_f;"));
+    assertTrue(vertdata.contains("layout(location = 2) out vec2 in_v2;"));
+    assertTrue(vertdata.contains("layout(location = 3) out vec3 in_v3;"));
+    assertTrue(vertdata.contains("layout(location = 4) out vec4 in_v4;"));
+
+    assertTrue(vertdata.contains("layout(location = 0) in vec4 " + Constants.GLF_POS));
     assertTrue(vertdata.contains("gl_Position = " + Constants.GLF_POS));
+
+    assertTrue(fragdata.contains("layout(location = 1) in float in_f;"));
+    assertTrue(fragdata.contains("layout(location = 2) in vec2 in_v2;"));
+    assertTrue(fragdata.contains("layout(location = 3) in vec3 in_v3;"));
+    assertTrue(fragdata.contains("layout(location = 4) in vec4 in_v4;"));
+
+    assertTrue(fragdata.contains("layout(location = 0) out vec4 " + Constants.GLF_COLOR));
   }
 
 }
+

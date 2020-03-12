@@ -114,12 +114,21 @@ public final class FragmentShaderToShaderJob {
     // TranslationUnit with corresponding 'out' variables and add it to 'shaders'.
     Optional<TranslationUnit> vertexShader = Optional.empty();
 
+    // Start layout locations from index 1
+    int locationIndex = 1;
+
     for (VariablesDeclaration vd : tu.getGlobalVariablesDeclarations()) {
       if (vd.getBaseType().hasQualifier(TypeQualifier.SHADER_INPUT)) {
         final BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
         // Create clone of the variables declaration and change the input to output:
         final QualifiedType varType = (QualifiedType) vd.getBaseType().clone();
         varType.replaceQualifier(TypeQualifier.SHADER_INPUT, TypeQualifier.SHADER_OUTPUT);
+
+        // Set same layout location for vertex output and fragment input
+        ((QualifiedType)vd.getBaseType()).setLocationQualifier(locationIndex);
+        varType.setLocationQualifier(locationIndex);
+        locationIndex++;
+
         // Check if this is the first input we're handling
         if (!vertexShader.isPresent()) {
           // Since we're going to need it, initialize vertexShader with
@@ -130,7 +139,7 @@ public final class FragmentShaderToShaderJob {
               new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
                   Arrays.asList(new LayoutQualifierSequence(
                       new LocationLayoutQualifier(0)),
-                  TypeQualifier.OUT_PARAM)),
+                  TypeQualifier.SHADER_INPUT)),
                   new VariableDeclInfo(Constants.GLF_POS, null, null)),
               new FunctionDefinition(
                   new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
