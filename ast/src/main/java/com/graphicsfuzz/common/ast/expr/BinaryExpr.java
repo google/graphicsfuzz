@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.ast.expr;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import java.util.Arrays;
 
 public class BinaryExpr extends Expr {
 
@@ -35,6 +36,9 @@ public class BinaryExpr extends Expr {
   public BinaryExpr(Expr lhs, Expr rhs, BinOp op) {
     assert lhs != null;
     assert rhs != null;
+    if (op != BinOp.COMMA) {
+      checkNoTopLevelCommaExpression(Arrays.asList(lhs, rhs));
+    }
     this.lhs = lhs;
     this.rhs = rhs;
     this.op = op;

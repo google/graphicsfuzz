@@ -801,4 +801,19 @@ public class ParseHelperTest {
     }
   }
 
+  @Test
+  public void testUnsupportedCommaInTernary() throws Exception {
+    try {
+      ParseHelper.parse("#version 310 es\n"
+          + "\n"
+          + "void main() {\n"
+          + "  true ? 2, 3 : 4;\n"
+          + "}\n");
+      fail("Exception was expected");
+    } catch (UnsupportedLanguageFeatureException exception) {
+      assertTrue(exception.getMessage().contains("The use of a comma in the 'then' expression of a "
+          + "ternary is not currently supported."));
+    }
+  }
+
 }

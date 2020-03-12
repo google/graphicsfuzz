@@ -1118,13 +1118,13 @@ public final class OpaqueExpressionGenerator {
       if (generator.nextBoolean()) {
         return identityConstructor(expr,
             ternary(makeOpaqueBoolean(false, BasicType.BOOL, constContext, depth, fuzzer),
-                something,
-                exprWithIdentityApplied));
+                addParenthesesIfCommaExpr(something),
+                addParenthesesIfCommaExpr(exprWithIdentityApplied)));
       }
       return identityConstructor(expr,
           ternary(makeOpaqueBoolean(true, BasicType.BOOL, constContext, depth, fuzzer),
-              exprWithIdentityApplied,
-              something));
+              addParenthesesIfCommaExpr(exprWithIdentityApplied),
+              addParenthesesIfCommaExpr(something)));
     }
 
   }

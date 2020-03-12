@@ -25,13 +25,15 @@ public class ArrayIndexExpr extends Expr {
   private Expr index;
 
   public ArrayIndexExpr(Expr array, Expr index) {
-    // Motivation for this assertion:
+    // Motivation for this exception:
     // vec2 v;
     // v[0]; // fine
     // v + vec2(0.0)[0]; // not fine - the following was probably intended:
     // (v + vec2(0.0))[0]; // fine
-    assert !(array instanceof BinaryExpr) :
-        "Array index into binary expression " + array.getText() + " not allowed.";
+    if (array instanceof BinaryExpr) {
+      throw new IllegalArgumentException("Array index into binary expression "
+          + array.getText() + " not allowed.");
+    }
     this.array = array;
     this.index = index;
   }

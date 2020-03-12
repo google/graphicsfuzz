@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.ast.expr;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import java.util.Collections;
 
 public class MemberLookupExpr extends Expr {
 
@@ -25,6 +26,7 @@ public class MemberLookupExpr extends Expr {
   private String member;
 
   public MemberLookupExpr(Expr structure, String member) {
+    checkNoTopLevelCommaExpression(Collections.singletonList(structure));
     setStructure(structure);
     this.member = member;
   }

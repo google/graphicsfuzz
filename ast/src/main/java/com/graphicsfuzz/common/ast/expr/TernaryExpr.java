@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.ast.expr;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import java.util.Arrays;
 
 public class TernaryExpr extends Expr {
 
@@ -32,6 +33,7 @@ public class TernaryExpr extends Expr {
    * @param elseExpr Result if the boolean is false
    */
   public TernaryExpr(Expr test, Expr thenExpr, Expr elseExpr) {
+    checkNoTopLevelCommaExpression(Arrays.asList(test, thenExpr, elseExpr));
     this.test = test;
     this.thenExpr = thenExpr;
     this.elseExpr = elseExpr;

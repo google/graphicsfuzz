@@ -36,12 +36,7 @@ public class TypeConstructorExpr extends Expr {
    * @param args Types of the arguments
    */
   public TypeConstructorExpr(String type, List<Expr> args) {
-    for (Expr arg : args) {
-      if (arg instanceof BinaryExpr && ((BinaryExpr) arg).getOp() == BinOp.COMMA) {
-        throw new IllegalArgumentException("Invalid for a comma expression to be a top-level "
-            + "type constructor argument.");
-      }
-    }
+    checkNoTopLevelCommaExpression(args);
     assert type != null;
     this.type = type;
     this.args = new ArrayList<>();
