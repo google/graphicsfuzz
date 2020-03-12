@@ -22,7 +22,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class SwizzleExprTemplate extends AbstractExprTemplate {
@@ -34,9 +34,7 @@ public class SwizzleExprTemplate extends AbstractExprTemplate {
   public SwizzleExprTemplate(BasicType argType, BasicType resultType, boolean isLValue) {
     assert argType.isVector();
     assert resultType.isVector() || resultType.isScalar();
-    if (isLValue) {
-      assert resultType.getNumElements() <= argType.getNumElements();
-    }
+    assert !isLValue || resultType.getNumElements() <= argType.getNumElements();
     this.argType = argType;
     this.resultType = resultType;
     this.isLValue = isLValue;
@@ -49,18 +47,18 @@ public class SwizzleExprTemplate extends AbstractExprTemplate {
 
     String[] mapping = chooseVectorComponentNamingScheme(generator);
 
-    String swizzleIndices = "";
+    StringBuilder swizzleIndices = new StringBuilder();
     int nextComponent = 0;
     while (nextComponent < resultType.getNumElements()) {
       String candidate = mapping[generator.nextInt(argType.getNumElements())];
-      if (isLValue() && swizzleIndices.contains(candidate)) {
+      if (isLValue() && swizzleIndices.toString().contains(candidate)) {
         continue;
       }
-      swizzleIndices += candidate;
+      swizzleIndices.append(candidate);
       nextComponent++;
     }
 
-    return new MemberLookupExpr(args[0], swizzleIndices);
+    return new MemberLookupExpr(args[0], swizzleIndices.toString());
 
   }
 
@@ -85,8 +83,8 @@ public class SwizzleExprTemplate extends AbstractExprTemplate {
   }
 
   @Override
-  public List<List<? extends Type>> getArgumentTypes() {
-    return new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(argType))));
+  public List<List<Type>> getArgumentTypes() {
+    return new ArrayList<>(Collections.singletonList(Collections.singletonList(argType)));
   }
 
   @Override

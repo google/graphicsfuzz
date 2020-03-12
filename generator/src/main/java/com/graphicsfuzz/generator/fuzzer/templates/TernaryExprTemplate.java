@@ -22,13 +22,13 @@ import com.graphicsfuzz.common.ast.expr.TernaryExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class TernaryExprTemplate extends AbstractExprTemplate {
 
-  private Type resultType;
+  private final Type resultType;
 
   public TernaryExprTemplate(Type resultType) {
     this.resultType = resultType;
@@ -46,11 +46,11 @@ public class TernaryExprTemplate extends AbstractExprTemplate {
   }
 
   @Override
-  public List<List<? extends Type>> getArgumentTypes() {
+  public List<List<Type>> getArgumentTypes() {
     return Arrays.asList(
-        new ArrayList<Type>(Arrays.asList(BasicType.BOOL)),
-        new ArrayList<Type>(Arrays.asList(resultType)),
-        new ArrayList<Type>(Arrays.asList(resultType))
+        Collections.singletonList(BasicType.BOOL),
+        Collections.singletonList(resultType),
+        Collections.singletonList(resultType)
     );
   }
 

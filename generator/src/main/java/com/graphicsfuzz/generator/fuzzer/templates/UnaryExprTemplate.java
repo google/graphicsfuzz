@@ -22,15 +22,14 @@ import com.graphicsfuzz.common.ast.expr.UnOp;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class UnaryExprTemplate extends AbstractExprTemplate {
 
-  private Type argType;
-  private Type resultType;
-  private UnOp op;
+  private final Type argType;
+  private final Type resultType;
+  private final UnOp op;
 
   public UnaryExprTemplate(Type argType, Type resultType, UnOp op) {
     this.argType = argType;
@@ -50,9 +49,8 @@ public class UnaryExprTemplate extends AbstractExprTemplate {
   }
 
   @Override
-  public List<List<? extends Type>> getArgumentTypes() {
-    return Arrays.asList(
-        new ArrayList<Type>(Arrays.asList(argType)));
+  public List<List<Type>> getArgumentTypes() {
+    return Collections.singletonList(Collections.singletonList(argType));
   }
 
   @Override

@@ -20,14 +20,13 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class ParenExprTemplate extends AbstractExprTemplate {
 
-  private Type type;
-  private boolean isLValue;
+  private final Type type;
+  private final boolean isLValue;
 
   public ParenExprTemplate(Type type, boolean isLValue) {
     this.type = type;
@@ -46,8 +45,8 @@ public class ParenExprTemplate extends AbstractExprTemplate {
   }
 
   @Override
-  public List<List<? extends Type>> getArgumentTypes() {
-    return Arrays.asList(new ArrayList<Type>(Arrays.asList(type)));
+  public List<List<Type>> getArgumentTypes() {
+    return Collections.singletonList(Collections.singletonList(type));
   }
 
   @Override

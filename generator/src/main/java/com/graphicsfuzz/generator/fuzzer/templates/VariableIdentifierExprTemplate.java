@@ -18,25 +18,30 @@ package com.graphicsfuzz.generator.fuzzer.templates;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
-import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.util.IRandom;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class VariableIdentifierExprTemplate extends AbstractExprTemplate {
 
-  private String name;
-  private Type type;
-  private List<TypeQualifier> qualifiers;
+  // The name of the variable.
+  private final String name;
 
-  public VariableIdentifierExprTemplate(String name, Type possiblyQualifiedType) {
+  // The type of the variable.
+  private final Type type;
+
+  // True if and only if the variable is a function formal parameter.  This is important because we
+  // should not regard such parameters as safe to use in a 'const' context even if they are const-
+  // qualified, because they are not compile-time constants.
+  private final boolean isFunctionParameter;
+
+  public VariableIdentifierExprTemplate(String name, Type type,
+                                        boolean isFunctionParameter) {
     this.name = name;
-    this.type = possiblyQualifiedType.getWithoutQualifiers();
-    this.qualifiers = possiblyQualifiedType instanceof QualifiedType
-        ? ((QualifiedType) possiblyQualifiedType).getQualifiers()
-        : new ArrayList<>();
+    this.type = type;
+    this.isFunctionParameter = isFunctionParameter;
   }
 
   @Override
@@ -47,12 +52,15 @@ public class VariableIdentifierExprTemplate extends AbstractExprTemplate {
 
   @Override
   public Type getResultType() {
-    return type;
+    // We return an unqualified version of the type, since during fuzzing we are looking for matches
+    // on underlying types; other methods such as 'isLValue' are sensitive to the qualifiers of the
+    // type.
+    return type.getWithoutQualifiers();
   }
 
   @Override
-  public List<List<? extends Type>> getArgumentTypes() {
-    return new ArrayList<>();
+  public List<List<Type>> getArgumentTypes() {
+    return Collections.emptyList();
   }
 
   @Override
@@ -67,16 +75,16 @@ public class VariableIdentifierExprTemplate extends AbstractExprTemplate {
 
   @Override
   public boolean isLValue() {
-    if (qualifiers.contains(TypeQualifier.ATTRIBUTE)) {
+    if (type.hasQualifier(TypeQualifier.ATTRIBUTE)) {
       return false;
     }
-    if (qualifiers.contains(TypeQualifier.CONST)) {
+    if (type.hasQualifier(TypeQualifier.CONST)) {
       return false;
     }
-    if (qualifiers.contains(TypeQualifier.SHADER_INPUT)) {
+    if (type.hasQualifier(TypeQualifier.SHADER_INPUT)) {
       return false;
     }
-    if (qualifiers.contains(TypeQualifier.UNIFORM)) {
+    if (type.hasQualifier(TypeQualifier.UNIFORM)) {
       return false;
     }
     return true;
@@ -84,7 +92,7 @@ public class VariableIdentifierExprTemplate extends AbstractExprTemplate {
 
   @Override
   public boolean isConst() {
-    return qualifiers.contains(TypeQualifier.CONST);
+    return !isFunctionParameter && type.hasQualifier(TypeQualifier.CONST);
   }
 
   @Override

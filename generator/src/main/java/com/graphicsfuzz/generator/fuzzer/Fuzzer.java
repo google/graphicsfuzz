@@ -291,7 +291,8 @@ public class Fuzzer {
     return Stream.concat(Templates.get(shadingLanguageVersion, shaderKind).stream(),
         scope.namesOfAllVariablesInScope()
             .stream()
-            .map(item -> new VariableIdentifierExprTemplate(item, scope.lookupType(item))));
+            .map(item -> new VariableIdentifierExprTemplate(item, scope.lookupType(item),
+                scope.lookupScopeEntry(item).hasParameterDecl())));
   }
 
   public TranslationUnit fuzzTranslationUnit() {

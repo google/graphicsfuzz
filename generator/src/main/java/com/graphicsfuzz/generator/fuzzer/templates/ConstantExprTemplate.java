@@ -27,6 +27,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -176,8 +177,8 @@ public class ConstantExprTemplate extends AbstractExprTemplate {
   }
 
   @Override
-  public List<List<? extends Type>> getArgumentTypes() {
-    return new ArrayList<>();
+  public List<List<Type>> getArgumentTypes() {
+    return Collections.emptyList();
   }
 
   @Override

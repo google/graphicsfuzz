@@ -25,23 +25,23 @@ abstract class AbstractExprTemplate implements IExprTemplate {
 
   @Override
   public final String toString() {
-    String result = getTemplateName() + ":(";
+    StringBuilder result = new StringBuilder(getTemplateName() + ":(");
     boolean firstArg = true;
     for (List<? extends Type> ts : getArgumentTypes()) {
       if (!firstArg) {
-        result += ",";
+        result.append(",");
       }
       firstArg = false;
-      result += "{";
+      result.append("{");
       boolean firstType = true;
       for (Type t : ts) {
         if (!firstType) {
-          result += ",";
+          result.append(",");
         }
         firstType = false;
-        result += t;
+        result.append(t);
       }
-      result += "}";
+      result.append("}");
     }
     return result + ")->" + getResultType();
   }
