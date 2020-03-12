@@ -110,8 +110,7 @@ public class GlslShaderJob implements ShaderJob {
         if (decl instanceof VariablesDeclaration
             && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
           final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
-          // We cannot yet deal with uniforms with array base types (only array information provided
-          // with the variable's declaration info).
+          // We cannot yet deal with uniforms with array base types, such as 'uniform float[5] A;'.
           assert !(variablesDeclaration.getBaseType().getWithoutQualifiers() instanceof ArrayType);
           for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
             final String uniformName = declInfo.getName();
