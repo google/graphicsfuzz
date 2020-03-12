@@ -358,6 +358,174 @@ public class GlslShaderJobTest {
     assertEquals(new PipelineInfo(JSON_WITH_BINDINGS_MULTIPLE_VARIABLES_PER_DECLARATION).toString(), job.getPipelineInfo().toString());
   }
 
+  private static final String VERT_SHADER_NO_BINDINGS_ARRAYS =
+      "uniform float a[2];\n"
+          + "uniform float b[3];\n"
+          + "uniform int c[1];\n"
+          + "uniform vec2 d[2];\n"
+          + "void main() { }\n";
+
+  private static final String FRAG_SHADER_NO_BINDINGS_ARRAYS = "" +
+      "uniform float b[3];\n"
+      + "uniform float f;\n"
+      + "uniform float g[2];\n"
+      + "uniform int e[6];\n"
+      + "uniform vec2 d[2];\n"
+      + "void main() { }\n";
+
+  private static final String FRAG_SHADER_NO_BINDINGS_ARRAYS_MULTIPLE_VARS_PER_DECL = "" +
+      "uniform float b[3], f, g[2];\n"
+      + "uniform int e[6];\n"
+      + "uniform vec2 d[2];\n"
+      + "void main() { }\n";
+
+  private static final String JSON_NO_BINDINGS_ARRAYS = "{" +
+      "  \"a\": {\n" +
+      "    \"args\": [\n" +
+      "      1.0, 2.0\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1fv\"\n" +
+      "  },\n" +
+      "  \"b\": {\n" +
+      "    \"args\": [\n" +
+      "      0.0, 10.0, 20.0\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1fv\"\n" +
+      "  },\n" +
+      "  \"c\": {\n" +
+      "    \"args\": [\n" +
+      "      2\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1iv\"\n" +
+      "  },\n" +
+      "  \"d\": {\n" +
+      "    \"args\": [\n" +
+      "      0.0, 1.0, 2.0, 3.0\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform2fv\"\n" +
+      "  },\n" +
+      "  \"f\": {\n" +
+      "    \"args\": [\n" +
+      "      100.0\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1f\"\n" +
+      "  },\n" +
+      "  \"g\": {\n" +
+      "    \"args\": [\n" +
+      "      100.0, 200.0\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1fv\"\n" +
+      "  },\n" +
+      "  \"e\": {\n" +
+      "    \"args\": [\n" +
+      "      12, 10, 8, 6, 4, 2\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1iv\"\n" +
+      "  }\n" +
+      "}\n";
+
+  private static final String VERT_SHADER_WITH_BINDINGS_ARRAYS = ""
+      + "layout(set = 0, binding = 0) uniform buf0 { float a[2]; };\n"
+      + "layout(set = 0, binding = 1) uniform buf1 { float b[3]; };\n"
+      + "layout(set = 0, binding = 2) uniform buf2 { int c[1]; };\n"
+      + "layout(set = 0, binding = 3) uniform buf3 { vec2 d[2]; };\n"
+      + "void main() { }\n";
+
+  private static final String FRAG_SHADER_WITH_BINDINGS_ARRAYS = ""
+      + "layout(set = 0, binding = 1) uniform buf1 { float b[3]; };\n"
+      + "layout(set = 0, binding = 4) uniform buf4 { float f; };\n"
+      + "layout(set = 0, binding = 5) uniform buf5 { float g[2]; };\n"
+      + "layout(set = 0, binding = 6) uniform buf6 { int e[6]; };\n"
+      + "layout(set = 0, binding = 3) uniform buf3 { vec2 d[2]; };\n"
+      + "void main() { }\n";
+
+  private static final String JSON_WITH_BINDINGS_ARRAYS = "{\n" +
+      "  \"a\": {\n" +
+      "    \"args\": [\n" +
+      "      1.0, 2.0\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1fv\",\n" +
+      "    \"binding\": 0\n" +
+      "  },\n" +
+      "  \"b\": {\n" +
+      "    \"args\": [\n" +
+      "      0.0, 10.0, 20.0\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1fv\",\n" +
+      "    \"binding\": 1\n" +
+      "  },\n" +
+      "  \"c\": {\n" +
+      "    \"args\": [\n" +
+      "      2\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1iv\",\n" +
+      "    \"binding\": 2\n" +
+      "  },\n" +
+      "  \"d\": {\n" +
+      "    \"args\": [\n" +
+      "      0.0, 1.0, 2.0, 3.0\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform2fv\",\n" +
+      "    \"binding\": 3\n" +
+      "  },\n" +
+      "  \"f\": {\n" +
+      "    \"args\": [\n" +
+      "      100.0\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1f\",\n" +
+      "    \"binding\": 4\n" +
+      "  },\n" +
+      "  \"g\": {\n" +
+      "    \"args\": [\n" +
+      "      100.0, 200.0\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1fv\",\n" +
+      "    \"binding\": 5\n" +
+      "  },\n" +
+      "  \"e\": {\n" +
+      "    \"args\": [\n" +
+      "      12, 10, 8, 6, 4, 2\n" +
+      "    ],\n" +
+      "    \"func\": \"glUniform1iv\",\n" +
+      "    \"binding\": 6\n" +
+      "  }\n" +
+      "}\n";
+
+  @Test
+  public void testMakeUniformBindingsArrays() throws Exception {
+
+    final GlslShaderJob job = new GlslShaderJob(
+        Optional.empty(),
+        new PipelineInfo(JSON_NO_BINDINGS_ARRAYS),
+        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_NO_BINDINGS_ARRAYS)),
+        ParseHelper.parse(getShaderFile("frag",
+            FRAG_SHADER_NO_BINDINGS_ARRAYS_MULTIPLE_VARS_PER_DECL)));
+
+    job.makeUniformBindings();
+
+    CompareAsts.assertEqualAsts(VERT_SHADER_WITH_BINDINGS_ARRAYS, job.getVertexShader().get());
+    CompareAsts.assertEqualAsts(FRAG_SHADER_WITH_BINDINGS_ARRAYS, job.getFragmentShader().get());
+    assertEquals(new PipelineInfo(JSON_WITH_BINDINGS_ARRAYS).toString(),
+        job.getPipelineInfo().toString());
+  }
+
+  @Test
+  public void testRemoveUniformBindingsArrays() throws Exception {
+
+    final GlslShaderJob job = new GlslShaderJob(
+        Optional.empty(),
+        new PipelineInfo(JSON_WITH_BINDINGS_ARRAYS),
+        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_WITH_BINDINGS_ARRAYS)),
+        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_WITH_BINDINGS_ARRAYS)));
+
+    job.removeUniformBindings();
+
+    CompareAsts.assertEqualAsts(VERT_SHADER_NO_BINDINGS_ARRAYS, job.getVertexShader().get());
+    CompareAsts.assertEqualAsts(FRAG_SHADER_NO_BINDINGS_ARRAYS, job.getFragmentShader().get());
+    assertEquals(new PipelineInfo(JSON_NO_BINDINGS_ARRAYS).toString(), job.getPipelineInfo().toString());
+
+  }
+
   private File getShaderFile(String extension, String content) throws IOException {
     final File file = temporaryFolder.newFile("shader." + extension);
     FileUtils.writeStringToFile(file, content, StandardCharsets.UTF_8);
