@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.xml.stream.Location;
 
 public class QualifiedType extends Type {
 
@@ -87,15 +86,15 @@ public class QualifiedType extends Type {
    * @param location Location to set in the location qualifier.
    */
   public void setLocationQualifier(int location) {
-    Optional<TypeQualifier> old = Optional.empty();
+    Optional existingLayoutQualifierSequence = Optional.empty();
     List<LayoutQualifier> qualifierList = new ArrayList<LayoutQualifier>();
     qualifierList.add(new LocationLayoutQualifier(location));
     for (TypeQualifier t : qualifiers) {
       if (t instanceof LayoutQualifierSequence) {
-        if (old.isPresent()) {
+        if (existingLayoutQualifierSequence.isPresent()) {
           throw new RuntimeException("More than one layout qualifier sequence found");
         }
-        old = Optional.of(t);
+        existingLayoutQualifierSequence = Optional.of(t);
         for (LayoutQualifier l : ((LayoutQualifierSequence) t).getLayoutQualifiers()) {
           if (!(l instanceof LocationLayoutQualifier)) {
             qualifierList.add(l);
@@ -103,8 +102,8 @@ public class QualifiedType extends Type {
         }
       }
     }
-    if (old.isPresent()) {
-      qualifiers.remove(old.get());
+    if (existingLayoutQualifierSequence.isPresent()) {
+      qualifiers.remove(existingLayoutQualifierSequence.get());
     }
     qualifiers.add(0, new LayoutQualifierSequence(qualifierList));
   }

@@ -44,7 +44,7 @@ public class FragmentShaderToShaderJobTest {
     + "\n"
     + "in float in_f;\n"
     + "in vec2 in_v2;\n"
-    + "layout(location = 78) in vec3 in_v3;\n"
+    + "layout(location = 78) in vec3 in_v3;\n" // 78 expected to change to smaller value
     + "in vec4 in_v4;\n"
     + "\n"
     + "void main(void)\n"
@@ -107,4 +107,3 @@ public class FragmentShaderToShaderJobTest {
   }
 
 }
-

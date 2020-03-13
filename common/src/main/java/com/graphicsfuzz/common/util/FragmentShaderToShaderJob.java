@@ -125,7 +125,7 @@ public final class FragmentShaderToShaderJob {
         varType.replaceQualifier(TypeQualifier.SHADER_INPUT, TypeQualifier.SHADER_OUTPUT);
 
         // Set same layout location for vertex output and fragment input
-        ((QualifiedType)vd.getBaseType()).setLocationQualifier(locationIndex);
+        ((QualifiedType) vd.getBaseType()).setLocationQualifier(locationIndex);
         varType.setLocationQualifier(locationIndex);
         locationIndex++;
 
