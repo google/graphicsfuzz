@@ -113,8 +113,35 @@ public class OutlineStatementMutationFinderTest {
     program.append("}\n");
     final TranslationUnit tu = ParseHelper.parse(program.toString());
 
-    // Check that structifying many times, with no memory in-between (other than the AST itself),
+    // Check that outlining many times, with no memory in-between (other than the AST itself),
     // leads to valid shaders.
+    for (int i = 0; i < limit; i++) {
+      new OutlineStatementMutationFinder(tu)
+          .findMutations()
+          .get(0).apply();
+
+      final File shaderJobFile = temporaryFolder.newFile("shaderjob" + i + ".json");
+      fileOperations.writeShaderJobFile(new GlslShaderJob(Optional.empty(),
+          new PipelineInfo("{}"),
+          tu), shaderJobFile);
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, false));
+    }
+  }
+
+  @Test
+  public void testOutlineWithNameShadowing() throws Exception {
+    final int limit = 4;
+    final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+    String program = "#version 300 es\n"
+        + "precision highp float;\n"
+        + "float x;\n"
+        + "void main() {\n"
+        + "  x = 2.0;\n"
+        + "  vec2 x;\n"
+        + "  x = vec2(1.0);\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+
     for (int i = 0; i < limit; i++) {
       new OutlineStatementMutationFinder(tu)
           .findMutations()
