@@ -77,7 +77,7 @@ public class DonateDeadCodeTransformationTest {
         + "     if (i > 5) break;\n"
         + "}\n");
 
-    final TranslationUnit reference = ParseHelper.parse("#version 100\n"
+    final TranslationUnit reference = ParseHelper.parse("#version 310 es\n"
         + "void main() {\n"
         + "  ;\n"
         + "  for(int i = 0; i < 100; i++) {\n"
@@ -181,7 +181,7 @@ public class DonateDeadCodeTransformationTest {
         + "  }\n"
         + "}\n");
 
-    final TranslationUnit reference = ParseHelper.parse("#version 100\n"
+    final TranslationUnit reference = ParseHelper.parse("#version 310 es\n"
         + "void main() {\n"
         + "  switch (0) {\n"
         + "    case 1:\n"
@@ -277,7 +277,7 @@ public class DonateDeadCodeTransformationTest {
         + "  }\n"
         + "}\n");
 
-    final TranslationUnit reference = ParseHelper.parse("#version 100\n"
+    final TranslationUnit reference = ParseHelper.parse("#version 310 es\n"
         + "void main() {\n"
         + "  ;\n"
         + "  switch (0) {\n"
