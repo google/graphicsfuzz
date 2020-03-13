@@ -113,17 +113,15 @@ TryFuzzingShader(VkShaderModuleCreateInfo const *pCreateInfo) {
   }
 
   // Create a fuzzer and the various parameters required for fuzzing.
-  spvtools::fuzz::Fuzzer fuzzer(target_env);
+  spvtools::fuzz::Fuzzer fuzzer(target_env, shader_module_id, false);
   std::vector<uint32_t> binary_in(pCreateInfo->pCode,
                                   pCreateInfo->pCode + code_size_in_words);
   std::vector<uint32_t> result;
   spvtools::fuzz::protobufs::FactSequence no_facts;
   spvtools::fuzz::protobufs::TransformationSequence transformation_sequence;
-  spvtools::FuzzerOptions fuzzer_options;
-  fuzzer_options.set_random_seed(shader_module_id);
 
   // Fuzz the shader into |result|.
-  auto fuzzer_result_status = fuzzer.Run(binary_in, no_facts, fuzzer_options,
+  auto fuzzer_result_status = fuzzer.Run(binary_in, no_facts, {},
                                          &result, &transformation_sequence);
 
   if (fuzzer_result_status !=
