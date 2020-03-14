@@ -16,20 +16,26 @@
 
 package com.graphicsfuzz.generator.semanticspreserving;
 
+import com.graphicsfuzz.common.ast.decl.Declaration;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.BreakStmt;
+import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.DefaultCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.ExprCaseLabel;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.stmt.ForStmt;
 import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.stmt.LoopStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -41,8 +47,9 @@ import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AddSwitchMutation implements Mutation {
@@ -71,13 +78,34 @@ public class AddSwitchMutation implements Mutation {
     final Stmt stmt = injectionPoint.getNextStmt();
     if (stmt instanceof BlockStmt) {
       assert isBlockWithoutTopLevelBreaks(stmt);
-      switchify(stmt, injectionPoint, random, shadingLanguageVersion, generationParams);
+      switchify(stmt, injectionPoint.scopeAtInjectionPoint());
       return;
     }
     if (stmt instanceof LoopStmt) {
       assert isBlockWithoutTopLevelBreaks(((LoopStmt) stmt).getBody());
-      switchify(((LoopStmt) stmt).getBody(), injectionPoint, random, shadingLanguageVersion,
-          generationParams);
+      Scope scope;
+      if (stmt instanceof ForStmt) {
+        // The statement is a for loop, which might declare new variables.  We thus make a new scope
+        // with the existing scope as its parent, and add any declarations introduced by the for
+        // loop header to the new scope.  This is important if the declarations in the for loop
+        // header shadow existing declarations.
+        final ForStmt forStmt = (ForStmt) stmt;
+        scope = new Scope(injectionPoint.scopeAtInjectionPoint());
+        if (forStmt.getInit() instanceof DeclarationStmt) {
+          // The for loop's initializer declares variables, so add each declaration to the scope.
+          final VariablesDeclaration variablesDeclaration =
+              ((DeclarationStmt) forStmt.getInit()).getVariablesDeclaration();
+          for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
+            scope.add(vdi.getName(), variablesDeclaration.getBaseType(), Optional.empty(), vdi,
+                variablesDeclaration);
+          }
+        }
+      } else {
+        // The statement is not a for loop, so it does not introduce new variables; use the scope
+        // associated with the injection point.
+        scope = injectionPoint.scopeAtInjectionPoint();
+      }
+      switchify(((LoopStmt) stmt).getBody(), scope);
       return;
     }
     assert stmt instanceof IfStmt;
@@ -88,26 +116,22 @@ public class AddSwitchMutation implements Mutation {
             && isBlockWithoutTopLevelBreaks(((IfStmt) stmt).getElseStmt());
 
     if (thenBranchCanBeTransformed && !elseBranchCanBeTransformed) {
-      switchify(((IfStmt) stmt).getThenStmt(), injectionPoint, random, shadingLanguageVersion,
-          generationParams);
+      switchify(((IfStmt) stmt).getThenStmt(), injectionPoint.scopeAtInjectionPoint());
       return;
     }
     if (!thenBranchCanBeTransformed && elseBranchCanBeTransformed) {
-      switchify(((IfStmt) stmt).getElseStmt(), injectionPoint, random, shadingLanguageVersion,
-          generationParams);
+      switchify(((IfStmt) stmt).getElseStmt(), injectionPoint.scopeAtInjectionPoint());
       return;
     }
     assert thenBranchCanBeTransformed && elseBranchCanBeTransformed;
     while (true) {
       boolean transformedOne = false;
       if (random.nextBoolean()) {
-        switchify(((IfStmt) stmt).getThenStmt(), injectionPoint, random, shadingLanguageVersion,
-            generationParams);
+        switchify(((IfStmt) stmt).getThenStmt(), injectionPoint.scopeAtInjectionPoint());
         transformedOne = true;
       }
       if (random.nextBoolean()) {
-        switchify(((IfStmt) stmt).getElseStmt(), injectionPoint, random, shadingLanguageVersion,
-            generationParams);
+        switchify(((IfStmt) stmt).getElseStmt(), injectionPoint.scopeAtInjectionPoint());
         transformedOne = true;
       }
       if (transformedOne) {
@@ -117,44 +141,42 @@ public class AddSwitchMutation implements Mutation {
   }
 
   private void switchify(Stmt stmt,
-                         IInjectionPoint injectionPoint,
-                         IRandom generator,
-                         ShadingLanguageVersion shadingLanguageVersion,
-                         GenerationParams generationParams) {
+                         Scope scope) {
     assert stmt instanceof BlockStmt;
     BlockStmt block = (BlockStmt) stmt;
     if (block.getNumStmts() == 0) {
       return;
     }
 
-    final int casesBefore = generator.nextInt(3);
-    final int casesDuring = generator.nextInt(3);
-    final int casesAfter = generator.nextInt(3);
+    final int casesBefore = random.nextInt(3);
+    final int casesDuring = random.nextInt(3);
+    final int casesAfter = random.nextInt(3);
 
-    final Fuzzer stmtFuzzer = new Fuzzer(new FuzzingContext(injectionPoint.scopeAtInjectionPoint()
+    final Fuzzer stmtFuzzer = new Fuzzer(new FuzzingContext(scope
         .shallowClone()),
         shadingLanguageVersion,
-        generator,
+        random,
         generationParams,
         Constants.GLF_SWITCH + "_" + idGenerator.freshId());
 
     List<Integer> usedLabels = new ArrayList<>();
     List<Stmt> switchBodyStmts = generateUnreachableSwitchContent(casesBefore,
-        usedLabels, stmtFuzzer, generator);
-    switchBodyStmts.addAll(generateReachableSwitchCases(block, casesDuring, usedLabels, generator));
+        usedLabels, stmtFuzzer, random);
+    switchBodyStmts.addAll(generateReachableSwitchCases(block, casesDuring, usedLabels, random));
     switchBodyStmts.addAll(generateUnreachableSwitchContent(casesAfter,
-        usedLabels, stmtFuzzer, generator));
+        usedLabels, stmtFuzzer, random));
     switchBodyStmts.add(new DefaultCaseLabel());
     switchBodyStmts.add(new ExprStmt(new IntConstantExpr("1")));
 
     final Expr zero =
-        new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
+        new OpaqueExpressionGenerator(random, generationParams, shadingLanguageVersion)
             .makeOpaqueZero(BasicType.INT, false, 0,
-                new Fuzzer(new FuzzingContext(injectionPoint.scopeAtInjectionPoint()),
+                new Fuzzer(new FuzzingContext(scope),
                     shadingLanguageVersion,
-                    generator, generationParams));
+                    random, generationParams));
 
-    block.setStmts(Arrays.asList(new SwitchStmt(new FunctionCallExpr(Constants.GLF_SWITCH, zero),
+    block.setStmts(Collections.singletonList(new SwitchStmt(new FunctionCallExpr(
+        Constants.GLF_SWITCH, zero),
         new BlockStmt(switchBodyStmts, true))));
   }
 
