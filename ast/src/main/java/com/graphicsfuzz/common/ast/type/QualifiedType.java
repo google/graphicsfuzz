@@ -86,16 +86,16 @@ public class QualifiedType extends Type {
    * @param location Location to set in the location qualifier.
    */
   public void setLocationQualifier(int location) {
-    Optional existingLayoutQualifierSequence = Optional.empty();
-    List<LayoutQualifier> qualifierList = new ArrayList<LayoutQualifier>();
+    Optional<LayoutQualifierSequence> existingLayoutQualifierSequence = Optional.empty();
+    List<LayoutQualifier> qualifierList = new ArrayList<>();
     qualifierList.add(new LocationLayoutQualifier(location));
     for (TypeQualifier t : qualifiers) {
       if (t instanceof LayoutQualifierSequence) {
         if (existingLayoutQualifierSequence.isPresent()) {
           throw new RuntimeException("More than one layout qualifier sequence found");
         }
-        existingLayoutQualifierSequence = Optional.of(t);
-        for (LayoutQualifier l : ((LayoutQualifierSequence) t).getLayoutQualifiers()) {
+        existingLayoutQualifierSequence = Optional.of((LayoutQualifierSequence) t);
+        for (LayoutQualifier l : existingLayoutQualifierSequence.get().getLayoutQualifiers()) {
           if (!(l instanceof LocationLayoutQualifier)) {
             qualifierList.add(l);
           }
