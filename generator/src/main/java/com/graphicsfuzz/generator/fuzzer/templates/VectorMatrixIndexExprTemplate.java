@@ -23,7 +23,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class VectorMatrixIndexExprTemplate extends AbstractExprTemplate {
@@ -81,8 +81,8 @@ public class VectorMatrixIndexExprTemplate extends AbstractExprTemplate {
   }
 
   @Override
-  public List<List<? extends Type>> getArgumentTypes() {
-    return new ArrayList<>(Arrays.asList(new ArrayList<>(Arrays.asList(argType))));
+  public List<List<Type>> getArgumentTypes() {
+    return Collections.singletonList(new ArrayList<>(Collections.singletonList(argType)));
   }
 
   @Override

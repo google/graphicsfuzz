@@ -24,125 +24,26 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class BinaryExprTemplate extends AbstractExprTemplate {
 
-  private List<? extends Type> lhsTypes;
-  private List<? extends Type> rhsTypes;
-  private Type resultType;
-  private BinOp op;
+  private final List<? extends Type> lhsTypes;
+  private final Type rhsType;
+  private final Type resultType;
+  private final BinOp op;
 
   public BinaryExprTemplate(List<? extends Type> lhsTypes, Type rhsType, Type resultType,
       BinOp op) {
     this.lhsTypes = lhsTypes;
-    this.rhsTypes = new ArrayList<>(Arrays.asList(rhsType));
+    this.rhsType = rhsType;
     this.resultType = resultType;
     this.op = op;
   }
 
   public BinaryExprTemplate(Type lhsType, Type rhsType, Type resultType, BinOp op) {
-    this(new ArrayList<>(Arrays.asList(lhsType)), rhsType, resultType, op);
-    String opString = null;
-    switch (op) {
-      case ADD:
-        opString = "+";
-        break;
-      case ADD_ASSIGN:
-        opString = "+=";
-        break;
-      case ASSIGN:
-        opString = "=";
-        break;
-      case BAND:
-        opString = "&";
-        break;
-      case BAND_ASSIGN:
-        opString = "&=";
-        break;
-      case BOR:
-        opString = "|";
-        break;
-      case BOR_ASSIGN:
-        opString = "|=";
-        break;
-      case BXOR:
-        opString = "^";
-        break;
-      case BXOR_ASSIGN:
-        opString = "^=";
-        break;
-      case COMMA:
-        opString = ",";
-        break;
-      case DIV:
-        opString = "/";
-        break;
-      case DIV_ASSIGN:
-        opString = "/=";
-        break;
-      case EQ:
-        opString = "==";
-        break;
-      case GE:
-        opString = ">=";
-        break;
-      case GT:
-        opString = ">";
-        break;
-      case LAND:
-        opString = "&&";
-        break;
-      case LE:
-        opString = "<=";
-        break;
-      case LOR:
-        opString = "||";
-        break;
-      case LT:
-        opString = "<";
-        break;
-      case LXOR:
-        opString = "^^";
-        break;
-      case MOD:
-        opString = "%";
-        break;
-      case MOD_ASSIGN:
-        opString = "%=";
-        break;
-      case MUL:
-        opString = "*";
-        break;
-      case MUL_ASSIGN:
-        opString = "*=";
-        break;
-      case NE:
-        opString = "!=";
-        break;
-      case SHL:
-        opString = "<<";
-        break;
-      case SHL_ASSIGN:
-        opString = "<<=";
-        break;
-      case SHR:
-        opString = ">>";
-        break;
-      case SHR_ASSIGN:
-        opString = ">>=";
-        break;
-      case SUB:
-        opString = "-";
-        break;
-      case SUB_ASSIGN:
-        opString = "-=";
-        break;
-      default:
-        assert false;
-        break;
-    }
-
+    this(Collections.singletonList(lhsType), rhsType, resultType, op);
   }
 
   @Override
@@ -157,8 +58,9 @@ public class BinaryExprTemplate extends AbstractExprTemplate {
   }
 
   @Override
-  public List<List<? extends Type>> getArgumentTypes() {
-    return Arrays.asList(lhsTypes, rhsTypes);
+  public List<List<Type>> getArgumentTypes() {
+    return Arrays.asList(new ArrayList<>(lhsTypes),
+        Collections.singletonList(rhsType));
   }
 
   @Override
@@ -212,10 +114,6 @@ public class BinaryExprTemplate extends AbstractExprTemplate {
       default:
         return true;
     }
-  }
-
-  public BinOp getOp() {
-    return op;
   }
 
   @Override

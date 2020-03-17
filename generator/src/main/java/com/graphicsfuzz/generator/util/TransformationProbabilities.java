@@ -216,6 +216,13 @@ public class TransformationProbabilities {
     return result;
   }
 
+  public static TransformationProbabilities onlyLiveCode() {
+    TransformationProbabilities result = ZERO;
+    result.probDonateLiveCodeAtStmt = 100;
+    result.probSubstituteFreeVariable = 50;
+    return result;
+  }
+
   public static TransformationProbabilities closeToDefaultProbabilities(IRandom generator) {
     return closeTo(generator, DEFAULT_PROBABILITIES);
   }
