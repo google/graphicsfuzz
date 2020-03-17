@@ -69,8 +69,13 @@ public class OutlineStatementMutationFinder extends MutationFinderBase<OutlineSt
     if (referencesArray(be.getRhs(), getCurrentScope())) {
       return;
     }
-    addMutation(new OutlineStatementMutation(exprStmt, getCurrentScope(), getTranslationUnit(),
-          getEnclosingFunction(), idGenerator));
+    // We clone the current scope when passing it to the mutation's constructor so that if shadowing
+    // variables with different types are later added to the scope the mutation will use the
+    // original types.
+    addMutation(new OutlineStatementMutation(exprStmt, getCurrentScope().shallowClone(),
+        getTranslationUnit(),
+        getEnclosingFunction(),
+        idGenerator));
   }
 
   private boolean referencesArray(Expr expr, Scope enclosingScope) {
