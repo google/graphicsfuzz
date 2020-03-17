@@ -23,6 +23,7 @@ import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
+import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
@@ -139,7 +140,10 @@ public final class PruneUniforms {
 
   public static Expr getBasicTypeLiteralExpr(BasicType baseType, List<Number> args) {
     List<Expr> argExprs;
-    if (baseType.getElementType() == BasicType.FLOAT) {
+    if (baseType.getElementType() == BasicType.BOOL) {
+      argExprs = args.stream().map(item -> new BoolConstantExpr(item.intValue() == 1))
+          .collect(Collectors.toList());
+    } else if (baseType.getElementType() == BasicType.FLOAT) {
       argExprs = args.stream().map(item -> new FloatConstantExpr(item.toString()))
           .collect(Collectors.toList());
     } else if (baseType.getElementType() == BasicType.UINT) {
