@@ -18,6 +18,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.Expr;
@@ -87,6 +88,11 @@ abstract class SimplifyExprReductionOpportunities
       assert inLoopLimiterVariableDeclInfo;
       inLoopLimiterVariableDeclInfo = false;
     }
+  }
+
+  @Override
+  public void visitArrayInfo(ArrayInfo arrayInfo) {
+    // Do nothing: we do not want to simplify array size expressions.
   }
 
   boolean allowedToReduceExpr(IAstNode parent, Expr child) {

@@ -130,7 +130,9 @@ public class FreeVariablesCollector extends ScopeTrackingVisitor {
         throw new RuntimeException(
             "Found variable '" + name + "' that is not typed in the current scope.");
       }
-      freeVariables.put(name, type);
+      // Clone the type so that we can do what we want with it when we go on to process the free
+      // variables.
+      freeVariables.put(name, type.clone());
     }
   }
 

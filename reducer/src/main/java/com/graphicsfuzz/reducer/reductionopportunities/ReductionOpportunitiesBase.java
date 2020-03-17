@@ -18,6 +18,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
