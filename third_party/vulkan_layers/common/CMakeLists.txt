@@ -19,7 +19,7 @@ set(VULKAN_LAYERS_COMMON_SOURCES
         spirv_util.cpp
         )
 
-add_library(vulkan_layers_common STATIC ${VULKAN_LAYERS_COMMON_SOURCES})
+add_library(vulkan_layers_common SHARED ${VULKAN_LAYERS_COMMON_SOURCES})
 
 target_include_directories(vulkan_layers_common
         PRIVATE ../external/SPIRV-Tools
