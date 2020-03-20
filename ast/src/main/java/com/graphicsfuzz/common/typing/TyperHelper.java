@@ -53,22 +53,18 @@ public final class TyperHelper {
 
   public static Type resolveTypeOfCommonBinary(Type lhsType, Type rhsType) {
     // If they match, the result must be the same
-    if (lhsType == rhsType) {
+    if (lhsType.equals(rhsType)) {
       return lhsType;
     }
     // If one side is scalar and the other side is basic, the result has to be that of the other
     // side
     if (lhsType == BasicType.FLOAT || lhsType == BasicType.INT || lhsType == BasicType.UINT) {
-      if (rhsType instanceof BasicType) {
-        return rhsType;
-      }
-      return null;
+      assert rhsType instanceof BasicType;
+      return rhsType;
     }
     if (rhsType == BasicType.FLOAT || rhsType == BasicType.INT || rhsType == BasicType.UINT) {
-      if (lhsType instanceof BasicType) {
-        return lhsType;
-      }
-      return null;
+      assert lhsType instanceof BasicType;
+      return lhsType;
     }
     // Now we are in a position where if we know that one type is vector
     // or matrix, the other side must be also
@@ -95,6 +91,7 @@ public final class TyperHelper {
         return t;
       }
     }
+    assert false : "Unreachable";
     return null;
   }
 
@@ -107,16 +104,12 @@ public final class TyperHelper {
     // If one side is scalar and the other side is basic, the result has to be that of the other
     // side
     if (lhsType == BasicType.FLOAT || lhsType == BasicType.INT || lhsType == BasicType.UINT) {
-      if (rhsType instanceof BasicType) {
-        return rhsType;
-      }
-      return null;
+      assert rhsType instanceof BasicType;
+      return rhsType;
     }
     if (rhsType == BasicType.FLOAT || rhsType == BasicType.INT || rhsType == BasicType.UINT) {
-      if (lhsType instanceof BasicType) {
-        return lhsType;
-      }
-      return null;
+      assert lhsType instanceof BasicType;
+      return lhsType;
     }
 
     // For integer and unsigned integer vectors, we are now in a position where if we see that
@@ -140,17 +133,9 @@ public final class TyperHelper {
       return BasicType.IVEC4;
     }
 
-    // Now for floating point vectors and matrices we need to be careful,
-    // so we just consider all the cases
-    if (lhsType == BasicType.VEC2 && rhsType == BasicType.VEC2) {
-      return BasicType.VEC2;
-    }
-    if (lhsType == BasicType.VEC3 && rhsType == BasicType.VEC3) {
-      return BasicType.VEC3;
-    }
-    if (lhsType == BasicType.VEC4 && rhsType == BasicType.VEC4) {
-      return BasicType.VEC4;
-    }
+    // Now for floating point vectors and matrices we need to be careful, so we just consider all
+    // the cases of distinct basic types (the cases where basic types are handled at the start of
+    // the method).
     if (lhsType == BasicType.VEC2 && rhsType == BasicType.MAT2X2) {
       return BasicType.VEC2;
     }
@@ -162,9 +147,6 @@ public final class TyperHelper {
     }
     if (lhsType == BasicType.MAT2X2 && rhsType == BasicType.VEC2) {
       return BasicType.VEC2;
-    }
-    if (lhsType == BasicType.MAT2X2 && rhsType == BasicType.MAT2X2) {
-      return BasicType.MAT2X2;
     }
     if (lhsType == BasicType.MAT2X2 && rhsType == BasicType.MAT3X2) {
       return BasicType.MAT3X2;
@@ -286,6 +268,7 @@ public final class TyperHelper {
     if (lhsType == BasicType.MAT4X4 && rhsType == BasicType.MAT4X4) {
       return BasicType.MAT4X4;
     }
+    assert false : "Unreachable";
     return null;
   }
 
