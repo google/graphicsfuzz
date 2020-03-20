@@ -31,17 +31,16 @@ import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
-import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.IdGenerator;
-import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -107,7 +106,7 @@ public class OutlineStatementMutation implements Mutation {
 
     toOutline.setExpr(new BinaryExpr(
         binaryExpr.getLhs().clone(), new FunctionCallExpr(newFunctionName,
-        referencedVariables.stream().map(item -> new VariableIdentifierExpr(item))
+        referencedVariables.stream().map(VariableIdentifierExpr::new)
             .collect(Collectors.toList())), BinOp.ASSIGN));
 
     final List<ParameterDecl> params = new ArrayList<>();
@@ -116,7 +115,9 @@ public class OutlineStatementMutation implements Mutation {
       assert type != null;
       final Type varType = type.clone().getWithoutQualifiers();
       assert !(varType.getWithoutQualifiers() instanceof ArrayType);
-      params.add(new ParameterDecl(v, varType, null));
+      // To avoid re-declaring a struct type in a parameter, we use a struct name type if the
+      // referenced variable's type is a named struct definition type.
+      params.add(new ParameterDecl(v, maybeGetStructNameType(varType), null));
     }
     Type returnType = scopeOfStmt.lookupType(
         ((VariableIdentifierExpr) binaryExpr.getLhs()).getName());
@@ -131,12 +132,14 @@ public class OutlineStatementMutation implements Mutation {
               + ((VariableIdentifierExpr) binaryExpr.getLhs()).getName());
       }
     }
-    returnType = returnType.getWithoutQualifiers();
+    // To avoid a duplicate struct definition, we use a struct name type if the return type is a
+    // named struct definition type.
+    returnType = maybeGetStructNameType(returnType.getWithoutQualifiers());
     tu.addDeclarationBefore(new FunctionDefinition(new FunctionPrototype(
         newFunctionName,
         returnType,
         params),
-        new BlockStmt(Arrays.asList(
+        new BlockStmt(Collections.singletonList(
             new ReturnStmt(binaryExpr.getRhs().clone())), false)),
         enclosingFunction);
   }
@@ -165,6 +168,20 @@ public class OutlineStatementMutation implements Mutation {
 
     }.getReferencedVars(expr);
 
+  }
+
+  /**
+   * If type is a struct definition type that has an associated struct name type, the struct name
+   * type is returned.  Otherwise type is returned.
+   */
+  private Type maybeGetStructNameType(Type type) {
+    if (type instanceof StructDefinitionType) {
+      final StructDefinitionType structDefinitionType = (StructDefinitionType) type;
+      if (structDefinitionType.hasStructNameType()) {
+        return structDefinitionType.getStructNameType();
+      }
+    }
+    return type;
   }
 
 }

@@ -155,4 +155,35 @@ public class OutlineStatementMutationFinderTest {
     }
   }
 
+  @Test
+  public void testOutlineWithStructs() throws Exception {
+    final int limit = 4;
+    final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+    String program = "#version 300 es\n"
+        + "precision highp float;\n"
+        + "struct S {"
+        + "  float x;"
+        + "} a, b;\n"
+        + "struct {"
+        + "  float x;"
+        + "} c, d;\n"
+        + "void main() {\n"
+        + "  a = b;\n"
+        + "  c = d;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+
+    for (int i = 0; i < limit; i++) {
+      new OutlineStatementMutationFinder(tu)
+          .findMutations()
+          .get(0).apply();
+
+      final File shaderJobFile = temporaryFolder.newFile("shaderjob" + i + ".json");
+      fileOperations.writeShaderJobFile(new GlslShaderJob(Optional.empty(),
+          new PipelineInfo("{}"),
+          tu), shaderJobFile);
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, false));
+    }
+  }
+
 }
