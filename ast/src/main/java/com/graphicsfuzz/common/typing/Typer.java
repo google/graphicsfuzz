@@ -217,8 +217,8 @@ public class Typer extends ScopeTrackingVisitor {
       final Type argType = lookupType(functionCallExpr.getArg(i));
       assert argType != null;
       final ParameterDecl parameter = prototype.getParameter(i);
-      if (!argType.getWithoutQualifiers()
-          .equals(Typer.combineBaseTypeAndArrayInfo(parameter.getType(), parameter.getArrayInfo())
+      if (!TyperHelper.matches(argType.getWithoutQualifiers(),
+          Typer.combineBaseTypeAndArrayInfo(parameter.getType(), parameter.getArrayInfo())
               .getWithoutQualifiers())) {
         return false;
       }

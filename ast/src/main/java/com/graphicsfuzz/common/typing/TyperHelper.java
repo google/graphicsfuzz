@@ -20,6 +20,7 @@ import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
@@ -53,9 +54,10 @@ public final class TyperHelper {
 
   public static Type resolveTypeOfCommonBinary(Type lhsType, Type rhsType) {
     // If they match, the result must be the same
-    if (lhsType.equals(rhsType)) {
+    if (matches(lhsType, rhsType)) {
       return lhsType;
     }
+
     // If one side is scalar and the other side is basic, the result has to be that of the other
     // side
     if (lhsType == BasicType.FLOAT || lhsType == BasicType.INT || lhsType == BasicType.UINT) {
@@ -1547,6 +1549,30 @@ public final class TyperHelper {
   @SuppressWarnings("unused")
   private static List<Type> bgenType() {
     return Arrays.asList(BasicType.BOOL, BasicType.BVEC2, BasicType.BVEC3, BasicType.BVEC4);
+  }
+
+  /**
+   * Checks equality on types, after following struct definitions to their struct names.
+   * @param lhsType The first type to be checked for equality
+   * @param rhsType The second type to be checked for equality
+   * @return True if and only if the types are equal, after following struct definitions to their
+   *         associated struct names.
+   */
+  public static boolean matches(Type lhsType, Type rhsType) {
+    return maybeGetStructName(lhsType).equals(maybeGetStructName(rhsType));
+  }
+
+  /**
+   * For a named struct definition type, this returns the associated struct name type.  Otherwise
+   * it returns its argument.
+   */
+  public static Type maybeGetStructName(Type type) {
+    if (!(type instanceof StructDefinitionType)) {
+      return type;
+    }
+    final StructDefinitionType structDefinitionType = (StructDefinitionType) type;
+    return structDefinitionType.hasStructNameType() ? structDefinitionType.getStructNameType() :
+        structDefinitionType;
   }
 
 }
