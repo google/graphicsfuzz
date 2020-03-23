@@ -16,13 +16,6 @@
 
 package com.graphicsfuzz.common.typing;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.Initializer;
@@ -45,20 +38,21 @@ import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
+import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.GlslParserException;
-import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.ShaderKind;
+import com.graphicsfuzz.util.ExecHelper.RedirectType;
+import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.IOException;
@@ -68,6 +62,13 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TyperTest {
 
@@ -821,6 +822,43 @@ public class TyperTest {
         assertTrue(type instanceof ArrayType);
         assertSame(((ArrayType) type).getBaseType(), BasicType.INT);
         assertEquals(2, (int) ((ArrayType) type).getArrayInfo().getConstantSize());
+      }
+    };
+  }
+
+  @Test
+  public void testStructAssignCorrectlyTyped() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 310 es\n"
+        + "struct S { float x; } myS;\n"
+        + "void main() {\n"
+        + "  S anotherS;\n"
+        + "  anotherS = myS;\n"
+        + "  myS = anotherS;\n"
+        + "}\n");
+    new NullCheckTyper(tu) {
+      @Override
+      public void visitBinaryExpr(BinaryExpr binaryExpr) {
+        super.visitBinaryExpr(binaryExpr);
+        final Type type = lookupType(binaryExpr);
+        assertTrue(type instanceof StructNameType || type instanceof StructDefinitionType);
+        assertEquals("S", ((StructNameType) TyperHelper.maybeGetStructName(type)).getName());
+      }
+    };
+  }
+
+  @Test
+  public void testPrototypeMatchingWithStructs() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 310 es\n"
+        + "struct S { float x; } myS;\n"
+        + "void foo(S myS);"
+        + "void main() {\n"
+        + "  foo(myS);\n"
+        + "}\n");
+    new NullCheckTyper(tu) {
+      @Override
+      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        super.visitFunctionCallExpr(functionCallExpr);
+        assertSame(VoidType.VOID, lookupType(functionCallExpr).getWithoutQualifiers());
       }
     };
   }
