@@ -44,16 +44,17 @@ public final class PruneUniforms {
   }
 
   /**
-   * Prunes uniforms from the shader job, by inlining their values into the shaders, until there
-   * are no more than a given number of uniforms in the shader job.
+   * Prunes uniforms from the shader job, by turning them into global variables initialized to the
+   * value the uniform would take, until there are no more than a given number of uniforms in the
+   * shader job.
    * @param shaderJob A shader job whose uniforms are to be pruned.
    * @param limit The maximum number of uniforms that should remain.
    * @param prefixesForPriorityPruning A list of prefixes, such that uniforms starting with one of
    *                                   the prefixes should be pruned before other uniforms.
    */
-  public static void prune(ShaderJob shaderJob,
-                           int limit,
-                           List<String> prefixesForPriorityPruning) {
+  public static void pruneIfNeeded(ShaderJob shaderJob,
+                                   int limit,
+                                   List<String> prefixesForPriorityPruning) {
 
     // Work out how many uniforms need to be pruned to meet the limit.
     final int numToPrune = shaderJob.getPipelineInfo().getNumUniforms() - limit;

@@ -190,7 +190,7 @@ public class PruneUniformsTest {
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), new PipelineInfo(uniforms),
         ParseHelper.parse(program));
 
-    PruneUniforms.prune(
+    PruneUniforms.pruneIfNeeded(
         shaderJob,
         limit,
         prefixList);

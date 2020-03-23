@@ -138,9 +138,10 @@ public final class PrepareReference {
     }
 
     if (maxUniforms > 0) {
-      // The reference shader job has more uniforms than the specified limit, so prune some of them
-      // by inlining their values into the shaders.
-      PruneUniforms.prune(shaderJob, maxUniforms, Collections.emptyList());
+      // If the reference shader job has more uniforms than the specified limit, some of them must
+      // be pruned, being replaced with global variables initialized to the value that the uniform
+      // would take.
+      PruneUniforms.pruneIfNeeded(shaderJob, maxUniforms, Collections.emptyList());
     }
 
     if (generateUniformBindings) {

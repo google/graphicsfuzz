@@ -171,7 +171,8 @@ public class KnownValueShaderGenerator {
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), pipelineInfo, tu);
 
     if (maxUniforms > 0) {
-      PruneUniforms.prune(shaderJob, maxUniforms, Arrays.asList(Constants.GLF_UNIFORM));
+      PruneUniforms.pruneIfNeeded(shaderJob, maxUniforms,
+          Collections.singletonList(Constants.GLF_UNIFORM));
     }
     if (generateUniformBindings) {
       shaderJob.makeUniformBindings();

@@ -184,7 +184,7 @@ public class Generate {
 
     if (args.limitUniforms()) {
       // Prune uniforms from the shader job, preferring to prune donated uniforms.
-      PruneUniforms.prune(shaderJob, args.getMaxUniforms(),
+      PruneUniforms.pruneIfNeeded(shaderJob, args.getMaxUniforms(),
           Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX));
     }
 
