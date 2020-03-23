@@ -27,6 +27,7 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
+import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -783,7 +784,7 @@ public class TyperTest {
   @Test
   public void testConstArrayCorrectlyTyped() throws Exception {
     TranslationUnit tu = ParseHelper.parse("#version 310 es\n"
-        + "int main() {\n"
+        + "void main() {\n"
         + "  const int A[2] = int[2](1, 2);\n"
         + "  A;\n"
         + "}\n");
@@ -802,6 +803,24 @@ public class TyperTest {
         } catch (UnsupportedLanguageFeatureException exception) {
           fail();
         }
+      }
+    };
+  }
+
+  @Test
+  public void testArrayConstructorCorrectlyTyped() throws Exception {
+    TranslationUnit tu = ParseHelper.parse("#version 310 es\n"
+        + "void main() {\n"
+        + "  int[2](1, 2);\n"
+        + "}\n");
+    new NullCheckTyper(tu) {
+      @Override
+      public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
+        super.visitArrayConstructorExpr(arrayConstructorExpr);
+        final Type type = lookupType(arrayConstructorExpr);
+        assertTrue(type instanceof ArrayType);
+        assertSame(((ArrayType) type).getBaseType(), BasicType.INT);
+        assertEquals(2, (int) ((ArrayType) type).getArrayInfo().getConstantSize());
       }
     };
   }

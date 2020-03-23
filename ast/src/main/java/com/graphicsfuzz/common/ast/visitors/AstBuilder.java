@@ -354,6 +354,12 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
           }
         }
       }
+
+      @Override
+      public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
+        super.visitArrayConstructorExpr(arrayConstructorExpr);
+        handleArrayInfo(arrayConstructorExpr.getArrayType().getArrayInfo());
+      }
     }.visit(tu);
     return tu;
   }
