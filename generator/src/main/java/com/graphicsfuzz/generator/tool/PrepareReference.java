@@ -22,10 +22,12 @@ import com.graphicsfuzz.common.util.AddBraces;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.PipelineInfo;
+import com.graphicsfuzz.common.util.PruneUniforms;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -135,8 +137,11 @@ public final class PrepareReference {
           shaderJob.getPipelineInfo());
     }
 
-    if (maxUniforms > 0 && shaderJob.getPipelineInfo().getNumUniforms() > maxUniforms) {
-      throw new RuntimeException("Too many uniforms in reference shader job.");
+    if (maxUniforms > 0) {
+      // If the reference shader job has more uniforms than the specified limit, some of them must
+      // be pruned, being replaced with global variables initialized to the value that the uniform
+      // would take.
+      PruneUniforms.pruneIfNeeded(shaderJob, maxUniforms, Collections.emptyList());
     }
 
     if (generateUniformBindings) {

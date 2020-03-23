@@ -43,36 +43,52 @@ public final class PruneUniforms {
     // Utility class
   }
 
-  public static boolean prune(ShaderJob shaderJob,
-                              int limit, List<String> prunablePrefixes) {
+  /**
+   * Prunes uniforms from the shader job, by turning them into global variables initialized to the
+   * value the uniform would take, until there are no more than a given number of uniforms in the
+   * shader job.
+   * @param shaderJob A shader job whose uniforms are to be pruned.
+   * @param limit The maximum number of uniforms that should remain.
+   * @param prefixesForPriorityPruning A list of prefixes, such that uniforms starting with one of
+   *                                   the prefixes should be pruned before other uniforms.
+   */
+  public static void pruneIfNeeded(ShaderJob shaderJob,
+                                   int limit,
+                                   List<String> prefixesForPriorityPruning) {
+
+    // Work out how many uniforms need to be pruned to meet the limit.
     final int numToPrune = shaderJob.getPipelineInfo().getNumUniforms() - limit;
-    if (numToPrune < 0) {
-      return true;
-    }
-    final List<String> candidatesForPruning = new ArrayList<>();
-    candidatesForPruning.addAll(shaderJob
-        .getPipelineInfo()
-        .getUniformNames()
-        .stream()
-        .filter(item -> isPrunable(prunablePrefixes, item))
-        .collect(Collectors.toList()));
-
-    // Sort in order to ensure determinism.
-    candidatesForPruning.sort(String::compareTo);
-
-    if (candidatesForPruning.size() < numToPrune) {
-      // Too few uniforms meet the criteria for pruning.
-      return false;
+    if (numToPrune <= 0) {
+      // No pruning is required.
+      return;
     }
 
-    for (String uniformName : candidatesForPruning.subList(0, numToPrune)) {
+    // Using the given prefixes, determine those uniforms we would prefer to prune and those
+    // uniforms we will only prune if necessary.
+    final List<String> pruneFirst = new ArrayList<>();
+    final List<String> pruneIfNecessary = new ArrayList<>();
+    for (String uniformName : shaderJob.getPipelineInfo().getUniformNames()) {
+      if (isPrunable(prefixesForPriorityPruning, uniformName)) {
+        pruneFirst.add(uniformName);
+      } else {
+        pruneIfNecessary.add(uniformName);
+      }
+    }
+
+    // Order the uniforms so that the ones we prefer to prune come first.
+    final List<String> orderedForPruning = new ArrayList<>();
+    orderedForPruning.addAll(pruneFirst);
+    orderedForPruning.addAll(pruneIfNecessary);
+
+    // Prune as many uniforms as needed.
+    for (int i = 0; i < numToPrune; i++) {
+      final String uniformName = orderedForPruning.get(i);
       for (TranslationUnit tu : shaderJob.getShaders()) {
         inlineUniform(tu, shaderJob.getPipelineInfo(), uniformName);
       }
       shaderJob.getPipelineInfo().removeUniform(uniformName);
     }
 
-    return true;
   }
 
   private static void inlineUniform(TranslationUnit tu, PipelineInfo pipelineInfo,
