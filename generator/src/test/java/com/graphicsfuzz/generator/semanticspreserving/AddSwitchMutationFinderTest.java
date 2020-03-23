@@ -54,8 +54,7 @@ public class AddSwitchMutationFinderTest {
     program.append("}\n");
     final TranslationUnit tu = ParseHelper.parse(program.toString());
 
-    // Check that splitting loops many times, with no memory in-between (other than
-    // the AST itself), leads to valid shaders.
+    // Check that adding switches many times leads to valid shaders.
     for (int i = 0; i < limit; i++) {
       final List<AddSwitchMutation> mutations =
           new AddSwitchMutationFinder(tu,
@@ -65,6 +64,38 @@ public class AddSwitchMutationFinderTest {
       mutations.get(0).apply();
       if (mutations.size() > 1) {
         mutations.get(mutations.size() - 1).apply();
+      }
+      final File shaderJobFile = temporaryFolder.newFile("shaderjob" + i + ".json");
+      fileOperations.writeShaderJobFile(new GlslShaderJob(Optional.empty(),
+          new PipelineInfo("{}"),
+          tu), shaderJobFile);
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, false));
+    }
+  }
+
+  @Test
+  public void testNameShadowingInForLoop() throws Exception {
+    // Checks that adding switch statements several times does not lead to an invalid shader.
+    final int limit = 10;
+    final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+    String program = "#version 300 es\n"
+        + "precision highp float;\n"
+        + "void main() {\n"
+        + "  float f = 2.0;\n"
+        + "  for (int f = 0; f < 100; f++) {\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+
+    // Check that adding switches many times leads to valid shaders.
+    for (int i = 0; i < limit; i++) {
+      final List<AddSwitchMutation> mutations =
+          new AddSwitchMutationFinder(tu,
+              new RandomWrapper(i),
+              GenerationParams.normal(tu.getShaderKind(), false))
+              .findMutations();
+      for (AddSwitchMutation mutation : mutations) {
+        mutation.apply();
       }
       final File shaderJobFile = temporaryFolder.newFile("shaderjob" + i + ".json");
       fileOperations.writeShaderJobFile(new GlslShaderJob(Optional.empty(),
