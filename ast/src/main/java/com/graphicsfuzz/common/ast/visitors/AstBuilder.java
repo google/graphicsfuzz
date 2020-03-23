@@ -1505,10 +1505,6 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     for (int i = argsInOrder.size() - 2; i >= 0; i -= 2) {
       assert (i % 2) == 1;
       final Expr thenExpr = argsInOrder.get(i);
-      if (thenExpr instanceof BinaryExpr && ((BinaryExpr) thenExpr).getOp() == BinOp.COMMA) {
-        throw new UnsupportedLanguageFeatureException("The use of a comma in the 'then' "
-            + "expression of a ternary is not currently supported.");
-      }
       result = new TernaryExpr(argsInOrder.get(i - 1), thenExpr, result);
     }
     return result;
