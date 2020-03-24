@@ -33,6 +33,10 @@ namespace graphicsfuzz_amber_scoop {
             PFN_vkBindBufferMemory fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkBindBufferMemory;
             return graphicsfuzz_amber_scoop::vkBindBufferMemory(fn, device, buffer, memory, memoryOffset);
         }
+        VKAPI_ATTR void VKAPI_CALL vkCmdCopyBuffer(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, VkBufferCopy const* pRegions) {
+            PFN_vkCmdCopyBuffer fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdCopyBuffer;
+            return graphicsfuzz_amber_scoop::vkCmdCopyBuffer(fn, commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
+        }
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayoutCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkDescriptorSetLayout* pSetLayout) {
             PFN_vkCreateDescriptorSetLayout fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateDescriptorSetLayout;
             return graphicsfuzz_amber_scoop::vkCreateDescriptorSetLayout(fn, device, pCreateInfo, pAllocator, pSetLayout);
@@ -48,6 +52,10 @@ namespace graphicsfuzz_amber_scoop {
         VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, VkDescriptorSet const* pDescriptorSets, uint32_t dynamicOffsetCount, uint32_t const* pDynamicOffsets) {
             PFN_vkCmdBindDescriptorSets fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdBindDescriptorSets;
             return graphicsfuzz_amber_scoop::vkCmdBindDescriptorSets(fn, commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
+        }
+        VKAPI_ATTR void VKAPI_CALL vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, VkBuffer const* pBuffers, VkDeviceSize const* pOffsets) {
+            PFN_vkCmdBindVertexBuffers fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdBindVertexBuffers;
+            return graphicsfuzz_amber_scoop::vkCmdBindVertexBuffers(fn, commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
         }
         VKAPI_ATTR void VKAPI_CALL vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
             PFN_vkCmdDraw fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdDraw;
@@ -353,10 +361,12 @@ namespace graphicsfuzz_amber_scoop {
             // Overrides
             GET_PROC(vkCreateBuffer);
             GET_PROC(vkBindBufferMemory);
+            GET_PROC(vkCmdCopyBuffer);
             GET_PROC(vkCreateDescriptorSetLayout);
             GET_PROC(vkAllocateDescriptorSets);
             GET_PROC(vkUpdateDescriptorSets);
             GET_PROC(vkCmdBindDescriptorSets);
+            GET_PROC(vkCmdBindVertexBuffers);
             GET_PROC(vkCmdDraw);
             GET_PROC(vkCmdDrawIndexed);
             GET_PROC(vkMapMemory);
@@ -419,10 +429,12 @@ namespace graphicsfuzz_amber_scoop {
             return reinterpret_cast<PFN_vkVoidFunction>(graphicsfuzz_amber_scoop::wrapped::func);
             INTERCEPT(vkCreateBuffer);
             INTERCEPT(vkBindBufferMemory);
+            INTERCEPT(vkCmdCopyBuffer);
             INTERCEPT(vkCreateDescriptorSetLayout);
             INTERCEPT(vkAllocateDescriptorSets);
             INTERCEPT(vkUpdateDescriptorSets);
             INTERCEPT(vkCmdBindDescriptorSets);
+            INTERCEPT(vkCmdBindVertexBuffers);
             INTERCEPT(vkCmdDraw);
             INTERCEPT(vkCmdDrawIndexed);
             INTERCEPT(vkMapMemory);
@@ -638,10 +650,12 @@ namespace graphicsfuzz_amber_scoop {
             return reinterpret_cast<PFN_vkVoidFunction>(graphicsfuzz_amber_scoop::wrapped::func);
             INTERCEPT(vkCreateBuffer);
             INTERCEPT(vkBindBufferMemory);
+            INTERCEPT(vkCmdCopyBuffer);
             INTERCEPT(vkCreateDescriptorSetLayout);
             INTERCEPT(vkAllocateDescriptorSets);
             INTERCEPT(vkUpdateDescriptorSets);
             INTERCEPT(vkCmdBindDescriptorSets);
+            INTERCEPT(vkCmdBindVertexBuffers);
             INTERCEPT(vkCmdDraw);
             INTERCEPT(vkCmdDrawIndexed);
             INTERCEPT(vkMapMemory);

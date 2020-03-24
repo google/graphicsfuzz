@@ -3,7 +3,7 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * You may obtain a copy of the Licens
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -18,6 +18,7 @@
 #include "amber_scoop/layer.h"
 
 #include <cassert>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -42,6 +43,7 @@ namespace graphicsfuzz_amber_scoop {
 struct CmdBeginRenderPass;
 struct CmdBindDescriptorSets;
 struct CmdBindPipeline;
+struct CmdBindVertexBuffers;
 struct CmdDraw;
 struct CmdDrawIndexed;
 
@@ -50,6 +52,7 @@ struct Cmd {
   enum Kind {
     kBeginRenderPass,
     kBindDescriptorSets,
+    kBindVertexBuffers,
     kBindPipeline,
     kDraw,
     kDrawIndexed
@@ -64,8 +67,8 @@ struct Cmd {
   virtual Cmd##target *As##target() { return nullptr; }                        \
   virtual const Cmd##target *As##target() const { return nullptr; }
   DeclareCastMethod(BeginRenderPass) DeclareCastMethod(BindDescriptorSets)
-  DeclareCastMethod(BindPipeline) DeclareCastMethod(Draw)
-  DeclareCastMethod(DrawIndexed)
+  DeclareCastMethod(BindPipeline) DeclareCastMethod(BindVertexBuffers)
+  DeclareCastMethod(Draw) DeclareCastMethod(DrawIndexed)
 #undef DeclareCastMethod
 
   Kind kind_;
@@ -124,6 +127,24 @@ struct CmdBindPipeline : public Cmd {
 
   VkPipelineBindPoint pipelineBindPoint_;
   VkPipeline pipeline_;
+};
+
+struct CmdBindVertexBuffers : public Cmd {
+
+  CmdBindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
+                       VkBuffer const *pBuffers, VkDeviceSize const *pOffsets)
+      : Cmd(kBindVertexBuffers), firstBinding_(firstBinding),
+        bindingCount_(bindingCount), pBuffers_(pBuffers), pOffsets_(pOffsets) {}
+
+  CmdBindVertexBuffers *AsBindVertexBuffers() override { return this; }
+  const CmdBindVertexBuffers *AsBindVertexBuffers() const override {
+    return this;
+  }
+
+  uint32_t firstBinding_;
+  uint32_t bindingCount_;
+  VkBuffer const *pBuffers_;
+  VkDeviceSize const *pOffsets_;
 };
 
 struct CmdDraw : public Cmd {
@@ -250,6 +271,18 @@ void vkCmdBindPipeline(PFN_vkCmdBindPipeline next,
   next(commandBuffer, pipelineBindPoint, pipeline);
   AddCommand(commandBuffer,
              std::make_unique<CmdBindPipeline>(pipelineBindPoint, pipeline));
+}
+
+void vkCmdBindVertexBuffers(PFN_vkCmdBindVertexBuffers next,
+                            VkCommandBuffer commandBuffer,
+                            uint32_t firstBinding, uint32_t bindingCount,
+                            VkBuffer const *pBuffers,
+                            VkDeviceSize const *pOffsets) {
+  DEBUG_LAYER(vkCmdBindVertexBuffers);
+  next(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
+  AddCommand(commandBuffer,
+             std::make_unique<CmdBindVertexBuffers>(firstBinding, bindingCount,
+                                                    pBuffers, pOffsets));
 }
 
 void vkCmdBindDescriptorSets(PFN_vkCmdBindDescriptorSets next,
@@ -395,6 +428,7 @@ struct DrawCallStateTracker {
   VkRenderPassBeginInfo *currentRenderPass = nullptr;
   uint32_t currentSubpass = 0;
   std::unordered_map<uint32_t, VkDescriptorSet> boundGraphicsDescriptorSets;
+  std::unordered_map<uint32_t, VkBuffer> boundVertexBuffers;
 };
 
 void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker);
@@ -444,6 +478,18 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
           default:
             // Not considering other pipelines now.
             break;
+          }
+        } else if (auto cmdBindVertexBuffers = cmd->AsBindVertexBuffers()) {
+          // TODO: this does not work if a staging buffer is used.
+          // TODO: track the vkCmdCopyBuffer command to get the staging buffer.
+          for (uint32_t bindingOffset = 0;
+               bindingOffset < cmdBindVertexBuffers->bindingCount_;
+               bindingOffset++) {
+            drawCallStateTracker.boundVertexBuffers.insert(
+                {bindingOffset + cmdBindVertexBuffers->firstBinding_,
+                 cmdBindVertexBuffers
+                     ->pBuffers_[bindingOffset +
+                                 cmdBindVertexBuffers->firstBinding_]});
           }
         } else if (auto cmdDraw = cmd->AsDraw()) {
           HandleDrawCall(drawCallStateTracker);
@@ -531,7 +577,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker) {
     }
   }
   assert(vertexShader && "Vertex shader required for graphics pipeline.");
-  assert(fragmentShader && "Vertex shader required for graphics pipeline.");
+  assert(fragmentShader && "Fragment shader required for graphics pipeline.");
 
   std::cout << "#!amber" << std::endl << std::endl;
 
@@ -543,16 +589,111 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker) {
   std::cout << GetDisassembly(fragmentShader);
   std::cout << "END" << std::endl << std::endl;
 
+  std::cout << "# Shaders for creating a 2x2 texture." << std::endl;
+  std::cout << "SHADER vertex vert_shader PASSTHROUGH" << std::endl;
+  std::cout << "SHADER fragment frag_shader_red GLSL" << std::endl
+            << "#version 430" << std::endl
+            << "layout(location = 0) out vec4 color_out;" << std::endl
+            << "void main() {" << std::endl
+            << "  color_out = vec4(1.0, 0.0, 0.0, 1.0);" << std::endl
+            << "}" << std::endl
+            << "END" << std::endl
+            << std::endl;
+
+  std::cout << "BUFFER texture FORMAT R8G8B8A8_UNORM" << std::endl
+            << "SAMPLER sampler" << std::endl
+            << std::endl;
+
+  std::cout << "PIPELINE graphics texture_create_pipeline\n"
+               "  ATTACH vert_shader\n"
+               "  ATTACH frag_shader_red\n"
+               "  FRAMEBUFFER_SIZE 2 2\n"
+               "  BIND BUFFER texture AS color LOCATION 0\n"
+               "END\n";
+
   std::stringstream bufferDeclarationStringStream;
   std::stringstream descriptorSetBindingStringStream;
   std::stringstream framebufferAttachmentStringStream;
 
+  for (auto vertexBufferBinding : drawCallStateTracker.boundVertexBuffers) {
+    auto buffer = buffers.at(vertexBufferBinding.second);
+    assert(buffer.usage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
+    auto bindingDescription =
+        graphicsPipelineCreateInfo.pVertexInputState
+            ->pVertexBindingDescriptions[vertexBufferBinding.first];
+    if (bindingDescription.inputRate != VK_VERTEX_INPUT_RATE_VERTEX)
+      assert(false && "inputRate not implemented");
+
+    if (bufferToMemory.count(vertexBufferBinding.second)) {
+      VkDeviceMemory deviceMemory =
+          bufferToMemory.at(vertexBufferBinding.second).first;
+
+      // Create string stream for every location
+      std::vector<std::shared_ptr<std::stringstream>> bufferDeclStrings;
+      for (uint32_t location = 0;
+           location < graphicsPipelineCreateInfo.pVertexInputState
+                          ->vertexAttributeDescriptionCount;
+           location++) {
+
+        auto strStream = std::make_shared<std::stringstream>();
+        *strStream << "BUFFER vert_" << vertexBufferBinding.first << "_"
+                   << location << " DATA_TYPE uint32 DATA " << std::endl
+                   << "  ";
+        bufferDeclStrings.push_back(strStream);
+      }
+
+      void *testPtr = vertexBufferBinding.second;
+
+      // Go through all elements in the buffer
+      for (uint32_t bufferOffset = 0; bufferOffset < buffer.size;
+           bufferOffset += bindingDescription.stride) {
+
+        auto thePtr = (float *)testPtr + bufferOffset / sizeof(float);
+        for (uint32_t location = 0;
+             location < graphicsPipelineCreateInfo.pVertexInputState
+                            ->vertexAttributeDescriptionCount;
+             location++) {
+          auto description = graphicsPipelineCreateInfo.pVertexInputState
+                                 ->pVertexAttributeDescriptions[location];
+
+          // TODO use a lookup table to get the component count
+          uint8_t components =
+              description.format == VK_FORMAT_R32G32B32_SFLOAT
+                  ? 3
+                  : (description.format == VK_FORMAT_R32G32_SFLOAT ? 2 : 0);
+          assert(components != 0 && "Unimplemented vertex format");
+
+          for (uint8_t component = 0; component < components; component++) {
+            float value = *thePtr;
+            float f = 0;
+            memcpy(&f, &value, sizeof(float));
+            *bufferDeclStrings.at(location) << f << " ";
+            thePtr++;
+          }
+        }
+      }
+
+      // End all buffer declaration streams and combine them to one stream.
+      for (auto stream : bufferDeclStrings) {
+        *stream << std::endl << "END" << std::endl;
+        bufferDeclarationStringStream << (*stream).str();
+      }
+    } else {
+      bufferDeclarationStringStream << "...";
+    }
+  }
+
   for (auto descriptorSet : drawCallStateTracker.boundGraphicsDescriptorSets) {
+
     uint32_t descriptorSetNumber = descriptorSet.first;
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo =
         descriptorSetLayouts.at(descriptorSets.at(descriptorSet.second));
-    for (auto bindingAndBuffer :
-         descriptorSetToBindingBuffer.at(descriptorSet.second)) {
+
+    auto bindingAndBuffers =
+        descriptorSetToBindingBuffer.at(descriptorSet.second);
+    for (auto bindingAndBuffer : bindingAndBuffers) {
+
       uint32_t bindingNumber = bindingAndBuffer.first;
       VkDescriptorBufferInfo bufferInfo = bindingAndBuffer.second;
 
@@ -631,13 +772,33 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker) {
             << framebufferCreateInfo.height << std::endl;
   std::cout << framebufferAttachmentStringStream.str();
   std::cout << descriptorSetBindingStringStream.str();
+
+  std::cout << "  VERTEX_DATA _position LOCATION 0\n"
+               "  VERTEX_DATA _texture_coord LOCATION 1\n"
+               "  VERTEX_DATA _normal LOCATION 2"
+            << std::endl;
+
+  std::cout
+      << "  BIND SAMPLER sampler DESCRIPTOR_SET 0 BINDING 1\n"
+         "  BIND BUFFER texture AS sampled_image DESCRIPTOR_SET 0 BINDING 2\n";
+
   std::cout << "END" << std::endl << std::endl;
 
   std::cout << "CLEAR_COLOR pipeline 0 0 0 255" << std::endl;
   std::cout << std::endl;
 
+  std::cout
+      << "# Generate a 2x2 texture with a one pixel sized chessboard pattern.\n"
+         "CLEAR_COLOR texture_create_pipeline 0 0 255 255\n"
+         "CLEAR texture_create_pipeline\n"
+         "RUN texture_create_pipeline DRAW_RECT POS 0 0 SIZE 1 1\n"
+         "RUN texture_create_pipeline DRAW_RECT POS 1 1 SIZE 1 1\n";
+
   std::cout << "CLEAR pipeline" << std::endl;
-  std::cout << "RUN pipeline DRAW_RECT POS 0 0 SIZE 256 256" << std::endl;
-}
+  std::cout << "RUN pipeline DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4"
+            << std::endl;
+
+  exit(0);
+} // namespace graphicsfuzz_amber_scoop
 
 } // namespace graphicsfuzz_amber_scoop

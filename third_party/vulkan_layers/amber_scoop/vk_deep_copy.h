@@ -53,6 +53,8 @@ VkRenderPassBeginInfo *DeepCopy(VkRenderPassBeginInfo const *pRenderPassBegin);
 
 VkRenderPassCreateInfo DeepCopy(const VkRenderPassCreateInfo &createInfo);
 
+VkPipelineVertexInputStateCreateInfo DeepCopy(const VkPipelineVertexInputStateCreateInfo &vertexInputState);
+
 VkShaderModuleCreateInfo DeepCopy(const VkShaderModuleCreateInfo &createInfo);
 
 VkSubpassDescription DeepCopy(const VkSubpassDescription &subpassDescription);

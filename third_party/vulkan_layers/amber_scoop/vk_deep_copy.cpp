@@ -56,13 +56,63 @@ VkFramebufferCreateInfo DeepCopy(const VkFramebufferCreateInfo &createInfo) {
 VkGraphicsPipelineCreateInfo
 DeepCopy(const VkGraphicsPipelineCreateInfo &createInfo) {
   VkGraphicsPipelineCreateInfo result = createInfo;
-  VkPipelineShaderStageCreateInfo *newStages =
-      new VkPipelineShaderStageCreateInfo[createInfo.stageCount];
-  for (uint32_t i = 0; i < createInfo.stageCount; i++) {
-    newStages[i] = DeepCopy(createInfo.pStages[i]);
+  // Copy pStages
+  {
+    auto *newStages =
+        new VkPipelineShaderStageCreateInfo[createInfo.stageCount];
+
+    for (uint32_t i = 0; i < createInfo.stageCount; i++) {
+      newStages[i] = DeepCopy(createInfo.pStages[i]);
+    }
+
+    result.pStages = newStages;
   }
-  result.pStages = newStages;
+
+  // Copy pVertexInputState
+  {
+    auto vertexInputState = new VkPipelineVertexInputStateCreateInfo();
+    *vertexInputState = *createInfo.pVertexInputState;
+
+    // Copy pVertexBindingDescriptions
+    {
+      auto vertexBindingDescriptions = new VkVertexInputBindingDescription
+          [vertexInputState->vertexBindingDescriptionCount];
+
+      for (uint32_t i = 0; i < vertexInputState->vertexBindingDescriptionCount;
+           i++) {
+        vertexBindingDescriptions[i] =
+            createInfo.pVertexInputState->pVertexBindingDescriptions[i];
+      }
+
+      vertexInputState->pVertexBindingDescriptions = vertexBindingDescriptions;
+    }
+
+    // Copy pVertexAttributeDescriptions
+    {
+      auto vertexInputAttributeDescriptions =
+          new VkVertexInputAttributeDescription
+              [vertexInputState->vertexAttributeDescriptionCount];
+
+      for (uint32_t i = 0;
+           i < vertexInputState->vertexAttributeDescriptionCount; i++) {
+        vertexInputAttributeDescriptions[i] =
+            createInfo.pVertexInputState->pVertexAttributeDescriptions[i];
+      }
+
+      vertexInputState->pVertexAttributeDescriptions =
+          vertexInputAttributeDescriptions;
+    }
+
+    result.pVertexInputState = vertexInputState;
+  }
+
   // TODO: handle deep copying of other fields.
+  return result;
+}
+
+VkPipelineVertexInputStateCreateInfo
+DeepCopy(const VkPipelineVertexInputStateCreateInfo &vertexInputState) {
+  VkPipelineVertexInputStateCreateInfo result = vertexInputState;
   return result;
 }
 
