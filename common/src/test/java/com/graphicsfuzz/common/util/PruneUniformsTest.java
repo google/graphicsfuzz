@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.io.FileUtils;
@@ -89,7 +90,7 @@ public class PruneUniformsTest {
           + "  }\n"
           + "}\n";
 
-    List<String> prefixList = Arrays.asList("prune");
+    List<String> prefixList = Collections.singletonList("prune");
     int limit = 2;
 
     doPruneTest(program, uniforms, expectedProgram, expectedUniforms, prefixList, limit);
@@ -105,6 +106,7 @@ public class PruneUniformsTest {
           + "uniform vec2 liveG, deadH;"
           + "uniform uint liveA, liveB;"
           + "uniform bvec3 liveC[3];"
+          + "uniform bool liveZ;"
           + "void main() {"
           + "}";
     final String uniforms = "{\n"
@@ -149,6 +151,12 @@ public class PruneUniformsTest {
           + "    \"args\": [\n"
           + "      0, 1, 0, 1, 0, 1, 0, 1, 0\n"
           + "    ]\n"
+          + "  },\n"
+          + "  \"liveZ\": {\n"
+          + "    \"func\": \"glUniform1i\",\n"
+          + "    \"args\": [\n"
+          + "      1\n"
+          + "    ]\n"
           + "  }\n"
           + "}\n";
 
@@ -160,7 +168,9 @@ public class PruneUniformsTest {
           + "vec2 liveG = vec2(256.0, 257.0);"
           + "uint liveA = 25u;"
           + "uint liveB = 26u;"
-          + "bvec3 liveC[3] = bvec3[3](bvec3(0, 1, 0), bvec3(1, 0, 1), bvec3(0, 1, 0));"
+          + "bvec3 liveC[3] = bvec3[3](bvec3(false, true, false), bvec3(true, false, true), "
+                  + "bvec3(false, true, false));"
+          + "bool liveZ = true;"
           + "void main() {"
           + "}";
     final String expectedUniforms = "{\n"
@@ -180,10 +190,10 @@ public class PruneUniformsTest {
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), new PipelineInfo(uniforms),
         ParseHelper.parse(program));
 
-    assertTrue(PruneUniforms.prune(
+    PruneUniforms.pruneIfNeeded(
         shaderJob,
         limit,
-        prefixList));
+        prefixList);
 
     final File shaderJobFile = temporaryFolder.newFile("shader.json");
 

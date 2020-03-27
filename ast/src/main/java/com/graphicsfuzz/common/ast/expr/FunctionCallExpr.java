@@ -30,12 +30,7 @@ public class FunctionCallExpr extends Expr {
   private List<Expr> args;
 
   public FunctionCallExpr(String callee, List<Expr> args) {
-    for (Expr arg : args) {
-      if (arg instanceof BinaryExpr && ((BinaryExpr) arg).getOp() == BinOp.COMMA) {
-        throw new IllegalArgumentException("Invalid for a comma expression to be a top-level "
-            + "function argument.");
-      }
-    }
+    checkNoTopLevelCommaExpression(args);
     this.callee = callee;
     this.args = new ArrayList<>();
     this.args.addAll(args);

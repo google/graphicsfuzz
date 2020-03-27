@@ -354,6 +354,12 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
           }
         }
       }
+
+      @Override
+      public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
+        super.visitArrayConstructorExpr(arrayConstructorExpr);
+        handleArrayInfo(arrayConstructorExpr.getArrayType().getArrayInfo());
+      }
     }.visit(tu);
     return tu;
   }
@@ -1504,7 +1510,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     Expr result = argsInOrder.get(argsInOrder.size() - 1);
     for (int i = argsInOrder.size() - 2; i >= 0; i -= 2) {
       assert (i % 2) == 1;
-      result = new TernaryExpr(argsInOrder.get(i - 1), argsInOrder.get(i), result);
+      final Expr thenExpr = argsInOrder.get(i);
+      result = new TernaryExpr(argsInOrder.get(i - 1), thenExpr, result);
     }
     return result;
   }

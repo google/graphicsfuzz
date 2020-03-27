@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.transformreduce;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
@@ -26,8 +27,10 @@ import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
+import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.ShaderKind;
 import java.util.ArrayList;
@@ -38,6 +41,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public class GlslShaderJob implements ShaderJob {
 
@@ -106,12 +110,9 @@ public class GlslShaderJob implements ShaderJob {
         if (decl instanceof VariablesDeclaration
             && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
           final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
-          final QualifiedType qualifiedType = (QualifiedType) variablesDeclaration.getBaseType();
-          // We cannot yet deal with adding bindings for uniform arrays.
-          assert !(qualifiedType.getWithoutQualifiers() instanceof ArrayType);
+          // We cannot yet deal with uniforms with array base types, such as 'uniform float[5] A;'.
+          assert !(variablesDeclaration.getBaseType().getWithoutQualifiers() instanceof ArrayType);
           for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
-            // Again, we cannot yet deal with adding bindings for uniform arrays.
-            assert !declInfo.hasArrayInfo();
             final String uniformName = declInfo.getName();
             assert pipelineInfo.hasUniform(uniformName);
             if (!pipelineInfo.hasBinding(uniformName)) {
@@ -121,12 +122,15 @@ public class GlslShaderJob implements ShaderJob {
               } while (usedBindings.contains(nextBinding));
             }
             final int binding = pipelineInfo.getBinding(uniformName);
-            // Keep any qualifiers apart from "uniform".
-            final QualifiedType memberType = new QualifiedType(qualifiedType.getWithoutQualifiers(),
-                qualifiedType.getQualifiers()
-                    .stream()
-                    .filter(item -> item != TypeQualifier.UNIFORM)
-                    .collect(Collectors.toList()));
+
+            // The member's type is the combination of the base type and array info for the decl.
+            // We clone this type, having created it, as we will use the same base type for other
+            // decls in this variables declaration and we do not want to have aliasing.
+            final Type memberType =
+                Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
+                declInfo.getArrayInfo()).clone();
+
+            ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
             newTopLevelDeclarations.add(
                 new InterfaceBlock(
                     Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
@@ -180,11 +184,25 @@ public class GlslShaderJob implements ShaderJob {
           final InterfaceBlock interfaceBlock = (InterfaceBlock) decl;
           // We are assuming that each uniform block wraps precisely one uniform.
           assert interfaceBlock.getMemberNames().size() == 1;
-          final String uniformName = interfaceBlock.getMemberNames().get(0);
+
+          // Split the block member's type into a base type and array info.
+          final ImmutablePair<Type, ArrayInfo> baseTypeAndArrayInfo =
+              Typer.getBaseTypeArrayInfo(interfaceBlock.getMemberTypes().get(0));
+
+          // We will use the block member's type plus the uniform qualifier as the base type for
+          // a new variable.
+          final List<TypeQualifier> qualifiers = new ArrayList<>();
+          qualifiers.add(TypeQualifier.UNIFORM);
+          // If the block member had qualifiers, use these in addition to uniform.
+          if (baseTypeAndArrayInfo.left instanceof QualifiedType) {
+            qualifiers.addAll(((QualifiedType) baseTypeAndArrayInfo.left).getQualifiers());
+          }
+          // Add a singleton variables declaration.
           newTopLevelDeclarations.add(new VariablesDeclaration(
-              new QualifiedType(interfaceBlock.getMemberTypes().get(0).getWithoutQualifiers(),
-                  Arrays.asList(TypeQualifier.UNIFORM)),
-              new VariableDeclInfo(uniformName, null, null)));
+              new QualifiedType(baseTypeAndArrayInfo.left.getWithoutQualifiers(),
+                  qualifiers),
+              new VariableDeclInfo(interfaceBlock.getMemberNames().get(0),
+                  baseTypeAndArrayInfo.right, null)));
         } else {
           newTopLevelDeclarations.add(decl);
         }

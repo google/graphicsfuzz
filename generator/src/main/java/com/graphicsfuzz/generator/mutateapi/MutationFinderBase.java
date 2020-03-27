@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.mutateapi;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
@@ -243,5 +244,10 @@ public abstract class MutationFinderBase<MutationT extends Mutation>
     underForLoopHeader = false;
     visitChildFromParent(forStmt.getBody(), forStmt);
     popScope();
+  }
+
+  @Override
+  public void visitArrayInfo(ArrayInfo arrayInfo) {
+    // Do nothing: we do not want to mutate array size expressions.
   }
 }

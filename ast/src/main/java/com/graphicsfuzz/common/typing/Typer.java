@@ -22,6 +22,7 @@ import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
+import com.graphicsfuzz.common.ast.expr.ArrayConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
@@ -81,16 +82,15 @@ public class Typer extends ScopeTrackingVisitor {
   @Override
   public void visitParenExpr(ParenExpr parenExpr) {
     super.visitParenExpr(parenExpr);
-    Type type = lookupType(parenExpr.getExpr());
-    if (type != null) {
-      types.put(parenExpr, type);
-    }
+    final Type type = lookupType(parenExpr.getExpr());
+    assert type != null;
+    types.put(parenExpr, type);
   }
 
   @Override
   public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
     super.visitFunctionPrototype(functionPrototype);
-    String name = functionPrototype.getName();
+    final String name = functionPrototype.getName();
     if (!userDefinedFunctions.containsKey(name)) {
       userDefinedFunctions.put(name, new HashSet<>());
     }
@@ -110,6 +110,11 @@ public class Typer extends ScopeTrackingVisitor {
   @Override
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
     super.visitFunctionCallExpr(functionCallExpr);
+
+    // Check that types have been found for all arguments to the function.
+    for (Expr arg : functionCallExpr.getArgs()) {
+      assert types.get(arg) != null;
+    }
 
     // First, see whether this is an invocation of a GraphicsFuzz macro.  If it is, we handle it
     // by propagating the type of an appropriate macro argument.
@@ -209,13 +214,11 @@ public class Typer extends ScopeTrackingVisitor {
       return false;
     }
     for (int i = 0; i < prototype.getNumParameters(); i++) {
-      Type argType = lookupType(functionCallExpr.getArg(i));
-      if (argType == null) {
-        return false;
-      }
+      final Type argType = lookupType(functionCallExpr.getArg(i));
+      assert argType != null;
       final ParameterDecl parameter = prototype.getParameter(i);
-      if (!argType.getWithoutQualifiers()
-          .equals(Typer.combineBaseTypeAndArrayInfo(parameter.getType(), parameter.getArrayInfo())
+      if (!TyperHelper.matches(argType.getWithoutQualifiers(),
+          Typer.combineBaseTypeAndArrayInfo(parameter.getType(), parameter.getArrayInfo())
               .getWithoutQualifiers())) {
         return false;
       }
@@ -226,7 +229,7 @@ public class Typer extends ScopeTrackingVisitor {
   @Override
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    Type type = getCurrentScope().lookupType(variableIdentifierExpr.getName());
+    final Type type = getCurrentScope().lookupType(variableIdentifierExpr.getName());
     if (type != null) {
       types.put(variableIdentifierExpr, type);
       return;
@@ -340,28 +343,17 @@ public class Typer extends ScopeTrackingVisitor {
   @Override
   public void visitUnaryExpr(UnaryExpr unaryExpr) {
     super.visitUnaryExpr(unaryExpr);
-
-    // TODO: need to check, but as a first approximation a unary always returns the same type as
-    // its argument
-
-    Type argType = types.get(unaryExpr.getExpr());
-    if (argType != null) {
-      types.put(unaryExpr, argType);
-    }
+    final Type argType = types.get(unaryExpr.getExpr());
+    assert argType != null;
+    types.put(unaryExpr, argType);
   }
 
   @Override
   public void visitTernaryExpr(TernaryExpr ternaryExpr) {
     super.visitTernaryExpr(ternaryExpr);
-    Type thenType = types.get(ternaryExpr.getThenExpr());
-    if (thenType != null) {
-      types.put(ternaryExpr, thenType);
-    } else {
-      Type elseType = types.get(ternaryExpr.getElseExpr());
-      if (elseType != null) {
-        types.put(ternaryExpr, elseType);
-      }
-    }
+    final Type thenType = types.get(ternaryExpr.getThenExpr());
+    assert thenType != null;
+    types.put(ternaryExpr, thenType);
   }
 
   @Override
@@ -371,10 +363,7 @@ public class Typer extends ScopeTrackingVisitor {
     Type rhsType = types.get(binaryExpr.getRhs()).getWithoutQualifiers();
     switch (binaryExpr.getOp()) {
       case MUL: {
-        Type resolvedType = TyperHelper.resolveTypeOfMul(lhsType, rhsType);
-        if (resolvedType != null) {
-          types.put(binaryExpr, resolvedType);
-        }
+        types.put(binaryExpr, TyperHelper.resolveTypeOfMul(lhsType, rhsType));
         return;
       }
       case ADD:
@@ -391,10 +380,7 @@ public class Typer extends ScopeTrackingVisitor {
       case DIV_ASSIGN:
       case MUL_ASSIGN:
       case SUB_ASSIGN: {
-        Type resolvedType = TyperHelper.resolveTypeOfCommonBinary(lhsType, rhsType);
-        if (resolvedType != null) {
-          types.put(binaryExpr, resolvedType);
-        }
+        types.put(binaryExpr, TyperHelper.resolveTypeOfCommonBinary(lhsType, rhsType));
         return;
       }
       case EQ:
@@ -455,12 +441,8 @@ public class Typer extends ScopeTrackingVisitor {
   @Override
   public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
     super.visitMemberLookupExpr(memberLookupExpr);
-    Type structureType = lookupType(memberLookupExpr.getStructure());
-
-    if (structureType == null) {
-      // In due course we should extend the typer so that it can type everything.
-      return;
-    }
+    final Type structureType = lookupType(memberLookupExpr.getStructure());
+    assert structureType != null;
 
     // The structure type is either a builtin, like a vector, or an actual struct
 
@@ -501,6 +483,12 @@ public class Typer extends ScopeTrackingVisitor {
     }
   }
 
+  @Override
+  public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
+    super.visitArrayConstructorExpr(arrayConstructorExpr);
+    types.put(arrayConstructorExpr, arrayConstructorExpr.getArrayType());
+  }
+
   public Type lookupType(Expr expr) {
     return types.get(expr);
   }
@@ -510,7 +498,7 @@ public class Typer extends ScopeTrackingVisitor {
   }
 
   public Set<FunctionPrototype> getPrototypes(String name) {
-    Set<FunctionPrototype> result = new HashSet<>();
+    final Set<FunctionPrototype> result = new HashSet<>();
     if (userDefinedFunctions.containsKey(name)) {
       result.addAll(userDefinedFunctions.get(name));
     }
@@ -534,11 +522,7 @@ public class Typer extends ScopeTrackingVisitor {
   @Override
   public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
     super.visitArrayIndexExpr(arrayIndexExpr);
-    Type arrayType = lookupType(arrayIndexExpr.getArray());
-    if (arrayType == null) {
-      return;
-    }
-    arrayType = arrayType.getWithoutQualifiers();
+    final Type arrayType = lookupType(arrayIndexExpr.getArray()).getWithoutQualifiers();
     Type elementType;
     if (BasicType.allVectorTypes().contains(arrayType)) {
       elementType = ((BasicType) arrayType).getElementType();

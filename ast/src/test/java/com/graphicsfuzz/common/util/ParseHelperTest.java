@@ -23,11 +23,16 @@ import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.Initializer;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.BinOp;
+import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.TernaryExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
+import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.Type;
@@ -644,6 +649,50 @@ public class ParseHelperTest {
     } catch (UnsupportedLanguageFeatureException exception) {
       fail(exception.getMessage());
     }
+  }
+
+  @Test
+  public void testParsingComma1() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse(""
+        + "void main() {\n"
+        + "  bool b, c;\n"
+        + "  int x, y;\n"
+        + "  b, c ? x : y;\n"
+        + "  b ? c, x : y;\n"
+        + "  b ? x : y, c;\n"
+        + "}\n");
+    final BlockStmt block = tu.getMainFunction().getBody();
+    assertTrue(block.getStmt(0) instanceof DeclarationStmt);
+    assertTrue(block.getStmt(1) instanceof DeclarationStmt);
+
+    {
+      final ExprStmt exprStmt = (ExprStmt) block.getStmt(2);
+      assertTrue(exprStmt.getExpr() instanceof BinaryExpr);
+      final BinaryExpr binaryExpr = (BinaryExpr) exprStmt.getExpr();
+      assertEquals(BinOp.COMMA, binaryExpr.getOp());
+      assertTrue(binaryExpr.getLhs() instanceof VariableIdentifierExpr);
+      assertTrue(binaryExpr.getRhs() instanceof TernaryExpr);
+    }
+
+    {
+      final ExprStmt exprStmt = (ExprStmt) block.getStmt(3);
+      assertTrue(exprStmt.getExpr() instanceof TernaryExpr);
+      final TernaryExpr ternaryExpr = (TernaryExpr) exprStmt.getExpr();
+      assertTrue(ternaryExpr.getTest() instanceof VariableIdentifierExpr);
+      assertTrue(ternaryExpr.getThenExpr() instanceof BinaryExpr);
+      assertEquals(BinOp.COMMA, ((BinaryExpr) ternaryExpr.getThenExpr()).getOp());
+      assertTrue(ternaryExpr.getElseExpr() instanceof VariableIdentifierExpr);
+    }
+
+    {
+      final ExprStmt exprStmt = (ExprStmt) block.getStmt(4);
+      assertTrue(exprStmt.getExpr() instanceof BinaryExpr);
+      final BinaryExpr binaryExpr = (BinaryExpr) exprStmt.getExpr();
+      assertEquals(BinOp.COMMA, binaryExpr.getOp());
+      assertTrue(binaryExpr.getLhs() instanceof TernaryExpr);
+      assertTrue(binaryExpr.getRhs() instanceof VariableIdentifierExpr);
+    }
+
   }
 
   @Test

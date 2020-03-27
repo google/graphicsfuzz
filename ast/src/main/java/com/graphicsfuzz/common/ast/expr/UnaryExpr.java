@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.ast.expr;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
+import java.util.Collections;
 
 public class UnaryExpr extends Expr {
 
@@ -25,6 +26,7 @@ public class UnaryExpr extends Expr {
   private UnOp op;
 
   public UnaryExpr(Expr expr, UnOp op) {
+    checkNoTopLevelCommaExpression(Collections.singletonList(expr));
     this.expr = expr;
     this.op = op;
   }

@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.generator.transformation;
 
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
@@ -362,7 +361,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
     final int maxTries = 10;
     int tries = 0;
     while (true) {
-      final Optional<TranslationUnit> maybeDonor = chooseDonor(generator, shadingLanguageVersion);
+      final Optional<TranslationUnit> maybeDonor = chooseDonor(generator);
 
       if (!maybeDonor.isPresent()) {
         // No compatible donors were found, thus we cannot do serious code donation here;
@@ -446,8 +445,6 @@ public abstract class DonateCodeTransformation implements ITransformation {
       tu.addDeclaration(maybeInjectionSwitch.get());
     }
 
-
-
     eliminateUsedDonors();
     return !injectionPoints.isEmpty();
 
@@ -517,27 +514,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
     }
   }
 
-  private Set<String> getCalledFunctions(final IAstNode node) {
-    return new StandardVisitor() {
-
-      private final Set<String> calledFunctions = new HashSet<String>();
-
-      @Override
-      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-        super.visitFunctionCallExpr(functionCallExpr);
-        calledFunctions.add(functionCallExpr.getCallee());
-      }
-
-      private Set<String> calledFunctions() {
-        visit(node);
-        return calledFunctions;
-      }
-
-    }.calledFunctions();
-  }
-
-  private Optional<TranslationUnit> chooseDonor(IRandom generator,
-                                                ShadingLanguageVersion shadingLanguageVersion) {
+  private Optional<TranslationUnit> chooseDonor(IRandom generator) {
     // The donors that we have previously selected during this donation pass are captured via
     // 'donorsToTranslationUnits'.  Furthermore, there is a maximum number of distinct donors we
     // are allowed to use per donation pass.  So first check whether the donors we have already

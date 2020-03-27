@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.ast.expr;
 
 import com.graphicsfuzz.common.ast.ChildDoesNotExistException;
 import com.graphicsfuzz.common.ast.IAstNode;
+import java.util.List;
 
 public abstract class Expr implements IAstNode {
 
@@ -45,5 +46,13 @@ public abstract class Expr implements IAstNode {
   }
 
   public abstract boolean hasChild(IAstNode child);
+
+  public static void checkNoTopLevelCommaExpression(List<Expr> args) {
+    for (Expr arg : args) {
+      if (arg instanceof BinaryExpr && ((BinaryExpr) arg).getOp() == BinOp.COMMA) {
+        throw new IllegalArgumentException("Invalid use of comma expression.");
+      }
+    }
+  }
 
 }

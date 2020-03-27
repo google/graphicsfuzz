@@ -23,13 +23,14 @@ import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class TypeConstructorExprTemplate extends AbstractExprTemplate {
 
-  private BasicType resultType;
-  private List<BasicType> argTypes;
+  private final BasicType resultType;
+  private final List<BasicType> argTypes;
 
   public TypeConstructorExprTemplate(BasicType resultType, BasicType... argTypes) {
     this.resultType = resultType;
@@ -48,9 +49,9 @@ public class TypeConstructorExprTemplate extends AbstractExprTemplate {
   }
 
   @Override
-  public List<List<? extends Type>> getArgumentTypes() {
-    return argTypes.stream().map(x -> new ArrayList<Type>(
-        Arrays.asList(x))).collect(Collectors.toList());
+  public List<List<Type>> getArgumentTypes() {
+    return argTypes.stream().map(item -> new ArrayList<Type>(
+        Collections.singletonList(item))).collect(Collectors.toList());
   }
 
   @Override

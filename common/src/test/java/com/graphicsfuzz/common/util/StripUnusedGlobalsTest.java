@@ -82,4 +82,17 @@ public class StripUnusedGlobalsTest {
     CompareAsts.assertEqualAsts(original, tu);
   }
 
+  @Test
+  public void testDoNotStripConstantUsedToInitializeArray() throws Exception {
+    final String original = ""
+        + "const int N = 5;\n"
+        + "int A[N];\n"
+        + "void main() {"
+        + "  A[0] = 1;\n"
+        + "}";
+    final TranslationUnit tu = ParseHelper.parse(original);
+    StripUnusedGlobals.strip(tu);
+    CompareAsts.assertEqualAsts(original, tu);
+  }
+
 }

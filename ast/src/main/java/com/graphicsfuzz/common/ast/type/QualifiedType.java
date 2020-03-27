@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -66,7 +67,7 @@ public class QualifiedType extends Type {
    * Replaces a qualifier with another. Useful when converting between shader versions.
    *
    * @param oldQualifier Old qualifier which has to exist
-   * @param newQualifier New qualfiier which must not exist
+   * @param newQualifier New qualifier which must not exist
    */
   public void replaceQualifier(TypeQualifier oldQualifier, TypeQualifier newQualifier) {
     if (!hasQualifier(oldQualifier)) {
@@ -77,6 +78,34 @@ public class QualifiedType extends Type {
     }
     qualifiers.remove(oldQualifier);
     qualifiers.add(newQualifier);
+  }
+
+  /**
+   * Sets or replaces location qualifier.
+   *
+   * @param location Location to set in the location qualifier.
+   */
+  public void setLocationQualifier(int location) {
+    Optional<LayoutQualifierSequence> existingLayoutQualifierSequence = Optional.empty();
+    List<LayoutQualifier> qualifierList = new ArrayList<>();
+    qualifierList.add(new LocationLayoutQualifier(location));
+    for (TypeQualifier t : qualifiers) {
+      if (t instanceof LayoutQualifierSequence) {
+        if (existingLayoutQualifierSequence.isPresent()) {
+          throw new RuntimeException("More than one layout qualifier sequence found");
+        }
+        existingLayoutQualifierSequence = Optional.of((LayoutQualifierSequence) t);
+        for (LayoutQualifier l : existingLayoutQualifierSequence.get().getLayoutQualifiers()) {
+          if (!(l instanceof LocationLayoutQualifier)) {
+            qualifierList.add(l);
+          }
+        }
+      }
+    }
+    if (existingLayoutQualifierSequence.isPresent()) {
+      qualifiers.remove(existingLayoutQualifierSequence.get());
+    }
+    qualifiers.add(0, new LayoutQualifierSequence(qualifierList));
   }
 
   /**

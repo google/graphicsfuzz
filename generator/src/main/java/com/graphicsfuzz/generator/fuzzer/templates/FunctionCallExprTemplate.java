@@ -25,14 +25,15 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.util.IRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class FunctionCallExprTemplate extends AbstractExprTemplate {
 
-  private String name;
-  private Type resultType;
-  private List<Type> argTypes;
+  private final String name;
+  private final Type resultType;
+  private final List<Type> argTypes;
 
   public FunctionCallExprTemplate(FunctionPrototype prototype) {
     this.name = prototype.getName();
@@ -55,8 +56,8 @@ public class FunctionCallExprTemplate extends AbstractExprTemplate {
   }
 
   @Override
-  public List<List<? extends Type>> getArgumentTypes() {
-    return argTypes.stream().map(item -> new ArrayList<>(Arrays.asList(item)))
+  public List<List<Type>> getArgumentTypes() {
+    return argTypes.stream().map(Collections::singletonList)
         .collect(Collectors.toList());
   }
 

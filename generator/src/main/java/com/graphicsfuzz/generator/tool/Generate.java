@@ -183,11 +183,9 @@ public class Generate {
     }
 
     if (args.limitUniforms()) {
-      if (!(PruneUniforms.prune(shaderJob, args.getMaxUniforms(),
-          Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX)))) {
-        throw new RuntimeException("It was not possible to prune sufficient uniforms from a "
-            + "shader.");
-      }
+      // Prune uniforms from the shader job, preferring to prune donated uniforms.
+      PruneUniforms.pruneIfNeeded(shaderJob, args.getMaxUniforms(),
+          Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX));
     }
 
     if (args.getGenerateUniformBindings()) {

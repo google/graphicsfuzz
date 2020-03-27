@@ -91,4 +91,32 @@ public class VariableDeclReductionOpportunitiesTest {
     assertEquals(0, ops.size());
   }
 
+  @Test
+  public void testDoNotRemoveConstantUsedToInitializeArray() throws Exception {
+    final String program = ""
+        + "#version 310 es\n"
+        + "const int N = 5;\n"
+        + "const int M = 6;\n"
+        + "int A[N];\n"
+        + "void main() {\n"
+        + "  int B[M];\n"
+        + "  const int P = 7;\n"
+        + "  int C[P];\n"
+        + "  A[0] = 1;\n"
+        + "  B[0] = 2;\n"
+        + "  C[0] = 3;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
+        .findOpportunities(
+            MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(
+                false,
+                ShadingLanguageVersion.ESSL_310,
+                new RandomWrapper(0),
+                new IdGenerator())
+        );
+    assertEquals(0, ops.size());
+  }
+
 }

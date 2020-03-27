@@ -77,7 +77,7 @@ public class VariableIdentifierExprTemplateTest {
     final VariablesDeclaration variablesDeclaration =
         (VariablesDeclaration) ParseHelper.parse(program).getTopLevelDeclarations().get(0);
     return new VariableIdentifierExprTemplate(variablesDeclaration.getDeclInfo(0).getName(),
-        variablesDeclaration.getBaseType());
+        variablesDeclaration.getBaseType(), false);
   }
 
 }
