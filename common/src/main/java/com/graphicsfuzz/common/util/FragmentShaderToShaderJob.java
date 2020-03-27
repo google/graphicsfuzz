@@ -117,49 +117,71 @@ public final class FragmentShaderToShaderJob {
     // Start layout locations from index 1
     int locationIndex = 1;
 
+
     for (VariablesDeclaration vd : tu.getGlobalVariablesDeclarations()) {
       if (vd.getBaseType().hasQualifier(TypeQualifier.SHADER_INPUT)) {
-        final BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
-        // Create clone of the variables declaration and change the input to output:
-        final QualifiedType varType = (QualifiedType) vd.getBaseType().clone();
-        varType.replaceQualifier(TypeQualifier.SHADER_INPUT, TypeQualifier.SHADER_OUTPUT);
-
-        // Set same layout location for vertex output and fragment input
-        ((QualifiedType) vd.getBaseType()).setLocationQualifier(locationIndex);
-        varType.setLocationQualifier(locationIndex);
-        locationIndex++;
-
-        // Check if this is the first input we're handling
-        if (!vertexShader.isPresent()) {
-          // Since we're going to need it, initialize vertexShader with
-          // skeleton definition
-          vertexShader = Optional.of(new TranslationUnit(ShaderKind.VERTEX,
-              Optional.of(ShadingLanguageVersion.ESSL_310), Arrays.asList(
-              new PrecisionDeclaration("precision mediump float;"),
-              new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
-                  Arrays.asList(new LayoutQualifierSequence(
-                      new LocationLayoutQualifier(0)),
-                  TypeQualifier.SHADER_INPUT)),
-                  new VariableDeclInfo(Constants.GLF_POS, null, null)),
-              new FunctionDefinition(
-                  new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
-                  new BlockStmt(Arrays.asList(
-                      new ExprStmt(new BinaryExpr(
-                      new VariableIdentifierExpr(OpenGlConstants.GL_POSITION),
-                      new VariableIdentifierExpr(Constants.GLF_POS),
-                      BinOp.ASSIGN))), false)))));
-        }
-
         for (VariableDeclInfo vdi : vd.getDeclInfos()) {
           if (vdi.hasArrayInfo()) {
             throw new RuntimeException("Arrays not implemented with " + vd.getBaseType().toString()
                 + " " + vdi.getName());
           }
+
+          final BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
+          // Create clone of the variables declaration and change the input to output:
+          final QualifiedType varTypeIn = (QualifiedType) vd.getBaseType().clone();
+          final QualifiedType varTypeOut = (QualifiedType) vd.getBaseType().clone();
+          varTypeOut.replaceQualifier(TypeQualifier.SHADER_INPUT, TypeQualifier.SHADER_OUTPUT);
+
+          // Set same layout location for vertex output and fragment input
+          varTypeIn.setLocationQualifier(locationIndex);
+          varTypeOut.setLocationQualifier(locationIndex);
+          // Increment location index
+          if (basicType == BasicType.MAT2X2
+              || basicType == BasicType.MAT2X3
+              || basicType == BasicType.MAT2X4
+              || basicType == BasicType.MAT3X2
+              || basicType == BasicType.MAT3X3
+              || basicType == BasicType.MAT3X4
+              || basicType == BasicType.MAT4X2
+              || basicType == BasicType.MAT4X3
+              || basicType == BasicType.MAT4X4) {
+            // For matrices, we'll skip ahead location indices a lot to make sure
+            // there's no problem with them.
+            locationIndex += 16;
+          } else {
+            locationIndex++;
+          }
+          // Check if this is the first input we're handling
+          if (!vertexShader.isPresent()) {
+            // Since we're going to need it, initialize vertexShader with
+            // skeleton definition
+            vertexShader = Optional.of(new TranslationUnit(ShaderKind.VERTEX,
+                Optional.of(ShadingLanguageVersion.ESSL_310), Arrays.asList(
+                new PrecisionDeclaration("precision mediump float;"),
+                new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
+                    Arrays.asList(new LayoutQualifierSequence(
+                        new LocationLayoutQualifier(0)),
+                    TypeQualifier.SHADER_INPUT)),
+                    new VariableDeclInfo(Constants.GLF_POS, null, null)),
+                new FunctionDefinition(
+                    new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
+                    new BlockStmt(Arrays.asList(
+                        new ExprStmt(new BinaryExpr(
+                        new VariableIdentifierExpr(OpenGlConstants.GL_POSITION),
+                        new VariableIdentifierExpr(Constants.GLF_POS),
+                        BinOp.ASSIGN))), false)))));
+          }
+
           // Add variables one by one, so the initialization code is more convenient
           vertexShader.get().addDeclarationBefore(
-              new VariablesDeclaration(varType, new VariableDeclInfo(vdi.getName(),
+              new VariablesDeclaration(varTypeOut, new VariableDeclInfo(vdi.getName(),
                   vdi.getArrayInfo(), null)),
               vertexShader.get().getMainFunction());
+          // Add variables one by one to the fragment shader too to get matching layout
+          tu.addDeclarationBefore(
+              new VariablesDeclaration(varTypeIn, new VariableDeclInfo(vdi.getName(),
+                  vdi.getArrayInfo(), null)),
+              vd);
           // Figure out the initializer
           Expr initExpr = null;
           if (basicType == BasicType.FLOAT) {
@@ -183,6 +205,105 @@ public final class FragmentShaderToShaderJob {
                 new FloatConstantExpr(Float.toString(generator.nextFloat())),
                 new FloatConstantExpr(Float.toString(generator.nextFloat())),
                 new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.MAT2X2) {
+            initExpr = new TypeConstructorExpr("mat2", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.MAT3X3) {
+            initExpr = new TypeConstructorExpr("mat3", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.MAT4X4) {
+            initExpr = new TypeConstructorExpr("mat4", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.MAT2X3) {
+            initExpr = new TypeConstructorExpr("mat2x3", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.MAT2X4) {
+            initExpr = new TypeConstructorExpr("mat2x4", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.MAT3X2) {
+            initExpr = new TypeConstructorExpr("mat3x2", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.MAT3X4) {
+            initExpr = new TypeConstructorExpr("mat3x4", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.MAT4X2) {
+            initExpr = new TypeConstructorExpr("mat4x2", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          } else if (basicType == BasicType.MAT4X3) {
+            initExpr = new TypeConstructorExpr("mat4x3", Arrays.asList(
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat())),
+                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
           } else {
             throw new RuntimeException("Unimplemented variable type with "
                 + vd.getBaseType().toString() + " " + vdi.getName());
@@ -193,6 +314,8 @@ public final class FragmentShaderToShaderJob {
                   initExpr,
                   BinOp.ASSIGN)));
         }
+        // Remove old variable declaration from fragment shader
+        tu.removeTopLevelDeclaration(vd);
       }
     }
 
