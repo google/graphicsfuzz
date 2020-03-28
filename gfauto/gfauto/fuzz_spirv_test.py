@@ -114,6 +114,7 @@ def run_spirv_reduce_or_shrink(
     output_dir: Path,
     preserve_semantics: bool,
     binary_manager: binaries_util.BinaryManager,
+    settings: Settings,
 ) -> Path:
     input_shader_job = source_dir / name_of_shader_job_to_reduce / test_util.SHADER_JOB
 
@@ -145,6 +146,9 @@ def run_spirv_reduce_or_shrink(
             str(final_shader),
             f"--shrink={str(transformations_file)}",
             f"--shrinker-temp-file-prefix={str(output_dir / 'temp_')}",
+        ]
+        cmd += list(settings.extra_spirv_fuzz_shrink_args)
+        cmd += [
             # This ensures the arguments that follow are all positional arguments.
             "--",
             "gfauto_interestingness_test",
@@ -161,6 +165,9 @@ def run_spirv_reduce_or_shrink(
             "-o",
             str(final_shader),
             f"--temp-file-prefix={str(output_dir / 'temp_')}",
+        ]
+        cmd += list(settings.extra_spirv_reduce_args)
+        cmd += [
             # This ensures the arguments that follow are all positional arguments.
             "--",
             "gfauto_interestingness_test",
@@ -190,6 +197,7 @@ def run_reduction_part(
     extension_to_reduce: str,
     preserve_semantics: bool,
     binary_manager: binaries_util.BinaryManager,
+    settings: Settings,
 ) -> Path:
     test = test_util.metadata_read_from_source_dir(source_dir_to_reduce)
 
@@ -218,6 +226,7 @@ def run_reduction_part(
         output_dir=output_dir,
         preserve_semantics=preserve_semantics,
         binary_manager=binary_manager,
+        settings=settings,
     )
 
     check(
@@ -266,6 +275,7 @@ def run_reduction(
     source_dir_to_reduce: Path,
     reduction_output_dir: Path,
     binary_manager: binaries_util.BinaryManager,
+    settings: Settings,
 ) -> Path:
     test = test_util.metadata_read_from_source_dir(source_dir_to_reduce)
     shader_jobs = tool.get_shader_jobs(source_dir_to_reduce)
@@ -304,6 +314,7 @@ def run_reduction(
             extension_to_reduce=extension_to_reduce,
             preserve_semantics=True,
             binary_manager=binary_manager,
+            settings=settings,
         )
 
     if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
@@ -318,6 +329,7 @@ def run_reduction(
                 extension_to_reduce=extension_to_reduce,
                 preserve_semantics=False,
                 binary_manager=binary_manager,
+                settings=settings,
             )
 
     # Create and return a symlink to the "best" reduction.
@@ -328,7 +340,10 @@ def run_reduction(
 
 
 def run_reduction_on_report(  # pylint: disable=too-many-locals;
-    test_dir: Path, reports_dir: Path, binary_manager: binaries_util.BinaryManager
+    test_dir: Path,
+    reports_dir: Path,
+    binary_manager: binaries_util.BinaryManager,
+    settings: Settings,
 ) -> None:
     test = test_util.metadata_read(test_dir)
 
@@ -349,6 +364,7 @@ def run_reduction_on_report(  # pylint: disable=too-many-locals;
                 test_dir, test.device.name
             ),
             binary_manager=binary_manager,
+            settings=settings,
         )
     except fuzz_glsl_test.ReductionFailedError as ex:
         # Create a symlink to the failed reduction so it is easy to investigate failed reductions.
@@ -407,7 +423,10 @@ def handle_test(
     for test_dir_in_reports in report_paths:
         if fuzz_glsl_test.should_reduce_report(settings, test_dir_in_reports):
             run_reduction_on_report(
-                test_dir_in_reports, reports_dir, binary_manager=binary_manager
+                test_dir_in_reports,
+                reports_dir,
+                binary_manager=binary_manager,
+                settings=settings,
             )
         else:
             log("Skipping reduction due to settings.")
@@ -451,6 +470,7 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
                     template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
                     donor_shader_job_paths=spirv_fuzz_shaders,
                     seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
+                    other_args=list(settings.extra_spirv_fuzz_generate_args),
                 )
             finally:
                 gflogging.pop_stream_for_logging()
