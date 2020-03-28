@@ -75,7 +75,8 @@ public class AddSwitchMutationFinderTest {
 
   @Test
   public void testNameShadowingInForLoop() throws Exception {
-    // Checks that adding switch statements several times does not lead to an invalid shader.
+    // Guards against problems related to a variable declared in a 'for' shadowing an outer variable
+    // when the 'for' loop is switchified.
     final int limit = 10;
     final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
     String program = "#version 300 es\n"
@@ -87,12 +88,54 @@ public class AddSwitchMutationFinderTest {
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    // Check that adding switches many times leads to valid shaders.
     for (int i = 0; i < limit; i++) {
       final List<AddSwitchMutation> mutations =
           new AddSwitchMutationFinder(tu,
               new RandomWrapper(i),
               GenerationParams.normal(tu.getShaderKind(), false))
+              .findMutations();
+      for (AddSwitchMutation mutation : mutations) {
+        mutation.apply();
+      }
+      final File shaderJobFile = temporaryFolder.newFile("shaderjob" + i + ".json");
+      fileOperations.writeShaderJobFile(new GlslShaderJob(Optional.empty(),
+          new PipelineInfo("{}"),
+          tu), shaderJobFile);
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, false));
+    }
+  }
+
+  @Test
+  public void testNameShadowingInBlock() throws Exception {
+    // Guards against problems related to a variable declared in a block shadowing an outer variable
+    // when the block is switchified.
+    final int limit = 10;
+    final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+    String program = "#version 300 es\n"
+        + "precision highp float;\n"
+        + "void main() {\n"
+        + "  float a;\n"
+        + "  float b;\n"
+        + "  float c;\n"
+        + "  float d;\n"
+        + "  float e;\n"
+        + "  {\n"
+        + "    vec4 a;\n"
+        + "    vec4 b;\n"
+        + "    vec4 c;\n"
+        + "    vec4 d;\n"
+        + "    vec4 e;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+
+    final GenerationParams generationParams = GenerationParams.normal(tu.getShaderKind(), false);
+    generationParams.setMaxInjectedSwitchCasesAfterOriginalCode(10);
+    for (int i = 0; i < limit; i++) {
+      final List<AddSwitchMutation> mutations =
+          new AddSwitchMutationFinder(tu,
+              new RandomWrapper(i),
+              generationParams)
               .findMutations();
       for (AddSwitchMutation mutation : mutations) {
         mutation.apply();

@@ -24,21 +24,54 @@ public class GenerationParams {
   public static final boolean COMMA_OPERATOR_ENABLED = false;
   public static final boolean NON_SQUARE_MATRICES_ENABLED = true;
 
+  // What sort of shader are we generating?
+  private final ShaderKind shaderKind;
+
+  // Can we rely in 'injectionSwitch' being defined?
+  private final boolean injectionSwitchIsAvailable;
+
+  // Expression fuzzing and identity transformations
+  private int maxDepthForGeneratedExpr = 3;
+
+  // Structification
+  private int maxStructNestingDepth = 2;
+  private int maxStructFields = 8;
+
+  // The maximum number of distinct donors that can be used during one donation pass.
+  private int maxDonorsPerDonationPass = 4;
+
+  // Adding switch statements
+  private int maxInjectedSwitchCasesBeforeOriginalCode = 3;
+  private int maxInjectedSwitchCasesInOriginalCode = 10;
+  private int maxInjectedSwitchCasesAfterOriginalCode = 3;
+
+  private GenerationParams(ShaderKind shaderKind, boolean injectionSwitchIsAvailable) {
+    // Prevent external construction
+    this.shaderKind = shaderKind;
+    this.injectionSwitchIsAvailable = injectionSwitchIsAvailable;
+  }
+
+  public static GenerationParams normal(ShaderKind shaderKind, boolean injectionSwitchAvailable) {
+    final GenerationParams result = new GenerationParams(shaderKind, injectionSwitchAvailable);
+    result.maxDepthForGeneratedExpr = 3;
+    result.maxStructNestingDepth = 2;
+    result.maxStructFields = 8;
+    result.maxDonorsPerDonationPass = 4;
+    result.maxInjectedSwitchCasesBeforeOriginalCode = 3;
+    result.maxInjectedSwitchCasesInOriginalCode = 10;
+    result.maxInjectedSwitchCasesAfterOriginalCode = 3;
+    return result;
+  }
+
   public static GenerationParams small(ShaderKind shaderKind, boolean injectionSwitchAvailable) {
     GenerationParams result = new GenerationParams(shaderKind, injectionSwitchAvailable);
     result.maxDepthForGeneratedExpr = 2;
     result.maxStructNestingDepth = 1;
     result.maxStructFields = 3;
     result.maxDonorsPerDonationPass = 2;
-    return result;
-  }
-
-  public static GenerationParams normal(ShaderKind shaderKind, boolean injectionSwitchAvailable) {
-    GenerationParams result = new GenerationParams(shaderKind, injectionSwitchAvailable);
-    result.maxDepthForGeneratedExpr = 3;
-    result.maxStructNestingDepth = 2;
-    result.maxStructFields = 5;
-    result.maxDonorsPerDonationPass = 4;
+    result.maxInjectedSwitchCasesBeforeOriginalCode = 2;
+    result.maxInjectedSwitchCasesInOriginalCode = 4;
+    result.maxInjectedSwitchCasesAfterOriginalCode = 2;
     return result;
   }
 
@@ -48,29 +81,19 @@ public class GenerationParams {
     result.maxStructNestingDepth = 4;
     result.maxStructFields = 7;
     result.maxDonorsPerDonationPass = 6;
+    result.maxInjectedSwitchCasesBeforeOriginalCode = 6;
+    result.maxInjectedSwitchCasesInOriginalCode = 20;
+    result.maxInjectedSwitchCasesAfterOriginalCode = 6;
     return result;
   }
 
-  private GenerationParams(ShaderKind shaderKind, boolean injectionSwitchIsAvailable) {
-    // Prevent external construction
-    this.shaderKind = shaderKind;
-    this.injectionSwitchIsAvailable = injectionSwitchIsAvailable;
+  public ShaderKind getShaderKind() {
+    return shaderKind;
   }
 
-  // What sort of shader are we generating?
-  private final ShaderKind shaderKind;
-
-  // Expression fuzzing and identity transformations
-  private int maxDepthForGeneratedExpr = 3;
-
-  // Structification
-  private int maxStructNestingDepth = 3;
-  private int maxStructFields = 8;
-
-  // The maximum number of distinct donors that can be used during one donation pass.
-  private int maxDonorsPerDonationPass = 5;
-
-  private final boolean injectionSwitchIsAvailable;
+  public boolean getInjectionSwitchIsAvailable() {
+    return injectionSwitchIsAvailable;
+  }
 
   public int getMaxDepthForGeneratedExpr() {
     return maxDepthForGeneratedExpr;
@@ -88,12 +111,24 @@ public class GenerationParams {
     return maxDonorsPerDonationPass;
   }
 
-  public ShaderKind getShaderKind() {
-    return shaderKind;
+  public int getMaxInjectedSwitchCasesBeforeOriginalCode() {
+    return maxInjectedSwitchCasesBeforeOriginalCode;
   }
 
-  public boolean getInjectionSwitchIsAvailable() {
-    return injectionSwitchIsAvailable;
+  public int getMaxInjectedSwitchCasesInOriginalCode() {
+    return maxInjectedSwitchCasesInOriginalCode;
+  }
+
+  public int getMaxInjectedSwitchCasesAfterOriginalCode() {
+    return maxInjectedSwitchCasesAfterOriginalCode;
+  }
+
+  // For purposes of testing, it can be useful to be able to set a specific parameter to a large
+  // value.  Add additional setter methods as needed.
+
+  public void setMaxInjectedSwitchCasesAfterOriginalCode(
+      int maxInjectedSwitchCasesAfterOriginalCode) {
+    this.maxInjectedSwitchCasesAfterOriginalCode = maxInjectedSwitchCasesAfterOriginalCode;
   }
 
 }

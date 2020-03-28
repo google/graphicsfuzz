@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.generator.semanticspreserving;
 
-import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.Expr;
@@ -36,6 +35,7 @@ import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
+import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.ContainsTopLevelBreak;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -93,12 +93,7 @@ public class AddSwitchMutation implements Mutation {
         scope = new Scope(injectionPoint.scopeAtInjectionPoint());
         if (forStmt.getInit() instanceof DeclarationStmt) {
           // The for loop's initializer declares variables, so add each declaration to the scope.
-          final VariablesDeclaration variablesDeclaration =
-              ((DeclarationStmt) forStmt.getInit()).getVariablesDeclaration();
-          for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
-            scope.add(vdi.getName(), variablesDeclaration.getBaseType(), Optional.empty(), vdi,
-                variablesDeclaration);
-          }
+          addVariablesToScope(scope, (DeclarationStmt) forStmt.getInit());
         }
       } else {
         // The statement is not a for loop, so it does not introduce new variables; use the scope
@@ -148,26 +143,61 @@ public class AddSwitchMutation implements Mutation {
       return;
     }
 
-    final int casesBefore = random.nextInt(3);
-    final int casesDuring = random.nextInt(3);
-    final int casesAfter = random.nextInt(3);
+    final int casesBefore = random.nextInt(
+        generationParams.getMaxInjectedSwitchCasesBeforeOriginalCode());
+    final int casesDuring = random.nextInt(
+        generationParams.getMaxInjectedSwitchCasesInOriginalCode());
+    final int casesAfter = random.nextInt(
+        generationParams.getMaxInjectedSwitchCasesAfterOriginalCode());
 
-    final Fuzzer stmtFuzzer = new Fuzzer(new FuzzingContext(scope
-        .shallowClone()),
+    // We will make unreachable switch cases both before and after the reachable switch case.  For
+    // this purpose we need a fuzzer object.
+    //
+    // The scope available to the fuzzer object will initially be a new scope with the scope
+    // associated with the block as its parent.
+    final Scope scopeForFuzzing = new Scope(scope.shallowClone());
+    final Fuzzer stmtFuzzer = new Fuzzer(new FuzzingContext(scopeForFuzzing),
         shadingLanguageVersion,
         random,
         generationParams,
         Constants.GLF_SWITCH + "_" + idGenerator.freshId());
 
-    List<Integer> usedLabels = new ArrayList<>();
-    List<Stmt> switchBodyStmts = generateUnreachableSwitchContent(casesBefore,
+    // This tracks labels that have been used in randomly-generated switch cases, to avoid duplicate
+    // labels.
+    final List<Integer> usedLabels = new ArrayList<>();
+
+    // First, generate some unreachable switch cases to appear *before* the reachable switch case.
+    final List<Stmt> switchBodyStmts = generateUnreachableSwitchContent(casesBefore,
         usedLabels, stmtFuzzer, random);
+
+    // Now add the reachable switch case, sprinkled with some more switch cases that target
+    // reachable code.
     switchBodyStmts.addAll(generateReachableSwitchCases(block, casesDuring, usedLabels, random));
+
+    // We also want to generate some switch cases to appear after the 'break' associated with the
+    // end of the reachable code.  However, the reachable code may have brought new variables into
+    // scope, so we need to add any such variables to the current scope.  This is to ensure that
+    // the expression fuzzer does not refer to variables of different types that are shadowed by
+    // such new variables.
+
+    // Consider each declaration in the block of reachable code.
+    for (Stmt stmtInBlock : block.getStmts()) {
+      if (stmtInBlock instanceof DeclarationStmt) {
+        addVariablesToScope(scopeForFuzzing, (DeclarationStmt) stmtInBlock);
+      }
+    }
+
+    // Armed with this updated scope, we are in a position to generate unreachable switch cases
+    // that occur after the reachable code.
     switchBodyStmts.addAll(generateUnreachableSwitchContent(casesAfter,
         usedLabels, stmtFuzzer, random));
+
+    // Finish the body of the new switch statement with 'default: 1;', so that (for cleanliness)
+    // there is always a non-empty default case.
     switchBodyStmts.add(new DefaultCaseLabel());
     switchBodyStmts.add(new ExprStmt(new IntConstantExpr("1")));
 
+    // The overall switch statement has the form 'switch(0) { ... }'
     final Expr zero =
         new OpaqueExpressionGenerator(random, generationParams, shadingLanguageVersion)
             .makeOpaqueZero(BasicType.INT, false, 0,
@@ -178,6 +208,18 @@ public class AddSwitchMutation implements Mutation {
     block.setStmts(Collections.singletonList(new SwitchStmt(new FunctionCallExpr(
         Constants.GLF_SWITCH, zero),
         new BlockStmt(switchBodyStmts, true))));
+  }
+
+  private void addVariablesToScope(Scope scope, DeclarationStmt declarationStmt) {
+    final VariablesDeclaration variablesDeclaration =
+        declarationStmt.getVariablesDeclaration();
+    for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
+      scope.add(declInfo.getName(),
+          Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
+              declInfo.getArrayInfo()),
+          Optional.empty(),
+          declInfo, variablesDeclaration);
+    }
   }
 
   private List<Stmt> generateReachableSwitchCases(BlockStmt block, int numCases,
