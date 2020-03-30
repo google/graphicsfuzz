@@ -24,10 +24,12 @@ import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
+import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
@@ -136,18 +138,11 @@ public final class FragmentShaderToShaderJob {
           varTypeIn.setLocationQualifier(locationIndex);
           varTypeOut.setLocationQualifier(locationIndex);
           // Increment location index
-          if (basicType == BasicType.MAT2X2
-              || basicType == BasicType.MAT2X3
-              || basicType == BasicType.MAT2X4
-              || basicType == BasicType.MAT3X2
-              || basicType == BasicType.MAT3X3
-              || basicType == BasicType.MAT3X4
-              || basicType == BasicType.MAT4X2
-              || basicType == BasicType.MAT4X3
-              || basicType == BasicType.MAT4X4) {
-            // For matrices, we'll skip ahead location indices a lot to make sure
-            // there's no problem with them.
-            locationIndex += 16;
+          if (BasicType.allMatrixTypes().contains(basicType)) {
+            // For matrices, we'll skip ahead location indices to make sure
+            // there's no problem with them. Smaller matrices (like 2x3)
+            // don't need as much, but this makes testing easier.
+            locationIndex += 4;
           } else {
             locationIndex++;
           }
@@ -183,131 +178,32 @@ public final class FragmentShaderToShaderJob {
                   vdi.getArrayInfo(), null)),
               vd);
           // Figure out the initializer
-          Expr initExpr = null;
-          if (basicType == BasicType.FLOAT) {
-            initExpr = new FloatConstantExpr(Float.toString(generator.nextFloat()));
-          } else if (basicType == BasicType.INT) {
-            initExpr = new IntConstantExpr(Integer.toString(generator.nextInt(0xffffff)));
-          } else if (basicType == BasicType.UINT) {
-            initExpr = new IntConstantExpr(Integer.toString(generator.nextPositiveInt(0xffffff)));
-          } else if (basicType == BasicType.VEC2) {
-            initExpr = new TypeConstructorExpr("vec2", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.VEC3) {
-            initExpr = new TypeConstructorExpr("vec3", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.VEC4) {
-            initExpr = new TypeConstructorExpr("vec4", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.MAT2X2) {
-            initExpr = new TypeConstructorExpr("mat2", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.MAT3X3) {
-            initExpr = new TypeConstructorExpr("mat3", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.MAT4X4) {
-            initExpr = new TypeConstructorExpr("mat4", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.MAT2X3) {
-            initExpr = new TypeConstructorExpr("mat2x3", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.MAT2X4) {
-            initExpr = new TypeConstructorExpr("mat2x4", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.MAT3X2) {
-            initExpr = new TypeConstructorExpr("mat3x2", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.MAT3X4) {
-            initExpr = new TypeConstructorExpr("mat3x4", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.MAT4X2) {
-            initExpr = new TypeConstructorExpr("mat4x2", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
-          } else if (basicType == BasicType.MAT4X3) {
-            initExpr = new TypeConstructorExpr("mat4x3", Arrays.asList(
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat())),
-                new FloatConstantExpr(Float.toString(generator.nextFloat()))));
+          final List<Expr> constructorParams = new ArrayList<>();
+          if (basicType.getElementType() == BasicType.INT) {
+            for (int i = 0; i < basicType.getNumElements(); i++) {
+              constructorParams.add(new IntConstantExpr(Integer.toString(
+                  generator.nextInt(0xffffff))));
+            }
+          } else if (basicType.getElementType() == BasicType.UINT) {
+            for (int i = 0; i < basicType.getNumElements(); i++) {
+              constructorParams.add(new UIntConstantExpr(Integer.toUnsignedString(
+                  generator.nextPositiveInt(0xffffff)) + "u"));
+            }
+          } else if (basicType.getElementType() == BasicType.BOOL) {
+            for (int i = 0; i < basicType.getNumElements(); i++) {
+              constructorParams.add(new BoolConstantExpr(
+                  generator.nextBoolean()));
+            }
+          } else if (basicType.getElementType() == BasicType.FLOAT) {
+            for (int i = 0; i < basicType.getNumElements(); i++) {
+              constructorParams.add(new FloatConstantExpr(Float.toString(
+                  generator.nextFloat())));
+            }
           } else {
             throw new RuntimeException("Unimplemented variable type with "
                 + vd.getBaseType().toString() + " " + vdi.getName());
           }
+          final Expr initExpr = new TypeConstructorExpr(basicType.toString(), constructorParams);
           vertexShader.get().getMainFunction().getBody().insertStmt(0,
               new ExprStmt(new BinaryExpr(
                   new VariableIdentifierExpr(vdi.getName()),
