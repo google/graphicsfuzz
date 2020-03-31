@@ -50,6 +50,7 @@ namespace graphicsfuzz_amber_scoop {
         PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets;
         PFN_vkUpdateDescriptorSets vkUpdateDescriptorSets;
         PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets;
+        PFN_vkCmdBindIndexBuffer vkCmdBindIndexBuffer;
         PFN_vkCmdBindVertexBuffers vkCmdBindVertexBuffers;
         PFN_vkCmdDraw vkCmdDraw;
         PFN_vkCmdDrawIndexed vkCmdDrawIndexed;
@@ -118,6 +119,7 @@ namespace graphicsfuzz_amber_scoop {
     VkResult vkAllocateDescriptorSets(PFN_vkAllocateDescriptorSets next, VkDevice device, VkDescriptorSetAllocateInfo const* pAllocateInfo, VkDescriptorSet* pDescriptorSets);
     void vkUpdateDescriptorSets(PFN_vkUpdateDescriptorSets next, VkDevice device, uint32_t descriptorWriteCount, VkWriteDescriptorSet const* pDescriptorWrites, uint32_t descriptorCopyCount, VkCopyDescriptorSet const* pDescriptorCopies);
     void vkCmdBindDescriptorSets(PFN_vkCmdBindDescriptorSets next, VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, VkDescriptorSet const* pDescriptorSets, uint32_t dynamicOffsetCount, uint32_t const* pDynamicOffsets);
+    void vkCmdBindIndexBuffer(PFN_vkCmdBindIndexBuffer next, VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType);
     void vkCmdBindVertexBuffers(PFN_vkCmdBindVertexBuffers next, VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, VkBuffer const* pBuffers, VkDeviceSize const* pOffsets);
     void vkCmdDraw(PFN_vkCmdDraw next, VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
     void vkCmdDrawIndexed(PFN_vkCmdDrawIndexed next, VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance);

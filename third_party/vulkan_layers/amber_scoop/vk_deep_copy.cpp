@@ -103,6 +103,13 @@ DeepCopy(const VkGraphicsPipelineCreateInfo &createInfo) {
           vertexInputAttributeDescriptions;
     }
 
+    // Copy pInputAssemblyState
+    {
+      auto inputAssemblyStateCreateInfo = new VkPipelineInputAssemblyStateCreateInfo();
+      *inputAssemblyStateCreateInfo = *createInfo.pInputAssemblyState;
+      result.pInputAssemblyState = inputAssemblyStateCreateInfo;
+    }
+
     result.pVertexInputState = vertexInputState;
   }
 
