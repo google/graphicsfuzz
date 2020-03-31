@@ -22,10 +22,10 @@
 
 namespace graphicsfuzz_amber_scoop {
 
-template <typename T> T *CopyArray(T const *pData, uint32_t numElements) {
-  T *result = new T[numElements];
+template <typename T> T *CopyArray(T const *pData, uint32_t numElements, uint32_t offset = 0) {
+  T *result = new T[numElements - offset];
   for (uint32_t i = 0; i < numElements; i++) {
-    result[i] = pData[i];
+    result[i] = pData[i + offset];
   }
   return result;
 }

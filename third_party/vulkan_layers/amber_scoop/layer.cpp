@@ -53,6 +53,10 @@ namespace graphicsfuzz_amber_scoop {
             PFN_vkCmdBindDescriptorSets fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdBindDescriptorSets;
             return graphicsfuzz_amber_scoop::vkCmdBindDescriptorSets(fn, commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
         }
+        VKAPI_ATTR void VKAPI_CALL vkCmdBindIndexBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) {
+            PFN_vkCmdBindIndexBuffer fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdBindIndexBuffer;
+            return graphicsfuzz_amber_scoop::vkCmdBindIndexBuffer(fn, commandBuffer, buffer, offset, indexType);
+        }
         VKAPI_ATTR void VKAPI_CALL vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, VkBuffer const* pBuffers, VkDeviceSize const* pOffsets) {
             PFN_vkCmdBindVertexBuffers fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdBindVertexBuffers;
             return graphicsfuzz_amber_scoop::vkCmdBindVertexBuffers(fn, commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
@@ -366,6 +370,7 @@ namespace graphicsfuzz_amber_scoop {
             GET_PROC(vkAllocateDescriptorSets);
             GET_PROC(vkUpdateDescriptorSets);
             GET_PROC(vkCmdBindDescriptorSets);
+            GET_PROC(vkCmdBindIndexBuffer);
             GET_PROC(vkCmdBindVertexBuffers);
             GET_PROC(vkCmdDraw);
             GET_PROC(vkCmdDrawIndexed);
@@ -434,6 +439,7 @@ namespace graphicsfuzz_amber_scoop {
             INTERCEPT(vkAllocateDescriptorSets);
             INTERCEPT(vkUpdateDescriptorSets);
             INTERCEPT(vkCmdBindDescriptorSets);
+            INTERCEPT(vkCmdBindIndexBuffer);
             INTERCEPT(vkCmdBindVertexBuffers);
             INTERCEPT(vkCmdDraw);
             INTERCEPT(vkCmdDrawIndexed);
@@ -655,6 +661,7 @@ namespace graphicsfuzz_amber_scoop {
             INTERCEPT(vkAllocateDescriptorSets);
             INTERCEPT(vkUpdateDescriptorSets);
             INTERCEPT(vkCmdBindDescriptorSets);
+            INTERCEPT(vkCmdBindIndexBuffer);
             INTERCEPT(vkCmdBindVertexBuffers);
             INTERCEPT(vkCmdDraw);
             INTERCEPT(vkCmdDrawIndexed);
