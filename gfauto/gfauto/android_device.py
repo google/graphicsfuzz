@@ -265,7 +265,7 @@ def get_all_android_devices(  # pylint: disable=too-many-locals;
 TIMESTAMP_PATTERN: Pattern[str] = re.compile(r"[\d.\-:,\s]+")
 
 
-def get_logcat_final_timestamp(serial: Optional[str]) -> Optional[str]:
+def get_next_logcat_timestamp(serial: Optional[str]) -> Optional[str]:
     # Get last log event.
     res = adb_check(serial, ["logcat", "-d", "-T", "1"])
     out = res.stdout  # type: Optional[str]
@@ -294,17 +294,20 @@ def get_logcat_final_timestamp(serial: Optional[str]) -> Optional[str]:
         ),
     )
 
-    return timestamp
+    # We want a timestamp that is _later_ than the final timestamp.
+    # Timestamp arguments passed to adb are rounded (by adb), so concatenating a "9"
+    # is a simple way to get the "next" timestamp at the finest granularity.
+    return timestamp + "9"
 
 
 def prepare_device(
     wait_for_screen: bool, serial: Optional[str] = None
 ) -> Optional[str]:
     """
-    Prepares Android device, ensuring it is unlocked, clearing the logcat, etc.
+    Prepares an Android device, ensuring it is unlocked, the logcat is cleared, etc.
 
-    Returns the timestamp of the last logcat message (if one exists) so that it can be ignored when getting the logcat
-    later.
+    Returns the next logcat timestamp (or None if one cannot be obtained) because clearing the logcat is unreliable;
+    the timestamp can be used to ignore old logcat events when getting the logcat later.
     """
     device_was_booting_or_locked = False
 
@@ -385,9 +388,9 @@ def prepare_device(
 
     # Logcat is not always cleared, so get the last timestamp from the logcat (if there is one); we will use that
     # to ignore old logcat entries later.
-    logcat_last_timestamp = get_logcat_final_timestamp(serial)
+    next_logcat_timestamp = get_next_logcat_timestamp(serial)
 
-    return logcat_last_timestamp
+    return next_logcat_timestamp
 
 
 def run_amber_on_device(
@@ -455,7 +458,7 @@ def run_amber_on_device_helper(
     serial: Optional[str] = None,
 ) -> Path:
 
-    last_logcat_timestamp_after_clear = prepare_device(
+    next_logcat_timestamp_after_clear = prepare_device(
         wait_for_screen=True, serial=serial
     )
 
@@ -535,9 +538,9 @@ def run_amber_on_device_helper(
 
         # Grab the log.
         logcat_dump_cmd = ["logcat", "-d"]
-        if last_logcat_timestamp_after_clear:
-            # Ignore all log events before the timestamp where we last tried to clear the log.
-            logcat_dump_cmd += ["-T", last_logcat_timestamp_after_clear]
+        if next_logcat_timestamp_after_clear:
+            # Only include logcat events after the previous logcat clear.
+            logcat_dump_cmd += ["-T", next_logcat_timestamp_after_clear]
         # Use a short time limit to increase the chance of detecting a device reboot.
         adb_check(
             serial, logcat_dump_cmd, verbose=True, timeout=ADB_SHORT_LOGCAT_TIME_LIMIT
