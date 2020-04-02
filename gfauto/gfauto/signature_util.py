@@ -81,7 +81,7 @@ PATTERN_ASSERTION_FAILURE = re.compile(r"\n.*?:\d+: (.*? [Aa]ssert(?:ion)?)")
 # Only used if "0 pass, 1 fail" is found.
 # E.g. /data/local/tmp/graphicsfuzz/test.amber: 256: probe ssbo format does not match buffer format
 #                                                    probe ssbo format does not match buffer format
-PATTERN_AMBER_ERROR = re.compile(r"\n.*?\w: \d+: (.*)")
+PATTERN_AMBER_ERROR = re.compile(r"\n.*?[.]amber: \d+: (.*)")
 
 # E.g. error: line 0: Module contains unreachable blocks during merge return.  Run dead branch elimination before merge return.
 #      error: line 0: Module contains unreachable blocks during merge return.  Run dead branch elimination before merge return.
@@ -213,6 +213,10 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
     if group:
         return group
 
+    match = re.search(PATTERN_AMBER_TOLERANCE_ERROR, log_contents)
+    if match:
+        return BAD_IMAGE_SIGNATURE
+
     # Amber error.
     if "0 pass, 1 fail" in log_contents:
         group = basic_match(PATTERN_AMBER_ERROR, log_contents)
@@ -319,10 +323,6 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
 
     if "pure virtual method called" in log_contents:
         return "pure_virtual_method_called"
-
-    match = re.search(PATTERN_AMBER_TOLERANCE_ERROR, log_contents)
-    if match:
-        return BAD_IMAGE_SIGNATURE
 
     return NO_SIGNATURE
 
