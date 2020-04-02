@@ -20,12 +20,13 @@ Provides functions for interacting with Android devices.
 """
 
 import os
+import re
 import shlex
 import shutil
 import subprocess
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Pattern
 
 from gfauto import (
     binaries_util,
@@ -261,7 +262,50 @@ def get_all_android_devices(  # pylint: disable=too-many-locals;
     return result
 
 
-def prepare_device(wait_for_screen: bool, serial: Optional[str] = None) -> None:
+TIMESTAMP_PATTERN: Pattern[str] = re.compile(r"[\d.\-:,\s]+")
+
+
+def get_logcat_final_timestamp(serial: Optional[str]) -> Optional[str]:
+    # Get last log event.
+    res = adb_check(serial, ["logcat", "-d", "-T", "1"])
+    out = res.stdout  # type: Optional[str]
+    if not out:
+        return None
+
+    lines = out.splitlines()
+    if not lines:
+        return None
+
+    # Get last line. E.g. "04-02 19:23:23.579   611   611 D logd    :  etc.".
+    last_line = lines[-1]
+
+    parts = last_line.split(" ")
+    # The first two parts are the timestamp.
+    if len(parts) < 2:
+        return None
+    timestamp = f"{parts[0]} {parts[1]}"
+    if not TIMESTAMP_PATTERN.fullmatch(timestamp):
+        return None
+
+    check(
+        last_line.startswith(timestamp),
+        AssertionError(
+            f"Last line and extracted timestamp did not match: \n{last_line}\n{timestamp}"
+        ),
+    )
+
+    return timestamp
+
+
+def prepare_device(
+    wait_for_screen: bool, serial: Optional[str] = None
+) -> Optional[str]:
+    """
+    Prepares Android device, ensuring it is unlocked, clearing the logcat, etc.
+
+    Returns the timestamp of the last logcat message (if one exists) so that it can be ignored when getting the logcat
+    later.
+    """
     device_was_booting_or_locked = False
 
     res = adb_can_fail(serial, ["get-state"])
@@ -324,9 +368,6 @@ def prepare_device(wait_for_screen: bool, serial: Optional[str] = None) -> None:
         )
         time.sleep(WAIT_AFTER_BOOT_AND_UNLOCK)
 
-    log("Clearing logcat.")
-    adb_check(serial, ["logcat", "-c"])
-
     adb_check(
         serial,
         [
@@ -338,6 +379,15 @@ def prepare_device(wait_for_screen: bool, serial: Optional[str] = None) -> None:
             f"mkdir -p {ANDROID_DEVICE_RESULT_DIR}",
         ],
     )
+
+    log("Clearing logcat.")
+    adb_check(serial, ["logcat", "-c"])
+
+    # Logcat is not always cleared, so get the last timestamp from the logcat (if there is one); we will use that
+    # to ignore old logcat entries later.
+    logcat_last_timestamp = get_logcat_final_timestamp(serial)
+
+    return logcat_last_timestamp
 
 
 def run_amber_on_device(
@@ -405,7 +455,9 @@ def run_amber_on_device_helper(
     serial: Optional[str] = None,
 ) -> Path:
 
-    prepare_device(wait_for_screen=True, serial=serial)
+    last_logcat_timestamp_after_clear = prepare_device(
+        wait_for_screen=True, serial=serial
+    )
 
     adb_check(
         serial, ["push", str(amber_script_file), ANDROID_DEVICE_AMBER_SCRIPT_FILE]
@@ -481,9 +533,14 @@ def run_amber_on_device_helper(
         gflogging.log_a_file(output_dir / "amber_stdout.txt")
         gflogging.log_a_file(output_dir / "amber_stderr.txt")
 
-        # Grab log. Use a short time limit to increase the chance of detecting a device reboot.
+        # Grab the log.
+        logcat_dump_cmd = ["logcat", "-d"]
+        if last_logcat_timestamp_after_clear:
+            # Ignore all log events before the timestamp where we last tried to clear the log.
+            logcat_dump_cmd += ["-T", last_logcat_timestamp_after_clear]
+        # Use a short time limit to increase the chance of detecting a device reboot.
         adb_check(
-            serial, ["logcat", "-d"], verbose=True, timeout=ADB_SHORT_LOGCAT_TIME_LIMIT
+            serial, logcat_dump_cmd, verbose=True, timeout=ADB_SHORT_LOGCAT_TIME_LIMIT
         )
 
     except subprocess.SubprocessError:
