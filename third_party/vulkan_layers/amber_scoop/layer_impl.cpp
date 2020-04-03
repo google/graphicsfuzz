@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 The GraphicsFuzz Project Authors
+ * Copyright 2020 The GraphicsFuzz Project Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,11 @@
  *
  */
 
-#include "amber_scoop/layer.h"
+#include "amber_scoop/layer_impl.h"
 
-#include <cassert>
 #include <cstring>
 #include <iostream>
-#include <map>
 #include <memory>
-#include <sstream>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -40,81 +37,6 @@ namespace graphicsfuzz_amber_scoop {
 #else
 #define DEBUG_LAYER(F)
 #endif
-
-struct CmdBeginRenderPass;
-struct CmdBindDescriptorSets;
-struct CmdBindIndexBuffer;
-struct CmdBindPipeline;
-struct CmdBindVertexBuffers;
-struct CmdCopyBuffer;
-struct CmdDraw;
-struct CmdDrawIndexed;
-struct BufferCopy;
-
-enum FormatType {
-  tInt8 = 0,
-  tInt16 = 1,
-  tInt32 = 2,
-  tInt64 = 3,
-  tUint8 = 4,
-  tUint16 = 5,
-  tUint32 = 6,
-  tUint64 = 7,
-  tFloat = 8,
-  tDouble = 9
-};
-
-const std::map<VkPrimitiveTopology, std::string> topologies = {
-    {VK_PRIMITIVE_TOPOLOGY_POINT_LIST, "POINT_LIST"},
-    {VK_PRIMITIVE_TOPOLOGY_LINE_LIST, "LINE_LIST"},
-    {VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, "LINE_STRIP"},
-    {VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, "TRIANGLE_LIST"},
-    {VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, "TRIANGLE_STRIP"},
-    {VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, "TRIANGLE_FAN"},
-    {VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
-     "LINE_LIST_WITH_ADJACENCY"},
-    {VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,
-     "LINE_STRIP_WITH_ADJACENCY"},
-    {VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
-     "TRIANGLE_LIST_WITH_ADJACENCY"},
-    {VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
-     "TRIANGLE_STRIP_WITH_ADJACENCY"},
-    {VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, "PATCH_LIST"}};
-
-struct Cmd {
-
-  enum Kind {
-    kBeginRenderPass,
-    kBindDescriptorSets,
-    kBindIndexBuffer,
-    kBindPipeline,
-    kBindVertexBuffers,
-    kCopyBuffer,
-    kDraw,
-    kDrawIndexed
-  };
-
-  explicit Cmd(Kind kind) : kind_(kind) {}
-
-// A bunch of methods for casting this type to a given type. Returns this if the
-// cast can be done, nullptr otherwise.
-// clang-format off
-#define DeclareCastMethod(target)                                              \
-  virtual Cmd##target *As##target() { return nullptr; }                        \
-  virtual const Cmd##target *As##target() const { return nullptr; }
-  DeclareCastMethod(BeginRenderPass)
-  DeclareCastMethod(BindDescriptorSets)
-  DeclareCastMethod(BindIndexBuffer)
-  DeclareCastMethod(BindPipeline)
-  DeclareCastMethod(BindVertexBuffers)
-  DeclareCastMethod(CopyBuffer)
-  DeclareCastMethod(Draw)
-  DeclareCastMethod(DrawIndexed)
-#undef DeclareCastMethod
-
-  Kind kind_;
-  // clang-format on
-};
 
 struct CmdBeginRenderPass : public Cmd {
   CmdBeginRenderPass(VkRenderPassBeginInfo const *pRenderPassBegin,
@@ -220,6 +142,26 @@ struct CmdCopyBuffer : public Cmd {
   VkBufferCopy const *pRegions_;
 };
 
+struct CmdCopyBufferToImage : public Cmd {
+  CmdCopyBufferToImage(VkBuffer srcBuffer, VkImage dstImage,
+                       VkImageLayout dstImageLayout, uint32_t regionCount,
+                       VkBufferImageCopy const *pRegions)
+      : Cmd(kCopyBufferToImage), srcBuffer_(srcBuffer), dstImage_(dstImage),
+        dstImageLayout_(dstImageLayout), regionCount_(regionCount),
+        pRegions_(CopyArray(pRegions, regionCount)) {}
+
+  CmdCopyBufferToImage *AsCopyBufferToImage() override { return this; }
+  const CmdCopyBufferToImage *AsCopyBufferToImage() const override {
+    return this;
+  }
+
+  VkBuffer srcBuffer_;
+  VkImage dstImage_;
+  VkImageLayout dstImageLayout_;
+  uint32_t regionCount_;
+  VkBufferImageCopy const *pRegions_;
+};
+
 struct CmdDraw : public Cmd {
   CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
           uint32_t firstInstance)
@@ -269,6 +211,8 @@ std::unordered_map<VkDeviceMemory, std::tuple<VkDeviceSize, VkDeviceSize,
     mappedMemory;
 std::unordered_map<VkBuffer, std::pair<VkDeviceMemory, VkDeviceSize>>
     bufferToMemory;
+std::unordered_map<VkImage, std::pair<VkDeviceMemory, VkDeviceSize>>
+    imageToMemory;
 std::unordered_map<VkBuffer, VkBufferCreateInfo> buffers;
 std::unordered_map<VkDescriptorSet, VkDescriptorSetLayout> descriptorSets;
 std::unordered_map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo>
@@ -282,6 +226,9 @@ std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shaderModules;
 std::unordered_map<VkDescriptorSet,
                    std::unordered_map<uint32_t, VkDescriptorBufferInfo>>
     descriptorSetToBindingBuffer;
+std::unordered_map<VkDescriptorSet,
+                   std::unordered_map<uint32_t, VkDescriptorImageInfo>>
+    descriptorSetToBindingImageAndSampler;
 
 std::vector<std::shared_ptr<BufferCopy>> bufferCopies;
 
@@ -324,6 +271,17 @@ VkResult vkBindBufferMemory(PFN_vkBindBufferMemory next, VkDevice device,
   auto result = next(device, buffer, memory, memoryOffset);
   if (result == VK_SUCCESS) {
     bufferToMemory.insert({buffer, {memory, memoryOffset}});
+  }
+  return result;
+}
+
+VkResult vkBindImageMemory(PFN_vkBindImageMemory next, VkDevice device,
+                           VkImage image, VkDeviceMemory memory,
+                           VkDeviceSize memoryOffset) {
+  DEBUG_LAYER(vkBindImageMemory);
+  auto result = next(device, image, memory, memoryOffset);
+  if (result == VK_SUCCESS) {
+    imageToMemory.insert({image, {memory, memoryOffset}});
   }
   return result;
 }
@@ -392,6 +350,19 @@ void vkCmdCopyBuffer(PFN_vkCmdCopyBuffer next, VkCommandBuffer commandBuffer,
   next(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
   AddCommand(commandBuffer, std::make_unique<CmdCopyBuffer>(
                                 srcBuffer, dstBuffer, regionCount, pRegions));
+}
+
+void vkCmdCopyBufferToImage(PFN_vkCmdCopyBufferToImage next,
+                            VkCommandBuffer commandBuffer, VkBuffer srcBuffer,
+                            VkImage dstImage, VkImageLayout dstImageLayout,
+                            uint32_t regionCount,
+                            VkBufferImageCopy const *pRegions) {
+  DEBUG_LAYER(vkCmdCopyBufferToImage);
+  next(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount,
+       pRegions);
+  AddCommand(commandBuffer,
+             std::make_unique<CmdCopyBufferToImage>(
+                 srcBuffer, dstImage, dstImageLayout, regionCount, pRegions));
 }
 
 void vkCmdDraw(PFN_vkCmdDraw next, VkCommandBuffer commandBuffer,
@@ -467,6 +438,13 @@ VkResult vkCreateGraphicsPipelines(
   return result;
 }
 
+VkResult vkCreateImage(PFN_vkCreateImage next, VkDevice device,
+                       VkImageCreateInfo const *pCreateInfo,
+                       AllocationCallbacks pAllocator, VkImage *pImage) {
+  auto result = next(device, pCreateInfo, pAllocator, pImage);
+  return result;
+}
+
 VkResult vkCreatePipelineLayout(PFN_vkCreatePipelineLayout next,
                                 VkDevice device,
                                 VkPipelineLayoutCreateInfo const *pCreateInfo,
@@ -538,110 +516,6 @@ struct DrawCallStateTracker {
 
   IndexBufferBinding boundIndexBuffer = {};
 };
-
-uint32_t getComponentWidth(VkFormat vkFormat) {
-  switch (vkFormat) {
-  case VK_FORMAT_R32G32B32A32_SFLOAT:
-  case VK_FORMAT_R32G32B32A32_UINT:
-  case VK_FORMAT_R32G32B32A32_SINT:
-  case VK_FORMAT_R32G32B32_SFLOAT:
-  case VK_FORMAT_R32G32B32_UINT:
-  case VK_FORMAT_R32G32B32_SINT:
-  case VK_FORMAT_R32G32_SFLOAT:
-  case VK_FORMAT_R32G32_UINT:
-  case VK_FORMAT_R32G32_SINT:
-  case VK_FORMAT_R32_SFLOAT:
-  case VK_FORMAT_R32_UINT:
-  case VK_FORMAT_R32_SINT:
-    return 4;
-  default:
-    assert(false && "Unknown format.");
-  }
-  // TODO: implement other formats
-  return 0;
-}
-
-uint32_t getComponentCount(VkFormat vkFormat) {
-  switch (vkFormat) {
-  case VK_FORMAT_R32G32B32A32_SFLOAT:
-  case VK_FORMAT_R32G32B32A32_UINT:
-  case VK_FORMAT_R32G32B32A32_SINT:
-    return 4;
-  case VK_FORMAT_R32G32B32_SFLOAT:
-  case VK_FORMAT_R32G32B32_UINT:
-  case VK_FORMAT_R32G32B32_SINT:
-    return 3;
-  case VK_FORMAT_R32G32_SFLOAT:
-  case VK_FORMAT_R32G32_UINT:
-  case VK_FORMAT_R32G32_SINT:
-    return 2;
-  case VK_FORMAT_R32_SFLOAT:
-  case VK_FORMAT_R32_UINT:
-  case VK_FORMAT_R32_SINT:
-    return 1;
-  default:
-    assert(false && "Unknown format.");
-  }
-  // TODO: implement other formats
-  return 0;
-}
-
-std::string getFormatTypeName(VkFormat vkFormat) {
-  switch (vkFormat) {
-  case VK_FORMAT_R32G32B32A32_SFLOAT:
-  case VK_FORMAT_R32G32B32_SFLOAT:
-  case VK_FORMAT_R32G32_SFLOAT:
-  case VK_FORMAT_R32_SFLOAT:
-    return "float";
-  case VK_FORMAT_R32G32B32A32_UINT:
-  case VK_FORMAT_R32G32B32_UINT:
-  case VK_FORMAT_R32G32_UINT:
-  case VK_FORMAT_R32_UINT:
-    return "uint32";
-  case VK_FORMAT_R32G32B32A32_SINT:
-  case VK_FORMAT_R32G32B32_SINT:
-  case VK_FORMAT_R32G32_SINT:
-  case VK_FORMAT_R32_SINT:
-    return "int32";
-  default:
-    assert(false && "Unknown format.");
-  }
-  // TODO: implement other formats
-}
-
-std::string getBufferTypeName(VkFormat vkFormat) {
-  auto componentCount = getComponentCount(vkFormat);
-  if (componentCount == 1) {
-    return getFormatTypeName(vkFormat);
-  }
-
-  std::stringstream strStream;
-  strStream << "vec" << componentCount << "<" << getFormatTypeName(vkFormat)
-            << ">";
-  return strStream.str();
-}
-
-FormatType getFormatTypeCode(VkFormat vkFormat) {
-  switch (vkFormat) {
-  case VK_FORMAT_R32G32B32A32_SFLOAT:
-  case VK_FORMAT_R32G32B32_SFLOAT:
-  case VK_FORMAT_R32G32_SFLOAT:
-  case VK_FORMAT_R32_SFLOAT:
-    return tFloat;
-  case VK_FORMAT_R32G32B32A32_UINT:
-  case VK_FORMAT_R32G32B32_UINT:
-  case VK_FORMAT_R32G32_UINT:
-  case VK_FORMAT_R32_UINT:
-    return tUint32;
-  case VK_FORMAT_R32G32B32A32_SINT:
-  case VK_FORMAT_R32G32B32_SINT:
-  case VK_FORMAT_R32G32_SINT:
-  case VK_FORMAT_R32_SINT:
-    return tInt32;
-  default:
-    assert(false && "Unknown format.");
-  }
-}
 
 void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
                     uint32_t indexCount = 0);
@@ -721,6 +595,8 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
             bufferCopy->regions.push_back(copyRegion);
           }
           bufferCopies.push_back(bufferCopy);
+        } else if (auto cmdCopyBufferToImage = cmd->AsCopyBufferToImage()) {
+          // TODO: not implemented.
         } else if (auto cmdDraw = cmd->AsDraw()) {
           HandleDrawCall(drawCallStateTracker);
         } else if (auto cmdDrawIndexed = cmd->AsDrawIndexed()) {
@@ -753,10 +629,20 @@ void vkUpdateDescriptorSets(PFN_vkUpdateDescriptorSets next, VkDevice device,
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
     case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
     case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
       // pImageInfo must be a valid pointer to an array of descriptorCount valid
       // VkDescriptorImageInfo structures
+      if (!descriptorSetToBindingImageAndSampler.count(
+              writeDescriptorSet.dstSet)) {
+        descriptorSetToBindingImageAndSampler.insert(
+            {writeDescriptorSet.dstSet, {}});
+      }
+      auto &bindingToImage =
+          descriptorSetToBindingImageAndSampler.at(writeDescriptorSet.dstSet);
+      bindingToImage.insert(
+          {writeDescriptorSet.dstBinding, writeDescriptorSet.pImageInfo[0]});
       break;
+    }
     case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
     case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
       // pTexelBufferView must be a valid pointer to an array of descriptorCount
@@ -819,28 +705,6 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   std::cout << "SHADER fragment fragment_shader SPIRV-ASM" << std::endl;
   std::cout << GetDisassembly(fragmentShader);
   std::cout << "END" << std::endl << std::endl;
-
-  std::cout << "# Shaders for creating a 2x2 texture." << std::endl;
-  std::cout << "SHADER vertex vert_shader PASSTHROUGH" << std::endl;
-  std::cout << "SHADER fragment frag_shader_red GLSL" << std::endl
-            << "#version 430" << std::endl
-            << "layout(location = 0) out vec4 color_out;" << std::endl
-            << "void main() {" << std::endl
-            << "  color_out = vec4(1.0, 0.0, 0.0, 1.0);" << std::endl
-            << "}" << std::endl
-            << "END" << std::endl
-            << std::endl;
-
-  std::cout << "BUFFER texture FORMAT R8G8B8A8_UNORM" << std::endl
-            << "SAMPLER sampler" << std::endl
-            << std::endl;
-
-  std::cout << "PIPELINE graphics texture_create_pipeline\n"
-               "  ATTACH vert_shader\n"
-               "  ATTACH frag_shader_red\n"
-               "  FRAMEBUFFER_SIZE 2 2\n"
-               "  BIND BUFFER texture AS color LOCATION 0\n"
-               "END\n";
 
   std::stringstream bufferDeclarationStringStream;
   std::stringstream descriptorSetBindingStringStream;
@@ -1079,10 +943,62 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
       VkDescriptorType descriptorType = layoutBinding.descriptorType;
       descriptorSetBindingStringStream
           << "  BIND BUFFER " << bufferName << " AS "
-          << (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ? "uniform"
-                                                                  : "...")
-          << " DESCRIPTOR_SET " << descriptorSetNumber << " BINDING "
-          << bindingNumber << std::endl;
+          << getDescriptorTypeString(descriptorType) << " DESCRIPTOR_SET "
+          << descriptorSetNumber << " BINDING " << bindingNumber << std::endl;
+    }
+
+    auto bindingAndImages =
+        descriptorSetToBindingImageAndSampler.at(descriptorSet.second);
+    for (auto bindingAndImage : bindingAndImages) {
+      uint32_t bindingNumber = bindingAndImage.first;
+      auto imageInfo = bindingAndImage.second;
+
+      VkDescriptorSetLayoutBinding layoutBinding =
+          layoutCreateInfo.pBindings[bindingNumber];
+      VkDescriptorType descriptorType = layoutBinding.descriptorType;
+
+      std::stringstream strstr;
+
+      switch (descriptorType) {
+      case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+      case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+      case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+        strstr << "img_" << descriptorSetNumber << "_" << bindingNumber;
+        std::string imageName = strstr.str();
+
+        descriptorSetBindingStringStream
+            << "  BIND BUFFER " << imageName << " AS "
+            << getDescriptorTypeString(descriptorType) << " DESCRIPTOR_SET "
+            << descriptorSetNumber << " BINDING " << bindingNumber;
+
+        if (descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+          descriptorSetBindingStringStream << " SAMPLER "
+                                           << " TBD: sampler name";
+        // TODO: implement BASE_MIP_LEVEL
+        // https://github.com/google/amber/blob/master/docs/amber_script.md#pipeline-buffers
+
+        bufferDeclarationStringStream << "BUFFER " << imageName
+                                      << " FORMAT R8G8B8A8_UNORM"
+                                      << " FILE texture.png"
+                                      << std::endl;
+        break;
+      }
+      case VK_DESCRIPTOR_TYPE_SAMPLER: {
+        strstr << "sampler_" << descriptorSetNumber << "_" << bindingNumber;
+        std::string samplerName = strstr.str();
+
+        descriptorSetBindingStringStream
+            << "  BIND SAMPLER " << samplerName << " DESCRIPTOR_SET "
+            << descriptorSetNumber << " BINDING " << bindingNumber;
+
+        bufferDeclarationStringStream << "SAMPLER " << samplerName << std::endl;
+
+        break;
+      }
+      default:
+        assert(false && "Unimplemented descriptor type");
+      }
+      descriptorSetBindingStringStream << std::endl;
     }
   }
 
@@ -1106,6 +1022,10 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   std::cout << "PIPELINE graphics pipeline" << std::endl;
   std::cout << "  ATTACH vertex_shader" << std::endl;
   std::cout << "  ATTACH fragment_shader" << std::endl;
+
+  // Add definitions for pipeline
+  std::cout << graphicsPipelineStringStream.str();
+
   VkFramebufferCreateInfo framebufferCreateInfo =
       framebuffers.at(drawCallStateTracker.currentRenderPass->framebuffer);
   std::cout << "  FRAMEBUFFER_SIZE " << framebufferCreateInfo.width << " "
@@ -1113,26 +1033,9 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   std::cout << framebufferAttachmentStringStream.str();
   std::cout << descriptorSetBindingStringStream.str();
 
-  // Add definitions for pipeline
-  std::cout << graphicsPipelineStringStream.str();
-
-  std::cout
-      << "  BIND SAMPLER sampler DESCRIPTOR_SET 0 BINDING 1\n"
-         "  BIND BUFFER texture AS sampled_image DESCRIPTOR_SET 0 BINDING 2\n";
-
   std::cout << "END" << std::endl << std::endl; // PIPELINE
 
   std::cout << "CLEAR_COLOR pipeline 0 0 0 255" << std::endl;
-  std::cout << std::endl;
-
-  std::cout
-      << "# Generate a 2x2 texture with a one pixel sized chessboard pattern.\n"
-         "CLEAR_COLOR texture_create_pipeline 0 0 255 255\n"
-         "CLEAR texture_create_pipeline\n"
-         "RUN texture_create_pipeline DRAW_RECT POS 0 0 SIZE 1 1\n"
-         "RUN texture_create_pipeline DRAW_RECT POS 1 1 SIZE 1 1\n"
-      << std::endl;
-
   std::cout << "CLEAR pipeline" << std::endl;
 
   std::string topology =
@@ -1146,6 +1049,6 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   }
 
   exit(0);
-} // namespace graphicsfuzz_amber_scoop
+}
 
 } // namespace graphicsfuzz_amber_scoop
