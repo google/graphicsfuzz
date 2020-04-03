@@ -20,7 +20,7 @@ set(AMBER_SCOOP_LAYER_SOURCES
     layer.cpp
     layer_impl.cpp
     vk_deep_copy.cpp
-    )
+        layer_impl.h)
 
 add_library(VkLayer_graphicsfuzz_amber_scoop SHARED ${AMBER_SCOOP_LAYER_SOURCES})
 
