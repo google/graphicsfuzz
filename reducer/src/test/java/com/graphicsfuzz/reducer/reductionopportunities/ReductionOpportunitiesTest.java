@@ -1108,4 +1108,21 @@ public class ReductionOpportunitiesTest {
     ops.forEach(IReductionOpportunity::applyReduction);
   }
 
+  @Test
+  public void testCanRemoveLiveInjectedVariables() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "void main() {\n"
+        + " vec4 GLF_live6c = vec4(1.0);\n"
+        + " GLF_live6c[0] = 1.0;\n"
+        + "}\n";
+
+    final TranslationUnit tu = ParseHelper.parse(shader);
+
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()), fileOps);
+    assertFalse(ops.isEmpty());
+  }
+
 }

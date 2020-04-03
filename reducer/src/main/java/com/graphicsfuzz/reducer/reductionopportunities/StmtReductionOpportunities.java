@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
@@ -333,8 +334,12 @@ public class StmtReductionOpportunities
   }
 
   private static boolean isLiveInjectionVariableReference(Expr lhs) {
-    while (lhs instanceof MemberLookupExpr) {
-      lhs = ((MemberLookupExpr) lhs).getStructure();
+    while (lhs instanceof MemberLookupExpr || lhs instanceof ArrayIndexExpr) {
+      if (lhs instanceof MemberLookupExpr) {
+        lhs = ((MemberLookupExpr) lhs).getStructure();
+      } else {
+        lhs = ((ArrayIndexExpr) lhs).getArray();
+      }
     }
     if (!(lhs instanceof VariableIdentifierExpr)) {
       return false;
