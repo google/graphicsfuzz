@@ -559,53 +559,6 @@ public class ReductionOpportunitiesTest {
   }
 
   @Test
-  public void testLeaveLoopLimiter() throws Exception {
-    TranslationUnit tu = ParseHelper.parse(""
-          + "void main() {"
-          + "    int GLF_live3_looplimiter0 = 0;\n"
-          + "    for(\n"
-          + "      float GLF_live3sphereNo = 0.0;\n"
-          + "      GLF_live3sphereNo < 10.0;\n"
-          + "      GLF_live3sphereNo ++\n"
-          + "  )\n"
-          + "   {\n"
-          + "    if(GLF_live3_looplimiter0 >= 5)\n"
-          + "     {\n"
-          + "      break;\n"
-          + "     }\n"
-          + "    GLF_live3_looplimiter0 ++;\n"
-          + "  }"
-          + "}\n");
-    while (true) {
-      List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false,
-            ShadingLanguageVersion.GLSL_440, new RandomWrapper(0), new IdGenerator()), fileOps);
-      if (ops.isEmpty()) {
-        break;
-      }
-      ops.get(0).applyReduction();
-    }
-
-    final String expected = "void main() {"
-          + "    int GLF_live3_looplimiter0 = 0;\n"
-          + "    for(\n"
-          + "      float GLF_live3sphereNo = 1.0;\n"
-          + "      1.0 < 10.0;\n"
-          + "      GLF_live3sphereNo ++\n"
-          + "  )\n"
-          + "   {\n"
-          + "    if(GLF_live3_looplimiter0 >= 5)\n"
-          + "     {\n"
-          + "      break;\n"
-          + "     }\n"
-          + "    GLF_live3_looplimiter0 ++;\n"
-          + "  }"
-          + "}\n";
-    CompareAsts.assertEqualAsts(expected, tu);
-
-  }
-
-  @Test
   public void testTernary() throws Exception {
     final String program = "void main() {"
           + "  int a = 2, b = 3, c = 4;"
@@ -629,7 +582,7 @@ public class ReductionOpportunitiesTest {
 
   @Test
   public void testRemoveLoopLimiter() throws Exception {
-    final String program = "void main() {"
+    final String program = "void main() {\n"
           + " {\n"
           + "  int GLF_live10_looplimiter0 = 0;\n"
           + "  for(\n"
@@ -644,10 +597,13 @@ public class ReductionOpportunitiesTest {
           + "     }\n"
           + "    GLF_live10_looplimiter0 ++;\n"
           + "   }\n"
-          + " }"
-          + "}";
-    final String expected = "void main() {"
-          + "}";
+          + " }\n"
+          + "}\n";
+    final String expected = "void main() {\n"
+          + " {\n"
+          + "  int GLF_live10_looplimiter0 = 0;\n"
+          + " }\n"
+          + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
           MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
@@ -656,6 +612,41 @@ public class ReductionOpportunitiesTest {
     ops.get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(tu));
+  }
+
+  @Test
+  public void testRemoveLoopLimiter2() throws Exception {
+    TranslationUnit tu = ParseHelper.parse(""
+        + "void main() {\n"
+        + "  int GLF_live3_looplimiter0 = 0;\n"
+        + "  for(\n"
+        + "      float GLF_live3sphereNo = 0.0;\n"
+        + "      GLF_live3sphereNo < 10.0;\n"
+        + "      GLF_live3sphereNo ++\n"
+        + "  )\n"
+        + "   {\n"
+        + "    if(GLF_live3_looplimiter0 >= 5)\n"
+        + "     {\n"
+        + "      break;\n"
+        + "     }\n"
+        + "    GLF_live3_looplimiter0 ++;\n"
+        + "  }\n"
+        + "}\n");
+    while (true) {
+      List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+          new ReducerContext(false,
+              ShadingLanguageVersion.GLSL_440, new RandomWrapper(0), new IdGenerator()), fileOps);
+      if (ops.isEmpty()) {
+        break;
+      }
+      ops.get(0).applyReduction();
+    }
+
+    final String expected = ""
+        + "void main() {\n"
+        + "}\n";
+    CompareAsts.assertEqualAsts(expected, tu);
+
   }
 
   @Test
