@@ -39,6 +39,7 @@ import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
+import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -78,7 +79,7 @@ public class TruncateLoops extends StandardVisitor {
 
   private void handleLoop(LoopStmt loopStmt) {
     final IParentMap parentMap = IParentMap.createParentMap(tu);
-    final String limiterName = prefix + "_looplimiter" + counter;
+    final String limiterName = prefix + "_" + Constants.LOOP_LIMITER + counter;
     counter++;
 
     final DeclarationStmt limiterDeclaration = new DeclarationStmt(

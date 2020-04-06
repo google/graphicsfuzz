@@ -535,4 +535,43 @@ public class StmtReductionOpportunitiesTest {
 
   }
 
+  private String loopLimiter(int counter) {
+    return Constants.LIVE_PREFIX + Constants.LOOP_LIMITER + counter;
+  }
+
+  private String liveVariable(String name) {
+    return Constants.LIVE_PREFIX + name;
+  }
+
+  @Test
+  public void testRemovalOfBlocksThatUseLoopLimiters() throws Exception {
+    final String program = ""
+        + "void main() {\n"
+        + "  int " + loopLimiter(1) + " = 0;\n"
+        + "  for (int " + liveVariable("x") + " = 0; ; " + liveVariable("x") + "++) {\n"
+        + "    for (int " + Constants.INJECTED_LOOP_COUNTER + " = 0; " + Constants.INJECTED_LOOP_COUNTER + " < 1; " + Constants.INJECTED_LOOP_COUNTER + "++) {\n"
+        + "      if (" + loopLimiter(1) + " >= 5) {\n"
+        + "        break;\n"
+        + "      }\n"
+        + "      if (true) {\n"
+        + "        " + loopLimiter(1) + "++;\n"
+        + "      }\n"
+        + "    }\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<StmtReductionOpportunity> ops =
+        StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()));
+    assertEquals(1, ops.size());
+    ops.get(0).applyReduction();
+
+    final String expected = ""
+        + "void main() {\n"
+        + "  int " + loopLimiter(1) + " = 0;\n"
+        + "}\n";
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
 }
