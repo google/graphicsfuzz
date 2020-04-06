@@ -17,6 +17,7 @@
 """Processes coverage files."""
 
 import io
+import json
 import os
 import subprocess
 import threading
@@ -129,38 +130,18 @@ def _process_text_lines(data: GetLineCountsData, lines: typing.TextIO) -> None:
             continue
 
 
-def _process_json_lines(data: GetLineCountsData, lines: typing.TextIO) -> None:
-    current_file = ""
-    current_file_line_counts: typing.Counter[int] = Counter()
-    # The count value given by the previous line, which may or may not be used depending on the next line.
-    current_count = -1
-    for line in lines:
-        line = line.strip()
-        # "file": "file_name",
-        if line.startswith('"file": "'):
-            assert current_count < 0
-            current_file = line[9:-2]
-            current_file_line_counts = data.line_counts.setdefault(
-                current_file, Counter()
-            )
-            continue
-        # "count": count,
-        if line.startswith('"count": '):
-            assert current_file
-            current_count = int(line[9:-1])
-            continue
-        # "line_number": line_number,
-        if line.startswith('"line_number": '):
-            assert current_file
-            assert current_count >= 0
-            line_number = int(line[15:-1])
-            # Confusingly, |update| adds counts.
-            current_file_line_counts.update({line_number: current_count})
-            # Fallthrough.
+def _process_json(data: GetLineCountsData, stdout: str) -> None:
+    json_output = json.loads(stdout)
+    if "files" not in json_output:
+        return
 
-        # Reset current_count; the "count" field can occur in a few places, but we only want to use the count that
-        # is immediately followed by "line_number".
-        current_count = -1
+    for file_coverage_info in json_output["files"]:
+        file_path = file_coverage_info["file"]
+        file_line_counts = data.line_counts.setdefault(file_path, Counter())
+        for line in file_coverage_info["lines"]:
+            line_number = line["line_number"]
+            line_count = int(line["count"])
+            file_line_counts.update({line_number: line_count})
 
 
 def _thread_adder(data: GetLineCountsData) -> None:
@@ -171,11 +152,11 @@ def _thread_adder(data: GetLineCountsData) -> None:
         if not root:
             # This is the special "done" message.
             break
-        lines = io.StringIO(stdout)
 
         if data.gcov_uses_json_output:
-            _process_json_lines(data, lines)
+            _process_json(data, stdout)
         else:
+            lines = io.StringIO(stdout)
             _process_text_lines(data, lines)
 
 
