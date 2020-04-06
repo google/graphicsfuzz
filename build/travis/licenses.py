@@ -728,7 +728,7 @@ def get_maven_dependencies_populated():
             'url': 'https://github.com/apache/commons-codec',
             'license_url': [
                 'https://raw.githubusercontent.com/apache/commons-codec/'
-                '5ce931b904d1f2961078b99049c293c11e779fec/NOTICE.txt'
+                '5ce931b904d1f2961078b99049c293c11e779fec/NOTICE.txt',
                 'https://raw.githubusercontent.com/apache/commons-codec'
                 '/5ce931b904d1f2961078b99049c293c11e779fec/LICENSE.txt'
             ],
