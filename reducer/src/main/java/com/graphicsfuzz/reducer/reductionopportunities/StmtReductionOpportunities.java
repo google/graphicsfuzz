@@ -439,7 +439,7 @@ public class StmtReductionOpportunities
       // outside any loop).
       for (int i = loopStack.size() - 1; i >= 0; i--) {
         if (loopStack.get(i).getRight().contains(variablesDeclaration)) {
-          // This is where the loop limiter is declared; shallow loops are not affected by this
+          // This is where the loop limiter is declared; shallower loops are not affected by this
           // loop limiter.
           break;
         }
