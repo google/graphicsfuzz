@@ -23,6 +23,7 @@ public final class Constants {
   }
 
   public static final String GLF_COLOR = "_GLF_color";
+  public static final String GLF_FRAGCOORD = "_GLF_FragCoord";
   public static final String GLF_POS = "_GLF_pos";
 
   public static final String GLF_OUT_VAR_BACKUP_PREFIX = "_GLF_outVarBackup";
@@ -106,7 +107,5 @@ public final class Constants {
   // constant provides a size for said array.
   public static final int DUMMY_SIZE_FOR_UNSIZED_ARRAY_DONATION = 10;
 
-  // String used inside live-injected variable to indicate that it is a loop limiter.
-  public static final String LOOP_LIMITER = "looplimiter";
 
 }
