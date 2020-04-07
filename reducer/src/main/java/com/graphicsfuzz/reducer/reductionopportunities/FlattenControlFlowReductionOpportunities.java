@@ -127,9 +127,9 @@ public class FlattenControlFlowReductionOpportunities
         shaderKind);
   }
 
-  private static boolean isLoopLimiterCheck(Stmt compoundStmt) {
+  private boolean isLoopLimiterCheck(Stmt compoundStmt) {
     return compoundStmt instanceof IfStmt
-          && StmtReductionOpportunities.referencesLoopLimiter(compoundStmt);
+          && StmtReductionOpportunities.referencesLoopLimiter(compoundStmt, getCurrentScope());
   }
 
 }

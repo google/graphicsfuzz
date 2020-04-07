@@ -106,5 +106,7 @@ public final class Constants {
   // constant provides a size for said array.
   public static final int DUMMY_SIZE_FOR_UNSIZED_ARRAY_DONATION = 10;
 
+  // String used inside live-injected variable to indicate that it is a loop limiter.
+  public static final String LOOP_LIMITER = "looplimiter";
 
 }

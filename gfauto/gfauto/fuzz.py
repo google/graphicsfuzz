@@ -273,7 +273,15 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     active_devices = devices_util.get_active_devices(
         settings.device_list, active_device_names=active_device_names
     )
-    # Add host_preprocessor device if it is missing.
+
+    # Add host_preprocessor device from device list if it is missing.
+    if not active_devices[0].HasField("preprocess"):
+        for device in settings.device_list.devices:
+            if device.HasField("preprocess"):
+                active_devices.insert(0, device)
+                break
+
+    # Add host_preprocessor device (from scratch) if it is still missing.
     if not active_devices[0].HasField("preprocess"):
         active_devices.insert(
             0, Device(name="host_preprocessor", preprocess=DevicePreprocess())

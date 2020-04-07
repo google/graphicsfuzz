@@ -71,6 +71,7 @@ def main() -> None:
             source_dir_to_reduce=source_dir,
             reduction_output_dir=output_dir,
             binary_manager=binary_manager,
+            settings=settings,
         )
     else:
         raise AssertionError(f"Unknown test type: {test}")

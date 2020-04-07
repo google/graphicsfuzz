@@ -62,4 +62,14 @@ message Settings {
 
   // Comment that links to documentation for this proto.
   string _comment = 12;
+
+  // Extra arguments to pass to spirv-fuzz during fuzzing (i.e. shader generation).
+  repeated string extra_spirv_fuzz_generate_args = 13;
+
+  // Extra arguments to pass to spirv-fuzz during shrinking.
+  repeated string extra_spirv_fuzz_shrink_args = 14;
+
+  // Extra arguments to pass to spirv-reduce.
+  repeated string extra_spirv_reduce_args = 15;
+
 }

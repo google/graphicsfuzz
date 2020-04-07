@@ -150,11 +150,11 @@ def get_index_line_to_write(amber_test_name: str, short_description: str) -> str
     # 1
     test_file_name_start_index = 5
     # 2
-    test_name_start_index = 53
+    test_name_start_index = 97
     # 3
-    test_description_start_index = 93
+    test_description_start_index = 181
     # 4
-    test_close_bracket_index = 181
+    test_close_bracket_index = 265
 
     tab_size = 4
 
