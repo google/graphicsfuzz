@@ -310,6 +310,15 @@ public final class PipelineInfo {
     dictionary.add(Constants.COMPUTE_DATA_KEY, computeData);
   }
 
+  public void addGridInfo(int columns, int rows) {
+    final JsonObject gridDimensions = new JsonObject();
+    final JsonArray dimensions = new JsonArray();
+    dimensions.add(columns);
+    dimensions.add(rows);
+    gridDimensions.add("dimensions", dimensions);
+    dictionary.add(Constants.GRID_DATA_KEY, gridDimensions);
+  }
+
   private JsonObject lookupUniform(String uniformName) {
     assert isLegalUniformName(uniformName);
     return (JsonObject) dictionary.get(uniformName);

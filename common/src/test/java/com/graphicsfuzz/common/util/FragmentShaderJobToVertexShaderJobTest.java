@@ -28,8 +28,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.assertTrue;
-
 
 public class FragmentShaderJobToVertexShaderJobTest {
   @Rule
@@ -49,7 +47,7 @@ public class FragmentShaderJobToVertexShaderJobTest {
         + "void main(void)\n"
         + "{\n"
         + "  vec2 lin = gl_FragCoord.xy / resolution;\n"
-        + "  GLF_color = vec4(lin.x,lin.y,0.0,1.0);\n"
+        + "  _GLF_color = vec4(lin.x,lin.y,0.0,1.0);\n"
         + "}\n";
 
     final String vert = "#version 430\n"
@@ -74,24 +72,24 @@ public class FragmentShaderJobToVertexShaderJobTest {
         + "\n"
         + "vec4 _GLF_FragCoord;\n"
         + "layout(location = 0) in vec4 _GLF_pos;\n"
-        + "layout(location = 0) out vec4 _GLF_color;\n"
+        + "layout(location = 0) out vec4 frag_color;\n"
         + "uniform vec2 resolution;\n"
         + "\n"
         + "void main(void)\n"
         + "{\n"
         + "  _GLF_FragCoord = (_GLF_pos + vec4(1.0,1.0,0.0,0.0)) * vec4(128.0, 128.0, 1.0, 1.0);\n"
         + "  vec2 lin = _GLF_FragCoord.xy / resolution;\n"
-        + "  GLF_color = vec4(lin.x,lin.y,0.0,1.0);\n"
+        + "  frag_color = vec4(lin.x,lin.y,0.0,1.0);\n"
         + "}\n";
 
     final String expectedFragmentShader = "#version 430\n"
         + "precision highp float;\n"
         + "\n"
-        + "layout(location = 0) in vec4 _GLF_color;\n"
-        + "layout(location = 0) out vec4 frag_color;\n"
+        + "layout(location = 0) out vec4 _GLF_color;\n"
+        + "layout(location = 0) in vec4 frag_color;\n"
         + "\n"
         + "void main() {\n"
-        + "  frag_color = _GLF_color;\n"
+        + "  _GLF_color = frag_color;\n"
         + "}";
 
     CompareAsts.assertEqualAsts(expectedFragmentShader, result.getFragmentShader().get());

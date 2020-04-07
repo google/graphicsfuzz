@@ -25,26 +25,24 @@ import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
-import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
-import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
+import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.LocationLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
-import com.graphicsfuzz.util.ArgsUtil;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
@@ -60,10 +58,6 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public final class FragmentShaderJobToVertexShaderJob {
 
-  private FragmentShaderJobToVertexShaderJob() {
-    // Utility class
-  }
-
   private static Optional<Integer> maybeGetArrayCount(VariableDeclInfo vdi) {
     if (vdi.hasArrayInfo()) {
       return Optional.of(vdi.getArrayInfo().getConstantSize());
@@ -72,43 +66,52 @@ public final class FragmentShaderJobToVertexShaderJob {
   }
 
   /**
-   * Creates a shader job with the given translation unit as its fragment shader, a pipeline state
-   * that provides a random value for every uniform declared in the shader, and if needed a vertex
-   * shader that provides outputs for the fragment shader's inputs.
+   * Converts a shader job where the fragment shader does all of the work
+   * into a shader job where the vertex shader does all of the work, discarding
+   * the existing vertex shader and replacing the fragment shader with a
+   * pass-through shader.
    *
-   * @param tu A fragment shader.
-   * @return A shader job that includes the fragment shader.
+   * @param sj A fragment shader based shader job
+   * @return A vertex shader based shader job.
    */
-
-
   public static ShaderJob convertShaderJob(ShaderJob sj) throws Exception {
-    final PipelineInfo pipelineInfo = sj.getPipelineInfo();
-    final List<TranslationUnit> shaders = new ArrayList<>();
-    
     // Get the current fragment shader and change it to vertex shader
     TranslationUnit vertexShader = sj.getFragmentShader().get();
     vertexShader.setShaderKind(ShaderKind.VERTEX);
 
-    // Create pass-through fragment shader
+    /* Create a pass-through fragment shader, of the form:
+
+        #version 430
+        precision highp float;
+
+        layout(location = 0) out vec4 _GLF_color;
+        layout(location = 0) in vec4 frag_color;
+
+        void main() {
+          _GLF_color = frag_color;
+        }
+    */
+    final String fragColor = "frag_color";
+
     final TranslationUnit fragmentShader = new TranslationUnit(ShaderKind.FRAGMENT,
         Optional.of(ShadingLanguageVersion.GLSL_430), Arrays.asList(
         new PrecisionDeclaration("precision highp float;"),
         new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
             Arrays.asList(new LayoutQualifierSequence(
                     new LocationLayoutQualifier(0)),
-                TypeQualifier.SHADER_INPUT)),
+                TypeQualifier.SHADER_OUTPUT)),
             new VariableDeclInfo(Constants.GLF_COLOR, null, null)),
         new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
             Arrays.asList(new LayoutQualifierSequence(
                     new LocationLayoutQualifier(0)),
-                TypeQualifier.SHADER_OUTPUT)),
-            new VariableDeclInfo("frag_color", null, null)),
+                TypeQualifier.SHADER_INPUT)),
+            new VariableDeclInfo(fragColor, null, null)),
         new FunctionDefinition(
             new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
             new BlockStmt(Arrays.asList(
                 new ExprStmt(new BinaryExpr(
-                    new VariableIdentifierExpr("frag_color"),
                     new VariableIdentifierExpr(Constants.GLF_COLOR),
+                    new VariableIdentifierExpr(fragColor),
                     BinOp.ASSIGN))), false))));
 
     // Find the first declaration that is not a precision declaration.
@@ -161,23 +164,48 @@ public final class FragmentShaderJobToVertexShaderJob {
                         BinOp.MUL),
             BinOp.ASSIGN)));
 
-    // Replace all instances of gl_FragCoord with _GLF_FragCoord
     new StandardVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
+        // Replace all instances of gl_FragCoord with _GLF_FragCoord
         if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_COORD)) {
           variableIdentifierExpr.setName(Constants.GLF_FRAGCOORD);
+        }
+        // Replace all instances of _GLF_color with frag_color
+        if (variableIdentifierExpr.getName().equals(Constants.GLF_COLOR)) {
+          variableIdentifierExpr.setName(fragColor);
+        }
+      }
+
+      // Also rename declarations of _GLF_color
+      @Override
+      public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+        final Type baseType = variablesDeclaration.getBaseType();
+        visit(baseType);
+        for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
+          if (vdi.getName().equals(Constants.GLF_COLOR)) {
+            vdi.setName(fragColor);
+          }
+          if (vdi.hasArrayInfo()) {
+            visit(vdi.getArrayInfo().getSizeExpr());
+          } else if (baseType instanceof ArrayType) {
+            visit(((ArrayType) baseType).getArrayInfo().getSizeExpr());
+          }
+          if (vdi.hasInitializer()) {
+            visit(vdi.getInitializer());
+          }
         }
       }
     }.visit(vertexShader);
 
-    // Add both shaders to list
-    shaders.add(fragmentShader);
-    shaders.add(vertexShader);
+    final PipelineInfo pipelineInfo = sj.getPipelineInfo();
+
+    pipelineInfo.addGridInfo(256, 256);
 
     // Return transformed shader job
-    return new GlslShaderJob(Optional.empty(), pipelineInfo, shaders);
+    return new GlslShaderJob(Optional.empty(), pipelineInfo,
+        Arrays.asList(vertexShader, fragmentShader));
   }
 
   private static Namespace parse(String[] args) throws ArgumentParserException {
