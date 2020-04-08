@@ -32,6 +32,7 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.util.Constants;
 import java.util.List;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class StmtReductionOpportunitiesTest {
@@ -570,6 +571,37 @@ public class StmtReductionOpportunitiesTest {
     final String expected = ""
         + "void main() {\n"
         + "  int " + loopLimiter(1) + " = 0;\n"
+        + "}\n";
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  // TODO(https://github.com/google/graphicsfuzz/issues/950) Re-enabled once the issue has been
+  //  addressed.
+  @Test
+  @Ignore
+  public void testGetRidOfLeftOverLoopLimiterReferences() throws Exception {
+    final String loopLimiterName = loopLimiter(0);
+    final String program = ""
+        + "#version 310 es\n"
+        + "void main() {\n"
+        + "  int " + loopLimiterName + " = 0;\n"
+        + "  if (" + loopLimiterName + ">= 5) {\n"
+        + "    " + loopLimiterName + "++;\n"
+        + "  }\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<StmtReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false, ShadingLanguageVersion.ESSL_310, new RandomWrapper(0),
+            new IdGenerator()));
+    assertEquals(2, ops.size());
+    ops.get(0).applyReduction();
+    ops.get(1).applyReduction();
+
+    final String expected = ""
+        + "#version 310 es\n"
+        + "void main() {\n"
+        + "  int " + loopLimiterName + " = 0;\n"
         + "}\n";
     CompareAsts.assertEqualAsts(expected, tu);
   }
