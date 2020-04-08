@@ -23,6 +23,10 @@ public final class Constants {
   }
 
   public static final String GLF_COLOR = "_GLF_color";
+
+  // Used to replace gl_FragCoord in vertex shades converted from fragment shaders
+  public static final String GLF_FRAGCOORD = "_GLF_FragCoord";
+
   public static final String GLF_POS = "_GLF_pos";
 
   public static final String GLF_OUT_VAR_BACKUP_PREFIX = "_GLF_outVarBackup";
@@ -72,6 +76,9 @@ public final class Constants {
   // A key we use in .json files to identify the sub-dictionary containing compute shader input/
   // output information.
   public static final String COMPUTE_DATA_KEY = "$compute";
+
+  // A key we use in .json files to instruct rendering of a grid instead of a quad.
+  public static final String GRID_DATA_KEY = "$grid";
 
   // The entry within the compute shader input/output information that records the number of groups.
   public static final String COMPUTE_NUM_GROUPS = "num_groups";
