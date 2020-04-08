@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
+import static org.junit.Assert.assertTrue;
 
 public class FragmentShaderJobToVertexShaderJobTest {
   @Rule
@@ -92,6 +92,9 @@ public class FragmentShaderJobToVertexShaderJobTest {
         + "  _GLF_color = frag_color;\n"
         + "}";
 
+    assertTrue(result.getPipelineInfo().hasGridInfo());
+    assertTrue(result.getPipelineInfo().getGridColumns() == 256);
+    assertTrue(result.getPipelineInfo().getGridRows() == 256);
     CompareAsts.assertEqualAsts(expectedFragmentShader, result.getFragmentShader().get());
     CompareAsts.assertEqualAsts(expectedVertexShader, result.getVertexShader().get());
   }
