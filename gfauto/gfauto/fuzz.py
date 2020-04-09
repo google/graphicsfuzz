@@ -33,10 +33,12 @@ from gfauto import (
     artifact_util,
     binaries_util,
     devices_util,
+    download_cts_gf_tests,
     fuzz_glsl_test,
     fuzz_spirv_test,
     gflogging,
     interrupt_util,
+    run_cts_gf_tests,
     settings_util,
     shader_job_util,
     test_util,
@@ -156,7 +158,8 @@ def main() -> None:
         "You can instead specify the number of times each tool will run; "
         "glsl-fuzz runs G times, then spirv-fuzz runs S times, then the pattern repeats. "
         "By default, G=0 and S=0, in which case glsl-fuzz is hardcoded to run. "
-        'Each run of glsl-fuzz/spirv-fuzz uses a random "iteration seed", which can be used to replay the invocation of the tool and the steps that follow. '
+        'Each run of glsl-fuzz/spirv-fuzz uses a random "iteration seed", which can be used to replay the invocation of the tool and the steps that follow. ',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     parser.add_argument(
@@ -197,11 +200,25 @@ def main() -> None:
     parser.add_argument(
         "--active_device",
         help="Add an active device name, overriding those in the settings.json file. "
+        "Ignored when --update_ignored_crash_signatures is passed."
         "Can be used multiple times to add multiple devices. "
         "E.g. --active_device host --active_device host_with_alternative_icd. "
         "This allows sharing a single settings.json file between multiple instances of gfauto_fuzz. "
         "Note that a host_preprocessor device will automatically be added as the first active device, if it is missing. ",
         action="append",
+    )
+
+    parser.add_argument(
+        "--update_ignored_crash_signatures",
+        metavar="GERRIT_COOKIE",
+        help="When passed, gfauto will download and run the existing GraphicsFuzz AmberScript tests from Khronos vk-gl-cts on "
+        "the active devices listed in the settings.json file. "
+        "It will then update the ignored_crash_signatures field for each active device in the settings.json file based on the crash signatures seen. "
+        "Requires Git. Requires Khronos membership. Obtain the Gerrit cookie as follows. "
+        + download_cts_gf_tests.GERRIT_COOKIE_INSTRUCTIONS,
+        action="store",
+        default=None,
+        type=str,
     )
 
     parsed_args = parser.parse_args(sys.argv[1:])
@@ -214,6 +231,9 @@ def main() -> None:
     spirv_fuzz_iterations: int = parsed_args.spirv_fuzz_iterations
     allow_no_stack_traces: bool = parsed_args.allow_no_stack_traces
     active_device_names: Optional[List[str]] = parsed_args.active_device
+    update_ignored_crash_signatures_gerrit_cookie: Optional[str] = (
+        parsed_args.update_ignored_crash_signatures
+    )
 
     # E.g. [GLSL_FUZZ, GLSL_FUZZ, SPIRV_FUZZ] will run glsl-fuzz twice, then spirv-fuzz once, then repeat.
     fuzzing_tool_pattern = get_fuzzing_tool_pattern(
@@ -230,6 +250,7 @@ def main() -> None:
                 fuzzing_tool_pattern,
                 allow_no_stack_traces,
                 active_device_names=active_device_names,
+                update_ignored_crash_signatures_gerrit_cookie=update_ignored_crash_signatures_gerrit_cookie,
             )
         except settings_util.NoSettingsFile as exception:
             log(str(exception))
@@ -256,6 +277,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     override_sigint: bool = True,
     use_amber_vulkan_loader: bool = False,
     active_device_names: Optional[List[str]] = None,
+    update_ignored_crash_signatures_gerrit_cookie: Optional[str] = None,
 ) -> None:
 
     if not fuzzing_tool_pattern:
@@ -269,6 +291,37 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     try_get_root_file()
 
     settings = settings_util.read_or_create(settings_path)
+
+    binary_manager = binaries_util.get_default_binary_manager(settings=settings)
+
+    temp_dir = Path() / "temp"
+
+    # Note: we use "is not None" so that if the user passes an empty Gerrit cookie, we still try to execute this code.
+    if update_ignored_crash_signatures_gerrit_cookie is not None:
+        git_tool = util.tool_on_path("git")
+        downloaded_graphicsfuzz_tests_dir = (
+            temp_dir / f"graphicsfuzz_cts_tests_{get_random_name()[:8]}"
+        )
+        work_dir = temp_dir / f"graphicsfuzz_cts_run_{get_random_name()[:8]}"
+        download_cts_gf_tests.download_cts_graphicsfuzz_tests(
+            git_tool=git_tool,
+            cookie=update_ignored_crash_signatures_gerrit_cookie,
+            output_tests_dir=downloaded_graphicsfuzz_tests_dir,
+        )
+        download_cts_gf_tests.extract_shaders(
+            tests_dir=downloaded_graphicsfuzz_tests_dir, binaries=binary_manager
+        )
+        with util.file_open_text(work_dir / "results.csv", "w") as results_out_handle:
+            run_cts_gf_tests.main_helper(
+                tests_dir=downloaded_graphicsfuzz_tests_dir,
+                work_dir=work_dir,
+                binaries=binary_manager,
+                settings=settings,
+                active_devices=devices_util.get_active_devices(settings.device_list),
+                results_out_handle=results_out_handle,
+                updated_settings_output_path=settings_path,
+            )
+        return
 
     active_devices = devices_util.get_active_devices(
         settings.device_list, active_device_names=active_device_names
@@ -289,7 +342,6 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
 
     reports_dir = Path() / "reports"
     fuzz_failures_dir = reports_dir / FUZZ_FAILURES_DIR_NAME
-    temp_dir = Path() / "temp"
     references_dir = Path() / REFERENCES_DIR
     donors_dir = Path() / DONORS_DIR
     spirv_fuzz_shaders_dir = Path() / "spirv_fuzz_shaders"
@@ -315,10 +367,6 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
         references = [
             ref for ref in references if shader_job_util.get_related_files(ref)
         ]
-
-    binary_manager = binaries_util.get_default_binary_manager(
-        settings=settings
-    ).get_child_binary_manager(list(settings.custom_binaries), prepend=True)
 
     if use_amber_vulkan_loader:
         library_path = binary_manager.get_binary_path_by_name(

@@ -35,7 +35,7 @@ from gfauto import (
 
 
 def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
-    git_tool: Path, cookie: str, output_shaders_dir: Path,
+    git_tool: Path, cookie: str, output_tests_dir: Path,
 ) -> Path:
     work_dir = Path() / "temp" / ("cts_" + fuzz.get_random_name())
 
@@ -107,27 +107,26 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
         / "vulkan"
         / "amber"
         / "graphicsfuzz",
-        output_shaders_dir,
+        output_tests_dir,
     )
 
 
-GERRIT_COOKIE_ARGUMENT_DESCRIPTION = (
-    "The Gerrit cookie used for authentication. Requires Khronos membership. "
-    "To get this, log in to the Khronos Gerrit page in your "
+GERRIT_COOKIE_INSTRUCTIONS = (
+    "Log in to the Khronos Gerrit page in your "
     "browser and paste the following into the JavaScript console (F12) to copy the cookie to your clipboard: "
-    "copy(document.cookie.match(/GerritAccount=([^;]*)/)[1])"
+    "copy( document.cookie.match( /GerritAccount=([^;]*)/ )[1])"
 )
 
 
-def extract_shaders(shader_dir: Path, binaries: binaries_util.BinaryManager) -> None:
-    for amber_file in shader_dir.glob("*.amber"):
+def extract_shaders(tests_dir: Path, binaries: binaries_util.BinaryManager) -> None:
+    for amber_file in tests_dir.glob("*.amber"):
         amber_converter.extract_shaders(
             amber_file, output_dir=amber_file.parent, binaries=binaries
         )
 
         zip_files = [
             util.ZipEntry(f, Path(f.name))
-            for f in sorted(shader_dir.glob(f"{amber_file.stem}.*"))
+            for f in sorted(tests_dir.glob(f"{amber_file.stem}.*"))
         ]
 
         util.create_zip(amber_file.with_suffix(".zip"), zip_files)
@@ -140,7 +139,11 @@ def main() -> None:
         "Requires Git. Requires Khronos membership."
     )
 
-    parser.add_argument("gerrit_cookie", help=GERRIT_COOKIE_ARGUMENT_DESCRIPTION)
+    parser.add_argument(
+        "gerrit_cookie",
+        help="The Gerrit cookie used for authentication. Requires Khronos membership. Obtain this as follows. "
+        + GERRIT_COOKIE_INSTRUCTIONS,
+    )
 
     parser.add_argument(
         "--settings",
@@ -160,9 +163,9 @@ def main() -> None:
 
     binaries = binaries_util.get_default_binary_manager(settings=settings)
 
-    shaders_dir = Path() / "graphicsfuzz"
-    download_cts_graphicsfuzz_tests(git_tool, cookie, shaders_dir)
-    extract_shaders(shaders_dir, binaries)
+    tests_dir = Path() / "graphicsfuzz"
+    download_cts_graphicsfuzz_tests(git_tool, cookie, tests_dir)
+    extract_shaders(tests_dir, binaries)
 
 
 if __name__ == "__main__":
