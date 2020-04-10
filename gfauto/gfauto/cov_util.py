@@ -47,7 +47,7 @@ class GetLineCountsData:
     build_dir: str
     gcov_prefix_dir: str
     num_threads: int
-    gcda_files_queue: "Queue[DirAndItsFiles]" = Queue()
+    gcno_files_queue: "Queue[DirAndItsFiles]" = Queue()
     stdout_queue: "Queue[DirAndItsOutput]" = Queue()
     line_counts: LineCounts = {}
 
@@ -56,7 +56,7 @@ def _thread_gcov(data: GetLineCountsData) -> None:
     # Keep getting files and processing until the special "done" ("", []) message.
 
     while True:
-        root, files = data.gcda_files_queue.get()
+        root, files = data.gcno_files_queue.get()
         if not root:
             # This is the special "done" message.
             break
@@ -64,7 +64,7 @@ def _thread_gcov(data: GetLineCountsData) -> None:
         if data.gcov_uses_json_output:
             cmd.append("-t")
         cmd.extend(files)
-        # I.e.: cd $root && gcov -i -t file_1.gcda file_2.gcda ...
+        # I.e.: cd $root && gcov -i -t file_1.gcno file_2.gcno ...
         result = subprocess.run(
             cmd,
             encoding="utf-8",
@@ -72,7 +72,6 @@ def _thread_gcov(data: GetLineCountsData) -> None:
             check=True,
             cwd=root,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
         )
         if data.gcov_uses_json_output:
             data.stdout_queue.put((root, result.stdout))
@@ -130,18 +129,20 @@ def _process_text_lines(data: GetLineCountsData, lines: typing.TextIO) -> None:
             continue
 
 
-def _process_json(data: GetLineCountsData, stdout: str) -> None:
-    json_output = json.loads(stdout)
-    if "files" not in json_output:
-        return
+def _process_json_lines(data: GetLineCountsData, lines: typing.TextIO) -> None:
+    # Each line is a JSON object.
+    for json_object in lines:
+        json_output = json.loads(json_object)
+        if "files" not in json_output:
+            return
 
-    for file_coverage_info in json_output["files"]:
-        file_path = file_coverage_info["file"]
-        file_line_counts = data.line_counts.setdefault(file_path, Counter())
-        for line in file_coverage_info["lines"]:
-            line_number = line["line_number"]
-            line_count = int(line["count"])
-            file_line_counts.update({line_number: line_count})
+        for file_coverage_info in json_output["files"]:
+            file_path = file_coverage_info["file"]
+            file_line_counts = data.line_counts.setdefault(file_path, Counter())
+            for line in file_coverage_info["lines"]:
+                line_number = line["line_number"]
+                line_count = int(line["count"])
+                file_line_counts.update({line_number: line_count})
 
 
 def _thread_adder(data: GetLineCountsData) -> None:
@@ -153,10 +154,10 @@ def _thread_adder(data: GetLineCountsData) -> None:
             # This is the special "done" message.
             break
 
+        lines = io.StringIO(stdout)
         if data.gcov_uses_json_output:
-            _process_json(data, stdout)
+            _process_json_lines(data, lines)
         else:
-            lines = io.StringIO(stdout)
             _process_text_lines(data, lines)
 
 
@@ -202,11 +203,11 @@ def get_line_counts(data: GetLineCountsData) -> None:
         gcno_files = [f for f in files if f.endswith(".gcno")]
         # TODO: Could split further if necessary.
         if gcno_files:
-            data.gcda_files_queue.put((os.path.join(root), gcno_files))
+            data.gcno_files_queue.put((os.path.join(root), gcno_files))
 
     # Send a "done" message for each thread.
     for _ in range(data.num_threads):
-        data.gcda_files_queue.put(("", []))
+        data.gcno_files_queue.put(("", []))
 
     # wait for threads.
     gcovs_thread.join()
