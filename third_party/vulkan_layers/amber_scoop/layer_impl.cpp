@@ -27,6 +27,7 @@
 #include "amber_scoop/vk_deep_copy.h"
 #include "common/spirv_util.h"
 #include "spirv-tools/libspirv.hpp"
+#include "vulkan_formats.h"
 
 namespace graphicsfuzz_amber_scoop {
 
@@ -767,8 +768,8 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
 
         auto strStream = std::make_shared<std::stringstream>();
         *strStream << "BUFFER " << bufferName.str() << " DATA_TYPE "
-                   << getBufferTypeName(description.format) << " DATA "
-                   << std::endl
+                   << vkf::VkFormatToVulkanFormat(description.format).name
+                   << " DATA\n"
                    << "  ";
         bufferDeclStrings.push_back(strStream);
       }
@@ -785,28 +786,14 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
              location++) {
           auto description = graphicsPipelineCreateInfo.pVertexInputState
                                  ->pVertexAttributeDescriptions[location];
+          // uint32_t componentWidth = getComponentWidth(description.format);
+          vkf::VulkanFormat format =
+              vkf::VkFormatToVulkanFormat(description.format);
 
-          uint32_t components = getComponentCount(description.format);
-          uint32_t componentWidth = getComponentWidth(description.format);
+          readComponentsFromBufferAndWriteToStrStream(
+              readPtr, format, *bufferDeclStrings.at(location));
 
-          for (uint32_t component = 0; component < components; component++) {
-            switch (getFormatTypeCode(description.format)) {
-            case tFloat:
-              *bufferDeclStrings.at(location) << *(float *)readPtr << " ";
-              break;
-            case tInt32:
-              *bufferDeclStrings.at(location) << *(int32_t *)readPtr << " ";
-              break;
-            case tUint32:
-              *bufferDeclStrings.at(location) << *(uint32_t *)readPtr << " ";
-              break;
-            // TODO: implement other formats
-            default:
-              assert(false && "Unimplemented format");
-            }
-
-            readPtr += componentWidth;
-          }
+          readPtr += format.width_bits / 8;
         }
       }
 
@@ -909,7 +896,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
       assert(bufferInfo.offset == 0);
 
       bufferDeclarationStringStream << "BUFFER " << bufferName << " DATA_TYPE "
-                                    << "float"
+                                    << "uint8"
                                     << " DATA" << std::endl;
       bufferDeclarationStringStream << "  ";
 
@@ -924,12 +911,12 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
                                    : bufferInfo.range;
           assert(std::get<0>(memoryMappingEntry) == 0);
           assert(std::get<1>(memoryMappingEntry) >= range);
-          auto *thePtr = (float *)std::get<3>(memoryMappingEntry);
-          for (int bidx = 0; bidx < range / sizeof(float); bidx++) {
+          auto *thePtr = (uint8_t *)std::get<3>(memoryMappingEntry);
+          for (int bidx = 0; bidx < range; bidx++) {
             if (bidx > 0) {
               bufferDeclarationStringStream << " ";
             }
-            bufferDeclarationStringStream << thePtr[bidx];
+            bufferDeclarationStringStream << (uint32_t)thePtr[bidx];
           }
         }
       } else {
@@ -979,8 +966,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
 
         bufferDeclarationStringStream << "BUFFER " << imageName
                                       << " FORMAT R8G8B8A8_UNORM"
-                                      << " FILE texture.png"
-                                      << std::endl;
+                                      << " FILE texture.png" << std::endl;
         break;
       }
       case VK_DESCRIPTOR_TYPE_SAMPLER: {
@@ -1000,6 +986,78 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
       }
       descriptorSetBindingStringStream << std::endl;
     }
+  }
+
+  // Depth
+  if (graphicsPipelineCreateInfo.pDepthStencilState != nullptr ||
+      graphicsPipelineCreateInfo.pRasterizationState->depthBiasEnable ||
+      graphicsPipelineCreateInfo.pRasterizationState->depthClampEnable) {
+
+    graphicsPipelineStringStream << "  DEPTH\n";
+
+    if (graphicsPipelineCreateInfo.pDepthStencilState != nullptr) {
+      auto depthState = graphicsPipelineCreateInfo.pDepthStencilState;
+      graphicsPipelineStringStream
+          << "    TEST " << (depthState->depthTestEnable ? "on" : "off") << "\n"
+          << "    WRITE " << (depthState->depthWriteEnable ? "on" : "off")
+          << "\n";
+      graphicsPipelineStringStream << "    COMPARE_OP ";
+      switch (depthState->depthCompareOp) {
+      case VK_COMPARE_OP_NEVER:
+        graphicsPipelineStringStream << "never";
+        break;
+      case VK_COMPARE_OP_LESS:
+        graphicsPipelineStringStream << "less";
+        break;
+      case VK_COMPARE_OP_EQUAL:
+        graphicsPipelineStringStream << "equal";
+        break;
+      case VK_COMPARE_OP_LESS_OR_EQUAL:
+        graphicsPipelineStringStream << "less_or_equal";
+        break;
+      case VK_COMPARE_OP_GREATER:
+        graphicsPipelineStringStream << "greater";
+        break;
+      case VK_COMPARE_OP_NOT_EQUAL:
+        graphicsPipelineStringStream << "not_equal";
+        break;
+      case VK_COMPARE_OP_GREATER_OR_EQUAL:
+        graphicsPipelineStringStream << "greater_or_equal";
+        break;
+      case VK_COMPARE_OP_ALWAYS:
+        graphicsPipelineStringStream << "always";
+        break;
+      default:
+        assert(false && "Invalid VK_COMPARE_OP");
+      }
+      graphicsPipelineStringStream << "\n";
+
+      // Amber expects the values as float values
+      graphicsPipelineStringStream << std::scientific;
+      graphicsPipelineStringStream << "    BOUNDS min "
+                                   << 1.0 << " max "
+                                   << depthState->maxDepthBounds << "\n";
+      graphicsPipelineStringStream << std::defaultfloat;
+    }
+
+    if (graphicsPipelineCreateInfo.pRasterizationState->depthClampEnable) {
+      graphicsPipelineStringStream << "    CLAMP on\n";
+    }
+
+    if (graphicsPipelineCreateInfo.pRasterizationState->depthBiasEnable) {
+      graphicsPipelineStringStream
+          << "    BIAS constant "
+          << graphicsPipelineCreateInfo.pRasterizationState
+                 ->depthBiasConstantFactor
+          << " clamp "
+          << graphicsPipelineCreateInfo.pRasterizationState->depthBiasClamp
+          << " slope "
+          << graphicsPipelineCreateInfo.pRasterizationState
+                 ->depthBiasSlopeFactor
+          << "\n";
+    }
+
+    graphicsPipelineStringStream << "  END\n"; // DEPTH
   }
 
   VkRenderPassCreateInfo renderPassCreateInfo =
@@ -1022,6 +1080,22 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   std::cout << "PIPELINE graphics pipeline" << std::endl;
   std::cout << "  ATTACH vertex_shader" << std::endl;
   std::cout << "  ATTACH fragment_shader" << std::endl;
+
+  // Polygon mode
+  std::cout << "  POLYGON_MODE ";
+  switch (graphicsPipelineCreateInfo.pRasterizationState->polygonMode) {
+  case VkPolygonMode::VK_POLYGON_MODE_FILL:
+    std::cout << "fill\n";
+    break;
+  case VkPolygonMode::VK_POLYGON_MODE_LINE:
+    std::cout << "line\n";
+    break;
+  case VkPolygonMode::VK_POLYGON_MODE_POINT:
+    std::cout << "point\n";
+    break;
+  default:
+    assert(false && "Polygon mode not supported by amber.");
+  }
 
   // Add definitions for pipeline
   std::cout << graphicsPipelineStringStream.str();
@@ -1049,6 +1123,52 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   }
 
   exit(0);
+}
+
+inline void readComponentsFromBufferAndWriteToStrStream(
+    char *buffer, vkf::VulkanFormat format, std::stringstream &bufStr) {
+
+  if (format.isPacked) {
+    // Packed formats are 16 or 32 bits wide.
+    if (format.width_bits == 16)
+      bufStr << (uint32_t) * (uint16_t *)buffer << " ";
+    else // 32-bit
+      bufStr << *(uint32_t *)buffer << " ";
+  } else {
+    for (uint8_t cIdx = 0; cIdx < format.component_count; cIdx++) {
+      if (format.components[cIdx].isFloat()) {
+        // TODO: implement 16-bit floats
+        if (format.components[cIdx].num_bits == 32)
+          bufStr << ((float *)buffer)[cIdx] << " ";
+        else if (format.components[cIdx].num_bits == 64)
+          bufStr << ((double *)buffer)[cIdx] << " ";
+      } else if (format.components[cIdx].isUInt()) {
+        if (format.components[cIdx].num_bits == 8)
+          bufStr << (uint32_t)((uint8_t *)buffer)[cIdx] << " ";
+        else if (format.components[cIdx].num_bits == 16)
+          bufStr << (uint32_t)((uint16_t *)buffer)[cIdx] << " ";
+        else if (format.components[cIdx].num_bits == 32)
+          bufStr << ((uint32_t *)buffer)[cIdx] << " ";
+        else if (format.components[cIdx].num_bits == 64)
+          bufStr << ((uint64_t *)buffer)[cIdx] << " ";
+        else
+          assert(false && "Unsupported width.");
+      } else if (format.components[cIdx].isSInt()) {
+        if (format.components[cIdx].num_bits == 8)
+          bufStr << (int32_t)((int8_t *)buffer)[cIdx] << " ";
+        else if (format.components[cIdx].num_bits == 16)
+          bufStr << (int32_t)((int16_t *)buffer)[cIdx] << " ";
+        else if (format.components[cIdx].num_bits == 32)
+          bufStr << ((int32_t *)buffer)[cIdx] << " ";
+        else if (format.components[cIdx].num_bits == 64)
+          bufStr << ((int64_t *)buffer)[cIdx] << " ";
+        else
+          assert(false && "Unsupported width.");
+      } else {
+        assert(false && "Unsupported format");
+      }
+    }
+  }
 }
 
 } // namespace graphicsfuzz_amber_scoop
