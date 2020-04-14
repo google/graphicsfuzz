@@ -15,14 +15,14 @@
  *
  */
 
-
 #ifndef GRAPHICSFUZZ_VULKAN_LAYERS_LAYER_IMPL_H
 #define GRAPHICSFUZZ_VULKAN_LAYERS_LAYER_IMPL_H
 
+#include "amber_scoop/layer.h"
+#include "vulkan_formats.h"
 #include <cassert>
 #include <map>
 #include <sstream>
-#include "amber_scoop/layer.h"
 
 namespace graphicsfuzz_amber_scoop {
 
@@ -36,19 +36,6 @@ struct CmdCopyBufferToImage;
 struct CmdDraw;
 struct CmdDrawIndexed;
 struct BufferCopy;
-
-enum FormatType {
-  tInt8 = 0,
-  tInt16 = 1,
-  tInt32 = 2,
-  tInt64 = 3,
-  tUint8 = 4,
-  tUint16 = 5,
-  tUint32 = 6,
-  tUint64 = 7,
-  tFloat = 8,
-  tDouble = 9
-};
 
 const std::map<VkPrimitiveTopology, std::string> topologies = {
     {VK_PRIMITIVE_TOPOLOGY_POINT_LIST, "POINT_LIST"},
@@ -65,8 +52,7 @@ const std::map<VkPrimitiveTopology, std::string> topologies = {
      "TRIANGLE_LIST_WITH_ADJACENCY"},
     {VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
      "TRIANGLE_STRIP_WITH_ADJACENCY"},
-    {VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, "PATCH_LIST"}
-};
+    {VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, "PATCH_LIST"}};
 
 struct Cmd {
 
@@ -105,111 +91,6 @@ struct Cmd {
   // clang-format on
 };
 
-uint32_t getComponentCount(VkFormat vkFormat) {
-  switch (vkFormat) {
-  case VK_FORMAT_R32G32B32A32_SFLOAT:
-  case VK_FORMAT_R32G32B32A32_UINT:
-  case VK_FORMAT_R32G32B32A32_SINT:
-    return 4;
-  case VK_FORMAT_R32G32B32_SFLOAT:
-  case VK_FORMAT_R32G32B32_UINT:
-  case VK_FORMAT_R32G32B32_SINT:
-    return 3;
-  case VK_FORMAT_R32G32_SFLOAT:
-  case VK_FORMAT_R32G32_UINT:
-  case VK_FORMAT_R32G32_SINT:
-    return 2;
-  case VK_FORMAT_R32_SFLOAT:
-  case VK_FORMAT_R32_UINT:
-  case VK_FORMAT_R32_SINT:
-    return 1;
-  default:
-    assert(false && "Unknown format.");
-  }
-  // TODO: implement other formats
-  return 0;
-}
-
-
-uint32_t getComponentWidth(VkFormat vkFormat) {
-  switch (vkFormat) {
-  case VK_FORMAT_R32G32B32A32_SFLOAT:
-  case VK_FORMAT_R32G32B32A32_UINT:
-  case VK_FORMAT_R32G32B32A32_SINT:
-  case VK_FORMAT_R32G32B32_SFLOAT:
-  case VK_FORMAT_R32G32B32_UINT:
-  case VK_FORMAT_R32G32B32_SINT:
-  case VK_FORMAT_R32G32_SFLOAT:
-  case VK_FORMAT_R32G32_UINT:
-  case VK_FORMAT_R32G32_SINT:
-  case VK_FORMAT_R32_SFLOAT:
-  case VK_FORMAT_R32_UINT:
-  case VK_FORMAT_R32_SINT:
-    return 4;
-  default:
-    assert(false && "Unknown format.");
-  }
-  // TODO: implement other formats
-  return 0;
-}
-
-std::string getFormatTypeName(VkFormat vkFormat) {
-  switch (vkFormat) {
-  case VK_FORMAT_R32G32B32A32_SFLOAT:
-  case VK_FORMAT_R32G32B32_SFLOAT:
-  case VK_FORMAT_R32G32_SFLOAT:
-  case VK_FORMAT_R32_SFLOAT:
-    return "float";
-  case VK_FORMAT_R32G32B32A32_UINT:
-  case VK_FORMAT_R32G32B32_UINT:
-  case VK_FORMAT_R32G32_UINT:
-  case VK_FORMAT_R32_UINT:
-    return "uint32";
-  case VK_FORMAT_R32G32B32A32_SINT:
-  case VK_FORMAT_R32G32B32_SINT:
-  case VK_FORMAT_R32G32_SINT:
-  case VK_FORMAT_R32_SINT:
-    return "int32";
-  default:
-    assert(false && "Unknown format.");
-  }
-  // TODO: implement other formats
-}
-
-std::string getBufferTypeName(VkFormat vkFormat) {
-  auto componentCount = getComponentCount(vkFormat);
-  if (componentCount == 1) {
-    return getFormatTypeName(vkFormat);
-  }
-
-  std::stringstream strStream;
-  strStream << "vec" << componentCount << "<" << getFormatTypeName(vkFormat)
-            << ">";
-  return strStream.str();
-}
-
-FormatType getFormatTypeCode(VkFormat vkFormat) {
-  switch (vkFormat) {
-  case VK_FORMAT_R32G32B32A32_SFLOAT:
-  case VK_FORMAT_R32G32B32_SFLOAT:
-  case VK_FORMAT_R32G32_SFLOAT:
-  case VK_FORMAT_R32_SFLOAT:
-    return tFloat;
-  case VK_FORMAT_R32G32B32A32_UINT:
-  case VK_FORMAT_R32G32B32_UINT:
-  case VK_FORMAT_R32G32_UINT:
-  case VK_FORMAT_R32_UINT:
-    return tUint32;
-  case VK_FORMAT_R32G32B32A32_SINT:
-  case VK_FORMAT_R32G32B32_SINT:
-  case VK_FORMAT_R32G32_SINT:
-  case VK_FORMAT_R32_SINT:
-    return tInt32;
-  default:
-    assert(false && "Unknown format.");
-  }
-}
-
 std::string getDescriptorTypeString(VkDescriptorType descriptorType) {
   switch (descriptorType) {
   case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
@@ -227,6 +108,10 @@ std::string getDescriptorTypeString(VkDescriptorType descriptorType) {
     return "...";
   }
 }
+
+void readComponentsFromBufferAndWriteToStrStream(char *buffer,
+                                                 vkf::VulkanFormat format,
+                                                 std::stringstream &bufStr);
 
 } // namespace graphicsfuzz_amber_scoop
 

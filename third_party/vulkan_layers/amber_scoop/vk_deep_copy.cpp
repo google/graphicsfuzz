@@ -75,51 +75,44 @@ DeepCopy(const VkGraphicsPipelineCreateInfo &createInfo) {
 
     // Copy pVertexBindingDescriptions
     {
-      auto vertexBindingDescriptions = new VkVertexInputBindingDescription
-          [vertexInputState->vertexBindingDescriptionCount];
-
-      for (uint32_t i = 0; i < vertexInputState->vertexBindingDescriptionCount;
-           i++) {
-        vertexBindingDescriptions[i] =
-            createInfo.pVertexInputState->pVertexBindingDescriptions[i];
-      }
-
-      vertexInputState->pVertexBindingDescriptions = vertexBindingDescriptions;
+      vertexInputState->pVertexBindingDescriptions =
+          CopyArray(createInfo.pVertexInputState->pVertexBindingDescriptions,
+                    vertexInputState->vertexBindingDescriptionCount);
     }
 
     // Copy pVertexAttributeDescriptions
     {
-      auto vertexInputAttributeDescriptions =
-          new VkVertexInputAttributeDescription
-              [vertexInputState->vertexAttributeDescriptionCount];
-
-      for (uint32_t i = 0;
-           i < vertexInputState->vertexAttributeDescriptionCount; i++) {
-        vertexInputAttributeDescriptions[i] =
-            createInfo.pVertexInputState->pVertexAttributeDescriptions[i];
-      }
-
-      vertexInputState->pVertexAttributeDescriptions =
-          vertexInputAttributeDescriptions;
+      vertexInputState->pVertexAttributeDescriptions = CopyArray(
+          createInfo.pVertexInputState->pVertexAttributeDescriptions,
+          createInfo.pVertexInputState->vertexAttributeDescriptionCount);
     }
 
     // Copy pInputAssemblyState
     {
-      auto inputAssemblyStateCreateInfo = new VkPipelineInputAssemblyStateCreateInfo();
+      auto inputAssemblyStateCreateInfo =
+          new VkPipelineInputAssemblyStateCreateInfo();
       *inputAssemblyStateCreateInfo = *createInfo.pInputAssemblyState;
       result.pInputAssemblyState = inputAssemblyStateCreateInfo;
+    }
+
+    // Copy pVertexInputState
+    {
+      auto rasterizationState = new VkPipelineRasterizationStateCreateInfo();
+      *rasterizationState = *createInfo.pRasterizationState;
+      result.pRasterizationState = rasterizationState;
+    }
+
+    // Copy pDepthStencilState
+    if (createInfo.pDepthStencilState != nullptr) {
+      auto depthStencilState = new VkPipelineDepthStencilStateCreateInfo();
+      *depthStencilState = *createInfo.pDepthStencilState;
+      result.pDepthStencilState = depthStencilState;
     }
 
     result.pVertexInputState = vertexInputState;
   }
 
   // TODO: handle deep copying of other fields.
-  return result;
-}
-
-VkPipelineVertexInputStateCreateInfo
-DeepCopy(const VkPipelineVertexInputStateCreateInfo &vertexInputState) {
-  VkPipelineVertexInputStateCreateInfo result = vertexInputState;
   return result;
 }
 
