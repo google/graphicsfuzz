@@ -196,7 +196,7 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
     """
     Returns AmberScript commands for uniform binding.
 
-    Skips the special '$compute' key, if present.
+    Skips the special '$...' keys, if present.
 
     {
       "myuniform": {
@@ -214,7 +214,7 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
     result = ""
     uniforms = json.loads(uniform_json)
     for name, entry in uniforms.items():
-        if name[0] == "$":
+        if name.startswith("$"):
             continue
         result += f"  BIND BUFFER {prefix}_{name} AS uniform DESCRIPTOR_SET 0 BINDING {entry['binding']}\n"
     return result
@@ -296,7 +296,7 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
 
     for name, entry in uniforms.items():
 
-        if name[0] == "$":
+        if name.startswith("$"):
             continue
 
         func = entry["func"]
@@ -455,7 +455,7 @@ class ShaderJobFile:
             must_exist=True,
         )
 
-        # Figure out if we want to draw rectangle or grid
+        # Figure out if we want to draw a rectangle or a grid.
         draw_command = derive_draw_command(json_contents)
 
         return GraphicsShaderJob(
