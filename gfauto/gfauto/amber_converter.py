@@ -196,7 +196,7 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
     """
     Returns AmberScript commands for uniform binding.
 
-    Skips the special '$compute' key, if present.
+    Skips the special '$...' keys, if present.
 
     {
       "myuniform": {
@@ -214,7 +214,7 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
     result = ""
     uniforms = json.loads(uniform_json)
     for name, entry in uniforms.items():
-        if name == "$compute":
+        if name.startswith("$"):
             continue
         result += f"  BIND BUFFER {prefix}_{name} AS uniform DESCRIPTOR_SET 0 BINDING {entry['binding']}\n"
     return result
@@ -224,7 +224,7 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
     """
     Returns the string representing AmberScript version of uniform definitions.
 
-    Skips the special '$compute' key, if present.
+    Skips the special '$...' keys, if present.
 
     {
       "myuniform": {
@@ -296,7 +296,7 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
 
     for name, entry in uniforms.items():
 
-        if name == "$compute":
+        if name.startswith("$"):
             continue
 
         func = entry["func"]
@@ -331,6 +331,15 @@ def is_compute_job(input_asm_spirv_job_json_path: pathlib.Path) -> bool:
         AssertionError(f"Expected 1 or 0 compute shader files: {comp_files}"),
     )
     return len(comp_files) == 1
+
+
+def derive_draw_command(json_contents: str) -> str:
+    shader_job_info = json.loads(json_contents)
+    if "$grid" in shader_job_info.keys():
+        cols = shader_job_info["$grid"]["dimensions"][0]
+        rows = shader_job_info["$grid"]["dimensions"][1]
+        return f"DRAW_GRID POS 0 0 SIZE 256 256 CELLS {cols} {rows}"
+    return "DRAW_RECT POS 0 0 SIZE 256 256"
 
 
 class ShaderType(Enum):
@@ -377,6 +386,7 @@ class ComputeShaderJob(ShaderJob):
 class GraphicsShaderJob(ShaderJob):
     vertex_shader: Shader
     fragment_shader: Shader
+    draw_command: str
 
 
 @attr.dataclass
@@ -445,6 +455,9 @@ class ShaderJobFile:
             must_exist=True,
         )
 
+        # Figure out if we want to draw a rectangle or a grid.
+        draw_command = derive_draw_command(json_contents)
+
         return GraphicsShaderJob(
             self.name_prefix,
             amberscript_uniform_buffer_def(json_contents, self.name_prefix),
@@ -461,6 +474,7 @@ class ShaderJobFile:
                 glsl_frag_contents,
                 self.processing_info,
             ),
+            draw_command,
         )
 
 
@@ -588,7 +602,7 @@ def graphics_shader_job_amber_test_to_amber_script(
         # Run the pipeline.
 
         result += f"\nCLEAR {prefix}_pipeline\n"
-        result += f"RUN {prefix}_pipeline DRAW_RECT POS 0 0 SIZE 256 256\n"
+        result += f"RUN {prefix}_pipeline {job.draw_command}\n"
         result += "\n"
 
     # Add fuzzy compare of framebuffers if there's more than one pipeline.
