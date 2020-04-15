@@ -22,14 +22,14 @@ set -u
 test -f ./Pipfile
 test -f ./dev_shell.sh.template
 
-# Sets PYTHON to python3.6, unless already defined.
-# Modify if needed; this should be a Python 3.6 binary.
+# Sets PYTHON to python3, unless already defined.
+# Modify if needed; this should be a Python 3.6+ binary.
 # E.g. PYTHON=python3.6
 # Or, do `export PYTHON=python3.6` before executing this script.
-PYTHON=${PYTHON-python3.6}
+PYTHON=${PYTHON-python3}
 
 # Upgrade/install pip and pipenv if needed.
-"${PYTHON}" -m pip install --upgrade --user --no-warn-script-location 'pip>=19.2.3' 'pipenv>=2018.11.26'
+"${PYTHON}" -m pip install --upgrade --user 'pip>=19.2.3' 'pipenv>=2018.11.26'
 
 # Place the virtual environment at `gfauto/.venv`.
 export PIPENV_VENV_IN_PROJECT=1
@@ -40,9 +40,3 @@ export PIPENV_IGNORE_PIPFILE=1
 # Install project dependencies, including development dependencies, into the
 # virtual environment using pipenv.
 "${PYTHON}" -m pipenv install --dev
-
-if [ -z ${SKIP_SHELL+x} ]; then
-  # Enter the virtual environment, unless SKIP_SHELL is defined.
-  # `python` should now point to the correct version of Python.
-  "${PYTHON}" -m pipenv shell
-fi
