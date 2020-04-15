@@ -175,7 +175,12 @@ VkSubpassDescription DeepCopy(const VkSubpassDescription &subpassDescription) {
         CopyArray(subpassDescription.pResolveAttachments,
                   subpassDescription.colorAttachmentCount);
   }
-  // TODO: deep copying of pDepthStencilAttachment not yet handled
+
+  if (subpassDescription.pDepthStencilAttachment) {
+    result.pDepthStencilAttachment =
+        CopyArray(subpassDescription.pDepthStencilAttachment, 1);
+  }
+
   result.pPreserveAttachments =
       CopyArray(subpassDescription.pPreserveAttachments,
                 subpassDescription.preserveAttachmentCount);

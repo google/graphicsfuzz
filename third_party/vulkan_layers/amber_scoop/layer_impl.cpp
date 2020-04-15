@@ -1034,8 +1034,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
 
       // Amber expects the values as float values
       graphicsPipelineStringStream << std::scientific;
-      graphicsPipelineStringStream << "    BOUNDS min "
-                                   << 1.0 << " max "
+      graphicsPipelineStringStream << "    BOUNDS min " << 1.0 << " max "
                                    << depthState->maxDepthBounds << "\n";
       graphicsPipelineStringStream << std::defaultfloat;
     }
@@ -1060,6 +1059,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
     graphicsPipelineStringStream << "  END\n"; // DEPTH
   }
 
+  // Create buffers for color attachments.
   VkRenderPassCreateInfo renderPassCreateInfo =
       renderPasses.at(drawCallStateTracker.currentRenderPass->renderPass);
   for (uint colorAttachment = 0;
@@ -1067,15 +1067,37 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
        renderPassCreateInfo.pSubpasses[drawCallStateTracker.currentSubpass]
            .colorAttachmentCount;
        colorAttachment++) {
+    uint32_t attachmentID =
+        renderPassCreateInfo.pSubpasses[drawCallStateTracker.currentSubpass]
+            .pColorAttachments[colorAttachment]
+            .attachment;
+    vkf::VulkanFormat format = vkf::VkFormatToVulkanFormat(
+        renderPassCreateInfo.pAttachments[attachmentID].format);
+
     bufferDeclarationStringStream << "BUFFER framebuffer_" << colorAttachment
-                                  << " FORMAT B8G8R8A8_UNORM" << std::endl
-                                  << std::endl;
+                                  << " FORMAT " << format.name << std::endl;
     framebufferAttachmentStringStream
         << "  BIND BUFFER framebuffer_" << colorAttachment
         << " AS color LOCATION " << colorAttachment << std::endl;
   }
 
-  std::cout << bufferDeclarationStringStream.str();
+  // Create buffer for depth / stencil attachment.
+  if (renderPassCreateInfo.pSubpasses[drawCallStateTracker.currentSubpass]
+          .pDepthStencilAttachment) {
+
+    uint32_t attachmentID =
+        renderPassCreateInfo.pSubpasses[drawCallStateTracker.currentSubpass]
+            .pDepthStencilAttachment->attachment;
+    vkf::VulkanFormat format = vkf::VkFormatToVulkanFormat(
+        renderPassCreateInfo.pAttachments[attachmentID].format);
+
+    bufferDeclarationStringStream << "BUFFER depthstencil FORMAT "
+                                  << format.name << std::endl;
+    framebufferAttachmentStringStream
+        << "  BIND BUFFER depthstencil AS depth_stencil" << std::endl;
+  }
+
+  std::cout << bufferDeclarationStringStream.str() << std::endl;
 
   std::cout << "PIPELINE graphics pipeline" << std::endl;
   std::cout << "  ATTACH vertex_shader" << std::endl;
