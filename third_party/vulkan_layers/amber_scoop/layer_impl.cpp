@@ -728,7 +728,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
       VkBuffer vertexBuffer = nullptr;
 
       // Check if a staging buffer is used.
-      for (auto bufferCopy : bufferCopies) {
+      for (const auto& bufferCopy : bufferCopies) {
         if (bufferCopy->dstBuffer != vertexBufferBinding.second)
           continue;
         vertexBuffer = bufferCopy->srcBuffer;
@@ -786,14 +786,12 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
              location++) {
           auto description = graphicsPipelineCreateInfo.pVertexInputState
                                  ->pVertexAttributeDescriptions[location];
-          // uint32_t componentWidth = getComponentWidth(description.format);
+
           vkf::VulkanFormat format =
               vkf::VkFormatToVulkanFormat(description.format);
 
           readComponentsFromBufferAndWriteToStrStream(
-              readPtr, format, *bufferDeclStrings.at(location));
-
-          readPtr += format.width_bits / 8;
+              readPtr + description.offset, format, *bufferDeclStrings.at(location));
         }
       }
 
