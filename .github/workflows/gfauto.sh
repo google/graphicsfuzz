@@ -44,7 +44,6 @@ esac
 python build/travis/check_headers.py
 cd gfauto
 export PYTHON=python
-export SKIP_SHELL=1
 ./dev_shell.sh.template
 # shellcheck disable=SC1090
 source "${ACTIVATE_PATH}"

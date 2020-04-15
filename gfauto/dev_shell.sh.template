@@ -40,9 +40,3 @@ export PIPENV_IGNORE_PIPFILE=1
 # Install project dependencies, including development dependencies, into the
 # virtual environment using pipenv.
 "${PYTHON}" -m pipenv install --dev
-
-if [ -z ${SKIP_SHELL+x} ]; then
-  # Enter the virtual environment, unless SKIP_SHELL is defined.
-  # `python` should now point to the correct version of Python.
-  "${PYTHON}" -m pipenv shell
-fi

@@ -6,35 +6,46 @@
 
 gfauto is a set of tools for using the fuzzers and reducers from the [GraphicsFuzz project](https://github.com/google/graphicsfuzz) (including spirv-fuzz and spirv-reduce) in a "push-button" fashion with minimal interaction.
 
-**Note: 64-bit Linux is currently the only supported platform. Windows and Mac may work, but there will likely be issues.**
+**Note: 64-bit Linux is currently the only supported platform. Windows and Mac are unlikely to work.**
+
+## Requirements
+
+* Python 3.6+.
+* Pip must be installed _for the Python binary you will use_. E.g. Try `python3 -m pip`.
 
 ## Setup
 
-> Optional: if you have just done `git pull` to get a more recent version of gfauto, consider deleting `.venv/` to start from a fresh virtual environment. This is rarely needed.
+Clone this repo and enter the `gfauto/` directory that contains this README file. Execute:
 
-> On Windows, you can use the Git Bash shell, or adapt the commands (including those inside `dev_shell.sh.template`) to the Windows command prompt.
+```sh
+./dev_shell.sh.template
+```
 
-Clone this repo and enter the `gfauto/` directory that contains this README file. Execute `./dev_shell.sh.template`. If the default settings don't work, make a copy of the file called `dev_shell.sh` and modify according to the comments before executing. `pip` must be installed for the version of Python you wish to use. Note that you can do e.g. `export PYTHON=python3.6.8` to set your preferred Python binary. We currently target Python 3.6.
+> Try `PYTHON=python3.6.8 ./dev_shell.sh.template` to override your preferred Python binary. Otherwise, if the default settings don't work, make a copy of the file called `dev_shell.sh`, modify according to the comments, and execute it.
 
 > Pip for Python 3.6 may be broken on certain Debian distributions.
-> You can just use the newer Python 3.7+ version provided by your
+> You can just use Python 3.7+ from your
 > distribution.
 > See "Installing Python" below if you want to use Python 3.6.
 
-The script generates and activates a Python virtual environment (located at `.venv/`) with all dependencies installed.
+The script generates a Python virtual environment (located at `.venv/`) with all dependencies installed. To activate the virtual environment:
+
+* `source .venv/bin/activate` (on Linux)
+* `source .venv/Scripts/activate` (on Windows with the Git Bash shell)
+* `.venv/Scripts/activate.bat` (on Windows with cmd)
 
 Skip to [Fuzzing](#fuzzing) to start fuzzing Vulkan devices and tools.
 
-### Presubmit checks
+## Presubmit checks and protobuf generation
 
 * Execute `./check_all.sh` to run various presubmit checks, linters, etc.
 * Execute `./fix_all.sh` to automatically fix certain issues, such as formatting.
+* Execute `./run_protoc.sh` update/generate protobuf files.
 
-
-### PyCharm
+## PyCharm
 
 Use PyCharm to open the top-level `gfauto/` directory (that contains this README file).
-It should pick up the Python virtual environment (at `.venv/`) automatically
+It should detect the Python virtual environment (at `.venv/`) automatically
 for both the code
 and when you open a `Terminal` or `Python Console` tab.
 
@@ -46,6 +57,10 @@ Install and configure plugins:
 * Mypy: the built-in PyCharm type checking uses Mypy behind-the-scenes, but this plugin enhances it by using the latest version and allowing the use of stricter settings, matching the settings used by the `./check_all.sh` script.
 
 Add `whitelist.dic` as a custom dictionary (search for "Spelling" in Actions). Do not add words via PyCharm's "Quick Fixes" feature, as the word will only be added to your personal dictionary. Instead, manually add the word to `whitelist.dic`.
+
+#### Terminal tab
+
+The `Terminal` tab in PyCharm is useful, as it uses the project's Python virtual environment. Use it to execute the scripts described above, such as `./check_all.sh`.
 
 ## [Coding conventions](docs/conventions.md)
 
@@ -62,15 +77,6 @@ Now any scripts in the `shader-generation` repository are visible in PyCharm.
 
 You can execute scripts in this repository by opening a Terminal in PyCharm.
 
-## Terminal
-
-The `Terminal` tab in PyCharm is useful and will use the project's Python virtual environment. In any other terminal, use:
-
-* `source .venv/bin/activate` (on Linux)
-* `source .venv/Scripts/activate` (on Windows with the Git Bash shell)
-* `.venv/Scripts/activate.bat` (on Windows with cmd)
-
-You can alternatively execute the `./dev_shell.sh` script, but this is fairly slow as it checks and reinstalls all dependencies
 
 ## Fuzzing
 
@@ -109,6 +115,9 @@ import secrets
 Assuming you saved those to `../seeds.txt`, you can run parallel instances of `gfauto_fuzz` using:
 
 ```sh
+# Warning: assumes "parallel" is from the "moreutils" pakage.
+# Check with "man parallel".
+
 parallel -j 32 gfauto_fuzz --iteration_seed -- $(cat ../seeds.txt)
 ```
 
@@ -117,6 +126,9 @@ This is probably only suitable for testing the `host_preprocessor` and `swift_sh
 You can run parallel instances of gfauto (just for increased throughput, not with fixed seeds) using:
 
 ```sh
+# Warning: assumes "parallel" is from the "moreutils" pakage.
+# Check with "man parallel".
+
 parallel -j 32 -i gfauto_fuzz -- $(seq 100)
 ```
 
