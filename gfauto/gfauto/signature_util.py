@@ -91,7 +91,15 @@ PATTERN_SPIRV_OPT_ERROR: Pattern[str] = re.compile(r"error: line \d+: (.*)")
 # E.g.
 # Backtrace:
 # /data/git/graphicsfuzz/graphicsfuzz/target/graphicsfuzz/bin/Linux/spirv-opt(_ZN8spvtools3opt21StructuredCFGAnalysis16SwitchMergeBlockEj+0x369)[0x5bd6d9]
-PATTERN_CATCHSEGV_STACK_FRAME = re.compile(r"Backtrace:\n.*/([^/(]*\([^)+\[]+)\+")
+#                                                                   |--- group 1 -------------------------------------------------------|
+#
+# E.g. Backtrace:
+# /home/runner/work/gfbuild-llpc/gfbuild-llpc/vulkandriver/drivers/llvm-project/llvm/lib/CodeGen/LiveInterval.cpp:758(_ZN4llvm9LiveRange20MergeValueNumberIntoEPNS_6VNInfoES2_)[0x135342c]
+#                                                                                                |--- group 1 ----------------------------------------------------------------|
+#
+#                                                           |-- group 1 -----|
+# Using "c" "<>" "<cc...>" to represent characters:    <>.*c(<ccc>*<><ccccc>+)<cc>
+PATTERN_CATCHSEGV_STACK_FRAME = re.compile(r"Backtrace:\n.*/([^/(]*\([^)+\[]+)[+)]")
 
 # E.g.
 # Backtrace:
