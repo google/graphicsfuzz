@@ -94,6 +94,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   private boolean inFunctionDefinition = false;
   private final boolean emitGraphicsFuzzDefines;
   private final Optional<String> license;
+  private boolean insideForStatement = false;
 
 
   public PrettyPrinterVisitor(PrintStream out) {
@@ -159,7 +160,10 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
     out.append(indent());
     super.visitDeclarationStmt(declarationStmt);
-    out.append(";" + newLine());
+    out.append(";");
+    if (!insideForStatement) {
+      out.append(newLine());
+    }
   }
 
   @Override
@@ -460,23 +464,22 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitForStmt(ForStmt forStmt) {
-    out.append(indent() + "for(" + newLine());
-    out.append("    ");
+    insideForStatement = true;
+    out.append(indent() + "for(");
     visit(forStmt.getInit());
-    out.append("    " + indent());
+    out.append(" ");
     if (forStmt.hasCondition()) {
       visit(forStmt.getCondition());
     }
-    out.append(";" + newLine());
-    out.append("    " + indent());
+    out.append("; ");
     if (forStmt.hasIncrement()) {
       visit(forStmt.getIncrement());
     }
-    out.append(newLine());
-    out.append(indent() + ")" + newLine());
+    out.append(" )" + newLine());
     increaseIndent();
     visit(forStmt.getBody());
     decreaseIndent();
+    insideForStatement = false;
   }
 
   @Override
