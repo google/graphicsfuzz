@@ -269,7 +269,7 @@ public class DonateLiveCodeTransformationTest {
           TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
           ShadingLanguageVersion.ESSL_100);
       assertEquals("{\n"
-          + " for( int i = 0; i < 10; i ++ )\n"
+          + " for(int i = 0; i < 10; i ++)\n"
           + "  if(i > 5)\n"
           + "   break;\n"
           + "}\n", donated.getText());
@@ -360,7 +360,7 @@ public class DonateLiveCodeTransformationTest {
           TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
           ShadingLanguageVersion.ESSL_100);
       assertEquals("{\n"
-          + " for( int i = 0; i < 10; i ++ )\n"
+          + " for(int i = 0; i < 10; i ++)\n"
           + "  if(i > 5)\n"
           + "   continue;\n"
           + "}\n", donated.getText());
