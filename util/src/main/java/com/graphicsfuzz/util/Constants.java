@@ -116,4 +116,13 @@ public final class Constants {
   // String used inside live-injected variable to indicate that it is a loop limiter.
   public static final String LOOP_LIMITER = "looplimiter";
 
+  public static boolean isLiveInjectedVariableName(String name) {
+    return name.startsWith(Constants.LIVE_PREFIX);
+  }
+
+  public static boolean isLooplimiterVariableName(String name) {
+    return isLiveInjectedVariableName(name)
+        && name.contains(Constants.LOOP_LIMITER);
+  }
+
 }

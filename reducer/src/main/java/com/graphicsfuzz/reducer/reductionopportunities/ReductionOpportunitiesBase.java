@@ -18,7 +18,6 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
@@ -26,7 +25,6 @@ import com.graphicsfuzz.common.ast.expr.UnaryExpr;
 import com.graphicsfuzz.common.ast.stmt.ExprCaseLabel;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.common.util.SideEffectChecker;
-import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -134,10 +132,6 @@ public abstract class ReductionOpportunitiesBase
       // does not hold -- this would lead to a reduction loop.
       opportunities.add(opportunity);
     }
-  }
-
-  static boolean isLiveInjectedVariableName(String name) {
-    return name.startsWith(Constants.LIVE_PREFIX);
   }
 
 }

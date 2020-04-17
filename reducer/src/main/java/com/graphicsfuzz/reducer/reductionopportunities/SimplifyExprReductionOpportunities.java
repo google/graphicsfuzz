@@ -27,7 +27,6 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
-import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.util.Constants;
 import java.util.stream.Collectors;
@@ -43,12 +42,16 @@ abstract class SimplifyExprReductionOpportunities
   // its initializer).  We do not wish to mess with these.
   private boolean inLoopLimiterVariableDeclInfo;
 
+  // Used to assess whether expressions that reference loop limiters can be simplified.
+  private final LoopLimiterImpactChecker loopLimiterImpactChecker;
+
   SimplifyExprReductionOpportunities(
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);
     this.typer = new Typer(tu);
     this.inLiveInjectedStmtOrDeclaration = false;
+    this.loopLimiterImpactChecker = new LoopLimiterImpactChecker(tu);
   }
 
   @Override
@@ -79,12 +82,12 @@ abstract class SimplifyExprReductionOpportunities
 
   @Override
   public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
-    if (StmtReductionOpportunities.isLooplimiter(variableDeclInfo.getName())) {
+    if (Constants.isLooplimiterVariableName(variableDeclInfo.getName())) {
       assert !inLoopLimiterVariableDeclInfo;
       inLoopLimiterVariableDeclInfo = true;
     }
     super.visitVariableDeclInfo(variableDeclInfo);
-    if (StmtReductionOpportunities.isLooplimiter(variableDeclInfo.getName())) {
+    if (Constants.isLooplimiterVariableName(variableDeclInfo.getName())) {
       assert inLoopLimiterVariableDeclInfo;
       inLoopLimiterVariableDeclInfo = false;
     }
@@ -99,8 +102,8 @@ abstract class SimplifyExprReductionOpportunities
 
     if (child instanceof VariableIdentifierExpr) {
       final String name = ((VariableIdentifierExpr) child).getName();
-      if (isLiveInjectedVariableName(name)
-            && !StmtReductionOpportunities.isLooplimiter(name)) {
+      if (Constants.isLiveInjectedVariableName(name)
+            && !Constants.isLooplimiterVariableName(name)) {
         return true;
       }
       if (name.startsWith(Constants.DEAD_PREFIX)) {
@@ -135,26 +138,14 @@ abstract class SimplifyExprReductionOpportunities
     }
 
     if (inLiveInjectedStmtOrDeclaration && !inLoopLimiterVariableDeclInfo
-        && !referencesLoopLimiter(child)) {
-      // We can simplify expressions in live code, so long as they do not reference loop limiters,
-      // and are not related to loop limiter initialization.
+        && !loopLimiterImpactChecker.referencesNonRedundantLoopLimiter(child, getCurrentScope())) {
+      // We can simplify expressions in live code, so long as they do not reference
+      // (non-redundant) loop limiters, and are not related to loop limiter initialization.
       return true;
     }
 
     return false;
 
-  }
-
-  private boolean referencesLoopLimiter(Expr child) {
-    return new CheckPredicateVisitor() {
-      @Override
-      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
-        super.visitVariableIdentifierExpr(variableIdentifierExpr);
-        if (StmtReductionOpportunities.isLooplimiter(variableIdentifierExpr.getName())) {
-          predicateHolds();
-        }
-      }
-    }.test(child);
   }
 
 }
