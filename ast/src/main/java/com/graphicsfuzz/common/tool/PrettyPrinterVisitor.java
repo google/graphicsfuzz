@@ -95,6 +95,9 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   private final boolean emitGraphicsFuzzDefines;
   private final Optional<String> license;
 
+  // Allows different formatting of a declaration when part of the header of a for statement.
+  private boolean insideForStatementHeader = false;
+
 
   public PrettyPrinterVisitor(PrintStream out) {
     this(out, DEFAULT_INDENTATION_WIDTH,
@@ -157,9 +160,14 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
-    out.append(indent());
+    if (!insideForStatementHeader) {
+      out.append(indent());
+    }
     super.visitDeclarationStmt(declarationStmt);
-    out.append(";" + newLine());
+    out.append(";");
+    if (!insideForStatementHeader) {
+      out.append(newLine());
+    }
   }
 
   @Override
@@ -460,20 +468,19 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitForStmt(ForStmt forStmt) {
-    out.append(indent() + "for(" + newLine());
-    out.append("    ");
+    insideForStatementHeader = true;
+    out.append(indent() + "for(");
     visit(forStmt.getInit());
-    out.append("    " + indent());
+    out.append(" ");
     if (forStmt.hasCondition()) {
       visit(forStmt.getCondition());
     }
-    out.append(";" + newLine());
-    out.append("    " + indent());
+    out.append("; ");
     if (forStmt.hasIncrement()) {
       visit(forStmt.getIncrement());
     }
-    out.append(newLine());
-    out.append(indent() + ")" + newLine());
+    out.append(")" + newLine());
+    insideForStatementHeader = false;
     increaseIndent();
     visit(forStmt.getBody());
     decreaseIndent();
