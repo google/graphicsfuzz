@@ -76,7 +76,7 @@ def _thread_gcov(data: GetLineCountsData) -> None:
         if data.gcov_uses_json_output:
             data.stdout_queue.put((root, result.stdout))
         else:
-            gcov_files = [file + ".gcov" for file in files]
+            gcov_files = [file for file in os.listdir(root) if file.endswith(".gcov")]
             gcov_contents = []
             for gcov_file in gcov_files:
                 with open(
