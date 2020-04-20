@@ -165,11 +165,7 @@ public class PrettyPrinterVisitorTest {
         + "layout(local_size_x = 128, local_size_y = 1) in;\n"
         + "void main()\n"
         + "{\n"
-        + " for(\n"
-        + "     uint d = gl_WorkGroupSize.x / 2u;\n"
-        + "     d > 0u;\n"
-        + "     d >>= 1u\n"
-        + " )\n"
+        + " for(uint d = gl_WorkGroupSize.x / 2u; d > 0u; d >>= 1u)\n"
         + "  {\n"
         + "   if(gl_LocalInvocationID.x < d)\n"
         + "    {\n"
@@ -548,6 +544,39 @@ public class PrettyPrinterVisitorTest {
         + " foo();\n"
         + "}\n";
     assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
+  }
+
+  @Test
+  public void testParseAndPrintLoopWithDeclarationsInside() throws Exception {
+    final String program = ""
+        + "void main()\n"
+        + "{\n"
+        + " for(int i = 0; i < 10; i ++)\n"
+        + "  {\n"
+        + "   int a;\n"
+        + "   int b;\n"
+        + "  }\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
+    )));
+  }
+
+  @Test
+  public void testParseAndPrintNestedLoop() throws Exception {
+    final String program = ""
+        + "void main()\n"
+        + "{\n"
+        + " for(int i = 0; i < 10; i ++)\n"
+        + "  {\n"
+        + "   for(int i = 0; i < 10; i ++)\n"
+        + "    {\n"
+        + "     int a;\n"
+        + "     int b;\n"
+        + "    }\n"
+        + "  }\n"
+        + "}\n";
+    assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
     )));
   }
 
