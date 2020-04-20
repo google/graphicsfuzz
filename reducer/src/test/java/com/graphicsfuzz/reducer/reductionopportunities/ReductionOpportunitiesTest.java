@@ -1125,4 +1125,27 @@ public class ReductionOpportunitiesTest {
     assertFalse(ops.isEmpty());
   }
 
+  @Test
+  public void testCanRemovePrecisionStatements() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "precision highp float;\n"
+        + "precision highp int;\n"
+        + "precision mediump float;\n"
+        + "precision lowp int;\n"
+        + "precision highp int;\n"
+        + "precision highp float;\n"
+        + "void main() {\n"
+        + "}\n";
+
+    final TranslationUnit tu = ParseHelper.parse(shader);
+
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()), fileOps);
+    assertFalse(ops.isEmpty());
+    // We expect two less than the number of precision declarations above.
+    assertTrue(ops.size() == 4);
+  }
+
 }
