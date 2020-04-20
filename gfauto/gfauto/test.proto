@@ -46,6 +46,11 @@ message Test {
   // If set, this indicates the source of the test. Most often this will be set to a shader name from the shaders
   // included with GraphicsFuzz that was used as the reference shader. For example, "colorgrid_modulo".
   string derived_from = 9;
+
+  // These arguments will be passed to any tool that accepts common spirv-val arguments. Supported arguments include:
+  // --scalar-block-layout, --skip-block-layout, etc. Tools include: spirv-val, spirv-opt, spirv-fuzz, and spirv-reduce.
+  // This field is typically used to relax SPIR-V validation.
+  repeated string common_spirv_args = 10;
 }
 
 message TestGlsl {
