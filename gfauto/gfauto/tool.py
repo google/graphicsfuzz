@@ -153,26 +153,35 @@ def glslang_glsl_shader_job_to_spirv(
     )
 
 
-def run_spirv_val_on_shader(shader_path: Path, spirv_val_path: Path) -> None:
-    subprocess_util.run(
-        util.prepend_catchsegv_if_available([str(spirv_val_path), str(shader_path)])
-    )
+def run_spirv_val_on_shader(
+    shader_path: Path, spirv_val_path: Path, extra_args: Optional[List[str]] = None,
+) -> None:
+    cmd = util.prepend_catchsegv_if_available([str(spirv_val_path), str(shader_path)])
+    if extra_args:
+        cmd.extend(extra_args)
+
+    subprocess_util.run(cmd)
 
 
-def validate_spirv_shader_job_helper(input_json: Path, spirv_val_path: Path) -> None:
+def validate_spirv_shader_job_helper(
+    input_json: Path, spirv_val_path: Path, extra_args: Optional[List[str]] = None,
+) -> None:
     shader_paths = shader_job_util.get_related_files(
         input_json, shader_job_util.EXT_ALL, [shader_job_util.SUFFIX_SPIRV]
     )
     for shader_path in shader_paths:
-        run_spirv_val_on_shader(shader_path, spirv_val_path)
+        run_spirv_val_on_shader(shader_path, spirv_val_path, extra_args=extra_args)
 
 
 def validate_spirv_shader_job(
-    input_json: Path, binary_paths: binaries_util.BinaryGetter
+    input_json: Path,
+    binary_paths: binaries_util.BinaryGetter,
+    extra_args: Optional[List[str]] = None,
 ) -> None:
     validate_spirv_shader_job_helper(
         input_json,
         binary_paths.get_binary_path_by_name(binaries_util.SPIRV_VAL_NAME).path,
+        extra_args=extra_args,
     )
 
 
@@ -196,6 +205,7 @@ def compile_shader_job(  # pylint: disable=too-many-locals;
     shader_overrides: Optional[ShaderSuffixToShaderOverride] = None,
     preprocessor_cache: Optional[util.CommandCache] = None,
     skip_validation: bool = False,
+    common_spirv_args: Optional[List[str]] = None,
 ) -> SpirvCombinedShaderJob:
 
     result = input_json
@@ -284,7 +294,9 @@ def compile_shader_job(  # pylint: disable=too-many-locals;
     )
 
     if not skip_validation:
-        validate_spirv_shader_job(result_spirv, binary_paths)
+        validate_spirv_shader_job(
+            result_spirv, binary_paths, extra_args=common_spirv_args,
+        )
 
     if spirv_opt_args:
         result = result_spirv
@@ -302,7 +314,9 @@ def compile_shader_job(  # pylint: disable=too-many-locals;
         )
 
         if not skip_validation:
-            validate_spirv_shader_job(result_spirv, binary_paths)
+            validate_spirv_shader_job(
+                result_spirv, binary_paths, extra_args=common_spirv_args,
+            )
 
     return SpirvCombinedShaderJob(
         name=name,
@@ -423,6 +437,7 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
                 binary_manager,
                 spirv_opt_args=spirv_opt_args,
                 skip_validation=test.skip_validation,
+                common_spirv_args=list(test.common_spirv_args),
             ).spirv_asm_shader_job,
             shader_job.shader_job,
             "",

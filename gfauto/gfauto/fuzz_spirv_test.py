@@ -54,6 +54,7 @@ def make_test(
     binary_manager: binaries_util.BinaryManager,
     derived_from: Optional[str],
     stable_shader: bool,
+    common_spirv_args: Optional[List[str]],
 ) -> Path:
 
     source_dir = test_util.get_source_dir(subtest_dir)
@@ -64,6 +65,7 @@ def make_test(
     test = Test(
         spirv_fuzz=TestSpirvFuzz(spirv_opt_args=spirv_opt_args),
         derived_from=derived_from,
+        common_spirv_args=common_spirv_args,
     )
 
     fuzz_glsl_test.add_spirv_shader_test_binaries(test, spirv_opt_args, binary_manager)
@@ -107,7 +109,7 @@ def run(
     return result_util.get_status(result_output_dir)
 
 
-def run_spirv_reduce_or_shrink(
+def run_spirv_reduce_or_shrink(  # pylint: disable=too-many-locals;
     source_dir: Path,
     name_of_shader_job_to_reduce: str,
     extension_to_reduce: str,
@@ -116,6 +118,7 @@ def run_spirv_reduce_or_shrink(
     binary_manager: binaries_util.BinaryManager,
     settings: Settings,
 ) -> Path:
+    test = test_util.metadata_read_from_source_dir(source_dir)
     input_shader_job = source_dir / name_of_shader_job_to_reduce / test_util.SHADER_JOB
 
     original_spirv_file = input_shader_job.with_suffix(
@@ -148,6 +151,7 @@ def run_spirv_reduce_or_shrink(
             f"--shrinker-temp-file-prefix={str(output_dir / 'temp_')}",
         ]
         cmd += list(settings.extra_spirv_fuzz_shrink_args)
+        cmd += list(test.common_spirv_args)
         cmd += [
             # This ensures the arguments that follow are all positional arguments.
             "--",
@@ -167,6 +171,7 @@ def run_spirv_reduce_or_shrink(
             f"--temp-file-prefix={str(output_dir / 'temp_')}",
         ]
         cmd += list(settings.extra_spirv_reduce_args)
+        cmd += list(test.common_spirv_args)
         cmd += [
             # This ensures the arguments that follow are all positional arguments.
             "--",
@@ -470,7 +475,8 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
                     template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
                     donor_shader_job_paths=spirv_fuzz_shaders,
                     seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
-                    other_args=list(settings.extra_spirv_fuzz_generate_args),
+                    other_args=list(settings.extra_spirv_fuzz_generate_args)
+                    + list(settings.common_spirv_args),
                 )
             finally:
                 gflogging.pop_stream_for_logging()
@@ -484,6 +490,8 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
 
     stable_shader = reference_name.startswith("stable_")
 
+    common_spirv_args = list(settings.common_spirv_args)
+
     test_dirs = [
         make_test(
             template_source_dir,
@@ -492,6 +500,7 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
         make_test(
             template_source_dir,
@@ -500,6 +509,7 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
         make_test(
             template_source_dir,
@@ -508,6 +518,7 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
         make_test(
             template_source_dir,
@@ -516,6 +527,7 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
         make_test(
             template_source_dir,
@@ -524,6 +536,7 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
         make_test(
             template_source_dir,
@@ -532,6 +545,7 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
     ]
 

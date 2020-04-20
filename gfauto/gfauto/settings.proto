@@ -72,4 +72,11 @@ message Settings {
   // Extra arguments to pass to spirv-reduce.
   repeated string extra_spirv_reduce_args = 15;
 
+  // These arguments will be passed to any tool that accepts common spirv-val arguments. Supported arguments include:
+  // --scalar-block-layout, --skip-block-layout, etc. Tools include: spirv-val, spirv-opt, spirv-fuzz, and spirv-reduce.
+  // This field is typically used to relax SPIR-V validation.
+  // This field is essentially ONLY used for shader fuzzing/generation and then simply written to the test metadata,
+  // so the test remains self-contained. When running or reducing a test, the field from the test metadata is used.
+  repeated string common_spirv_args = 16;
+
 }
