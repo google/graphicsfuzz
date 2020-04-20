@@ -25,6 +25,7 @@ import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.PruneUniforms;
+import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;
 import java.util.List;
 
@@ -63,7 +64,7 @@ public class InlineUniformReductionOpportunities extends SimplifyExprReductionOp
     // We only inline uniforms if we are not preserving semantics, if the current program point is
     // is dead code, or if the uniform is a live-injected variable.
     if (!(context.reduceEverywhere() || currentProgramPointIsDeadCode()
-        || isLiveInjectedVariableName(variableIdentifierExpr.getName()))) {
+        || Constants.isLiveInjectedVariableName(variableIdentifierExpr.getName()))) {
       return;
     }
 
