@@ -23,10 +23,12 @@ set_property(TARGET simple PROPERTY CXX_STANDARD 17)
 
 add_executable(vertex_buffer vertex_buffer.cpp)
 target_include_directories(vertex_buffer PRIVATE ../external/stb)
+target_include_directories(vertex_buffer PRIVATE ../external/glm)
 target_link_libraries(vertex_buffer PUBLIC vulkan glslang SPIRV)
 set_property(TARGET vertex_buffer PROPERTY CXX_STANDARD 17)
 
 add_executable(compute_shader_manipulating_vertex_buffer compute_shader_manipulating_vertex_buffer.cpp)
 target_include_directories(compute_shader_manipulating_vertex_buffer PRIVATE ../external/stb)
+target_include_directories(compute_shader_manipulating_vertex_buffer PRIVATE ../external/glm)
 target_link_libraries(compute_shader_manipulating_vertex_buffer PUBLIC vulkan glslang SPIRV)
 set_property(TARGET compute_shader_manipulating_vertex_buffer PROPERTY CXX_STANDARD 17)
