@@ -879,8 +879,10 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo =
         descriptorSetLayouts.at(descriptorSets.at(descriptorSet.second));
 
-    auto bindingAndBuffers =
-        descriptorSetToBindingBuffer.at(descriptorSet.second);
+    std::unordered_map<uint32_t, VkDescriptorBufferInfo> bindingAndBuffers;
+    if (descriptorSetToBindingBuffer.count(descriptorSet.second)) {
+      bindingAndBuffers = descriptorSetToBindingBuffer.at(descriptorSet.second);
+    }
     for (auto bindingAndBuffer : bindingAndBuffers) {
 
       uint32_t bindingNumber = bindingAndBuffer.first;
@@ -932,57 +934,59 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
           << descriptorSetNumber << " BINDING " << bindingNumber << std::endl;
     }
 
-    auto bindingAndImages =
-        descriptorSetToBindingImageAndSampler.at(descriptorSet.second);
-    for (auto bindingAndImage : bindingAndImages) {
-      uint32_t bindingNumber = bindingAndImage.first;
-      auto imageInfo = bindingAndImage.second;
+    if (descriptorSetToBindingImageAndSampler.count(descriptorSet.second)) {
+      auto bindingAndImages =
+          descriptorSetToBindingImageAndSampler.at(descriptorSet.second);
+      for (auto bindingAndImage : bindingAndImages) {
+        uint32_t bindingNumber = bindingAndImage.first;
+        auto imageInfo = bindingAndImage.second;
 
-      VkDescriptorSetLayoutBinding layoutBinding =
-          layoutCreateInfo.pBindings[bindingNumber];
-      VkDescriptorType descriptorType = layoutBinding.descriptorType;
+        VkDescriptorSetLayoutBinding layoutBinding =
+            layoutCreateInfo.pBindings[bindingNumber];
+        VkDescriptorType descriptorType = layoutBinding.descriptorType;
 
-      std::stringstream strstr;
+        std::stringstream strstr;
 
-      switch (descriptorType) {
-      case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-      case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-      case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-        strstr << "img_" << descriptorSetNumber << "_" << bindingNumber;
-        std::string imageName = strstr.str();
+        switch (descriptorType) {
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+          strstr << "img_" << descriptorSetNumber << "_" << bindingNumber;
+          std::string imageName = strstr.str();
 
-        descriptorSetBindingStringStream
-            << "  BIND BUFFER " << imageName << " AS "
-            << getDescriptorTypeString(descriptorType) << " DESCRIPTOR_SET "
-            << descriptorSetNumber << " BINDING " << bindingNumber;
+          descriptorSetBindingStringStream
+              << "  BIND BUFFER " << imageName << " AS "
+              << getDescriptorTypeString(descriptorType) << " DESCRIPTOR_SET "
+              << descriptorSetNumber << " BINDING " << bindingNumber;
 
-        if (descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-          descriptorSetBindingStringStream << " SAMPLER "
-                                           << " TBD: sampler name";
-        // TODO: implement BASE_MIP_LEVEL
-        // https://github.com/google/amber/blob/master/docs/amber_script.md#pipeline-buffers
+          if (descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+            descriptorSetBindingStringStream << " SAMPLER "
+                                             << " TBD: sampler name";
+          // TODO: implement BASE_MIP_LEVEL
+          // https://github.com/google/amber/blob/master/docs/amber_script.md#pipeline-buffers
 
-        bufferDeclarationStringStream << "BUFFER " << imageName
-                                      << " FORMAT R8G8B8A8_UNORM"
-                                      << " FILE texture.png" << std::endl;
-        break;
+          bufferDeclarationStringStream << "BUFFER " << imageName
+                                        << " FORMAT R8G8B8A8_UNORM"
+                                        << " FILE texture.png" << std::endl;
+          break;
+        }
+        case VK_DESCRIPTOR_TYPE_SAMPLER: {
+          strstr << "sampler_" << descriptorSetNumber << "_" << bindingNumber;
+          std::string samplerName = strstr.str();
+
+          descriptorSetBindingStringStream
+              << "  BIND SAMPLER " << samplerName << " DESCRIPTOR_SET "
+              << descriptorSetNumber << " BINDING " << bindingNumber;
+
+          bufferDeclarationStringStream << "SAMPLER " << samplerName
+                                        << std::endl;
+          break;
+        }
+        default:
+          assert(false && "Unimplemented descriptor type");
+        }
+        descriptorSetBindingStringStream << std::endl;
       }
-      case VK_DESCRIPTOR_TYPE_SAMPLER: {
-        strstr << "sampler_" << descriptorSetNumber << "_" << bindingNumber;
-        std::string samplerName = strstr.str();
-
-        descriptorSetBindingStringStream
-            << "  BIND SAMPLER " << samplerName << " DESCRIPTOR_SET "
-            << descriptorSetNumber << " BINDING " << bindingNumber;
-
-        bufferDeclarationStringStream << "SAMPLER " << samplerName << std::endl;
-
-        break;
-      }
-      default:
-        assert(false && "Unimplemented descriptor type");
-      }
-      descriptorSetBindingStringStream << std::endl;
     }
   }
 
@@ -1132,7 +1136,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   std::cout << "CLEAR_COLOR pipeline 0 0 0 255" << std::endl;
   std::cout << "CLEAR pipeline" << std::endl;
 
-  std::string topology =
+  const std::string& topology =
       topologies.at(graphicsPipelineCreateInfo.pInputAssemblyState->topology);
 
   if (indexCount > 0) {
