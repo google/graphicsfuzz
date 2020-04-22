@@ -46,7 +46,7 @@ def main() -> None:
         # One sentence, 58 characters max., no period, no line breaks.
         short_description="A fragment shader with TODO",
         comment_text="""The test passes because TODO""",
-        copyright_year="2019",
+        copyright_year="2020",
         extra_commands=tool.AMBER_COMMAND_EXPECT_RED,
         is_coverage_gap=False,
     )

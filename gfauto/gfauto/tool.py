@@ -410,6 +410,11 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
     is_coverage_gap: bool = False,
 ) -> Path:
     """Converts a GLSL shader job of a wrong image case to an Amber script suitable for adding to the CTS."""
+    check(
+        not short_description.endswith("."),
+        AssertionError("Short description should not end with period."),
+    )
+
     shader_jobs = get_shader_jobs(source_dir)
 
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
