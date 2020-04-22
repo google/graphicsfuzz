@@ -16,7 +16,9 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import com.graphicsfuzz.common.util.ShaderKind;
 import java.io.File;
+import java.util.Optional;
 
 public class GeneratorArguments {
 
@@ -30,6 +32,7 @@ public class GeneratorArguments {
   private final int maxUniforms;
   private final EnabledTransformations enabledTransformations;
   private final boolean addInjectionSwitch;
+  private final Optional<ShaderKind> onlyFuzzShaderStage;
 
   public GeneratorArguments(
         boolean small,
@@ -41,7 +44,8 @@ public class GeneratorArguments {
         boolean generateUniformBindings,
         int maxUniforms,
         EnabledTransformations enabledTransformations,
-        boolean addInjectionSwitch) {
+        boolean addInjectionSwitch,
+        Optional<ShaderKind> onlyFuzzShaderStage) {
     this.small = small;
     this.allowLongLoops = allowLongLoops;
     this.singlePass = singlePass;
@@ -52,6 +56,11 @@ public class GeneratorArguments {
     this.maxUniforms = maxUniforms;
     this.enabledTransformations = enabledTransformations;
     this.addInjectionSwitch = addInjectionSwitch;
+    this.onlyFuzzShaderStage = onlyFuzzShaderStage;
+  }
+
+  public Optional<ShaderKind> getOnlyFuzzShaderStage() {
+    return onlyFuzzShaderStage;
   }
 
   public boolean getSmall() {
