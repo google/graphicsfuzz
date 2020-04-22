@@ -40,7 +40,6 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
-import com.graphicsfuzz.common.typing.TyperHelper;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.FileNotFoundException;

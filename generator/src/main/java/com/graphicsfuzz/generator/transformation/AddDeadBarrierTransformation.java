@@ -17,21 +17,13 @@
 package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
-import com.graphicsfuzz.common.ast.stmt.ExprStmt;
-import com.graphicsfuzz.common.ast.stmt.Stmt;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
 import com.graphicsfuzz.generator.semanticspreserving.AddDeadBarrierMutation;
 import com.graphicsfuzz.generator.semanticspreserving.AddDeadBarrierMutationFinder;
-import com.graphicsfuzz.generator.transformation.ITransformation;
-import com.graphicsfuzz.generator.transformation.injection.IInjectionPoint;
-import com.graphicsfuzz.generator.transformation.injection.InjectionPoints;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
-import java.util.ArrayList;
 import java.util.List;
 
 public class AddDeadBarrierTransformation implements ITransformation {

@@ -25,7 +25,6 @@ import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.SwitchStmt;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import java.util.Collections;
-import java.util.stream.Collectors;
 
 /**
  * Turns a switch statement into a do...while(false) loop.  The body of the loop comprises all

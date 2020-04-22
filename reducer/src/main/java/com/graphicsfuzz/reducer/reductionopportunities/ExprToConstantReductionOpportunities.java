@@ -18,16 +18,13 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
-import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 public final class ExprToConstantReductionOpportunities extends SimplifyExprReductionOpportunities {
 

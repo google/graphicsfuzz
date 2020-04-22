@@ -17,7 +17,6 @@
 package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.IAstNode;
-import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 

@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.reducer.filejudge;
 
-import com.graphicsfuzz.reducer.FileJudgeException;
 import com.graphicsfuzz.reducer.IFileJudge;
 import java.io.File;
 import org.slf4j.Logger;

@@ -18,7 +18,6 @@ package com.graphicsfuzz.generator.transformation;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.IRandom;
-import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutation;
 import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutationFinder;
 import com.graphicsfuzz.generator.util.GenerationParams;

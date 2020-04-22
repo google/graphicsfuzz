@@ -19,7 +19,6 @@ package com.graphicsfuzz.tool;
 import com.graphicsfuzz.common.util.FuzzyImageComparison;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
 public class FuzzyImageComparisonTool {

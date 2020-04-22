@@ -19,7 +19,6 @@ package com.graphicsfuzz.generator.util;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
-import java.util.Optional;
 
 public class RemoveReturnStatements extends RemoveStatements {
 
