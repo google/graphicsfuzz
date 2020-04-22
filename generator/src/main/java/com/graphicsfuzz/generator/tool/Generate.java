@@ -170,7 +170,7 @@ public class Generate {
                                               GeneratorArguments args,
                                               IRandom random) {
     final StringBuilder result = new StringBuilder();
-    List<TranslationUnit> shaders = new ArrayList<>(shaderJob.getShaders());
+    final List<TranslationUnit> shaders = new ArrayList<>(shaderJob.getShaders());
 
     if (args.getOnlyFuzzShaderStage().isPresent()) {
       shaders.removeIf((tu) -> !tu.getShaderKind().equals(args.getOnlyFuzzShaderStage().get()));
