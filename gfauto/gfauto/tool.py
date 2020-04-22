@@ -415,6 +415,13 @@ def glsl_shader_job_wrong_image_to_amber_script_for_google_cts(
         AssertionError("Short description should not end with period."),
     )
 
+    check(
+        "because shader" not in comment_text,
+        AssertionError(
+            'In comment_text: change "because shader" to "because the shader"'
+        ),
+    )
+
     shader_jobs = get_shader_jobs(source_dir)
 
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
