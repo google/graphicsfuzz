@@ -1143,9 +1143,30 @@ public class ReductionOpportunitiesTest {
         MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
             ShadingLanguageVersion.ESSL_310,
             new RandomWrapper(0), new IdGenerator()), fileOps);
-    assertFalse(ops.isEmpty());
+
     // We expect two less than the number of precision declarations above.
-    assertTrue(ops.size() == 4);
+    assertEquals(4, ops.size());
+  }
+
+  @Test
+  public void testCannotRemovePrecisionStatements() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "precision mediump float;\n"
+        + "float f;\n"
+        + "precision highp float;\n"
+        + "float g;\n"
+        + "void main() {\n"
+        + "  f = g;\n"
+        + "}\n";
+
+    final TranslationUnit tu = ParseHelper.parse(shader);
+
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()), fileOps);
+    // Neither precision statement can be removed since they each affect a declaration.
+    assertTrue(ops.isEmpty());
   }
 
 }
