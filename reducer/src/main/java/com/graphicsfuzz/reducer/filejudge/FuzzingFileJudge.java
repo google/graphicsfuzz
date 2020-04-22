@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.reducer.filejudge;
 
-import com.graphicsfuzz.reducer.FileJudgeException;
 import com.graphicsfuzz.reducer.IFileJudge;
 import com.graphicsfuzz.shadersets.IShaderDispatcher;
 import java.io.File;

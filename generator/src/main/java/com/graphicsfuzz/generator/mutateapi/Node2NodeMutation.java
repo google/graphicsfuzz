@@ -17,7 +17,6 @@
 package com.graphicsfuzz.generator.mutateapi;
 
 import com.graphicsfuzz.common.ast.IAstNode;
-import com.graphicsfuzz.generator.mutateapi.Mutation;
 import java.util.function.Supplier;
 
 public abstract class Node2NodeMutation<NodeT extends IAstNode>

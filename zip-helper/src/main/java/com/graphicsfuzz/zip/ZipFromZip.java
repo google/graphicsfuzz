@@ -28,7 +28,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.compress.archivers.zip.ZipFile;
-import org.apache.commons.compress.archivers.zip.ZipMethod;
 import org.apache.commons.io.IOUtils;
 
 /**

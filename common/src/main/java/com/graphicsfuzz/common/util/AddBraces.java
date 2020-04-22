@@ -25,9 +25,6 @@ import com.graphicsfuzz.common.ast.stmt.LoopStmt;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.stmt.WhileStmt;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 
 public final class AddBraces {

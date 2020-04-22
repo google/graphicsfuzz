@@ -16,9 +16,6 @@
 
 package com.graphicsfuzz.common.ast.type;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public abstract class BuiltinType extends UnqualifiedType {
 
   @Override
