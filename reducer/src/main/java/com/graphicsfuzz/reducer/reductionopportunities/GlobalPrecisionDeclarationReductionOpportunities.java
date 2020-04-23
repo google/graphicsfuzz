@@ -21,12 +21,12 @@ import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.PrecisionDeclaration;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class GlobalPrecisionDeclarationReductionOpportunities {
 
@@ -34,8 +34,8 @@ public class GlobalPrecisionDeclarationReductionOpportunities {
       TranslationUnit tu,
       ReducerContext context) {
     final List<GlobalPrecisionDeclarationReductionOpportunity> opportunities = new ArrayList<>();
-    List<Declaration> globalDeclarations = tu.getTopLevelDeclarations();
-    final HashMap<String, Scope> precisionMap = new HashMap<String, Scope>();
+    final List<Declaration> globalDeclarations = tu.getTopLevelDeclarations();
+    final Set<String> precisionSet = new HashSet<String>();
     // Scan declarations from end to beginning so we leave the last ones alone.
     for (int i = globalDeclarations.size() - 1; i >= 0; i--) {
       if (globalDeclarations.get(i) instanceof PrecisionDeclaration) {
@@ -46,18 +46,18 @@ public class GlobalPrecisionDeclarationReductionOpportunities {
         //  In the meantime, assume that "precision QUALIFIER TYPE" appears in a single line, so
         //  that TYPE is the 3rd token when we split the declaration's text on spaces.
         final String type = precisionDeclaration.getText().split(" ")[2];
-        if (precisionMap.containsKey(type)) {
+        if (precisionSet.contains(type)) {
           opportunities.add(new GlobalPrecisionDeclarationReductionOpportunity(
               tu,
               precisionDeclaration,
               new VisitationDepth(0)));
         } else {
-          precisionMap.put(type, null);
+          precisionSet.add(type);
         }
       } else {
-        // This is a non-precision declaration, and might depend on precision declarations that
-        // were encountered previously. Thus clear our knowledge of such precision declarations.
-        precisionMap.clear();
+        // This is a non-precision declaration, and might depend on earlier precision declarations.
+        // Thus clear our knowledge of precision declarations.
+        precisionSet.clear();
       }
     }
     return opportunities;
