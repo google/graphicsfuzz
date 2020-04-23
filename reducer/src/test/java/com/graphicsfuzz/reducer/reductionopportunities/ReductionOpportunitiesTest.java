@@ -1125,4 +1125,76 @@ public class ReductionOpportunitiesTest {
     assertFalse(ops.isEmpty());
   }
 
+  @Test
+  public void testCanRemovePrecisionStatements() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "precision highp float;\n"
+        + "precision highp int;\n"
+        + "precision mediump float;\n"
+        + "precision lowp int;\n"
+        + "precision highp int;\n"
+        + "precision highp float;\n"
+        + "void main() {\n"
+        + "}\n";
+
+    final TranslationUnit tu = ParseHelper.parse(shader);
+
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()), fileOps);
+
+    // We expect two less than the number of precision declarations above.
+    assertEquals(4, ops.size());
+  }
+
+  @Test
+  public void testCannotRemovePrecisionStatements() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "precision mediump float;\n"
+        + "float f;\n"
+        + "precision highp float;\n"
+        + "float g;\n"
+        + "void main() {\n"
+        + "  f = g;\n"
+        + "}\n";
+
+    final TranslationUnit tu = ParseHelper.parse(shader);
+
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()), fileOps);
+    // Neither precision statement can be removed since they each affect a declaration.
+    assertTrue(ops.isEmpty());
+  }
+
+  @Test
+  public void testCanRemoveOnePrecisionStatement() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "precision mediump float;\n"
+        + "precision highp float;\n"
+        + "float f;\n"
+        + "void main() {\n"
+        + "  f = 1.0;\n"
+        + "}\n";
+
+    final TranslationUnit tu = ParseHelper.parse(shader);
+
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()), fileOps);
+    assertEquals(1, ops.size());
+    ops.get(0).applyReduction();
+
+    final String expected = "#version 310 es\n"
+        + "precision highp float;\n"
+        + "float f;\n"
+        + "void main() {\n"
+        + "  f = 1.0;\n"
+        + "}\n";
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
 }
