@@ -36,34 +36,30 @@ public class GlobalPrecisionDeclarationReductionOpportunities {
     final List<GlobalPrecisionDeclarationReductionOpportunity> opportunities = new ArrayList<>();
     List<Declaration> globalDeclarations = tu.getTopLevelDeclarations();
     final HashMap<String, Scope> precisionMap = new HashMap<String, Scope>();
-
-    for (Declaration precisionDeclaration : globalDeclarations) {
-      if (precisionDeclaration instanceof PrecisionDeclaration) {
-        // Create signature from the precision declaration, skipping the precision (highp etc)
-        final String[] precisionTokens = precisionDeclaration.getText().split(" ");
-        String signature = new String();
-        for (int i = 0; i < precisionTokens.length; i++) {
-          if (i != 1) {
-            if (i != 0) {
-              signature += " ";
-            }
-            signature += precisionTokens[i];
-          }
-        }
-        if (precisionMap.containsKey(signature)) {
+    // Scan declarations from end to beginning so we leave the last ones alone.
+    for (int i = globalDeclarations.size() - 1; i >= 0; i--) {
+      if (globalDeclarations.get(i) instanceof PrecisionDeclaration) {
+        final PrecisionDeclaration precisionDeclaration =
+            (PrecisionDeclaration) globalDeclarations.get(i);
+        // TODO(https://github.com/google/graphicsfuzz/issues/972): Rework this when precision
+        //  declarations are handled properly in the AST.
+        //  In the meantime, assume that "precision QUALIFIER TYPE" appears in a single line, so
+        //  that TYPE is the 3rd token when we split the declaration's text on spaces.
+        final String type = precisionDeclaration.getText().split(" ")[2];
+        if (precisionMap.containsKey(type)) {
           opportunities.add(new GlobalPrecisionDeclarationReductionOpportunity(
               tu,
-              (PrecisionDeclaration) precisionDeclaration,
+              precisionDeclaration,
               new VisitationDepth(0)));
         } else {
-          precisionMap.put(signature, null);
+          precisionMap.put(type, null);
         }
       } else {
-        // If non-precision declaration, clear our map
+        // This is a non-precision declaration, and might depend on precision declarations that
+        // were encountered previously. Thus clear our knowledge of such precision declarations.
         precisionMap.clear();
       }
     }
-
     return opportunities;
   }
 

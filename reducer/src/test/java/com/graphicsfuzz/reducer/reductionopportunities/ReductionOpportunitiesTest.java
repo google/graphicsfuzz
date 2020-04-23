@@ -1169,4 +1169,32 @@ public class ReductionOpportunitiesTest {
     assertTrue(ops.isEmpty());
   }
 
+  @Test
+  public void testCanRemoveOnePrecisionStatement() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "precision mediump float;\n"
+        + "precision highp float;\n"
+        + "float f;\n"
+        + "void main() {\n"
+        + "  f = 1.0;\n"
+        + "}\n";
+
+    final TranslationUnit tu = ParseHelper.parse(shader);
+
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_310,
+            new RandomWrapper(0), new IdGenerator()), fileOps);
+    assertEquals(1, ops.size());
+    ops.get(0).applyReduction();
+
+    final String expected = "#version 310 es\n"
+        + "precision highp float;\n"
+        + "float f;\n"
+        + "void main() {\n"
+        + "  f = 1.0;\n"
+        + "}\n";
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
 }
