@@ -85,6 +85,7 @@ public final class FragmentShaderJobToVertexShaderJob {
     class Analysis extends StandardVisitor {
       public boolean usesFragCoord = false;
       public boolean usesFragDepth = false;
+
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
@@ -95,7 +96,8 @@ public final class FragmentShaderJobToVertexShaderJob {
           usesFragDepth = true;
         }
       }
-    };
+    }
+    
     final Analysis analysis = new Analysis();
     analysis.visit(vertexShader);
 
@@ -233,28 +235,29 @@ public final class FragmentShaderJobToVertexShaderJob {
           }
         }
       }
+
       // Replace discard with a null statement
       @Override
       public void visitDiscardStmt(DiscardStmt discardStmt) {
         // Re
         parentMap.getParent(discardStmt).replaceChild(discardStmt, new NullStmt());
       }
+
       // Replace fragment-only functions with parenthesis expression
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
         // For most of the functions, they take only one parameter and it's the same
         // type as the output.
         if (Arrays.asList("dFdx", "dFdy", "dFdxCoarse", "dFdyCoarse", "dFdxFine", "dFdyFine",
-            "fwidth", "fwidthCoarse", "fwidthFine", "interpolateAtCentroid").
-            contains(functionCallExpr.getCallee())) {
+            "fwidth", "fwidthCoarse", "fwidthFine", "interpolateAtCentroid")
+            .contains(functionCallExpr.getCallee())) {
           assert functionCallExpr.getNumChildren() == 1;
           final Expr childExpr = functionCallExpr.getChild(0);
           parentMap.getParent(functionCallExpr).replaceChild(functionCallExpr,
               new ParenExpr(childExpr));
         }
         // the first parameter of interpolateAtOffset has same type as return type, so use it
-        if (Arrays.asList("interpolateAtOffset").
-            contains(functionCallExpr.getCallee())) {
+        if (Arrays.asList("interpolateAtOffset").contains(functionCallExpr.getCallee())) {
           assert functionCallExpr.getNumChildren() == 2;
           final Expr childExpr = functionCallExpr.getChild(0);
           parentMap.getParent(functionCallExpr).replaceChild(functionCallExpr,
