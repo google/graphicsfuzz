@@ -25,6 +25,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     CompletedProcess = subprocess.CompletedProcess[Any]  # pylint: disable=invalid-name;
     Popen = subprocess.Popen[Any]  # pylint: disable=invalid-name;
+    PopenStr = subprocess.Popen[str]  # pylint: disable=invalid-name;
 else:
     CompletedProcess = subprocess.CompletedProcess  # pylint: disable=invalid-name;
     Popen = subprocess.Popen  # pylint: disable=invalid-name;
+    PopenStr = subprocess.Popen  # pylint: disable=invalid-name;

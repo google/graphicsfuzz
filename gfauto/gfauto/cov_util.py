@@ -16,7 +16,6 @@
 
 """Processes coverage files."""
 
-import io
 import json
 import os
 import subprocess
@@ -24,7 +23,7 @@ import threading
 import typing
 from collections import Counter
 from queue import Queue
-from typing import Dict, List, Tuple
+from typing import Dict, List, TextIO, Tuple, Union
 
 from attr import dataclass
 
@@ -35,7 +34,7 @@ LineCounts = Dict[str, typing.Counter[int]]
 
 DirAndItsFiles = Tuple[str, List[str]]
 
-DirAndItsOutput = Tuple[str, str]
+DirAndItsOutput = Tuple[str, Union["subprocess.Popen[str]", TextIO, None]]
 
 IGNORED_MISSING_FILES = ["CMakeCXXCompilerId.cpp", "CMakeCCompilerId.c"]
 
@@ -65,29 +64,21 @@ def _thread_gcov(data: GetLineCountsData) -> None:
             cmd.append("-t")
         cmd.extend(files)
         # I.e.: cd $root && gcov -i -t file_1.gcno file_2.gcno ...
-        result = subprocess.run(
-            cmd,
-            encoding="utf-8",
-            errors="ignore",
-            check=True,
-            cwd=root,
-            stdout=subprocess.PIPE,
+        result: subprocess.Popen[str] = subprocess.Popen(
+            cmd, encoding="utf-8", errors="ignore", cwd=root, stdout=subprocess.PIPE,
         )
         if data.gcov_uses_json_output:
-            data.stdout_queue.put((root, result.stdout))
+            data.stdout_queue.put((root, result))
         else:
             gcov_files = [file + ".gcov" for file in files]
-            gcov_contents = []
             for gcov_file in gcov_files:
-                with open(
+                text_cov_stream = open(
                     os.path.join(root, gcov_file),
                     "r",
                     encoding="utf-8",
                     errors="ignore",
-                ) as f:
-                    gcov_contents.append(f.read())
-            gcov_contents_combined = "\n".join(gcov_contents)
-            data.stdout_queue.put((root, gcov_contents_combined))
+                )
+                data.stdout_queue.put((root, text_cov_stream))
 
 
 def _thread_gcovs(data: GetLineCountsData) -> None:
@@ -102,7 +93,7 @@ def _thread_gcovs(data: GetLineCountsData) -> None:
         thread.join()
 
     # send "done" message to adder thread.
-    data.stdout_queue.put(("", ""))
+    data.stdout_queue.put(("", None))
 
 
 def _process_text_lines(data: GetLineCountsData, lines: typing.TextIO) -> None:
@@ -149,16 +140,24 @@ def _thread_adder(data: GetLineCountsData) -> None:
     # Keep processing stdout entries until we get the special "done" message.
 
     while True:
-        root, stdout = data.stdout_queue.get()
+        root, cov_stream = data.stdout_queue.get()
         if not root:
             # This is the special "done" message.
             break
 
-        lines = io.StringIO(stdout)
+        # This is not the special "done" message, so coverage_info_stream is not None. Needed for type checker.
+        assert cov_stream  # noqa
+
         if data.gcov_uses_json_output:
-            _process_json_lines(data, lines)
+            # cov_stream is a process.
+            cov_stream = typing.cast("subprocess.Popen[str]", cov_stream)
+            _process_json_lines(data, typing.cast(TextIO, cov_stream.stdout))
+            cov_stream.communicate()
         else:
-            _process_text_lines(data, lines)
+            # cov_stream is a file stream.
+            cov_stream = typing.cast(TextIO, cov_stream)
+            _process_text_lines(data, cov_stream)
+            cov_stream.close()
 
 
 def get_line_counts(data: GetLineCountsData) -> None:
