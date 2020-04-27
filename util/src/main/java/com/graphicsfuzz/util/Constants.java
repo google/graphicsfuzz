@@ -26,6 +26,8 @@ public final class Constants {
 
   // Used to replace gl_FragCoord in vertex shades converted from fragment shaders
   public static final String GLF_FRAGCOORD = "_GLF_FragCoord";
+  // Used to replace gl_FragDepth in vertex shades converted from fragment shaders
+  public static final String GLF_FRAGDEPTH = "_GLF_FragDepth";
 
   public static final String GLF_POS = "_GLF_pos";
 
