@@ -34,10 +34,14 @@ import java.util.List;
 public class FlattenControlFlowReductionOpportunities
       extends ReductionOpportunitiesBase<AbstractReductionOpportunity> {
 
+  // Used to assess whether code that references loop limiters can be flattened.
+  private final LoopLimiterImpactChecker loopLimiterImpactChecker;
+
   private FlattenControlFlowReductionOpportunities(
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);
+    this.loopLimiterImpactChecker = new LoopLimiterImpactChecker(tu);
   }
 
   static List<AbstractReductionOpportunity> findOpportunities(
@@ -129,7 +133,8 @@ public class FlattenControlFlowReductionOpportunities
 
   private boolean isLoopLimiterCheck(Stmt compoundStmt) {
     return compoundStmt instanceof IfStmt
-          && StmtReductionOpportunities.referencesLoopLimiter(compoundStmt, getCurrentScope());
+          && loopLimiterImpactChecker.referencesNonRedundantLoopLimiter(compoundStmt,
+                                                                        getCurrentScope());
   }
 
 }

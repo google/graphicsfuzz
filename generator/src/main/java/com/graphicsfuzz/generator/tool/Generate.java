@@ -153,6 +153,10 @@ public class Generate {
     parser.addArgument("--write-probabilities")
         .help(Arguments.SUPPRESS)
         .action(Arguments.storeTrue());
+
+    parser.addArgument("--shader-stage")
+        .help("Only fuzz the given shader stage.")
+        .type(ShaderKind.class);
   }
 
   /**
@@ -166,15 +170,24 @@ public class Generate {
                                               GeneratorArguments args,
                                               IRandom random) {
     final StringBuilder result = new StringBuilder();
+    final List<TranslationUnit> shaders = new ArrayList<>(shaderJob.getShaders());
+
+    if (args.getOnlyFuzzShaderStage().isPresent()) {
+      shaders.removeIf((tu) -> !tu.getShaderKind().equals(args.getOnlyFuzzShaderStage().get()));
+      if (shaders.isEmpty()) {
+        throw new RuntimeException(
+            "Shader job had no shader for stage: " + args.getOnlyFuzzShaderStage().get());
+      }
+    }
 
     if (args.getAddInjectionSwitch()) {
-      for (TranslationUnit shader : shaderJob.getShaders()) {
+      for (TranslationUnit shader : shaders) {
         addInjectionSwitchIfNotPresent(shader);
       }
       setInjectionSwitch(shaderJob.getPipelineInfo());
     }
 
-    for (TranslationUnit tu : shaderJob.getShaders()) {
+    for (TranslationUnit tu : shaders) {
       result.append(transformShader(
           tu,
           shaderJob,
@@ -336,6 +349,7 @@ public class Generate {
     if (!donors.isDirectory()) {
       throw new RuntimeException("Donors directory '" + donors.toString() + "' does not exist.");
     }
+    ShaderKind shaderStage = ns.get("shader_stage");
     return new GeneratorArguments(
         ns.getBoolean("small"),
         ns.getBoolean("allow_long_loops"),
@@ -346,7 +360,9 @@ public class Generate {
         ns.get("generate_uniform_bindings"),
         ns.get("max_uniforms"),
         enabledTransformations,
-        !ns.getBoolean("no_injection_switch"));
+        !ns.getBoolean("no_injection_switch"),
+        Optional.ofNullable(shaderStage)
+    );
   }
 
   public static EnabledTransformations getTransformationDisablingFlags(Namespace ns) {

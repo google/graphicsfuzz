@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 

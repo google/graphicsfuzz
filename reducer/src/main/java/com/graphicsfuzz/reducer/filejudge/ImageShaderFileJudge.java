@@ -19,7 +19,6 @@ package com.graphicsfuzz.reducer.filejudge;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.FileJudgeException;
 import com.graphicsfuzz.reducer.IFileJudge;
-import com.graphicsfuzz.server.thrift.ImageComparisonMetric;
 import com.graphicsfuzz.server.thrift.ImageJob;
 import com.graphicsfuzz.server.thrift.ImageJobResult;
 import com.graphicsfuzz.server.thrift.JobStatus;

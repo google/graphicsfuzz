@@ -117,6 +117,8 @@ def fuzz_glsl(  # pylint: disable=too-many-locals;
 
     stable_shader = reference_name.startswith("stable_")
 
+    common_spirv_args = list(settings.common_spirv_args)
+
     test_dirs = [
         make_test(
             template_source_dir,
@@ -125,6 +127,7 @@ def fuzz_glsl(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
         make_test(
             template_source_dir,
@@ -133,6 +136,7 @@ def fuzz_glsl(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
         make_test(
             template_source_dir,
@@ -141,6 +145,7 @@ def fuzz_glsl(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
         make_test(
             template_source_dir,
@@ -149,6 +154,7 @@ def fuzz_glsl(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
         make_test(
             template_source_dir,
@@ -157,6 +163,7 @@ def fuzz_glsl(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
         make_test(
             template_source_dir,
@@ -165,6 +172,7 @@ def fuzz_glsl(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             derived_from=reference_name,
             stable_shader=stable_shader,
+            common_spirv_args=common_spirv_args,
         ),
     ]
 
@@ -197,6 +205,7 @@ def make_test(
     binary_manager: binaries_util.BinaryManager,
     derived_from: Optional[str],
     stable_shader: bool,
+    common_spirv_args: Optional[List[str]],
 ) -> Path:
 
     source_dir = test_util.get_source_dir(subtest_dir)
@@ -204,7 +213,11 @@ def make_test(
     # Create the subtest by copying the base source.
     util.copy_dir(base_source_dir, source_dir)
 
-    test = Test(glsl=TestGlsl(spirv_opt_args=spirv_opt_args), derived_from=derived_from)
+    test = Test(
+        glsl=TestGlsl(spirv_opt_args=spirv_opt_args),
+        derived_from=derived_from,
+        common_spirv_args=common_spirv_args,
+    )
 
     test.binaries.extend([binary_manager.get_binary_by_name(name="glslangValidator")])
     add_spirv_shader_test_binaries(test, spirv_opt_args, binary_manager)
@@ -579,6 +592,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                             shader_overrides=shader_overrides,
                             preprocessor_cache=preprocessor_cache,
                             skip_validation=test.skip_validation,
+                            common_spirv_args=list(test.common_spirv_args),
                         )
                     )
                 except subprocess.CalledProcessError:

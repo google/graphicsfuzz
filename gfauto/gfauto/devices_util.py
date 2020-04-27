@@ -202,7 +202,8 @@ def get_device_list(
     device = Device(
         name="amdllpc",
         shader_compiler=DeviceShaderCompiler(
-            binary="amdllpc", args=["-gfxip=9.0.0", "-verify-ir", "-auto-layout-desc"]
+            binary="amdllpc",
+            args=["-val=false", "-gfxip=9.0.0", "-verify-ir", "-auto-layout-desc"],
         ),
         binaries=[binary_manager.get_binary_by_name("amdllpc")],
     )

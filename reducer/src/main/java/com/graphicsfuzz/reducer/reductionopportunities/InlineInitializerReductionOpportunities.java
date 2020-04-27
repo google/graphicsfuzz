@@ -26,6 +26,7 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.ListConcat;
 import com.graphicsfuzz.common.util.StatsVisitor;
+import com.graphicsfuzz.util.Constants;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -140,11 +141,11 @@ public class InlineInitializerReductionOpportunities
     if (currentProgramPointIsDeadCode()) {
       return true;
     }
-    if (StmtReductionOpportunities.isLooplimiter(variableDeclInfo.getName())) {
+    if (Constants.isLooplimiterVariableName(variableDeclInfo.getName())) {
       // Do not mess with loop limiters.
       return false;
     }
-    if (isLiveInjectedVariableName(variableDeclInfo.getName())) {
+    if (Constants.isLiveInjectedVariableName(variableDeclInfo.getName())) {
       return true;
     }
     return false;

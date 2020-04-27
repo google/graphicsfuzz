@@ -33,6 +33,7 @@ import com.graphicsfuzz.util.ArgsUtil;
 import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.slf4j.Logger;
@@ -74,7 +75,7 @@ public class ShaderProducer implements Runnable {
 
     final EnabledTransformations enabledTransformations =
         Generate.getTransformationDisablingFlags(ns);
-
+    ShaderKind shaderStage = ns.get("shader_stage");
     final GeneratorArguments generatorArguments =
         new GeneratorArguments(
             ns.get("small"),
@@ -86,7 +87,8 @@ public class ShaderProducer implements Runnable {
             ns.get("generate_uniform_bindings"),
             ns.get("max_uniforms"),
             enabledTransformations,
-            !ns.getBoolean("no_injection_switch")
+            !ns.getBoolean("no_injection_switch"),
+            Optional.ofNullable(shaderStage)
         );
 
     final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));

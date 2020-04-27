@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='gfauto',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x11gfauto/test.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\x9e\x02\n\x04Test\x12 \n\x04glsl\x18\x01 \x01(\x0b\x32\x10.gfauto.TestGlslH\x00\x12+\n\nspirv_fuzz\x18\x05 \x01(\x0b\x32\x15.gfauto.TestSpirvFuzzH\x00\x12\x17\n\x0f\x63rash_signature\x18\x02 \x01(\t\x12\x1e\n\x06\x64\x65vice\x18\x03 \x01(\x0b\x32\x0e.gfauto.Device\x12 \n\x08\x62inaries\x18\x04 \x03(\x0b\x32\x0e.gfauto.Binary\x12\x17\n\x0f\x65xpected_status\x18\x06 \x01(\t\x12\x1c\n\x14\x63rash_regex_override\x18\x07 \x01(\t\x12\x17\n\x0fskip_validation\x18\x08 \x01(\x08\x12\x14\n\x0c\x64\x65rived_from\x18\t \x01(\tB\x06\n\x04test\"\"\n\x08TestGlsl\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\t\"\'\n\rTestSpirvFuzz\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\tb\x06proto3')
+  serialized_pb=_b('\n\x11gfauto/test.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\xb9\x02\n\x04Test\x12 \n\x04glsl\x18\x01 \x01(\x0b\x32\x10.gfauto.TestGlslH\x00\x12+\n\nspirv_fuzz\x18\x05 \x01(\x0b\x32\x15.gfauto.TestSpirvFuzzH\x00\x12\x17\n\x0f\x63rash_signature\x18\x02 \x01(\t\x12\x1e\n\x06\x64\x65vice\x18\x03 \x01(\x0b\x32\x0e.gfauto.Device\x12 \n\x08\x62inaries\x18\x04 \x03(\x0b\x32\x0e.gfauto.Binary\x12\x17\n\x0f\x65xpected_status\x18\x06 \x01(\t\x12\x1c\n\x14\x63rash_regex_override\x18\x07 \x01(\t\x12\x17\n\x0fskip_validation\x18\x08 \x01(\x08\x12\x14\n\x0c\x64\x65rived_from\x18\t \x01(\t\x12\x19\n\x11\x63ommon_spirv_args\x18\n \x03(\tB\x06\n\x04test\"\"\n\x08TestGlsl\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\t\"\'\n\rTestSpirvFuzz\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\tb\x06proto3')
   ,
   dependencies=[gfauto_dot_common__pb2.DESCRIPTOR,gfauto_dot_device__pb2.DESCRIPTOR,])
 
@@ -99,6 +99,13 @@ _TEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='common_spirv_args', full_name='gfauto.Test.common_spirv_args', index=9,
+      number=10, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -115,7 +122,7 @@ _TEST = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=72,
-  serialized_end=358,
+  serialized_end=385,
 )
 
 
@@ -145,8 +152,8 @@ _TESTGLSL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=360,
-  serialized_end=394,
+  serialized_start=387,
+  serialized_end=421,
 )
 
 
@@ -176,8 +183,8 @@ _TESTSPIRVFUZZ = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=396,
-  serialized_end=435,
+  serialized_start=423,
+  serialized_end=462,
 )
 
 _TEST.fields_by_name['glsl'].message_type = _TESTGLSL
