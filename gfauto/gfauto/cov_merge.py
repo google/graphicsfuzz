@@ -55,14 +55,27 @@ def main() -> None:
     for input_file in input_files:
         with open(input_file, mode="rb") as f:
             input_line_counts: cov_util.LineCounts = pickle.load(f)
-        for file_path, line_counts in input_line_counts.items():
-            if file_path not in line_counts:
-                output_line_counts[file_path] = line_counts
-            else:
-                output_line_counts[file_path].update(line_counts)
+        add_line_counts_unsafe(input_line_counts, output_line_counts)
 
     with open(output_file, mode="wb") as f:
         pickle.dump(output_line_counts, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def add_line_counts_unsafe(
+    input_line_counts: cov_util.LineCounts, output_line_counts: cov_util.LineCounts
+) -> None:
+    """
+    Merges input_line_counts into output_line_counts.
+
+    WARNING: takes ownership of input_line_counts. I.e. input_line_counts should not be used after return.
+    This is because Counter references from input_line_counts may be copied into output_line_counts (which may then get
+    mutated further).
+    """
+    for file_path, line_counts in input_line_counts.items():
+        if file_path not in output_line_counts:
+            output_line_counts[file_path] = line_counts
+        else:
+            output_line_counts[file_path].update(line_counts)
 
 
 if __name__ == "__main__":
