@@ -87,6 +87,13 @@ def run_helper(
         AssertionError("run takes a list of str, not a str"),
     )
 
+    # When using catchsegv, only SIGSEGV will cause a backtrace to be printed.
+    # We can also include SIGABRT by setting the following environment variable.
+    if cmd[0].endswith("catchsegv"):
+        if env is None:
+            env = {}
+        env["SEGFAULT_SIGNALS"] = "SEGV ABRT"
+
     env_child: Optional[Dict[str, str]] = None
     if env:
         log(f"Extra environment variables are: {env}")
