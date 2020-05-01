@@ -123,6 +123,7 @@ def spirv_opt_shader_job(
     binary_paths: binaries_util.BinaryGetter,
     preprocessor_cache: Optional[util.CommandCache] = None,
     skip_validation: bool = False,
+    extra_args: Optional[List[str]] = None,
 ) -> Path:
     spirv_opt_binary = binary_paths.get_binary_path_by_name(
         binaries_util.SPIRV_OPT_NAME
@@ -136,6 +137,7 @@ def spirv_opt_shader_job(
         or binaries_util.SPIRV_OPT_NO_VALIDATE_AFTER_ALL_TAG
         in spirv_opt_binary.binary.tags,
         preprocessor_cache=preprocessor_cache,
+        extra_args=extra_args,
     )
 
 
@@ -307,6 +309,7 @@ def compile_shader_job(  # pylint: disable=too-many-locals;
             binary_paths,
             preprocessor_cache=preprocessor_cache,
             skip_validation=skip_validation,
+            extra_args=common_spirv_args,
         )
         result_spirv = result
         result = spirv_dis_shader_job(

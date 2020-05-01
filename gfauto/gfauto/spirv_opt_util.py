@@ -96,6 +96,7 @@ def run_spirv_opt_on_spirv_shader(
     spirv_opt_no_validate_after_all: bool = False,
     time_limit: int = SPIRV_OPT_DEFAULT_TIME_LIMIT,
     preprocessor_cache: Optional[util.CommandCache] = None,
+    extra_args: Optional[List[str]] = None,
 ) -> pathlib.Path:
 
     if not spirv_opt_file_path:
@@ -113,6 +114,8 @@ def run_spirv_opt_on_spirv_shader(
     if not spirv_opt_no_validate_after_all:
         cmd.append_str("--validate-after-all")
     cmd.extend_str(spirv_opt_args)
+    if extra_args:
+        cmd.extend_str(extra_args)
 
     if preprocessor_cache and preprocessor_cache.write_cached_output_file(
         cmd, output_spirv_file_path
@@ -135,6 +138,7 @@ def run_spirv_opt_on_spirv_shader_job(
     spirv_opt_file_path: Optional[pathlib.Path] = None,
     spirv_opt_no_validate_after_all: bool = False,
     preprocessor_cache: Optional[util.CommandCache] = None,
+    extra_args: Optional[List[str]] = None,
 ) -> pathlib.Path:
 
     if not spirv_opt_file_path:
@@ -157,6 +161,7 @@ def run_spirv_opt_on_spirv_shader_job(
             spirv_opt_file_path,
             spirv_opt_no_validate_after_all,
             preprocessor_cache=preprocessor_cache,
+            extra_args=extra_args,
         )
 
     return output_spirv_shader_job_json_file_path
