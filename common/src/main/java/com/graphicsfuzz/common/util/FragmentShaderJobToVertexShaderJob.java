@@ -82,9 +82,17 @@ public final class FragmentShaderJobToVertexShaderJob {
     vertexShader.setShaderKind(ShaderKind.VERTEX);
 
     // Analyse the shader for used features (can't use anonymous class due to member access)
-    class Analysis extends StandardVisitor {
-      public boolean usesFragCoord = false;
-      public boolean usesFragDepth = false;
+    class FragmentBuiltinUsageAnalysis extends StandardVisitor {
+      private boolean usesFragCoord = false;
+      private boolean usesFragDepth = false;
+
+      public boolean getUsesFragCoord() {
+        return usesFragCoord;
+      }
+
+      public boolean getUsesFragDepth() {
+        return usesFragDepth;
+      }
 
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
@@ -97,9 +105,9 @@ public final class FragmentShaderJobToVertexShaderJob {
         }
       }
     }
-    
-    final Analysis analysis = new Analysis();
-    analysis.visit(vertexShader);
+
+    final FragmentBuiltinUsageAnalysis fragmentBuiltinUsage = new FragmentBuiltinUsageAnalysis();
+    fragmentBuiltinUsage.visit(vertexShader);
 
 
     /* Create a pass-through fragment shader, of the form:
@@ -149,7 +157,7 @@ public final class FragmentShaderJobToVertexShaderJob {
 
     assert firstNonPrecisionDeclaration != null;
 
-    if (analysis.usesFragDepth) {
+    if (fragmentBuiltinUsage.getUsesFragDepth()) {
       // Add a global _GLF_FragDepth that will replace gl_FragDepth
       vertexShader.addDeclarationBefore(
           new VariablesDeclaration(
@@ -157,7 +165,7 @@ public final class FragmentShaderJobToVertexShaderJob {
           firstNonPrecisionDeclaration);
     }
 
-    if (analysis.usesFragCoord) {
+    if (fragmentBuiltinUsage.getUsesFragCoord()) {
       // Add a global _GLF_FragCoord that will replace gl_FragCoord
       vertexShader.addDeclarationBefore(
           new VariablesDeclaration(
@@ -198,6 +206,11 @@ public final class FragmentShaderJobToVertexShaderJob {
     }
 
     final IParentMap parentMap = IParentMap.createParentMap(vertexShader);
+    // Perform float to vertex shader conversion by replacing fragment-only variables and
+    // functions with things that work in fragment shaders. Some functionality is not
+    // duplicated, either because it is impossible or because it would be very difficult;
+    // notably, gl_FragDepth and discard could be signalled to the fragment shader, but
+    // are simply discarded. Partial derivative function calls (dFdx etc) are simply removed.
     new StandardVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
@@ -246,6 +259,7 @@ public final class FragmentShaderJobToVertexShaderJob {
       // Replace fragment-only functions with parenthesis expression
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        super.visitFunctionCallExpr(functionCallExpr);
         // For most of the functions, they take only one parameter and it's the same
         // type as the output.
         if (Arrays.asList("dFdx", "dFdy", "dFdxCoarse", "dFdyCoarse", "dFdxFine", "dFdyFine",
@@ -262,9 +276,6 @@ public final class FragmentShaderJobToVertexShaderJob {
           final Expr childExpr = functionCallExpr.getChild(0);
           parentMap.getParent(functionCallExpr).replaceChild(functionCallExpr,
               new ParenExpr(childExpr));
-        }
-        for (int i = 0; i < functionCallExpr.getNumChildren(); i++) {
-          visit(functionCallExpr.getChild(i));
         }
       }
 
