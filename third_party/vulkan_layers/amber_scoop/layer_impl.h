@@ -18,9 +18,10 @@
 #ifndef GRAPHICSFUZZ_VULKAN_LAYERS_LAYER_IMPL_H
 #define GRAPHICSFUZZ_VULKAN_LAYERS_LAYER_IMPL_H
 
-#include "amber_scoop/layer.h"
 #include <map>
 #include <sstream>
+
+#include "amber_scoop/layer.h"
 
 namespace graphicsfuzz_amber_scoop {
 
@@ -41,6 +42,6 @@ const std::map<VkPrimitiveTopology, std::string> topologies = {
      "TRIANGLE_STRIP_WITH_ADJACENCY"},
     {VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, "PATCH_LIST"}};
 
-} // namespace graphicsfuzz_amber_scoop
+}  // namespace graphicsfuzz_amber_scoop
 
-#endif // GRAPHICSFUZZ_VULKAN_LAYERS_LAYER_IMPL_H
+#endif  // GRAPHICSFUZZ_VULKAN_LAYERS_LAYER_IMPL_H

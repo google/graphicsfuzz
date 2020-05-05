@@ -83,7 +83,6 @@ void BufferCopy::copyBuffer(
     }
 
     for (const auto &pipelineBarrier : pipelineBarriers) {
-
       // Copy all global and buffer memory barriers
       auto bufferMemoryBarriers =
           CopyArray(pipelineBarrier->pBufferMemoryBarriers_,
@@ -132,7 +131,7 @@ void BufferCopy::copyBuffer(
   submitInfo.pCommandBuffers = &commandBuffer;
   vkQueueSubmit(queue, 1, &submitInfo, nullptr);
 
-  vkDeviceWaitIdle(device); // Maybe use vkQueueWaitIdle() instead?
+  vkDeviceWaitIdle(device);  // Maybe use vkQueueWaitIdle() instead?
 
   // Invalidate memory to make it visible to host.
   {
@@ -181,4 +180,4 @@ uint32_t BufferCopy::findMemoryType(uint32_t typeFilter,
   throw std::runtime_error("Failed to find suitable memory type.");
 }
 
-} // namespace graphicsfuzz_amber_scoop
+}  // namespace graphicsfuzz_amber_scoop

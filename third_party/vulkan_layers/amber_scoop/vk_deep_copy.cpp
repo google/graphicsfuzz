@@ -28,15 +28,15 @@ VkBufferCreateInfo DeepCopy(const VkBufferCreateInfo &createInfo) {
   return result;
 }
 
-VkDescriptorSetLayoutBinding
-DeepCopy(const VkDescriptorSetLayoutBinding &descriptorSetLayoutBinding) {
+VkDescriptorSetLayoutBinding DeepCopy(
+    const VkDescriptorSetLayoutBinding &descriptorSetLayoutBinding) {
   VkDescriptorSetLayoutBinding result = descriptorSetLayoutBinding;
   // TODO deep copy immutable samplers if needed.
   return result;
 }
 
-VkDescriptorSetLayoutCreateInfo
-DeepCopy(const VkDescriptorSetLayoutCreateInfo &createInfo) {
+VkDescriptorSetLayoutCreateInfo DeepCopy(
+    const VkDescriptorSetLayoutCreateInfo &createInfo) {
   VkDescriptorSetLayoutCreateInfo result = createInfo;
   auto newBindings = new VkDescriptorSetLayoutBinding[createInfo.bindingCount];
   for (uint32_t i = 0; i < createInfo.bindingCount; i++) {
@@ -53,8 +53,8 @@ VkFramebufferCreateInfo DeepCopy(const VkFramebufferCreateInfo &createInfo) {
   return result;
 }
 
-VkGraphicsPipelineCreateInfo
-DeepCopy(const VkGraphicsPipelineCreateInfo &createInfo) {
+VkGraphicsPipelineCreateInfo DeepCopy(
+    const VkGraphicsPipelineCreateInfo &createInfo) {
   VkGraphicsPipelineCreateInfo result = createInfo;
   // Copy pStages
   {
@@ -116,8 +116,8 @@ DeepCopy(const VkGraphicsPipelineCreateInfo &createInfo) {
   return result;
 }
 
-VkPipelineLayoutCreateInfo
-DeepCopy(const VkPipelineLayoutCreateInfo &createInfo) {
+VkPipelineLayoutCreateInfo DeepCopy(
+    const VkPipelineLayoutCreateInfo &createInfo) {
   VkPipelineLayoutCreateInfo result = createInfo;
   result.pSetLayouts =
       CopyArray(createInfo.pSetLayouts, createInfo.setLayoutCount);
@@ -126,8 +126,8 @@ DeepCopy(const VkPipelineLayoutCreateInfo &createInfo) {
   return result;
 }
 
-VkPipelineShaderStageCreateInfo
-DeepCopy(const VkPipelineShaderStageCreateInfo &createInfo) {
+VkPipelineShaderStageCreateInfo DeepCopy(
+    const VkPipelineShaderStageCreateInfo &createInfo) {
   VkPipelineShaderStageCreateInfo result = createInfo;
   // TODO: make copy deep.
   return result;
@@ -187,4 +187,4 @@ VkSubpassDescription DeepCopy(const VkSubpassDescription &subpassDescription) {
   return result;
 }
 
-} // namespace graphicsfuzz_amber_scoop
+}  // namespace graphicsfuzz_amber_scoop

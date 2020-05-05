@@ -99,10 +99,10 @@ std::string GetDisassembly(VkShaderModule shaderModule) {
   return disassembly;
 }
 
-VkResult
-vkAllocateDescriptorSets(PFN_vkAllocateDescriptorSets next, VkDevice device,
-                         VkDescriptorSetAllocateInfo const *pAllocateInfo,
-                         VkDescriptorSet *pDescriptorSets) {
+VkResult vkAllocateDescriptorSets(
+    PFN_vkAllocateDescriptorSets next, VkDevice device,
+    VkDescriptorSetAllocateInfo const *pAllocateInfo,
+    VkDescriptorSet *pDescriptorSets) {
   DEBUG_LAYER(vkAllocateDescriptorSets);
   auto result = next(device, pAllocateInfo, pDescriptorSets);
   if (result == VK_SUCCESS) {
@@ -263,19 +263,18 @@ void vkCmdPipelineBarrier(
        memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount,
        pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
 
-  auto memoryBarriers = CopyArray<VkMemoryBarrier>(pMemoryBarriers, memoryBarrierCount);
+  auto memoryBarriers =
+      CopyArray<VkMemoryBarrier>(pMemoryBarriers, memoryBarrierCount);
 
-  AddCommand(
-      commandBuffer,
-      std::make_unique<CmdPipelineBarrier>(
-          srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount,
-          memoryBarriers,
-          bufferMemoryBarrierCount,
-          CopyArray<VkBufferMemoryBarrier>(pBufferMemoryBarriers,
-                                           bufferMemoryBarrierCount),
-          imageMemoryBarrierCount,
-          CopyArray<VkImageMemoryBarrier>(pImageMemoryBarriers,
-                                          imageMemoryBarrierCount)));
+  AddCommand(commandBuffer,
+             std::make_unique<CmdPipelineBarrier>(
+                 srcStageMask, dstStageMask, dependencyFlags,
+                 memoryBarrierCount, memoryBarriers, bufferMemoryBarrierCount,
+                 CopyArray<VkBufferMemoryBarrier>(pBufferMemoryBarriers,
+                                                  bufferMemoryBarrierCount),
+                 imageMemoryBarrierCount,
+                 CopyArray<VkImageMemoryBarrier>(pImageMemoryBarriers,
+                                                 imageMemoryBarrierCount)));
 }
 
 VkResult vkCreateBuffer(PFN_vkCreateBuffer next, VkDevice device,
@@ -472,14 +471,14 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
               cmdBindIndexBuffer->indexType_;
         } else if (auto cmdBindPipeline = cmd->AsBindPipeline()) {
           switch (cmdBindPipeline->pipelineBindPoint_) {
-          case VK_PIPELINE_BIND_POINT_GRAPHICS:
-            drawCallStateTracker.graphicsPipelineIsBound = true;
-            drawCallStateTracker.boundGraphicsPipeline =
-                cmdBindPipeline->pipeline_;
-            break;
-          default:
-            // Not considering other pipelines now.
-            break;
+            case VK_PIPELINE_BIND_POINT_GRAPHICS:
+              drawCallStateTracker.graphicsPipelineIsBound = true;
+              drawCallStateTracker.boundGraphicsPipeline =
+                  cmdBindPipeline->pipeline_;
+              break;
+            default:
+              // Not considering other pipelines now.
+              break;
           }
         } else if (auto cmdBindVertexBuffers = cmd->AsBindVertexBuffers()) {
           for (uint32_t bindingIdx = 0;
@@ -525,47 +524,47 @@ void vkUpdateDescriptorSets(PFN_vkUpdateDescriptorSets next, VkDevice device,
     assert(writeDescriptorSet.descriptorCount == 1);
 
     switch (writeDescriptorSet.descriptorType) {
-    case VK_DESCRIPTOR_TYPE_SAMPLER:
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
-      // pImageInfo must be a valid pointer to an array of descriptorCount valid
-      // VkDescriptorImageInfo structures
-      if (!descriptorSetToBindingImageAndSampler.count(
-              writeDescriptorSet.dstSet)) {
-        descriptorSetToBindingImageAndSampler.insert(
-            {writeDescriptorSet.dstSet, {}});
+      case VK_DESCRIPTOR_TYPE_SAMPLER:
+      case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+      case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+      case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+      case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        // pImageInfo must be a valid pointer to an array of descriptorCount
+        // valid VkDescriptorImageInfo structures
+        if (!descriptorSetToBindingImageAndSampler.count(
+                writeDescriptorSet.dstSet)) {
+          descriptorSetToBindingImageAndSampler.insert(
+              {writeDescriptorSet.dstSet, {}});
+        }
+        auto &bindingToImage =
+            descriptorSetToBindingImageAndSampler.at(writeDescriptorSet.dstSet);
+        bindingToImage.insert(
+            {writeDescriptorSet.dstBinding, writeDescriptorSet.pImageInfo[0]});
+        break;
       }
-      auto &bindingToImage =
-          descriptorSetToBindingImageAndSampler.at(writeDescriptorSet.dstSet);
-      bindingToImage.insert(
-          {writeDescriptorSet.dstBinding, writeDescriptorSet.pImageInfo[0]});
-      break;
-    }
-    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-      // pTexelBufferView must be a valid pointer to an array of descriptorCount
-      // valid VkBufferView handles
-      break;
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
-      // pBufferInfo must be a valid pointer to an array of descriptorCount
-      // valid VkDescriptorBufferInfo structures
-      if (!descriptorSetToBindingBuffer.count(writeDescriptorSet.dstSet)) {
-        descriptorSetToBindingBuffer.insert({writeDescriptorSet.dstSet, {}});
+      case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+      case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+        // pTexelBufferView must be a valid pointer to an array of
+        // descriptorCount valid VkBufferView handles
+        break;
+      case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+      case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+      case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+      case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
+        // pBufferInfo must be a valid pointer to an array of descriptorCount
+        // valid VkDescriptorBufferInfo structures
+        if (!descriptorSetToBindingBuffer.count(writeDescriptorSet.dstSet)) {
+          descriptorSetToBindingBuffer.insert({writeDescriptorSet.dstSet, {}});
+        }
+        auto &bindingToBuffer =
+            descriptorSetToBindingBuffer.at(writeDescriptorSet.dstSet);
+        bindingToBuffer.insert(
+            {writeDescriptorSet.dstBinding, writeDescriptorSet.pBufferInfo[0]});
+        break;
       }
-      auto &bindingToBuffer =
-          descriptorSetToBindingBuffer.at(writeDescriptorSet.dstSet);
-      bindingToBuffer.insert(
-          {writeDescriptorSet.dstBinding, writeDescriptorSet.pBufferInfo[0]});
-      break;
-    }
-    default:
-      throw std::runtime_error("Should be unreachable.");
-      break;
+      default:
+        throw std::runtime_error("Should be unreachable.");
+        break;
     }
   }
 }
@@ -653,7 +652,6 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
          location < graphicsPipelineCreateInfo.pVertexInputState
                         ->vertexAttributeDescriptionCount;
          location++) {
-
       auto description = graphicsPipelineCreateInfo.pVertexInputState
                              ->pVertexAttributeDescriptions[location];
 
@@ -674,7 +672,6 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
     // Go through all elements in the buffer
     for (uint32_t bufferOffset = 0; bufferOffset < buffer.size;
          bufferOffset += bindingDescription.stride) {
-
       auto readPtr = (char *)mappedVertexBufferMemory + bufferOffset;
 
       for (uint32_t location = 0;
@@ -769,7 +766,6 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
       bindingAndBuffers = descriptorSetToBindingBuffer.at(descriptorSet.second);
     }
     for (const auto &bindingAndBuffer : bindingAndBuffers) {
-
       uint32_t bindingNumber = bindingAndBuffer.first;
       VkDescriptorBufferInfo bufferInfo = bindingAndBuffer.second;
 
@@ -855,42 +851,42 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
         std::stringstream strstr;
 
         switch (descriptorType) {
-        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-          strstr << "img_" << descriptorSetNumber << "_" << bindingNumber;
-          std::string imageName = strstr.str();
+          case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+          case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+          case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+            strstr << "img_" << descriptorSetNumber << "_" << bindingNumber;
+            std::string imageName = strstr.str();
 
-          descriptorSetBindingStringStream
-              << "  BIND BUFFER " << imageName << " AS "
-              << getDescriptorTypeString(descriptorType) << " DESCRIPTOR_SET "
-              << descriptorSetNumber << " BINDING " << bindingNumber;
+            descriptorSetBindingStringStream
+                << "  BIND BUFFER " << imageName << " AS "
+                << getDescriptorTypeString(descriptorType) << " DESCRIPTOR_SET "
+                << descriptorSetNumber << " BINDING " << bindingNumber;
 
-          if (descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-            descriptorSetBindingStringStream << " SAMPLER "
-                                             << " TBD: sampler name";
-          // TODO: implement BASE_MIP_LEVEL
-          // https://github.com/google/amber/blob/master/docs/amber_script.md#pipeline-buffers
+            if (descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+              descriptorSetBindingStringStream << " SAMPLER "
+                                               << " TBD: sampler name";
+            // TODO: implement BASE_MIP_LEVEL
+            // https://github.com/google/amber/blob/master/docs/amber_script.md#pipeline-buffers
 
-          bufferDeclarationStringStream << "BUFFER " << imageName
-                                        << " FORMAT R8G8B8A8_UNORM"
-                                        << " FILE texture.png" << std::endl;
-          break;
-        }
-        case VK_DESCRIPTOR_TYPE_SAMPLER: {
-          strstr << "sampler_" << descriptorSetNumber << "_" << bindingNumber;
-          std::string samplerName = strstr.str();
+            bufferDeclarationStringStream << "BUFFER " << imageName
+                                          << " FORMAT R8G8B8A8_UNORM"
+                                          << " FILE texture.png" << std::endl;
+            break;
+          }
+          case VK_DESCRIPTOR_TYPE_SAMPLER: {
+            strstr << "sampler_" << descriptorSetNumber << "_" << bindingNumber;
+            std::string samplerName = strstr.str();
 
-          descriptorSetBindingStringStream
-              << "  BIND SAMPLER " << samplerName << " DESCRIPTOR_SET "
-              << descriptorSetNumber << " BINDING " << bindingNumber;
+            descriptorSetBindingStringStream
+                << "  BIND SAMPLER " << samplerName << " DESCRIPTOR_SET "
+                << descriptorSetNumber << " BINDING " << bindingNumber;
 
-          bufferDeclarationStringStream << "SAMPLER " << samplerName
-                                        << std::endl;
-          break;
-        }
-        default:
-          throw std::runtime_error("Unimplemented descriptor type");
+            bufferDeclarationStringStream << "SAMPLER " << samplerName
+                                          << std::endl;
+            break;
+          }
+          default:
+            throw std::runtime_error("Unimplemented descriptor type");
         }
         descriptorSetBindingStringStream << std::endl;
       }
@@ -901,7 +897,6 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   if (graphicsPipelineCreateInfo.pDepthStencilState != nullptr ||
       graphicsPipelineCreateInfo.pRasterizationState->depthBiasEnable ||
       graphicsPipelineCreateInfo.pRasterizationState->depthClampEnable) {
-
     graphicsPipelineStringStream << "  DEPTH\n";
 
     if (graphicsPipelineCreateInfo.pDepthStencilState != nullptr) {
@@ -912,32 +907,32 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
           << "\n";
       graphicsPipelineStringStream << "    COMPARE_OP ";
       switch (depthState->depthCompareOp) {
-      case VK_COMPARE_OP_NEVER:
-        graphicsPipelineStringStream << "never";
-        break;
-      case VK_COMPARE_OP_LESS:
-        graphicsPipelineStringStream << "less";
-        break;
-      case VK_COMPARE_OP_EQUAL:
-        graphicsPipelineStringStream << "equal";
-        break;
-      case VK_COMPARE_OP_LESS_OR_EQUAL:
-        graphicsPipelineStringStream << "less_or_equal";
-        break;
-      case VK_COMPARE_OP_GREATER:
-        graphicsPipelineStringStream << "greater";
-        break;
-      case VK_COMPARE_OP_NOT_EQUAL:
-        graphicsPipelineStringStream << "not_equal";
-        break;
-      case VK_COMPARE_OP_GREATER_OR_EQUAL:
-        graphicsPipelineStringStream << "greater_or_equal";
-        break;
-      case VK_COMPARE_OP_ALWAYS:
-        graphicsPipelineStringStream << "always";
-        break;
-      default:
-        throw std::runtime_error("Invalid VK_COMPARE_OP");
+        case VK_COMPARE_OP_NEVER:
+          graphicsPipelineStringStream << "never";
+          break;
+        case VK_COMPARE_OP_LESS:
+          graphicsPipelineStringStream << "less";
+          break;
+        case VK_COMPARE_OP_EQUAL:
+          graphicsPipelineStringStream << "equal";
+          break;
+        case VK_COMPARE_OP_LESS_OR_EQUAL:
+          graphicsPipelineStringStream << "less_or_equal";
+          break;
+        case VK_COMPARE_OP_GREATER:
+          graphicsPipelineStringStream << "greater";
+          break;
+        case VK_COMPARE_OP_NOT_EQUAL:
+          graphicsPipelineStringStream << "not_equal";
+          break;
+        case VK_COMPARE_OP_GREATER_OR_EQUAL:
+          graphicsPipelineStringStream << "greater_or_equal";
+          break;
+        case VK_COMPARE_OP_ALWAYS:
+          graphicsPipelineStringStream << "always";
+          break;
+        default:
+          throw std::runtime_error("Invalid VK_COMPARE_OP");
       }
       graphicsPipelineStringStream << "\n";
 
@@ -965,7 +960,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
           << "\n";
     }
 
-    graphicsPipelineStringStream << "  END\n"; // DEPTH
+    graphicsPipelineStringStream << "  END\n";  // DEPTH
   }
 
   // Create buffers for color attachments.
@@ -1015,17 +1010,17 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   // Polygon mode
   std::cout << "  POLYGON_MODE ";
   switch (graphicsPipelineCreateInfo.pRasterizationState->polygonMode) {
-  case VkPolygonMode::VK_POLYGON_MODE_FILL:
-    std::cout << "fill\n";
-    break;
-  case VkPolygonMode::VK_POLYGON_MODE_LINE:
-    std::cout << "line\n";
-    break;
-  case VkPolygonMode::VK_POLYGON_MODE_POINT:
-    std::cout << "point\n";
-    break;
-  default:
-    throw std::runtime_error("Polygon mode not supported by amber.");
+    case VkPolygonMode::VK_POLYGON_MODE_FILL:
+      std::cout << "fill\n";
+      break;
+    case VkPolygonMode::VK_POLYGON_MODE_LINE:
+      std::cout << "line\n";
+      break;
+    case VkPolygonMode::VK_POLYGON_MODE_POINT:
+      std::cout << "point\n";
+      break;
+    default:
+      throw std::runtime_error("Polygon mode not supported by amber.");
   }
 
   // Add definitions for pipeline
@@ -1038,7 +1033,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   std::cout << framebufferAttachmentStringStream.str();
   std::cout << descriptorSetBindingStringStream.str();
 
-  std::cout << "END" << std::endl << std::endl; // PIPELINE
+  std::cout << "END" << std::endl << std::endl;  // PIPELINE
 
   std::cout << "CLEAR_COLOR pipeline 0 0 0 255" << std::endl;
   std::cout << "CLEAR pipeline" << std::endl;
@@ -1059,12 +1054,11 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
 void readComponentsFromBufferAndWriteToStrStream(char *buffer,
                                                  vkf::VulkanFormat format,
                                                  std::stringstream &bufStr) {
-
   if (format.isPacked) {
     // Packed formats are 16 or 32 bits wide.
     if (format.width_bits == 16)
       bufStr << (uint32_t) * (uint16_t *)buffer << " ";
-    else // 32-bit
+    else  // 32-bit
       bufStr << *(uint32_t *)buffer << " ";
   } else {
     for (uint8_t cIdx = 0; cIdx < format.component_count; cIdx++) {
@@ -1105,20 +1099,20 @@ void readComponentsFromBufferAndWriteToStrStream(char *buffer,
 
 std::string getDescriptorTypeString(VkDescriptorType descriptorType) {
   switch (descriptorType) {
-  case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-    return "combined_image_sampler";
-  case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-    return "sampled_image";
-  case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-    return "storage_image";
-  case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-    return "uniform";
-  case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-    return "storage";
-  default:
-    assert(false && "Unimplemented descriptor type");
-    return "...";
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+      return "combined_image_sampler";
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+      return "sampled_image";
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+      return "storage_image";
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+      return "uniform";
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+      return "storage";
+    default:
+      assert(false && "Unimplemented descriptor type");
+      return "...";
   }
 }
 
-} // namespace graphicsfuzz_amber_scoop
+}  // namespace graphicsfuzz_amber_scoop

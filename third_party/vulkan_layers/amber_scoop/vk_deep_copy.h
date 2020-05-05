@@ -22,9 +22,9 @@
 
 namespace graphicsfuzz_amber_scoop {
 
-template <typename T> T *CopyArray(T const *pData, uint32_t numElements, uint32_t offset = 0) {
-  if (pData == nullptr)
-    return nullptr;
+template <typename T>
+T *CopyArray(T const *pData, uint32_t numElements, uint32_t offset = 0) {
+  if (pData == nullptr) return nullptr;
   T *result = new T[numElements - offset];
   for (uint32_t i = 0; i < numElements; i++) {
     result[i] = pData[i + offset];
@@ -34,33 +34,34 @@ template <typename T> T *CopyArray(T const *pData, uint32_t numElements, uint32_
 
 VkBufferCreateInfo DeepCopy(const VkBufferCreateInfo &createInfo);
 
-VkDescriptorSetLayoutBinding
-DeepCopy(const VkDescriptorSetLayoutBinding &descriptorSetLayoutBinding);
+VkDescriptorSetLayoutBinding DeepCopy(
+    const VkDescriptorSetLayoutBinding &descriptorSetLayoutBinding);
 
-VkDescriptorSetLayoutCreateInfo
-DeepCopy(const VkDescriptorSetLayoutCreateInfo &createInfo);
+VkDescriptorSetLayoutCreateInfo DeepCopy(
+    const VkDescriptorSetLayoutCreateInfo &createInfo);
 
 VkFramebufferCreateInfo DeepCopy(const VkFramebufferCreateInfo &createInfo);
 
-VkGraphicsPipelineCreateInfo
-DeepCopy(const VkGraphicsPipelineCreateInfo &createInfo);
+VkGraphicsPipelineCreateInfo DeepCopy(
+    const VkGraphicsPipelineCreateInfo &createInfo);
 
-VkPipelineLayoutCreateInfo
-DeepCopy(const VkPipelineLayoutCreateInfo &createInfo);
+VkPipelineLayoutCreateInfo DeepCopy(
+    const VkPipelineLayoutCreateInfo &createInfo);
 
-VkPipelineShaderStageCreateInfo
-DeepCopy(const VkPipelineShaderStageCreateInfo &createInfo);
+VkPipelineShaderStageCreateInfo DeepCopy(
+    const VkPipelineShaderStageCreateInfo &createInfo);
 
 VkRenderPassBeginInfo *DeepCopy(VkRenderPassBeginInfo const *pRenderPassBegin);
 
 VkRenderPassCreateInfo DeepCopy(const VkRenderPassCreateInfo &createInfo);
 
-VkPipelineVertexInputStateCreateInfo DeepCopy(const VkPipelineVertexInputStateCreateInfo &vertexInputState);
+VkPipelineVertexInputStateCreateInfo DeepCopy(
+    const VkPipelineVertexInputStateCreateInfo &vertexInputState);
 
 VkShaderModuleCreateInfo DeepCopy(const VkShaderModuleCreateInfo &createInfo);
 
 VkSubpassDescription DeepCopy(const VkSubpassDescription &subpassDescription);
 
-} // namespace graphicsfuzz_amber_scoop
+}  // namespace graphicsfuzz_amber_scoop
 
-#endif // GRAPHICSFUZZ_VULKAN_LAYERS_VK_DEEP_COPY_H
+#endif  // GRAPHICSFUZZ_VULKAN_LAYERS_VK_DEEP_COPY_H

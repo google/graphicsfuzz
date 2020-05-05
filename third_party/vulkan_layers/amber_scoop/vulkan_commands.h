@@ -18,8 +18,9 @@
 #ifndef GRAPHICSFUZZ_VULKAN_LAYERS_VULKAN_COMMANDS_H
 #define GRAPHICSFUZZ_VULKAN_LAYERS_VULKAN_COMMANDS_H
 
-#include "vk_deep_copy.h"
 #include <vulkan/vulkan_core.h>
+
+#include "vk_deep_copy.h"
 
 namespace graphicsfuzz_amber_scoop {
 
@@ -35,7 +36,6 @@ struct CmdDrawIndexed;
 struct CmdPipelineBarrier;
 
 struct Cmd {
-
   enum Kind {
     kBeginRenderPass,
     kBindDescriptorSets,
@@ -76,7 +76,8 @@ struct Cmd {
 struct CmdBeginRenderPass : public Cmd {
   CmdBeginRenderPass(VkRenderPassBeginInfo const *pRenderPassBegin,
                      VkSubpassContents contents)
-      : Cmd(kBeginRenderPass), pRenderPassBegin_(DeepCopy(pRenderPassBegin)),
+      : Cmd(kBeginRenderPass),
+        pRenderPassBegin_(DeepCopy(pRenderPassBegin)),
         contents_(contents) {}
 
   CmdBeginRenderPass *AsBeginRenderPass() override { return this; }
@@ -87,15 +88,16 @@ struct CmdBeginRenderPass : public Cmd {
 };
 
 struct CmdBindDescriptorSets : public Cmd {
-
   CmdBindDescriptorSets(VkPipelineBindPoint pipelineBindPoint,
                         VkPipelineLayout layout, uint32_t firstSet,
                         uint32_t descriptorSetCount,
                         VkDescriptorSet const *pDescriptorSets,
                         uint32_t dynamicOffsetCount,
                         uint32_t const *pDynamicOffsets)
-      : Cmd(kBindDescriptorSets), pipelineBindPoint_(pipelineBindPoint),
-        layout_(layout), firstSet_(firstSet),
+      : Cmd(kBindDescriptorSets),
+        pipelineBindPoint_(pipelineBindPoint),
+        layout_(layout),
+        firstSet_(firstSet),
         descriptorSetCount_(descriptorSetCount),
         pDescriptorSets_(CopyArray(pDescriptorSets, descriptorSetCount)),
         dynamicOffsetCount_(dynamicOffsetCount),
@@ -116,10 +118,11 @@ struct CmdBindDescriptorSets : public Cmd {
 };
 
 struct CmdBindIndexBuffer : public Cmd {
-
   CmdBindIndexBuffer(VkBuffer buffer, VkDeviceSize offset,
                      VkIndexType indexType)
-      : Cmd(kBindIndexBuffer), buffer_(buffer), offset_(offset),
+      : Cmd(kBindIndexBuffer),
+        buffer_(buffer),
+        offset_(offset),
         indexType_(indexType) {}
 
   CmdBindIndexBuffer *AsBindIndexBuffer() override { return this; }
@@ -132,7 +135,8 @@ struct CmdBindIndexBuffer : public Cmd {
 
 struct CmdBindPipeline : public Cmd {
   CmdBindPipeline(VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
-      : Cmd(kBindPipeline), pipelineBindPoint_(pipelineBindPoint),
+      : Cmd(kBindPipeline),
+        pipelineBindPoint_(pipelineBindPoint),
         pipeline_(pipeline) {}
 
   CmdBindPipeline *AsBindPipeline() override { return this; }
@@ -143,10 +147,10 @@ struct CmdBindPipeline : public Cmd {
 };
 
 struct CmdBindVertexBuffers : public Cmd {
-
   CmdBindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
                        VkBuffer const *pBuffers, VkDeviceSize const *pOffsets)
-      : Cmd(kBindVertexBuffers), firstBinding_(firstBinding),
+      : Cmd(kBindVertexBuffers),
+        firstBinding_(firstBinding),
         bindingCount_(bindingCount),
         pBuffers_(CopyArray(pBuffers, bindingCount)),
         pOffsets_(CopyArray(pOffsets, bindingCount)) {}
@@ -165,8 +169,11 @@ struct CmdBindVertexBuffers : public Cmd {
 struct CmdCopyBuffer : public Cmd {
   CmdCopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount,
                 VkBufferCopy const *pRegions)
-      : Cmd(kCopyBuffer), srcBuffer_(srcBuffer), dstBuffer_(dstBuffer),
-        regionCount_(regionCount), pRegions_(pRegions) {}
+      : Cmd(kCopyBuffer),
+        srcBuffer_(srcBuffer),
+        dstBuffer_(dstBuffer),
+        regionCount_(regionCount),
+        pRegions_(pRegions) {}
 
   CmdCopyBuffer *AsCopyBuffer() override { return this; }
   const CmdCopyBuffer *AsCopyBuffer() const override { return this; }
@@ -181,8 +188,11 @@ struct CmdCopyBufferToImage : public Cmd {
   CmdCopyBufferToImage(VkBuffer srcBuffer, VkImage dstImage,
                        VkImageLayout dstImageLayout, uint32_t regionCount,
                        VkBufferImageCopy const *pRegions)
-      : Cmd(kCopyBufferToImage), srcBuffer_(srcBuffer), dstImage_(dstImage),
-        dstImageLayout_(dstImageLayout), regionCount_(regionCount),
+      : Cmd(kCopyBufferToImage),
+        srcBuffer_(srcBuffer),
+        dstImage_(dstImage),
+        dstImageLayout_(dstImageLayout),
+        regionCount_(regionCount),
         pRegions_(CopyArray(pRegions, regionCount)) {}
 
   CmdCopyBufferToImage *AsCopyBufferToImage() override { return this; }
@@ -200,8 +210,11 @@ struct CmdCopyBufferToImage : public Cmd {
 struct CmdDraw : public Cmd {
   CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
           uint32_t firstInstance)
-      : Cmd(kDraw), vertexCount_(vertexCount), instanceCount_(instanceCount),
-        firstVertex_(firstVertex), firstInstance_(firstInstance) {}
+      : Cmd(kDraw),
+        vertexCount_(vertexCount),
+        instanceCount_(instanceCount),
+        firstVertex_(firstVertex),
+        firstInstance_(firstInstance) {}
 
   CmdDraw *AsDraw() override { return this; }
   const CmdDraw *AsDraw() const override { return this; }
@@ -216,9 +229,12 @@ struct CmdDrawIndexed : public Cmd {
   CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount,
                  uint32_t firstIndex, int32_t vertexOffset,
                  uint32_t firstInstance)
-      : Cmd(kDrawIndexed), indexCount_(indexCount),
-        instanceCount_(instanceCount), firstIndex_(firstIndex),
-        vertexOffset_(vertexOffset), firstInstance_(firstInstance) {}
+      : Cmd(kDrawIndexed),
+        indexCount_(indexCount),
+        instanceCount_(instanceCount),
+        firstIndex_(firstIndex),
+        vertexOffset_(vertexOffset),
+        firstInstance_(firstInstance) {}
 
   CmdDrawIndexed *AsDrawIndexed() override { return this; }
   const CmdDrawIndexed *AsDrawIndexed() const override { return this; }
@@ -240,8 +256,10 @@ struct CmdPipelineBarrier : public Cmd {
                      VkBufferMemoryBarrier const *pBufferMemoryBarriers,
                      uint32_t imageMemoryBarrierCount,
                      VkImageMemoryBarrier const *pImageMemoryBarriers)
-      : Cmd(kPipelineBarrier), srcStageMask_(srcStageMask),
-        dstStageMask_(dstStageMask), dependencyFlags_(dependencyFlags),
+      : Cmd(kPipelineBarrier),
+        srcStageMask_(srcStageMask),
+        dstStageMask_(dstStageMask),
+        dependencyFlags_(dependencyFlags),
         memoryBarrierCount_(memoryBarrierCount),
         pMemoryBarriers_(CopyArray(pMemoryBarriers, memoryBarrierCount)),
         bufferMemoryBarrierCount_(bufferMemoryBarrierCount),
@@ -265,6 +283,6 @@ struct CmdPipelineBarrier : public Cmd {
   VkImageMemoryBarrier const *pImageMemoryBarriers_;
 };
 
-} // namespace graphicsfuzz_amber_scoop
+}  // namespace graphicsfuzz_amber_scoop
 
-#endif // GRAPHICSFUZZ_VULKAN_LAYERS_VULKAN_COMMANDS_H
+#endif  // GRAPHICSFUZZ_VULKAN_LAYERS_VULKAN_COMMANDS_H

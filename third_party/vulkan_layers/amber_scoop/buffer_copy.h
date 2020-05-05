@@ -18,16 +18,17 @@
 #ifndef GRAPHICSFUZZ_VULKAN_LAYERS_BUFFER_COPY_H
 #define GRAPHICSFUZZ_VULKAN_LAYERS_BUFFER_COPY_H
 
+#include <vulkan/vulkan.h>
+
+#include <memory>
+
 #include "layer_impl.h"
 #include "vulkan_commands.h"
-#include <memory>
-#include <vulkan/vulkan.h>
 
 namespace graphicsfuzz_amber_scoop {
 
 class BufferCopy {
-
-public:
+ public:
   /**
    * Copies buffer contents from the given buffer to a host readable buffer.
    * Creates a new command buffer for the copy commands and submits the command
@@ -50,19 +51,18 @@ public:
 
   void freeResources();
 
-private:
+ private:
   VkBuffer bufferCopy;
   VkDeviceMemory bufferCopyMemory;
   VkCommandPool commandPool;
   VkCommandBuffer commandBuffer;
   VkDevice device;
 
-  uint32_t findMemoryType(uint32_t typeFilter,
-                                 VkMemoryPropertyFlags properties,
-                                 VkDevice physicalDevice);
+  uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties,
+                          VkDevice physicalDevice);
 
-}; // class BufferCopy
+};  // class BufferCopy
 
-} // namespace graphicsfuzz_amber_scoop
+}  // namespace graphicsfuzz_amber_scoop
 
-#endif // GRAPHICSFUZZ_VULKAN_LAYERS_BUFFER_COPY_H
+#endif  // GRAPHICSFUZZ_VULKAN_LAYERS_BUFFER_COPY_H

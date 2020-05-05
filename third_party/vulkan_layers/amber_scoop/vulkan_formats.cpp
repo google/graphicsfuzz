@@ -28,5 +28,4 @@ VulkanFormat VkFormatToVulkanFormat(VkFormat format) {
   return formats.at(format);
 }
 
-} // namespace graphicsfuzz_amber_scoop::vkf
-
+}  // namespace graphicsfuzz_amber_scoop::vkf

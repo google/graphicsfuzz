@@ -19,9 +19,10 @@
 #ifndef GRAPHICSFUZZ_VULKAN_LAYERS_VULKAN_FORMATS_H
 #define GRAPHICSFUZZ_VULKAN_LAYERS_VULKAN_FORMATS_H
 
-#include "vulkan/vulkan.h"
 #include <cassert>
 #include <map>
+
+#include "vulkan/vulkan.h"
 
 namespace graphicsfuzz_amber_scoop {
 namespace vkf {
@@ -61,11 +62,11 @@ struct VulkanFormat {
 
     bool isFloat() {
       switch (mode) {
-      case FormatMode::kUFloat:
-      case FormatMode::kSFloat:
-        return true;
-      default:
-        return false;
+        case FormatMode::kUFloat:
+        case FormatMode::kSFloat:
+          return true;
+        default:
+          return false;
       }
 
       return false;
@@ -73,24 +74,24 @@ struct VulkanFormat {
 
     bool isSInt() {
       switch (mode) {
-      case FormatMode::kSInt:
-      case FormatMode::kSScaled:
-      case FormatMode::kSNorm:
-        return true;
-      default:
-        return false;
+        case FormatMode::kSInt:
+        case FormatMode::kSScaled:
+        case FormatMode::kSNorm:
+          return true;
+        default:
+          return false;
       }
       return false;
     }
 
     bool isUInt() {
       switch (mode) {
-      case FormatMode::kUInt:
-      case FormatMode::kUScaled:
-      case FormatMode::kUNorm:
-        return true;
-      default:
-        return false;
+        case FormatMode::kUInt:
+        case FormatMode::kUScaled:
+        case FormatMode::kUNorm:
+          return true;
+        default:
+          return false;
       }
       return false;
     }
@@ -1371,7 +1372,7 @@ const std::map<VkFormat, VulkanFormat> formats = {
 
 VulkanFormat VkFormatToVulkanFormat(VkFormat format);
 
-} // namespace vkf
-} // namespace graphicsfuzz_amber_scoop
+}  // namespace vkf
+}  // namespace graphicsfuzz_amber_scoop
 
-#endif // GRAPHICSFUZZ_VULKAN_LAYERS_VULKAN_FORMATS_H
+#endif  // GRAPHICSFUZZ_VULKAN_LAYERS_VULKAN_FORMATS_H
