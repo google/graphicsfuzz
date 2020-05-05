@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 The GraphicsFuzz Project Authors
+ * Copyright 2020 The GraphicsFuzz Project Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@
 namespace graphicsfuzz_amber_scoop {
 
 template <typename T> T *CopyArray(T const *pData, uint32_t numElements, uint32_t offset = 0) {
+  if (pData == nullptr)
+    return nullptr;
   T *result = new T[numElements - offset];
   for (uint32_t i = 0; i < numElements; i++) {
     result[i] = pData[i + offset];

@@ -1369,10 +1369,8 @@ const std::map<VkFormat, VulkanFormat> formats = {
           {FormatComponentType::kS, FormatMode::kUInt, 8},
       }}}};
 
-VulkanFormat VkFormatToVulkanFormat(VkFormat format) {
-  assert(formats.count(format) && "Unsupported format");
-  return formats.at(format);
-}
+VulkanFormat VkFormatToVulkanFormat(VkFormat format);
+
 } // namespace vkf
 } // namespace graphicsfuzz_amber_scoop
 

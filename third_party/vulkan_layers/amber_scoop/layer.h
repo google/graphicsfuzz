@@ -39,13 +39,14 @@ namespace graphicsfuzz_amber_scoop {
 
     struct InstanceFunctions {
         // Overriden Functions
+        PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties;
         // Stored pointers to call
     };
     struct DeviceFunctions {
         // Overriden Functions
         PFN_vkCreateBuffer vkCreateBuffer;
         PFN_vkBindBufferMemory vkBindBufferMemory;
-        PFN_vkCmdCopyBuffer vkCmdCopyBuffer;
+        PFN_vkCreateCommandPool vkCreateCommandPool;
         PFN_vkCmdCopyBufferToImage vkCmdCopyBufferToImage;
         PFN_vkCreateDescriptorSetLayout vkCreateDescriptorSetLayout;
         PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets;
@@ -66,6 +67,7 @@ namespace graphicsfuzz_amber_scoop {
         PFN_vkCreateFramebuffer vkCreateFramebuffer;
         PFN_vkCreateRenderPass vkCreateRenderPass;
         PFN_vkCmdBeginRenderPass vkCmdBeginRenderPass;
+        PFN_vkCmdPipelineBarrier vkCmdPipelineBarrier;
         // Stored pointers to call
     };
     // All of the instance data that is needed for book-keeping in a layer.
@@ -117,7 +119,7 @@ namespace graphicsfuzz_amber_scoop {
     Context &GetGlobalContext();
     VkResult vkCreateBuffer(PFN_vkCreateBuffer next, VkDevice device, VkBufferCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkBuffer* pBuffer);
     VkResult vkBindBufferMemory(PFN_vkBindBufferMemory next, VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset);
-    void vkCmdCopyBuffer(PFN_vkCmdCopyBuffer next, VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, VkBufferCopy const* pRegions);
+    VkResult vkCreateCommandPool(PFN_vkCreateCommandPool next, VkDevice device, VkCommandPoolCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkCommandPool* pCommandPool);
     void vkCmdCopyBufferToImage(PFN_vkCmdCopyBufferToImage next, VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, VkBufferImageCopy const* pRegions);
     VkResult vkCreateDescriptorSetLayout(PFN_vkCreateDescriptorSetLayout next, VkDevice device, VkDescriptorSetLayoutCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkDescriptorSetLayout* pSetLayout);
     VkResult vkAllocateDescriptorSets(PFN_vkAllocateDescriptorSets next, VkDevice device, VkDescriptorSetAllocateInfo const* pAllocateInfo, VkDescriptorSet* pDescriptorSets);
@@ -134,8 +136,10 @@ namespace graphicsfuzz_amber_scoop {
     VkResult vkCreateGraphicsPipelines(PFN_vkCreateGraphicsPipelines next, VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, VkGraphicsPipelineCreateInfo const* pCreateInfos, AllocationCallbacks pAllocator, VkPipeline* pPipelines);
     VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device, VkShaderModuleCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkShaderModule* pShaderModule);
     void vkCmdBindPipeline(PFN_vkCmdBindPipeline next, VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline);
+    void vkGetPhysicalDeviceMemoryProperties(PFN_vkGetPhysicalDeviceMemoryProperties next, VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties);
     VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue, uint32_t submitCount, VkSubmitInfo const* pSubmits, VkFence fence);
     VkResult vkCreateFramebuffer(PFN_vkCreateFramebuffer next, VkDevice device, VkFramebufferCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkFramebuffer* pFramebuffer);
     VkResult vkCreateRenderPass(PFN_vkCreateRenderPass next, VkDevice device, VkRenderPassCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkRenderPass* pRenderPass);
     void vkCmdBeginRenderPass(PFN_vkCmdBeginRenderPass next, VkCommandBuffer commandBuffer, VkRenderPassBeginInfo const* pRenderPassBegin, VkSubpassContents contents);
+    void vkCmdPipelineBarrier(PFN_vkCmdPipelineBarrier next, VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32_t memoryBarrierCount, VkMemoryBarrier const* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, VkBufferMemoryBarrier const* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, VkImageMemoryBarrier const* pImageMemoryBarriers);
 }

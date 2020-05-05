@@ -17,17 +17,17 @@
 
 #include "amber_scoop/layer_impl.h"
 
-#include <cstring>
 #include <iostream>
 #include <memory>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
 
+#include "amber_scoop/buffer_copy.h"
 #include "amber_scoop/vk_deep_copy.h"
+#include "amber_scoop/vulkan_formats.h"
 #include "common/spirv_util.h"
 #include "spirv-tools/libspirv.hpp"
-#include "vulkan_formats.h"
 
 namespace graphicsfuzz_amber_scoop {
 
@@ -39,172 +39,21 @@ namespace graphicsfuzz_amber_scoop {
 #define DEBUG_LAYER(F)
 #endif
 
-struct CmdBeginRenderPass : public Cmd {
-  CmdBeginRenderPass(VkRenderPassBeginInfo const *pRenderPassBegin,
-                     VkSubpassContents contents)
-      : Cmd(kBeginRenderPass), pRenderPassBegin_(DeepCopy(pRenderPassBegin)),
-        contents_(contents) {}
+std::string getDescriptorTypeString(VkDescriptorType descriptorType);
 
-  CmdBeginRenderPass *AsBeginRenderPass() override { return this; }
-  const CmdBeginRenderPass *AsBeginRenderPass() const override { return this; }
+void readComponentsFromBufferAndWriteToStrStream(char *buffer,
+                                                 vkf::VulkanFormat format,
+                                                 std::stringstream &bufStr);
 
-  VkRenderPassBeginInfo *pRenderPassBegin_;
-  VkSubpassContents contents_;
-};
-
-struct CmdBindDescriptorSets : public Cmd {
-
-  CmdBindDescriptorSets(VkPipelineBindPoint pipelineBindPoint,
-                        VkPipelineLayout layout, uint32_t firstSet,
-                        uint32_t descriptorSetCount,
-                        VkDescriptorSet const *pDescriptorSets,
-                        uint32_t dynamicOffsetCount,
-                        uint32_t const *pDynamicOffsets)
-      : Cmd(kBindDescriptorSets), pipelineBindPoint_(pipelineBindPoint),
-        layout_(layout), firstSet_(firstSet),
-        descriptorSetCount_(descriptorSetCount),
-        pDescriptorSets_(CopyArray(pDescriptorSets, descriptorSetCount)),
-        dynamicOffsetCount_(dynamicOffsetCount),
-        pDynamicOffsets_(CopyArray(pDynamicOffsets, dynamicOffsetCount)) {}
-
-  CmdBindDescriptorSets *AsBindDescriptorSets() override { return this; }
-  const CmdBindDescriptorSets *AsBindDescriptorSets() const override {
-    return this;
-  }
-
-  VkPipelineBindPoint pipelineBindPoint_;
-  VkPipelineLayout layout_;
-  uint32_t firstSet_;
-  uint32_t descriptorSetCount_;
-  VkDescriptorSet *pDescriptorSets_;
-  uint32_t dynamicOffsetCount_;
-  uint32_t *pDynamicOffsets_;
-};
-
-struct CmdBindIndexBuffer : public Cmd {
-
-  CmdBindIndexBuffer(VkBuffer buffer, VkDeviceSize offset,
-                     VkIndexType indexType)
-      : Cmd(kBindIndexBuffer), buffer_(buffer), offset_(offset),
-        indexType_(indexType) {}
-
-  CmdBindIndexBuffer *AsBindIndexBuffer() override { return this; }
-  const CmdBindIndexBuffer *AsBindIndexBuffer() const override { return this; }
-
-  VkBuffer buffer_;
-  VkDeviceSize offset_;
-  VkIndexType indexType_;
-};
-
-struct CmdBindPipeline : public Cmd {
-  CmdBindPipeline(VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
-      : Cmd(kBindPipeline), pipelineBindPoint_(pipelineBindPoint),
-        pipeline_(pipeline) {}
-
-  CmdBindPipeline *AsBindPipeline() override { return this; }
-  const CmdBindPipeline *AsBindPipeline() const override { return this; }
-
-  VkPipelineBindPoint pipelineBindPoint_;
-  VkPipeline pipeline_;
-};
-
-struct CmdBindVertexBuffers : public Cmd {
-
-  CmdBindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
-                       VkBuffer const *pBuffers, VkDeviceSize const *pOffsets)
-      : Cmd(kBindVertexBuffers), firstBinding_(firstBinding),
-        bindingCount_(bindingCount),
-        pBuffers_(CopyArray(pBuffers, bindingCount)),
-        pOffsets_(CopyArray(pOffsets, bindingCount)) {}
-
-  CmdBindVertexBuffers *AsBindVertexBuffers() override { return this; }
-  const CmdBindVertexBuffers *AsBindVertexBuffers() const override {
-    return this;
-  }
-
-  uint32_t firstBinding_;
-  uint32_t bindingCount_;
-  VkBuffer const *pBuffers_;
-  VkDeviceSize const *pOffsets_;
-};
-
-struct CmdCopyBuffer : public Cmd {
-  CmdCopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount,
-                VkBufferCopy const *pRegions)
-      : Cmd(kCopyBuffer), srcBuffer_(srcBuffer), dstBuffer_(dstBuffer),
-        regionCount_(regionCount), pRegions_(pRegions) {}
-
-  CmdCopyBuffer *AsCopyBuffer() override { return this; }
-  const CmdCopyBuffer *AsCopyBuffer() const override { return this; }
-
-  VkBuffer srcBuffer_;
-  VkBuffer dstBuffer_;
-  uint32_t regionCount_;
-  VkBufferCopy const *pRegions_;
-};
-
-struct CmdCopyBufferToImage : public Cmd {
-  CmdCopyBufferToImage(VkBuffer srcBuffer, VkImage dstImage,
-                       VkImageLayout dstImageLayout, uint32_t regionCount,
-                       VkBufferImageCopy const *pRegions)
-      : Cmd(kCopyBufferToImage), srcBuffer_(srcBuffer), dstImage_(dstImage),
-        dstImageLayout_(dstImageLayout), regionCount_(regionCount),
-        pRegions_(CopyArray(pRegions, regionCount)) {}
-
-  CmdCopyBufferToImage *AsCopyBufferToImage() override { return this; }
-  const CmdCopyBufferToImage *AsCopyBufferToImage() const override {
-    return this;
-  }
-
-  VkBuffer srcBuffer_;
-  VkImage dstImage_;
-  VkImageLayout dstImageLayout_;
-  uint32_t regionCount_;
-  VkBufferImageCopy const *pRegions_;
-};
-
-struct CmdDraw : public Cmd {
-  CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
-          uint32_t firstInstance)
-      : Cmd(kDraw), vertexCount_(vertexCount), instanceCount_(instanceCount),
-        firstVertex_(firstVertex), firstInstance_(firstInstance) {}
-
-  CmdDraw *AsDraw() override { return this; }
-  const CmdDraw *AsDraw() const override { return this; }
-
-  uint32_t vertexCount_;
-  uint32_t instanceCount_;
-  uint32_t firstVertex_;
-  uint32_t firstInstance_;
-};
-
-struct CmdDrawIndexed : public Cmd {
-  CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount,
-                 uint32_t firstIndex, int32_t vertexOffset,
-                 uint32_t firstInstance)
-      : Cmd(kDrawIndexed), indexCount_(indexCount),
-        instanceCount_(instanceCount), firstIndex_(firstIndex),
-        vertexOffset_(vertexOffset), firstInstance_(firstInstance) {}
-
-  CmdDrawIndexed *AsDrawIndexed() override { return this; }
-  const CmdDrawIndexed *AsDrawIndexed() const override { return this; }
-
-  uint32_t indexCount_;
-  uint32_t instanceCount_;
-  uint32_t firstIndex_;
-  int32_t vertexOffset_;
-  uint32_t firstInstance_;
-};
-
-std::unordered_map<VkCommandBuffer, std::vector<std::unique_ptr<Cmd>>>
-    command_buffers;
+std::unordered_map<VkCommandBuffer, std::vector<std::shared_ptr<Cmd>>>
+    commandBuffers;
 
 void AddCommand(VkCommandBuffer command_buffer, std::unique_ptr<Cmd> command) {
-  if (command_buffers.count(command_buffer) == 0) {
-    std::vector<std::unique_ptr<Cmd>> empty_cmds;
-    command_buffers.insert({command_buffer, std::move(empty_cmds)});
+  if (commandBuffers.count(command_buffer) == 0) {
+    std::vector<std::shared_ptr<Cmd>> empty_cmds;
+    commandBuffers.insert({command_buffer, std::move(empty_cmds)});
   }
-  command_buffers.at(command_buffer).push_back(std::move(command));
+  commandBuffers.at(command_buffer).push_back(std::move(command));
 }
 
 std::unordered_map<VkDeviceMemory, std::tuple<VkDeviceSize, VkDeviceSize,
@@ -231,7 +80,7 @@ std::unordered_map<VkDescriptorSet,
                    std::unordered_map<uint32_t, VkDescriptorImageInfo>>
     descriptorSetToBindingImageAndSampler;
 
-std::vector<std::shared_ptr<BufferCopy>> bufferCopies;
+std::unordered_map<VkCommandPool, uint32_t> commandPoolToQueueFamilyIndex;
 
 std::string GetDisassembly(VkShaderModule shaderModule) {
   auto createInfo = shaderModules.at(shaderModule);
@@ -283,6 +132,19 @@ VkResult vkBindImageMemory(PFN_vkBindImageMemory next, VkDevice device,
   auto result = next(device, image, memory, memoryOffset);
   if (result == VK_SUCCESS) {
     imageToMemory.insert({image, {memory, memoryOffset}});
+  }
+  return result;
+}
+
+VkResult vkCreateCommandPool(PFN_vkCreateCommandPool next, VkDevice device,
+                             VkCommandPoolCreateInfo const *pCreateInfo,
+                             AllocationCallbacks pAllocator,
+                             VkCommandPool *pCommandPool) {
+  DEBUG_LAYER(vkCreateCommandPool);
+  auto result = next(device, pCreateInfo, pAllocator, pCommandPool);
+  if (result == VK_SUCCESS) {
+    commandPoolToQueueFamilyIndex.insert(
+        {*pCommandPool, pCreateInfo->queueFamilyIndex});
   }
   return result;
 }
@@ -388,13 +250,51 @@ void vkCmdDrawIndexed(PFN_vkCmdDrawIndexed next, VkCommandBuffer commandBuffer,
                                 vertexOffset, firstInstance));
 }
 
+void vkCmdPipelineBarrier(
+    PFN_vkCmdPipelineBarrier next, VkCommandBuffer commandBuffer,
+    VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
+    VkDependencyFlags dependencyFlags, uint32_t memoryBarrierCount,
+    VkMemoryBarrier const *pMemoryBarriers, uint32_t bufferMemoryBarrierCount,
+    VkBufferMemoryBarrier const *pBufferMemoryBarriers,
+    uint32_t imageMemoryBarrierCount,
+    VkImageMemoryBarrier const *pImageMemoryBarriers) {
+  DEBUG_LAYER(vkCmdPipelineBarrier);
+  next(commandBuffer, srcStageMask, dstStageMask, dependencyFlags,
+       memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount,
+       pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
+
+  auto memoryBarriers = CopyArray<VkMemoryBarrier>(pMemoryBarriers, memoryBarrierCount);
+
+  AddCommand(
+      commandBuffer,
+      std::make_unique<CmdPipelineBarrier>(
+          srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount,
+          memoryBarriers,
+          bufferMemoryBarrierCount,
+          CopyArray<VkBufferMemoryBarrier>(pBufferMemoryBarriers,
+                                           bufferMemoryBarrierCount),
+          imageMemoryBarrierCount,
+          CopyArray<VkImageMemoryBarrier>(pImageMemoryBarriers,
+                                          imageMemoryBarrierCount)));
+}
+
 VkResult vkCreateBuffer(PFN_vkCreateBuffer next, VkDevice device,
                         VkBufferCreateInfo const *pCreateInfo,
                         AllocationCallbacks pAllocator, VkBuffer *pBuffer) {
   DEBUG_LAYER(vkCreateBuffer);
-  auto result = next(device, pCreateInfo, pAllocator, pBuffer);
+
+  VkBufferCreateInfo createInfo = *pCreateInfo;
+  // Allow vertex/index buffer to be used as transfer source buffer. Required if
+  // the vertex/index buffer data needs to be copied from the buffer.
+  if (createInfo.usage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ||
+      createInfo.usage & VK_BUFFER_USAGE_INDEX_BUFFER_BIT ||
+      createInfo.usage & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) {
+    createInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+  }
+
+  auto result = next(device, &createInfo, pAllocator, pBuffer);
   if (result == VK_SUCCESS) {
-    buffers.insert({*pBuffer, DeepCopy(*pCreateInfo)});
+    buffers.insert({*pBuffer, DeepCopy(createInfo)});
   }
   return result;
 }
@@ -481,6 +381,13 @@ VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device,
   }
   return result;
 }
+void vkGetPhysicalDeviceMemoryProperties(
+    PFN_vkGetPhysicalDeviceMemoryProperties next,
+    VkPhysicalDevice physicalDevice,
+    VkPhysicalDeviceMemoryProperties *pMemoryProperties) {
+  DEBUG_LAYER(vkGetPhysicalDeviceMemoryProperties);
+  next(physicalDevice, pMemoryProperties);
+}
 
 VkResult vkMapMemory(PFN_vkMapMemory next, VkDevice device,
                      VkDeviceMemory memory, VkDeviceSize offset,
@@ -493,12 +400,6 @@ VkResult vkMapMemory(PFN_vkMapMemory next, VkDevice device,
   return result;
 }
 
-struct BufferCopy {
-  VkBuffer srcBuffer{};
-  VkBuffer dstBuffer{};
-  std::vector<std::shared_ptr<VkBufferCopy>> regions;
-};
-
 struct IndexBufferBinding {
   VkBuffer buffer;
   VkDeviceSize offset;
@@ -510,11 +411,13 @@ struct DrawCallStateTracker {
   VkPipeline boundGraphicsPipeline = nullptr;
   VkRenderPassBeginInfo *currentRenderPass = nullptr;
   uint32_t currentSubpass = 0;
+  VkCommandBuffer commandBuffer;
+  VkQueue queue;
   std::unordered_map<uint32_t, VkDescriptorSet> boundGraphicsDescriptorSets;
 
   // TODO: also track buffer offsets
   std::unordered_map<uint32_t, VkBuffer> boundVertexBuffers;
-
+  std::vector<std::shared_ptr<CmdPipelineBarrier>> pipelineBarriers;
   IndexBufferBinding boundIndexBuffer = {};
 };
 
@@ -530,15 +433,19 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
     for (uint32_t commandBufferIndex = 0;
          commandBufferIndex < pSubmits[submitIndex].commandBufferCount;
          commandBufferIndex++) {
-      auto command_buffer =
+      auto commandBuffer =
           pSubmits[submitIndex].pCommandBuffers[commandBufferIndex];
 
       DrawCallStateTracker drawCallStateTracker = {};
 
-      if (!command_buffers.count(command_buffer)) {
+      if (!commandBuffers.count(commandBuffer)) {
         continue;
       }
-      for (auto &cmd : command_buffers.at(command_buffer)) {
+
+      drawCallStateTracker.commandBuffer = commandBuffer;
+      drawCallStateTracker.queue = queue;
+
+      for (auto &cmd : commandBuffers.at(commandBuffer)) {
         if (auto cmdBeginRenderPass = cmd->AsBeginRenderPass()) {
           drawCallStateTracker.currentRenderPass =
               cmdBeginRenderPass->pRenderPassBegin_;
@@ -575,35 +482,27 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
             break;
           }
         } else if (auto cmdBindVertexBuffers = cmd->AsBindVertexBuffers()) {
-          for (uint32_t bindingOffset = 0;
-               bindingOffset < cmdBindVertexBuffers->bindingCount_;
-               bindingOffset++) {
+          for (uint32_t bindingIdx = 0;
+               bindingIdx < cmdBindVertexBuffers->bindingCount_; bindingIdx++) {
             drawCallStateTracker.boundVertexBuffers.insert(
-                {bindingOffset + cmdBindVertexBuffers->firstBinding_,
+                {bindingIdx + cmdBindVertexBuffers->firstBinding_,
                  cmdBindVertexBuffers
-                     ->pBuffers_[bindingOffset +
+                     ->pBuffers_[bindingIdx +
                                  cmdBindVertexBuffers->firstBinding_]});
           }
         } else if (auto cmdCopyBuffer = cmd->AsCopyBuffer()) {
-          auto bufferCopy = std::make_shared<BufferCopy>();
-          bufferCopy->dstBuffer = cmdCopyBuffer->dstBuffer_;
-          bufferCopy->srcBuffer = cmdCopyBuffer->srcBuffer_;
-          for (uint32_t regionIdx = 0; regionIdx < cmdCopyBuffer->regionCount_;
-               regionIdx++) {
-
-            auto copyRegion = std::make_shared<VkBufferCopy>(
-                cmdCopyBuffer->pRegions_[regionIdx]);
-            bufferCopy->regions.push_back(copyRegion);
-          }
-          bufferCopies.push_back(bufferCopy);
+          // TODO: track buffer copies?
         } else if (auto cmdCopyBufferToImage = cmd->AsCopyBufferToImage()) {
           // TODO: not implemented.
         } else if (auto cmdDraw = cmd->AsDraw()) {
           HandleDrawCall(drawCallStateTracker);
         } else if (auto cmdDrawIndexed = cmd->AsDrawIndexed()) {
           HandleDrawCall(drawCallStateTracker, cmdDrawIndexed->indexCount_);
+        } else if (auto cmdPipelineBarrier = cmd->AsPipelineBarrier()) {
+          drawCallStateTracker.pipelineBarriers.push_back(
+              std::make_shared<CmdPipelineBarrier>(*cmdPipelineBarrier));
         } else {
-          assert(false && "Unknown command.");
+          throw std::runtime_error("Unknown command.");
         }
       }
     }
@@ -665,7 +564,7 @@ void vkUpdateDescriptorSets(PFN_vkUpdateDescriptorSets next, VkDevice device,
       break;
     }
     default:
-      assert(false && "Should be unreachable.");
+      throw std::runtime_error("Should be unreachable.");
       break;
     }
   }
@@ -691,7 +590,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
     } else if (stageCreateInfo.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
       fragmentShader = stageCreateInfo.module;
     } else {
-      assert(false && "Not handled.");
+      throw std::runtime_error("Not handled.");
     }
   }
   assert(vertexShader && "Vertex shader required for graphics pipeline.");
@@ -712,7 +611,8 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   std::stringstream framebufferAttachmentStringStream;
   std::stringstream graphicsPipelineStringStream;
 
-  for (auto vertexBufferBinding : drawCallStateTracker.boundVertexBuffers) {
+  for (const auto &vertexBufferBinding :
+       drawCallStateTracker.boundVertexBuffers) {
     auto buffer = buffers.at(vertexBufferBinding.second);
     assert(buffer.usage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
@@ -723,136 +623,122 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
     assert(bindingDescription.inputRate == VK_VERTEX_INPUT_RATE_VERTEX &&
            "inputRate not implemented");
 
-    if (bufferToMemory.count(vertexBufferBinding.second)) {
+    VkBuffer vertexBuffer = vertexBufferBinding.second;
 
-      VkBuffer vertexBuffer = nullptr;
+    auto commandPool =
+        GetGlobalContext()
+            .GetVkCommandBufferData(drawCallStateTracker.commandBuffer)
+            ->command_pool;
+    auto queueFamilyIndex = commandPoolToQueueFamilyIndex.at(commandPool);
+    BufferCopy vertexBufferCopy = BufferCopy();
+    void *mappedVertexBufferMemory;
 
-      // Check if a staging buffer is used.
-      for (const auto& bufferCopy : bufferCopies) {
-        if (bufferCopy->dstBuffer != vertexBufferBinding.second)
-          continue;
-        vertexBuffer = bufferCopy->srcBuffer;
+    // Check if there is pipeline barriers for vertex buffer
+    std::vector<std::shared_ptr<CmdPipelineBarrier>>
+        vertexBufferPipelineBarriers;
+    for (const auto &barrier : drawCallStateTracker.pipelineBarriers) {
+      if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_INPUT_BIT) {
+        vertexBufferPipelineBarriers.push_back(barrier);
         break;
       }
+    }
 
-      // Assume that the bound vertex buffer contains the data if a staging
-      // buffer is not found.
-      if (vertexBuffer == nullptr) {
-        vertexBuffer = vertexBufferBinding.second;
-      }
+    vertexBufferCopy.copyBuffer(drawCallStateTracker.queue, queueFamilyIndex,
+                                vertexBufferPipelineBarriers, vertexBuffer,
+                                buffer.size, &mappedVertexBufferMemory);
 
-      VkDeviceMemory deviceMemory = bufferToMemory.at(vertexBuffer).first;
+    // Create string stream for every location
+    std::vector<std::shared_ptr<std::stringstream>> bufferDeclStrings;
+    for (uint32_t location = 0;
+         location < graphicsPipelineCreateInfo.pVertexInputState
+                        ->vertexAttributeDescriptionCount;
+         location++) {
 
-      assert(mappedMemory.count(deviceMemory) &&
-             "Vertex buffer mapping not found");
+      auto description = graphicsPipelineCreateInfo.pVertexInputState
+                             ->pVertexAttributeDescriptions[location];
 
-      auto memoryMapping = mappedMemory.at(deviceMemory);
+      std::stringstream bufferName;
+      bufferName << "vert_" << vertexBufferBinding.first << "_" << location;
 
-      void *bufferPtr = std::get<3>(memoryMapping);
+      graphicsPipelineStringStream << "  VERTEX_DATA " << bufferName.str()
+                                   << " LOCATION " << location << std::endl;
 
-      // Create string stream for every location
-      std::vector<std::shared_ptr<std::stringstream>> bufferDeclStrings;
+      auto strStream = std::make_shared<std::stringstream>();
+      *strStream << "BUFFER " << bufferName.str() << " DATA_TYPE "
+                 << vkf::VkFormatToVulkanFormat(description.format).name
+                 << " DATA\n"
+                 << "  ";
+      bufferDeclStrings.push_back(strStream);
+    }
+
+    // Go through all elements in the buffer
+    for (uint32_t bufferOffset = 0; bufferOffset < buffer.size;
+         bufferOffset += bindingDescription.stride) {
+
+      auto readPtr = (char *)mappedVertexBufferMemory + bufferOffset;
+
       for (uint32_t location = 0;
            location < graphicsPipelineCreateInfo.pVertexInputState
                           ->vertexAttributeDescriptionCount;
            location++) {
-
         auto description = graphicsPipelineCreateInfo.pVertexInputState
                                ->pVertexAttributeDescriptions[location];
 
-        std::stringstream bufferName;
-        bufferName << "vert_" << vertexBufferBinding.first << "_" << location;
+        vkf::VulkanFormat format =
+            vkf::VkFormatToVulkanFormat(description.format);
 
-        graphicsPipelineStringStream << "  VERTEX_DATA " << bufferName.str()
-                                     << " LOCATION " << location << std::endl;
-
-        auto strStream = std::make_shared<std::stringstream>();
-        *strStream << "BUFFER " << bufferName.str() << " DATA_TYPE "
-                   << vkf::VkFormatToVulkanFormat(description.format).name
-                   << " DATA\n"
-                   << "  ";
-        bufferDeclStrings.push_back(strStream);
+        readComponentsFromBufferAndWriteToStrStream(
+            readPtr + description.offset, format,
+            *bufferDeclStrings.at(location));
       }
+    }
+    vertexBufferCopy.freeResources();
 
-      // Go through all elements in the buffer
-      for (uint32_t bufferOffset = 0; bufferOffset < buffer.size;
-           bufferOffset += bindingDescription.stride) {
-
-        auto readPtr = (char *)bufferPtr + bufferOffset;
-
-        for (uint32_t location = 0;
-             location < graphicsPipelineCreateInfo.pVertexInputState
-                            ->vertexAttributeDescriptionCount;
-             location++) {
-          auto description = graphicsPipelineCreateInfo.pVertexInputState
-                                 ->pVertexAttributeDescriptions[location];
-
-          vkf::VulkanFormat format =
-              vkf::VkFormatToVulkanFormat(description.format);
-
-          readComponentsFromBufferAndWriteToStrStream(
-              readPtr + description.offset, format, *bufferDeclStrings.at(location));
-        }
-      }
-
-      // End all buffer declaration streams and combine them to one stream.
-      for (auto stream : bufferDeclStrings) {
-        *stream << std::endl << "END" << std::endl << std::endl;
-        bufferDeclarationStringStream << (*stream).str();
-      }
-    } else {
-      bufferDeclarationStringStream << "...";
+    // End all buffer declaration streams and combine them to one stream.
+    for (const auto &stream : bufferDeclStrings) {
+      *stream << std::endl << "END" << std::endl << std::endl;
+      bufferDeclarationStringStream << (*stream).str();
     }
   }
 
   // Declare index buffer (if used)
   if (indexCount > 0) {
-
     auto buffer = buffers.at(drawCallStateTracker.boundIndexBuffer.buffer);
-    assert(buffer.usage & VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    VkBuffer indexBuffer = drawCallStateTracker.boundIndexBuffer.buffer;
 
-    assert(bufferToMemory.count(drawCallStateTracker.boundIndexBuffer.buffer) &&
-           "Index buffer memory not found");
+    auto commandPool =
+        GetGlobalContext()
+            .GetVkCommandBufferData(drawCallStateTracker.commandBuffer)
+            ->command_pool;
+    auto queueFamilyIndex = commandPoolToQueueFamilyIndex.at(commandPool);
+    void *mappedIndexBufferMemory;
 
-    VkBuffer indexBuffer = nullptr;
-    VkDeviceSize bufferCopyOffset = 0;
-    // Check if a staging buffer is used.
-    for (const auto &bufferCopy : bufferCopies) {
-      if (bufferCopy->dstBuffer ==
-          drawCallStateTracker.boundIndexBuffer.buffer) {
-        indexBuffer = bufferCopy->srcBuffer;
-        assert(bufferCopy->regions.size() == 1 &&
-               "Only one copy region supported.");
-        bufferCopyOffset = bufferCopy->regions.at(0)->srcOffset;
+    std::vector<std::shared_ptr<CmdPipelineBarrier>>
+        vertexBufferPipelineBarriers;
+    // Check if there is pipeline barriers for index buffer
+    for (const auto &barrier : drawCallStateTracker.pipelineBarriers) {
+      if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_INPUT_BIT) {
+        vertexBufferPipelineBarriers.push_back(barrier);
         break;
       }
     }
 
-    // Assume that the bound index buffer contains the data if a staging
-    // buffer is not found.
-    if (indexBuffer == nullptr) {
-      indexBuffer = drawCallStateTracker.boundIndexBuffer.buffer;
-    }
+    BufferCopy indexBufferCopy = BufferCopy();
+    indexBufferCopy.copyBuffer(drawCallStateTracker.queue, queueFamilyIndex,
+                               vertexBufferPipelineBarriers, indexBuffer,
+                               buffer.size, &mappedIndexBufferMemory);
 
     graphicsPipelineStringStream << "  INDEX_DATA index_buffer" << std::endl;
 
-    // Amber supports only 32 bit indices. 16 bit indices will be used as 32
-    // bit.
+    // Amber supports only 32-bit indices. 16-bit indices will be used as
+    // 32-bit.
     bufferDeclarationStringStream << "BUFFER index_buffer DATA_TYPE uint32 ";
-
     bufferDeclarationStringStream << "DATA " << std::endl << "  ";
-
-    VkDeviceMemory deviceMemory = bufferToMemory.at(indexBuffer).first;
-    assert(mappedMemory.count(deviceMemory) &&
-           "Index buffer mapping not found");
-    auto memoryMapping = mappedMemory.at(deviceMemory);
-    void *bufferPtr = (char *)std::get<3>(memoryMapping) + bufferCopyOffset +
-                      drawCallStateTracker.boundIndexBuffer.offset;
 
     // 16-bit indices
     if (drawCallStateTracker.boundIndexBuffer.indexType ==
         VK_INDEX_TYPE_UINT16) {
-      auto ptr = (uint16_t *)bufferPtr;
+      auto ptr = (uint16_t *)mappedIndexBufferMemory;
       for (uint32_t indexIdx = 0; indexIdx < indexCount; indexIdx++) {
         bufferDeclarationStringStream << ptr[indexIdx] << " ";
       }
@@ -860,21 +746,20 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
     // 32-bit indices
     else if (drawCallStateTracker.boundIndexBuffer.indexType ==
              VK_INDEX_TYPE_UINT32) {
-      auto ptr = (uint32_t *)bufferPtr;
+      auto ptr = (uint32_t *)mappedIndexBufferMemory;
       for (uint32_t indexIdx = 0; indexIdx < indexCount; indexIdx++) {
         bufferDeclarationStringStream << ptr[indexIdx] << " ";
       }
     } else {
-      assert(false && "Invalid indexType");
+      throw std::runtime_error("Invalid indexType");
     }
-
     bufferDeclarationStringStream << std::endl
                                   << "END" << std::endl
                                   << std::endl;
   }
 
-  for (auto descriptorSet : drawCallStateTracker.boundGraphicsDescriptorSets) {
-
+  for (const auto &descriptorSet :
+       drawCallStateTracker.boundGraphicsDescriptorSets) {
     uint32_t descriptorSetNumber = descriptorSet.first;
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo =
         descriptorSetLayouts.at(descriptorSets.at(descriptorSet.second));
@@ -883,7 +768,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
     if (descriptorSetToBindingBuffer.count(descriptorSet.second)) {
       bindingAndBuffers = descriptorSetToBindingBuffer.at(descriptorSet.second);
     }
-    for (auto bindingAndBuffer : bindingAndBuffers) {
+    for (const auto &bindingAndBuffer : bindingAndBuffers) {
 
       uint32_t bindingNumber = bindingAndBuffer.first;
       VkDescriptorBufferInfo bufferInfo = bindingAndBuffer.second;
@@ -893,35 +778,57 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
       std::string bufferName = strstr.str();
 
       VkBufferCreateInfo bufferCreateInfo = buffers.at(bufferInfo.buffer);
-      assert(bufferInfo.offset == 0);
 
       bufferDeclarationStringStream << "BUFFER " << bufferName << " DATA_TYPE "
                                     << "uint8"
                                     << " DATA" << std::endl;
       bufferDeclarationStringStream << "  ";
 
-      if (bufferToMemory.count(bufferInfo.buffer)) {
-        VkDeviceMemory deviceMemory =
-            bufferToMemory.at(bufferInfo.buffer).first;
-        if (mappedMemory.count(deviceMemory)) {
-          std::tuple<VkDeviceSize, VkDeviceSize, VkMemoryMapFlags, void *>
-              &memoryMappingEntry = mappedMemory.at(deviceMemory);
-          VkDeviceSize range = bufferInfo.range == VK_WHOLE_SIZE
-                                   ? bufferCreateInfo.size
-                                   : bufferInfo.range;
-          assert(std::get<0>(memoryMappingEntry) == 0);
-          assert(std::get<1>(memoryMappingEntry) >= range);
-          auto *thePtr = (uint8_t *)std::get<3>(memoryMappingEntry);
-          for (int bidx = 0; bidx < range; bidx++) {
-            if (bidx > 0) {
-              bufferDeclarationStringStream << " ";
-            }
-            bufferDeclarationStringStream << (uint32_t)thePtr[bidx];
+      // TODO: implement buffer copying if vkCmdUpdateBuffer is used.
+
+      const VkBuffer &descriptorBuffer = bufferInfo.buffer;
+
+      auto commandPool =
+          GetGlobalContext()
+              .GetVkCommandBufferData(drawCallStateTracker.commandBuffer)
+              ->command_pool;
+      auto queueFamilyIndex = commandPoolToQueueFamilyIndex.at(commandPool);
+      BufferCopy descriptorBufferCopy = BufferCopy();
+      void *mappedDescriptorMemory;
+
+      // Check if there is pipeline barriers for descriptor buffer
+      std::vector<std::shared_ptr<CmdPipelineBarrier>> descriptorBufferBarriers;
+      for (const auto &barrier : drawCallStateTracker.pipelineBarriers) {
+        // Find all barriers where dstStage contains vertex shader.
+        if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_SHADER_BIT) {
+          // Check if at least one of the buffer memory barriers has
+          // VK_ACCESS_UNIFORM_READ_BIT set.
+          for (uint32_t bufMemBarrierIdx = 0;
+               bufMemBarrierIdx < barrier->bufferMemoryBarrierCount_;
+               bufMemBarrierIdx++) {
+            descriptorBufferBarriers.push_back(barrier);
+            break;
           }
         }
-      } else {
-        bufferDeclarationStringStream << "...";
       }
+
+      descriptorBufferCopy.copyBuffer(
+          drawCallStateTracker.queue, queueFamilyIndex,
+          descriptorBufferBarriers, descriptorBuffer, bufferCreateInfo.size,
+          &mappedDescriptorMemory);
+
+      VkDeviceSize range = bufferInfo.range == VK_WHOLE_SIZE
+                               ? bufferCreateInfo.size
+                               : bufferInfo.range;
+
+      auto *thePtr = (uint8_t *)mappedDescriptorMemory;
+      for (int bidx = bufferInfo.offset; bidx < range; bidx++) {
+        if (bidx > 0) {
+          bufferDeclarationStringStream << " ";
+        }
+        bufferDeclarationStringStream << (uint32_t)thePtr[bidx];
+      }
+
       bufferDeclarationStringStream << std::endl;
       bufferDeclarationStringStream << "END" << std::endl << std::endl;
 
@@ -983,7 +890,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
           break;
         }
         default:
-          assert(false && "Unimplemented descriptor type");
+          throw std::runtime_error("Unimplemented descriptor type");
         }
         descriptorSetBindingStringStream << std::endl;
       }
@@ -1030,7 +937,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
         graphicsPipelineStringStream << "always";
         break;
       default:
-        assert(false && "Invalid VK_COMPARE_OP");
+        throw std::runtime_error("Invalid VK_COMPARE_OP");
       }
       graphicsPipelineStringStream << "\n";
 
@@ -1077,7 +984,8 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
         renderPassCreateInfo.pAttachments[attachmentID].format);
 
     bufferDeclarationStringStream << "BUFFER framebuffer_" << colorAttachment
-                                  << " FORMAT " << format.name << std::endl;
+                                  << " FORMAT B8G8R8A8_UNORM" << std::endl;
+    // << format.name << std::endl;
     framebufferAttachmentStringStream
         << "  BIND BUFFER framebuffer_" << colorAttachment
         << " AS color LOCATION " << colorAttachment << std::endl;
@@ -1086,7 +994,6 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   // Create buffer for depth / stencil attachment.
   if (renderPassCreateInfo.pSubpasses[drawCallStateTracker.currentSubpass]
           .pDepthStencilAttachment) {
-
     uint32_t attachmentID =
         renderPassCreateInfo.pSubpasses[drawCallStateTracker.currentSubpass]
             .pDepthStencilAttachment->attachment;
@@ -1118,7 +1025,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
     std::cout << "point\n";
     break;
   default:
-    assert(false && "Polygon mode not supported by amber.");
+    throw std::runtime_error("Polygon mode not supported by amber.");
   }
 
   // Add definitions for pipeline
@@ -1136,7 +1043,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   std::cout << "CLEAR_COLOR pipeline 0 0 0 255" << std::endl;
   std::cout << "CLEAR pipeline" << std::endl;
 
-  const std::string& topology =
+  const std::string &topology =
       topologies.at(graphicsPipelineCreateInfo.pInputAssemblyState->topology);
 
   if (indexCount > 0) {
@@ -1149,8 +1056,9 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
   exit(0);
 }
 
-inline void readComponentsFromBufferAndWriteToStrStream(
-    char *buffer, vkf::VulkanFormat format, std::stringstream &bufStr) {
+void readComponentsFromBufferAndWriteToStrStream(char *buffer,
+                                                 vkf::VulkanFormat format,
+                                                 std::stringstream &bufStr) {
 
   if (format.isPacked) {
     // Packed formats are 16 or 32 bits wide.
@@ -1176,7 +1084,7 @@ inline void readComponentsFromBufferAndWriteToStrStream(
         else if (format.components[cIdx].num_bits == 64)
           bufStr << ((uint64_t *)buffer)[cIdx] << " ";
         else
-          assert(false && "Unsupported width.");
+          throw std::runtime_error("Unsupported width.");
       } else if (format.components[cIdx].isSInt()) {
         if (format.components[cIdx].num_bits == 8)
           bufStr << (int32_t)((int8_t *)buffer)[cIdx] << " ";
@@ -1187,11 +1095,29 @@ inline void readComponentsFromBufferAndWriteToStrStream(
         else if (format.components[cIdx].num_bits == 64)
           bufStr << ((int64_t *)buffer)[cIdx] << " ";
         else
-          assert(false && "Unsupported width.");
+          throw std::runtime_error("Unsupported width.");
       } else {
-        assert(false && "Unsupported format");
+        throw std::runtime_error("Unsupported format");
       }
     }
+  }
+}
+
+std::string getDescriptorTypeString(VkDescriptorType descriptorType) {
+  switch (descriptorType) {
+  case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+    return "combined_image_sampler";
+  case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+    return "sampled_image";
+  case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+    return "storage_image";
+  case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    return "uniform";
+  case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+    return "storage";
+  default:
+    assert(false && "Unimplemented descriptor type");
+    return "...";
   }
 }
 
