@@ -52,3 +52,46 @@ def test_crash_offset_in_apk_lib() -> None:
 """
     signature = signature_util.get_signature_from_log_contents(log)
     assert signature == "abso_0x123000_00001234abcd1234abcd123abc1234"
+
+
+def test_catchsegv_backtrace_with_symbols() -> None:
+    log = """
+
+Backtrace:
+/data/binaries/built_in/gfbuild-SPIRV-Tools-18b3b94567a9251a6f8491a6d07c4422abadd22c-Linux_x64_Debug/SPIRV-Tools/bin/spirv-opt(_ZNK8spvtools5utils17IntrusiveNodeBaseINS_3opt11InstructionEE8NextNodeEv+0x10)[0x9fa588]
+/data/binaries/built_in/gfbuild-SPIRV-Tools-18b3b94567a9251a6f8491a6d07c4422abadd22c-Linux_x64_Debug/SPIRV-Tools/bin/spirv-opt(_ZNK8spvtools5utils13IntrusiveListINS_3opt11InstructionEE5emptyEv+0x1c)[0x9fa4ca]
+/data/binaries/built_in/gfbuild-SPIRV-Tools-18b3b94567a9251a6f8491a6d07c4422abadd22c-Linux_x64_Debug/SPIRV-Tools/bin/spirv-opt(_ZN8spvtools3opt10BasicBlock4tailEv+0x2f)[0xa5d8ab]
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "spirvopt_ZNKspvtoolsutilsIntrusiveNodeBaseINS_optI"
+
+
+def test_catchsegv_backtrace_module_not_found() -> None:
+    log = """
+Backtrace:
+/made/up/path/install/lib64/libvulkan_intel.so(+0x76c9a4)[0x7fc67c0369a4]
+/made/up/path/install/lib64/libvulkan_intel.so(+0x8ac1ef)[0x7fc67c1761ef]
+    """
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "libvulkan_intelso0x76c9a4"
+
+
+def test_catchsegv_backtrace_skip_libc() -> None:
+    log = """
+Backtrace:
+/lib64/libc.so.6(abort+0x12b)[0x7f529082d8d9]
+/made/up/path/install/lib64/libvulkan_intel.so(+0x8ac1ef)[0x7fc67c1761ef]
+    """
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "libvulkan_intelso0x8ac1ef"
+
+
+def test_catchsegv_backtrace_with_cpp_file_and_line() -> None:
+    log = """
+
+Backtrace:
+/home/runner/work/gfbuild-llpc/gfbuild-llpc/vulkandriver/drivers/llvm-project/llvm/lib/CodeGen/LiveInterval.cpp:758(_ZN4llvm9LiveRange20MergeValueNumberIntoEPNS_6VNInfoES2_)[0x1202f80]
+/home/runner/work/gfbuild-llpc/gfbuild-llpc/vulkandriver/drivers/llvm-project/llvm/lib/CodeGen/RegisterCoalescer.cpp:1861 (discriminator 3)(_ZN12_GLOBAL__N_117RegisterCoalescer8joinCopyEPN4llvm12MachineInstrERb)[0x13946b3]
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "LiveIntervalcpp_ZNllvmLiveRangeMergeValueNumberInt"
