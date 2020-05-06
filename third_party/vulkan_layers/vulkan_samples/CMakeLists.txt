@@ -27,6 +27,12 @@ target_include_directories(vertex_buffer PRIVATE ../external/glm)
 target_link_libraries(vertex_buffer PUBLIC vulkan glslang SPIRV)
 set_property(TARGET vertex_buffer PROPERTY CXX_STANDARD 17)
 
+add_executable(uniform uniform.cpp)
+target_include_directories(uniform PRIVATE ../external/stb)
+target_include_directories(uniform PRIVATE ../external/glm)
+target_link_libraries(uniform PUBLIC vulkan glslang SPIRV)
+set_property(TARGET uniform PROPERTY CXX_STANDARD 17)
+
 add_executable(compute_shader_manipulating_vertex_buffer compute_shader_manipulating_vertex_buffer.cpp)
 target_include_directories(compute_shader_manipulating_vertex_buffer PRIVATE ../external/stb)
 target_include_directories(compute_shader_manipulating_vertex_buffer PRIVATE ../external/glm)
