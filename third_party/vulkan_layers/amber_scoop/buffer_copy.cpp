@@ -19,160 +19,160 @@
 
 namespace graphicsfuzz_amber_scoop {
 
-void BufferCopy::copyBuffer(
-    VkQueue queue, uint32_t queueFamilyIndex,
-    const std::vector<std::shared_ptr<CmdPipelineBarrier>> &pipelineBarriers,
-    const VkBuffer &buffer, VkDeviceSize bufferSize, void **mappedMemory) {
+void BufferCopy::CopyBuffer(
+    VkQueue queue, uint32_t queue_family_index,
+    const std::vector<std::shared_ptr<CmdPipelineBarrier>> &pipeline_barriers,
+    const VkBuffer &buffer, VkDeviceSize buffer_size, void **mapped_memory) {
   device = GetGlobalContext().GetVkQueueData(queue)->device;
 
   // Create a buffer where the data will be copied to.
-  VkBufferCreateInfo vkBufferCreateInfo = {};
-  vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  vkBufferCreateInfo.size = bufferSize;
-  vkBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-  vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  if (vkCreateBuffer(device, &vkBufferCreateInfo, nullptr, &bufferCopy) !=
+  VkBufferCreateInfo vk_buffer_create_info = {};
+  vk_buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  vk_buffer_create_info.size = buffer_size;
+  vk_buffer_create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  vk_buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  if (vkCreateBuffer(device, &vk_buffer_create_info, nullptr, &buffer_copy) !=
       VK_SUCCESS) {
     throw std::runtime_error("Failed to create buffer for the copy data.");
   }
-  VkMemoryRequirements bufferMemoryRequirements;
-  vkGetBufferMemoryRequirements(device, bufferCopy, &bufferMemoryRequirements);
+  VkMemoryRequirements memory_requirements;
+  vkGetBufferMemoryRequirements(device, buffer_copy, &memory_requirements);
   {
     VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
     vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    vkMemoryAllocateInfo.allocationSize = bufferMemoryRequirements.size;
+    vkMemoryAllocateInfo.allocationSize = memory_requirements.size;
     vkMemoryAllocateInfo.memoryTypeIndex =
-        findMemoryType(bufferMemoryRequirements.memoryTypeBits,
-                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, device);
+        FindMemoryType(memory_requirements.memoryTypeBits,
+                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     if (vkAllocateMemory(device, &vkMemoryAllocateInfo, nullptr,
-                         &bufferCopyMemory) != VK_SUCCESS) {
+                         &buffer_copy_memory) != VK_SUCCESS) {
       throw std::runtime_error("Failed to allocate memory for buffer copy.");
     }
   }
-  if (vkBindBufferMemory(device, bufferCopy, bufferCopyMemory, 0) !=
+  if (vkBindBufferMemory(device, buffer_copy, buffer_copy_memory, 0) !=
       VK_SUCCESS) {
     throw std::runtime_error("Failed binding memory for buffer copy.");
   }
 
   // Create command pool
-  VkCommandPoolCreateInfo commandPoolCreateInfo = {};
-  commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndex;
-  if (vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr,
-                          &commandPool) != VK_SUCCESS) {
+  VkCommandPoolCreateInfo command_pool_create_info = {};
+  command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  command_pool_create_info.queueFamilyIndex = queue_family_index;
+  if (vkCreateCommandPool(device, &command_pool_create_info, nullptr,
+                          &command_pool) != VK_SUCCESS) {
     throw std::runtime_error("Failed to create command pool.");
   }
 
-  VkCommandBufferAllocateInfo vkCommandBufferAllocateInfo = {};
-  vkCommandBufferAllocateInfo.sType =
+  VkCommandBufferAllocateInfo command_buffer_allocate_info = {};
+  command_buffer_allocate_info.sType =
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  vkCommandBufferAllocateInfo.commandPool = commandPool;
-  vkCommandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  vkCommandBufferAllocateInfo.commandBufferCount = 1;
-  if (vkAllocateCommandBuffers(device, &vkCommandBufferAllocateInfo,
-                               &commandBuffer) != VK_SUCCESS) {
+  command_buffer_allocate_info.commandPool = command_pool;
+  command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  command_buffer_allocate_info.commandBufferCount = 1;
+  if (vkAllocateCommandBuffers(device, &command_buffer_allocate_info,
+                               &command_buffer) != VK_SUCCESS) {
     throw std::runtime_error("Failed to allocate command buffers.");
   }
 
   // Record a command buffer for the copy operation.
   {
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+    VkCommandBufferBeginInfo begin_info = {};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
       throw std::runtime_error("Failed to begin recording command buffer.");
     }
 
-    for (const auto &pipelineBarrier : pipelineBarriers) {
+    for (const auto &pipeline_barrier : pipeline_barriers) {
       // Copy all global and buffer memory barriers
-      auto bufferMemoryBarriers =
-          CopyArray(pipelineBarrier->pBufferMemoryBarriers_,
-                    pipelineBarrier->bufferMemoryBarrierCount_);
-      auto memoryBarriers = CopyArray(pipelineBarrier->pMemoryBarriers_,
-                                      pipelineBarrier->memoryBarrierCount_);
+      auto buffer_memory_barriers =
+          CopyArray(pipeline_barrier->pBufferMemoryBarriers_,
+                    pipeline_barrier->bufferMemoryBarrierCount_);
+      auto memory_barriers = CopyArray(pipeline_barrier->pMemoryBarriers_,
+                                       pipeline_barrier->memoryBarrierCount_);
 
       // Set dstAccessMask(s) to VK_ACCESS_HOST_READ_BIT
-      for (uint32_t i = 0; i < pipelineBarrier->bufferMemoryBarrierCount_;
+      for (uint32_t i = 0; i < pipeline_barrier->bufferMemoryBarrierCount_;
            i++) {
-        bufferMemoryBarriers[i].dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+        buffer_memory_barriers[i].dstAccessMask = VK_ACCESS_HOST_READ_BIT;
       }
-      for (uint32_t i = 0; i < pipelineBarrier->memoryBarrierCount_; i++) {
-        memoryBarriers[i].dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+      for (uint32_t i = 0; i < pipeline_barrier->memoryBarrierCount_; i++) {
+        memory_barriers[i].dstAccessMask = VK_ACCESS_HOST_READ_BIT;
       }
 
       // clang-format off
       vkCmdPipelineBarrier(
-          commandBuffer,
-          pipelineBarrier->srcStageMask_ | VK_PIPELINE_STAGE_TRANSFER_BIT,
+          command_buffer,
+          pipeline_barrier->srcStageMask_ | VK_PIPELINE_STAGE_TRANSFER_BIT,
           VK_PIPELINE_STAGE_HOST_BIT,
           0,
-          pipelineBarrier->memoryBarrierCount_,
-          memoryBarriers,
-          pipelineBarrier->bufferMemoryBarrierCount_,
-          bufferMemoryBarriers,
+          pipeline_barrier->memoryBarrierCount_,
+          memory_barriers,
+          pipeline_barrier->bufferMemoryBarrierCount_,
+          buffer_memory_barriers,
           0,
           nullptr
       );
       // clang-format on
 
-      delete[] bufferMemoryBarriers;
-      delete[] memoryBarriers;
+      delete[] buffer_memory_barriers;
+      delete[] memory_barriers;
     }
-    VkBufferCopy copyRegion{0, 0, bufferSize};
-    vkCmdCopyBuffer(commandBuffer, buffer, bufferCopy, 1, &copyRegion);
+    VkBufferCopy copy_region = {0, 0, buffer_size};
+    vkCmdCopyBuffer(command_buffer, buffer, buffer_copy, 1, &copy_region);
 
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+    if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
       throw std::runtime_error("Failed to record command buffer.");
     }
   }
 
-  VkSubmitInfo submitInfo = {};
-  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &commandBuffer;
-  vkQueueSubmit(queue, 1, &submitInfo, nullptr);
+  VkSubmitInfo submit_info = {};
+  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_info.commandBufferCount = 1;
+  submit_info.pCommandBuffers = &command_buffer;
+  vkQueueSubmit(queue, 1, &submit_info, nullptr);
 
-  vkDeviceWaitIdle(device);  // Maybe use vkQueueWaitIdle() instead?
+  // TODO: Maybe use vkQueueWaitIdle() or fence instead?
+  vkDeviceWaitIdle(device);
 
   // Invalidate memory to make it visible to host.
   {
-    vkMapMemory(device, bufferCopyMemory, 0, bufferSize, 0, mappedMemory);
-    VkMappedMemoryRange rangeToInvalidate = {};
-    rangeToInvalidate.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-    rangeToInvalidate.memory = bufferCopyMemory;
-    rangeToInvalidate.offset = 0;
-    rangeToInvalidate.size = VK_WHOLE_SIZE;
-    vkInvalidateMappedMemoryRanges(device, 1, &rangeToInvalidate);
+    vkMapMemory(device, buffer_copy_memory, 0, buffer_size, 0, mapped_memory);
+    VkMappedMemoryRange range_to_invalidate = {};
+    range_to_invalidate.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    range_to_invalidate.memory = buffer_copy_memory;
+    range_to_invalidate.offset = 0;
+    range_to_invalidate.size = VK_WHOLE_SIZE;
+    vkInvalidateMappedMemoryRanges(device, 1, &range_to_invalidate);
   }
 }
 
-void BufferCopy::freeResources() {
+void BufferCopy::FreeResources() {
   // Unmap memory
-  vkUnmapMemory(device, bufferCopyMemory);
+  vkUnmapMemory(device, buffer_copy_memory);
 
   // Free resources
-  vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
-  vkDestroyCommandPool(device, commandPool, nullptr);
-  vkDestroyBuffer(device, bufferCopy, nullptr);
+  vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+  vkDestroyCommandPool(device, command_pool, nullptr);
+  vkDestroyBuffer(device, buffer_copy, nullptr);
 }
 
-uint32_t BufferCopy::findMemoryType(uint32_t typeFilter,
-                                    VkMemoryPropertyFlags properties,
-                                    VkDevice device) {
+uint32_t BufferCopy::FindMemoryType(uint32_t typeFilter,
+                                    VkMemoryPropertyFlags properties) {
   VkPhysicalDevice physicalDevice =
       GetGlobalContext().GetVkDeviceData(device)->physical_device;
 
-  VkPhysicalDeviceMemoryProperties memProperties;
+  VkPhysicalDeviceMemoryProperties memory_properties;
 
   PFN_vkGetPhysicalDeviceMemoryProperties fn =
       GetGlobalContext()
           .GetVkPhysicalDeviceData(physicalDevice)
           ->functions->vkGetPhysicalDeviceMemoryProperties;
   graphicsfuzz_amber_scoop::vkGetPhysicalDeviceMemoryProperties(
-      fn, physicalDevice, &memProperties);
+      fn, physicalDevice, &memory_properties);
 
-  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+  for (uint32_t i = 0; i < memory_properties.memoryTypeCount; i++) {
     if ((typeFilter & (1U << i)) &&
-        (memProperties.memoryTypes[i].propertyFlags & properties) ==
+        (memory_properties.memoryTypes[i].propertyFlags & properties) ==
             properties) {
       return i;
     }

@@ -602,7 +602,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
       }
     }
 
-    vertexBufferCopy.copyBuffer(drawCallStateTracker.queue, queueFamilyIndex,
+    vertexBufferCopy.CopyBuffer(drawCallStateTracker.queue, queueFamilyIndex,
                                 vertexBufferPipelineBarriers, vertexBuffer,
                                 buffer.size, &mappedVertexBufferMemory);
 
@@ -649,7 +649,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
             *bufferDeclStrings.at(location));
       }
     }
-    vertexBufferCopy.freeResources();
+    vertexBufferCopy.FreeResources();
 
     // End all buffer declaration streams and combine them to one stream.
     for (const auto &stream : bufferDeclStrings) {
@@ -681,7 +681,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
     }
 
     BufferCopy indexBufferCopy = BufferCopy();
-    indexBufferCopy.copyBuffer(drawCallStateTracker.queue, queueFamilyIndex,
+    indexBufferCopy.CopyBuffer(drawCallStateTracker.queue, queueFamilyIndex,
                                vertexBufferPipelineBarriers, indexBuffer,
                                buffer.size, &mappedIndexBufferMemory);
 
@@ -768,7 +768,7 @@ void HandleDrawCall(const DrawCallStateTracker &drawCallStateTracker,
         }
       }
 
-      descriptorBufferCopy.copyBuffer(
+      descriptorBufferCopy.CopyBuffer(
           drawCallStateTracker.queue, queueFamilyIndex,
           descriptorBufferBarriers, descriptorBuffer, bufferCreateInfo.size,
           &mappedDescriptorMemory);

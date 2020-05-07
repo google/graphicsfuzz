@@ -35,31 +35,31 @@ class BufferCopy {
    * buffer to the given queue. Waits for the copy commands to finish before
    * returning from the function.
    *
-   * @param queue Queue where the copy commands will be submitted to.
-   * @param queueFamilyIndex Queue family index of the given queue. Used to
-   * create a new command pool.
-   * @param pipelineBarriers Pipeline barriers that must be waited before
+   * @param [in] queue Queue where the copy commands will be submitted to.
+   * @param [in] queue_family_index Queue family index of the given queue. Used
+   * to create a new command pool.
+   * @param [in] pipeline_barriers Pipeline barriers that must be waited before
    * copying can be performed.
-   * @param buffer Buffer where the data is copied from.
-   * @param bufferSize Size of the buffer in bytes.
-   * @param mappedMemory Pointer to the host visible copied data.
+   * @param [in] buffer Buffer where the data is copied from.
+   * @param [in] buffer_size Size of the buffer in bytes.
+   * @param [out] mapped_memory Pointer to the host visible copied data.
    */
-  void copyBuffer(
-      VkQueue queue, uint32_t queueFamilyIndex,
-      const std::vector<std::shared_ptr<CmdPipelineBarrier>> &pipelineBarriers,
-      const VkBuffer &buffer, VkDeviceSize bufferSize, void **mappedMemory);
+  void CopyBuffer(
+      VkQueue queue, uint32_t queue_family_index,
+      const std::vector<std::shared_ptr<CmdPipelineBarrier>> &pipeline_barriers,
+      const VkBuffer &buffer, VkDeviceSize buffer_size, void **mapped_memory);
 
-  void freeResources();
+  void FreeResources();
 
  private:
-  VkBuffer bufferCopy;
-  VkDeviceMemory bufferCopyMemory;
-  VkCommandPool commandPool;
-  VkCommandBuffer commandBuffer;
+  VkBuffer buffer_copy;
+  VkDeviceMemory buffer_copy_memory;
+  VkCommandPool command_pool;
+  VkCommandBuffer command_buffer;
   VkDevice device;
 
-  uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties,
-                          VkDevice physicalDevice);
+  uint32_t FindMemoryType(uint32_t typeFilter,
+                          VkMemoryPropertyFlags properties);
 
 };  // class BufferCopy
 
