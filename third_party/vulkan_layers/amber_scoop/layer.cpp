@@ -29,13 +29,13 @@ namespace graphicsfuzz_amber_scoop {
             PFN_vkCreateBuffer fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateBuffer;
             return graphicsfuzz_amber_scoop::vkCreateBuffer(fn, device, pCreateInfo, pAllocator, pBuffer);
         }
-        VKAPI_ATTR uint32_t VKAPI_CALL vkBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset) {
-            PFN_vkBindBufferMemory fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkBindBufferMemory;
-            return graphicsfuzz_amber_scoop::vkBindBufferMemory(fn, device, buffer, memory, memoryOffset);
-        }
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreateCommandPool(VkDevice device, VkCommandPoolCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkCommandPool* pCommandPool) {
             PFN_vkCreateCommandPool fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateCommandPool;
             return graphicsfuzz_amber_scoop::vkCreateCommandPool(fn, device, pCreateInfo, pAllocator, pCommandPool);
+        }
+        VKAPI_ATTR void VKAPI_CALL vkCmdCopyBuffer(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, VkBufferCopy const* pRegions) {
+            PFN_vkCmdCopyBuffer fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdCopyBuffer;
+            return graphicsfuzz_amber_scoop::vkCmdCopyBuffer(fn, commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
         }
         VKAPI_ATTR void VKAPI_CALL vkCmdCopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, VkBufferImageCopy const* pRegions) {
             PFN_vkCmdCopyBufferToImage fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdCopyBufferToImage;
@@ -76,14 +76,6 @@ namespace graphicsfuzz_amber_scoop {
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreateImage(VkDevice device, VkImageCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkImage* pImage) {
             PFN_vkCreateImage fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateImage;
             return graphicsfuzz_amber_scoop::vkCreateImage(fn, device, pCreateInfo, pAllocator, pImage);
-        }
-        VKAPI_ATTR uint32_t VKAPI_CALL vkBindImageMemory(VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset) {
-            PFN_vkBindImageMemory fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkBindImageMemory;
-            return graphicsfuzz_amber_scoop::vkBindImageMemory(fn, device, image, memory, memoryOffset);
-        }
-        VKAPI_ATTR uint32_t VKAPI_CALL vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData) {
-            PFN_vkMapMemory fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkMapMemory;
-            return graphicsfuzz_amber_scoop::vkMapMemory(fn, device, memory, offset, size, flags, ppData);
         }
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreatePipelineLayout(VkDevice device, VkPipelineLayoutCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkPipelineLayout* pPipelineLayout) {
             PFN_vkCreatePipelineLayout fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreatePipelineLayout;
@@ -385,8 +377,8 @@ namespace graphicsfuzz_amber_scoop {
             reinterpret_cast<PFN_##name>(get_device_proc_addr(*pDevice, #name))
             // Overrides
             GET_PROC(vkCreateBuffer);
-            GET_PROC(vkBindBufferMemory);
             GET_PROC(vkCreateCommandPool);
+            GET_PROC(vkCmdCopyBuffer);
             GET_PROC(vkCmdCopyBufferToImage);
             GET_PROC(vkCreateDescriptorSetLayout);
             GET_PROC(vkAllocateDescriptorSets);
@@ -397,8 +389,6 @@ namespace graphicsfuzz_amber_scoop {
             GET_PROC(vkCmdDraw);
             GET_PROC(vkCmdDrawIndexed);
             GET_PROC(vkCreateImage);
-            GET_PROC(vkBindImageMemory);
-            GET_PROC(vkMapMemory);
             GET_PROC(vkCreatePipelineLayout);
             GET_PROC(vkCreateGraphicsPipelines);
             GET_PROC(vkCreateShaderModule);
@@ -458,8 +448,8 @@ namespace graphicsfuzz_amber_scoop {
             if (strcmp(pName, #func) == 0) \
             return reinterpret_cast<PFN_vkVoidFunction>(graphicsfuzz_amber_scoop::wrapped::func);
             INTERCEPT(vkCreateBuffer);
-            INTERCEPT(vkBindBufferMemory);
             INTERCEPT(vkCreateCommandPool);
+            INTERCEPT(vkCmdCopyBuffer);
             INTERCEPT(vkCmdCopyBufferToImage);
             INTERCEPT(vkCreateDescriptorSetLayout);
             INTERCEPT(vkAllocateDescriptorSets);
@@ -470,8 +460,6 @@ namespace graphicsfuzz_amber_scoop {
             INTERCEPT(vkCmdDraw);
             INTERCEPT(vkCmdDrawIndexed);
             INTERCEPT(vkCreateImage);
-            INTERCEPT(vkBindImageMemory);
-            INTERCEPT(vkMapMemory);
             INTERCEPT(vkCreatePipelineLayout);
             INTERCEPT(vkCreateGraphicsPipelines);
             INTERCEPT(vkCreateShaderModule);
@@ -685,8 +673,8 @@ namespace graphicsfuzz_amber_scoop {
             if (strcmp(pName, #func) == 0) \
             return reinterpret_cast<PFN_vkVoidFunction>(graphicsfuzz_amber_scoop::wrapped::func);
             INTERCEPT(vkCreateBuffer);
-            INTERCEPT(vkBindBufferMemory);
             INTERCEPT(vkCreateCommandPool);
+            INTERCEPT(vkCmdCopyBuffer);
             INTERCEPT(vkCmdCopyBufferToImage);
             INTERCEPT(vkCreateDescriptorSetLayout);
             INTERCEPT(vkAllocateDescriptorSets);
@@ -697,8 +685,6 @@ namespace graphicsfuzz_amber_scoop {
             INTERCEPT(vkCmdDraw);
             INTERCEPT(vkCmdDrawIndexed);
             INTERCEPT(vkCreateImage);
-            INTERCEPT(vkBindImageMemory);
-            INTERCEPT(vkMapMemory);
             INTERCEPT(vkCreatePipelineLayout);
             INTERCEPT(vkCreateGraphicsPipelines);
             INTERCEPT(vkCreateShaderModule);

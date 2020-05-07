@@ -56,13 +56,6 @@ void AddCommand(VkCommandBuffer command_buffer, std::unique_ptr<Cmd> command) {
   commandBuffers.at(command_buffer).push_back(std::move(command));
 }
 
-std::unordered_map<VkDeviceMemory, std::tuple<VkDeviceSize, VkDeviceSize,
-                                              VkMemoryMapFlags, void *>>
-    mappedMemory;
-std::unordered_map<VkBuffer, std::pair<VkDeviceMemory, VkDeviceSize>>
-    bufferToMemory;
-std::unordered_map<VkImage, std::pair<VkDeviceMemory, VkDeviceSize>>
-    imageToMemory;
 std::unordered_map<VkBuffer, VkBufferCreateInfo> buffers;
 std::unordered_map<VkDescriptorSet, VkDescriptorSetLayout> descriptorSets;
 std::unordered_map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo>
@@ -110,28 +103,6 @@ VkResult vkAllocateDescriptorSets(
       descriptorSets.insert(
           {pDescriptorSets[i], pAllocateInfo->pSetLayouts[i]});
     }
-  }
-  return result;
-}
-
-VkResult vkBindBufferMemory(PFN_vkBindBufferMemory next, VkDevice device,
-                            VkBuffer buffer, VkDeviceMemory memory,
-                            VkDeviceSize memoryOffset) {
-  DEBUG_LAYER(vkBindBufferMemory);
-  auto result = next(device, buffer, memory, memoryOffset);
-  if (result == VK_SUCCESS) {
-    bufferToMemory.insert({buffer, {memory, memoryOffset}});
-  }
-  return result;
-}
-
-VkResult vkBindImageMemory(PFN_vkBindImageMemory next, VkDevice device,
-                           VkImage image, VkDeviceMemory memory,
-                           VkDeviceSize memoryOffset) {
-  DEBUG_LAYER(vkBindImageMemory);
-  auto result = next(device, image, memory, memoryOffset);
-  if (result == VK_SUCCESS) {
-    imageToMemory.insert({image, {memory, memoryOffset}});
   }
   return result;
 }
@@ -283,8 +254,8 @@ VkResult vkCreateBuffer(PFN_vkCreateBuffer next, VkDevice device,
   DEBUG_LAYER(vkCreateBuffer);
 
   VkBufferCreateInfo createInfo = *pCreateInfo;
-  // Allow vertex/index buffer to be used as transfer source buffer. Required if
-  // the vertex/index buffer data needs to be copied from the buffer.
+  // Allow vertex/index/uniform buffer to be used as transfer source buffer.
+  // Required if the buffer data needs to be copied from the buffer.
   if (createInfo.usage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ||
       createInfo.usage & VK_BUFFER_USAGE_INDEX_BUFFER_BIT ||
       createInfo.usage & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) {
@@ -386,17 +357,6 @@ void vkGetPhysicalDeviceMemoryProperties(
     VkPhysicalDeviceMemoryProperties *pMemoryProperties) {
   DEBUG_LAYER(vkGetPhysicalDeviceMemoryProperties);
   next(physicalDevice, pMemoryProperties);
-}
-
-VkResult vkMapMemory(PFN_vkMapMemory next, VkDevice device,
-                     VkDeviceMemory memory, VkDeviceSize offset,
-                     VkDeviceSize size, VkMemoryMapFlags flags, void **ppData) {
-  DEBUG_LAYER(vkMapMemory);
-  auto result = next(device, memory, offset, size, flags, ppData);
-  if (result == VK_SUCCESS) {
-    mappedMemory.insert({memory, {offset, size, flags, *ppData}});
-  }
-  return result;
 }
 
 struct IndexBufferBinding {
