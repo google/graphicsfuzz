@@ -188,6 +188,19 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
   }
 }
 
+inline void RequireSuccess(VkResult result) {
+  if (VK_SUCCESS != result) {
+    throw std::runtime_error("Vulkan error: " + std::to_string(result));
+  }
+}
+
+inline void RequireSuccess(VkResult result, const char* message) {
+  if (VK_SUCCESS != result) {
+    throw std::runtime_error("Vulkan error: " + std::to_string(result) + " - " +
+                             message);
+  }
+}
+
 const char* vertexShaderText = R"(
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
@@ -195,10 +208,14 @@ const char* vertexShaderText = R"(
 layout(location = 0) in vec2 inPosition;
 layout(location = 1) in vec3 inColor;
 
+layout (set = 0, binding = 0) uniform camera {
+    layout(column_major) mat4 transformation;
+};
+
 layout(location = 0) out vec3 fragColor;
 
 void main() {
-    gl_Position = vec4(inPosition, 0.0, 1.0);
+    gl_Position = transformation * vec4(inPosition, 0.0, 1.0);
     fragColor = inColor;
 }
 )";
@@ -407,6 +424,11 @@ int main() {
   VkExtent2D offScreenExtent;
   VkImageView offScreenImageView;
   VkRenderPass renderPass;
+  VkDescriptorPool descriptor_pool;
+  VkDescriptorSetLayout descriptor_set_layout;
+  VkDescriptorSet descriptor_set;
+  VkBuffer uniform_buffer;
+  VkDeviceMemory uniform_buffer_memory;
   VkPipelineLayout pipelineLayout;
   VkPipeline graphicsPipeline;
   VkFramebuffer offScreenFramebuffer;
@@ -518,7 +540,7 @@ int main() {
     vkGetDeviceQueue(device, graphicsQueueIndex.value(), 0, &graphicsQueue);
 
     // Image to render to
-    offScreenImageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+    offScreenImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
     VkDeviceSize imageSize = WIDTH * HEIGHT * 4;
     VkImageCreateInfo vkImageCreateInfo = {};
     vkImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -666,6 +688,24 @@ int main() {
         fragmentShaderBinary);
     ShFinalize();
 
+    // Create descriptor pool
+    {
+      VkDescriptorPoolSize pool_size = {};
+      pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+      VkDescriptorPoolCreateInfo create_info = {};
+      pool_size.descriptorCount = 1;
+      create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+      create_info.pNext = nullptr;
+      create_info.maxSets = 1;
+      create_info.poolSizeCount = 1;
+      create_info.pPoolSizes = &pool_size;
+
+      RequireSuccess(vkCreateDescriptorPool(device, &create_info, nullptr,
+                                            &descriptor_pool),
+                     "Error creating descriptor pool.");
+    }
+
     // Create graphics pipeline
     VkShaderModule vertShaderModule =
         createShaderModule(vertexShaderBinary, device);
@@ -743,8 +783,31 @@ int main() {
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
+    {
+      VkDescriptorSetLayoutBinding descriptor_set_layout_binding = {};
+      descriptor_set_layout_binding.binding = 0;
+      descriptor_set_layout_binding.descriptorType =
+          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      descriptor_set_layout_binding.descriptorCount = 1;
+      descriptor_set_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+      descriptor_set_layout_binding.pImmutableSamplers = nullptr;
+
+      VkDescriptorSetLayoutCreateInfo create_info = {};
+      create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+      create_info.pNext = nullptr;
+      create_info.flags = 0;
+      create_info.bindingCount = 1;
+      create_info.pBindings = &descriptor_set_layout_binding;
+
+      RequireSuccess(vkCreateDescriptorSetLayout(device, &create_info, nullptr,
+                                                 &descriptor_set_layout),
+                     "Failed to create descriptor set layout.");
+    }
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout;
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
                                &pipelineLayout) != VK_SUCCESS) {
       throw std::runtime_error("Failed to create pipeline layout.");
@@ -793,6 +856,75 @@ int main() {
       throw std::runtime_error("Failed to create command pool.");
     }
 
+    // Create uniform buffer
+    {
+      VkBufferCreateInfo create_info = {};
+      create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+      create_info.pNext = nullptr;
+      create_info.flags = 0;
+      create_info.size = 4 * 4 * sizeof(float);  // One 4x4 matrix.
+      create_info.usage =
+          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+      create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      create_info.queueFamilyIndexCount = 0;
+      create_info.pQueueFamilyIndices = nullptr;
+
+      RequireSuccess(
+          vkCreateBuffer(device, &create_info, nullptr, &uniform_buffer));
+
+      VkMemoryRequirements memory_requirements;
+      vkGetBufferMemoryRequirements(device, uniform_buffer,
+                                    &memory_requirements);
+
+      VkMemoryAllocateInfo memory_allocate_info = {};
+      memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      memory_allocate_info.pNext = nullptr;
+      memory_allocate_info.allocationSize = memory_requirements.size;
+      memory_allocate_info.memoryTypeIndex =
+          findMemoryType(memory_requirements.memoryTypeBits,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, physicalDevice);
+
+      RequireSuccess(vkAllocateMemory(device, &memory_allocate_info, nullptr,
+                                      &uniform_buffer_memory),
+                     "Failed to allocate uniform buffer memory.");
+
+      RequireSuccess(
+          vkBindBufferMemory(device, uniform_buffer, uniform_buffer_memory, 0),
+          "Failed binding uniform buffer memory.");
+    }
+
+    // Allocate & update descriptor set
+    {
+      VkDescriptorSetAllocateInfo allocate_info = {};
+      allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+      allocate_info.pNext = nullptr;
+      allocate_info.descriptorPool = descriptor_pool;
+      allocate_info.descriptorSetCount = 1;
+      allocate_info.pSetLayouts = &descriptor_set_layout;
+      RequireSuccess(
+          vkAllocateDescriptorSets(device, &allocate_info, &descriptor_set),
+          "Failed to allocate descriptor set.");
+
+      VkDescriptorBufferInfo descriptor_buffer_info = {};
+      descriptor_buffer_info.buffer = uniform_buffer;
+      descriptor_buffer_info.offset = 0;
+      descriptor_buffer_info.range = VK_WHOLE_SIZE;
+
+      VkWriteDescriptorSet write_descriptor_set = {};
+      write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      write_descriptor_set.pNext = nullptr;
+      write_descriptor_set.dstSet = descriptor_set;
+      write_descriptor_set.dstBinding = 0;
+      write_descriptor_set.dstArrayElement = 0;
+      write_descriptor_set.descriptorCount = 1;
+      write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      write_descriptor_set.pImageInfo = nullptr;
+      write_descriptor_set.pBufferInfo = &descriptor_buffer_info;
+      write_descriptor_set.pTexelBufferView = nullptr;
+
+      vkUpdateDescriptorSets(device, 1, &write_descriptor_set, 0, nullptr);
+    }
+
     // Create vertex buffer
     VkBufferCreateInfo vkBufferCreateInfo = {};
     vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -837,6 +969,14 @@ int main() {
       vkUnmapMemory(device, vertexBufferMemory);
     }
 
+    // clang-format off
+    // Uniform data. Rotates 180 degrees.
+    glm::mat4 rotate = glm::mat4(-1.0f, 0.0f, 0.0f, 0.0f,
+                                 0.0f, -1.0f, 0.0f, 0.0f,
+                                 0.0f, 0.0f, 1.0f, 0.0f,
+                                 0.0f, 0.0f, 0.0f, 1.0f);
+    // clang-format on
+
     // Create command buffer
     VkCommandBufferAllocateInfo vkCommandBufferAllocateInfo = {};
     vkCommandBufferAllocateInfo.sType =
@@ -848,6 +988,36 @@ int main() {
                                  &commandBuffer) != VK_SUCCESS) {
       throw std::runtime_error("Failed to allocate command buffers.");
     }
+
+    // Submit command buffer that updates the the uniform buffer.
+    {
+      VkCommandBufferBeginInfo begin_info = {};
+      begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+      begin_info.pNext = nullptr;
+      begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+      begin_info.pInheritanceInfo = nullptr;
+
+      RequireSuccess(vkBeginCommandBuffer(commandBuffer, &begin_info));
+      vkCmdUpdateBuffer(commandBuffer, uniform_buffer, 0, sizeof(glm::mat4),
+                        &rotate);
+      RequireSuccess(vkEndCommandBuffer(commandBuffer));
+
+      VkSubmitInfo submit_info = {};
+      submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+      submit_info.pNext = nullptr;
+      submit_info.waitSemaphoreCount = 0;
+      submit_info.pSignalSemaphores = nullptr;
+      submit_info.pWaitDstStageMask = nullptr;
+      submit_info.commandBufferCount = 1;
+      submit_info.pCommandBuffers = &commandBuffer;
+
+      RequireSuccess(vkQueueSubmit(graphicsQueue, 1, &submit_info, nullptr));
+
+      vkDeviceWaitIdle(device);
+
+      RequireSuccess(vkResetCommandPool(device, commandPool, 0));
+    }
+
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
@@ -866,6 +1036,8 @@ int main() {
                          VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       graphicsPipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            pipelineLayout, 0, 1, &descriptor_set, 0, nullptr);
     VkBuffer vertexBuffers[] = {vertexBuffer};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
@@ -995,9 +1167,13 @@ int main() {
     vkDestroyBuffer(device, vertexBuffer, nullptr);
     vkFreeMemory(device, vertexBufferMemory, nullptr);
     vkDestroyCommandPool(device, commandPool, nullptr);
+    vkFreeMemory(device, uniform_buffer_memory, nullptr);
+    vkDestroyBuffer(device, uniform_buffer, nullptr);
     vkDestroyFramebuffer(device, offScreenFramebuffer, nullptr);
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyDescriptorSetLayout(device, descriptor_set_layout, nullptr);
+    vkDestroyDescriptorPool(device, descriptor_pool, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
     vkDestroyImageView(device, offScreenImageView, nullptr);
     vkDestroyImage(device, offScreenImage, nullptr);
