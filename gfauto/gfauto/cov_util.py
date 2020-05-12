@@ -24,7 +24,7 @@ import threading
 import typing
 from collections import Counter
 from queue import Queue
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from attr import dataclass
 
@@ -131,13 +131,20 @@ def _process_text_lines(data: GetLineCountsData, lines: typing.TextIO) -> None:
 
 def _process_json_lines(data: GetLineCountsData, lines: typing.TextIO) -> None:
     # Each line is a JSON object.
-    for json_object in lines:
-        json_output = json.loads(json_object)
-        if "files" not in json_output:
-            return
+    for json_object_text in lines:
+        json_object: Dict[str, Any] = json.loads(json_object_text)
+        if "files" not in json_object:
+            break
 
-        for file_coverage_info in json_output["files"]:
-            file_path = file_coverage_info["file"]
+        current_working_directory: Optional[str] = json_object.get(
+            "current_working_directory"
+        )
+
+        for file_coverage_info in json_object["files"]:
+            file_path: str = file_coverage_info["file"]
+            if current_working_directory:
+                file_path = os.path.join(current_working_directory, file_path)
+                file_path = os.path.normpath(file_path)
             file_line_counts = data.line_counts.setdefault(file_path, Counter())
             for line in file_coverage_info["lines"]:
                 line_number = line["line_number"]
