@@ -208,6 +208,9 @@ def compile_shader_job(  # pylint: disable=too-many-locals;
     common_spirv_args: Optional[List[str]] = None,
 ) -> SpirvCombinedShaderJob:
 
+    if common_spirv_args is None:
+        common_spirv_args = []
+
     result = input_json
 
     glsl_source_shader_job: Optional[Path] = None
@@ -302,7 +305,7 @@ def compile_shader_job(  # pylint: disable=too-many-locals;
         result = result_spirv
         result = spirv_opt_shader_job(
             result,
-            spirv_opt_args,
+            spirv_opt_args + common_spirv_args,
             work_dir / "2_spirv_opt" / result.name,
             binary_paths,
             preprocessor_cache=preprocessor_cache,
