@@ -81,6 +81,7 @@ public class FragmentShaderJobToVertexShaderJobTest {
         + "  _GLF_FragCoord = (_GLF_pos + vec4(1.0,1.0,0.0,0.0)) * vec4(128.0, 128.0, 1.0, 1.0);\n"
         + "  vec2 lin = _GLF_FragCoord.xy / resolution;\n"
         + "  frag_color = vec4(lin.x,lin.y,0.0,1.0);\n"
+        + "  gl_Position = _GLF_pos;\n"
         + "}\n";
 
     final String expectedFragmentShader = "#version 430\n"
@@ -135,12 +136,15 @@ public class FragmentShaderJobToVertexShaderJobTest {
     final String expectedVertexShader = "#version 410\n"
         + "precision highp float;\n"
         + "\n"
+        + "layout(location = 0) in vec4 _GLF_pos;\n"
+        + "\n"
         + "layout(location = 0) out vec4 frag_color;\n"
         + "\n"
-        + "void main(void)\n"
+        + "void main()\n"
         + "{\n"
-        + "  frag_color = vec4(1.0, 1.0, 1.0, 1.0);\n"
-        + "}\n";
+        + " frag_color = vec4(1.0, 1.0, 1.0, 1.0);\n"
+        + " gl_Position = _GLF_pos;\n"
+        + "}";
 
     final String expectedFragmentShader = "#version 410\n"
         + "precision highp float;\n"
@@ -212,6 +216,7 @@ public class FragmentShaderJobToVertexShaderJobTest {
         + "  _GLF_FragDepth += sin((0.08) + sin(((0.09))));\n"
         + "  _GLF_FragDepth += (0.10) + (0.11);"
         + "  frag_color = vec4(1.0, 1.0, 1.0, 1.0);\n"
+        + "  gl_Position = _GLF_pos;\n"
         + "}\n";
 
     final String expectedFragmentShader = "#version 430\n"
