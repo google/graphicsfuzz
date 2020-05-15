@@ -242,3 +242,5 @@ writelines
 colorgrid
 logd
 gf
+SIGSEGV
+SIGABRT

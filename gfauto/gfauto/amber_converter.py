@@ -82,6 +82,51 @@ def get_text_as_comment(text: str) -> str:
     return "\n".join(lines)
 
 
+def amberscript_comp_buffer_bind(comp_json: str) -> str:
+    """
+    Returns a string (template) containing an AmberScript command for binding the in/out buffer.
+
+    Only the "$compute" key is read.
+
+      {
+        "myuniform": {
+          "func": "glUniform1f",
+          "args": [ 42.0 ],
+          "binding": 3
+        },
+
+        "$compute": {
+          "num_groups": [12, 13, 14];
+          "buffer": {
+            "binding": 123,
+            "fields":
+            [
+              { "type": "int", "data": [ 0 ] },
+              { "type": "int", "data": [ 1, 2 ] },
+            ]
+          }
+        }
+
+      }
+
+    becomes:
+
+      BIND BUFFER {} AS storage DESCRIPTOR_SET 0 BINDING 123
+
+    The string template argument (use `format()`) is the name of the SSBO buffer.
+    """
+    comp = json.loads(comp_json)
+
+    check(
+        "$compute" in comp.keys(),
+        AssertionError("Cannot find '$compute' key in JSON file"),
+    )
+
+    compute_info = comp["$compute"]
+
+    return f"  BIND BUFFER {{}} AS storage DESCRIPTOR_SET 0 BINDING {compute_info['buffer']['binding']}\n"
+
+
 def amberscript_comp_buff_def(comp_json: str, make_empty_buffer: bool = False) -> str:
     """
     Returns a string (template) containing AmberScript commands for defining the initial in/out buffer.
@@ -381,6 +426,11 @@ class ComputeShaderJob(ShaderJob):
     # String specifying the number of groups to run when calling the Amber RUN command. E.g. "7 3 4".
     num_groups_def: str
 
+    # The binding command for the SSBO buffer.
+    # This string is a template (use with .format()) where the template argument is the name of buffer.
+    # E.g. BIND BUFFER {} AS storage DESCRIPTOR_SET 0 BINDING 0
+    buffer_binding_template: str
+
 
 @attr.dataclass
 class GraphicsShaderJob(ShaderJob):
@@ -428,6 +478,7 @@ class ShaderJobFile:
                 amberscript_comp_buff_def(json_contents),
                 amberscript_comp_buff_def(json_contents, make_empty_buffer=True),
                 amberscript_comp_num_groups_def(json_contents),
+                amberscript_comp_buffer_bind(json_contents),
             )
 
         # Get GLSL contents
@@ -660,8 +711,8 @@ def compute_shader_job_amber_test_to_amber_script(
 
         result += f"\nPIPELINE compute {prefix}_pipeline\n"
         result += f"  ATTACH {compute_shader_name}\n"
-        result += f"  BIND BUFFER {ssbo_name} AS storage DESCRIPTOR_SET 0 BINDING 0\n"
         result += job.uniform_bindings
+        result += job.buffer_binding_template.format(ssbo_name)
         result += "END\n"
 
         # Run the pipeline.

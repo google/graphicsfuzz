@@ -20,7 +20,6 @@ Used to compute the "signature" of a bug, typically using the error message or t
 stack trace.
 """
 
-
 import re
 from pathlib import Path
 from typing import Match, Optional, Pattern
@@ -97,18 +96,15 @@ PATTERN_SPIRV_OPT_ERROR: Pattern[str] = re.compile(r"error: line \d+: (.*)")
 # /home/runner/work/gfbuild-llpc/gfbuild-llpc/vulkandriver/drivers/llvm-project/llvm/lib/CodeGen/LiveInterval.cpp:758(_ZN4llvm9LiveRange20MergeValueNumberIntoEPNS_6VNInfoES2_)[0x135342c]
 #                                                                                                |--- group 1 ----------------------------------------------------------------|
 #
-#                                                           |-- group 1 -----|
-# Using "c" "<>" "<cc...>" to represent characters:    <>.*c(<ccc>*<><ccccc>+)<cc>
-PATTERN_CATCHSEGV_STACK_FRAME = re.compile(r"Backtrace:\n.*/([^/(]*\([^)+\[]+)[+)]")
+#                                                |--- group 1 ----|
+# Using "c" "<>" "<cc...>" for chars         c.*c(<ccc>*<><ccccc>+)<cc>
+PATTERN_CATCHSEGV_STACK_FRAME = re.compile(r"/.*/([^/(]*\([^)+\[]+)[+)]")
 
 # E.g.
-# Backtrace:
 # /data/git/graphicsfuzz/gfauto/temp/june_20/binaries/swiftshader_vulkan/Linux/libvk_swiftshader.so(+0x1d537d)[0x7f51ebd1237d]
 # /data/git/graphicsfuzz/gfauto/temp/june_20/binaries/swiftshader_vulkan/Linux/libvk_swiftshader.so  0x1d537d
 # ^ group 1                                                                                          ^ group 2
-PATTERN_CATCHSEGV_STACK_FRAME_ADDRESS = re.compile(
-    r"Backtrace:\n(.*)\(\+([x\da-fA-F]+)+\)\["
-)
+PATTERN_CATCHSEGV_STACK_FRAME_ADDRESS = re.compile(r"(.*)\(\+([x\da-fA-F]+)+\)\[")
 
 PATTERN_SWIFT_SHADER_ABORT = re.compile(r":\d+ ABORT:(.*)")
 
@@ -300,14 +296,8 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
             group = reduce_length(group)
             return group
 
-    # catchsegv "Backtrace:" with source code info.
-    group = basic_match(PATTERN_CATCHSEGV_STACK_FRAME, log_contents)
-    if group:
-        return group
-
-    # catchsegv "Backtrace:" with addresses.
-    if "Backtrace:" in log_contents:
-        result = get_signature_from_catchsegv_frame_address(log_contents)
+    if "\nBacktrace:\n" in log_contents:
+        result = get_signature_from_catchsegv_backtrace(log_contents)
         if result:
             return result
 
@@ -335,16 +325,55 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
     return NO_SIGNATURE
 
 
+def get_signature_from_catchsegv_backtrace(log_contents: str) -> Optional[str]:
+    lines = log_contents.splitlines()
+    i = 0
+    # Skip to just after "Backtrace:".
+    while True:
+        if i >= len(lines):
+            return None
+        if lines[i] == "Backtrace:":
+            i += 1
+            break
+        i += 1
+
+    # Find the first stack frame line.
+    # It will normally be the first line.
+    # It should start with "/".
+    # We skip libc stack frames.
+    while True:
+        if i >= len(lines):
+            return None
+        if lines[i].startswith("/"):
+            # Skip frame if it is libc.
+            if "libc.so" in lines[i]:
+                i += 1
+                continue
+            break
+        i += 1
+
+    group = basic_match(PATTERN_CATCHSEGV_STACK_FRAME, lines[i])
+    if group:
+        return group
+
+    result = get_signature_from_catchsegv_frame_address(lines[i])
+    if result:
+        return result
+
+    return None
+
+
 def get_signature_from_catchsegv_frame_address(log_contents: str) -> Optional[str]:
     match = re.search(PATTERN_CATCHSEGV_STACK_FRAME_ADDRESS, log_contents)
     if not match:
         return None
     module = Path(match.group(1))
-    if not module.exists():
-        return None
     address = match.group(2)
-    function_signature = get_function_signature_from_address(module, address)
+    function_signature = None
+    if module.exists():
+        function_signature = get_function_signature_from_address(module, address)
     if not function_signature:
+        # The module does not exist or we could not get any symbols using addr2line.
         # As a last resort, we can use the module name + offset as the signature.
         return get_hex_signature_from_frame(module, address)
     function_signature = clean_up(function_signature)
@@ -354,7 +383,7 @@ def get_signature_from_catchsegv_frame_address(log_contents: str) -> Optional[st
 
 def get_hex_signature_from_frame(module: Path, address: str) -> str:
     signature = f"{module.name}+{address}"
-    signature = clean_up(signature)
+    signature = clean_up(signature, remove_numbers=False)
     signature = reduce_length(signature)
     return signature
 
@@ -365,6 +394,7 @@ def get_function_signature_from_address(module: Path, address: str) -> Optional[
         result = subprocess_util.run(
             [str(address_tool), "-e", str(module), address, "-f", "-C"],
             check_exit_code=False,
+            verbose=True,
         )
         if result.returncode != 0:
             return None
