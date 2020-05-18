@@ -42,21 +42,22 @@ class BufferCopy {
    * copying can be performed.
    * @param [in] buffer Buffer where the data is copied from.
    * @param [in] buffer_size Size of the buffer in bytes.
-   * @param [out] mapped_memory Pointer to the host visible copied data.
    */
   void CopyBuffer(
       VkQueue queue, uint32_t queue_family_index,
       const std::vector<std::shared_ptr<CmdPipelineBarrier>> &pipeline_barriers,
-      const VkBuffer &buffer, VkDeviceSize buffer_size, void **mapped_memory);
+      const VkBuffer &buffer, VkDeviceSize buffer_size);
 
   void FreeResources();
 
+  void* copied_data_;
+
  private:
-  VkBuffer buffer_copy;
-  VkDeviceMemory buffer_copy_memory;
-  VkCommandPool command_pool;
-  VkCommandBuffer command_buffer;
-  VkDevice device;
+  VkBuffer buffer_copy_;
+  VkDeviceMemory buffer_copy_memory_;
+  VkCommandPool command_pool_;
+  VkCommandBuffer command_buffer_;
+  VkDevice device_;
 
   uint32_t FindMemoryType(uint32_t typeFilter,
                           VkMemoryPropertyFlags properties);

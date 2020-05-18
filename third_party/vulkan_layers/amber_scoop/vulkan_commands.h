@@ -20,6 +20,8 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include <cstring>
+
 #include "vk_deep_copy.h"
 
 namespace graphicsfuzz_amber_scoop {
@@ -34,6 +36,7 @@ struct CmdCopyBufferToImage;
 struct CmdDraw;
 struct CmdDrawIndexed;
 struct CmdPipelineBarrier;
+struct CmdPushConstants;
 
 struct Cmd {
   enum Kind {
@@ -46,7 +49,8 @@ struct Cmd {
     kCopyBufferToImage,
     kDraw,
     kDrawIndexed,
-    kPipelineBarrier
+    kPipelineBarrier,
+    kPushConstants
   };
 
   explicit Cmd(Kind kind) : kind_(kind) {}
@@ -67,6 +71,7 @@ struct Cmd {
   DeclareCastMethod(Draw)
   DeclareCastMethod(DrawIndexed)
   DeclareCastMethod(PipelineBarrier)
+  DeclareCastMethod(PushConstants)
 #undef DeclareCastMethod
 
   Kind kind_;
@@ -99,7 +104,7 @@ struct CmdBindDescriptorSets : public Cmd {
         layout_(layout),
         firstSet_(firstSet),
         descriptorSetCount_(descriptorSetCount),
-        pDescriptorSets_(CopyArray(pDescriptorSets, descriptorSetCount)),
+        pDescriptorSets_(CopyArray(pDescriptorSets, firstSet + descriptorSetCount)),
         dynamicOffsetCount_(dynamicOffsetCount),
         pDynamicOffsets_(CopyArray(pDynamicOffsets, dynamicOffsetCount)) {}
 
@@ -152,8 +157,8 @@ struct CmdBindVertexBuffers : public Cmd {
       : Cmd(kBindVertexBuffers),
         firstBinding_(firstBinding),
         bindingCount_(bindingCount),
-        pBuffers_(CopyArray(pBuffers, bindingCount)),
-        pOffsets_(CopyArray(pOffsets, bindingCount)) {}
+        pBuffers_(CopyArray(pBuffers, firstBinding + bindingCount)),
+        pOffsets_(CopyArray(pOffsets, firstBinding + bindingCount)) {}
 
   CmdBindVertexBuffers *AsBindVertexBuffers() override { return this; }
   const CmdBindVertexBuffers *AsBindVertexBuffers() const override {
@@ -173,7 +178,7 @@ struct CmdCopyBuffer : public Cmd {
         srcBuffer_(srcBuffer),
         dstBuffer_(dstBuffer),
         regionCount_(regionCount),
-        pRegions_(pRegions) {}
+        pRegions_(CopyArray(pRegions, regionCount)) {}
 
   CmdCopyBuffer *AsCopyBuffer() override { return this; }
   const CmdCopyBuffer *AsCopyBuffer() const override { return this; }
@@ -281,6 +286,29 @@ struct CmdPipelineBarrier : public Cmd {
   VkBufferMemoryBarrier const *pBufferMemoryBarriers_;
   uint32_t imageMemoryBarrierCount_;
   VkImageMemoryBarrier const *pImageMemoryBarriers_;
+};
+
+struct CmdPushConstants : public Cmd {
+  CmdPushConstants(VkPipelineLayout layout, VkShaderStageFlags stageFlags,
+                   uint32_t offset, uint32_t size, void const *pValues)
+      : Cmd(kPushConstants),
+        layout_(layout),
+        stageFlags_(stageFlags),
+        offset_(offset),
+        size_(size) {
+    auto push_constant_mem = new uint8_t[size];
+    memcpy(push_constant_mem, pValues, size);
+    pValues_ = push_constant_mem;
+  }
+
+  CmdPushConstants *AsPushConstants() override { return this; }
+  const CmdPushConstants *AsPushConstants() const override { return this; }
+
+  VkPipelineLayout layout_;
+  VkShaderStageFlags stageFlags_;
+  uint32_t offset_;
+  uint32_t size_;
+  void const *pValues_;
 };
 
 }  // namespace graphicsfuzz_amber_scoop

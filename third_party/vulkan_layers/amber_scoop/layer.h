@@ -52,11 +52,13 @@ namespace graphicsfuzz_amber_scoop {
         PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets;
         PFN_vkUpdateDescriptorSets vkUpdateDescriptorSets;
         PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets;
+        PFN_vkCmdPushConstants vkCmdPushConstants;
         PFN_vkCmdBindIndexBuffer vkCmdBindIndexBuffer;
         PFN_vkCmdBindVertexBuffers vkCmdBindVertexBuffers;
         PFN_vkCmdDraw vkCmdDraw;
         PFN_vkCmdDrawIndexed vkCmdDrawIndexed;
         PFN_vkCreateImage vkCreateImage;
+        PFN_vkCreateSampler vkCreateSampler;
         PFN_vkCreatePipelineLayout vkCreatePipelineLayout;
         PFN_vkCreateGraphicsPipelines vkCreateGraphicsPipelines;
         PFN_vkCreateShaderModule vkCreateShaderModule;
@@ -123,11 +125,13 @@ namespace graphicsfuzz_amber_scoop {
     VkResult vkAllocateDescriptorSets(PFN_vkAllocateDescriptorSets next, VkDevice device, VkDescriptorSetAllocateInfo const* pAllocateInfo, VkDescriptorSet* pDescriptorSets);
     void vkUpdateDescriptorSets(PFN_vkUpdateDescriptorSets next, VkDevice device, uint32_t descriptorWriteCount, VkWriteDescriptorSet const* pDescriptorWrites, uint32_t descriptorCopyCount, VkCopyDescriptorSet const* pDescriptorCopies);
     void vkCmdBindDescriptorSets(PFN_vkCmdBindDescriptorSets next, VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, VkDescriptorSet const* pDescriptorSets, uint32_t dynamicOffsetCount, uint32_t const* pDynamicOffsets);
+    void vkCmdPushConstants(PFN_vkCmdPushConstants next, VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, void const* pValues);
     void vkCmdBindIndexBuffer(PFN_vkCmdBindIndexBuffer next, VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType);
     void vkCmdBindVertexBuffers(PFN_vkCmdBindVertexBuffers next, VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, VkBuffer const* pBuffers, VkDeviceSize const* pOffsets);
     void vkCmdDraw(PFN_vkCmdDraw next, VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
     void vkCmdDrawIndexed(PFN_vkCmdDrawIndexed next, VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance);
     VkResult vkCreateImage(PFN_vkCreateImage next, VkDevice device, VkImageCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkImage* pImage);
+    VkResult vkCreateSampler(PFN_vkCreateSampler next, VkDevice device, VkSamplerCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkSampler* pSampler);
     VkResult vkCreatePipelineLayout(PFN_vkCreatePipelineLayout next, VkDevice device, VkPipelineLayoutCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkPipelineLayout* pPipelineLayout);
     VkResult vkCreateGraphicsPipelines(PFN_vkCreateGraphicsPipelines next, VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, VkGraphicsPipelineCreateInfo const* pCreateInfos, AllocationCallbacks pAllocator, VkPipeline* pPipelines);
     VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device, VkShaderModuleCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkShaderModule* pShaderModule);

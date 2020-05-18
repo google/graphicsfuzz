@@ -57,6 +57,10 @@ namespace graphicsfuzz_amber_scoop {
             PFN_vkCmdBindDescriptorSets fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdBindDescriptorSets;
             return graphicsfuzz_amber_scoop::vkCmdBindDescriptorSets(fn, commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
         }
+        VKAPI_ATTR void VKAPI_CALL vkCmdPushConstants(VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, void const* pValues) {
+            PFN_vkCmdPushConstants fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdPushConstants;
+            return graphicsfuzz_amber_scoop::vkCmdPushConstants(fn, commandBuffer, layout, stageFlags, offset, size, pValues);
+        }
         VKAPI_ATTR void VKAPI_CALL vkCmdBindIndexBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) {
             PFN_vkCmdBindIndexBuffer fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdBindIndexBuffer;
             return graphicsfuzz_amber_scoop::vkCmdBindIndexBuffer(fn, commandBuffer, buffer, offset, indexType);
@@ -76,6 +80,10 @@ namespace graphicsfuzz_amber_scoop {
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreateImage(VkDevice device, VkImageCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkImage* pImage) {
             PFN_vkCreateImage fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateImage;
             return graphicsfuzz_amber_scoop::vkCreateImage(fn, device, pCreateInfo, pAllocator, pImage);
+        }
+        VKAPI_ATTR uint32_t VKAPI_CALL vkCreateSampler(VkDevice device, VkSamplerCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkSampler* pSampler) {
+            PFN_vkCreateSampler fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateSampler;
+            return graphicsfuzz_amber_scoop::vkCreateSampler(fn, device, pCreateInfo, pAllocator, pSampler);
         }
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreatePipelineLayout(VkDevice device, VkPipelineLayoutCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkPipelineLayout* pPipelineLayout) {
             PFN_vkCreatePipelineLayout fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreatePipelineLayout;
@@ -384,11 +392,13 @@ namespace graphicsfuzz_amber_scoop {
             GET_PROC(vkAllocateDescriptorSets);
             GET_PROC(vkUpdateDescriptorSets);
             GET_PROC(vkCmdBindDescriptorSets);
+            GET_PROC(vkCmdPushConstants);
             GET_PROC(vkCmdBindIndexBuffer);
             GET_PROC(vkCmdBindVertexBuffers);
             GET_PROC(vkCmdDraw);
             GET_PROC(vkCmdDrawIndexed);
             GET_PROC(vkCreateImage);
+            GET_PROC(vkCreateSampler);
             GET_PROC(vkCreatePipelineLayout);
             GET_PROC(vkCreateGraphicsPipelines);
             GET_PROC(vkCreateShaderModule);
@@ -455,11 +465,13 @@ namespace graphicsfuzz_amber_scoop {
             INTERCEPT(vkAllocateDescriptorSets);
             INTERCEPT(vkUpdateDescriptorSets);
             INTERCEPT(vkCmdBindDescriptorSets);
+            INTERCEPT(vkCmdPushConstants);
             INTERCEPT(vkCmdBindIndexBuffer);
             INTERCEPT(vkCmdBindVertexBuffers);
             INTERCEPT(vkCmdDraw);
             INTERCEPT(vkCmdDrawIndexed);
             INTERCEPT(vkCreateImage);
+            INTERCEPT(vkCreateSampler);
             INTERCEPT(vkCreatePipelineLayout);
             INTERCEPT(vkCreateGraphicsPipelines);
             INTERCEPT(vkCreateShaderModule);
@@ -680,11 +692,13 @@ namespace graphicsfuzz_amber_scoop {
             INTERCEPT(vkAllocateDescriptorSets);
             INTERCEPT(vkUpdateDescriptorSets);
             INTERCEPT(vkCmdBindDescriptorSets);
+            INTERCEPT(vkCmdPushConstants);
             INTERCEPT(vkCmdBindIndexBuffer);
             INTERCEPT(vkCmdBindVertexBuffers);
             INTERCEPT(vkCmdDraw);
             INTERCEPT(vkCmdDrawIndexed);
             INTERCEPT(vkCreateImage);
+            INTERCEPT(vkCreateSampler);
             INTERCEPT(vkCreatePipelineLayout);
             INTERCEPT(vkCreateGraphicsPipelines);
             INTERCEPT(vkCreateShaderModule);
