@@ -70,6 +70,26 @@ struct PipelineLayoutData {
   std::map<uint32_t, VkDescriptorSet> descriptor_set_bindings_;
 };
 
+struct DescriptorBufferBinding {
+  uint32_t binding_number_;
+  uint32_t dynamic_offset_;
+  VkDescriptorBufferInfo descriptor_buffer_info_;
+};
+
+struct DescriptorSetData {
+  explicit DescriptorSetData(
+      VkDescriptorSetLayout descriptor_set_layout,
+      const VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info)
+      : descriptor_set_layout_(descriptor_set_layout),
+        descriptor_set_layout_create_info_(descriptor_set_layout_create_info) {}
+
+  VkDescriptorSetLayout descriptor_set_layout_;
+  VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info_;
+  std::vector<DescriptorBufferBinding> descriptor_buffer_bindings_ = {};
+  std::unordered_map<uint32_t, VkDescriptorImageInfo>
+      image_and_sampler_bindings_ = {};
+};
+
 std::unordered_map<VkCommandBuffer, std::vector<std::shared_ptr<Cmd>>>
     commandBuffers;
 
@@ -86,9 +106,9 @@ int32_t current_draw_call_number = 0;
 
 std::unordered_map<VkBuffer, VkBufferCreateInfo> buffers;
 std::unordered_map<VkSampler, VkSamplerCreateInfo> samplers_;
-std::unordered_map<VkDescriptorSet, VkDescriptorSetLayout> descriptorSets;
+std::unordered_map<VkDescriptorSet, DescriptorSetData> descriptor_sets_;
 std::unordered_map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo>
-    descriptorSetLayouts;
+    descriptor_set_layouts_;
 std::unordered_map<VkFramebuffer, VkFramebufferCreateInfo> framebuffers;
 std::unordered_map<VkPipeline, VkGraphicsPipelineCreateInfo> graphicsPipelines;
 std::unordered_map<VkPipelineLayout, PipelineLayoutData> pipeline_layouts;
@@ -96,13 +116,13 @@ std::unordered_map<VkRenderPass, VkRenderPassCreateInfo> renderPasses;
 std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shaderModules;
 // TODO: make struct for std::tuple<uint32_t, VkDescriptorBufferInfo, uint32_t>
 // fields: <binding_number, VkDescriptorBufferInfo, dynamic_offset>
-std::unordered_map<
+/*std::unordered_map<
     VkDescriptorSet,
     std::vector<std::tuple<uint32_t, VkDescriptorBufferInfo, uint32_t>>>
-    descriptorSetToBindingBuffers;
-std::unordered_map<VkDescriptorSet,
+    descriptorSetToBindingBuffers;*/
+/*std::unordered_map<VkDescriptorSet,
                    std::unordered_map<uint32_t, VkDescriptorImageInfo>>
-    descriptorSetToBindingImageAndSampler;
+    descriptorSetToBindingImageAndSampler;*/
 
 std::unordered_map<VkCommandPool, uint32_t> commandPoolToQueueFamilyIndex;
 
@@ -131,8 +151,11 @@ VkResult vkAllocateDescriptorSets(
   auto result = next(device, pAllocateInfo, pDescriptorSets);
   if (result == VK_SUCCESS) {
     for (uint32_t i = 0; i < pAllocateInfo->descriptorSetCount; i++) {
-      descriptorSets.insert(
-          {pDescriptorSets[i], pAllocateInfo->pSetLayouts[i]});
+      descriptor_sets_.insert(
+          {pDescriptorSets[i],
+           DescriptorSetData(
+               pAllocateInfo->pSetLayouts[i],
+               descriptor_set_layouts_.at(pAllocateInfo->pSetLayouts[i]))});
     }
   }
   return result;
@@ -329,7 +352,7 @@ VkResult vkCreateDescriptorSetLayout(
   DEBUG_LAYER(vkCreateDescriptorSetLayout);
   auto result = next(device, pCreateInfo, pAllocator, pSetLayout);
   if (result == VK_SUCCESS) {
-    descriptorSetLayouts.insert({*pSetLayout, DeepCopy(*pCreateInfo)});
+    descriptor_set_layouts_.insert({*pSetLayout, DeepCopy(*pCreateInfo)});
   }
   return result;
 }
@@ -487,7 +510,6 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
               VK_PIPELINE_BIND_POINT_GRAPHICS) {
             // Check if there are already descriptor bindings for the pipeline
             // layout.
-
             uint32_t dynamic_offset_idx = 0;
 
             // Update / create the bindings
@@ -500,33 +522,22 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
               // Check if there's any UNIFORM_BUFFER_DYNAMIC or
               // STORAGE_BUFFER_DYNAMIC descriptors in the set and store the
               // dynamic offsets for them.
-              VkDescriptorSetLayoutCreateInfo
-                  descriptor_set_layout_create_info =
-                      descriptorSetLayouts.at(descriptorSets.at(
-                          cmdBindDescriptorSets
-                              ->pDescriptorSets_[descriptor_set_idx]));
+              auto &descriptor_set_data = descriptor_sets_.at(descriptor_set);
 
-              if (descriptorSetToBindingBuffers.count(
+              for (auto &buffer_binding :
+                   descriptor_set_data.descriptor_buffer_bindings_) {
+                VkDescriptorSetLayoutBinding layout_binding =
+                    descriptor_set_data.descriptor_set_layout_create_info_
+                        .pBindings[buffer_binding.binding_number_];
+                if (layout_binding.descriptorType ==
+                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
+                  buffer_binding.binding_number_ =
                       cmdBindDescriptorSets
-                          ->pDescriptorSets_[descriptor_set_idx])) {
-                auto &bindingAndBuffers =
-                    descriptorSetToBindingBuffers.at(descriptor_set);
-
-                for (auto &binding_and_buffer : bindingAndBuffers) {
-                  uint32_t binding_number = std::get<0>(binding_and_buffer);
-                  VkDescriptorSetLayoutBinding layout_binding =
-                      descriptor_set_layout_create_info
-                          .pBindings[binding_number];
-                  if (layout_binding.descriptorType ==
-                      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
-                    std::get<2>(binding_and_buffer) =
-                        cmdBindDescriptorSets
-                            ->pDynamicOffsets_[dynamic_offset_idx++];
-                    /* // For debug. TODO: remove this
-                    std::cout
-                        << "dynamic offset: " << std::get<2>(binding_and_buffer)
-                        << std::endl;*/
-                  }
+                          ->pDynamicOffsets_[dynamic_offset_idx++];
+                  /* // For debug. TODO: remove this
+                  std::cout
+                      << "dynamic offset: " << std::get<2>(binding_and_buffer)
+                      << std::endl;*/
                 }
               }
 
@@ -563,11 +574,12 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
                  cmdBindVertexBuffers
                      ->pBuffers_[bindingIdx +
                                  cmdBindVertexBuffers->firstBinding_]});
-            drawCallStateTracker.vertex_buffer_offsets.insert(
-                {bindingIdx + cmdBindVertexBuffers->firstBinding_,
-                 cmdBindVertexBuffers
-                     ->pOffsets_[bindingIdx +
-                                 cmdBindVertexBuffers->firstBinding_]});
+            drawCallStateTracker
+                .vertex_buffer_offsets[bindingIdx +
+                                       cmdBindVertexBuffers->firstBinding_] =
+                cmdBindVertexBuffers
+                    ->pOffsets_[bindingIdx +
+                                cmdBindVertexBuffers->firstBinding_];
           }
         } else if (auto cmdCopyBuffer = cmd->AsCopyBuffer()) {
           // TODO: track buffer copies?
@@ -617,15 +629,10 @@ void vkUpdateDescriptorSets(PFN_vkUpdateDescriptorSets next, VkDevice device,
       case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
         // pImageInfo must be a valid pointer to an array of descriptorCount
         // valid VkDescriptorImageInfo structures
-        if (!descriptorSetToBindingImageAndSampler.count(
-                writeDescriptorSet.dstSet)) {
-          descriptorSetToBindingImageAndSampler.insert(
-              {writeDescriptorSet.dstSet, {}});
-        }
-        auto &bindingToImage =
-            descriptorSetToBindingImageAndSampler.at(writeDescriptorSet.dstSet);
-        bindingToImage.insert(
-            {writeDescriptorSet.dstBinding, *writeDescriptorSet.pImageInfo});
+        descriptor_sets_.at(writeDescriptorSet.dstSet)
+            .image_and_sampler_bindings_.insert(
+                {writeDescriptorSet.dstBinding,
+                 *writeDescriptorSet.pImageInfo});
         break;
       }
       case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
@@ -639,13 +646,12 @@ void vkUpdateDescriptorSets(PFN_vkUpdateDescriptorSets next, VkDevice device,
       case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
         // pBufferInfo must be a valid pointer to an array of descriptorCount
         // valid VkDescriptorBufferInfo structures
-        if (!descriptorSetToBindingBuffers.count(writeDescriptorSet.dstSet)) {
-          descriptorSetToBindingBuffers.insert({writeDescriptorSet.dstSet, {}});
-        }
-        auto &bindingToBuffer =
-            descriptorSetToBindingBuffers.at(writeDescriptorSet.dstSet);
-        bindingToBuffer.emplace_back(writeDescriptorSet.dstBinding,
-                                     *writeDescriptorSet.pBufferInfo, 0);
+        descriptor_sets_.at(writeDescriptorSet.dstSet)
+            .descriptor_buffer_bindings_.emplace_back(DescriptorBufferBinding{
+                writeDescriptorSet.dstBinding,
+                0,
+                *writeDescriptorSet.pBufferInfo,
+            });
         break;
       }
       default:
@@ -662,7 +668,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   }
   assert(draw_call_state_tracker.currentRenderPass);
 
-  // if (index_count != 384) return; // DEBUG TODO: remove
+  if (index_count != 6) return;  // DEBUG TODO: remove
 
   if (capture_draw_call_number == -1) {
     auto frame_number_str = std::getenv("DRAW_CALL_NUMBER");
@@ -845,7 +851,8 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     uint32_t stride =
         binding_description.stride == 0 ? 1 : binding_description.stride;
 
-    uint32_t element_count = vertex_count == 0 ? max_index_value : vertex_count;
+    uint32_t element_count =
+        vertex_count == 0 ? max_index_value + 1 : vertex_count;
 
     for (uint32_t i = 0; i < element_count; i++) {
       auto readPtr = (uint8_t *)buffer_copy->copied_data_ + i * stride +
@@ -892,44 +899,38 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
         << "  BIND BUFFER push_constants_buffer AS push_constant" << std::endl;
   }
 
-  for (const auto &descriptorSet :
+  for (const auto &descriptor_set_binding :
        pipeline_layout_data.descriptor_set_bindings_) {
-    uint32_t descriptorSetNumber = descriptorSet.first;
-    VkDescriptorSetLayoutCreateInfo layoutCreateInfo =
-        descriptorSetLayouts.at(descriptorSets.at(descriptorSet.second));
-
-    std::vector<std::tuple<uint32_t, VkDescriptorBufferInfo, uint32_t>>
-        bindingAndBuffers;
-    if (descriptorSetToBindingBuffers.count(descriptorSet.second)) {
-      bindingAndBuffers =
-          descriptorSetToBindingBuffers.at(descriptorSet.second);
-    }
+    uint32_t descriptor_set_number = descriptor_set_binding.first;
+    const auto &descriptor_set =
+        descriptor_sets_.at(descriptor_set_binding.second);
 
     uint32_t dynamic_buffer_index = 0;
-    for (const auto &bindingAndBuffer : bindingAndBuffers) {
-      uint32_t bindingNumber = std::get<0>(bindingAndBuffer);
-      VkDescriptorBufferInfo bufferInfo = std::get<1>(bindingAndBuffer);
-
+    for (const auto &buffer_binding :
+         descriptor_set.descriptor_buffer_bindings_) {
       std::stringstream strstr;
-      strstr << "buf_" << descriptorSetNumber << "_" << bindingNumber;
+      strstr << "buf_" << descriptor_set_number << "_"
+             << buffer_binding.binding_number_;
       std::string bufferName = strstr.str();
 
-      VkBufferCreateInfo bufferCreateInfo = buffers.at(bufferInfo.buffer);
+      VkBufferCreateInfo bufferCreateInfo =
+          buffers.at(buffer_binding.descriptor_buffer_info_.buffer);
 
       bufferDeclarationStringStream << "BUFFER " << bufferName << " DATA_TYPE "
                                     << "uint8"
                                     << " DATA" << std::endl;
       bufferDeclarationStringStream << "  ";
 
-      VkDescriptorSetLayoutBinding layoutBinding =
-          layoutCreateInfo.pBindings[bindingNumber];
-      VkDescriptorType descriptorType = layoutBinding.descriptorType;
+      const auto &layout_binding =
+          descriptor_set.descriptor_set_layout_create_info_.pBindings;
       descriptorSetBindingStringStream
           << "  BIND BUFFER " << bufferName << " AS "
-          << GetDescriptorTypeString(descriptorType) << " DESCRIPTOR_SET "
-          << descriptorSetNumber << " BINDING " << bindingNumber << std::endl;
+          << GetDescriptorTypeString(layout_binding->descriptorType)
+          << " DESCRIPTOR_SET " << descriptor_set_number << " BINDING "
+          << buffer_binding.binding_number_ << std::endl;
 
-      const VkBuffer &descriptorBuffer = bufferInfo.buffer;
+      const auto &descriptor_buffer =
+          buffer_binding.descriptor_buffer_info_.buffer;
 
       auto commandPool =
           GetGlobalContext()
@@ -938,7 +939,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
       auto queueFamilyIndex = commandPoolToQueueFamilyIndex.at(commandPool);
       BufferCopy descriptorBufferCopy = BufferCopy();
 
-      // Check if there is pipeline barriers for descriptor buffer
+      // Create list of pipeline barriers for the descriptor buffer
       std::vector<std::shared_ptr<CmdPipelineBarrier>> descriptorBufferBarriers;
       for (const auto &barrier : draw_call_state_tracker.pipelineBarriers) {
         // Find all barriers where dstStage contains vertex shader.
@@ -956,101 +957,59 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 
       descriptorBufferCopy.CopyBuffer(
           draw_call_state_tracker.queue, queueFamilyIndex,
-          descriptorBufferBarriers, descriptorBuffer, bufferCreateInfo.size);
+          descriptorBufferBarriers, descriptor_buffer, bufferCreateInfo.size);
 
-      VkDeviceSize range = bufferInfo.range == VK_WHOLE_SIZE
-                               ? bufferCreateInfo.size
-                               : bufferInfo.range;
+      VkDeviceSize range =
+          buffer_binding.descriptor_buffer_info_.range == VK_WHOLE_SIZE
+              ? bufferCreateInfo.size
+              : buffer_binding.descriptor_buffer_info_.range;
 
-      uint32_t dynamic_offset = std::get<2>(bindingAndBuffer);
       auto *thePtr = (uint8_t *)descriptorBufferCopy.copied_data_;
 
       for (VkDeviceSize bidx = 0; bidx < range; bidx++) {
         if (bidx > 0) {
           bufferDeclarationStringStream << " ";
         }
-        bufferDeclarationStringStream
-            << (uint32_t)thePtr[bidx + bufferInfo.offset + dynamic_offset];
+        bufferDeclarationStringStream << (uint32_t)
+                thePtr[bidx + buffer_binding.descriptor_buffer_info_.offset +
+                       buffer_binding.dynamic_offset_];
       }
 
       bufferDeclarationStringStream << std::endl;
       bufferDeclarationStringStream << "END" << std::endl << std::endl;
     }
 
-    if (descriptorSetToBindingImageAndSampler.count(descriptorSet.second)) {
-      auto bindingAndImages =
-          descriptorSetToBindingImageAndSampler.at(descriptorSet.second);
-      for (auto bindingAndImage : bindingAndImages) {
-        uint32_t bindingNumber = bindingAndImage.first;
-        auto imageInfo = bindingAndImage.second;
+    for (const auto &binding_and_image :
+         descriptor_set.image_and_sampler_bindings_) {
+      uint32_t binding_number = binding_and_image.first;
+      const auto &image_info = binding_and_image.second;
 
-        VkDescriptorSetLayoutBinding layoutBinding =
-            layoutCreateInfo.pBindings[bindingNumber];
-        VkDescriptorType descriptorType = layoutBinding.descriptorType;
+      const auto &layout_binding =
+          descriptor_set.descriptor_set_layout_create_info_
+              .pBindings[binding_number];
+      VkDescriptorType descriptor_type = layout_binding.descriptorType;
 
-        std::stringstream strstr;
+      std::stringstream strstr;
 
-        switch (descriptorType) {
-          case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-          case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-          case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-            strstr << "img_" << descriptorSetNumber << "_" << bindingNumber;
-            std::string imageName = strstr.str();
+      switch (descriptor_type) {
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+          strstr << "img_" << descriptor_set_number << "_" << binding_number;
+          std::string imageName = strstr.str();
 
-            descriptorSetBindingStringStream
-                << "  BIND BUFFER " << imageName << " AS "
-                << GetDescriptorTypeString(descriptorType);
+          descriptorSetBindingStringStream
+              << "  BIND BUFFER " << imageName << " AS "
+              << GetDescriptorTypeString(descriptor_type);
 
-            if (descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-              std::stringstream sampler_str;
-              sampler_str << "sampler_" << descriptorSetNumber << "_"
-                          << bindingNumber;
-              std::string samplerName = sampler_str.str();
+          if (descriptor_type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+            std::stringstream sampler_str;
+            sampler_str << "sampler_" << descriptor_set_number << "_"
+                        << binding_number;
+            std::string samplerName = sampler_str.str();
 
-              auto sampler_info = samplers_.at(imageInfo.sampler);
-              descriptorSetBindingStringStream << " SAMPLER " << samplerName;
-              bufferDeclarationStringStream
-                  << "SAMPLER " << samplerName << " MAG_FILTER "
-                  << GetSamplerFilterTypeString(sampler_info.magFilter)
-                  << " MIN_FILTER "
-                  << GetSamplerFilterTypeString(sampler_info.minFilter)
-                  << " ADDRESS_MODE_U "
-                  << GetSamplerAddressModeString(sampler_info.addressModeU)
-                  << " ADDRESS_MODE_V "
-                  << GetSamplerAddressModeString(sampler_info.addressModeV)
-                  << " ADDRESS_MODE_W "
-                  << GetSamplerAddressModeString(sampler_info.addressModeW)
-                  << " BORDER_COLOR "
-                  << GetSamplerBorderColorString(sampler_info.borderColor)
-                  << std::scientific << " MIN_LOD " << sampler_info.minLod
-                  << " MAX_LOD " << sampler_info.maxLod << std::defaultfloat
-                  << (sampler_info.unnormalizedCoordinates
-                          ? " UNNORMALIZED_COORDS"
-                          : " NORMALIZED_COORDS")
-                  << std::endl;
-            }
-
-            descriptorSetBindingStringStream
-                << " DESCRIPTOR_SET " << descriptorSetNumber << " BINDING "
-                << bindingNumber << std::endl;
-
-            // TODO: implement BASE_MIP_LEVEL
-            // https://github.com/google/amber/blob/master/docs/amber_script.md#pipeline-buffers
-
-            bufferDeclarationStringStream << "BUFFER " << imageName
-                                          << " FORMAT R8G8B8A8_UNORM"
-                                          << " FILE texture.png" << std::endl;
-            break;
-          }
-          case VK_DESCRIPTOR_TYPE_SAMPLER: {
-            auto sampler_info = samplers_.at(imageInfo.sampler);
-            strstr << "sampler_" << descriptorSetNumber << "_" << bindingNumber;
-            std::string samplerName = strstr.str();
-
-            descriptorSetBindingStringStream
-                << "  BIND SAMPLER " << samplerName << " DESCRIPTOR_SET "
-                << descriptorSetNumber << " BINDING " << bindingNumber;
-
+            auto sampler_info = samplers_.at(image_info.sampler);
+            descriptorSetBindingStringStream << " SAMPLER " << samplerName;
             bufferDeclarationStringStream
                 << "SAMPLER " << samplerName << " MAG_FILTER "
                 << GetSamplerFilterTypeString(sampler_info.magFilter)
@@ -1064,20 +1023,61 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
                 << GetSamplerAddressModeString(sampler_info.addressModeW)
                 << " BORDER_COLOR "
                 << GetSamplerBorderColorString(sampler_info.borderColor)
-                << " MIN_LOD " << sampler_info.minLod << " MAX_LOD "
-                << sampler_info.maxLod
+                << std::scientific << " MIN_LOD " << sampler_info.minLod
+                << " MAX_LOD " << sampler_info.maxLod << std::defaultfloat
                 << (sampler_info.unnormalizedCoordinates
                         ? " UNNORMALIZED_COORDS"
                         : " NORMALIZED_COORDS")
                 << std::endl;
-            break;
           }
-          default:
-            throw std::runtime_error("Unimplemented descriptor type: " +
-                                     std::to_string(descriptorType));
+
+          descriptorSetBindingStringStream
+              << " DESCRIPTOR_SET " << descriptor_set_number << " BINDING "
+              << binding_number << std::endl;
+
+          // TODO: implement BASE_MIP_LEVEL
+          // https://github.com/google/amber/blob/master/docs/amber_script.md#pipeline-buffers
+
+          bufferDeclarationStringStream << "BUFFER " << imageName
+                                        << " FORMAT R8G8B8A8_UNORM"
+                                        << " FILE texture.png" << std::endl;
+          break;
         }
-        descriptorSetBindingStringStream << std::endl;
+        case VK_DESCRIPTOR_TYPE_SAMPLER: {
+          auto sampler_info = samplers_.at(image_info.sampler);
+          strstr << "sampler_" << descriptor_set_number << "_"
+                 << binding_number;
+          std::string samplerName = strstr.str();
+
+          descriptorSetBindingStringStream
+              << "  BIND SAMPLER " << samplerName << " DESCRIPTOR_SET "
+              << descriptor_set_number << " BINDING " << binding_number;
+
+          bufferDeclarationStringStream
+              << "SAMPLER " << samplerName << " MAG_FILTER "
+              << GetSamplerFilterTypeString(sampler_info.magFilter)
+              << " MIN_FILTER "
+              << GetSamplerFilterTypeString(sampler_info.minFilter)
+              << " ADDRESS_MODE_U "
+              << GetSamplerAddressModeString(sampler_info.addressModeU)
+              << " ADDRESS_MODE_V "
+              << GetSamplerAddressModeString(sampler_info.addressModeV)
+              << " ADDRESS_MODE_W "
+              << GetSamplerAddressModeString(sampler_info.addressModeW)
+              << " BORDER_COLOR "
+              << GetSamplerBorderColorString(sampler_info.borderColor)
+              << " MIN_LOD " << sampler_info.minLod << " MAX_LOD "
+              << sampler_info.maxLod
+              << (sampler_info.unnormalizedCoordinates ? " UNNORMALIZED_COORDS"
+                                                       : " NORMALIZED_COORDS")
+              << std::endl;
+          break;
+        }
+        default:
+          throw std::runtime_error("Unimplemented descriptor type: " +
+                                   std::to_string(descriptor_type));
       }
+      descriptorSetBindingStringStream << std::endl;
     }
   }
 
@@ -1244,8 +1244,8 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
       topologies.at(graphicsPipelineCreateInfo.pInputAssemblyState->topology);
 
   if (index_count > 0) {
-    amber_file << "RUN pipeline DRAW_ARRAY AS " << topology << " INDEXED"
-               << std::endl;
+    amber_file << "RUN pipeline DRAW_ARRAY AS " << topology
+               << " INDEXED START_IDX 0 COUNT " << index_count << std::endl;
   } else {
     amber_file << "RUN pipeline DRAW_ARRAY AS " << topology << std::endl;
   }
