@@ -74,6 +74,20 @@ public class ReductionDriver {
                          ShaderJobFileOperations fileOps,
                          IFileJudge judge,
                          File workDir) {
+    this(context,
+        verbose,
+        fileOps,
+        judge,
+        workDir,
+        false);
+  }
+
+  public ReductionDriver(ReducerContext context,
+                         boolean verbose,
+                         ShaderJobFileOperations fileOps,
+                         IFileJudge judge,
+                         File workDir,
+                         boolean literalsToUniforms) {
     this.context = context;
     this.fileOps = fileOps;
     this.judge = judge;
@@ -81,6 +95,18 @@ public class ReductionDriver {
     this.failHashCache = new HashSet<>();
     this.passHashCache = new HashSet<>();
     this.failHashCacheHits = 0;
+
+    if (literalsToUniforms) {
+      this.passManager = ReductionDriver.getLiteralsToUniformsPassManager(context, verbose);
+    } else {
+      this.passManager = ReductionDriver.getDefaultPassManager(context, verbose);
+    }
+
+  }
+
+  private static IReductionPassManager getDefaultPassManager(
+      ReducerContext context,
+      boolean verbose) {
 
     final List<IReductionPass> initialPasses = new ArrayList<>();
     initialPasses.add(new SystematicReductionPass(context, verbose,
@@ -132,8 +158,23 @@ public class ReductionDriver {
       corePasses.add(pass);
       cleanupPasses.add(pass);
     }
-    this.passManager = new SystematicReductionPassManager(initialPasses, corePasses, cleanupPasses);
+    return new SystematicReductionPassManager(initialPasses, corePasses, cleanupPasses);
+  }
 
+  private static IReductionPassManager getLiteralsToUniformsPassManager(
+      ReducerContext context,
+      boolean verbose) {
+    final List<IReductionPass> initialPasses = new ArrayList<>();
+    final List<IReductionPass> corePasses = new ArrayList<>();
+    final List<IReductionPass> cleanupPasses = new ArrayList<>();
+
+    cleanupPasses.add(
+        new SystematicReductionPass(
+            context,
+            verbose,
+            IReductionOpportunityFinder.literalToUniformFinder()));
+
+    return new SystematicReductionPassManager(initialPasses, corePasses, cleanupPasses);
   }
 
   public String doReduction(
