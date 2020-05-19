@@ -53,8 +53,21 @@ const char *GetSamplerBorderColorString(VkBorderColor border_color);
 
 const char *GetSamplerFilterTypeString(VkFilter filter);
 
-struct DescriptorSetBindingsWithOffsets {
-  std::vector<uint32_t> dynamic_offsets;
+/**
+ * Container for per pipeline layout data.
+ */
+struct PipelineLayoutData {
+  PipelineLayoutData(
+      VkPipelineLayoutCreateInfo create_info,
+      std::vector<uint8_t> push_constants,
+      std::map<uint32_t, VkDescriptorSet> descriptor_set_bindings)
+      : create_info_(create_info),
+        push_constants_(std::move(push_constants)),
+        descriptor_set_bindings_(std::move(descriptor_set_bindings)) {}
+
+  VkPipelineLayoutCreateInfo create_info_;
+  std::vector<uint8_t> push_constants_;
+  std::map<uint32_t, VkDescriptorSet> descriptor_set_bindings_;
 };
 
 std::unordered_map<VkCommandBuffer, std::vector<std::shared_ptr<Cmd>>>
@@ -78,13 +91,7 @@ std::unordered_map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo>
     descriptorSetLayouts;
 std::unordered_map<VkFramebuffer, VkFramebufferCreateInfo> framebuffers;
 std::unordered_map<VkPipeline, VkGraphicsPipelineCreateInfo> graphicsPipelines;
-std::unordered_map<VkPipelineLayout, VkPipelineLayoutCreateInfo>
-    pipelineLayouts;
-// TODO: Create struct for pipeline layout and move pushconstants there.
-std::unordered_map<VkPipelineLayout, std::pair<uint32_t, uint8_t *>>
-    push_constants;
-std::unordered_map<VkPipelineLayout, std::map<uint32_t, VkDescriptorSet>>
-    descriptor_set_bindings;
+std::unordered_map<VkPipelineLayout, PipelineLayoutData> pipeline_layouts;
 std::unordered_map<VkRenderPass, VkRenderPassCreateInfo> renderPasses;
 std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shaderModules;
 // TODO: make struct for std::tuple<uint32_t, VkDescriptorBufferInfo, uint32_t>
@@ -369,21 +376,18 @@ VkResult vkCreatePipelineLayout(PFN_vkCreatePipelineLayout next,
                                 VkPipelineLayout *pPipelineLayout) {
   auto result = next(device, pCreateInfo, pAllocator, pPipelineLayout);
   if (result == VK_SUCCESS) {
-    pipelineLayouts.insert({*pPipelineLayout, DeepCopy(*pCreateInfo)});
-
     uint32_t push_constant_size = 0;
     for (uint32_t i = 0; i < pCreateInfo->pushConstantRangeCount; i++) {
       push_constant_size += pCreateInfo->pPushConstantRanges[i].size;
     }
+    std::vector<uint8_t> push_constants;
     if (push_constant_size) {
-      // TODO: free the allocated memory
-
-      auto push_constant_mem = new uint8_t[push_constant_size];
-      std::memset(push_constant_mem, 0, push_constant_size);
-
-      push_constants.insert(
-          {*pPipelineLayout, {push_constant_size, push_constant_mem}});
+      push_constants.resize(push_constant_size);
+      std::memset(push_constants.data(), 0, push_constant_size);
     }
+    pipeline_layouts.insert(
+        {*pPipelineLayout,
+         PipelineLayoutData(DeepCopy(*pCreateInfo), push_constants, {})});
   }
   return result;
 }
@@ -477,18 +481,12 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
               cmdBeginRenderPass->pRenderPassBegin_;
           drawCallStateTracker.currentSubpass = 0;
         } else if (auto cmdBindDescriptorSets = cmd->AsBindDescriptorSets()) {
+          auto &pipeline_layout_data =
+              pipeline_layouts.at(cmdBindDescriptorSets->layout_);
           if (cmdBindDescriptorSets->pipelineBindPoint_ ==
               VK_PIPELINE_BIND_POINT_GRAPHICS) {
             // Check if there are already descriptor bindings for the pipeline
             // layout.
-            std::map<uint32_t, VkDescriptorSet> bindings_for_layout;
-            if (descriptor_set_bindings.count(cmdBindDescriptorSets->layout_)) {
-              bindings_for_layout =
-                  descriptor_set_bindings.at(cmdBindDescriptorSets->layout_);
-            }
-
-            auto layout_create_info =
-                pipelineLayouts.at(cmdBindDescriptorSets->layout_);
 
             uint32_t dynamic_offset_idx = 0;
 
@@ -532,14 +530,12 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
                 }
               }
 
-              bindings_for_layout.insert(
+              // Update the descriptor set bindings
+              pipeline_layout_data.descriptor_set_bindings_.insert(
                   {cmdBindDescriptorSets->firstSet_ + descriptor_set_idx,
                    cmdBindDescriptorSets
                        ->pDescriptorSets_[descriptor_set_idx]});
             }
-            // Update the descriptor set bindings of the pipeline layout.
-            descriptor_set_bindings.insert(
-                {cmdBindDescriptorSets->layout_, bindings_for_layout});
           }
         } else if (auto cmdBindIndexBuffer = cmd->AsBindIndexBuffer()) {
           drawCallStateTracker.boundIndexBuffer.buffer =
@@ -585,9 +581,10 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
           drawCallStateTracker.pipelineBarriers.push_back(
               std::make_shared<CmdPipelineBarrier>(*cmdPipelineBarrier));
         } else if (auto cmdPushConstants = cmd->AsPushConstants()) {
-          auto stored_push_constant_state =
-              push_constants.at(cmdPushConstants->layout_).second;
-          memcpy(stored_push_constant_state + cmdPushConstants->offset_,
+          // Store push constant values
+          memcpy(pipeline_layouts.at(cmdPushConstants->layout_)
+                         .push_constants_.data() +
+                     cmdPushConstants->offset_,
                  cmdPushConstants->pValues_, cmdPushConstants->size_);
         } else {
           throw std::runtime_error("Unknown command.");
@@ -873,17 +870,19 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 
   auto pipeline_layout =
       graphicsPipelines.at(draw_call_state_tracker.graphics_pipeline_).layout;
-  auto pipeline_layout_create_info = pipelineLayouts.at(pipeline_layout);
 
-  if (pipeline_layout_create_info.pushConstantRangeCount) {
+  const auto &pipeline_layout_data = pipeline_layouts.at(pipeline_layout);
+
+  if (pipeline_layout_data.create_info_.pushConstantRangeCount) {
     bufferDeclarationStringStream
         << "BUFFER push_constants_buffer DATA_TYPE uint8 DATA" << std::endl;
-    auto push_constant = push_constants.at(pipeline_layout);
+
+    const auto &push_constants = pipeline_layout_data.push_constants_;
 
     bufferDeclarationStringStream << "  ";
-    for (uint32_t i = 0; i < push_constant.first; i++) {
+    for (unsigned char push_constant : push_constants) {
       // bufferDeclarationStringStream << std::hex << "0x" ;
-      bufferDeclarationStringStream << (uint32_t)push_constant.second[i] << " ";
+      bufferDeclarationStringStream << (uint32_t)push_constant << " ";
       // bufferDeclarationStringStream << std::dec;
     }
     bufferDeclarationStringStream << std::endl
@@ -893,171 +892,123 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
         << "  BIND BUFFER push_constants_buffer AS push_constant" << std::endl;
   }
 
-  const auto &bound_descriptor_set_bindings =
-      descriptor_set_bindings.find(pipeline_layout);
+  for (const auto &descriptorSet :
+       pipeline_layout_data.descriptor_set_bindings_) {
+    uint32_t descriptorSetNumber = descriptorSet.first;
+    VkDescriptorSetLayoutCreateInfo layoutCreateInfo =
+        descriptorSetLayouts.at(descriptorSets.at(descriptorSet.second));
 
-  if (bound_descriptor_set_bindings != descriptor_set_bindings.end()) {
-    for (const auto &descriptorSet : bound_descriptor_set_bindings->second) {
-      uint32_t descriptorSetNumber = descriptorSet.first;
-      VkDescriptorSetLayoutCreateInfo layoutCreateInfo =
-          descriptorSetLayouts.at(descriptorSets.at(descriptorSet.second));
+    std::vector<std::tuple<uint32_t, VkDescriptorBufferInfo, uint32_t>>
+        bindingAndBuffers;
+    if (descriptorSetToBindingBuffers.count(descriptorSet.second)) {
+      bindingAndBuffers =
+          descriptorSetToBindingBuffers.at(descriptorSet.second);
+    }
 
-      std::vector<std::tuple<uint32_t, VkDescriptorBufferInfo, uint32_t>>
-          bindingAndBuffers;
-      if (descriptorSetToBindingBuffers.count(descriptorSet.second)) {
-        bindingAndBuffers =
-            descriptorSetToBindingBuffers.at(descriptorSet.second);
+    uint32_t dynamic_buffer_index = 0;
+    for (const auto &bindingAndBuffer : bindingAndBuffers) {
+      uint32_t bindingNumber = std::get<0>(bindingAndBuffer);
+      VkDescriptorBufferInfo bufferInfo = std::get<1>(bindingAndBuffer);
+
+      std::stringstream strstr;
+      strstr << "buf_" << descriptorSetNumber << "_" << bindingNumber;
+      std::string bufferName = strstr.str();
+
+      VkBufferCreateInfo bufferCreateInfo = buffers.at(bufferInfo.buffer);
+
+      bufferDeclarationStringStream << "BUFFER " << bufferName << " DATA_TYPE "
+                                    << "uint8"
+                                    << " DATA" << std::endl;
+      bufferDeclarationStringStream << "  ";
+
+      VkDescriptorSetLayoutBinding layoutBinding =
+          layoutCreateInfo.pBindings[bindingNumber];
+      VkDescriptorType descriptorType = layoutBinding.descriptorType;
+      descriptorSetBindingStringStream
+          << "  BIND BUFFER " << bufferName << " AS "
+          << GetDescriptorTypeString(descriptorType) << " DESCRIPTOR_SET "
+          << descriptorSetNumber << " BINDING " << bindingNumber << std::endl;
+
+      const VkBuffer &descriptorBuffer = bufferInfo.buffer;
+
+      auto commandPool =
+          GetGlobalContext()
+              .GetVkCommandBufferData(draw_call_state_tracker.commandBuffer)
+              ->command_pool;
+      auto queueFamilyIndex = commandPoolToQueueFamilyIndex.at(commandPool);
+      BufferCopy descriptorBufferCopy = BufferCopy();
+
+      // Check if there is pipeline barriers for descriptor buffer
+      std::vector<std::shared_ptr<CmdPipelineBarrier>> descriptorBufferBarriers;
+      for (const auto &barrier : draw_call_state_tracker.pipelineBarriers) {
+        // Find all barriers where dstStage contains vertex shader.
+        if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_SHADER_BIT) {
+          // Check if at least one of the buffer memory barriers has
+          // VK_ACCESS_UNIFORM_READ_BIT set.
+          for (uint32_t bufMemBarrierIdx = 0;
+               bufMemBarrierIdx < barrier->bufferMemoryBarrierCount_;
+               bufMemBarrierIdx++) {
+            descriptorBufferBarriers.push_back(barrier);
+            break;
+          }
+        }
       }
 
-      uint32_t dynamic_buffer_index = 0;
-      for (const auto &bindingAndBuffer : bindingAndBuffers) {
-        uint32_t bindingNumber = std::get<0>(bindingAndBuffer);
-        VkDescriptorBufferInfo bufferInfo = std::get<1>(bindingAndBuffer);
+      descriptorBufferCopy.CopyBuffer(
+          draw_call_state_tracker.queue, queueFamilyIndex,
+          descriptorBufferBarriers, descriptorBuffer, bufferCreateInfo.size);
 
-        std::stringstream strstr;
-        strstr << "buf_" << descriptorSetNumber << "_" << bindingNumber;
-        std::string bufferName = strstr.str();
+      VkDeviceSize range = bufferInfo.range == VK_WHOLE_SIZE
+                               ? bufferCreateInfo.size
+                               : bufferInfo.range;
 
-        VkBufferCreateInfo bufferCreateInfo = buffers.at(bufferInfo.buffer);
+      uint32_t dynamic_offset = std::get<2>(bindingAndBuffer);
+      auto *thePtr = (uint8_t *)descriptorBufferCopy.copied_data_;
 
-        bufferDeclarationStringStream << "BUFFER " << bufferName
-                                      << " DATA_TYPE "
-                                      << "uint8"
-                                      << " DATA" << std::endl;
-        bufferDeclarationStringStream << "  ";
+      for (VkDeviceSize bidx = 0; bidx < range; bidx++) {
+        if (bidx > 0) {
+          bufferDeclarationStringStream << " ";
+        }
+        bufferDeclarationStringStream
+            << (uint32_t)thePtr[bidx + bufferInfo.offset + dynamic_offset];
+      }
+
+      bufferDeclarationStringStream << std::endl;
+      bufferDeclarationStringStream << "END" << std::endl << std::endl;
+    }
+
+    if (descriptorSetToBindingImageAndSampler.count(descriptorSet.second)) {
+      auto bindingAndImages =
+          descriptorSetToBindingImageAndSampler.at(descriptorSet.second);
+      for (auto bindingAndImage : bindingAndImages) {
+        uint32_t bindingNumber = bindingAndImage.first;
+        auto imageInfo = bindingAndImage.second;
 
         VkDescriptorSetLayoutBinding layoutBinding =
             layoutCreateInfo.pBindings[bindingNumber];
         VkDescriptorType descriptorType = layoutBinding.descriptorType;
-        descriptorSetBindingStringStream
-            << "  BIND BUFFER " << bufferName << " AS "
-            << GetDescriptorTypeString(descriptorType) << " DESCRIPTOR_SET "
-            << descriptorSetNumber << " BINDING " << bindingNumber << std::endl;
 
-        const VkBuffer &descriptorBuffer = bufferInfo.buffer;
+        std::stringstream strstr;
 
-        auto commandPool =
-            GetGlobalContext()
-                .GetVkCommandBufferData(draw_call_state_tracker.commandBuffer)
-                ->command_pool;
-        auto queueFamilyIndex = commandPoolToQueueFamilyIndex.at(commandPool);
-        BufferCopy descriptorBufferCopy = BufferCopy();
+        switch (descriptorType) {
+          case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+          case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+          case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+            strstr << "img_" << descriptorSetNumber << "_" << bindingNumber;
+            std::string imageName = strstr.str();
 
-        // Check if there is pipeline barriers for descriptor buffer
-        std::vector<std::shared_ptr<CmdPipelineBarrier>>
-            descriptorBufferBarriers;
-        for (const auto &barrier : draw_call_state_tracker.pipelineBarriers) {
-          // Find all barriers where dstStage contains vertex shader.
-          if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_SHADER_BIT) {
-            // Check if at least one of the buffer memory barriers has
-            // VK_ACCESS_UNIFORM_READ_BIT set.
-            for (uint32_t bufMemBarrierIdx = 0;
-                 bufMemBarrierIdx < barrier->bufferMemoryBarrierCount_;
-                 bufMemBarrierIdx++) {
-              descriptorBufferBarriers.push_back(barrier);
-              break;
-            }
-          }
-        }
+            descriptorSetBindingStringStream
+                << "  BIND BUFFER " << imageName << " AS "
+                << GetDescriptorTypeString(descriptorType);
 
-        descriptorBufferCopy.CopyBuffer(
-            draw_call_state_tracker.queue, queueFamilyIndex,
-            descriptorBufferBarriers, descriptorBuffer, bufferCreateInfo.size);
+            if (descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+              std::stringstream sampler_str;
+              sampler_str << "sampler_" << descriptorSetNumber << "_"
+                          << bindingNumber;
+              std::string samplerName = sampler_str.str();
 
-        VkDeviceSize range = bufferInfo.range == VK_WHOLE_SIZE
-                                 ? bufferCreateInfo.size
-                                 : bufferInfo.range;
-
-        uint32_t dynamic_offset = std::get<2>(bindingAndBuffer);
-        auto *thePtr = (uint8_t *)descriptorBufferCopy.copied_data_;
-
-        for (VkDeviceSize bidx = 0; bidx < range; bidx++) {
-          if (bidx > 0) {
-            bufferDeclarationStringStream << " ";
-          }
-          bufferDeclarationStringStream
-              << (uint32_t)thePtr[bidx + bufferInfo.offset + dynamic_offset];
-        }
-
-        bufferDeclarationStringStream << std::endl;
-        bufferDeclarationStringStream << "END" << std::endl << std::endl;
-      }
-
-      if (descriptorSetToBindingImageAndSampler.count(descriptorSet.second)) {
-        auto bindingAndImages =
-            descriptorSetToBindingImageAndSampler.at(descriptorSet.second);
-        for (auto bindingAndImage : bindingAndImages) {
-          uint32_t bindingNumber = bindingAndImage.first;
-          auto imageInfo = bindingAndImage.second;
-
-          VkDescriptorSetLayoutBinding layoutBinding =
-              layoutCreateInfo.pBindings[bindingNumber];
-          VkDescriptorType descriptorType = layoutBinding.descriptorType;
-
-          std::stringstream strstr;
-
-          switch (descriptorType) {
-            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-            case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-              strstr << "img_" << descriptorSetNumber << "_" << bindingNumber;
-              std::string imageName = strstr.str();
-
-              descriptorSetBindingStringStream
-                  << "  BIND BUFFER " << imageName << " AS "
-                  << GetDescriptorTypeString(descriptorType);
-
-              if (descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-                std::stringstream sampler_str;
-                sampler_str << "sampler_" << descriptorSetNumber << "_"
-                            << bindingNumber;
-                std::string samplerName = sampler_str.str();
-
-                auto sampler_info = samplers_.at(imageInfo.sampler);
-                descriptorSetBindingStringStream << " SAMPLER " << samplerName;
-                bufferDeclarationStringStream
-                    << "SAMPLER " << samplerName << " MAG_FILTER "
-                    << GetSamplerFilterTypeString(sampler_info.magFilter)
-                    << " MIN_FILTER "
-                    << GetSamplerFilterTypeString(sampler_info.minFilter)
-                    << " ADDRESS_MODE_U "
-                    << GetSamplerAddressModeString(sampler_info.addressModeU)
-                    << " ADDRESS_MODE_V "
-                    << GetSamplerAddressModeString(sampler_info.addressModeV)
-                    << " ADDRESS_MODE_W "
-                    << GetSamplerAddressModeString(sampler_info.addressModeW)
-                    << " BORDER_COLOR "
-                    << GetSamplerBorderColorString(sampler_info.borderColor)
-                    << std::scientific << " MIN_LOD " << sampler_info.minLod
-                    << " MAX_LOD " << sampler_info.maxLod << std::defaultfloat
-                    << (sampler_info.unnormalizedCoordinates
-                            ? " UNNORMALIZED_COORDS"
-                            : " NORMALIZED_COORDS")
-                    << std::endl;
-              }
-
-              descriptorSetBindingStringStream
-                  << " DESCRIPTOR_SET " << descriptorSetNumber << " BINDING "
-                  << bindingNumber << std::endl;
-
-              // TODO: implement BASE_MIP_LEVEL
-              // https://github.com/google/amber/blob/master/docs/amber_script.md#pipeline-buffers
-
-              bufferDeclarationStringStream << "BUFFER " << imageName
-                                            << " FORMAT R8G8B8A8_UNORM"
-                                            << " FILE texture.png" << std::endl;
-              break;
-            }
-            case VK_DESCRIPTOR_TYPE_SAMPLER: {
               auto sampler_info = samplers_.at(imageInfo.sampler);
-              strstr << "sampler_" << descriptorSetNumber << "_"
-                     << bindingNumber;
-              std::string samplerName = strstr.str();
-
-              descriptorSetBindingStringStream
-                  << "  BIND SAMPLER " << samplerName << " DESCRIPTOR_SET "
-                  << descriptorSetNumber << " BINDING " << bindingNumber;
-
+              descriptorSetBindingStringStream << " SAMPLER " << samplerName;
               bufferDeclarationStringStream
                   << "SAMPLER " << samplerName << " MAG_FILTER "
                   << GetSamplerFilterTypeString(sampler_info.magFilter)
@@ -1071,23 +1022,65 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
                   << GetSamplerAddressModeString(sampler_info.addressModeW)
                   << " BORDER_COLOR "
                   << GetSamplerBorderColorString(sampler_info.borderColor)
-                  << " MIN_LOD " << sampler_info.minLod << " MAX_LOD "
-                  << sampler_info.maxLod
+                  << std::scientific << " MIN_LOD " << sampler_info.minLod
+                  << " MAX_LOD " << sampler_info.maxLod << std::defaultfloat
                   << (sampler_info.unnormalizedCoordinates
                           ? " UNNORMALIZED_COORDS"
                           : " NORMALIZED_COORDS")
                   << std::endl;
-              break;
             }
-            default:
-              throw std::runtime_error("Unimplemented descriptor type: " +
-                                       std::to_string(descriptorType));
+
+            descriptorSetBindingStringStream
+                << " DESCRIPTOR_SET " << descriptorSetNumber << " BINDING "
+                << bindingNumber << std::endl;
+
+            // TODO: implement BASE_MIP_LEVEL
+            // https://github.com/google/amber/blob/master/docs/amber_script.md#pipeline-buffers
+
+            bufferDeclarationStringStream << "BUFFER " << imageName
+                                          << " FORMAT R8G8B8A8_UNORM"
+                                          << " FILE texture.png" << std::endl;
+            break;
           }
-          descriptorSetBindingStringStream << std::endl;
+          case VK_DESCRIPTOR_TYPE_SAMPLER: {
+            auto sampler_info = samplers_.at(imageInfo.sampler);
+            strstr << "sampler_" << descriptorSetNumber << "_" << bindingNumber;
+            std::string samplerName = strstr.str();
+
+            descriptorSetBindingStringStream
+                << "  BIND SAMPLER " << samplerName << " DESCRIPTOR_SET "
+                << descriptorSetNumber << " BINDING " << bindingNumber;
+
+            bufferDeclarationStringStream
+                << "SAMPLER " << samplerName << " MAG_FILTER "
+                << GetSamplerFilterTypeString(sampler_info.magFilter)
+                << " MIN_FILTER "
+                << GetSamplerFilterTypeString(sampler_info.minFilter)
+                << " ADDRESS_MODE_U "
+                << GetSamplerAddressModeString(sampler_info.addressModeU)
+                << " ADDRESS_MODE_V "
+                << GetSamplerAddressModeString(sampler_info.addressModeV)
+                << " ADDRESS_MODE_W "
+                << GetSamplerAddressModeString(sampler_info.addressModeW)
+                << " BORDER_COLOR "
+                << GetSamplerBorderColorString(sampler_info.borderColor)
+                << " MIN_LOD " << sampler_info.minLod << " MAX_LOD "
+                << sampler_info.maxLod
+                << (sampler_info.unnormalizedCoordinates
+                        ? " UNNORMALIZED_COORDS"
+                        : " NORMALIZED_COORDS")
+                << std::endl;
+            break;
+          }
+          default:
+            throw std::runtime_error("Unimplemented descriptor type: " +
+                                     std::to_string(descriptorType));
         }
+        descriptorSetBindingStringStream << std::endl;
       }
     }
   }
+
   // Depth
   if (graphicsPipelineCreateInfo.pDepthStencilState != nullptr ||
       graphicsPipelineCreateInfo.pRasterizationState->depthBiasEnable ||
