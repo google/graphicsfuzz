@@ -59,14 +59,11 @@ const char *GetSamplerFilterTypeString(VkFilter filter);
 struct PipelineLayoutData {
   PipelineLayoutData(
       VkPipelineLayoutCreateInfo create_info,
-      std::vector<uint8_t> push_constants,
       std::map<uint32_t, VkDescriptorSet> descriptor_set_bindings)
       : create_info_(create_info),
-        push_constants_(std::move(push_constants)),
         descriptor_set_bindings_(std::move(descriptor_set_bindings)) {}
 
   VkPipelineLayoutCreateInfo create_info_;
-  std::vector<uint8_t> push_constants_;
   std::map<uint32_t, VkDescriptorSet> descriptor_set_bindings_;
 };
 
@@ -399,18 +396,8 @@ VkResult vkCreatePipelineLayout(PFN_vkCreatePipelineLayout next,
                                 VkPipelineLayout *pPipelineLayout) {
   auto result = next(device, pCreateInfo, pAllocator, pPipelineLayout);
   if (result == VK_SUCCESS) {
-    uint32_t push_constant_size = 0;
-    for (uint32_t i = 0; i < pCreateInfo->pushConstantRangeCount; i++) {
-      push_constant_size += pCreateInfo->pPushConstantRanges[i].size;
-    }
-    std::vector<uint8_t> push_constants;
-    if (push_constant_size) {
-      push_constants.resize(push_constant_size);
-      std::memset(push_constants.data(), 0, push_constant_size);
-    }
     pipeline_layouts.insert(
-        {*pPipelineLayout,
-         PipelineLayoutData(DeepCopy(*pCreateInfo), push_constants, {})});
+        {*pPipelineLayout, PipelineLayoutData(DeepCopy(*pCreateInfo), {})});
   }
   return result;
 }
@@ -459,6 +446,7 @@ struct DrawCallStateTracker {
   uint32_t currentSubpass = 0;
   VkCommandBuffer commandBuffer;
   VkQueue queue;
+  std::vector<uint8_t> push_constants_;
 
   std::unordered_map<uint32_t, VkBuffer> bound_vertex_buffers;
   std::unordered_map<uint32_t, VkDeviceSize> vertex_buffer_offsets;
@@ -569,11 +557,12 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
         } else if (auto cmdBindVertexBuffers = cmd->AsBindVertexBuffers()) {
           for (uint32_t bindingIdx = 0;
                bindingIdx < cmdBindVertexBuffers->bindingCount_; bindingIdx++) {
-            drawCallStateTracker.bound_vertex_buffers.insert(
-                {bindingIdx + cmdBindVertexBuffers->firstBinding_,
-                 cmdBindVertexBuffers
-                     ->pBuffers_[bindingIdx +
-                                 cmdBindVertexBuffers->firstBinding_]});
+            drawCallStateTracker
+                .bound_vertex_buffers[bindingIdx +
+                                      cmdBindVertexBuffers->firstBinding_] =
+                cmdBindVertexBuffers
+                    ->pBuffers_[bindingIdx +
+                                cmdBindVertexBuffers->firstBinding_];
             drawCallStateTracker
                 .vertex_buffer_offsets[bindingIdx +
                                        cmdBindVertexBuffers->firstBinding_] =
@@ -593,9 +582,13 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
           drawCallStateTracker.pipelineBarriers.push_back(
               std::make_shared<CmdPipelineBarrier>(*cmdPipelineBarrier));
         } else if (auto cmdPushConstants = cmd->AsPushConstants()) {
+          if (cmdPushConstants->size_ >
+              drawCallStateTracker.push_constants_.size()) {
+            drawCallStateTracker.push_constants_.resize(
+                cmdPushConstants->size_);
+          }
           // Store push constant values
-          memcpy(pipeline_layouts.at(cmdPushConstants->layout_)
-                         .push_constants_.data() +
+          memcpy(drawCallStateTracker.push_constants_.data() +
                      cmdPushConstants->offset_,
                  cmdPushConstants->pValues_, cmdPushConstants->size_);
         } else {
@@ -668,7 +661,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   }
   assert(draw_call_state_tracker.currentRenderPass);
 
-  if (index_count != 6) return;  // DEBUG TODO: remove
+  if (index_count != 213) return;  // DEBUG TODO: remove
 
   if (capture_draw_call_number == -1) {
     auto frame_number_str = std::getenv("DRAW_CALL_NUMBER");
@@ -745,7 +738,8 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     // 16-bit indices
     if (draw_call_state_tracker.boundIndexBuffer.indexType ==
         VK_INDEX_TYPE_UINT16) {
-      auto ptr = (uint16_t *)indexBufferCopy.copied_data_;
+      auto ptr = (uint16_t *)((uint8_t *)indexBufferCopy.copied_data_ +
+                              draw_call_state_tracker.boundIndexBuffer.offset);
       for (uint32_t indexIdx = 0; indexIdx < index_count; indexIdx++) {
         max_index_value = std::max((uint32_t)ptr[indexIdx], max_index_value);
         bufferDeclarationStringStream << ptr[indexIdx] << " ";
@@ -754,7 +748,8 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     // 32-bit indices
     else if (draw_call_state_tracker.boundIndexBuffer.indexType ==
              VK_INDEX_TYPE_UINT32) {
-      auto ptr = (uint32_t *)indexBufferCopy.copied_data_;
+      auto ptr = (uint32_t *)((uint8_t *)indexBufferCopy.copied_data_ +
+                              draw_call_state_tracker.boundIndexBuffer.offset);
       for (uint32_t indexIdx = 0; indexIdx < index_count; indexIdx++) {
         max_index_value = std::max(ptr[indexIdx], max_index_value);
         bufferDeclarationStringStream << ptr[indexIdx] << " ";
@@ -881,15 +876,23 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   const auto &pipeline_layout_data = pipeline_layouts.at(pipeline_layout);
 
   if (pipeline_layout_data.create_info_.pushConstantRangeCount) {
+    if (pipeline_layout_data.create_info_.pushConstantRangeCount > 1) {
+      throw std::runtime_error("Amber supports only one pushConstantRange.");
+    }
+
     bufferDeclarationStringStream
         << "BUFFER push_constants_buffer DATA_TYPE uint8 DATA" << std::endl;
 
-    const auto &push_constants = pipeline_layout_data.push_constants_;
-
+    const auto &push_constants = draw_call_state_tracker.push_constants_;
     bufferDeclarationStringStream << "  ";
-    for (unsigned char push_constant : push_constants) {
+
+    const auto &range =
+        pipeline_layout_data.create_info_.pPushConstantRanges[0];
+
+    for (uint32_t idx = 0; idx < range.size; idx++) {
       // bufferDeclarationStringStream << std::hex << "0x" ;
-      bufferDeclarationStringStream << (uint32_t)push_constant << " ";
+      bufferDeclarationStringStream
+          << (uint32_t)push_constants[idx + range.offset] << " ";
       // bufferDeclarationStringStream << std::dec;
     }
     bufferDeclarationStringStream << std::endl
