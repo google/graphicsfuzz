@@ -53,6 +53,10 @@ const char *GetSamplerBorderColorString(VkBorderColor border_color);
 
 const char *GetSamplerFilterTypeString(VkFilter filter);
 
+std::string CreateSpecializationString(
+    const VkSpecializationMapEntry &specialization_map_entry,
+    const void *specialization_data);
+
 /**
  * Container for per pipeline layout data.
  */
@@ -680,20 +684,26 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     return;
   }
 
-  VkShaderModule vertexShader = nullptr;
-  VkShaderModule fragmentShader = nullptr;
+  VkPipelineShaderStageCreateInfo *vertexShader = nullptr;
+  VkPipelineShaderStageCreateInfo *fragmentShader = nullptr;
   auto graphicsPipelineCreateInfo =
       graphicsPipelines.at(draw_call_state_tracker.graphics_pipeline_);
   for (uint32_t stageIndex = 0;
        stageIndex < graphicsPipelineCreateInfo.stageCount; stageIndex++) {
-    auto stageCreateInfo = graphicsPipelineCreateInfo.pStages[stageIndex];
+    auto &stageCreateInfo = graphicsPipelineCreateInfo.pStages[stageIndex];
     if (stageCreateInfo.stage == VK_SHADER_STAGE_VERTEX_BIT) {
-      vertexShader = stageCreateInfo.module;
+      vertexShader =
+          const_cast<VkPipelineShaderStageCreateInfo *>(&stageCreateInfo);
     } else if (stageCreateInfo.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
-      fragmentShader = stageCreateInfo.module;
+      fragmentShader =
+          const_cast<VkPipelineShaderStageCreateInfo *>(&stageCreateInfo);
     } else {
       throw std::runtime_error("Not handled.");
     }
+  }
+  // Both vertex and fragment shaders are required.
+  if (vertexShader == nullptr || fragmentShader == nullptr) {
+    throw std::runtime_error("Missing vertex or fragment shader.");
   }
 
   std::stringstream bufferDeclarationStringStream;
@@ -781,9 +791,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
       throw std::runtime_error("VK_VERTEX_INPUT_RATE_VERTEX not implemented");
 
     vertex_buffer_found = true;
-
     VkBuffer vertexBuffer = vertexBufferBinding.second;
-
     // Don't copy the buffer if it's already copied
     if (copied_buffers.count(vertexBuffer)) continue;
 
@@ -1199,18 +1207,36 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   amber_file << "#!amber" << std::endl << std::endl;
 
   amber_file << "SHADER vertex vertex_shader SPIRV-ASM" << std::endl;
-  amber_file << GetDisassembly(vertexShader);
+  amber_file << GetDisassembly(vertexShader->module);
   amber_file << "END" << std::endl << std::endl;
 
   amber_file << "SHADER fragment fragment_shader SPIRV-ASM" << std::endl;
-  amber_file << GetDisassembly(fragmentShader);
+  amber_file << GetDisassembly(fragmentShader->module);
   amber_file << "END" << std::endl << std::endl;
 
   amber_file << bufferDeclarationStringStream.str() << std::endl;
 
   amber_file << "PIPELINE graphics pipeline" << std::endl;
-  amber_file << "  ATTACH vertex_shader" << std::endl;
-  amber_file << "  ATTACH fragment_shader" << std::endl;
+  amber_file << "  ATTACH vertex_shader";
+  if (vertexShader->pSpecializationInfo != nullptr) {
+    for (uint32_t id = 0; id < vertexShader->pSpecializationInfo->mapEntryCount;
+         id++) {
+      amber_file << " " << CreateSpecializationString(
+          vertexShader->pSpecializationInfo->pMapEntries[id],
+          vertexShader->pSpecializationInfo->pData);
+    }
+  }
+  amber_file << std::endl;
+  amber_file << "  ATTACH fragment_shader";
+  if (fragmentShader->pSpecializationInfo != nullptr) {
+    for (uint32_t id = 0; id < fragmentShader->pSpecializationInfo->mapEntryCount;
+         id++) {
+      amber_file << " " << CreateSpecializationString(
+          fragmentShader->pSpecializationInfo->pMapEntries[id],
+          fragmentShader->pSpecializationInfo->pData);
+    }
+  }
+  amber_file << std::endl;
 
   // Polygon mode
   amber_file << "  POLYGON_MODE ";
@@ -1375,6 +1401,21 @@ const char *GetSamplerFilterTypeString(VkFilter filter) {
     default:
       throw std::runtime_error("Unsupported sampler filter.");
   }
+}
+
+std::string CreateSpecializationString(
+    const VkSpecializationMapEntry &specialization_map_entry,
+    const void *specialization_data) {
+  if (specialization_map_entry.size != 4) {
+    throw std::runtime_error(
+        "Amber supports only 4 byte specialization constants.");
+  }
+  std::string result =
+      "SPECIALIZE " + std::to_string(specialization_map_entry.constantID) +
+      " AS uint32 " +
+      std::to_string(*(const uint32_t *)((const uint8_t *)specialization_data +
+                                   specialization_map_entry.offset));
+  return result;
 }
 
 }  // namespace graphicsfuzz_amber_scoop

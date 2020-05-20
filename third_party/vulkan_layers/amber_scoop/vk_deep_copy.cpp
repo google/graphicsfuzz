@@ -95,7 +95,7 @@ VkGraphicsPipelineCreateInfo DeepCopy(
       result.pInputAssemblyState = inputAssemblyStateCreateInfo;
     }
 
-    // Copy pVertexInputState
+    // Copy pRasterizationState
     {
       auto rasterizationState = new VkPipelineRasterizationStateCreateInfo();
       *rasterizationState = *createInfo.pRasterizationState;
@@ -129,6 +129,15 @@ VkPipelineLayoutCreateInfo DeepCopy(
 VkPipelineShaderStageCreateInfo DeepCopy(
     const VkPipelineShaderStageCreateInfo &createInfo) {
   VkPipelineShaderStageCreateInfo result = createInfo;
+  if (createInfo.pSpecializationInfo != nullptr) {
+    result.pSpecializationInfo = new VkSpecializationInfo(
+        {createInfo.pSpecializationInfo->mapEntryCount,
+         CopyArray(createInfo.pSpecializationInfo->pMapEntries,
+                   createInfo.pSpecializationInfo->mapEntryCount),
+         createInfo.pSpecializationInfo->dataSize,
+         CopyArray((uint8_t*)createInfo.pSpecializationInfo->pData,
+                   createInfo.pSpecializationInfo->dataSize)});
+  }
   // TODO: make copy deep.
   return result;
 }
