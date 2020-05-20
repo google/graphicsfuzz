@@ -215,6 +215,11 @@ public class GlslReduce {
               + "presence of a " + Constants.REDUCTION_INCOMPLETE + " file.")
           .action(Arguments.storeTrue());
 
+    parser.addArgument("--literals-to-uniforms")
+          .help("A special mode where the only \"reduction\" performed is replacing literal "
+              + "numbers with uniforms.")
+          .action(Arguments.storeTrue());
+
     return parser;
 
   }
@@ -298,6 +303,8 @@ public class GlslReduce {
       final boolean usingSwiftshader = ns.get("swiftshader");
 
       final boolean continuePreviousReduction = ns.get("continue_previous_reduction");
+
+      final boolean literalsToUniforms = ns.get("literals_to_uniforms");
 
       if (managerOverride != null && (server == null || worker == null)) {
         throw new ArgumentParserException(
@@ -459,6 +466,7 @@ public class GlslReduce {
           maxSteps,
           reduceEverywhere,
           continuePreviousReduction,
+          literalsToUniforms,
           verbose,
           fileOps);
 
@@ -485,6 +493,7 @@ public class GlslReduce {
       int stepLimit,
       boolean reduceEverywhere,
       boolean continuePreviousReduction,
+      boolean literalsToUniforms,
       boolean verbose,
       ShaderJobFileOperations fileOps)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
@@ -523,7 +532,8 @@ public class GlslReduce {
         verbose,
         fileOps,
         fileJudge,
-        workDir)
+        workDir,
+        literalsToUniforms)
         .doReduction(
             initialState,
             outputShortName,
