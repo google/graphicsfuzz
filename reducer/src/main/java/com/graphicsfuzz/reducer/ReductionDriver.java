@@ -36,6 +36,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -164,17 +165,15 @@ public class ReductionDriver {
   private static IReductionPassManager getLiteralsToUniformsPassManager(
       ReducerContext context,
       boolean verbose) {
-    final List<IReductionPass> initialPasses = new ArrayList<>();
-    final List<IReductionPass> corePasses = new ArrayList<>();
-    final List<IReductionPass> cleanupPasses = new ArrayList<>();
 
-    cleanupPasses.add(
-        new SystematicReductionPass(
-            context,
-            verbose,
-            IReductionOpportunityFinder.literalToUniformFinder()));
-
-    return new SystematicReductionPassManager(initialPasses, corePasses, cleanupPasses);
+    return new SystematicReductionPassManager(
+        Collections.emptyList(),
+        Collections.emptyList(),
+        Collections.singletonList(
+            new SystematicReductionPass(
+                context,
+                verbose,
+                IReductionOpportunityFinder.literalToUniformFinder())));
   }
 
   public String doReduction(

@@ -57,6 +57,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
 
     //noinspection OptionalGetWithoutIsPresent
     CompareAsts.assertEqualAsts(shaderReplaced, shaderJob.getFragmentShader().get());
+
+    // TODO: assert that the pipelineInfo has the new uniform using: shaderJob.getPipelineInfo().
   }
 
 }
