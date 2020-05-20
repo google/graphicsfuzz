@@ -519,7 +519,7 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
                         .pBindings[buffer_binding.binding_number_];
                 if (layout_binding.descriptorType ==
                     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
-                  buffer_binding.binding_number_ =
+                  buffer_binding.dynamic_offset_ =
                       cmdBindDescriptorSets
                           ->pDynamicOffsets_[dynamic_offset_idx++];
                   /* // For debug. TODO: remove this
