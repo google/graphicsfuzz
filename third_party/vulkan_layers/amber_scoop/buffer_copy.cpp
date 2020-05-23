@@ -153,6 +153,7 @@ void BufferCopy::FreeResources() {
   // Free resources
   vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer_);
   vkDestroyCommandPool(device_, command_pool_, nullptr);
+  vkFreeMemory(device_, buffer_copy_memory_, nullptr);
   vkDestroyBuffer(device_, buffer_copy_, nullptr);
 }
 

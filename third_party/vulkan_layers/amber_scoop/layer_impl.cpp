@@ -770,6 +770,9 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     bufferDeclarationStringStream << std::endl
                                   << "END" << std::endl
                                   << std::endl;
+
+    // Free vulkan resources related to index buffer copy.
+    indexBufferCopy.FreeResources();
   }
 
   bool vertex_buffer_found = false;
@@ -988,6 +991,8 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 
       bufferDeclarationStringStream << std::endl;
       bufferDeclarationStringStream << "END" << std::endl << std::endl;
+
+      descriptorBufferCopy.FreeResources();
     }
 
     for (const auto &binding_and_image :
