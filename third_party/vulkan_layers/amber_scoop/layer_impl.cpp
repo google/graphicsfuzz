@@ -454,7 +454,7 @@ struct DrawCallStateTracker {
 
   std::unordered_map<uint32_t, VkBuffer> bound_vertex_buffers;
   std::unordered_map<uint32_t, VkDeviceSize> vertex_buffer_offsets;
-  std::vector<std::shared_ptr<CmdPipelineBarrier>> pipelineBarriers;
+  std::vector<const CmdPipelineBarrier *> pipeline_barriers;
   IndexBufferBinding boundIndexBuffer = {};
 };
 
@@ -482,13 +482,12 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
       drawCallStateTracker.commandBuffer = commandBuffer;
       drawCallStateTracker.queue = queue;
 
-      /* // For debugging
+      // For debugging
       uint32_t draw_commands = 0;
       for (auto &cmd : commandBuffers.at(commandBuffer)) {
         if (cmd->AsDraw() || cmd->AsDrawIndexed()) draw_commands++;
       }
-      std::cout << "Draw command count: " << draw_commands << std::endl;
-      */
+      // std::cout << "Draw command count: " << draw_commands << std::endl;
 
       for (auto &cmd : commandBuffers.at(commandBuffer)) {
         if (auto cmdBeginRenderPass = cmd->AsBeginRenderPass()) {
@@ -583,13 +582,12 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
         } else if (auto cmdDrawIndexed = cmd->AsDrawIndexed()) {
           HandleDrawCall(drawCallStateTracker, cmdDrawIndexed->indexCount_, 0);
         } else if (auto cmdPipelineBarrier = cmd->AsPipelineBarrier()) {
-          drawCallStateTracker.pipelineBarriers.push_back(
-              std::make_shared<CmdPipelineBarrier>(*cmdPipelineBarrier));
+          drawCallStateTracker.pipeline_barriers.push_back(cmdPipelineBarrier);
         } else if (auto cmdPushConstants = cmd->AsPushConstants()) {
-          if (cmdPushConstants->size_ >
+          if (cmdPushConstants->size_ + cmdPushConstants->offset_ >
               drawCallStateTracker.push_constants_.size()) {
             drawCallStateTracker.push_constants_.resize(
-                cmdPushConstants->size_);
+                cmdPushConstants->size_ + cmdPushConstants->offset_);
           }
           // Store push constant values
           memcpy(drawCallStateTracker.push_constants_.data() +
@@ -599,6 +597,7 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
           throw std::runtime_error("Unknown command.");
         }
       }
+      if (draw_commands) exit(1);
     }
   }
   return next(queue, submitCount, pSubmits, fence);
@@ -665,7 +664,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   }
   assert(draw_call_state_tracker.currentRenderPass);
 
-  if (index_count != 213) return;  // DEBUG TODO: remove
+  // if (index_count != 213) return;  // DEBUG TODO: remove
 
   if (capture_draw_call_number == -1) {
     auto frame_number_str = std::getenv("DRAW_CALL_NUMBER");
@@ -679,10 +678,10 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     }
   }
 
-  if (current_draw_call_number != capture_draw_call_number) {
+  /*if (current_draw_call_number != capture_draw_call_number) {
     current_draw_call_number++;
     return;
-  }
+  }*/
 
   VkPipelineShaderStageCreateInfo *vertexShader = nullptr;
   VkPipelineShaderStageCreateInfo *fragmentShader = nullptr;
@@ -723,20 +722,19 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
             ->command_pool;
     auto queueFamilyIndex = commandPoolToQueueFamilyIndex.at(commandPool);
 
-    std::vector<std::shared_ptr<CmdPipelineBarrier>>
-        vertexBufferPipelineBarriers;
+    std::vector<const CmdPipelineBarrier *> index_buffer_pipeline_barriers;
     // Check if there is pipeline barriers for index buffer
-    for (const auto &barrier : draw_call_state_tracker.pipelineBarriers) {
+    for (const auto &barrier : draw_call_state_tracker.pipeline_barriers) {
       if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_INPUT_BIT) {
-        vertexBufferPipelineBarriers.push_back(barrier);
+        index_buffer_pipeline_barriers.push_back(barrier);
         break;
       }
     }
 
-    BufferCopy indexBufferCopy = BufferCopy();
-    indexBufferCopy.CopyBuffer(draw_call_state_tracker.queue, queueFamilyIndex,
-                               vertexBufferPipelineBarriers, indexBuffer,
-                               buffer.size);
+    BufferCopy index_buffer_copy = BufferCopy();
+    index_buffer_copy.CopyBuffer(
+        draw_call_state_tracker.queue, queueFamilyIndex,
+        index_buffer_pipeline_barriers, indexBuffer, buffer.size);
 
     graphicsPipelineStringStream << "  INDEX_DATA index_buffer" << std::endl;
 
@@ -748,7 +746,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     // 16-bit indices
     if (draw_call_state_tracker.boundIndexBuffer.indexType ==
         VK_INDEX_TYPE_UINT16) {
-      auto ptr = (uint16_t *)((uint8_t *)indexBufferCopy.copied_data_ +
+      auto ptr = (uint16_t *)((uint8_t *)index_buffer_copy.copied_data_ +
                               draw_call_state_tracker.boundIndexBuffer.offset);
       for (uint32_t indexIdx = 0; indexIdx < index_count; indexIdx++) {
         max_index_value = std::max((uint32_t)ptr[indexIdx], max_index_value);
@@ -758,7 +756,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     // 32-bit indices
     else if (draw_call_state_tracker.boundIndexBuffer.indexType ==
              VK_INDEX_TYPE_UINT32) {
-      auto ptr = (uint32_t *)((uint8_t *)indexBufferCopy.copied_data_ +
+      auto ptr = (uint32_t *)((uint8_t *)index_buffer_copy.copied_data_ +
                               draw_call_state_tracker.boundIndexBuffer.offset);
       for (uint32_t indexIdx = 0; indexIdx < index_count; indexIdx++) {
         max_index_value = std::max(ptr[indexIdx], max_index_value);
@@ -772,7 +770,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
                                   << std::endl;
 
     // Free vulkan resources related to index buffer copy.
-    indexBufferCopy.FreeResources();
+    index_buffer_copy.FreeResources();
   }
 
   bool vertex_buffer_found = false;
@@ -787,8 +785,10 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
       continue;
 
     auto bindingDescription =
-        graphicsPipelineCreateInfo.pVertexInputState
-            ->pVertexBindingDescriptions[vertexBufferBinding.first];
+        graphicsPipelineCreateInfo.pVertexInputState->pVertexBindingDescriptions
+            [graphicsPipelineCreateInfo.pVertexInputState
+                 ->pVertexAttributeDescriptions[vertexBufferBinding.first]
+                 .binding];
 
     if (bindingDescription.inputRate != VK_VERTEX_INPUT_RATE_VERTEX)
       throw std::runtime_error("VK_VERTEX_INPUT_RATE_VERTEX not implemented");
@@ -806,17 +806,16 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     auto vertexBufferCopy = new BufferCopy();
 
     // Check if there is pipeline barriers for vertex buffer
-    std::vector<std::shared_ptr<CmdPipelineBarrier>>
-        vertexBufferPipelineBarriers;
-    for (const auto &barrier : draw_call_state_tracker.pipelineBarriers) {
+    std::vector<const CmdPipelineBarrier *> vertex_buffer_pipeline_barriers;
+    for (auto barrier : draw_call_state_tracker.pipeline_barriers) {
       if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_INPUT_BIT) {
-        vertexBufferPipelineBarriers.push_back(barrier);
-        break;
+        vertex_buffer_pipeline_barriers.push_back(barrier);
+        break;  // TODO: Should this be removed?
       }
     }
 
     vertexBufferCopy->CopyBuffer(draw_call_state_tracker.queue,
-                                 queueFamilyIndex, vertexBufferPipelineBarriers,
+                                 queueFamilyIndex, vertex_buffer_pipeline_barriers,
                                  vertexBuffer, buffer.size);
 
     copied_buffers.insert({vertexBuffer, vertexBufferCopy});
@@ -954,8 +953,8 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
       BufferCopy descriptorBufferCopy = BufferCopy();
 
       // Create list of pipeline barriers for the descriptor buffer
-      std::vector<std::shared_ptr<CmdPipelineBarrier>> descriptorBufferBarriers;
-      for (const auto &barrier : draw_call_state_tracker.pipelineBarriers) {
+      std::vector<const CmdPipelineBarrier *> descriptor_buffer_barriers;
+      for (const auto &barrier : draw_call_state_tracker.pipeline_barriers) {
         // Find all barriers where dstStage contains vertex shader.
         if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_SHADER_BIT) {
           // Check if at least one of the buffer memory barriers has
@@ -963,15 +962,15 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
           for (uint32_t bufMemBarrierIdx = 0;
                bufMemBarrierIdx < barrier->bufferMemoryBarrierCount_;
                bufMemBarrierIdx++) {
-            descriptorBufferBarriers.push_back(barrier);
-            break;
+            descriptor_buffer_barriers.push_back(barrier);
+            break;  // TODO: Should this be removed?
           }
         }
       }
 
       descriptorBufferCopy.CopyBuffer(
           draw_call_state_tracker.queue, queueFamilyIndex,
-          descriptorBufferBarriers, descriptor_buffer, bufferCreateInfo.size);
+          descriptor_buffer_barriers, descriptor_buffer, bufferCreateInfo.size);
 
       VkDeviceSize range =
           buffer_binding.descriptor_buffer_info_.range == VK_WHOLE_SIZE
@@ -1240,19 +1239,21 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   if (vertexShader->pSpecializationInfo != nullptr) {
     for (uint32_t id = 0; id < vertexShader->pSpecializationInfo->mapEntryCount;
          id++) {
-      amber_file << " " << CreateSpecializationString(
-          vertexShader->pSpecializationInfo->pMapEntries[id],
-          vertexShader->pSpecializationInfo->pData);
+      amber_file << " "
+                 << CreateSpecializationString(
+                        vertexShader->pSpecializationInfo->pMapEntries[id],
+                        vertexShader->pSpecializationInfo->pData);
     }
   }
   amber_file << std::endl;
   amber_file << "  ATTACH fragment_shader";
   if (fragmentShader->pSpecializationInfo != nullptr) {
-    for (uint32_t id = 0; id < fragmentShader->pSpecializationInfo->mapEntryCount;
-         id++) {
-      amber_file << " " << CreateSpecializationString(
-          fragmentShader->pSpecializationInfo->pMapEntries[id],
-          fragmentShader->pSpecializationInfo->pData);
+    for (uint32_t id = 0;
+         id < fragmentShader->pSpecializationInfo->mapEntryCount; id++) {
+      amber_file << " "
+                 << CreateSpecializationString(
+                        fragmentShader->pSpecializationInfo->pMapEntries[id],
+                        fragmentShader->pSpecializationInfo->pData);
     }
   }
   amber_file << std::endl;
@@ -1307,7 +1308,8 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   }
   std::cout << std::endl;
 
-  exit(0);
+  // exit(0);
+  current_draw_call_number++;
 }
 
 void readComponentsFromBufferAndWriteToStrStream(uint8_t *buffer,
@@ -1433,7 +1435,7 @@ std::string CreateSpecializationString(
       "SPECIALIZE " + std::to_string(specialization_map_entry.constantID) +
       " AS uint32 " +
       std::to_string(*(const uint32_t *)((const uint8_t *)specialization_data +
-                                   specialization_map_entry.offset));
+                                         specialization_map_entry.offset));
   return result;
 }
 

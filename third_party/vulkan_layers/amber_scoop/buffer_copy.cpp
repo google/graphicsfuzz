@@ -21,7 +21,7 @@ namespace graphicsfuzz_amber_scoop {
 
 void BufferCopy::CopyBuffer(
     VkQueue queue, uint32_t queue_family_index,
-    const std::vector<std::shared_ptr<CmdPipelineBarrier>> &pipeline_barriers,
+    const std::vector<const CmdPipelineBarrier *> &pipeline_barriers,
     const VkBuffer &buffer, VkDeviceSize buffer_size) {
   device_ = GetGlobalContext().GetVkQueueData(queue)->device;
 

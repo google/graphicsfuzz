@@ -45,12 +45,12 @@ class BufferCopy {
    */
   void CopyBuffer(
       VkQueue queue, uint32_t queue_family_index,
-      const std::vector<std::shared_ptr<CmdPipelineBarrier>> &pipeline_barriers,
+      const std::vector<const CmdPipelineBarrier *> &pipeline_barriers,
       const VkBuffer &buffer, VkDeviceSize buffer_size);
 
   void FreeResources();
 
-  void* copied_data_;
+  void *copied_data_;
 
  private:
   VkBuffer buffer_copy_;
