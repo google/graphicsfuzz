@@ -1286,6 +1286,58 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 
   amber_file << "END" << std::endl << std::endl;  // PIPELINE
 
+  /* // This extra pipeline is used to draw over existing "framebuffer"
+   // that can be for example an output of the previous draw call.
+  amber_file << R"(
+SHADER vertex vert_shader_tex GLSL
+#version 430
+layout(location = 0) in vec4 position;
+layout(location = 1) in vec2 texcoords_in;
+layout(location = 0) out vec2 texcoords_out;
+void main() {
+  gl_Position = position;
+  texcoords_out = texcoords_in;
+}
+END
+
+SHADER fragment frag_shader_tex GLSL
+#version 430
+layout(location = 0) in vec2 texcoords_in;
+layout(location = 0) out vec4 color_out;
+uniform layout(set=0, binding=0) sampler2D tex_sampler;
+void main() {
+  color_out = texture(tex_sampler, texcoords_in);
+}
+END
+
+BUFFER framebuffer_input FORMAT R8G8B8A8_UNORM FILE PNG framebuffer.png
+SAMPLER sampler
+BUFFER position DATA_TYPE vec2<float> DATA
+-1.0 -1.0
+ 1.0 -1.0
+ 1.0  1.0
+-1.0  1.0
+END
+
+BUFFER texcoords DATA_TYPE vec2<float> DATA
+0.0 0.0
+1.0 0.0
+1.0 1.0
+0.0 1.0
+END
+
+PIPELINE graphics pipeline_input
+  ATTACH vert_shader_tex
+  ATTACH frag_shader_tex
+  BIND BUFFER framebuffer_input AS combined_image_sampler SAMPLER sampler
+DESCRIPTOR_SET 0 BINDING 0 VERTEX_DATA position LOCATION 0 VERTEX_DATA texcoords
+LOCATION 1 FRAMEBUFFER_SIZE 1280 720 BIND BUFFER framebuffer_0 AS color LOCATION
+0 END
+)";
+  amber_file << "RUN pipeline_input DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT
+4" << std::endl;
+   */
+
   amber_file << "CLEAR_COLOR pipeline 0 0 0 255" << std::endl;
   amber_file << "CLEAR pipeline" << std::endl;
 
