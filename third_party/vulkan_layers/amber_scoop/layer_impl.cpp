@@ -1168,6 +1168,16 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     graphicsPipelineStringStream << "  END\n";  // DEPTH
   }
 
+  std::string amber_file_name;
+  if (std::getenv("AMBER_FILE_NAME") == nullptr) {
+    auto order_string = std::to_string(current_draw_call_number);
+    amber_file_name = "draw_call_" +
+                      std::string(4 - order_string.length(), '0') +
+                      order_string + ".amber";
+  } else {
+    amber_file_name = std::getenv("AMBER_FILE_NAME");
+  }
+
   // Create buffers for color attachments.
   VkRenderPassCreateInfo renderPassCreateInfo =
       renderPasses.at(draw_call_state_tracker.currentRenderPass->renderPass);
@@ -1185,7 +1195,11 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 
     bufferDeclarationStringStream << "BUFFER framebuffer_" << colorAttachment
                                   << " FORMAT B8G8R8A8_UNORM" << std::endl;
+    // The original format is not used, because the Amber's png output supports
+    // only B8G8R8A8_UNORM format. Replace the line above with the following
+    // line to use the original format.
     // << format.name << std::endl;
+
     framebufferAttachmentStringStream
         << "  BIND BUFFER framebuffer_" << colorAttachment
         << " AS color LOCATION " << colorAttachment << std::endl;
@@ -1207,7 +1221,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   }
 
   std::fstream amber_file;
-  amber_file.open("output.amber", std::ios::trunc | std::ios::out);
+  amber_file.open(amber_file_name, std::ios::trunc | std::ios::out);
 
   amber_file << "#!amber" << std::endl << std::endl;
 
@@ -1285,7 +1299,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   }
 
   amber_file.close();
-  amber_file.open("output.amber", std::ios::in);
+  amber_file.open(amber_file_name, std::ios::in);
 
   std::string line;
   while (std::getline(amber_file, line)) {
