@@ -556,4 +556,23 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
+  static IReductionOpportunityFinder<LiteralToUniformReductionOpportunity>
+      literalToUniformFinder() {
+    return new IReductionOpportunityFinder<LiteralToUniformReductionOpportunity>() {
+      @Override
+      public List<LiteralToUniformReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        return LiteralToUniformReductionOpportunities.findOpportunities(
+            shaderJob,
+            context);
+      }
+
+      @Override
+      public String getName() {
+        return "literalToUniform";
+      }
+    };
+  }
+
 }

@@ -172,16 +172,8 @@ public final class FragmentShaderJobToVertexShaderJob {
               BasicType.VEC4, new VariableDeclInfo(Constants.GLF_FRAGCOORD, null, null)),
           firstNonPrecisionDeclaration);
 
-      // Add vertex position input
-      vertexShader.addDeclarationBefore(
-          new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
-              Arrays.asList(new LayoutQualifierSequence(
-                      new LocationLayoutQualifier(0)),
-                  TypeQualifier.SHADER_INPUT)),
-              new VariableDeclInfo(Constants.GLF_POS, null, null)),
-          firstNonPrecisionDeclaration);
-
       // At start of main, populate _GLF_FragCoord with coordinates calculated from vertex input
+      // Note: This assumes the resolution is 256x256. The 128 multiplies by 2.
       vertexShader.getMainFunction().getBody().insertStmt(0,
           new ExprStmt(
               new BinaryExpr(
@@ -204,6 +196,23 @@ public final class FragmentShaderJobToVertexShaderJob {
                       BinOp.MUL),
                   BinOp.ASSIGN)));
     }
+
+    // Add vertex position input
+    vertexShader.addDeclarationBefore(
+        new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
+            Arrays.asList(new LayoutQualifierSequence(
+                    new LocationLayoutQualifier(0)),
+                TypeQualifier.SHADER_INPUT)),
+            new VariableDeclInfo(Constants.GLF_POS, null, null)),
+        firstNonPrecisionDeclaration);
+
+    // Add gl_Position setting to the end of main()
+    vertexShader.getMainFunction().getBody().addStmt(
+        new ExprStmt(
+            new BinaryExpr(
+                new VariableIdentifierExpr(OpenGlConstants.GL_POSITION),
+                new VariableIdentifierExpr(Constants.GLF_POS),
+                BinOp.ASSIGN)));
 
     final IParentMap parentMap = IParentMap.createParentMap(vertexShader);
     // Perform float to vertex shader conversion by replacing fragment-only variables and
