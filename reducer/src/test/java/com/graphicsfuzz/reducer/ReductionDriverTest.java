@@ -542,7 +542,7 @@ public class ReductionDriverTest {
     ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         pipelineInfo,
         fragShader);
-    shaderJob.makeUniformBindings();
+    shaderJob.makeUniformBindings(Optional.empty());
 
     final File workDir = testFolder.getRoot();
     final File tempShaderJobFile = new File(workDir, "temp.json");

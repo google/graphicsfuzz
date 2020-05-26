@@ -89,9 +89,12 @@ public class GlslShaderJob implements ShaderJob {
    *
    * <p>The method then puts every uniform in its own uniform block and assigns bindings.
    * If a uniform is declared in both shaders, the binding it is given is common to them.</p>
+   *
+   * <p>The pushConstant parameter can name one uniform as a candidate to be turned into a push
+   * contant.</p>
    */
   @Override
-  public void makeUniformBindings() {
+  public void makeUniformBindings(Optional<String> pushConstant) {
     for (String uniformName : getPipelineInfo().getUniformNames()) {
       assert !getPipelineInfo().hasBinding(uniformName);
     }
@@ -115,8 +118,10 @@ public class GlslShaderJob implements ShaderJob {
           for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
             final String uniformName = declInfo.getName();
             assert pipelineInfo.hasUniform(uniformName);
-            if (!pipelineInfo.hasBinding(uniformName)) {
-              pipelineInfo.addUniformBinding(uniformName, nextBinding);
+            if (pushConstant.isPresent() && pushConstant.get().equals(uniformName)) {
+              pipelineInfo.addUniformBinding(uniformName, true, 0);
+            } else if (!pipelineInfo.hasBinding(uniformName)) {
+              pipelineInfo.addUniformBinding(uniformName, false, nextBinding);
               do {
                 nextBinding++;
               } while (usedBindings.contains(nextBinding));
@@ -153,7 +158,11 @@ public class GlslShaderJob implements ShaderJob {
     // a situation where some uniforms are unbound.
     for (String uniformName : getPipelineInfo().getUniformNames()) {
       if (!getPipelineInfo().hasBinding(uniformName)) {
-        getPipelineInfo().addUniformBinding(uniformName, nextBinding++);
+        if (pushConstant.isPresent() && pushConstant.get().equals(uniformName)) {
+          getPipelineInfo().addUniformBinding(uniformName, true, 0);
+        } else {
+          getPipelineInfo().addUniformBinding(uniformName, false, nextBinding++);
+        }
       }
     }
   }

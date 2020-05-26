@@ -17,6 +17,7 @@
 package com.graphicsfuzz.generator.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.BasicType;
@@ -59,8 +60,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -202,7 +205,36 @@ public class Generate {
     }
 
     if (args.getGenerateUniformBindings()) {
-      shaderJob.makeUniformBindings();
+      Optional<String> pushConstant = Optional.empty();
+      if (random.nextFloat() >= args.getPushConstantProbability()) {
+        // Get the list of (unique) uniform names in all shaders
+        final Set<String> allUniforms = new HashSet<String>();
+        for (TranslationUnit tu : shaders) {
+          for (Declaration decl : tu.getTopLevelDeclarations()) {
+            if (decl instanceof VariablesDeclaration
+                && ((VariablesDeclaration) decl).getBaseType()
+                .hasQualifier(TypeQualifier.UNIFORM)) {
+              final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
+              for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
+                allUniforms.add(declInfo.getName());
+              }
+            }
+          }
+        }
+
+        // Pick one uniform at random if we have any
+        if (allUniforms.size() > 1) {
+          pushConstant = Optional.of(new ArrayList<String>(allUniforms)
+              .get(random.nextPositiveInt(allUniforms.size())));
+        } else {
+          if (allUniforms.size() == 1) {
+            pushConstant = Optional.of(new ArrayList<String>(allUniforms).get(0));
+          }
+        }
+
+      }
+      // Note that by default we pass Optional.empty() here.
+      shaderJob.makeUniformBindings(pushConstant);
     }
 
     return result;
@@ -361,7 +393,8 @@ public class Generate {
         ns.get("max_uniforms"),
         enabledTransformations,
         !ns.getBoolean("no_injection_switch"),
-        Optional.ofNullable(shaderStage)
+        Optional.ofNullable(shaderStage),
+        0
     );
   }
 

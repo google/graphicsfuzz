@@ -27,7 +27,7 @@ public interface ShaderJob {
 
   Optional<String> getLicense();
 
-  void makeUniformBindings();
+  void makeUniformBindings(Optional<String> pushConstant);
 
   void removeUniformBindings();
 

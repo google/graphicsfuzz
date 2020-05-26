@@ -226,14 +226,22 @@ public final class PipelineInfo {
     return result;
   }
 
-  public void addUniformBinding(String uniformName, int number) {
+  public void addUniformBinding(String uniformName, boolean pushConstant, int number) {
     assert hasUniform(uniformName);
-    dictionary.getAsJsonObject(uniformName).addProperty("binding", number);
+    if (pushConstant) {
+      dictionary.getAsJsonObject(uniformName).addProperty("push_constant", true);
+    } else {
+      dictionary.getAsJsonObject(uniformName).addProperty("binding", number);
+    }
   }
 
   public void removeUniformBinding(String uniformName) {
     assert hasBinding(uniformName);
-    dictionary.getAsJsonObject(uniformName).remove("binding");
+    if (isPushConstant(uniformName)) {
+      dictionary.getAsJsonObject(uniformName).remove("push");
+    } else {
+      dictionary.getAsJsonObject(uniformName).remove("binding");
+    }
   }
 
   public List<String> getUniformNames() {
@@ -273,7 +281,11 @@ public final class PipelineInfo {
   }
 
   public boolean hasBinding(String uniformName) {
-    return lookupUniform(uniformName).has("binding");
+    return lookupUniform(uniformName).has("binding") || isPushConstant(uniformName);
+  }
+
+  public boolean isPushConstant(String uniformName) {
+    return lookupUniform(uniformName).has("push");
   }
 
   public int getBinding(String uniformName) {
