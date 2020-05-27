@@ -10,11 +10,26 @@ The build at https://swiftshader-review.googlesource.com/c/SwiftShader/+/44728 c
 2. Enable the flag `SWIFTSHADER_EMIT_COVERAGE` in CMakeLists.txt
 3. Build as described in the SwiftShader README
 
+This can be built by the following script.
+
+## Script:
+
+```
+mkdir -p out/build_coverage
+cd out/build_coverage
+cmake -G Ninja ../.. -DCMAKE_BUILD_TYPE=Debug -DSWIFTSHADER_EMIT_COVERAGE=1
+cmake --build . --config Debug
+```
+
+The resulting SwiftShader ICD can be found here:
+`/path/to/SwiftShader/out/build_coverage/Linux/{libvk_swiftshader.so, vk_swiftshader_icd.json}`
+
 # Running Vulkan programs with SwiftShader
 
 In order to generate the complete coverage information for a Vulkan sample, the sample needs to be built with coverage as well. This will create the appropriate .gcno files for the sample. In order to create the .gcda files for both the sample and SwiftShader, we need to link the Vulkan sample with the SwiftShader library when we run the Vulkan samples.
 
-This is done via the Vulkan Loader. The Vulkan Loader is used to run a given Vulkan application with a variety of Vulkan drivers present on the platform. In order to use SwiftShader with the Vulkan Loader, simply specify the environment variable `VK_ICD_FILENAMEs` to "/path/to/SwiftShader/build/Linux/vk\_swiftshader\_icd.json".
+`export VK_ICD_FILENAMES=/path/to/SwiftShader/build/Linux/vk_swiftshader_icd.json`
+`./vulkan-app`
 
 # Data File Locations (.gcda and .gcno files)
 
