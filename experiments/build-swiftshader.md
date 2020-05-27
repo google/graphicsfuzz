@@ -26,7 +26,7 @@ The resulting SwiftShader ICD can be found here:
 
 # Running Vulkan programs with SwiftShader
 
-In order to generate the complete coverage information for a Vulkan sample, the sample needs to be built with coverage as well. This will create the appropriate .gcno files for the sample. In order to create the .gcda files for both the sample and SwiftShader, we need to link the Vulkan sample with the SwiftShader library when we run the Vulkan samples.
+This is done via the Vulkan Loader. The Vulkan Loader is used to run a given Vulkan application with a variety of Vulkan drivers present on the platform. In order to use SwiftShader with the Vulkan Loader, simply specify the environment variable `VK_ICD_FILENAMES` to `/path/to/SwiftShader/build/Linux/vk_swiftshader_icd.json`.
 
 `export VK_ICD_FILENAMES=/path/to/SwiftShader/build/Linux/vk_swiftshader_icd.json`
 `./vulkan-app`
