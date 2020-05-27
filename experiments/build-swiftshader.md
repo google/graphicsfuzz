@@ -7,7 +7,7 @@ The build at https://swiftshader-review.googlesource.com/c/SwiftShader/+/44728 c
 ## Steps:
 
 1. Clone the [repo](https://swiftshader-review.googlesource.com/c/SwiftShader/+/44728)
-2. Enable the flag SWIFTSHADER\_EMIT\_COVERAGE in CMakeLists.txt
+2. Enable the flag `SWIFTSHADER_EMIT_COVERAGE` in CMakeLists.txt
 3. Build as described in the SwiftShader README
 
 # Running Vulkan programs with SwiftShader
@@ -18,5 +18,5 @@ This is done via the Vulkan Loader. The Vulkan Loader is used to run a given Vul
 
 # Data File Locations (.gcda and .gcno files)
 
-/path/to/SwiftShader/build/src/CMakeFiles/vk\_swiftshader.dir
+`/path/to/SwiftShader/build/src/CMakeFiles/vk_swiftshader.dir`
 
