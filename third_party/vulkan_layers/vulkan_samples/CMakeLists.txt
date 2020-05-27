@@ -27,6 +27,12 @@ target_include_directories(vertex_buffer PRIVATE ../external/glm)
 target_link_libraries(vertex_buffer PUBLIC vulkan glslang SPIRV)
 set_property(TARGET vertex_buffer PROPERTY CXX_STANDARD 17)
 
+add_executable(stencil stencil.cpp)
+target_include_directories(stencil PRIVATE ../external/stb)
+target_include_directories(stencil PRIVATE ../external/glm)
+target_link_libraries(stencil PUBLIC vulkan glslang SPIRV)
+set_property(TARGET stencil PROPERTY CXX_STANDARD 17)
+
 add_executable(push_constants push_constants.cpp)
 target_include_directories(push_constants PRIVATE ../external/stb)
 target_include_directories(push_constants PRIVATE ../external/glm)
