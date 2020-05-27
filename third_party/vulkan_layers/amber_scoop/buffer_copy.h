@@ -50,7 +50,7 @@ class BufferCopy {
 
   void FreeResources();
 
-  void *copied_data_;
+  uint8_t *copied_data_;
 
  private:
   VkBuffer buffer_copy_;

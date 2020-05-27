@@ -136,7 +136,8 @@ void BufferCopy::CopyBuffer(
 
   // Invalidate memory to make it visible to host.
   {
-    vkMapMemory(device_, buffer_copy_memory_, 0, buffer_size, 0, &copied_data_);
+    vkMapMemory(device_, buffer_copy_memory_, 0, buffer_size, 0,
+                (void **)&copied_data_);
     VkMappedMemoryRange range_to_invalidate = {};
     range_to_invalidate.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     range_to_invalidate.memory = buffer_copy_memory_;

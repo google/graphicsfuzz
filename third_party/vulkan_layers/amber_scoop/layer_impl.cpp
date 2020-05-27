@@ -63,12 +63,15 @@ std::string CreateSpecializationString(
 struct PipelineLayoutData {
   PipelineLayoutData(
       VkPipelineLayoutCreateInfo create_info,
-      std::map<uint32_t, VkDescriptorSet> descriptor_set_bindings)
+      std::map<uint32_t, VkDescriptorSet> descriptor_set_bindings,
+      uint32_t push_constants_size)
       : create_info_(create_info),
-        descriptor_set_bindings_(std::move(descriptor_set_bindings)) {}
+        descriptor_set_bindings_(std::move(descriptor_set_bindings)),
+        push_constants_size_(push_constants_size) {}
 
   VkPipelineLayoutCreateInfo create_info_;
   std::map<uint32_t, VkDescriptorSet> descriptor_set_bindings_;
+  uint32_t push_constants_size_;
 };
 
 struct DescriptorBufferBinding {
@@ -115,16 +118,6 @@ std::unordered_map<VkPipeline, VkGraphicsPipelineCreateInfo> graphicsPipelines;
 std::unordered_map<VkPipelineLayout, PipelineLayoutData> pipeline_layouts;
 std::unordered_map<VkRenderPass, VkRenderPassCreateInfo> renderPasses;
 std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shaderModules;
-// TODO: make struct for std::tuple<uint32_t, VkDescriptorBufferInfo, uint32_t>
-// fields: <binding_number, VkDescriptorBufferInfo, dynamic_offset>
-/*std::unordered_map<
-    VkDescriptorSet,
-    std::vector<std::tuple<uint32_t, VkDescriptorBufferInfo, uint32_t>>>
-    descriptorSetToBindingBuffers;*/
-/*std::unordered_map<VkDescriptorSet,
-                   std::unordered_map<uint32_t, VkDescriptorImageInfo>>
-    descriptorSetToBindingImageAndSampler;*/
-
 std::unordered_map<VkCommandPool, uint32_t> commandPoolToQueueFamilyIndex;
 
 std::string GetDisassembly(VkShaderModule shaderModule) {
@@ -400,8 +393,16 @@ VkResult vkCreatePipelineLayout(PFN_vkCreatePipelineLayout next,
                                 VkPipelineLayout *pPipelineLayout) {
   auto result = next(device, pCreateInfo, pAllocator, pPipelineLayout);
   if (result == VK_SUCCESS) {
+    uint32_t push_constant_size = 0;
+    for (uint32_t i = 0; i < pCreateInfo->pushConstantRangeCount; i++) {
+      push_constant_size = std::max(
+          push_constant_size, pCreateInfo->pPushConstantRanges[i].size +
+                                  pCreateInfo->pPushConstantRanges[i].offset);
+    }
+
     pipeline_layouts.insert(
-        {*pPipelineLayout, PipelineLayoutData(DeepCopy(*pCreateInfo), {})});
+        {*pPipelineLayout,
+         PipelineLayoutData(DeepCopy(*pCreateInfo), {}, push_constant_size)});
   }
   return result;
 }
@@ -531,12 +532,15 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
                       << std::endl;*/
                 }
               }
+              // TODO: descriptor set bindings should be stored in
+              // drawCallStateTracker to enable pipeline layout compatibility:
+              // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/chap13.html#descriptorsets-compatibility
 
               // Update the descriptor set bindings
-              pipeline_layout_data.descriptor_set_bindings_.insert(
-                  {cmdBindDescriptorSets->firstSet_ + descriptor_set_idx,
-                   cmdBindDescriptorSets
-                       ->pDescriptorSets_[descriptor_set_idx]});
+              pipeline_layout_data
+                  .descriptor_set_bindings_[cmdBindDescriptorSets->firstSet_ +
+                                            descriptor_set_idx] =
+                  cmdBindDescriptorSets->pDescriptorSets_[descriptor_set_idx];
             }
           }
         } else if (auto cmdBindIndexBuffer = cmd->AsBindIndexBuffer()) {
@@ -584,10 +588,14 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
         } else if (auto cmdPipelineBarrier = cmd->AsPipelineBarrier()) {
           drawCallStateTracker.pipeline_barriers.push_back(cmdPipelineBarrier);
         } else if (auto cmdPushConstants = cmd->AsPushConstants()) {
-          if (cmdPushConstants->size_ + cmdPushConstants->offset_ >
+          // Resize (increase) push constant storage size based on the ranges
+          // defined in the pipeline layout currently being used.
+          if (pipeline_layouts.at(cmdPushConstants->layout_)
+                  .push_constants_size_ >
               drawCallStateTracker.push_constants_.size()) {
             drawCallStateTracker.push_constants_.resize(
-                cmdPushConstants->size_ + cmdPushConstants->offset_);
+                pipeline_layouts.at(cmdPushConstants->layout_)
+                    .push_constants_size_);
           }
           // Store push constant values
           memcpy(drawCallStateTracker.push_constants_.data() +
@@ -746,7 +754,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     // 16-bit indices
     if (draw_call_state_tracker.boundIndexBuffer.indexType ==
         VK_INDEX_TYPE_UINT16) {
-      auto ptr = (uint16_t *)((uint8_t *)index_buffer_copy.copied_data_ +
+      auto ptr = (uint16_t *)(index_buffer_copy.copied_data_ +
                               draw_call_state_tracker.boundIndexBuffer.offset);
       for (uint32_t indexIdx = 0; indexIdx < index_count; indexIdx++) {
         max_index_value = std::max((uint32_t)ptr[indexIdx], max_index_value);
@@ -756,7 +764,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     // 32-bit indices
     else if (draw_call_state_tracker.boundIndexBuffer.indexType ==
              VK_INDEX_TYPE_UINT32) {
-      auto ptr = (uint32_t *)((uint8_t *)index_buffer_copy.copied_data_ +
+      auto ptr = (uint32_t *)(index_buffer_copy.copied_data_ +
                               draw_call_state_tracker.boundIndexBuffer.offset);
       for (uint32_t indexIdx = 0; indexIdx < index_count; indexIdx++) {
         max_index_value = std::max(ptr[indexIdx], max_index_value);
@@ -775,58 +783,59 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 
   bool vertex_buffer_found = false;
   std::unordered_map<VkBuffer, BufferCopy *> copied_buffers;
-  for (const auto &vertexBufferBinding :
-       draw_call_state_tracker.bound_vertex_buffers) {
-    auto buffer = buffers.at(vertexBufferBinding.second);
-    assert(buffer.usage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-
+  for (uint32_t attr_idx = 0;
+       attr_idx < graphicsPipelineCreateInfo.pVertexInputState
+                      ->vertexAttributeDescriptionCount;
+       attr_idx++) {
+    // TODO: Check if this can be removed
     if (!graphicsPipelineCreateInfo.pVertexInputState
              ->vertexBindingDescriptionCount)
       continue;
 
-    auto bindingDescription =
-        graphicsPipelineCreateInfo.pVertexInputState->pVertexBindingDescriptions
-            [graphicsPipelineCreateInfo.pVertexInputState
-                 ->pVertexAttributeDescriptions[vertexBufferBinding.first]
-                 .binding];
+    // auto location = vertex_buffer_binding.first;
+    auto attribute_description = graphicsPipelineCreateInfo.pVertexInputState
+                                     ->pVertexAttributeDescriptions[attr_idx];
+    auto location = attribute_description.location;
+    auto binding_description =
+        graphicsPipelineCreateInfo.pVertexInputState
+            ->pVertexBindingDescriptions[attribute_description.binding];
+    auto vertex_buffer = draw_call_state_tracker.bound_vertex_buffers.at(
+        attribute_description.binding);
+    auto buffer_create_info = buffers.at(vertex_buffer);
+    assert(buffer_create_info.usage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-    if (bindingDescription.inputRate != VK_VERTEX_INPUT_RATE_VERTEX)
-      throw std::runtime_error("VK_VERTEX_INPUT_RATE_VERTEX not implemented");
+    if (binding_description.inputRate != VK_VERTEX_INPUT_RATE_VERTEX)
+      throw std::runtime_error("VK_VERTEX_INPUT_RATE_INSTANCE not implemented");
 
     vertex_buffer_found = true;
-    VkBuffer vertexBuffer = vertexBufferBinding.second;
+    BufferCopy *vertex_buffer_copy = nullptr;
     // Don't copy the buffer if it's already copied
-    if (copied_buffers.count(vertexBuffer)) continue;
+    if (!copied_buffers.count(vertex_buffer)) {
+      auto commandPool =
+          GetGlobalContext()
+              .GetVkCommandBufferData(draw_call_state_tracker.commandBuffer)
+              ->command_pool;
+      auto queueFamilyIndex = commandPoolToQueueFamilyIndex.at(commandPool);
+      vertex_buffer_copy = new BufferCopy();
 
-    auto commandPool =
-        GetGlobalContext()
-            .GetVkCommandBufferData(draw_call_state_tracker.commandBuffer)
-            ->command_pool;
-    auto queueFamilyIndex = commandPoolToQueueFamilyIndex.at(commandPool);
-    auto vertexBufferCopy = new BufferCopy();
-
-    // Check if there is pipeline barriers for vertex buffer
-    std::vector<const CmdPipelineBarrier *> vertex_buffer_pipeline_barriers;
-    for (auto barrier : draw_call_state_tracker.pipeline_barriers) {
-      if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_INPUT_BIT) {
-        vertex_buffer_pipeline_barriers.push_back(barrier);
-        break;  // TODO: Should this be removed?
+      // Check if there is pipeline barriers for vertex buffer
+      std::vector<const CmdPipelineBarrier *> vertex_buffer_pipeline_barriers;
+      for (auto barrier : draw_call_state_tracker.pipeline_barriers) {
+        if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_INPUT_BIT) {
+          vertex_buffer_pipeline_barriers.push_back(barrier);
+          break;  // TODO: Should this be removed?
+        }
       }
+
+      vertex_buffer_copy->CopyBuffer(draw_call_state_tracker.queue,
+                                     queueFamilyIndex,
+                                     vertex_buffer_pipeline_barriers,
+                                     vertex_buffer, buffer_create_info.size);
+
+      copied_buffers.insert({vertex_buffer, vertex_buffer_copy});
+    } else {
+      vertex_buffer_copy = copied_buffers.at(vertex_buffer);
     }
-
-    vertexBufferCopy->CopyBuffer(draw_call_state_tracker.queue,
-                                 queueFamilyIndex, vertex_buffer_pipeline_barriers,
-                                 vertexBuffer, buffer.size);
-
-    copied_buffers.insert({vertexBuffer, vertexBufferCopy});
-  }
-
-  for (uint32_t location = 0;
-       location < graphicsPipelineCreateInfo.pVertexInputState
-                      ->vertexAttributeDescriptionCount;
-       location++) {
-    auto attribute_description = graphicsPipelineCreateInfo.pVertexInputState
-                                     ->pVertexAttributeDescriptions[location];
 
     std::stringstream bufferName;
     bufferName << "vert_" << location;
@@ -842,14 +851,6 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
                            << format.name << " DATA\n"
                            << "  ";
 
-    auto binding_description =
-        graphicsPipelineCreateInfo.pVertexInputState
-            ->pVertexBindingDescriptions[attribute_description.binding];
-
-    auto buffer = draw_call_state_tracker.bound_vertex_buffers.at(
-        binding_description.binding);
-    auto buffer_copy = copied_buffers.at(buffer);
-
     auto buffer_offset = draw_call_state_tracker.vertex_buffer_offsets.at(
         binding_description.binding);
 
@@ -860,8 +861,13 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
         vertex_count == 0 ? max_index_value + 1 : vertex_count;
 
     for (uint32_t i = 0; i < element_count; i++) {
-      auto readPtr = (uint8_t *)buffer_copy->copied_data_ + i * stride +
-                     attribute_description.offset + buffer_offset;
+      uint32_t offset =
+          i * stride + attribute_description.offset + buffer_offset;
+      if (offset > buffer_create_info.size) {
+        throw std::runtime_error(
+            "Offset is greater than the size of the buffer.");
+      }
+      auto readPtr = vertex_buffer_copy->copied_data_ + offset;
 
       readComponentsFromBufferAndWriteToStrStream(readPtr, format,
                                                   buffer_declaration_str);
@@ -977,7 +983,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
               ? bufferCreateInfo.size
               : buffer_binding.descriptor_buffer_info_.range;
 
-      auto *thePtr = (uint8_t *)descriptorBufferCopy.copied_data_;
+      auto *thePtr = descriptorBufferCopy.copied_data_;
 
       for (VkDeviceSize bidx = 0; bidx < range; bidx++) {
         if (bidx > 0) {
@@ -1381,9 +1387,12 @@ void readComponentsFromBufferAndWriteToStrStream(uint8_t *buffer,
           bufStr << ((float *)buffer)[cIdx] << " ";
         else if (format.components[cIdx].num_bits == 64)
           bufStr << ((double *)buffer)[cIdx] << " ";
+        else if (format.components[cIdx].num_bits == 16) {
+          throw std::runtime_error("16 bit floats not supported");
+        }
       } else if (format.components[cIdx].isUInt()) {
         if (format.components[cIdx].num_bits == 8)
-          bufStr << (uint32_t)((uint8_t *)buffer)[cIdx] << " ";
+          bufStr << (uint32_t)buffer[cIdx] << " ";
         else if (format.components[cIdx].num_bits == 16)
           bufStr << (uint32_t)((uint16_t *)buffer)[cIdx] << " ";
         else if (format.components[cIdx].num_bits == 32)
