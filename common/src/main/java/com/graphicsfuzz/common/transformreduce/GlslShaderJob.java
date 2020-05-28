@@ -25,6 +25,7 @@ import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
+import com.graphicsfuzz.common.ast.type.PushConstantLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.Type;
@@ -126,26 +127,39 @@ public class GlslShaderJob implements ShaderJob {
                 nextBinding++;
               } while (usedBindings.contains(nextBinding));
             }
-            final int binding = pipelineInfo.getBinding(uniformName);
-
             // The member's type is the combination of the base type and array info for the decl.
             // We clone this type, having created it, as we will use the same base type for other
             // decls in this variables declaration and we do not want to have aliasing.
             final Type memberType =
                 Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
-                declInfo.getArrayInfo()).clone();
+                    declInfo.getArrayInfo()).clone();
 
-            ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
-            newTopLevelDeclarations.add(
-                new InterfaceBlock(
-                    Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
-                        new BindingLayoutQualifier(binding))),
-                    TypeQualifier.UNIFORM,
-                    "buf" + binding,
-                    Collections.singletonList(uniformName),
-                    Collections.singletonList(memberType),
-                    Optional.empty())
-            );
+            if (pipelineInfo.isPushConstant(uniformName)) {
+              // Handle push constants separately
+              newTopLevelDeclarations.add(
+                  new InterfaceBlock(
+                      Optional.of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
+                      TypeQualifier.UNIFORM,
+                      "buf_push",
+                      Collections.singletonList(uniformName),
+                      Collections.singletonList(memberType),
+                      Optional.empty())
+              );
+            } else {
+              // Not a push constant, so it's a normal uniform
+              final int binding = pipelineInfo.getBinding(uniformName);
+              ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
+              newTopLevelDeclarations.add(
+                  new InterfaceBlock(
+                      Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
+                          new BindingLayoutQualifier(binding))),
+                      TypeQualifier.UNIFORM,
+                      "buf" + binding,
+                      Collections.singletonList(uniformName),
+                      Collections.singletonList(memberType),
+                      Optional.empty())
+              );
+            }
           }
         } else {
           newTopLevelDeclarations.add(decl);

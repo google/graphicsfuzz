@@ -281,11 +281,11 @@ public final class PipelineInfo {
   }
 
   public boolean hasBinding(String uniformName) {
-    return lookupUniform(uniformName).has("binding") || isPushConstant(uniformName);
+    return lookupUniform(uniformName).has("binding");
   }
 
   public boolean isPushConstant(String uniformName) {
-    return lookupUniform(uniformName).has("push");
+    return lookupUniform(uniformName).has("push_constant");
   }
 
   public int getBinding(String uniformName) {
