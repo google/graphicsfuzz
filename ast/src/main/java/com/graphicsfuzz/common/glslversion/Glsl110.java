@@ -336,4 +336,9 @@ final class Glsl110 implements ShadingLanguageVersion {
   public boolean supportedShaderMemoryControlFunctions() {
     return false;
   }
+
+  @Override
+  public boolean supportedPushConstants() {
+    return false;
+  }
 }

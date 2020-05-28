@@ -204,19 +204,22 @@ public class Generate {
           Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX));
     }
 
+
     if (args.getGenerateUniformBindings()) {
       Optional<String> pushConstant = Optional.empty();
       if (random.nextFloat() >= args.getPushConstantProbability()) {
         // Get the list of (unique) uniform names in all shaders
         final Set<String> allUniforms = new HashSet<String>();
         for (TranslationUnit tu : shaders) {
-          for (Declaration decl : tu.getTopLevelDeclarations()) {
-            if (decl instanceof VariablesDeclaration
-                && ((VariablesDeclaration) decl).getBaseType()
-                .hasQualifier(TypeQualifier.UNIFORM)) {
-              final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
-              for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
-                allUniforms.add(declInfo.getName());
+          if (tu.getShadingLanguageVersion().supportedPushConstants()) {
+            for (Declaration decl : tu.getTopLevelDeclarations()) {
+              if (decl instanceof VariablesDeclaration
+                  && ((VariablesDeclaration) decl).getBaseType()
+                  .hasQualifier(TypeQualifier.UNIFORM)) {
+                final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
+                for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
+                  allUniforms.add(declInfo.getName());
+                }
               }
             }
           }
