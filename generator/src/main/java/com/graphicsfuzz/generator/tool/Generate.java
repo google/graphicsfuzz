@@ -160,6 +160,13 @@ public class Generate {
     parser.addArgument("--shader-stage")
         .help("Only fuzz the given shader stage.")
         .type(ShaderKind.class);
+
+    parser.addArgument("--push-constant-probability")
+        .help("Probability of converting a random uniform to push constant; "
+            + "floating point 0..1. Defaults to 0.5")
+        .setDefault(new Float(0.5))
+        .type(Float.class);
+
   }
 
   /**
@@ -204,10 +211,9 @@ public class Generate {
           Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX));
     }
 
-
     if (args.getGenerateUniformBindings()) {
       Optional<String> pushConstant = Optional.empty();
-      if (random.nextFloat() >= args.getPushConstantProbability()) {
+      if (random.nextFloat() <= args.getPushConstantProbability()) {
         // Get the list of (unique) uniform names in all shaders
         final Set<String> allUniforms = new HashSet<String>();
         for (TranslationUnit tu : shaders) {
@@ -226,15 +232,10 @@ public class Generate {
         }
 
         // Pick one uniform at random if we have any
-        if (allUniforms.size() > 1) {
+        if (allUniforms.size() > 0) {
           pushConstant = Optional.of(new ArrayList<String>(allUniforms)
-              .get(random.nextPositiveInt(allUniforms.size())));
-        } else {
-          if (allUniforms.size() == 1) {
-            pushConstant = Optional.of(new ArrayList<String>(allUniforms).get(0));
-          }
+              .get(random.nextInt(allUniforms.size())));
         }
-
       }
       // Note that by default we pass Optional.empty() here.
       shaderJob.makeUniformBindings(pushConstant);
@@ -397,7 +398,7 @@ public class Generate {
         enabledTransformations,
         !ns.getBoolean("no_injection_switch"),
         Optional.ofNullable(shaderStage),
-        0
+        ns.getFloat("push_constant_probability")
     );
   }
 
