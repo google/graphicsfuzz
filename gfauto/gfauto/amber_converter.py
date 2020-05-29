@@ -123,9 +123,8 @@ def amberscript_comp_buffer_bind(comp_json: str) -> str:
     )
 
     compute_info = comp["$compute"]
-    assert 'binding' in compute_info['buffer'].keys()
+    assert "binding" in compute_info["buffer"].keys()
     return f"  BIND BUFFER {{}} AS storage DESCRIPTOR_SET 0 BINDING {compute_info['buffer']['binding']}\n"
-
 
 
 def amberscript_comp_buff_def(comp_json: str, make_empty_buffer: bool = False) -> str:
@@ -262,9 +261,9 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
     for name, entry in uniforms.items():
         if name.startswith("$"):
             continue
-        if 'binding' in entry.keys():
+        if "binding" in entry.keys():
             result += f"  BIND BUFFER {prefix}_{name} AS uniform DESCRIPTOR_SET 0 BINDING {entry['binding']}\n"
-        elif 'push_constant' in entry.keys():
+        elif "push_constant" in entry.keys():
             result += f"  BIND BUFFER {prefix}_{name} AS push_constant\n"
         else:
             AssertionError("Uniform should have 'binding' or 'push_constant' field")
