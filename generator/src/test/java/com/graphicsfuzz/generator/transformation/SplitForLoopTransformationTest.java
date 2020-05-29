@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.generator.transformation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -55,15 +58,13 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 public class SplitForLoopTransformationTest {
 
   @Test
   public void suitableForSplittingNoNext()
       throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    Method suitableForSplitting = SplitForLoopMutation.class.getDeclaredMethod("suitableForSplitting",
+    Method suitableForSplitting = SplitForLoopMutation.class.getDeclaredMethod(
+        "suitableForSplitting",
         IInjectionPoint.class);
     suitableForSplitting.setAccessible(true);
     Boolean result = (Boolean) suitableForSplitting.invoke(null,
@@ -138,7 +139,8 @@ public class SplitForLoopTransformationTest {
                         new DeclarationStmt(
                             new VariablesDeclaration(
                                 new QualifiedType(BasicType.INT,
-                                    new ArrayList<TypeQualifier>()), new VariableDeclInfo("i", null, new Initializer(new IntConstantExpr("0"))))),
+                                    new ArrayList<TypeQualifier>()), new VariableDeclInfo("i",
+                                null, new Initializer(new IntConstantExpr("0"))))),
                         new BinaryExpr(
                             new VariableIdentifierExpr("i"),
                             new IntConstantExpr("10"),
@@ -153,7 +155,8 @@ public class SplitForLoopTransformationTest {
     final String program = "#version 100\nvoid main() { for(int i = 0; i < 10; i++) { } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, countForLoops(tu));
-    new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(), new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
+    new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(),
+        new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
     assertEquals(2, countForLoops(tu));
   }
 
@@ -163,7 +166,8 @@ public class SplitForLoopTransformationTest {
         + "break; } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, countForLoops(tu));
-    new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(), new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
+    new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(),
+        new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
     assertEquals(1, countForLoops(tu));
   }
 
@@ -176,6 +180,7 @@ public class SplitForLoopTransformationTest {
       }
 
       private int count = 0;
+
       @Override
       public void visitForStmt(ForStmt forStmt) {
         super.visitForStmt(forStmt);

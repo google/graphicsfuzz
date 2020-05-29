@@ -96,7 +96,7 @@ public class ConstCleanerTest {
   }
 
   @Test
-  public void testCleanWithGlobalsGLSL100() throws Exception {
+  public void testCleanWithGlobalsGlsl100() throws Exception {
     final String program = ""
         + "int g1;"
         + "int g2 = g1;"
@@ -119,7 +119,7 @@ public class ConstCleanerTest {
   }
 
   @Test
-  public void testCleanWithGlobalsGLSL440() throws Exception {
+  public void testCleanWithGlobalsGlsl440() throws Exception {
     final String program = "#version 440\n"
         + "int g1;"
         + "int g2 = g1;"
@@ -141,7 +141,7 @@ public class ConstCleanerTest {
   }
 
   @Test
-  public void testCleanWithGlobalsGLSL100MultipleDeclarations() throws Exception {
+  public void testCleanWithGlobalsGlsl100MultipleDeclarations() throws Exception {
     final String program = ""
         + "int g1;"
         + "int g2 = g1, g3 = g1, g4 = 5;"
@@ -166,7 +166,7 @@ public class ConstCleanerTest {
   }
 
   @Test
-  public void testCleanWithGlobalsGLSL100Misc() throws Exception {
+  public void testCleanWithGlobalsGlsl100Misc() throws Exception {
     final String program = ""
         + "uniform float _FLOAT_CONST[1];"
         + "float foo(vec3 p, vec2 t) {"
