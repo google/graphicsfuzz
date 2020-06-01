@@ -57,6 +57,10 @@ std::string CreateSpecializationString(
     const VkSpecializationMapEntry &specialization_map_entry,
     const void *specialization_data);
 
+const char *GetStencilOpString(VkStencilOp stencil_op);
+
+const char *GetCompareOpString(VkCompareOp compare_op);
+
 /**
  * Container for per pipeline layout data.
  */
@@ -716,7 +720,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   std::stringstream bufferDeclarationStringStream;
   std::stringstream descriptorSetBindingStringStream;
   std::stringstream framebufferAttachmentStringStream;
-  std::stringstream graphicsPipelineStringStream;
+  std::stringstream pipeline_str_stream;
 
   // Declare index buffer (if used)
   uint32_t max_index_value = 0;
@@ -744,7 +748,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
         draw_call_state_tracker.queue, queueFamilyIndex,
         index_buffer_pipeline_barriers, indexBuffer, buffer.size);
 
-    graphicsPipelineStringStream << "  INDEX_DATA index_buffer" << std::endl;
+    pipeline_str_stream << "  INDEX_DATA index_buffer" << std::endl;
 
     // Amber supports only 32-bit indices. 16-bit indices will be used as
     // 32-bit.
@@ -840,7 +844,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     std::stringstream bufferName;
     bufferName << "vert_" << location;
 
-    graphicsPipelineStringStream << "  VERTEX_DATA " << bufferName.str()
+    pipeline_str_stream << "  VERTEX_DATA " << bufferName.str()
                                  << " LOCATION " << location << std::endl;
 
     vkf::VulkanFormat format =
@@ -1102,63 +1106,32 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     }
   }
 
-  // Depth
   if (graphicsPipelineCreateInfo.pDepthStencilState != nullptr ||
       graphicsPipelineCreateInfo.pRasterizationState->depthBiasEnable ||
       graphicsPipelineCreateInfo.pRasterizationState->depthClampEnable) {
-    graphicsPipelineStringStream << "  DEPTH\n";
+    // Depth
+    pipeline_str_stream << "  DEPTH\n";
 
     if (graphicsPipelineCreateInfo.pDepthStencilState != nullptr) {
       auto depthState = graphicsPipelineCreateInfo.pDepthStencilState;
-      graphicsPipelineStringStream
-          << "    TEST " << (depthState->depthTestEnable ? "on" : "off") << "\n"
+      pipeline_str_stream << "    TEST " << (depthState->depthTestEnable ? "on" : "off") << "\n"
           << "    WRITE " << (depthState->depthWriteEnable ? "on" : "off")
           << "\n";
-      graphicsPipelineStringStream << "    COMPARE_OP ";
-      switch (depthState->depthCompareOp) {
-        case VK_COMPARE_OP_NEVER:
-          graphicsPipelineStringStream << "never";
-          break;
-        case VK_COMPARE_OP_LESS:
-          graphicsPipelineStringStream << "less";
-          break;
-        case VK_COMPARE_OP_EQUAL:
-          graphicsPipelineStringStream << "equal";
-          break;
-        case VK_COMPARE_OP_LESS_OR_EQUAL:
-          graphicsPipelineStringStream << "less_or_equal";
-          break;
-        case VK_COMPARE_OP_GREATER:
-          graphicsPipelineStringStream << "greater";
-          break;
-        case VK_COMPARE_OP_NOT_EQUAL:
-          graphicsPipelineStringStream << "not_equal";
-          break;
-        case VK_COMPARE_OP_GREATER_OR_EQUAL:
-          graphicsPipelineStringStream << "greater_or_equal";
-          break;
-        case VK_COMPARE_OP_ALWAYS:
-          graphicsPipelineStringStream << "always";
-          break;
-        default:
-          throw std::runtime_error("Invalid VK_COMPARE_OP");
-      }
-      graphicsPipelineStringStream << "\n";
+      pipeline_str_stream << "    COMPARE_OP " << GetCompareOpString(depthState->depthCompareOp)
+          << "\n";
 
       // Amber expects the values as float values
-      graphicsPipelineStringStream << std::scientific;
-      graphicsPipelineStringStream << "    BOUNDS min "
+      pipeline_str_stream << std::scientific;
+      pipeline_str_stream << "    BOUNDS min "
                                    << depthState->minDepthBounds << " max "
                                    << depthState->maxDepthBounds << "\n";
-      graphicsPipelineStringStream << std::defaultfloat;
+      pipeline_str_stream << std::defaultfloat;
     }
-
     if (graphicsPipelineCreateInfo.pRasterizationState->depthClampEnable) {
-      graphicsPipelineStringStream << "    CLAMP on\n";
+      pipeline_str_stream << "    CLAMP on\n";
     }
-
     if (graphicsPipelineCreateInfo.pRasterizationState->depthBiasEnable) {
-      graphicsPipelineStringStream
+      pipeline_str_stream
           << "    BIAS constant "
           << graphicsPipelineCreateInfo.pRasterizationState
                  ->depthBiasConstantFactor
@@ -1169,8 +1142,37 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
                  ->depthBiasSlopeFactor
           << "\n";
     }
+    pipeline_str_stream << "  END\n";  // DEPTH
 
-    graphicsPipelineStringStream << "  END\n";  // DEPTH
+    // Stencil
+    if (graphicsPipelineCreateInfo.pDepthStencilState != nullptr &&
+        graphicsPipelineCreateInfo.pDepthStencilState->stencilTestEnable) {
+        auto create_stencil_block = [](std::stringstream &stringstream,
+                                       const VkStencilOpState &state) {
+          stringstream << "    TEST on \n"
+                       << "    FAIL_OP " << GetStencilOpString(state.failOp)
+                       << "\n"
+                       << "    PASS_OP " << GetStencilOpString(state.passOp)
+                       << "\n"
+                       << "    DEPTH_FAIL_OP "
+                       << GetStencilOpString(state.depthFailOp) << "\n"
+                       << "    COMPARE_OP "
+                       << GetCompareOpString(state.compareOp) << "\n"
+                       << "    COMPARE_MASK " << state.compareMask << "\n"
+                       << "    WRITE_MASK " << state.writeMask << "\n"
+                       << "    WRITE_MASK " << state.writeMask << "\n"
+                       << "    REFERENCE " << state.reference << "\n"
+                       << "  END\n";
+        };
+        pipeline_str_stream << "  STENCIL front \n";
+        create_stencil_block(
+            pipeline_str_stream,
+            graphicsPipelineCreateInfo.pDepthStencilState->front);
+        pipeline_str_stream << "  STENCIL back \n";
+        create_stencil_block(
+            pipeline_str_stream,
+            graphicsPipelineCreateInfo.pDepthStencilState->back);
+    }
   }
 
   std::string amber_file_name;
@@ -1281,7 +1283,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   }
 
   // Add definitions for pipeline
-  amber_file << graphicsPipelineStringStream.str();
+  amber_file << pipeline_str_stream.str();
 
   VkFramebufferCreateInfo framebufferCreateInfo =
       framebuffers.at(draw_call_state_tracker.currentRenderPass->framebuffer);
@@ -1498,6 +1500,50 @@ std::string CreateSpecializationString(
       std::to_string(*(const uint32_t *)((const uint8_t *)specialization_data +
                                          specialization_map_entry.offset));
   return result;
+}
+
+const char *GetStencilOpString(VkStencilOp stencil_op) {
+  switch (stencil_op) {
+    case VK_STENCIL_OP_KEEP:
+      return "keep";
+    case VK_STENCIL_OP_REPLACE:
+      return "replace";
+    case VK_STENCIL_OP_INCREMENT_AND_CLAMP:
+      return "increment_and_clamp";
+    case VK_STENCIL_OP_DECREMENT_AND_CLAMP:
+      return "decrement_and_clamp";
+    case VK_STENCIL_OP_INVERT:
+      return "invert";
+    case VK_STENCIL_OP_INCREMENT_AND_WRAP:
+      return "increment_and_wrap";
+    case VK_STENCIL_OP_DECREMENT_AND_WRAP:
+      return "decrement_and_wrap";
+    default:
+      throw std::runtime_error("Stencil operation not supported.");
+  }
+}
+
+const char *GetCompareOpString(VkCompareOp compare_op) {
+  switch (compare_op) {
+    case VK_COMPARE_OP_NEVER:
+      return "never";
+    case VK_COMPARE_OP_LESS:
+      return "less";
+    case VK_COMPARE_OP_EQUAL:
+      return "equal";
+    case VK_COMPARE_OP_LESS_OR_EQUAL:
+      return "less_or_equal";
+    case VK_COMPARE_OP_GREATER:
+      return "greater";
+    case VK_COMPARE_OP_NOT_EQUAL:
+      return "not_equal";
+    case VK_COMPARE_OP_GREATER_OR_EQUAL:
+      return "greater_or_equal";
+    case VK_COMPARE_OP_ALWAYS:
+      return "always";
+    default:
+      throw std::runtime_error("Compare Op not supported.");
+  }
 }
 
 }  // namespace graphicsfuzz_amber_scoop
