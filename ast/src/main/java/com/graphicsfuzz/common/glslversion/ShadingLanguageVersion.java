@@ -370,7 +370,7 @@ public interface ShadingLanguageVersion {
   boolean supportedShaderMemoryControlFunctions();
 
   /**
-   * GLSL versions 4.6 and ESSL versions 3.2+ support push_constants for vulkan.
+   * GLSL versions 4.6+ and ESSL versions 3.2+ support push_constants for Vulkan.
    * @return true if and only if push constants are supported.
    */
   boolean supportedPushConstants();

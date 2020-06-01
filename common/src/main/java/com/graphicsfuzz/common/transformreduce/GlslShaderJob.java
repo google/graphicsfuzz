@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.common.transformreduce;
 
+import static java.util.Optional.of;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
@@ -43,6 +45,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+
 
 public class GlslShaderJob implements ShaderJob {
 
@@ -138,7 +141,7 @@ public class GlslShaderJob implements ShaderJob {
               // Handle push constants separately
               newTopLevelDeclarations.add(
                   new InterfaceBlock(
-                      Optional.of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
+                      of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
                       TypeQualifier.UNIFORM,
                       "buf_push",
                       Collections.singletonList(uniformName),
@@ -151,7 +154,7 @@ public class GlslShaderJob implements ShaderJob {
               ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
               newTopLevelDeclarations.add(
                   new InterfaceBlock(
-                      Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
+                      of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
                           new BindingLayoutQualifier(binding))),
                       TypeQualifier.UNIFORM,
                       "buf" + binding,
@@ -239,9 +242,20 @@ public class GlslShaderJob implements ShaderJob {
     for (String uniformName : getPipelineInfo().getUniformNames()) {
       // We maintain the invariant that either all or no uniforms have bindings, so it suffices
       // to check the first one we come across.
-      return getPipelineInfo().hasBinding(uniformName);
+      return getPipelineInfo().hasBinding(uniformName)
+          || getPipelineInfo().isPushConstant(uniformName);
     }
     return false;
+  }
+
+  @Override
+  public Optional<String> getPushConstant() {
+    for (String uniformName : getPipelineInfo().getUniformNames()) {
+      if (getPipelineInfo().isPushConstant(uniformName)) {
+        return Optional.of(uniformName);
+      }
+    }
+    return Optional.empty();
   }
 
   @Override

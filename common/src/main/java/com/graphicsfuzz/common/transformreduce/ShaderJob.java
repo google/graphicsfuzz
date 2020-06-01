@@ -41,6 +41,8 @@ public interface ShaderJob {
 
   Optional<TranslationUnit> getComputeShader();
 
+  Optional<String> getPushConstant();
+
   ShaderJob clone();
 
 }

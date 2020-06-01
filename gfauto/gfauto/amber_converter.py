@@ -262,6 +262,7 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
         if name.startswith("$"):
             continue
         if "binding" in entry.keys():
+            assert "push_constant" not in entry.keys()
             result += f"  BIND BUFFER {prefix}_{name} AS uniform DESCRIPTOR_SET 0 BINDING {entry['binding']}\n"
         elif "push_constant" in entry.keys():
             result += f"  BIND BUFFER {prefix}_{name} AS push_constant\n"

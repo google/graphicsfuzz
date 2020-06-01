@@ -406,7 +406,7 @@ public class GenerateTest {
     final String program = "#version 460\n"
         + "uniform vec4 u1;"
         + "out vec4 c;"
-        + "void main() {c = u1;}";
+        + "void main() { c = u1; }";
     final File shaderJobFile = temporaryFolder.newFile("shader.json");
     fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(),
             ParseHelper.parse(program, ShaderKind.FRAGMENT)),
