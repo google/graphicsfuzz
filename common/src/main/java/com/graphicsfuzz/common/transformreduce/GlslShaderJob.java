@@ -100,7 +100,7 @@ public class GlslShaderJob implements ShaderJob {
   @Override
   public void makeUniformBindings(Optional<String> pushConstant) {
     for (String uniformName : getPipelineInfo().getUniformNames()) {
-      assert !getPipelineInfo().hasBinding(uniformName);
+      assert !getPipelineInfo().hasBindingOrIsPushConstant(uniformName);
     }
 
     final Set<Integer> usedBindings = findUsedBindings();
@@ -139,6 +139,7 @@ public class GlslShaderJob implements ShaderJob {
 
             if (pipelineInfo.isPushConstant(uniformName)) {
               // Handle push constants separately
+              ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
               newTopLevelDeclarations.add(
                   new InterfaceBlock(
                       of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
@@ -174,7 +175,7 @@ public class GlslShaderJob implements ShaderJob {
     // Add bindings to any uniforms not referenced in the shaders, so that we don't end up in
     // a situation where some uniforms are unbound.
     for (String uniformName : getPipelineInfo().getUniformNames()) {
-      if (!getPipelineInfo().hasBinding(uniformName)) {
+      if (!getPipelineInfo().hasBindingOrIsPushConstant(uniformName)) {
         if (pushConstant.isPresent() && pushConstant.get().equals(uniformName)) {
           getPipelineInfo().addUniformBinding(uniformName, true, 0);
         } else {
@@ -194,7 +195,7 @@ public class GlslShaderJob implements ShaderJob {
   @Override
   public void removeUniformBindings() {
     for (String uniformName : getPipelineInfo().getUniformNames()) {
-      assert getPipelineInfo().hasBinding(uniformName);
+      assert getPipelineInfo().hasBindingOrIsPushConstant(uniformName);
       getPipelineInfo().removeUniformBinding(uniformName);
     }
     for (TranslationUnit tu : shaders) {
@@ -242,8 +243,7 @@ public class GlslShaderJob implements ShaderJob {
     for (String uniformName : getPipelineInfo().getUniformNames()) {
       // We maintain the invariant that either all or no uniforms have bindings, so it suffices
       // to check the first one we come across.
-      return getPipelineInfo().hasBinding(uniformName)
-          || getPipelineInfo().isPushConstant(uniformName);
+      return getPipelineInfo().hasBindingOrIsPushConstant(uniformName);
     }
     return false;
   }

@@ -236,8 +236,9 @@ public final class PipelineInfo {
   }
 
   public void removeUniformBinding(String uniformName) {
-    assert hasBinding(uniformName);
+    assert hasBindingOrIsPushConstant(uniformName);
     if (isPushConstant(uniformName)) {
+      assert !hasBinding(uniformName);
       dictionary.getAsJsonObject(uniformName).remove("push_constant");
     } else {
       dictionary.getAsJsonObject(uniformName).remove("binding");
@@ -278,6 +279,10 @@ public final class PipelineInfo {
       result.add(args.get(i).getAsNumber());
     }
     return result;
+  }
+
+  public boolean hasBindingOrIsPushConstant(String uniformName) {
+    return hasBinding(uniformName) || isPushConstant(uniformName);
   }
 
   public boolean hasBinding(String uniformName) {
