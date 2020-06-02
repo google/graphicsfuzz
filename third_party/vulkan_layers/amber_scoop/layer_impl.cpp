@@ -464,7 +464,9 @@ struct DrawCallStateTracker {
 };
 
 void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
-                    uint32_t index_count, uint32_t vertex_count);
+                    uint32_t first_index, uint32_t index_count,
+                    uint32_t first_vertex, uint32_t vertex_count,
+                    uint32_t first_instance, uint32_t instance_count);
 
 VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
                        uint32_t submitCount, VkSubmitInfo const *pSubmits,
@@ -586,9 +588,14 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
         } else if (auto cmdCopyBufferToImage = cmd->AsCopyBufferToImage()) {
           // TODO: not implemented.
         } else if (auto cmdDraw = cmd->AsDraw()) {
-          HandleDrawCall(drawCallStateTracker, 0, cmdDraw->vertexCount_);
+          HandleDrawCall(drawCallStateTracker, 0, 0, cmdDraw->firstVertex_,
+                         cmdDraw->vertexCount_, cmdDraw->firstInstance_,
+                         cmdDraw->instanceCount_);
         } else if (auto cmdDrawIndexed = cmd->AsDrawIndexed()) {
-          HandleDrawCall(drawCallStateTracker, cmdDrawIndexed->indexCount_, 0);
+          HandleDrawCall(drawCallStateTracker, cmdDrawIndexed->firstInstance_,
+                         cmdDrawIndexed->indexCount_, 0, 0,
+                         cmdDrawIndexed->firstInstance_,
+                         cmdDrawIndexed->instanceCount_);
         } else if (auto cmdPipelineBarrier = cmd->AsPipelineBarrier()) {
           drawCallStateTracker.pipeline_barriers.push_back(cmdPipelineBarrier);
         } else if (auto cmdPushConstants = cmd->AsPushConstants()) {
@@ -670,7 +677,9 @@ void vkUpdateDescriptorSets(PFN_vkUpdateDescriptorSets next, VkDevice device,
 }
 
 void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
-                    uint32_t index_count, uint32_t vertex_count) {
+                    uint32_t first_index, uint32_t index_count,
+                    uint32_t first_vertex, uint32_t vertex_count,
+                    uint32_t first_instance, uint32_t instance_count) {
   if (!draw_call_state_tracker.graphicsPipelineIsBound) {
     return;
   }
@@ -844,8 +853,8 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     std::stringstream bufferName;
     bufferName << "vert_" << location;
 
-    pipeline_str_stream << "  VERTEX_DATA " << bufferName.str()
-                                 << " LOCATION " << location << std::endl;
+    pipeline_str_stream << "  VERTEX_DATA " << bufferName.str() << " LOCATION "
+                        << location << std::endl;
 
     vkf::VulkanFormat format =
         vkf::VkFormatToVulkanFormat(attribute_description.format);
@@ -1114,17 +1123,20 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 
     if (graphicsPipelineCreateInfo.pDepthStencilState != nullptr) {
       auto depthState = graphicsPipelineCreateInfo.pDepthStencilState;
-      pipeline_str_stream << "    TEST " << (depthState->depthTestEnable ? "on" : "off") << "\n"
-          << "    WRITE " << (depthState->depthWriteEnable ? "on" : "off")
-          << "\n";
-      pipeline_str_stream << "    COMPARE_OP " << GetCompareOpString(depthState->depthCompareOp)
-          << "\n";
+      pipeline_str_stream << "    TEST "
+                          << (depthState->depthTestEnable ? "on" : "off")
+                          << "\n"
+                          << "    WRITE "
+                          << (depthState->depthWriteEnable ? "on" : "off")
+                          << "\n";
+      pipeline_str_stream << "    COMPARE_OP "
+                          << GetCompareOpString(depthState->depthCompareOp)
+                          << "\n";
 
       // Amber expects the values as float values
       pipeline_str_stream << std::scientific;
-      pipeline_str_stream << "    BOUNDS min "
-                                   << depthState->minDepthBounds << " max "
-                                   << depthState->maxDepthBounds << "\n";
+      pipeline_str_stream << "    BOUNDS min " << depthState->minDepthBounds
+                          << " max " << depthState->maxDepthBounds << "\n";
       pipeline_str_stream << std::defaultfloat;
     }
     if (graphicsPipelineCreateInfo.pRasterizationState->depthClampEnable) {
@@ -1147,31 +1159,30 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     // Stencil
     if (graphicsPipelineCreateInfo.pDepthStencilState != nullptr &&
         graphicsPipelineCreateInfo.pDepthStencilState->stencilTestEnable) {
-        auto create_stencil_block = [](std::stringstream &stringstream,
-                                       const VkStencilOpState &state) {
-          stringstream << "    TEST on \n"
-                       << "    FAIL_OP " << GetStencilOpString(state.failOp)
-                       << "\n"
-                       << "    PASS_OP " << GetStencilOpString(state.passOp)
-                       << "\n"
-                       << "    DEPTH_FAIL_OP "
-                       << GetStencilOpString(state.depthFailOp) << "\n"
-                       << "    COMPARE_OP "
-                       << GetCompareOpString(state.compareOp) << "\n"
-                       << "    COMPARE_MASK " << state.compareMask << "\n"
-                       << "    WRITE_MASK " << state.writeMask << "\n"
-                       << "    WRITE_MASK " << state.writeMask << "\n"
-                       << "    REFERENCE " << state.reference << "\n"
-                       << "  END\n";
-        };
-        pipeline_str_stream << "  STENCIL front \n";
-        create_stencil_block(
-            pipeline_str_stream,
-            graphicsPipelineCreateInfo.pDepthStencilState->front);
-        pipeline_str_stream << "  STENCIL back \n";
-        create_stencil_block(
-            pipeline_str_stream,
-            graphicsPipelineCreateInfo.pDepthStencilState->back);
+      auto create_stencil_block = [](std::stringstream &stringstream,
+                                     const VkStencilOpState &state) {
+        stringstream << "    TEST on \n"
+                     << "    FAIL_OP " << GetStencilOpString(state.failOp)
+                     << "\n"
+                     << "    PASS_OP " << GetStencilOpString(state.passOp)
+                     << "\n"
+                     << "    DEPTH_FAIL_OP "
+                     << GetStencilOpString(state.depthFailOp) << "\n"
+                     << "    COMPARE_OP " << GetCompareOpString(state.compareOp)
+                     << "\n"
+                     << "    COMPARE_MASK " << state.compareMask << "\n"
+                     << "    WRITE_MASK " << state.writeMask << "\n"
+                     << "    WRITE_MASK " << state.writeMask << "\n"
+                     << "    REFERENCE " << state.reference << "\n"
+                     << "  END\n";
+      };
+      pipeline_str_stream << "  STENCIL front \n";
+      create_stencil_block(
+          pipeline_str_stream,
+          graphicsPipelineCreateInfo.pDepthStencilState->front);
+      pipeline_str_stream << "  STENCIL back \n";
+      create_stencil_block(pipeline_str_stream,
+                           graphicsPipelineCreateInfo.pDepthStencilState->back);
     }
   }
 
@@ -1354,10 +1365,16 @@ LOCATION 1 FRAMEBUFFER_SIZE 1280 720 BIND BUFFER framebuffer_0 AS color LOCATION
 
   if (index_count > 0) {
     amber_file << "RUN pipeline DRAW_ARRAY AS " << topology
-               << " INDEXED START_IDX 0 COUNT " << index_count << std::endl;
+               << " INDEXED START_IDX " << first_index << " COUNT "
+               << index_count;
   } else {
-    amber_file << "RUN pipeline DRAW_ARRAY AS " << topology << std::endl;
+    amber_file << "RUN pipeline DRAW_ARRAY AS " << topology;
   }
+  if (instance_count) {
+    amber_file << " START_INSTANCE " << first_instance << " INSTANCE_COUNT "
+               << instance_count;
+  }
+  amber_file << std::endl;
 
   amber_file.close();
   amber_file.open(amber_file_name, std::ios::in);
