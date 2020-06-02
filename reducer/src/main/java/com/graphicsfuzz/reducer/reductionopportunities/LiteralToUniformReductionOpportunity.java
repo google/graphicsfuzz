@@ -16,39 +16,14 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.ast.ChildDoesNotExistException;
-import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ArrayInfo;
-import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
-import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
-import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
-import com.graphicsfuzz.common.ast.expr.BinOp;
-import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
-import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
-import com.graphicsfuzz.common.ast.type.ArrayType;
-import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
-import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
-import com.graphicsfuzz.common.ast.type.QualifiedType;
-import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
-import com.graphicsfuzz.common.ast.type.Type;
-import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
-import com.graphicsfuzz.common.typing.Typer;
-import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.PipelineInfo;
-import com.graphicsfuzz.util.Constants;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
 public class LiteralToUniformReductionOpportunity
     extends AbstractReductionOpportunity {
