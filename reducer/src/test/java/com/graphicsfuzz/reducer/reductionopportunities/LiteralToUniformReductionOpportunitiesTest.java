@@ -16,7 +16,6 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ParseHelper;
@@ -24,9 +23,6 @@ import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.ShaderKind;
 import java.util.Optional;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class LiteralToUniformReductionOpportunitiesTest {
 
