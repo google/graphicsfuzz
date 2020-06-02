@@ -226,6 +226,12 @@ public final class PipelineInfo {
     return result;
   }
 
+  /**
+   * Assigns an uniform binding, or alternatively sets it as a push constant.
+   * @param uniformName Name of the uniform.
+   * @param pushConstant Boolean for whether this is a push constant or not.
+   * @param number Binding number for the uniform. Ignored in case of push constants.
+   */
   public void addUniformBinding(String uniformName, boolean pushConstant, int number) {
     assert hasUniform(uniformName);
     if (pushConstant) {

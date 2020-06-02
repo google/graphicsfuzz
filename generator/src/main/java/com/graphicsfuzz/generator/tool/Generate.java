@@ -213,41 +213,42 @@ public class Generate {
     }
 
     if (args.getGenerateUniformBindings()) {
-      boolean supportedInAllShaders = true;
+      boolean pushConstantsSupportedInAllShaders = true;
       for (TranslationUnit tu : shaders) {
         if (!tu.getShadingLanguageVersion().supportedPushConstants()) {
-          supportedInAllShaders = false;
+          pushConstantsSupportedInAllShaders = false;
         }
       }
-      if (supportedInAllShaders) {
-        if (random.nextFloat() <= args.getPushConstantProbability()) {
-          // Get the list of (unique) uniform names in all shaders
-          Optional<String> pushConstant = Optional.empty();
-          final Set<String> allUniforms = new HashSet<String>();
-          for (TranslationUnit tu : shaders) {
-            for (Declaration decl : tu.getTopLevelDeclarations()) {
-              if (decl instanceof VariablesDeclaration
-                  && ((VariablesDeclaration) decl).getBaseType() instanceof QualifiedType
-                  && ((QualifiedType)((VariablesDeclaration) decl).getBaseType())
-                  .getTargetType() instanceof BasicType
-                  && ((VariablesDeclaration) decl).getBaseType()
-                  .hasQualifier(TypeQualifier.UNIFORM)) {
-                final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
-                for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
-                  allUniforms.add(declInfo.getName());
-                }
+      if (pushConstantsSupportedInAllShaders
+          && random.nextFloat() <= args.getPushConstantProbability()) {
+        // Get the list of (unique) uniform names in all shaders which
+        // are eglible for being turned into push constants (so samplers, etc
+        // are out)
+        Optional<String> pushConstant = Optional.empty();
+        final Set<String> allUniforms = new HashSet<String>();
+        for (TranslationUnit tu : shaders) {
+          for (Declaration decl : tu.getTopLevelDeclarations()) {
+            if (decl instanceof VariablesDeclaration
+                && ((VariablesDeclaration) decl).getBaseType() instanceof QualifiedType
+                && ((QualifiedType)((VariablesDeclaration) decl).getBaseType())
+                .getTargetType() instanceof BasicType
+                && ((VariablesDeclaration) decl).getBaseType()
+                .hasQualifier(TypeQualifier.UNIFORM)) {
+              final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
+              for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
+                allUniforms.add(declInfo.getName());
               }
             }
           }
-
-          // Pick one uniform at random if we have any
-          if (!allUniforms.isEmpty()) {
-            pushConstant = Optional.of(new ArrayList<String>(allUniforms)
-                .get(random.nextInt(allUniforms.size())));
-          }
-          // Note that by default we pass Optional.empty() here.
-          shaderJob.makeUniformBindings(pushConstant);
         }
+
+        // Pick one uniform at random if we have any
+        if (!allUniforms.isEmpty()) {
+          pushConstant = Optional.of(new ArrayList<String>(allUniforms)
+              .get(random.nextInt(allUniforms.size())));
+        }
+        // Note that by default we pass Optional.empty() here.
+        shaderJob.makeUniformBindings(pushConstant);
       }
     }
 

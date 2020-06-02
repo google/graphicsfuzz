@@ -46,7 +46,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
-
 public class GlslShaderJob implements ShaderJob {
 
   private final Optional<String> license;
@@ -123,6 +122,7 @@ public class GlslShaderJob implements ShaderJob {
             final String uniformName = declInfo.getName();
             assert pipelineInfo.hasUniform(uniformName);
             if (pushConstant.isPresent() && pushConstant.get().equals(uniformName)) {
+              // In case of push constants, the binding number (0 here) is ignored.
               pipelineInfo.addUniformBinding(uniformName, true, 0);
             } else if (!pipelineInfo.hasBinding(uniformName)) {
               pipelineInfo.addUniformBinding(uniformName, false, nextBinding);
@@ -137,9 +137,10 @@ public class GlslShaderJob implements ShaderJob {
                 Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
                     declInfo.getArrayInfo()).clone();
 
+            ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
+
             if (pipelineInfo.isPushConstant(uniformName)) {
               // Handle push constants separately
-              ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
               newTopLevelDeclarations.add(
                   new InterfaceBlock(
                       of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
@@ -152,7 +153,6 @@ public class GlslShaderJob implements ShaderJob {
             } else {
               // Not a push constant, so it's a normal uniform
               final int binding = pipelineInfo.getBinding(uniformName);
-              ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
               newTopLevelDeclarations.add(
                   new InterfaceBlock(
                       of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
