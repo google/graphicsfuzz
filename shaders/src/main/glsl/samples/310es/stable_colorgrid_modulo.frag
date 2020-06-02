@@ -31,9 +31,11 @@ float compute_value(float limit, float thirty_two) {
         if ((i % 32) == 0) {
             // Avoid computing e.g. mod(float(32), round(32.0)), which could be sensitive to round-off if mutated.
             result += 0.4;
-        } else if (mod(float(i), round(thirty_two)) <= 0.01) {
+        } else {
+            if (mod(float(i), round(thirty_two)) <= 0.01) {
             // This should never get executed, because the previous if condition would get triggered.
-            result += 100.0;
+                result += 100.0;
+            }
         }
         if (float(i) >= limit) {
             return result;
