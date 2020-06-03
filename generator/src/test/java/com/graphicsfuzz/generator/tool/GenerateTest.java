@@ -383,7 +383,7 @@ public class GenerateTest {
   public void testStructUniform() throws Exception {
     // Checks that the generator does not fall over when presented with struct uniforms.
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    final String program = "#version 310 es\n"
+    final String program = "#version 320 es\n"
         + "struct S { float x; };"
         + "uniform S myS;"
         + "uniform struct T { int y; } myT;"

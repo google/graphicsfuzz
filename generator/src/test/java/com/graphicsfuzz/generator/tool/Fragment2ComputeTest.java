@@ -37,7 +37,7 @@ public class Fragment2ComputeTest {
   public void testTranslationToCompute() throws Exception {
     // Check that we can turn fragment shaders into valid compute shaders.
     final File referencesDir = Paths.get(ToolPaths.getShadersDirectory(), "samples",
-        "310es").toFile();
+        "320es").toFile();
 
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 

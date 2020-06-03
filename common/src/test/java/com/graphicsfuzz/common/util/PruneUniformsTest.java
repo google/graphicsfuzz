@@ -40,7 +40,7 @@ public class PruneUniformsTest {
 
   @Test
   public void testPruneOne() throws Exception {
-    final String program = "#version 310 es\n"
+    final String program = "#version 320 es\n"
           + "precision highp float;"
           + "uniform float a;"
           + "uniform float prune_b;"
@@ -68,7 +68,7 @@ public class PruneUniformsTest {
           + "  }\n"
           + "}\n";
 
-    final String expectedProgram = "#version 310 es\n"
+    final String expectedProgram = "#version 320 es\n"
           + "precision highp float;"
           + "uniform float a;"
           + "float prune_b = 23.0;"

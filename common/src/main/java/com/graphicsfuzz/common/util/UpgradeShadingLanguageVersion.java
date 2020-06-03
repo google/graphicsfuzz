@@ -146,7 +146,7 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
       System.err.println("Time for parsing: " + (endTime - startTime));
 
       startTime = System.currentTimeMillis();
-      upgrade(tu, ShadingLanguageVersion.ESSL_310, ns.getBoolean("norename"));
+      upgrade(tu, ShadingLanguageVersion.ESSL_320, ns.getBoolean("norename"));
       endTime = System.currentTimeMillis();
       System.err.println("Time for upgrading: " + (endTime - startTime));
 
@@ -170,8 +170,8 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
   private UpgradeShadingLanguageVersion(TranslationUnit tu, ShadingLanguageVersion newVersion,
                                         boolean renameUserDefined) {
     this.renameUserDefined = renameUserDefined;
-    if (newVersion != ShadingLanguageVersion.ESSL_310) {
-      throw new RuntimeException("Only upgrading to ESSL 310 supported at present.");
+    if (newVersion != ShadingLanguageVersion.ESSL_320) {
+      throw new RuntimeException("Only upgrading to ESSL 320 supported at present.");
     }
     if (tu.getShadingLanguageVersion() != ShadingLanguageVersion.ESSL_100) {
       throw new RuntimeException("Only upgrading from ESSL 100 supported at present.");

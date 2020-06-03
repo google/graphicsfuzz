@@ -29,14 +29,14 @@ public class UpgradeShadingLanguageVersionTest {
         + "void main() {\n"
         + "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
         + "}\n";
-    final String expected = "#version 310 es\n"
+    final String expected = "#version 320 es\n"
         + "precision mediump float;\n"
         + "layout(location = 0) out vec4 _GLF_color;\n"
         + "void main() {\n"
         + "  _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
+    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_320);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -48,7 +48,7 @@ public class UpgradeShadingLanguageVersionTest {
         + "void main() {\n"
         + "  gl_FragColor = inp;\n"
         + "}\n";
-    final String expected = "#version 310 es\n"
+    final String expected = "#version 320 es\n"
         + "precision mediump float;\n"
         + "layout(location = 0) out vec4 _GLF_color;\n"
         + "in vec4 inp_;\n"
@@ -56,7 +56,7 @@ public class UpgradeShadingLanguageVersionTest {
         + "  _GLF_color = inp_;\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
+    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_320);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -67,14 +67,14 @@ public class UpgradeShadingLanguageVersionTest {
         + "void main() {\n"
         + "  gl_FragColor = texture2D(vec2(0.0,1.0));\n"
         + "}\n";
-    final String expected = "#version 310 es\n"
+    final String expected = "#version 320 es\n"
         + "precision mediump float;\n"
         + "layout(location = 0) out vec4 _GLF_color;\n"
         + "void main() {\n"
         + "  _GLF_color = texture(vec2(0.0,1.0));\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
+    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_320);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -92,7 +92,7 @@ public class UpgradeShadingLanguageVersionTest {
         + "void main() {\n"
         + "  gl_FragColor = texture2D(rot(foo));\n"
         + "}\n";
-    final String expected = "#version 310 es\n"
+    final String expected = "#version 320 es\n"
         + "precision mediump float;\n"
         + "layout(location = 0) out vec4 _GLF_color;\n"
         + "vec2 foo_;\n"
@@ -108,7 +108,7 @@ public class UpgradeShadingLanguageVersionTest {
         + "  _GLF_color = texture(rot_(foo_));\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
+    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_320);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -124,7 +124,7 @@ public class UpgradeShadingLanguageVersionTest {
         + "  texture = vec2(sin(0.0), 1.0);"
         + "  gl_FragColor = texture2D(texture);\n"
         + "}\n";
-    final String expected = "#version 310 es\n"
+    final String expected = "#version 320 es\n"
         + "precision mediump float;\n"
         + "layout(location = 0) out vec4 _GLF_color;\n"
         + "vec2 texture_;\n"
@@ -136,7 +136,7 @@ public class UpgradeShadingLanguageVersionTest {
         + "  _GLF_color = texture(texture_);\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310);
+    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_320);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 
@@ -152,7 +152,7 @@ public class UpgradeShadingLanguageVersionTest {
         + "  texture = vec2(sin(0.0), 1.0);"
         + "  gl_FragColor = texture2D(texture);\n"
         + "}\n";
-    final String expected = "#version 310 es\n"
+    final String expected = "#version 320 es\n"
         + "precision mediump float;\n"
         + "layout(location = 0) out vec4 _GLF_color;\n"
         + "vec2 texture;\n"
@@ -164,7 +164,7 @@ public class UpgradeShadingLanguageVersionTest {
         + "  _GLF_color = texture(texture);\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_310, false);
+    UpgradeShadingLanguageVersion.upgrade(tu, ShadingLanguageVersion.ESSL_320, false);
     CompareAsts.assertEqualAsts(expected, tu);
   }
 

@@ -75,7 +75,7 @@ public class PrepareReferenceTest {
         + "    ]\n"
         + "  }\n"
         + "}\n";
-    final String comp = "#version 310 es\n"
+    final String comp = "#version 320 es\n"
         + "layout(std430, binding = 0) buffer doesNotMatter {\n"
         + " int result;\n"
         + " int data[];\n"
@@ -123,7 +123,7 @@ public class PrepareReferenceTest {
         + "    ]\n"
         + "  }\n"
         + "}\n";
-    final String comp = "#version 310 es\n"
+    final String comp = "#version 320 es\n"
         + "layout(std430, binding = 1) buffer doesNotMatter {\n"
         + " int result;\n"
         + " int data[];\n"
