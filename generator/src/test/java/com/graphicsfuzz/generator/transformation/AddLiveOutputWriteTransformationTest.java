@@ -16,26 +16,24 @@
 
 package com.graphicsfuzz.generator.transformation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.generator.transformation.AddLiveOutputWriteTransformation;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import java.util.Arrays;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 
 public class AddLiveOutputWriteTransformationTest {
 
@@ -66,7 +64,7 @@ public class AddLiveOutputWriteTransformationTest {
     applyTransformation(trivialTu, shaderKind, 0);
     assertEquals(0,
         ((FunctionDefinition) trivialTu.getTopLevelDeclarations().get(0)).getBody()
-        .getNumStmts());
+            .getNumStmts());
   }
 
   @Test
@@ -91,7 +89,8 @@ public class AddLiveOutputWriteTransformationTest {
   }
 
   private void applyTransformation(TranslationUnit tu, ShaderKind shaderKind, int seed) {
-    new AddLiveOutputWriteTransformation().apply(tu, TransformationProbabilities.onlyAddLiveFragColorWrites(),
+    new AddLiveOutputWriteTransformation().apply(tu,
+        TransformationProbabilities.onlyAddLiveFragColorWrites(),
         new RandomWrapper(seed),
         GenerationParams.normal(shaderKind, true));
   }

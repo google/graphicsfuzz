@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.generator.fuzzer;
 
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -57,8 +59,6 @@ import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertTrue;
 
 public class OpaqueExpressionGeneratorTest {
 
@@ -120,8 +120,8 @@ public class OpaqueExpressionGeneratorTest {
               generationParams, shadingLanguageVersion);
       final Fuzzer fuzzer = new Fuzzer(new FuzzingContext(new Scope()), shadingLanguageVersion,
           generator, generationParams);
-      final Expr expr =
-          opaqueExpressionGenerator.applyIdentityFunction(basicType.getCanonicalConstant(new Scope()),
+      final Expr expr = opaqueExpressionGenerator.applyIdentityFunction(basicType
+              .getCanonicalConstant(new Scope()),
               basicType, false, 0, fuzzer);
 
       newStmts.add(new ExprStmt(new BinaryExpr(new VariableIdentifierExpr("x"), expr,
@@ -154,7 +154,8 @@ public class OpaqueExpressionGeneratorTest {
         for (boolean constContext : Arrays.asList(true, false)) {
           stmts.addAll(makeStatementsFromFactories(generator, generationParams,
               shadingLanguageVersion,
-              idGenerator, basicType, constContext, opaqueExpressionGenerator.waysToMakeZero(), true));
+              idGenerator, basicType, constContext, opaqueExpressionGenerator.waysToMakeZero(),
+              true));
           // We do not allow making one for non-square matrices.
           if (!BasicType.allNonSquareMatrixTypes().contains(basicType)) {
             stmts.addAll(makeStatementsFromFactories(generator, generationParams,
@@ -181,12 +182,18 @@ public class OpaqueExpressionGeneratorTest {
     }
   }
 
-  private List<Stmt> makeStatementsFromFactories(IRandom generator, GenerationParams generationParams, ShadingLanguageVersion shadingLanguageVersion, IdGenerator idGenerator, BasicType typeToGenerate, boolean constContext, List<OpaqueZeroOneFactory> factories, boolean makingZero) {
+  private List<Stmt> makeStatementsFromFactories(IRandom generator,
+                                                 GenerationParams generationParams,
+                                                 ShadingLanguageVersion shadingLanguageVersion,
+                                                 IdGenerator idGenerator,
+                                                 BasicType typeToGenerate, boolean constContext,
+                                                 List<OpaqueZeroOneFactory> factories,
+                                                 boolean makingZero) {
     List<Stmt> result = new ArrayList<>();
     for (OpaqueZeroOneFactory factory : factories) {
       final Optional<Expr> expr = factory.tryMakeOpaque(typeToGenerate, constContext, 0,
           new Fuzzer(new FuzzingContext(new Scope()), shadingLanguageVersion,
-          generator, generationParams), makingZero);
+              generator, generationParams), makingZero);
       if (expr.isPresent()) {
         final Type baseType = constContext ? new QualifiedType(typeToGenerate,
             Collections.singletonList(TypeQualifier.CONST)) : typeToGenerate;

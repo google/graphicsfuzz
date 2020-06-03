@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.generator.transformation.donation;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -32,9 +35,6 @@ import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertTrue;
 
 public class CheckDonorVersionMatchesTest {
 
@@ -73,8 +73,7 @@ public class CheckDonorVersionMatchesTest {
           TransformationProbabilities.ALWAYS,
           new RandomWrapper(0), normalGenerationParams);
       fail("An exception should have been thrown");
-    } catch (RuntimeException runtimeException)
-    {
+    } catch (RuntimeException runtimeException) {
       assertTrue(runtimeException.getMessage().startsWith("Incompatible versions"));
     }
   }
