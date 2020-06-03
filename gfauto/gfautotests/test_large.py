@@ -278,7 +278,7 @@ def fuzz_and_reduce_bug(
     # Add shaders.
     binary_manager = binaries_util.get_default_binary_manager(settings)
     graphicsfuzz_tool = binary_manager.get_binary_path_by_name("graphicsfuzz-tool")
-    sample_shaders_path: Path = graphicsfuzz_tool.path.parent.parent.parent / "shaders" / "samples" / "320es"
+    sample_shaders_path: Path = graphicsfuzz_tool.path.parent.parent.parent / "shaders" / "samples" / "310es"
     util.copy_dir(sample_shaders_path, Path() / fuzz.REFERENCES_DIR)
     util.copy_dir(sample_shaders_path, Path() / fuzz.DONORS_DIR)
 
