@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.common.transformreduce;
 
+import static java.util.Optional.of;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
@@ -25,6 +27,7 @@ import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
+import com.graphicsfuzz.common.ast.type.PushConstantLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.Type;
@@ -89,11 +92,14 @@ public class GlslShaderJob implements ShaderJob {
    *
    * <p>The method then puts every uniform in its own uniform block and assigns bindings.
    * If a uniform is declared in both shaders, the binding it is given is common to them.</p>
+   *
+   * <p>The pushConstant parameter can name one uniform as a candidate to be turned into a push
+   * contant.</p>
    */
   @Override
-  public void makeUniformBindings() {
+  public void makeUniformBindings(Optional<String> pushConstant) {
     for (String uniformName : getPipelineInfo().getUniformNames()) {
-      assert !getPipelineInfo().hasBinding(uniformName);
+      assert !getPipelineInfo().hasBindingOrIsPushConstant(uniformName);
     }
 
     final Set<Integer> usedBindings = findUsedBindings();
@@ -115,32 +121,49 @@ public class GlslShaderJob implements ShaderJob {
           for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
             final String uniformName = declInfo.getName();
             assert pipelineInfo.hasUniform(uniformName);
-            if (!pipelineInfo.hasBinding(uniformName)) {
-              pipelineInfo.addUniformBinding(uniformName, nextBinding);
+            if (pushConstant.isPresent() && pushConstant.get().equals(uniformName)) {
+              // In case of push constants, the binding number (0 here) is ignored.
+              pipelineInfo.addUniformBinding(uniformName, true, 0);
+            } else if (!pipelineInfo.hasBinding(uniformName)) {
+              pipelineInfo.addUniformBinding(uniformName, false, nextBinding);
               do {
                 nextBinding++;
               } while (usedBindings.contains(nextBinding));
             }
-            final int binding = pipelineInfo.getBinding(uniformName);
-
             // The member's type is the combination of the base type and array info for the decl.
             // We clone this type, having created it, as we will use the same base type for other
             // decls in this variables declaration and we do not want to have aliasing.
             final Type memberType =
                 Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
-                declInfo.getArrayInfo()).clone();
+                    declInfo.getArrayInfo()).clone();
 
             ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
-            newTopLevelDeclarations.add(
-                new InterfaceBlock(
-                    Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
-                        new BindingLayoutQualifier(binding))),
-                    TypeQualifier.UNIFORM,
-                    "buf" + binding,
-                    Collections.singletonList(uniformName),
-                    Collections.singletonList(memberType),
-                    Optional.empty())
-            );
+
+            if (pipelineInfo.isPushConstant(uniformName)) {
+              // Handle push constants separately
+              newTopLevelDeclarations.add(
+                  new InterfaceBlock(
+                      of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
+                      TypeQualifier.UNIFORM,
+                      "buf_push",
+                      Collections.singletonList(uniformName),
+                      Collections.singletonList(memberType),
+                      Optional.empty())
+              );
+            } else {
+              // Not a push constant, so it's a normal uniform
+              final int binding = pipelineInfo.getBinding(uniformName);
+              newTopLevelDeclarations.add(
+                  new InterfaceBlock(
+                      of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
+                          new BindingLayoutQualifier(binding))),
+                      TypeQualifier.UNIFORM,
+                      "buf" + binding,
+                      Collections.singletonList(uniformName),
+                      Collections.singletonList(memberType),
+                      Optional.empty())
+              );
+            }
           }
         } else {
           newTopLevelDeclarations.add(decl);
@@ -152,8 +175,12 @@ public class GlslShaderJob implements ShaderJob {
     // Add bindings to any uniforms not referenced in the shaders, so that we don't end up in
     // a situation where some uniforms are unbound.
     for (String uniformName : getPipelineInfo().getUniformNames()) {
-      if (!getPipelineInfo().hasBinding(uniformName)) {
-        getPipelineInfo().addUniformBinding(uniformName, nextBinding++);
+      if (!getPipelineInfo().hasBindingOrIsPushConstant(uniformName)) {
+        if (pushConstant.isPresent() && pushConstant.get().equals(uniformName)) {
+          getPipelineInfo().addUniformBinding(uniformName, true, 0);
+        } else {
+          getPipelineInfo().addUniformBinding(uniformName, false, nextBinding++);
+        }
       }
     }
   }
@@ -168,7 +195,7 @@ public class GlslShaderJob implements ShaderJob {
   @Override
   public void removeUniformBindings() {
     for (String uniformName : getPipelineInfo().getUniformNames()) {
-      assert getPipelineInfo().hasBinding(uniformName);
+      assert getPipelineInfo().hasBindingOrIsPushConstant(uniformName);
       getPipelineInfo().removeUniformBinding(uniformName);
     }
     for (TranslationUnit tu : shaders) {
@@ -216,9 +243,19 @@ public class GlslShaderJob implements ShaderJob {
     for (String uniformName : getPipelineInfo().getUniformNames()) {
       // We maintain the invariant that either all or no uniforms have bindings, so it suffices
       // to check the first one we come across.
-      return getPipelineInfo().hasBinding(uniformName);
+      return getPipelineInfo().hasBindingOrIsPushConstant(uniformName);
     }
     return false;
+  }
+
+  @Override
+  public Optional<String> getPushConstant() {
+    for (String uniformName : getPipelineInfo().getUniformNames()) {
+      if (getPipelineInfo().isPushConstant(uniformName)) {
+        return Optional.of(uniformName);
+      }
+    }
+    return Optional.empty();
   }
 
   @Override

@@ -542,7 +542,7 @@ public class ReductionDriverTest {
     ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         pipelineInfo,
         fragShader);
-    shaderJob.makeUniformBindings();
+    shaderJob.makeUniformBindings(Optional.empty());
 
     final File workDir = testFolder.getRoot();
     final File tempShaderJobFile = new File(workDir, "temp.json");
@@ -560,6 +560,60 @@ public class ReductionDriverTest {
     CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
 
   }
+
+  @Test
+  public void testReductionWithPushConstantBinding() throws Exception {
+    final TranslationUnit fragShader = ParseHelper.parse("layout(location = 0) out vec4 " +
+        "_GLF_color;" +
+        "uniform float a; " +
+        "uniform float b;" +
+        "void main() {" +
+        "  if (a > b) {" +
+        "    _GLF_color = vec4(1.0);" +
+        "  } else {" +
+        "    _GLF_color = vec4(0.0);" +
+        "  }" +
+        "}");
+    final String expected = "layout(location = 0) out vec4 _GLF_color;\n"
+        + "\n"
+        + "layout(push_constant) uniform buf_push {\n"
+        + " float a;\n"
+        + "};\n"
+        + "layout(set = 0, binding = 0) uniform buf0 {\n"
+        + " float b;\n"
+        + "};\n"
+        + "void main() {\n"
+        + " if(a > b) {\n"
+        + "   _GLF_color = vec4(1.0);\n"
+        + "  } else {\n"
+        + "   _GLF_color = vec4(0.0);\n"
+        + "  }\n"
+        + "}\n";
+    PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Arrays.asList(1.0));
+    pipelineInfo.addUniform("b", BasicType.FLOAT, Optional.empty(), Arrays.asList(2.0));
+    ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        pipelineInfo,
+        fragShader);
+    shaderJob.makeUniformBindings(Optional.of("a"));
+
+    final File workDir = testFolder.getRoot();
+    final File tempShaderJobFile = new File(workDir, "temp.json");
+    fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
+
+    final String resultsPrefix = new ReductionDriver(new ReducerContext(false,
+        ShadingLanguageVersion.ESSL_300,
+        new RandomWrapper(0),
+        new IdGenerator()),
+        false,
+        fileOps,
+        (unused, item) -> true, workDir)
+        .doReduction(shaderJob, "temp", 0, 100);
+
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+
+  }
+
 
   @Test
   public void testReductionOfUnreferencedUniform() throws Exception {

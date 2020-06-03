@@ -332,4 +332,9 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   public boolean supportedShaderMemoryControlFunctions() {
     return prototype.supportedShaderMemoryControlFunctions();
   }
+
+  @Override
+  public boolean supportedPushConstants() {
+    return prototype.supportedPushConstants();
+  }
 }
