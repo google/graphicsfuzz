@@ -1,12 +1,7 @@
 # Building SwiftShader with Coverage Enabled
-
-The SwiftShader CMakeLists.txt file defines the SWIFTSHADER\_EMIT\_COVERAGE flag to generate coverage information. However, it was designed for a very specific toolchain (clang-10 toolchain, CMake option SWIFTSHADER\_LLVM\_VERSION=10.0).
-
-The build at https://swiftshader-review.googlesource.com/c/SwiftShader/+/44728 can be built with coverage information without these restrictions.
-
 ## Steps:
 
-1. Clone the [repo](https://swiftshader-review.googlesource.com/c/SwiftShader/+/44728)
+1. `git clone https://github.com/google/swiftshader.git 9e718f962f87c30d08e91053f0e9ce3467cbd488`
 2. Enable the flag `SWIFTSHADER_EMIT_COVERAGE` in CMakeLists.txt
 3. Build as described in the SwiftShader README
 
