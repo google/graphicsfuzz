@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.tool;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.util.AddBraces;
 import com.graphicsfuzz.common.util.ParseHelper;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -44,6 +46,10 @@ class PrettyPrint {
         .help("Target file name.")
         .type(String.class);
 
+    parser.addArgument("--add-braces")
+        .help("Add braces even for single-statement code blocks")
+        .action(Arguments.storeTrue());
+
     return parser.parseArgs(args);
 
   }
@@ -55,6 +61,10 @@ class PrettyPrint {
       long startTime = System.currentTimeMillis();
       TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")));
       long endTime = System.currentTimeMillis();
+
+      if (ns.getBoolean("add_braces")) {
+        tu = AddBraces.transform(tu);
+      }
 
       prettyPrintShader(ns, tu);
 

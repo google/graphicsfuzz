@@ -31,13 +31,13 @@ import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.OpenGlConstants;
-import com.graphicsfuzz.generator.semanticspreserving.OutlineStatementMutation;
-import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.typing.Scope;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.OpenGlConstants;
+import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,27 +50,28 @@ public class OutlineStatementMutationTest {
   @Before
   public void setUp() {
     fakeFunction = new FunctionDefinition(
-        new FunctionPrototype("fake", VoidType.VOID, new ArrayList<>())
-        , new BlockStmt(new ArrayList<>(), false));
+        new FunctionPrototype("fake", VoidType.VOID, new ArrayList<>()),
+        new BlockStmt(new ArrayList<>(), false));
     tu = new TranslationUnit(null, Arrays.asList(fakeFunction));
   }
 
   @Test
   public void apply() throws Exception {
 
-    ExprStmt toOutline = new ExprStmt(new BinaryExpr(
+    final ExprStmt toOutline = new ExprStmt(new BinaryExpr(
         new VariableIdentifierExpr("x"),
         new BinaryExpr(new BinaryExpr(new VariableIdentifierExpr("x"),
             new VariableIdentifierExpr("y"), BinOp.MUL), new VariableIdentifierExpr("z"),
             BinOp.ADD), BinOp.ASSIGN));
 
-    Scope fakeScope = new Scope();
+    final Scope fakeScope = new Scope();
     fakeScope.add("x", BasicType.VEC2, Optional.empty());
     fakeScope.add("y", BasicType.FLOAT, Optional.empty());
     fakeScope.add("z", BasicType.VEC2, Optional.empty());
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
-    final String expectedDecl = "vec2 " + Constants.OUTLINED_FUNCTION_PREFIX + "0(vec2 x, float y, vec2 z)\n"
+    final String expectedDecl = "vec2 " + Constants.OUTLINED_FUNCTION_PREFIX
+        + "0(vec2 x, float y, vec2 z)\n"
         + "{\n"
         + PrettyPrinterVisitor.defaultIndent(1) + "return x * y + z;\n"
         + "}\n";
@@ -91,7 +92,8 @@ public class OutlineStatementMutationTest {
 
     Scope fakeScope = new Scope();
     fakeScope.add("x", BasicType.VEC2, Optional.empty());
-    fakeScope.add("y", new QualifiedType(BasicType.VEC2, Arrays.asList(TypeQualifier.UNIFORM)), Optional.empty());
+    fakeScope.add("y", new QualifiedType(BasicType.VEC2,
+        Collections.singletonList(TypeQualifier.UNIFORM)), Optional.empty());
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
 
@@ -143,7 +145,8 @@ public class OutlineStatementMutationTest {
         BinOp.ASSIGN));
 
     Scope fakeScope = new Scope();
-    fakeScope.add("x", new QualifiedType(BasicType.VEC2, Arrays.asList(TypeQualifier.OUT_PARAM)), Optional.empty());
+    fakeScope.add("x", new QualifiedType(BasicType.VEC2,
+        Collections.singletonList(TypeQualifier.OUT_PARAM)), Optional.empty());
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
 

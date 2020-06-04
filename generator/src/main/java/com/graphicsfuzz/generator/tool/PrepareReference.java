@@ -28,6 +28,7 @@ import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -145,7 +146,7 @@ public final class PrepareReference {
     }
 
     if (generateUniformBindings) {
-      shaderJob.makeUniformBindings();
+      shaderJob.makeUniformBindings(Optional.empty());
     }
   }
 

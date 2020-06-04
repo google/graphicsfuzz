@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The GraphicsFuzz Project Authors
+ * Copyright 2020 The GraphicsFuzz Project Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,13 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.common.glslversion;
+package com.graphicsfuzz.common.ast.type;
 
-final class Glsl460 extends CompositeShadingLanguageVersion {
-
-  static final ShadingLanguageVersion INSTANCE = new Glsl460(Glsl450.INSTANCE);
-
-  private Glsl460(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+public class PushConstantLayoutQualifier implements LayoutQualifier {
 
   @Override
-  public String getVersionString() {
-    return "460";
-  }
-
-  @Override
-  public boolean supportedPushConstants() {
-    return true;
+  public String toString() {
+    return "push_constant";
   }
 
 }

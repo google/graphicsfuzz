@@ -312,7 +312,7 @@ new MemberLookupExpr(new VariableIdentifierExpr(OpenGlConstants.GL_NUM_WORK_GROU
     final ShaderJob transformedShaderJob = transform(
         fileOps.readShaderJobFile(ns.get("fragment_json")), generator);
     if (ns.getBoolean("generate_uniform_bindings")) {
-      transformedShaderJob.makeUniformBindings();
+      transformedShaderJob.makeUniformBindings(Optional.empty());
     }
     fileOps.writeShaderJobFile(transformedShaderJob,
         ns.get("compute_json"));

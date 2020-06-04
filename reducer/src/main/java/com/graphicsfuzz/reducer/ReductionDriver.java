@@ -185,6 +185,7 @@ public class ReductionDriver {
 
     // This is used for Vulkan compatibility.
     final boolean requiresUniformBindings = initialState.hasUniformBindings();
+    final Optional<String> pushConstant = initialState.getPushConstant();
     if (initialState.hasUniformBindings()) {
       // We eliminate uniform bindings while applying reduction steps, and re-introduce them
       // each time we emit shaders.
@@ -199,7 +200,7 @@ public class ReductionDriver {
         for (int i = 1; ; i++) {
           // Initially, check that things are interesting even if we do nothing to make the shader
           // job more likely to be free from undefined behaviour, such as adding loop limiters.
-          if (isInterestingNoCache(initialState, requiresUniformBindings,
+          if (isInterestingNoCache(initialState, requiresUniformBindings, pushConstant,
               false,
               false,
               false,
@@ -228,7 +229,7 @@ public class ReductionDriver {
         LOGGER.info("We are not preserving semantics, so see whether adding guards against "
             + "undefined behaviour preserves interestingness.");
 
-        if (isInterestingNoCache(initialState, requiresUniformBindings, true,
+        if (isInterestingNoCache(initialState, requiresUniformBindings, pushConstant, true,
             false, false, shaderJobShortName)) {
           LOGGER.info("The shader is still interesting when global loop limiters are added; these"
               + " will be used during reduction, so the final reduced shader should be free from "
@@ -240,8 +241,8 @@ public class ReductionDriver {
               + "long-running or infinite loops.");
         }
 
-        if (isInterestingNoCache(initialState, requiresUniformBindings, addGlobalLoopLimiters,
-            true, false, shaderJobShortName)) {
+        if (isInterestingNoCache(initialState, requiresUniformBindings,  pushConstant,
+            addGlobalLoopLimiters, true, false, shaderJobShortName)) {
           LOGGER.info("The shader is still interesting when array/vector/matrix accesses "
               + "are made in-bounds.  Bounds clamping will be applied during reduction, so "
               + "the final reduced shader should be free from out-of-bounds accesses.");
@@ -252,8 +253,8 @@ public class ReductionDriver {
               + "so the final reduced shader might exhibit out-of-bounds accesses.");
         }
 
-        if (isInterestingNoCache(initialState, requiresUniformBindings, addGlobalLoopLimiters,
-            makeArrayAccessesInBounds, true, shaderJobShortName)) {
+        if (isInterestingNoCache(initialState, requiresUniformBindings, pushConstant,
+            addGlobalLoopLimiters, makeArrayAccessesInBounds, true, shaderJobShortName)) {
           LOGGER.info("The shader is still interesting when initializers are added to all regular "
               + "variables.  Adding of initializers will be applied during reduction, so the final "
               + "reduced shader should be free from reads from uninitialized regular variables.");
@@ -289,6 +290,7 @@ public class ReductionDriver {
                 currentReductionAttempt);
         final boolean interesting = isInterestingWithCache(newState,
             requiresUniformBindings,
+            pushConstant,
             addGlobalLoopLimiters,
             makeArrayAccessesInBounds,
             addInitializers,
@@ -323,13 +325,13 @@ public class ReductionDriver {
 
       String finalOutputFilePrefix = shaderJobShortName + "_reduced_final";
 
-      if (!isInterestingNoCache(finalState, requiresUniformBindings,
+      if (!isInterestingNoCache(finalState, requiresUniformBindings, pushConstant,
           addGlobalLoopLimiters, makeArrayAccessesInBounds, addInitializers,
           finalOutputFilePrefix)) {
         LOGGER.info(
             "Failed to simplify final reduction state! Reverting to the non-simplified state.");
         writeState(currentState, new File(workDir, finalOutputFilePrefix + ".json"),
-            requiresUniformBindings, addGlobalLoopLimiters, makeArrayAccessesInBounds,
+            requiresUniformBindings, pushConstant, addGlobalLoopLimiters, makeArrayAccessesInBounds,
             addInitializers);
       }
 
@@ -347,6 +349,7 @@ public class ReductionDriver {
 
   private boolean isInteresting(ShaderJob state,
                                 boolean requiresUniformBindings,
+                                Optional<String> pushConstant,
                                 boolean addGlobalLoopLimiters,
                                 boolean makeArrayAccessesInBounds,
                                 boolean addInitializers,
@@ -362,7 +365,7 @@ public class ReductionDriver {
       // transformations.  This is because two different shader jobs might get post-processed to the
       // same thing, and we want to avoid treating this as a reduction loop (and we *do* want to
       // guard against reduction loops).
-      writeState(state, shaderJobFile, false, false, false, false);
+      writeState(state, shaderJobFile, false, Optional.empty(), false, false, false);
 
       hash = fileOps.getShaderJobFileHash(shaderJobFile);
       if (failHashCache.contains(hash)) {
@@ -378,7 +381,7 @@ public class ReductionDriver {
 
     // If we used the cache, we will have already written the shader job out, but without any post-
     // processing; we overwrite it now with any relevant post-processing.
-    writeState(state, shaderJobFile, requiresUniformBindings, addGlobalLoopLimiters,
+    writeState(state, shaderJobFile, requiresUniformBindings, pushConstant, addGlobalLoopLimiters,
         makeArrayAccessesInBounds, addInitializers);
 
     if (judge.isInteresting(
@@ -397,34 +400,37 @@ public class ReductionDriver {
 
   private boolean isInterestingWithCache(ShaderJob state,
                                 boolean requiresUniformBindings,
+                                Optional<String> pushConstant,
                                 boolean addGlobalLoopLimiters,
                                 boolean makeArrayAccessesInBounds,
                                 boolean addInitializers,
                                 String shaderJobShortName) throws IOException, FileJudgeException {
 
-    return isInteresting(state, requiresUniformBindings, addGlobalLoopLimiters,
+    return isInteresting(state, requiresUniformBindings, pushConstant, addGlobalLoopLimiters,
         makeArrayAccessesInBounds, addInitializers, shaderJobShortName, true);
   }
 
   private boolean isInterestingNoCache(ShaderJob state,
                                 boolean requiresUniformBindings,
+                                Optional<String> pushConstant,
                                 boolean addGlobalLoopLimiters,
                                 boolean makeArrayAccessesInBounds,
                                 boolean addInitializers,
                                 String shaderJobShortName) throws IOException, FileJudgeException {
-    return isInteresting(state, requiresUniformBindings, addGlobalLoopLimiters,
+    return isInteresting(state, requiresUniformBindings, pushConstant, addGlobalLoopLimiters,
         makeArrayAccessesInBounds, addInitializers, shaderJobShortName, false);
   }
 
   private void writeState(ShaderJob state, File shaderJobFileOutput,
                           boolean requiresUniformBindings,
+                          Optional<String> pushConstant,
                           boolean addGlobalLoopLimiters,
                           boolean makeArrayAccessesInBounds,
                           boolean addInitializers) throws FileNotFoundException {
     ShaderJob stateToWrite = state.clone();
     if (requiresUniformBindings) {
       assert !stateToWrite.hasUniformBindings();
-      stateToWrite.makeUniformBindings();
+      stateToWrite.makeUniformBindings(pushConstant);
     }
     if (addGlobalLoopLimiters) {
       GloballyTruncateLoops.truncate(stateToWrite,

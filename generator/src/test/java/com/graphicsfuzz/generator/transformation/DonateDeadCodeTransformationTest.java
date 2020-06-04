@@ -16,6 +16,11 @@
 
 package com.graphicsfuzz.generator.transformation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.stmt.BreakStmt;
 import com.graphicsfuzz.common.ast.stmt.ContinueStmt;
@@ -49,11 +54,6 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class DonateDeadCodeTransformationTest {
 
@@ -380,7 +380,7 @@ public class DonateDeadCodeTransformationTest {
   }
 
   @Test
-  public void testInAndOutParametersDonatedOK() throws Exception {
+  public void testInAndOutParametersDonatedOk() throws Exception {
     // This checks that donation of code that uses 'in' and 'out' parameters of functions works.
 
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();

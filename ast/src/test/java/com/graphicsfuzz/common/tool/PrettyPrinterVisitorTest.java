@@ -580,4 +580,34 @@ public class PrettyPrinterVisitorTest {
     )));
   }
 
+  @Test
+  public void addBracesParameterTest() throws Exception {
+    final String frag =
+          "void main(void)\n"
+        + "{\n"
+        + "  if (condition)\n"
+        + "  do_something();\n"
+        + "}\n";
+    final String expected =
+          "void main(void)\n"
+        + "{\n"
+        + "  if (condition) {\n"
+        + "  do_something();\n"
+        + "  }\n"
+        + "}\n";
+
+    final File fragFile = temporaryFolder.newFile("shader.frag");
+    final File outFile = temporaryFolder.newFile("out.frag");
+    FileUtils.writeStringToFile(fragFile, frag, StandardCharsets.UTF_8);
+
+    PrettyPrint.main(new String[] {
+        fragFile.getAbsolutePath(),
+        outFile.getAbsolutePath(),
+        "--add-braces" });
+
+    final String prettiedFrag = FileUtils.readFileToString(outFile, StandardCharsets.UTF_8);
+
+    CompareAstsDuplicate.assertEqualAsts(prettiedFrag, expected);
+  }
+
 }
