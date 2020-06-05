@@ -16,52 +16,57 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.common.util.CompareAsts;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.PipelineInfo;
+import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
+import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class LiteralToUniformReductionOpportunitiesTest {
 
   @Test
   public void testReplaceSimpleInt() throws Exception {
-    final String shader = "void main() { float a = 1; int b = 22; }";
+      final String shader = "void main() { "
+        + "int a = 1; int b = 1; int c = 2;}";
 
     final String shaderReplaced = "layout(set = 0, binding = 0) uniform buf0 {"
-        + " int one;"
+        + " int _GLF_uniform_values[2];"
         + "};"
         + "void main()"
         + "{"
-        + "  int a = one;"
+        + "  int a = _GLF_uniform_values[0];"
+        + "  int b = _GLF_uniform_values[0];"
+        + "  int c = _GLF_uniform_values[1];"
         + "}";
 
     final PipelineInfo pipelineInfo = new PipelineInfo();
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         pipelineInfo, ParseHelper.parse(shader, ShaderKind.FRAGMENT));
 
-    /*
-    List<LiteralToUniformReductionOpportunity> ops =
+    final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
         .findOpportunities(shaderJob,
             new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                 new IdGenerator()));
-*/
-   // assertEquals("There should be one opportunity", 1, ops.size());
-    //ops.get(0).applyReduction();
 
-    LiteralToUniformReductionOpportunities.replaceOpportunities(shaderJob);
+    assertEquals("There should be three opportunities", 3, ops.size());
 
-    //noinspection OptionalGetWithoutIsPresent
-   // CompareAsts.assertEqualAsts(shaderReplaced, shaderJob.getFragmentShader().get());
+    ops.forEach(AbstractReductionOpportunity::applyReduction);
 
-    // TODO: assert that the pipelineInfo has the new uniform using: shaderJob.getPipelineInfo().
-   // assertTrue(shaderJob.getPipelineInfo().hasUniform("one"));
+    CompareAsts.assertEqualAsts(shaderReplaced, shaderJob.getFragmentShader().get());
 
-    //System.out.println( PrettyPrinterVisitor.prettyPrintAsString(shaderJob.getFragmentShader().get()));
-    //System.out.println(shaderJob.getPipelineInfo());
+    assertTrue(shaderJob.getPipelineInfo().hasUniform("_GLF_uniform_values"));
+
   }
 
 }
