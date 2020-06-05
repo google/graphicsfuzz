@@ -89,13 +89,22 @@ struct DescriptorSetData {
       VkDescriptorSetLayout descriptor_set_layout,
       const VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info)
       : descriptor_set_layout_(descriptor_set_layout),
-        descriptor_set_layout_create_info_(descriptor_set_layout_create_info) {}
+        descriptor_set_layout_create_info_(descriptor_set_layout_create_info) {
+    for (uint32_t i = 0; i < descriptor_set_layout_create_info.bindingCount;
+         i++) {
+      auto &binding = descriptor_set_layout_create_info.pBindings[i];
+      descriptor_set_layout_bindings_[binding.binding] = binding;
+    }
+  }
 
   VkDescriptorSetLayout descriptor_set_layout_;
   VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info_;
   std::vector<DescriptorBufferBinding> descriptor_buffer_bindings_ = {};
-  std::unordered_map<uint32_t, VkDescriptorImageInfo>
+  std::map<uint32_t, VkDescriptorImageInfo>
       image_and_sampler_bindings_ = {};
+  // Key is the binding number of the binding.
+  std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding>
+      descriptor_set_layout_bindings_ = {};
 };
 
 std::unordered_map<VkCommandBuffer, std::vector<std::shared_ptr<Cmd>>>
@@ -1019,8 +1028,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
       const auto &image_info = binding_and_image.second;
 
       const auto &layout_binding =
-          descriptor_set.descriptor_set_layout_create_info_
-              .pBindings[binding_number];
+          descriptor_set.descriptor_set_layout_bindings_.at(binding_number);
       VkDescriptorType descriptor_type = layout_binding.descriptorType;
 
       std::stringstream strstr;
@@ -1067,7 +1075,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 
           descriptorSetBindingStringStream
               << " DESCRIPTOR_SET " << descriptor_set_number << " BINDING "
-              << binding_number << std::endl;
+              << binding_number;
 
           // TODO: implement BASE_MIP_LEVEL
           // https://github.com/google/amber/blob/master/docs/amber_script.md#pipeline-buffers
