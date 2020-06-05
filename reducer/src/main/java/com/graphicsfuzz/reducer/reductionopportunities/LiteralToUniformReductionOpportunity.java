@@ -86,7 +86,7 @@ public class LiteralToUniformReductionOpportunity
     final int binding = this.shaderJob.getPipelineInfo().getNumUniforms();
     this.shaderJob.getPipelineInfo().addUniform(arrayName, BasicType.INT,
         Optional.of(values.size()), values);
-    this.shaderJob.getPipelineInfo().addUniformBinding(arrayName, binding);
+    this.shaderJob.getPipelineInfo().addUniformBinding(arrayName, false, binding);
 
     // Adds declaration for the uniform array and replaces the literal with an element in the array.
     for (TranslationUnit tu: shaderJob.getShaders()) {
