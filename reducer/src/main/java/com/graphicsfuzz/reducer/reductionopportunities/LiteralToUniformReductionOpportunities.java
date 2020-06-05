@@ -17,78 +17,16 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.ArrayInfo;
-import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
-import com.graphicsfuzz.common.ast.type.ArrayType;
-import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
-import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
-import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
-import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
-import com.graphicsfuzz.common.util.IdGenerator;
-import com.graphicsfuzz.common.util.PipelineInfo;
-import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 public final class LiteralToUniformReductionOpportunities {
 
   private LiteralToUniformReductionOpportunities() {
-    // This class just provides a static methods.
-  }
-
-  static void replaceOpportunities(ShaderJob shaderJob) {
-
-    // TODO separate lists for different types
-    List<LiteralToUniformReductionOpportunity> ops =
-        LiteralToUniformReductionOpportunities
-            .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
-                    new IdGenerator()));
-
-    List<Integer> literals = new ArrayList<>();
-    for (LiteralToUniformReductionOpportunity o: ops) {
-      literals.add(((IntConstantExpr)o.getLiteral()).getNumericValue());
-    }
-
-    // replace the literals with elements in an array
-    ops.forEach(AbstractReductionOpportunity::applyReduction);
-
-    // add uniform to the associated .json file
-
-    // TODO check whether there are other uniforms already
-    //int binding = this.pipelineInfo.getNumUniforms();
-    int binding = 0;
-    String uniformName = "values";
-    BasicType type = BasicType.INT;
-    PipelineInfo pipelineInfo = shaderJob.getPipelineInfo();
-    pipelineInfo.addUniform(uniformName, type, Optional.of(literals.size()), literals);
-    pipelineInfo.addUniformBinding(uniformName, binding);
-
-    // Add layout qualifiers for the uniforms
-    final ArrayType intArraySize = new ArrayType(BasicType.INT, new ArrayInfo(
-        new IntConstantExpr(String.valueOf(ops.size()))));
-    intArraySize.getArrayInfo().setConstantSizeExpr(2);
-
-    // TODO what if there are other than fragment shaders?
-    TranslationUnit tu = shaderJob.getShaders().get(0);
-    tu.addDeclaration(
-        new InterfaceBlock(
-            Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
-                new BindingLayoutQualifier(binding))),
-            TypeQualifier.UNIFORM,
-            "buf" + binding,
-            Collections.singletonList(uniformName),
-            Collections.singletonList(intArraySize),
-            Optional.empty()
-        )
-    );
+    // This class just provides a static method.
   }
 
   static List<LiteralToUniformReductionOpportunity> findOpportunities(
@@ -104,9 +42,8 @@ public final class LiteralToUniformReductionOpportunities {
         public void visitIntConstantExpr(IntConstantExpr intConstantExpr) {
           super.visitIntConstantExpr(intConstantExpr);
 
-          opportunities.add(new LiteralToUniformReductionOpportunity(tu, intConstantExpr,
-              opportunities.size(),
-              shaderJob.getPipelineInfo(), getVistitationDepth()));
+          opportunities.add(new LiteralToUniformReductionOpportunity(intConstantExpr,
+              shaderJob, getVistitationDepth()));
         }
 
       }.visit(tu);
