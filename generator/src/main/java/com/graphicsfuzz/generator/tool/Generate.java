@@ -165,7 +165,7 @@ public class Generate {
         .help("Probability of converting a random uniform to push constant; "
             + "floating point 0..1. Defaults to 0.5. "
             + "Ignored if shader language version doesn't support push constants.")
-        .setDefault(new Float(0.5))
+        .setDefault(new Float(0.0))
         .type(Float.class);
 
   }
