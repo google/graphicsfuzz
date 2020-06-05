@@ -175,7 +175,7 @@ public class KnownValueShaderGenerator {
           Collections.singletonList(Constants.GLF_UNIFORM));
     }
     if (generateUniformBindings) {
-      shaderJob.makeUniformBindings();
+      shaderJob.makeUniformBindings(Optional.empty());
     }
 
     fileOps.writeShaderJobFile(shaderJob, shaderJobFile);

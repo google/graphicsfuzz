@@ -297,8 +297,8 @@ public class PrettyPrinterVisitorTest {
 
   @Test
   public void testParseAndPrintVersionES() throws Exception {
-    final String program = "#\tversion 310 es\nvoid main() { }\n";
-    final String expected = "#version 310 es\nvoid main()\n{\n}\n";
+    final String program = "#\tversion 320 es\nvoid main() { }\n";
+    final String expected = "#version 320 es\nvoid main()\n{\n}\n";
     assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
     )));
   }
@@ -578,6 +578,36 @@ public class PrettyPrinterVisitorTest {
         + "}\n";
     assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
     )));
+  }
+
+  @Test
+  public void addBracesParameterTest() throws Exception {
+    final String frag =
+          "void main(void)\n"
+        + "{\n"
+        + "  if (condition)\n"
+        + "  do_something();\n"
+        + "}\n";
+    final String expected =
+          "void main(void)\n"
+        + "{\n"
+        + "  if (condition) {\n"
+        + "  do_something();\n"
+        + "  }\n"
+        + "}\n";
+
+    final File fragFile = temporaryFolder.newFile("shader.frag");
+    final File outFile = temporaryFolder.newFile("out.frag");
+    FileUtils.writeStringToFile(fragFile, frag, StandardCharsets.UTF_8);
+
+    PrettyPrint.main(new String[] {
+        fragFile.getAbsolutePath(),
+        outFile.getAbsolutePath(),
+        "--add-braces" });
+
+    final String prettiedFrag = FileUtils.readFileToString(outFile, StandardCharsets.UTF_8);
+
+    CompareAstsDuplicate.assertEqualAsts(prettiedFrag, expected);
   }
 
 }

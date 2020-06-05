@@ -29,4 +29,10 @@ final class Glsl460 extends CompositeShadingLanguageVersion {
   public String getVersionString() {
     return "460";
   }
+
+  @Override
+  public boolean supportedPushConstants() {
+    return true;
+  }
+
 }

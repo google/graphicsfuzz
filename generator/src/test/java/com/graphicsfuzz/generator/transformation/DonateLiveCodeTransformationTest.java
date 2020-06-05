@@ -16,6 +16,11 @@
 
 package com.graphicsfuzz.generator.transformation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
@@ -68,18 +73,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 public class DonateLiveCodeTransformationTest {
 
   @Rule
   public TemporaryFolder testFolder = new TemporaryFolder();
 
   private DonateLiveCodeTransformation getDummyTransformationObject() {
-    return new DonateLiveCodeTransformation(IRandom::nextBoolean, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT, true),
+    return new DonateLiveCodeTransformation(IRandom::nextBoolean, testFolder.getRoot(),
+        GenerationParams.normal(ShaderKind.FRAGMENT, true),
         false);
   }
 
@@ -90,7 +91,8 @@ public class DonateLiveCodeTransformationTest {
 
     DonationContext dc = new DonationContext(new DiscardStmt(), new HashMap<>(),
         new ArrayList<>(), null);
-    Stmt donated = dlc.prepareStatementToDonate(null, dc, TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
+    Stmt donated = dlc.prepareStatementToDonate(null, dc,
+        TransformationProbabilities.DEFAULT_PROBABILITIES, new RandomWrapper(0),
         ShadingLanguageVersion.ESSL_100);
 
     assertFalse(new CheckPredicateVisitor() {
@@ -374,68 +376,69 @@ public class DonateLiveCodeTransformationTest {
     // here in the spirit of "why delete a test?"
 
     final String reference = "#version 300 es\n"
-          + "void main() {\n"
-          + "  int t;\n"
-          + "  {\n"
-          + "  }\n"
-          + "  gl_FragColor = vec4(float(t));\n"
-          + "}\n";
+        + "void main() {\n"
+        + "  int t;\n"
+        + "  {\n"
+        + "  }\n"
+        + "  gl_FragColor = vec4(float(t));\n"
+        + "}\n";
 
     final IRandom generator = new RandomWrapper(0);
 
     for (int i = 0; i < 10; i++) {
 
       final DonateLiveCodeTransformation donateLiveCode =
-            new DonateLiveCodeTransformation(item -> true, testFolder.getRoot(), GenerationParams.normal(ShaderKind.FRAGMENT, true),
-                  false);
+          new DonateLiveCodeTransformation(item -> true, testFolder.getRoot(),
+              GenerationParams.normal(ShaderKind.FRAGMENT, true),
+              false);
 
       final TranslationUnit referenceTu = ParseHelper.parse(reference);
 
       BlockInjectionPoint blockInjectionPoint =
 
-            new ScopeTrackingVisitor() {
+          new ScopeTrackingVisitor() {
 
-              BlockInjectionPoint blockInjectionPoint;
+            BlockInjectionPoint blockInjectionPoint;
 
-              @Override
-              public void visitBlockStmt(BlockStmt stmt) {
-                super.visitBlockStmt(stmt);
-                if (stmt.getNumStmts() == 0) {
-                  blockInjectionPoint = new BlockInjectionPoint(stmt, null, getEnclosingFunction(),
-                        false, false, getCurrentScope());
-                }
+            @Override
+            public void visitBlockStmt(BlockStmt stmt) {
+              super.visitBlockStmt(stmt);
+              if (stmt.getNumStmts() == 0) {
+                blockInjectionPoint = new BlockInjectionPoint(stmt, null, getEnclosingFunction(),
+                    false, false, getCurrentScope());
               }
+            }
 
-              BlockInjectionPoint getBlockInjectionPoint(TranslationUnit tu) {
-                visit(tu);
-                return blockInjectionPoint;
-              }
-            }.getBlockInjectionPoint(referenceTu);
+            BlockInjectionPoint getBlockInjectionPoint(TranslationUnit tu) {
+              visit(tu);
+              return blockInjectionPoint;
+            }
+          }.getBlockInjectionPoint(referenceTu);
 
       final DeclarationStmt declarationStmt = new DeclarationStmt(
-            new VariablesDeclaration(
-                  BasicType.INT,
-                  new VariableDeclInfo("a", null,
-                        new Initializer(
+          new VariablesDeclaration(
+              BasicType.INT,
+              new VariableDeclInfo("a", null,
+                  new Initializer(
+                      new BinaryExpr(
+                          new BinaryExpr(
                               new BinaryExpr(
-                                    new BinaryExpr(
-                                          new BinaryExpr(
-                                                new BinaryExpr(
-                                                      new VariableIdentifierExpr("x1"),
-                                                      new VariableIdentifierExpr("x2"),
-                                                      BinOp.ADD
-                                                ),
-                                                new VariableIdentifierExpr("x3"),
-                                                BinOp.ADD
-                                          ),
-                                          new VariableIdentifierExpr("x4"),
-                                          BinOp.ADD
-                                    ),
-                                    new VariableIdentifierExpr("x5"),
-                                    BinOp.ADD
-                              )
-                        )
-                  )));
+                                  new BinaryExpr(
+                                      new VariableIdentifierExpr("x1"),
+                                      new VariableIdentifierExpr("x2"),
+                                      BinOp.ADD
+                                  ),
+                                  new VariableIdentifierExpr("x3"),
+                                  BinOp.ADD
+                              ),
+                              new VariableIdentifierExpr("x4"),
+                              BinOp.ADD
+                          ),
+                          new VariableIdentifierExpr("x5"),
+                          BinOp.ADD
+                      )
+                  )
+              )));
       final Map<String, Type> freeVariables = new HashMap<>();
       freeVariables.put("x1", BasicType.INT);
       freeVariables.put("x2", BasicType.INT);
@@ -443,24 +446,24 @@ public class DonateLiveCodeTransformationTest {
       freeVariables.put("x4", BasicType.INT);
       freeVariables.put("x5", BasicType.INT);
       Stmt toDonate = donateLiveCode.prepareStatementToDonate(blockInjectionPoint,
-            new DonationContext(
-                  declarationStmt,
-                  freeVariables,
-                  new ArrayList<>(),
-                  new FunctionDefinition(new FunctionPrototype("foo", VoidType.VOID,
-                        new ArrayList<>()), null)),
-            TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
-            generator,
+          new DonationContext(
+              declarationStmt,
+              freeVariables,
+              new ArrayList<>(),
+              new FunctionDefinition(new FunctionPrototype("foo", VoidType.VOID,
+                  new ArrayList<>()), null)),
+          TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
+          generator,
           referenceTu.getShadingLanguageVersion());
 
       blockInjectionPoint.inject(toDonate);
 
       final IdentityTransformation identityTransformation =
-            new IdentityTransformation();
+          new IdentityTransformation();
 
       identityTransformation.apply(referenceTu, TransformationProbabilities.onlyMutateExpressions(),
-            generator,
-            GenerationParams.large(ShaderKind.FRAGMENT, true)
+          generator,
+          GenerationParams.large(ShaderKind.FRAGMENT, true)
       );
     }
   }
@@ -482,20 +485,20 @@ public class DonateLiveCodeTransformationTest {
       // A call to "bar", which calls "foo" via its prototype (i.e. "foo" is defined after "bar").
       final String donorSource =
           "#version 300 es\n"
-          + "\n"
-          + "int foo(int f);\n"
-          + "\n"
-          + "int bar(int b) {\n"
-          + "    return foo(b);\n"
-          + "}\n"
-          + "\n"
-          + "int foo(int f) {\n"
-          + "    return f + 1;\n"
-          + "}\n"
-          + "\n"
-          + "void main() {\n"
-          + "    bar(1);\n"
-          + "}\n";
+              + "\n"
+              + "int foo(int f);\n"
+              + "\n"
+              + "int bar(int b) {\n"
+              + "    return foo(b);\n"
+              + "}\n"
+              + "\n"
+              + "int foo(int f) {\n"
+              + "    return f + 1;\n"
+              + "}\n"
+              + "\n"
+              + "void main() {\n"
+              + "    bar(1);\n"
+              + "}\n";
 
       fileOps.writeShaderJobFileFromImageJob(
           new ImageJob()
@@ -523,7 +526,7 @@ public class DonateLiveCodeTransformationTest {
 
     DonateLiveCodeTransformation transformation =
         new DonateLiveCodeTransformation(IRandom::nextBoolean, donors,
-        GenerationParams.normal(ShaderKind.FRAGMENT, true), false);
+            GenerationParams.normal(ShaderKind.FRAGMENT, true), false);
 
     assert referenceShaderJob.getFragmentShader().isPresent();
 
@@ -728,7 +731,7 @@ public class DonateLiveCodeTransformationTest {
   }
 
   @Test
-  public void testInAndOutParametersDonatedOK() throws Exception {
+  public void testInAndOutParametersDonatedOk() throws Exception {
     // This checks that donation of code that uses 'in' and 'out' parameters of functions works.
 
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
@@ -755,9 +758,9 @@ public class DonateLiveCodeTransformationTest {
 
       fileOps.writeShaderJobFile(
           new GlslShaderJob(
-            Optional.empty(),
-            new PipelineInfo(),
-            ParseHelper.parse(donorSource)),
+              Optional.empty(),
+              new PipelineInfo(),
+              ParseHelper.parse(donorSource)),
           new File(donors, "donor.json")
       );
     }

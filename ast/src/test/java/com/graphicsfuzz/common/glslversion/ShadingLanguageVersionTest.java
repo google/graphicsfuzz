@@ -93,6 +93,8 @@ public class ShadingLanguageVersionTest {
     expected.put(
         new String [] {"#version 310 es", "void main() { }"}, ShadingLanguageVersion.ESSL_310);
     expected.put(
+        new String [] {"#version 320 es", "void main() { }"}, ShadingLanguageVersion.ESSL_320);
+    expected.put(
         new String [] {"#version 100", "//WebGL", "void main() { }"},
         ShadingLanguageVersion.WEBGL_SL);
     expected.put(

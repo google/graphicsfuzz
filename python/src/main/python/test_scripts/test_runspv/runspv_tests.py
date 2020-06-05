@@ -48,7 +48,7 @@ def get_image_test(json_filename: str) -> str:
 
 
 def get_compute_samples_dir() -> str:
-    return cmd_helpers.get_shaders_dir() + os.sep + 'samples' + os.sep + 'compute' + os.sep + '310es'
+    return cmd_helpers.get_shaders_dir() + os.sep + 'samples' + os.sep + 'compute' + os.sep + '320es'
 
 
 def make_empty_json(path: pathlib2.Path, prefix: str = 'shader') -> pathlib2.Path:

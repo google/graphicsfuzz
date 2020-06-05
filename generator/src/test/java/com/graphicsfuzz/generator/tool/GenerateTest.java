@@ -383,7 +383,7 @@ public class GenerateTest {
   public void testStructUniform() throws Exception {
     // Checks that the generator does not fall over when presented with struct uniforms.
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    final String program = "#version 310 es\n"
+    final String program = "#version 320 es\n"
         + "struct S { float x; };"
         + "uniform S myS;"
         + "uniform struct T { int y; } myT;"
@@ -397,6 +397,31 @@ public class GenerateTest {
 
     Generate.mainHelper(new String[] { shaderJobFile.getAbsolutePath(), donors.getAbsolutePath(),
         output.getAbsolutePath(), "--seed", "0" });
+  }
+
+  @Test
+  public void testPushConstant() throws Exception {
+    // Checks that the generator does not fall over when presented with struct uniforms.
+    final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    final String program = "#version 460\n"
+        + "uniform vec4 u1;"
+        + "out vec4 c;"
+        + "void main() { c = u1; }";
+    final File shaderJobFile = temporaryFolder.newFile("shader.json");
+    fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(),
+            ParseHelper.parse(program, ShaderKind.FRAGMENT)),
+        shaderJobFile);
+    final File donors = temporaryFolder.newFolder();
+    final File output = temporaryFolder.newFile("output.json");
+
+    Generate.mainHelper(new String[] { shaderJobFile.getAbsolutePath(), donors.getAbsolutePath(),
+        output.getAbsolutePath(), "--seed", "0", "--generate-uniform-bindings",
+        "--no-injection-switch", "--push-constant-probability", "1.0" });
+
+    final ShaderJob outputShaderJob = fileOps.readShaderJobFile(output);
+
+    assertTrue(outputShaderJob.getPipelineInfo().hasUniform("u1"));
+    assertTrue(outputShaderJob.getPipelineInfo().isPushConstant("u1"));
   }
 
 }

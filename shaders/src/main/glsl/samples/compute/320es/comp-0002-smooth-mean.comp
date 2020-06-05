@@ -1,0 +1,57 @@
+#version 320 es
+
+/*
+ * Copyright 2019 The GraphicsFuzz Project Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// smooth-mean is a 1D compute shader to smooth an array of int using a moving
+// mean. https://en.wikipedia.org/wiki/Moving_average
+
+// NOTE: this is a non-optimal shader (actually incorrect, due to the lack of
+// global barrier) used as a example containing loops and barriers.
+
+// NOTE: the data array size must be equal to the number of workgroups times the
+// workgroup width.
+
+layout(std430, binding = 0) buffer doesNotMatter {
+  int data_size;
+  int data[];
+};
+
+layout(local_size_x=16, local_size_y=1) in;
+
+void main() {
+  // thread id
+  int tid = int(gl_GlobalInvocationID.x);
+
+  int num_values = 0;
+  int sum = 0;
+
+  for (int i = -2; i < 3; i++) {
+    int offset = tid + i;
+    if (0 < offset && offset < data_size) {
+      num_values++;
+      sum += data[offset];
+    }
+  }
+
+  int mean = sum / num_values;
+
+  // We would actually like a GPU-wide barrier, but this is just a toy example.
+  groupMemoryBarrier();
+  barrier();
+
+  data[tid] = mean;
+}

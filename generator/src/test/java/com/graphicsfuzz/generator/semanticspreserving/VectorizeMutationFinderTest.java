@@ -16,25 +16,21 @@
 
 package com.graphicsfuzz.generator.semanticspreserving;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CannedRandom;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
-import com.graphicsfuzz.common.util.RandomWrapper;
-import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutationFinder;
-import com.graphicsfuzz.generator.semanticspreserving.VectorizeMutation;
 import java.util.List;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class VectorizeMutationFinderTest {
 
   @Test
   public void testVectorizationOpportunities() throws Exception {
     final String program =
-            "vec3 f()\n"
+        "vec3 f()\n"
             + "{\n"
             + "    float x;"
             + "    float a, b, c, d, e = a = b = c = d = 0.;\n"
@@ -141,11 +137,12 @@ public class VectorizeMutationFinderTest {
 
   @Test
   public void testLoops() throws Exception {
-    final String program = "void main() { for(int i = 0; i < 10; i++) { } for (int j = 0; j < 10; j++) { } }";
+    final String program = "void main() { for(int i = 0; i < 10; i++) { } for (int j = 0; j < 10;"
+        + " j++) { } }";
     TranslationUnit tu = ParseHelper.parse(program);
     List<VectorizeMutation> ops =
-          new VectorizeMutationFinder(tu,
-                new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
+        new VectorizeMutationFinder(tu,
+            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
     assertEquals(0, ops.size());
 
   }
@@ -153,74 +150,80 @@ public class VectorizeMutationFinderTest {
   @Test
   public void testVectorizationOpportunitiesNested() throws Exception {
     final String program =
-          "float f()\n"
-                + "{\n"
-                + "    float a = 1.0;"
-                + "    float b = 2.0;"
-                + "    float c = 3.0;"
-                + "    return a;\n"
-                + "}\n";
+        "float f()\n"
+            + "{\n"
+            + "    float a = 1.0;"
+            + "    float b = 2.0;"
+            + "    float c = 3.0;"
+            + "    return a;\n"
+            + "}\n";
 
     final String expectedFirst =
-          "float f()\n"
-                + "{\n"
-                + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
-                + "    float a = 1.0;\n"
-                + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = a;\n"
-                + "    float b = 2.0;\n"
-                + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
-                + "    float c = 3.0;\n"
-                + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
-                + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
-                + "}\n";
+        "float f()\n"
+            + "{\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1.0;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = a;\n"
+            + "    float b = 2.0;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
+            + "    float c = 3.0;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
+            + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
+            + "}\n";
 
     final String expectedSecond =
-          "float f()\n"
-                + "{\n"
-                + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
-                + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
-                + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
-                + "    float a = 1.0;\n"
-                + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
-                + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
-                + "    float b = 2.0;\n"
-                + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = b;\n"
-                + "    float c = 3.0;\n"
-                + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = c;\n"
-                + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
-                + "}\n";
+        "float f()\n"
+            + "{\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = "
+            + "GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1.0;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = "
+            + "GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
+            + "    float b = 2.0;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = b;\n"
+            + "    float c = 3.0;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = c;\n"
+            + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
+            + "}\n";
 
     final String expectedThird =
-          "float f()\n"
-                + "{\n"
-                + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
-                + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
-                + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
-                + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
-                + "    float a = 1.0;\n"
-                + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
-                + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
-                + "    float b = 2.0;\n"
-                + "    GLF_merged2_0_1_1_1_1_1bc.x = b;\n"
-                + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = GLF_merged2_0_1_1_1_1_1bc.x;\n"
-                + "    float c = 3.0;\n"
-                + "    GLF_merged2_0_1_1_1_1_1bc.y = c;\n"
-                + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = GLF_merged2_0_1_1_1_1_1bc.y;\n"
-                + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
-                + "}\n";
+        "float f()\n"
+            + "{\n"
+            + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
+            + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
+            + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = "
+            + "GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    float a = 1.0;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = "
+            + "GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
+            + "    float b = 2.0;\n"
+            + "    GLF_merged2_0_1_1_1_1_1bc.x = b;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = "
+            + "GLF_merged2_0_1_1_1_1_1bc.x;\n"
+            + "    float c = 3.0;\n"
+            + "    GLF_merged2_0_1_1_1_1_1bc.y = c;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = "
+            + "GLF_merged2_0_1_1_1_1_1bc.y;\n"
+            + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
+            + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program);
     List<VectorizeMutation> ops =
-          new VectorizeMutationFinder(tu,
-                new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
+        new VectorizeMutationFinder(tu,
+            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
     assertEquals(1, ops.size());
     ops.get(0).apply();
     CompareAsts.assertEqualAsts(expectedFirst, tu);
 
     // Now do a nested application
     ops =
-          new VectorizeMutationFinder(tu,
-                new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
+        new VectorizeMutationFinder(tu,
+            new CannedRandom(0, 0, 0, 0, 0, 0, 0)).findMutations();
     assertEquals(2, ops.size());
     ops.get(0).apply();
     CompareAsts.assertEqualAsts(expectedSecond, tu);

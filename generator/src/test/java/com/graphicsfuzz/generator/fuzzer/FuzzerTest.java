@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.generator.fuzzer;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.TypeConstructorExpr;
@@ -29,26 +32,24 @@ import com.graphicsfuzz.common.util.ZeroCannedRandom;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 public class FuzzerTest {
 
   @Test
   public void testStructExprFuzzing() throws Exception {
 
-    final String shader = "" +
-        "struct A {" +
-        "  int f1;" +
-        "  int f2;" +
-        "};\n" +
-        "struct B {" +
-        "   A f1;" +
-        "   A f2;" +
-        "};" +
-        "void main() {" +
-        "  int doitWhenYouReachMyUse;" +
-        "  doitWhenYouReachMyUse;" +
-        "}";
+    final String shader = ""
+        + "struct A {"
+        + "  int f1;"
+        + "  int f2;"
+        + "};\n"
+        + "struct B {"
+        + "   A f1;"
+        + "   A f2;"
+        + "};"
+        + "void main() {"
+        + "  int doitWhenYouReachMyUse;"
+        + "  doitWhenYouReachMyUse;"
+        + "}";
 
     TranslationUnit tu = ParseHelper.parse(shader);
 
@@ -57,19 +58,20 @@ public class FuzzerTest {
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
         if (variableIdentifierExpr.getName().equals("doitWhenYouReachMyUse")) {
-          Expr expr = new Fuzzer(new FuzzingContext(getCurrentScope()), ShadingLanguageVersion.ESSL_100,
+          Expr expr = new Fuzzer(new FuzzingContext(getCurrentScope()),
+              ShadingLanguageVersion.ESSL_100,
               new ZeroCannedRandom(), GenerationParams.normal(ShaderKind.FRAGMENT, true), "prefix")
               .fuzzExpr(new StructNameType("B"), false, false, 0);
           assertTrue(expr instanceof TypeConstructorExpr);
           // Sanity check a few things about the result
           final TypeConstructorExpr outer = (TypeConstructorExpr) expr;
-          assertTrue(outer.getTypename().equals("B"));
+          assertEquals("B", outer.getTypename());
           assertTrue(outer.getArg(0) instanceof TypeConstructorExpr);
           assertTrue(outer.getArg(1) instanceof TypeConstructorExpr);
           final TypeConstructorExpr inner0 = (TypeConstructorExpr) outer.getArg(0);
           final TypeConstructorExpr inner1 = (TypeConstructorExpr) outer.getArg(1);
-          assertTrue(inner0.getTypename().equals("A"));
-          assertTrue(inner1.getTypename().equals("A"));
+          assertEquals("A", inner0.getTypename());
+          assertEquals("A", inner1.getTypename());
         }
       }
     }.visit(tu);

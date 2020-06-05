@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.generator.semanticspreserving;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -46,11 +49,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-
 public class IdentityMutationFinderTest {
 
   @Rule
@@ -77,7 +75,7 @@ public class IdentityMutationFinderTest {
   }
 
   @Test
-  public void testNumMutationPoints100WebGL() throws Exception {
+  public void testNumMutationPoints100WebGl() throws Exception {
     final String program =
         "#version 100\n"
             + "precision mediump float;\n"
@@ -101,7 +99,7 @@ public class IdentityMutationFinderTest {
   }
 
   @Test
-  public void testNoMutationPoints100WebGL() throws Exception {
+  public void testNoMutationPoints100WebGl() throws Exception {
     final String program =
         "void main() {\n"
             + "  int j = 0;"
@@ -233,9 +231,9 @@ public class IdentityMutationFinderTest {
         + "  true;"
         + "}");
     final List<Expr2ExprMutation> mutations =
-      new IdentityMutationFinder(tu, new RandomWrapper(0),
-          GenerationParams.normal(ShaderKind.FRAGMENT, false))
-          .findMutations();
+        new IdentityMutationFinder(tu, new RandomWrapper(0),
+            GenerationParams.normal(ShaderKind.FRAGMENT, false))
+            .findMutations();
     assertEquals(2, mutations.size());
     mutations.get(0).apply();
     assertEquals("void main()\n{\n true;\n}\n",
@@ -268,7 +266,8 @@ public class IdentityMutationFinderTest {
           if (!(functionCallExpr.getArgs().get(0) instanceof VariableIdentifierExpr)) {
             return;
           }
-          if (!(((VariableIdentifierExpr) functionCallExpr.getArgs().get(0)).getName().equals("m"))) {
+          if (!(((VariableIdentifierExpr) functionCallExpr.getArgs().get(0)).getName()
+              .equals("m"))) {
             return;
           }
           if (!(functionCallExpr.getArgs().get(1) instanceof BinaryExpr)) {

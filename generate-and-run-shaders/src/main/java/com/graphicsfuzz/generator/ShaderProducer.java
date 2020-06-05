@@ -88,7 +88,8 @@ public class ShaderProducer implements Runnable {
             ns.get("max_uniforms"),
             enabledTransformations,
             !ns.getBoolean("no_injection_switch"),
-            Optional.ofNullable(shaderStage)
+            Optional.ofNullable(shaderStage),
+            ns.getFloat("push_constant_probability")
         );
 
     final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));

@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Initializer;
-import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -34,17 +33,19 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.CannedRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.generator.util.GenerationParams;
+import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -61,7 +62,7 @@ public class StructificationMutationTest {
     // the existing declaration.
     TranslationUnit tu = new TranslationUnit(
         Optional.empty(),
-        Arrays.asList(new VariablesDeclaration(BasicType.FLOAT, new ArrayList<>())));
+        Collections.singletonList(new VariablesDeclaration(BasicType.FLOAT, new ArrayList<>())));
 
     // float v = 3.0;
     DeclarationStmt declStmt =
@@ -92,12 +93,12 @@ public class StructificationMutationTest {
         )
     );
     BlockStmt block =
-      new BlockStmt(
-          Arrays.asList(
-              declStmt.clone(),
-              assignment.clone(),
-              new BlockStmt(Arrays.asList(declStmt.clone(), assignment.clone()), true)
-          ), true);
+        new BlockStmt(
+            Arrays.asList(
+                declStmt.clone(),
+                assignment.clone(),
+                new BlockStmt(Arrays.asList(declStmt.clone(), assignment.clone()), true)
+            ), true);
 
     CannedRandom generator = new CannedRandom(
 
@@ -143,32 +144,35 @@ public class StructificationMutationTest {
 
     // Check that the inner declaration is still called v
     assertEquals("v",
-        ((DeclarationStmt)((BlockStmt) block.getStmt(2)).getStmt(0)).getVariablesDeclaration()
-           .getDeclInfo(0).getName());
+        ((DeclarationStmt) ((BlockStmt) block.getStmt(2)).getStmt(0)).getVariablesDeclaration()
+            .getDeclInfo(0).getName());
     assertEquals(BasicType.FLOAT,
-        ((DeclarationStmt)((BlockStmt) block.getStmt(2)).getStmt(0)).getVariablesDeclaration()
+        ((DeclarationStmt) ((BlockStmt) block.getStmt(2)).getStmt(0)).getVariablesDeclaration()
             .getBaseType());
     assertEquals("v",
-        ((VariableIdentifierExpr)((BinaryExpr)((ExprStmt)((BlockStmt) block.getStmt(2)).getStmt(1)).getExpr())
-            .getLhs()).getName());
+        ((VariableIdentifierExpr) ((BinaryExpr) ((ExprStmt) ((BlockStmt) block.getStmt(2))
+            .getStmt(1)).getExpr()).getLhs()).getName());
 
-    String newName = ((DeclarationStmt) block.getStmt(0)).getVariablesDeclaration().getDeclInfo(0).getName();
+    String newName =
+        ((DeclarationStmt) block.getStmt(0)).getVariablesDeclaration().getDeclInfo(0).getName();
     assertTrue(newName.startsWith(Constants.GLF_STRUCT_REPLACEMENT));
 
     BinaryExpr newAssignment = (BinaryExpr) ((ExprStmt) block.getStmt(1)).getExpr();
 
     assertTrue(newAssignment.getLhs() instanceof MemberLookupExpr);
     assertEquals("v", ((MemberLookupExpr) newAssignment.getLhs()).getMember());
-    assertTrue(((MemberLookupExpr) newAssignment.getLhs()).getStructure() instanceof MemberLookupExpr);
-    assertEquals("_f0", ((MemberLookupExpr)((MemberLookupExpr) newAssignment.getLhs()).getStructure())
+    assertTrue(((MemberLookupExpr) newAssignment.getLhs()).getStructure()
+        instanceof MemberLookupExpr);
+    assertEquals("_f0",
+        ((MemberLookupExpr) ((MemberLookupExpr) newAssignment.getLhs()).getStructure())
         .getMember());
-    assertTrue(((MemberLookupExpr)((MemberLookupExpr) newAssignment.getLhs()).getStructure())
+    assertTrue(((MemberLookupExpr) ((MemberLookupExpr) newAssignment.getLhs()).getStructure())
         .getStructure() instanceof VariableIdentifierExpr);
     assertEquals(newName,
         ((VariableIdentifierExpr)
-        ((MemberLookupExpr)((MemberLookupExpr) newAssignment.getLhs()).getStructure())
-            .getStructure()).getName()
-        );
+            ((MemberLookupExpr) ((MemberLookupExpr) newAssignment.getLhs()).getStructure())
+                .getStructure()).getName()
+    );
 
   }
 
@@ -190,7 +194,8 @@ public class StructificationMutationTest {
         false /* that is not a struct */,
         0 /* instead it is FLOAT */);
     List<StructDefinitionType> structs = StructificationMutation.randomStruct(0, generator,
-        new IdGenerator(), ShadingLanguageVersion.GLSL_440, GenerationParams.normal(ShaderKind.FRAGMENT, true));
+        new IdGenerator(), ShadingLanguageVersion.GLSL_440,
+        GenerationParams.normal(ShaderKind.FRAGMENT, true));
     assertEquals(3, structs.size());
     StructDefinitionType enclosingStruct = structs.get(0);
     assertEquals(enclosingStruct.getFieldName(0), "_f0");
@@ -203,9 +208,9 @@ public class StructificationMutationTest {
     assertEquals(enclosingStruct.getFieldType(2), structs.get(2).getStructNameType());
     assertEquals(enclosingStruct.getFieldType(1), BasicType.FLOAT);
     assertEquals(lookupDeclaration((StructNameType) enclosingStruct.getFieldType(0), structs)
-            .getFieldType(0), BasicType.FLOAT);
+        .getFieldType(0), BasicType.FLOAT);
     assertEquals(lookupDeclaration((StructNameType) enclosingStruct.getFieldType(0), structs)
-            .getFieldType(1), BasicType.VEC2);
+        .getFieldType(1), BasicType.VEC2);
     assertEquals(lookupDeclaration((StructNameType) enclosingStruct.getFieldType(2), structs)
             .getFieldType(0),
         BasicType.FLOAT);
@@ -224,13 +229,15 @@ public class StructificationMutationTest {
 
   }
 
-  private void checkDisjointSubStructs(StructDefinitionType struct, List<StructDefinitionType> structs) {
+  private void checkDisjointSubStructs(StructDefinitionType struct,
+                                       List<StructDefinitionType> structs) {
     Set<StructNameType> observedStructs = new HashSet<>();
     observedStructs.add(struct.getStructNameType());
     for (Type t : struct.getFieldTypes()) {
       if (t.getWithoutQualifiers() instanceof StructNameType) {
         final StructNameType StructNameType = (StructNameType) t.getWithoutQualifiers();
-        final StructDefinitionType structDefinitionType = lookupDeclaration(StructNameType, structs);
+        final StructDefinitionType structDefinitionType = lookupDeclaration(StructNameType,
+            structs);
         checkDisjointSubStructs(structDefinitionType, structs);
         Set<StructNameType> referencedStructs = getAllReferencedStructs(
             structDefinitionType, structs);
@@ -242,16 +249,17 @@ public class StructificationMutationTest {
     }
   }
 
-  private StructDefinitionType lookupDeclaration(StructNameType StructNameType, List<StructDefinitionType> structs) {
+  private StructDefinitionType lookupDeclaration(StructNameType structNameType,
+                                                 List<StructDefinitionType> structs) {
     return structs
         .stream()
-        .filter(item -> item.getStructNameType().equals(StructNameType))
+        .filter(item -> item.getStructNameType().equals(structNameType))
         .findAny()
         .get();
   }
 
   private Set<StructNameType> getAllReferencedStructs(StructDefinitionType structDefinitionType,
-                                                  List<StructDefinitionType> structs) {
+                                                      List<StructDefinitionType> structs) {
     Set<StructNameType> result = new HashSet<>();
     result.add(structDefinitionType.getStructNameType());
     for (Type t : structDefinitionType.getFieldTypes()) {

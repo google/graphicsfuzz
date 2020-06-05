@@ -24,8 +24,6 @@ import com.graphicsfuzz.generator.mutateapi.Expr2ExprMutation;
 import java.util.List;
 import org.junit.Test;
 
-import static org.junit.Assert.assertFalse;
-
 public class Expr2BinaryMutationFinderTest {
 
   @Test
