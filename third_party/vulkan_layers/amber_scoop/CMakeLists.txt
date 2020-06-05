@@ -42,4 +42,4 @@ target_include_directories(VkLayer_graphicsfuzz_amber_scoop
 target_link_libraries(VkLayer_graphicsfuzz_amber_scoop
         PUBLIC SPIRV-Tools-opt
         PUBLIC vulkan_layers_common
-        PUBLIC vulkan)
+        PUBLIC Vulkan::Vulkan)
