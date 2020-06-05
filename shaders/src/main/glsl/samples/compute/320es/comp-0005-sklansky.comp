@@ -1,0 +1,81 @@
+#version 320 es
+
+/*
+ * Copyright 2019 The GraphicsFuzz Project Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Sklansky prefix sum implementation.
+
+// Deliberately not a power-of-two, to make things interesting.
+#define DATA_SIZE 200
+#define INVOCATIONS 100
+
+layout(std430, binding = 0) buffer theSSBO {
+  // Amber only supports one type in a given buffer, hence the 'is_exclusive'
+  // bool field is declared as a uint
+  uint is_exclusive;
+  uint data_out[DATA_SIZE];
+  uint data_in[DATA_SIZE];
+};
+
+layout(local_size_x=INVOCATIONS, local_size_y=1, local_size_z=1) in;
+
+shared uint result[DATA_SIZE];
+
+void main() {
+
+  uint tid = gl_LocalInvocationIndex;
+  uint gid = gl_GlobalInvocationID.x;
+
+  if (tid != gid) {
+    // They should be the same.  Use them both and do this check just to shake things up a bit.
+    return;
+  }
+
+  result[2u * tid] = data_in[2u * gid];
+  result[2u * tid + 1u] = data_in[2u * gid + 1u];
+
+  uint d = 1u;
+
+  for ( ; ; ) {
+
+    if ((d & (d - 1u)) != 0u) {
+      // An invariant that should hold.
+      return;
+    }
+
+    if (d >= uint(DATA_SIZE)) {
+      break;
+    }
+
+    barrier();
+    uint block = 2u * (tid - (tid & (d - 1u)));
+    uint me = block + (tid & (d - 1u)) + d;
+    uint spine = block + d - 1u;
+    result[me] = max(result[spine], result[me]);
+    d = d * 2u;
+  }
+
+  barrier();
+
+  if (bool(is_exclusive)) {
+    data_out[2u * gid] = (tid == 0u) ? 0u : result[2u * tid - 1u];
+    data_out[2u * gid + 1u] = result[2u * tid];
+  } else {
+   data_out[2u * gid] = result[2u * tid];
+   data_out[2u * gid + 1u] = result[2u * tid + 1u];
+  }
+
+}

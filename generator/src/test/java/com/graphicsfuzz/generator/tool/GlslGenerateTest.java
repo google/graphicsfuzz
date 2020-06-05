@@ -60,7 +60,7 @@ public class GlslGenerateTest {
   @Test
   public void testVulkanShaderFamilies() throws Exception {
     final String references = Paths.get(ToolPaths.getShadersDirectory(),
-        "samples", "310es").toString();
+        "samples", "320es").toString();
     final int numVariants = 3;
     final String prefix = "someprefix";
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
@@ -118,7 +118,7 @@ public class GlslGenerateTest {
   @Test
   public void testGenerateComputeShaderFamily() throws Exception {
     final String references = Paths.get(ToolPaths.getShadersDirectory(),
-        "samples", "compute", "310es").toString();
+        "samples", "compute", "320es").toString();
     final int numVariants = 3;
     final String prefix = "someprefix";
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();

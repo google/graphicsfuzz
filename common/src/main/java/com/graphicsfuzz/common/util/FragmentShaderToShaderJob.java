@@ -151,7 +151,7 @@ public final class FragmentShaderToShaderJob {
             // Since we're going to need it, initialize vertexShader with
             // skeleton definition
             vertexShader = Optional.of(new TranslationUnit(ShaderKind.VERTEX,
-                Optional.of(ShadingLanguageVersion.ESSL_310), Arrays.asList(
+                Optional.of(ShadingLanguageVersion.ESSL_320), Arrays.asList(
                 new PrecisionDeclaration("precision mediump float;"),
                 new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
                     Arrays.asList(new LayoutQualifierSequence(

@@ -297,8 +297,8 @@ public class PrettyPrinterVisitorTest {
 
   @Test
   public void testParseAndPrintVersionES() throws Exception {
-    final String program = "#\tversion 310 es\nvoid main() { }\n";
-    final String expected = "#version 310 es\nvoid main()\n{\n}\n";
+    final String program = "#\tversion 320 es\nvoid main() { }\n";
+    final String expected = "#version 320 es\nvoid main()\n{\n}\n";
     assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
     )));
   }
