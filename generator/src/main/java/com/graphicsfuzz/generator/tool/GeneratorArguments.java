@@ -33,7 +33,6 @@ public class GeneratorArguments {
   private final EnabledTransformations enabledTransformations;
   private final boolean addInjectionSwitch;
   private final Optional<ShaderKind> onlyFuzzShaderStage;
-  private final float pushConstantProbability;
 
   public GeneratorArguments(
         boolean small,
@@ -46,8 +45,7 @@ public class GeneratorArguments {
         int maxUniforms,
         EnabledTransformations enabledTransformations,
         boolean addInjectionSwitch,
-        Optional<ShaderKind> onlyFuzzShaderStage,
-        float pushConstantProbability) {
+        Optional<ShaderKind> onlyFuzzShaderStage) {
     this.small = small;
     this.allowLongLoops = allowLongLoops;
     this.singlePass = singlePass;
@@ -59,7 +57,6 @@ public class GeneratorArguments {
     this.enabledTransformations = enabledTransformations;
     this.addInjectionSwitch = addInjectionSwitch;
     this.onlyFuzzShaderStage = onlyFuzzShaderStage;
-    this.pushConstantProbability = pushConstantProbability;
   }
 
   public Optional<ShaderKind> getOnlyFuzzShaderStage() {
@@ -110,10 +107,6 @@ public class GeneratorArguments {
     return addInjectionSwitch;
   }
 
-  public float getPushConstantProbability() {
-    return pushConstantProbability;
-  }
-
   @Override
   public final String toString() {
     final StringBuilder sb = new StringBuilder();
@@ -127,7 +120,6 @@ public class GeneratorArguments {
     sb.append("maxUniforms: " + (limitUniforms() ? "-" : maxUniforms) + "\n");
     sb.append("enabledTransformations: " + enabledTransformations + "\n");
     sb.append("addInjectionSwitch: " + addInjectionSwitch + "\n");
-    sb.append("pushConstantProbability: " + pushConstantProbability + "\n");
     return sb.toString();
   }
 

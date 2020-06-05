@@ -35,9 +35,4 @@ final class Essl320 extends CompositeShadingLanguageVersion {
     return true;
   }
 
-  @Override
-  public boolean supportedPushConstants() {
-    return true;
-  }
-
 }

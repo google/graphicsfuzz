@@ -172,7 +172,7 @@ public class GlslShaderJobTest {
         ParseHelper.parse(getShaderFile("vert", VERT_SHADER_NO_BINDINGS)),
         ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_NO_BINDINGS)));
 
-    job.makeUniformBindings(Optional.empty());
+    job.makeUniformBindings();
 
     CompareAsts.assertEqualAsts(VERT_SHADER_WITH_BINDINGS, job.getVertexShader().get());
     CompareAsts.assertEqualAsts(FRAG_SHADER_WITH_BINDINGS, job.getFragmentShader().get());
@@ -349,7 +349,7 @@ public class GlslShaderJobTest {
         ParseHelper.parse(getShaderFile("vert", VERT_SHADER_NO_BINDINGS_MULTIPLE_VARIABLES_PER_DECLARATION)),
         ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_NO_BINDINGS_MULTIPLE_VARIABLES_PER_DECLARATION)));
 
-    job.makeUniformBindings(Optional.empty());
+    job.makeUniformBindings();
 
     CompareAsts.assertEqualAsts(VERT_SHADER_WITH_BINDINGS_MULTIPLE_VARIABLES_PER_DECLARATION,
         job.getVertexShader().get());
@@ -501,7 +501,7 @@ public class GlslShaderJobTest {
         ParseHelper.parse(getShaderFile("frag",
             FRAG_SHADER_NO_BINDINGS_ARRAYS_MULTIPLE_VARS_PER_DECL)));
 
-    job.makeUniformBindings(Optional.empty());
+    job.makeUniformBindings();
 
     CompareAsts.assertEqualAsts(VERT_SHADER_WITH_BINDINGS_ARRAYS, job.getVertexShader().get());
     CompareAsts.assertEqualAsts(FRAG_SHADER_WITH_BINDINGS_ARRAYS, job.getFragmentShader().get());

@@ -27,7 +27,7 @@ public interface ShaderJob {
 
   Optional<String> getLicense();
 
-  void makeUniformBindings(Optional<String> pushConstant);
+  void makeUniformBindings();
 
   void removeUniformBindings();
 
@@ -40,8 +40,6 @@ public interface ShaderJob {
   Optional<TranslationUnit> getFragmentShader();
 
   Optional<TranslationUnit> getComputeShader();
-
-  Optional<String> getPushConstant();
 
   ShaderJob clone();
 

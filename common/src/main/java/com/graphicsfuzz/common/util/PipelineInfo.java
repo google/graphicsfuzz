@@ -226,29 +226,14 @@ public final class PipelineInfo {
     return result;
   }
 
-  /**
-   * Assigns an uniform binding, or alternatively sets it as a push constant.
-   * @param uniformName Name of the uniform.
-   * @param pushConstant Boolean for whether this is a push constant or not.
-   * @param number Binding number for the uniform. Ignored in case of push constants.
-   */
-  public void addUniformBinding(String uniformName, boolean pushConstant, int number) {
+  public void addUniformBinding(String uniformName, int number) {
     assert hasUniform(uniformName);
-    if (pushConstant) {
-      dictionary.getAsJsonObject(uniformName).addProperty("push_constant", true);
-    } else {
-      dictionary.getAsJsonObject(uniformName).addProperty("binding", number);
-    }
+    dictionary.getAsJsonObject(uniformName).addProperty("binding", number);
   }
 
   public void removeUniformBinding(String uniformName) {
-    assert hasBindingOrIsPushConstant(uniformName);
-    if (isPushConstant(uniformName)) {
-      assert !hasBinding(uniformName);
-      dictionary.getAsJsonObject(uniformName).remove("push_constant");
-    } else {
-      dictionary.getAsJsonObject(uniformName).remove("binding");
-    }
+    assert hasBinding(uniformName);
+    dictionary.getAsJsonObject(uniformName).remove("binding");
   }
 
   public List<String> getUniformNames() {
@@ -287,16 +272,8 @@ public final class PipelineInfo {
     return result;
   }
 
-  public boolean hasBindingOrIsPushConstant(String uniformName) {
-    return hasBinding(uniformName) || isPushConstant(uniformName);
-  }
-
   public boolean hasBinding(String uniformName) {
     return lookupUniform(uniformName).has("binding");
-  }
-
-  public boolean isPushConstant(String uniformName) {
-    return lookupUniform(uniformName).has("push_constant");
   }
 
   public int getBinding(String uniformName) {

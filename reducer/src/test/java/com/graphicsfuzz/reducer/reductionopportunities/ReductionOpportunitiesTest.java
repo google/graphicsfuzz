@@ -1070,7 +1070,7 @@ public class ReductionOpportunitiesTest {
     assertEquals(1, ops.size());
     assertTrue(ops.get(0) instanceof VariableDeclReductionOpportunity);
     ops.get(0).applyReduction();
-    shaderJob.makeUniformBindings(Optional.empty());
+    shaderJob.makeUniformBindings();
     CompareAsts.assertEqualAsts("#version 310 es\nvoid main() { }", tu);
   }
 
