@@ -27,7 +27,6 @@ if [ -z "$VULKAN_SDK" ]; then
     echo "VULKAN_SDK is empty, missing Vulkan SDK"
     exit 1
 fi
-sudo apt-get install cmake g++ xorg-dev libglu1-mesa-dev
 
 #### Get the source
 git clone --recurse-submodules https://github.com/KhronosGroup/Vulkan-Samples.git
