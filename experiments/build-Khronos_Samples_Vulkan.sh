@@ -29,10 +29,13 @@ if [ -z "$VULKAN_SDK" ]; then
 fi
 
 #### Get the source
-git clone --recurse-submodules https://github.com/KhronosGroup/Vulkan-Samples.git
+git clone https://github.com/KhronosGroup/Vulkan-Samples.git
 (
     cd Vulkan-Samples
     git checkout -b gsoc 8155762d9395de224e6ab1b22ae8e5880faabd3e
+
+    # Update submodules after checking out the required commit
+    git submodule update --init --recursive
 )
 
 #### Build
