@@ -41,6 +41,6 @@ git clone https://github.com/KhronosGroup/Vulkan-Samples.git
 #### Build
 (
     cd Vulkan-Samples
-    cmake -G "Unix Makefiles" -H. -Bbuild/linux -DCMAKE_BUILD_TYPE=Release
-    cmake --build build/linux --config Release --target vulkan_samples -- -j4
+    cmake -G Ninja -H. -Bbuild/linux -DCMAKE_BUILD_TYPE=Release
+    cmake --build build/linux --config Release --target vulkan_samples
 )
