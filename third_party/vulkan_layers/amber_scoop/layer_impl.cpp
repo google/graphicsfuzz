@@ -100,8 +100,7 @@ struct DescriptorSetData {
   VkDescriptorSetLayout descriptor_set_layout_;
   VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info_;
   std::vector<DescriptorBufferBinding> descriptor_buffer_bindings_ = {};
-  std::map<uint32_t, VkDescriptorImageInfo>
-      image_and_sampler_bindings_ = {};
+  std::map<uint32_t, VkDescriptorImageInfo> image_and_sampler_bindings_ = {};
   // Key is the binding number of the binding.
   std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding>
       descriptor_set_layout_bindings_ = {};
@@ -326,11 +325,13 @@ VkResult vkCreateBuffer(PFN_vkCreateBuffer next, VkDevice device,
   DEBUG_LAYER(vkCreateBuffer);
 
   VkBufferCreateInfo createInfo = *pCreateInfo;
-  // Allow vertex/index/uniform buffer to be used as transfer source buffer.
-  // Required if the buffer data needs to be copied from the buffer.
-  if (createInfo.usage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ||
-      createInfo.usage & VK_BUFFER_USAGE_INDEX_BUFFER_BIT ||
-      createInfo.usage & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) {
+  // Allow vertex/index/uniform/storage buffer to be used as transfer source
+  // buffer. Required if the buffer data needs to be copied from the buffer.
+  if (createInfo.usage &
+      (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+       VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+       VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT |
+       VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT)) {
     createInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
   }
 
