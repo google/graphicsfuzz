@@ -17,13 +17,9 @@
 import sys, json, subprocess
 
 json_string = subprocess.check_output(
-        "pushd swiftshader/build-coverage/src/Vulkan/CMakeFiles/vk_swiftshader.dir;\
-        gcov -i -t libVulkan.cpp.o;\
-        popd;\
-        exit 0",
-        shell=True,
-        executable="/bin/bash"
-).decode("utf-8").split('\n')[1]
+    ["gcov", "-i", "-t", "libVulkan.cpp.o"],
+    cwd="swiftshader/build-coverage/src/Vulkan/CMakeFiles/vk_swiftshader.dir"
+)
 
 files_array = json.loads(json_string)['files']
 
