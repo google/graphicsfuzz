@@ -35,7 +35,7 @@ for index in range(len(files_array)):
 
 if libVulkanIndex == -1:
     print("libVulkan.cpp not found in gcov data")
-    sys.exit(0)
+    sys.exit(1)
 
 functions = files_array[libVulkanIndex]['functions']
 
