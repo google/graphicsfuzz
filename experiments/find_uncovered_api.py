@@ -25,18 +25,20 @@ workdir = "swiftshader/build-coverage/src/Vulkan/CMakeFiles/vk_swiftshader.dir"
 json_string = subprocess.check_output(cmd, cwd=workdir)
 
 files_array = json.loads(json_string)['files']
+lib_vulkan_record = None
 
-libVulkanIndex = -1
-for index in range(len(files_array)):
-    if "libVulkan" in files_array[index]['file']:
-        libVulkanIndex = index
+# We expect only one file_record to match
+# libVulkan
+for file_record in files_array:
+    if "libVulkan" in file_record['file']:
+        lib_vulkan_record = file_record
         break
 
-if libVulkanIndex == -1:
+if not lib_vulkan_record:
     print("libVulkan.cpp not found in gcov data")
     sys.exit(1)
 
-functions = files_array[libVulkanIndex]['functions']
+functions = lib_vulkan_record['functions']
 
 for function in functions:
     if function['execution_count'] == 0:
