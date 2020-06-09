@@ -41,8 +41,7 @@ public final class LiteralToUniformReductionOpportunities {
         @Override
         public void visitIntConstantExpr(IntConstantExpr intConstantExpr) {
           super.visitIntConstantExpr(intConstantExpr);
-
-          opportunities.add(new LiteralToUniformReductionOpportunity(intConstantExpr,
+          opportunities.add(new LiteralToUniformReductionOpportunity(intConstantExpr, tu,
               shaderJob, getVistitationDepth()));
         }
 

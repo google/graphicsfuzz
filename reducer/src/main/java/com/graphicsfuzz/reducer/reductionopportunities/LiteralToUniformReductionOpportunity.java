@@ -20,22 +20,20 @@ import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
-import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
+import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
-import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
-import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
-import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
+import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,93 +41,85 @@ public class LiteralToUniformReductionOpportunity
     extends AbstractReductionOpportunity {
 
   private final ConstantExpr literalExpr;
+  private final TranslationUnit translationUnit;
   private final ShaderJob shaderJob;
 
 
   LiteralToUniformReductionOpportunity(ConstantExpr literalExpr,
+                                       TranslationUnit translationUnit,
                                        ShaderJob shaderJob,
                                        VisitationDepth depth) {
 
     super(depth);
 
     this.literalExpr = literalExpr;
+    this.translationUnit = translationUnit;
     this.shaderJob = shaderJob;
 
+    // If the uniform array doesn't exist in the pipeline info adds an empty array
+    final String arrayName = Constants.INT_LITERAL_UNIFORM_VALUES;
+    if (!shaderJob.getPipelineInfo().hasUniform(arrayName)) {
+      shaderJob.getPipelineInfo().addUniform(arrayName, BasicType.INT,
+          Optional.of(0), new ArrayList<>());
+      shaderJob.getPipelineInfo().addUniformBinding(arrayName, false,
+          shaderJob.getPipelineInfo().getNumUniforms());
+    }
   }
 
   @Override
   void applyReductionImpl() {
 
     final String arrayName = Constants.INT_LITERAL_UNIFORM_VALUES;
-    final List<Number> values;
+
+    // Adds the literal to the array if it doesn't exist already and updates the index number to
+    // point at the corresponding element in the array.
     final int index;
+    final List<Number> values = this.shaderJob.getPipelineInfo().getArgs(arrayName);
 
-    // Creates a combined list of the current and previously added values.
-    // Updates the index number to point at the corresponding element in the array.
-    if (this.shaderJob.getPipelineInfo().hasUniform(arrayName)) {
-      values = this.shaderJob.getPipelineInfo().getArgs(arrayName);
-      if (values.contains(((IntConstantExpr)this.literalExpr).getNumericValue())) {
-        index = values.indexOf(((IntConstantExpr)this.literalExpr).getNumericValue());
-      } else {
-        index = this.shaderJob.getPipelineInfo().getArgs(arrayName).size();
-        values.add(((IntConstantExpr)this.literalExpr).getNumericValue());
-      }
-
+    if (values.contains(((IntConstantExpr) this.literalExpr).getNumericValue())) {
+      index = values.indexOf(((IntConstantExpr) this.literalExpr).getNumericValue());
     } else {
-      values = new ArrayList<>();
-      values.add(((IntConstantExpr)this.literalExpr).getNumericValue());
-      index = values.size() - 1;
+      index = this.shaderJob.getPipelineInfo().getArgs(arrayName).size();
+      values.add(((IntConstantExpr) this.literalExpr).getNumericValue());
     }
 
     // Removes the old uniform array and adds the new one to the associated json structure.
     this.shaderJob.getPipelineInfo().removeUniform(arrayName);
-    final int binding = this.shaderJob.getPipelineInfo().getNumUniforms();
     this.shaderJob.getPipelineInfo().addUniform(arrayName, BasicType.INT,
         Optional.of(values.size()), values);
-    this.shaderJob.getPipelineInfo().addUniformBinding(arrayName, false, binding);
+    this.shaderJob.getPipelineInfo().addUniformBinding(arrayName, false,
+        this.shaderJob.getPipelineInfo().getNumUniforms());
 
-    // Adds declaration for the uniform array and replaces the literal with an element in the array.
+    // Adds the new array declaration to every translation unit.
     for (TranslationUnit tu: shaderJob.getShaders()) {
 
       // Declares the array if it didn't exist. Otherwise, removes it and adds a new declaration
       // with increased size.
       Optional<Declaration> oldDeclaration = Optional.empty();
-      final List<Declaration> declarations = tu.getTopLevelDeclarations();
-      for (Declaration declaration : declarations) {
-        if (declaration instanceof InterfaceBlock) {
-          final List<String> members = ((InterfaceBlock) declaration).getMemberNames();
-          if (members.get(0).equals(arrayName)) {
-            oldDeclaration = Optional.of(declaration);
-          }
+      final List<VariablesDeclaration> declarations = this.translationUnit.getUniformDecls();
+      for (VariablesDeclaration declaration : declarations) {
+        if (declaration.getDeclInfo(0).getName().equals(arrayName)) {
+          oldDeclaration = Optional.of(declaration);
         }
       }
+      oldDeclaration.ifPresent(this.translationUnit::removeTopLevelDeclaration);
 
-      oldDeclaration.ifPresent(tu::removeTopLevelDeclaration);
+      final ArrayInfo arrayInfo = new ArrayInfo(new IntConstantExpr(String.valueOf(values.size())));
+      final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(arrayName,
+          arrayInfo, null);
+      final VariablesDeclaration asd = new VariablesDeclaration(
+          new QualifiedType(BasicType.INT, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
+      );
 
-      final ArrayType arraySize = new ArrayType(BasicType.INT, new ArrayInfo(
-          new IntConstantExpr(String.valueOf(values.size()))));
-
-      arraySize.getArrayInfo().setConstantSizeExpr(2);
-      final InterfaceBlock ib =
-          new InterfaceBlock(Optional.of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
-              new BindingLayoutQualifier(binding))),
-              TypeQualifier.UNIFORM,
-              "buf" + binding,
-              Collections.singletonList(arrayName),
-              Collections.singletonList(arraySize),
-              Optional.empty()
-          );
-
-      tu.addDeclaration(ib);
-
-      // Replaces the literal with an element in the uniform array.
-      final IParentMap parentMap = IParentMap.createParentMap(tu);
-      final ArrayIndexExpr aie = new ArrayIndexExpr(new VariableIdentifierExpr(arrayName),
-          new IntConstantExpr(String.valueOf(index)));
-
-      parentMap.getParent(this.literalExpr).replaceChild(this.literalExpr,
-          aie);
+      this.translationUnit.addDeclaration(asd);
     }
+
+    // Replaces the literal with an element in the uniform array.
+    final IParentMap parentMap = IParentMap.createParentMap(this.translationUnit);
+    final ArrayIndexExpr aie = new ArrayIndexExpr(new VariableIdentifierExpr(arrayName),
+        new IntConstantExpr(String.valueOf(index)));
+
+    parentMap.getParent(this.literalExpr).replaceChild(this.literalExpr, aie);
   }
 
   @Override

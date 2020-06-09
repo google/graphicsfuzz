@@ -16,7 +16,9 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
@@ -25,6 +27,7 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderKind;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
@@ -39,9 +42,7 @@ public class LiteralToUniformReductionOpportunitiesTest {
       final String shader = "void main() { "
         + "int a = 1; int b = 1; int c = 2;}";
 
-    final String shaderReplaced = "layout(set = 0, binding = 0) uniform buf0 {"
-        + " int _GLF_uniform_values[2];"
-        + "};"
+    final String shaderReplaced = "uniform int _GLF_uniform_values[2];"
         + "void main()"
         + "{"
         + "  int a = _GLF_uniform_values[0];"
