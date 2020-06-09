@@ -16,10 +16,13 @@
 
 import sys, json, subprocess
 
-json_string = subprocess.check_output(
-    ["gcov", "-i", "-t", "libVulkan.cpp.o"],
-    cwd="swiftshader/build-coverage/src/Vulkan/CMakeFiles/vk_swiftshader.dir"
-)
+# Note that --json-format is only available since gcov 9
+cmd = ["gcov", "--json-format", "--stdout", "libVulkan.cpp.o"]
+
+# gcov must be called in a precise location in order to find the .gcda file
+workdir = "swiftshader/build-coverage/src/Vulkan/CMakeFiles/vk_swiftshader.dir"
+
+json_string = subprocess.check_output(cmd, cwd=workdir)
 
 files_array = json.loads(json_string)['files']
 
