@@ -246,7 +246,7 @@ public class ReturnRemoverTest {
         + "}";
     final TranslationUnit tu = ParseHelper.parse(program);
     final FunctionDefinition fd = findFunctionDefinition(tu, "foo");
-    ReturnRemover.removeReturns(fd, ShadingLanguageVersion.ESSL_310);
+    ReturnRemover.removeReturns(fd, ShadingLanguageVersion.ESSL_320);
     CompareAstsDuplicate.assertEqualAsts(expected, tu);
   }
 

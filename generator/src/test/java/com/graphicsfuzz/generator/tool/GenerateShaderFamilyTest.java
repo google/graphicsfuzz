@@ -88,14 +88,14 @@ public class GenerateShaderFamilyTest {
 
   @Test
   public void testGenerateSmallVulkanShaderFamily() throws Exception {
-    final String samplesSubdir = "310es";
+    final String samplesSubdir = "320es";
     final String referenceShaderName = "prefix_sum";
     final int numVariants = 3;
     int seed = 4;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
         seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
             String.valueOf(10),
-            "--generate-uniform-bindings", "--single-pass"), ShadingLanguageVersion.ESSL_310);
+            "--generate-uniform-bindings", "--single-pass"), ShadingLanguageVersion.ESSL_320);
   }
 
   @Test
@@ -142,14 +142,14 @@ public class GenerateShaderFamilyTest {
 
   @Test
   public void testGenerateSmallVulkanShaderFamilyMultiPass() throws Exception {
-    final String samplesSubdir = "310es";
+    final String samplesSubdir = "320es";
     final String referenceShaderName = "stable_bubblesort_flag";
     final int numVariants = 3;
     int seed = 9;
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
         seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
             String.valueOf(10),
-            "--generate-uniform-bindings"), ShadingLanguageVersion.ESSL_310);
+            "--generate-uniform-bindings"), ShadingLanguageVersion.ESSL_320);
   }
 
   @Test
@@ -182,7 +182,7 @@ public class GenerateShaderFamilyTest {
   public void testIgnoreGlslangValidator() throws Exception {
     // shader_translator will not be invoked on this shader, and glslangValidator would reject it
     // due to it using a made up extension.
-    final String reference = "#version 310 es\n"
+    final String reference = "#version 320 es\n"
         + "#extension does_not_exist : nothing\n"
         + "\n"
         + "precision mediump float;\n"
@@ -194,7 +194,7 @@ public class GenerateShaderFamilyTest {
     FileUtils.writeStringToFile(referenceJsonFile, "{}", StandardCharsets.UTF_8);
 
     final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
-        "310es").toString();
+        "320es").toString();
     // Disabling glslangValidator should lead to a family being generated, as the rest of the tool
     // chain will just ignore the imaginary extension.
     checkShaderFamilyGeneration(2, 0,
@@ -231,7 +231,7 @@ public class GenerateShaderFamilyTest {
    * donate code between shader kinds.
    */
   private void maybeAddVertexShaderIfMissing(ShadingLanguageVersion shadingLanguageVersion, ShaderJobFileOperations fileOperations, File newShaderJobFile) throws IOException {
-    if (!Arrays.asList(ShadingLanguageVersion.ESSL_300, ShadingLanguageVersion.ESSL_310,
+    if (!Arrays.asList(ShadingLanguageVersion.ESSL_300, ShadingLanguageVersion.ESSL_320,
         ShadingLanguageVersion.ESSL_320).contains(shadingLanguageVersion)) {
       return;
     }

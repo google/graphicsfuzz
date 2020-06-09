@@ -1,0 +1,66 @@
+#version 320 es
+
+/*
+ * Copyright 2019 The GraphicsFuzz Project Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Kogge-Stone prefix sum implementation.
+
+#define N 256
+
+layout(std430, binding = 0) buffer theSSBO {
+  float data_in[N];
+  float data_out[N];
+  // Amber only supports one type in a given buffer, hence the 'is_exclusive'
+  // bool field is declared as a float
+  float is_exclusive;
+};
+
+layout(local_size_x=N, local_size_y=1, local_size_z=1) in;
+
+shared float result[N];
+
+void main() {
+
+  float temp;
+  uint tid = gl_LocalInvocationID.x;
+  result[tid] = data_in[tid];
+
+  barrier();
+
+  for (uint offset = 1u; offset < uint(N); offset <<= 1u)
+  {
+    if (tid >= offset)
+    {
+      temp = result[tid-offset];
+    }
+
+    barrier();
+
+    if (tid >= offset)
+    {
+      result[tid] = temp + result[tid];
+    }
+
+    barrier();
+  }
+
+  if (bool(is_exclusive)) {
+    data_out[tid] = (tid == 0u) ? 0.0 : result[tid - 1u];
+  } else {
+    data_out[tid] = result[tid];
+  }
+
+}

@@ -32,7 +32,7 @@ public class FragmentShaderToShaderJobTest {
 
   @Test
   public void basicJsonGenerationTest() throws Exception {
-    final String frag =  "#version 310 es\n"
+    final String frag =  "#version 320 es\n"
     + "precision mediump float;\n"
     + "\n"
     + "layout(location = 0) out vec4 " + Constants.GLF_COLOR + ";\n"

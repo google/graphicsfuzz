@@ -112,7 +112,7 @@ public class ParseHelperTest {
   public void testParseCurrentHeaderNoMacros() throws Exception {
     File tempFile = testFolder.newFile("shader.frag");
     PrintStream ps = new PrintStream(new FileOutputStream(tempFile));
-    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps, ShadingLanguageVersion.ESSL_310);
+    PrettyPrinterVisitor.emitGraphicsFuzzDefines(ps, ShadingLanguageVersion.ESSL_320);
     ps.println(TEST_PROGRAM);
     ps.close();
     TranslationUnit tu = ParseHelper.parse(tempFile);
