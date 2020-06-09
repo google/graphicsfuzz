@@ -24,8 +24,17 @@ import java.util.List;
 
 public class ToolHelper {
 
-  public static ExecResult runValidatorOnShader(ExecHelper.RedirectType redirectType, File file)
+  public static ExecResult runValidatorOnShader(ExecHelper.RedirectType redirectType, File file,
+                                                Boolean vulkan)
         throws IOException, InterruptedException {
+    if (vulkan)
+      return new ExecHelper().exec(
+          redirectType,
+          null,
+          false,
+          ToolPaths.glslangValidator(),
+          "-V100",
+          file.toString());
     return new ExecHelper().exec(
           redirectType,
           null,

@@ -200,7 +200,7 @@ public class PruneUniformsTest {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
     fileOps.writeShaderJobFile(shaderJob, shaderJobFile);
-    assertTrue(fileOps.areShadersValid(shaderJobFile, false));
+    assertTrue(fileOps.areShadersValid(shaderJobFile, false, false));
 
     final File expectedUniformsFile = temporaryFolder.newFile("expecteduniforms.json");
     FileUtils.writeStringToFile(expectedUniformsFile, expectedUniforms, StandardCharsets.UTF_8);

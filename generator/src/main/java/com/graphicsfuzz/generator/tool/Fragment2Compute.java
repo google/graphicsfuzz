@@ -102,9 +102,8 @@ public class Fragment2Compute {
         .help("Seed (unsigned 64 bit long integer) for random number generator.")
         .type(String.class);
 
-    parser.addArgument("--generate-uniform-bindings")
-        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
-            + "compatibility.")
+    parser.addArgument("--vulkan")
+        .help("Generate shader targeting Vulkan")
         .action(Arguments.storeTrue());
 
     return parser.parseArgs(args);
@@ -311,7 +310,7 @@ new MemberLookupExpr(new VariableIdentifierExpr(OpenGlConstants.GL_NUM_WORK_GROU
 
     final ShaderJob transformedShaderJob = transform(
         fileOps.readShaderJobFile(ns.get("fragment_json")), generator);
-    if (ns.getBoolean("generate_uniform_bindings")) {
+    if (ns.getBoolean("vulkan")) {
       transformedShaderJob.makeUniformBindings(Optional.empty());
     }
     fileOps.writeShaderJobFile(transformedShaderJob,

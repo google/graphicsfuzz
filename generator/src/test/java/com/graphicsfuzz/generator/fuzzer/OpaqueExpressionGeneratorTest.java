@@ -96,7 +96,7 @@ public class OpaqueExpressionGeneratorTest {
         final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
         fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(),
             tu), shaderJobFile);
-        assertTrue(fileOps.areShadersValid(shaderJobFile, false));
+        assertTrue(fileOps.areShadersValid(shaderJobFile, false, false));
         fileOps.deleteShaderJobFile(shaderJobFile);
       }
     }
@@ -177,7 +177,7 @@ public class OpaqueExpressionGeneratorTest {
       final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
       fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(),
           tu), shaderJobFile);
-      assertTrue(fileOps.areShadersValid(shaderJobFile, false));
+      assertTrue(fileOps.areShadersValid(shaderJobFile, false, false));
       fileOps.deleteShaderJobFile(shaderJobFile);
     }
   }

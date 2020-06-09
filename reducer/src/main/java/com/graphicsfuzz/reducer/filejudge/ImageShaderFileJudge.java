@@ -65,7 +65,7 @@ public class ImageShaderFileJudge implements IFileJudge {
 
     try {
       // 1.
-      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnValidationError)) {
+      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnValidationError, false)) {
         return false;
       }
       // 2.

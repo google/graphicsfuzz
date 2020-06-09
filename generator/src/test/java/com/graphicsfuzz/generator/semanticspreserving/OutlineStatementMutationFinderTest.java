@@ -124,7 +124,7 @@ public class OutlineStatementMutationFinderTest {
       fileOperations.writeShaderJobFile(new GlslShaderJob(Optional.empty(),
           new PipelineInfo("{}"),
           tu), shaderJobFile);
-      assertTrue(fileOperations.areShadersValid(shaderJobFile, false));
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, false, false));
     }
   }
 
@@ -151,7 +151,7 @@ public class OutlineStatementMutationFinderTest {
       fileOperations.writeShaderJobFile(new GlslShaderJob(Optional.empty(),
           new PipelineInfo("{}"),
           tu), shaderJobFile);
-      assertTrue(fileOperations.areShadersValid(shaderJobFile, false));
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, false, false));
     }
   }
 
@@ -182,7 +182,7 @@ public class OutlineStatementMutationFinderTest {
       fileOperations.writeShaderJobFile(new GlslShaderJob(Optional.empty(),
           new PipelineInfo("{}"),
           tu), shaderJobFile);
-      assertTrue(fileOperations.areShadersValid(shaderJobFile, false));
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, false, false));
     }
   }
 

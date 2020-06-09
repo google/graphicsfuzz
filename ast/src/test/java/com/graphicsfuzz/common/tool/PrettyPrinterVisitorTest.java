@@ -400,7 +400,7 @@ public class PrettyPrinterVisitorTest {
     final File shaderFile = temporaryFolder.newFile("shader.frag");
     FileUtils.writeStringToFile(shaderFile, "#version 410\n\n" + program, StandardCharsets.UTF_8);
     assertEquals(0, ToolHelper.runValidatorOnShader(ExecHelper.RedirectType.TO_BUFFER,
-        shaderFile).res);
+        shaderFile, false).res);
     assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
     )));
   }

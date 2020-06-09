@@ -111,46 +111,46 @@ public class ShadingLanguageVersionTest {
       throws IOException, InterruptedException {
     final boolean expectedInvalid = !shadingLanguageVersion.supportedDoStmt();
     final String program = programWithDoStmt(shadingLanguageVersion).toString();
-    checkValidity(expectedInvalid, program, shadingLanguageVersion);
+    checkValidity(expectedInvalid, program, shadingLanguageVersion, false);
   }
 
   private void checkSwitchStmtSupport(ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
     final boolean expectedInvalid = !shadingLanguageVersion.supportedSwitchStmt();
     final String program = programWithSwitchStmt(shadingLanguageVersion).toString();
-    checkValidity(expectedInvalid, program, shadingLanguageVersion);
+    checkValidity(expectedInvalid, program, shadingLanguageVersion, false);
   }
 
   private void checkUnsignedSupport(ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
     final boolean expectedInvalid = !shadingLanguageVersion.supportedUnsigned();
     final String program = programWithUnsigned(shadingLanguageVersion).toString();
-    checkValidity(expectedInvalid, program, shadingLanguageVersion);
+    checkValidity(expectedInvalid, program, shadingLanguageVersion, false);
   }
 
   private void checkInitializersOfConstMustBeConst(ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
     final boolean expectedInvalid = shadingLanguageVersion.initializersOfConstMustBeConst();
     final String program = constInitializedWithNonConst(shadingLanguageVersion).toString();
-    checkValidity(expectedInvalid, program, shadingLanguageVersion);
+    checkValidity(expectedInvalid, program, shadingLanguageVersion, false);
   }
 
   private void checkGlobalVariableInitializersMustBeConst(ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
     final boolean expectedInvalid = shadingLanguageVersion.globalVariableInitializersMustBeConst();
     final String program = globalWithNonConstInitializer(shadingLanguageVersion).toString();
-    checkValidity(expectedInvalid, program, shadingLanguageVersion);
+    checkValidity(expectedInvalid, program, shadingLanguageVersion, false);
   }
 
   private void checkValidity(boolean expectedInvalid, String program,
-                             ShadingLanguageVersion shadingLanguageVersion)
+                             ShadingLanguageVersion shadingLanguageVersion, Boolean vulkan)
       throws IOException, InterruptedException {
     final File shader = temporaryFolder.newFile("temp.frag");
     FileUtils.writeStringToFile(shader,
         program,
         StandardCharsets.UTF_8);
     final boolean glslangValidatorSaysOk = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER,
-        shader).res == 0;
+        shader, vulkan).res == 0;
     final boolean shaderTranslatorSaysOk =
         !ShaderTranslatorShadingLanguageVersionSupport.isVersionSupported(shadingLanguageVersion)
           || ToolHelper.runShaderTranslatorOnShader(RedirectType.TO_BUFFER, shader,

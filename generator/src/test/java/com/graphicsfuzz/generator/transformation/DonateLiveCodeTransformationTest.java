@@ -540,7 +540,7 @@ public class DonateLiveCodeTransformationTest {
     Assert.assertTrue(result);
 
     fileOps.writeShaderJobFile(referenceShaderJob, variantFile);
-    fileOps.areShadersValid(variantFile, true);
+    fileOps.areShadersValid(variantFile, true, false);
 
     // Creating a parent map checks that there is no aliasing in the AST.
     IParentMap.createParentMap(referenceShaderJob.getFragmentShader().get());
@@ -606,7 +606,7 @@ public class DonateLiveCodeTransformationTest {
     Assert.assertTrue(result);
 
     fileOps.writeShaderJobFile(referenceShaderJob, variantFile);
-    fileOps.areShadersValid(variantFile, true);
+    fileOps.areShadersValid(variantFile, true, false);
 
     // Creating a parent map checks that there is no aliasing in the AST.
     IParentMap.createParentMap(referenceShaderJob.getFragmentShader().get());
@@ -804,7 +804,7 @@ public class DonateLiveCodeTransformationTest {
         final File tempFile = testFolder.newFile("shader" + seed + ".json");
         fileOps.writeShaderJobFile(referenceShaderJob, tempFile);
         // This will fail if the shader job turns out to be invalid.
-        fileOps.areShadersValid(tempFile, true);
+        fileOps.areShadersValid(tempFile, true, false);
       } else {
         ++noCodeDonatedCount;
       }
@@ -898,7 +898,7 @@ public class DonateLiveCodeTransformationTest {
         final File tempFile = testFolder.newFile("shader" + seed + ".json");
         fileOps.writeShaderJobFile(referenceShaderJob, tempFile);
         // This will fail if the shader job turns out to be invalid.
-        fileOps.areShadersValid(tempFile, true);
+        fileOps.areShadersValid(tempFile, true, false);
       } else {
         ++noCodeDonatedCount;
       }
@@ -984,7 +984,7 @@ public class DonateLiveCodeTransformationTest {
         final File tempFile = testFolder.newFile("shader" + seed + ".json");
         fileOps.writeShaderJobFile(referenceShaderJob, tempFile);
         // This will fail if the shader job turns out to be invalid.
-        fileOps.areShadersValid(tempFile, true);
+        fileOps.areShadersValid(tempFile, true, false);
       } else {
         ++noCodeDonatedCount;
       }
@@ -1077,7 +1077,7 @@ public class DonateLiveCodeTransformationTest {
         final File tempFile = testFolder.newFile("shader" + seed + ".json");
         fileOps.writeShaderJobFile(referenceShaderJob, tempFile);
         // This will fail if the shader job turns out to be invalid.
-        fileOps.areShadersValid(tempFile, true);
+        fileOps.areShadersValid(tempFile, true, false);
       } else {
         ++noCodeDonatedCount;
       }
@@ -1172,7 +1172,7 @@ public class DonateLiveCodeTransformationTest {
         final File tempFile = testFolder.newFile("shader" + seed + ".json");
         fileOps.writeShaderJobFile(referenceShaderJob, tempFile);
         // This will fail if the shader job turns out to be invalid.
-        fileOps.areShadersValid(tempFile, true);
+        fileOps.areShadersValid(tempFile, true, false);
       } else {
         ++noCodeDonatedCount;
       }
@@ -1262,7 +1262,7 @@ public class DonateLiveCodeTransformationTest {
         final File tempFile = testFolder.newFile("shader" + seed + ".json");
         fileOps.writeShaderJobFile(referenceShaderJob, tempFile);
         // This will fail if the shader job turns out to be invalid.
-        fileOps.areShadersValid(tempFile, true);
+        fileOps.areShadersValid(tempFile, true, false);
       } else {
         ++noCodeDonatedCount;
       }

@@ -453,7 +453,7 @@ public class DonateDeadCodeTransformationTest {
         final File tempFile = testFolder.newFile("shader" + seed + ".json");
         fileOps.writeShaderJobFile(referenceShaderJob, tempFile);
         // This will fail if the shader job turns out to be invalid.
-        fileOps.areShadersValid(tempFile, true);
+        fileOps.areShadersValid(tempFile, true, false);
       } else {
         ++noCodeDonatedCount;
       }

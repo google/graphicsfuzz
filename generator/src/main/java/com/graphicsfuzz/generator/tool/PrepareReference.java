@@ -60,9 +60,8 @@ public final class PrepareReference {
         .help("Use WebGL spec.")
         .action(Arguments.storeTrue());
 
-    parser.addArgument("--generate-uniform-bindings")
-        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
-            + "compatibility.")
+    parser.addArgument("--vulkan")
+        .help("Generate shader targeting Vulka")
         .action(Arguments.storeTrue());
 
     parser.addArgument("--max-uniforms")
@@ -100,7 +99,7 @@ public final class PrepareReference {
         ns.get("output"),
         ns.get("replace_float_literals"),
         ns.get("max_uniforms"),
-        ns.get("generate_uniform_bindings"),
+        ns.get("vulkan"),
         fileOps);
 
 

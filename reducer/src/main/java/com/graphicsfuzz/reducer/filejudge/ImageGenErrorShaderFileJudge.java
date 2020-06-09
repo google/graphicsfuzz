@@ -62,7 +62,7 @@ public class ImageGenErrorShaderFileJudge implements IFileJudge {
     // 2. Generate image.
 
     try {
-      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnValidationError)) {
+      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnValidationError, false)) {
         return false;
       }
 

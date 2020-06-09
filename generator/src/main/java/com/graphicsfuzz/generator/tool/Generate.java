@@ -137,9 +137,8 @@ public class Generate {
         .help("Replace float literals with uniforms.")
         .action(Arguments.storeTrue());
 
-    parser.addArgument("--generate-uniform-bindings")
-        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
-            + "compatibility.")
+    parser.addArgument("--vulkan")
+        .help("Generate shader targeting Vulkan")
         .action(Arguments.storeTrue());
 
     parser.addArgument("--max-uniforms")
@@ -165,7 +164,7 @@ public class Generate {
         .help("Probability of converting a random uniform to push constant; "
             + "floating point 0..1. Defaults to 0.5. "
             + "Ignored if shader language version doesn't support push constants.")
-        .setDefault(new Float(0.0))
+        .setDefault(new Float(0.5))
         .type(Float.class);
 
   }
@@ -404,7 +403,7 @@ public class Generate {
         ns.getBoolean("aggressively_complicate_control_flow"),
         ns.getBoolean("replace_float_literals"),
         donors,
-        ns.get("generate_uniform_bindings"),
+        ns.get("vulkan"),
         ns.get("max_uniforms"),
         enabledTransformations,
         !ns.getBoolean("no_injection_switch"),

@@ -57,7 +57,7 @@ public class RandomFileJudge implements IFileJudge {
       File shaderResultFileOutput
   ) {
     try {
-      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnInvalid)) {
+      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnInvalid, false)) {
         return false;
       }
     } catch (IOException | InterruptedException ex) {

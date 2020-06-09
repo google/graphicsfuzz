@@ -153,7 +153,7 @@ public class GenerateTest {
         outputShaderJobFile.toString(),
     });
 
-    fileOps.areShadersValid(outputShaderJobFile, true);
+    fileOps.areShadersValid(outputShaderJobFile, true, false);
 
   }
 
@@ -212,7 +212,7 @@ public class GenerateTest {
         outputShaderJobFile.toString()
     });
 
-    fileOps.areShadersValid(outputShaderJobFile, true);
+    fileOps.areShadersValid(outputShaderJobFile, true, false);
 
     assertTrue(
         fileOps
@@ -272,7 +272,7 @@ public class GenerateTest {
               .getShaderContents(outputShaderJobFile, ShaderKind.VERTEX)
               .contains("iAmAVertexShader")
       );
-      fileOps.areShadersValid(outputShaderJobFile, true);
+      fileOps.areShadersValid(outputShaderJobFile, true, false);
     }
 
   }
@@ -303,7 +303,7 @@ public class GenerateTest {
 
     assertTrue(outputShaderJob.getPipelineInfo().hasUniform("injectionSwitch"));
 
-    assertTrue(fileOps.areShadersValid(output, false));
+    assertTrue(fileOps.areShadersValid(output, false, false));
 
     assertTrue(outputShaderJob.getShaders().get(0).getTopLevelDeclarations()
         .stream()
@@ -343,7 +343,7 @@ public class GenerateTest {
 
     assertFalse(outputShaderJob.getPipelineInfo().hasUniform("injectionSwitch"));
 
-    assertTrue(fileOps.areShadersValid(output, false));
+    assertTrue(fileOps.areShadersValid(output, false, false));
 
     assertFalse(outputShaderJob.getShaders().get(0).getTopLevelDeclarations()
         .stream()
@@ -415,7 +415,7 @@ public class GenerateTest {
     final File output = temporaryFolder.newFile("output.json");
 
     Generate.mainHelper(new String[] { shaderJobFile.getAbsolutePath(), donors.getAbsolutePath(),
-        output.getAbsolutePath(), "--seed", "0", "--generate-uniform-bindings",
+        output.getAbsolutePath(), "--seed", "0", "--vulkan",
         "--no-injection-switch", "--push-constant-probability", "1.0" });
 
     final ShaderJob outputShaderJob = fileOps.readShaderJobFile(output);

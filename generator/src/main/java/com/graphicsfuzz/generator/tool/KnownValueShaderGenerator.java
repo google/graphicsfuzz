@@ -109,9 +109,8 @@ public class KnownValueShaderGenerator {
         .setDefault(0)
         .type(Integer.class);
 
-    parser.addArgument("--generate-uniform-bindings")
-        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
-            + "compatibility.")
+    parser.addArgument("--vulkan")
+        .help("Generate shader targeting Vulkan")
         .action(Arguments.storeTrue());
 
     return parser.parseArgs(args);
@@ -124,7 +123,7 @@ public class KnownValueShaderGenerator {
     final float bFloat = ns.getFloat("b");
     final float aFloat = ns.getFloat("a");
     final int maxUniforms = ns.getInt("max_uniforms");
-    final boolean generateUniformBindings = ns.getBoolean("generate_uniform_bindings");
+    final boolean generateUniformBindings = ns.getBoolean("vulkan");
     final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
     final String version = ns.getString("version");
     final File shaderJobFile = ns.get("output");

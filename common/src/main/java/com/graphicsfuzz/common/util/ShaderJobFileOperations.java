@@ -156,12 +156,13 @@ public class ShaderJobFileOperations {
 
   public boolean areShadersValid(
       File shaderJobFile,
-      boolean throwExceptionOnInvalid)
+      boolean throwExceptionOnInvalid,
+      boolean vulkan)
       throws IOException, InterruptedException {
     for (ShaderKind shaderKind : ShaderKind.values()) {
       //noinspection deprecation: OK from within this class.
       final File shaderFile = getUnderlyingShaderFile(shaderJobFile, shaderKind);
-      if (shaderFile.isFile() && !shaderIsValid(shaderFile, throwExceptionOnInvalid)) {
+      if (shaderFile.isFile() && !shaderIsValid(shaderFile, throwExceptionOnInvalid, vulkan)) {
         return false;
       }
     }
@@ -1080,10 +1081,11 @@ public class ShaderJobFileOperations {
 
   private boolean shaderIsValid(
       File shaderFile,
-      boolean throwExceptionOnValidationError)
+      boolean throwExceptionOnValidationError,
+      boolean vulkan)
       throws IOException, InterruptedException {
     return checkValidationResult(ToolHelper.runValidatorOnShader(ExecHelper.RedirectType.TO_BUFFER,
-        shaderFile), shaderFile.getName(), throwExceptionOnValidationError);
+        shaderFile, vulkan), shaderFile.getName(), throwExceptionOnValidationError);
   }
 
   private boolean shaderIsValidShaderTranslator(
