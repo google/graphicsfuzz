@@ -53,7 +53,7 @@ def main_helper(args):
         shader_job_prefix = os.path.splitext(os.path.basename(shader_job))[0]
         json_in_output_dir = os.path.join(args.output_dir, shader_job_prefix + ".json")
         graphicsfuzz_tool.main_helper(["com.graphicsfuzz.generator.tool.PrepareReference",
-                                       "--generate-uniform-bindings", "--max-uniforms", "10",
+                                       "--vulkan", "--max-uniforms", "10",
                                        shader_job, json_in_output_dir])
         shader_job_uniforms_to_spirv_fuzz_facts.main_helper([json_in_output_dir,
                                                              os.path.join(args.output_dir,
