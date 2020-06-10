@@ -21,6 +21,11 @@ target_include_directories(simple PRIVATE ../external/stb)
 target_link_libraries(simple PUBLIC Vulkan::Vulkan glslang SPIRV)
 set_property(TARGET simple PROPERTY CXX_STANDARD 17)
 
+add_executable(instance instance.cpp)
+target_include_directories(instance PRIVATE ../external/stb)
+target_link_libraries(instance PUBLIC Vulkan::Vulkan glslang SPIRV)
+set_property(TARGET instance PROPERTY CXX_STANDARD 17)
+
 add_executable(vertex_buffer vertex_buffer.cpp)
 target_include_directories(vertex_buffer PRIVATE ../external/stb)
 target_include_directories(vertex_buffer PRIVATE ../external/glm)
