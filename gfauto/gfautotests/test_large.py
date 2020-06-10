@@ -273,6 +273,9 @@ def fuzz_and_reduce_bug(
     settings.extra_graphics_fuzz_reduce_args.append("--max-steps")
     settings.extra_graphics_fuzz_reduce_args.append("2")
 
+    # We use an old version of GraphicsFuzz.
+    settings.legacy_graphics_fuzz_vulkan_arg = True
+
     settings_util.write(settings, settings_util.DEFAULT_SETTINGS_FILE_PATH)
 
     # Add shaders.

@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='gfauto',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x15gfauto/settings.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\xb3\x04\n\x08Settings\x12\'\n\x0b\x64\x65vice_list\x18\x01 \x01(\x0b\x32\x12.gfauto.DeviceList\x12\'\n\x0f\x63ustom_binaries\x18\x02 \x03(\x0b\x32\x0e.gfauto.Binary\x12!\n\x19maximum_duplicate_crashes\x18\x03 \x01(\r\x12\x1d\n\x15maximum_fuzz_failures\x18\x04 \x01(\r\x12\x1b\n\x13reduce_tool_crashes\x18\x05 \x01(\x08\x12\x16\n\x0ereduce_crashes\x18\x06 \x01(\x08\x12\x19\n\x11reduce_bad_images\x18\x07 \x01(\x08\x12.\n\x16latest_binary_versions\x18\x08 \x03(\x0b\x32\x0e.gfauto.Binary\x12)\n!extra_graphics_fuzz_generate_args\x18\t \x03(\t\x12\'\n\x1f\x65xtra_graphics_fuzz_reduce_args\x18\n \x03(\t\x12#\n\x1bonly_reduce_signature_regex\x18\x0b \x01(\t\x12\x10\n\x08_comment\x18\x0c \x01(\t\x12&\n\x1e\x65xtra_spirv_fuzz_generate_args\x18\r \x03(\t\x12$\n\x1c\x65xtra_spirv_fuzz_shrink_args\x18\x0e \x03(\t\x12\x1f\n\x17\x65xtra_spirv_reduce_args\x18\x0f \x03(\t\x12\x19\n\x11\x63ommon_spirv_args\x18\x10 \x03(\tb\x06proto3')
+  serialized_pb=_b('\n\x15gfauto/settings.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\xdc\x04\n\x08Settings\x12\'\n\x0b\x64\x65vice_list\x18\x01 \x01(\x0b\x32\x12.gfauto.DeviceList\x12\'\n\x0f\x63ustom_binaries\x18\x02 \x03(\x0b\x32\x0e.gfauto.Binary\x12!\n\x19maximum_duplicate_crashes\x18\x03 \x01(\r\x12\x1d\n\x15maximum_fuzz_failures\x18\x04 \x01(\r\x12\x1b\n\x13reduce_tool_crashes\x18\x05 \x01(\x08\x12\x16\n\x0ereduce_crashes\x18\x06 \x01(\x08\x12\x19\n\x11reduce_bad_images\x18\x07 \x01(\x08\x12.\n\x16latest_binary_versions\x18\x08 \x03(\x0b\x32\x0e.gfauto.Binary\x12)\n!extra_graphics_fuzz_generate_args\x18\t \x03(\t\x12\'\n\x1f\x65xtra_graphics_fuzz_reduce_args\x18\n \x03(\t\x12#\n\x1bonly_reduce_signature_regex\x18\x0b \x01(\t\x12\x10\n\x08_comment\x18\x0c \x01(\t\x12&\n\x1e\x65xtra_spirv_fuzz_generate_args\x18\r \x03(\t\x12$\n\x1c\x65xtra_spirv_fuzz_shrink_args\x18\x0e \x03(\t\x12\x1f\n\x17\x65xtra_spirv_reduce_args\x18\x0f \x03(\t\x12\x19\n\x11\x63ommon_spirv_args\x18\x10 \x03(\t\x12\'\n\x1flegacy_graphics_fuzz_vulkan_arg\x18\x11 \x01(\x08\x62\x06proto3')
   ,
   dependencies=[gfauto_dot_common__pb2.DESCRIPTOR,gfauto_dot_device__pb2.DESCRIPTOR,])
 
@@ -148,6 +148,13 @@ _SETTINGS = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='legacy_graphics_fuzz_vulkan_arg', full_name='gfauto.Settings.legacy_graphics_fuzz_vulkan_arg', index=16,
+      number=17, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -161,7 +168,7 @@ _SETTINGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=76,
-  serialized_end=639,
+  serialized_end=680,
 )
 
 _SETTINGS.fields_by_name['device_list'].message_type = gfauto_dot_device__pb2._DEVICELIST
