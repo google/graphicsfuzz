@@ -43,19 +43,19 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final String vertexShader = "void main() { "
         + "int a = 1;}";
 
-    final String vertexShaderReplaced = "uniform int _GLF_uniform_values[2];"
+    final String vertexShaderReplaced = "uniform int _GLF_uniform_int_values[2];"
         + "void main()"
         + "{"
-        + "  int a = _GLF_uniform_values[0];"
+        + "  int a = _GLF_uniform_int_values[0];"
         + "}";
 
     final String fragmentShader = "void main() { "
         + "int a = 2;}";
 
-    final String fragmentShaderReplaced = "uniform int _GLF_uniform_values[2];"
+    final String fragmentShaderReplaced = "uniform int _GLF_uniform_int_values[2];"
         + "void main()"
         + "{"
-        + "  int a = _GLF_uniform_values[1];"
+        + "  int a = _GLF_uniform_int_values[1];"
         + "}";
 
     final List<TranslationUnit> shaders = new ArrayList<>();
@@ -82,24 +82,73 @@ public class LiteralToUniformReductionOpportunitiesTest {
   }
 
   @Test
+  public void testReplaceSimpleIntAndFloat() throws Exception {
+
+    final String vertexShader = "void main() { "
+        + "int a = 1;}";
+
+    final String vertexShaderReplaced =
+          "uniform float _GLF_uniform_float_values[1];"
+        + "uniform int _GLF_uniform_int_values[1];"
+        + "void main()"
+        + "{"
+        + "  int a = _GLF_uniform_int_values[0];"
+        + "}";
+
+    final String fragmentShader = "void main() { "
+        + "float a = 2.0;}";
+
+    final String fragmentShaderReplaced =
+          "uniform float _GLF_uniform_float_values[1];"
+        + "uniform int _GLF_uniform_int_values[1];"
+        + "void main()"
+        + "{"
+        + "  float a = _GLF_uniform_float_values[0];"
+        + "}";
+
+    final List<TranslationUnit> shaders = new ArrayList<>();
+    shaders.add(ParseHelper.parse(vertexShader, ShaderKind.VERTEX));
+    shaders.add(ParseHelper.parse(fragmentShader, ShaderKind.FRAGMENT));
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        pipelineInfo, shaders);
+
+    final List<LiteralToUniformReductionOpportunity> ops =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be two opportunities", 2, ops.size());
+
+    ops.forEach(AbstractReductionOpportunity::applyReduction);
+
+    CompareAsts.assertEqualAsts(fragmentShaderReplaced, shaderJob.getFragmentShader().get());
+    CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
+
+    assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
+  }
+
+
+  @Test
   public void testReplaceSameInt() throws Exception {
 
     final String vertexShader = "void main() { "
         + "int a = 1;}";
 
-    final String vertexShaderReplaced = "uniform int _GLF_uniform_values[1];"
+    final String vertexShaderReplaced = "uniform int _GLF_uniform_int_values[1];"
         + "void main()"
         + "{"
-        + "  int a = _GLF_uniform_values[0];"
+        + "  int a = _GLF_uniform_int_values[0];"
         + "}";
 
     final String fragmentShader = "void main() { "
         + "int b = 1;}";
 
-    final String fragmentShaderReplaced = "uniform int _GLF_uniform_values[1];"
+    final String fragmentShaderReplaced = "uniform int _GLF_uniform_int_values[1];"
         + "void main()"
         + "{"
-        + "  int b = _GLF_uniform_values[0];"
+        + "  int b = _GLF_uniform_int_values[0];"
         + "}";
 
     final List<TranslationUnit> shaders = new ArrayList<>();
