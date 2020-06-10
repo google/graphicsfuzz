@@ -96,13 +96,13 @@ public class LiteralToUniformReductionOpportunity
       // Declares the array if it didn't exist. Otherwise, removes it and adds a new declaration
       // with increased size.
       Optional<Declaration> oldDeclaration = Optional.empty();
-      final List<VariablesDeclaration> declarations = this.translationUnit.getUniformDecls();
+      final List<VariablesDeclaration> declarations = tu.getUniformDecls();
       for (VariablesDeclaration declaration : declarations) {
         if (declaration.getDeclInfo(0).getName().equals(arrayName)) {
           oldDeclaration = Optional.of(declaration);
         }
       }
-      oldDeclaration.ifPresent(this.translationUnit::removeTopLevelDeclaration);
+      oldDeclaration.ifPresent(tu::removeTopLevelDeclaration);
 
       final ArrayInfo arrayInfo = new ArrayInfo(new IntConstantExpr(String.valueOf(values.size())));
       final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(arrayName,
@@ -111,7 +111,7 @@ public class LiteralToUniformReductionOpportunity
           new QualifiedType(BasicType.INT, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
       );
 
-      this.translationUnit.addDeclaration(asd);
+      tu.addDeclaration(asd);
     }
 
     // Replaces the literal with an element in the uniform array.
