@@ -14,40 +14,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Build the Khronos Samples Repo
+
 set -e
 set -x
 
-# This script downloads and builds SaschaWillems Vulkan demos
-# https://github.com/SaschaWillems/Vulkan
+# This script download and builds the Khronos Vulkan Samples
+# https://github.com/KhronosGroup/Vulkan-Samples
 
 #### Check dependencies
 if [ -z "$VULKAN_SDK" ]; then
-  echo "VULKAN_SDK is empty, missing Vulkan SDK"
-  exit 1
+    echo "VULKAN_SDK is empty, missing Vulkan SDK"
+    exit 1
 fi
 
-# TODO: check presence of: libassimp-dev
-
 #### Get the source
-# The default repo name is "Vulkan", let's be more clear and use
-# SaschaWillems_Vulkan to mirror the github name.
-git clone https://github.com/SaschaWillems/Vulkan SaschaWillems_Vulkan
+git clone https://github.com/KhronosGroup/Vulkan-Samples.git
 (
-  cd SaschaWillems_Vulkan
-  # Known-to-work commit
-  git checkout -b gsoc 4818f85916bf88c1ca8c2ed1a46e0e758651489e
+    cd Vulkan-Samples
+    git checkout -b gsoc 8155762d9395de224e6ab1b22ae8e5880faabd3e
 
-  git submodule update --init --recursive
-
-  python3 download_assets.py
+    # Update submodules after checking out the required commit
+    git submodule update --init --recursive
 )
-
 
 #### Build
 (
-  cd SaschaWillems_Vulkan
-  mkdir build
-  cd build
-  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-  cmake --build . --config Release
+    cd Vulkan-Samples
+    cmake -G Ninja -H. -Bbuild/linux -DCMAKE_BUILD_TYPE=Release
+    cmake --build build/linux --config Release --target vulkan_samples
 )

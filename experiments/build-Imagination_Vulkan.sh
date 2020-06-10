@@ -14,40 +14,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Build the Imagination Demos Repo
+
 set -e
 set -x
 
-# This script downloads and builds SaschaWillems Vulkan demos
-# https://github.com/SaschaWillems/Vulkan
+# This script download and builds the Imagination Vulkan demos 
+# https://github.com/powervr-graphics/Native_SDK.git
 
 #### Check dependencies
 if [ -z "$VULKAN_SDK" ]; then
-  echo "VULKAN_SDK is empty, missing Vulkan SDK"
-  exit 1
+    echo "VULKAN_SDK is empty, missing Vulkan SDK"
+    exit 1
 fi
 
-# TODO: check presence of: libassimp-dev
-
 #### Get the source
-# The default repo name is "Vulkan", let's be more clear and use
-# SaschaWillems_Vulkan to mirror the github name.
-git clone https://github.com/SaschaWillems/Vulkan SaschaWillems_Vulkan
+git clone https://github.com/powervr-graphics/Native_SDK.git Imagination-Vulkan-Samples
 (
-  cd SaschaWillems_Vulkan
-  # Known-to-work commit
-  git checkout -b gsoc 4818f85916bf88c1ca8c2ed1a46e0e758651489e
-
-  git submodule update --init --recursive
-
-  python3 download_assets.py
+    cd Imagination-Vulkan-Samples
+    git checkout -b gsoc 0a5b48fd1f4ad251f5b4f0e07c46744c4841255b 
 )
-
 
 #### Build
 (
-  cd SaschaWillems_Vulkan
-  mkdir build
-  cd build
-  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-  cmake --build . --config Release
+    cd Imagination-Vulkan-Samples
+    mkdir build
+    cd build
+    cmake -G Ninja -DPVR_WINDOW_SYSTEM=X11 -DCMAKE_BUILD_TYPE=Release ..
+    cmake --build . --config Release
 )
