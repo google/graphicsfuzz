@@ -313,7 +313,7 @@ public class TyperTest {
     };
 
   }
-
+  
   @Test
   public void testSwizzleTyped() throws Exception {
     TranslationUnit tu = ParseHelper.parse("void main() { vec2 v; v.xy = v.yx; }");
