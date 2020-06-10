@@ -153,7 +153,7 @@ public class GenerateTest {
         outputShaderJobFile.toString(),
     });
 
-    fileOps.areShadersValid(outputShaderJobFile, true, false);
+    fileOps.areShadersValid(outputShaderJobFile, true);
 
   }
 
@@ -212,7 +212,7 @@ public class GenerateTest {
         outputShaderJobFile.toString()
     });
 
-    fileOps.areShadersValid(outputShaderJobFile, true, false);
+    fileOps.areShadersValid(outputShaderJobFile, true);
 
     assertTrue(
         fileOps
@@ -272,7 +272,7 @@ public class GenerateTest {
               .getShaderContents(outputShaderJobFile, ShaderKind.VERTEX)
               .contains("iAmAVertexShader")
       );
-      fileOps.areShadersValid(outputShaderJobFile, true, false);
+      fileOps.areShadersValid(outputShaderJobFile, true);
     }
 
   }
@@ -303,7 +303,7 @@ public class GenerateTest {
 
     assertTrue(outputShaderJob.getPipelineInfo().hasUniform("injectionSwitch"));
 
-    assertTrue(fileOps.areShadersValid(output, false, false));
+    assertTrue(fileOps.areShadersValid(output, false));
 
     assertTrue(outputShaderJob.getShaders().get(0).getTopLevelDeclarations()
         .stream()
@@ -343,7 +343,7 @@ public class GenerateTest {
 
     assertFalse(outputShaderJob.getPipelineInfo().hasUniform("injectionSwitch"));
 
-    assertTrue(fileOps.areShadersValid(output, false, false));
+    assertTrue(fileOps.areShadersValid(output, false));
 
     assertFalse(outputShaderJob.getShaders().get(0).getTopLevelDeclarations()
         .stream()

@@ -1069,8 +1069,7 @@ public class TyperTest {
           tempFile,
           makeBuiltinsProgram(shadingLanguageVersion, shaderKind).toString(),
           StandardCharsets.UTF_8);
-      final ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, tempFile,
-          false);
+      final ExecResult result = ToolHelper.runValidatorOnShader(RedirectType.TO_BUFFER, tempFile);
       assertEquals(0, result.res);
     }
   }

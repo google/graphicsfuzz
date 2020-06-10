@@ -211,7 +211,8 @@ public class Generate {
           Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX));
     }
 
-    if (args.getGenerateUniformBindings()) {
+    if (args.getVulkan()) {
+      Optional<String> pushConstant = Optional.empty();
       boolean pushConstantsSupportedInAllShaders = true;
       for (TranslationUnit tu : shaders) {
         if (!tu.getShadingLanguageVersion().supportedPushConstants()) {
@@ -223,7 +224,6 @@ public class Generate {
         // Get the list of (unique) uniform names in all shaders which
         // are eglible for being turned into push constants (so samplers, etc
         // are out)
-        Optional<String> pushConstant = Optional.empty();
         final Set<String> allUniforms = new HashSet<String>();
         for (TranslationUnit tu : shaders) {
           for (Declaration decl : tu.getTopLevelDeclarations()) {
@@ -246,9 +246,9 @@ public class Generate {
           pushConstant = Optional.of(new ArrayList<String>(allUniforms)
               .get(random.nextInt(allUniforms.size())));
         }
-        // Note that by default we pass Optional.empty() here.
-        shaderJob.makeUniformBindings(pushConstant);
       }
+      // Note that by default we pass Optional.empty() here.
+      shaderJob.makeUniformBindings(pushConstant);
     }
 
     return result;

@@ -24,23 +24,33 @@ import java.util.List;
 
 public class ToolHelper {
 
+  public static ExecResult runValidatorOnShader(ExecHelper.RedirectType redirectType, File file)
+      throws IOException, InterruptedException {
+    return runValidatorOnShader(redirectType, file, false);
+  }
+
   public static ExecResult runValidatorOnShader(ExecHelper.RedirectType redirectType, File file,
-                                                Boolean vulkan)
-        throws IOException, InterruptedException {
-    if (vulkan)
-      return new ExecHelper().exec(
-          redirectType,
-          null,
-          false,
+                                                boolean vulkan)
+      throws IOException, InterruptedException {
+
+    String[] command;
+    if (vulkan) {
+      command = new String[] {
           ToolPaths.glslangValidator(),
           "-V100",
-          file.toString());
+          file.toString()
+      };
+    } else {
+      command = new String[] {
+          ToolPaths.glslangValidator(),
+          file.toString()
+      };
+    }
     return new ExecHelper().exec(
           redirectType,
           null,
           false,
-          ToolPaths.glslangValidator(),
-          file.toString());
+          command);
   }
 
   public static ExecResult runShaderTranslatorOnShader(ExecHelper.RedirectType redirectType,

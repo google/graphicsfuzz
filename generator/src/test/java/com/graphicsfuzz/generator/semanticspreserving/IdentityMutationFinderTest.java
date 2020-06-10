@@ -216,7 +216,7 @@ public class IdentityMutationFinderTest {
     final File shaderJobFile = temporaryFolder.newFile("shader.json");
     final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
     fileOperations.writeShaderJobFile(shaderJob, shaderJobFile);
-    return fileOperations.areShadersValid(shaderJobFile, false, false);
+    return fileOperations.areShadersValid(shaderJobFile, false);
   }
 
   @Test
@@ -336,7 +336,7 @@ public class IdentityMutationFinderTest {
       fileOperations.writeShaderJobFile(shaderJob, shaderJobFile);
       // Check that there is no invalidity due to mis-use of constants (in which case an exception
       // will be thrown, but we assert the result of 'areShadersValid' is true just to be sure.
-      assertTrue(fileOperations.areShadersValid(shaderJobFile, true, false));
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, true));
     }
   }
 
@@ -363,7 +363,7 @@ public class IdentityMutationFinderTest {
       fileOperations.writeShaderJobFile(shaderJob, shaderJobFile);
       // Check that there is no invalidity due to mis-use of constants (in which case an exception
       // will be thrown, but we assert the result of 'areShadersValid' is true just to be sure.
-      assertTrue(fileOperations.areShadersValid(shaderJobFile, true, false));
+      assertTrue(fileOperations.areShadersValid(shaderJobFile, true));
     }
   }
 

@@ -163,7 +163,7 @@ public class GenerateShaderFamily {
           generatorArguments.getReplaceFloatLiterals(),
           // We subtract 1 because we need to be able to add injectionSwitch
           generatorArguments.getMaxUniforms() - 1,
-          generatorArguments.getGenerateUniformBindings(),
+          generatorArguments.getVulkan(),
           fileOps);
     } catch (ParseTimeoutException | GlslParserException exception) {
       // Remove the created output directory and all of its contents, so that we don't get a
@@ -178,7 +178,7 @@ public class GenerateShaderFamily {
 
     // Validate reference shaders.
     if (!disableGlslangValidator) {
-      if (!fileOps.areShadersValid(preparedReferenceShaderJob, false, true)) {
+      if (!fileOps.areShadersValid(preparedReferenceShaderJob, false, vulkan)) {
         throw new RuntimeException("One or more of the prepared shaders of shader job "
             + preparedReferenceShaderJob.getAbsolutePath() + " is not valid according to "
             + "glslangValidator.");

@@ -44,7 +44,7 @@ public final class Util {
       TemporaryFolder temporaryFolder,
       ShaderJobFileOperations fileOps)
       throws IOException, InterruptedException {
-    assertTrue(fileOps.areShadersValid(shaderJobFile, false, false));
+    assertTrue(fileOps.areShadersValid(shaderJobFile, false));
     assertTrue(fileOps.areShadersValidShaderTranslator(shaderJobFile, false));
     return getImage(shaderJobFile, temporaryFolder, fileOps);
   }

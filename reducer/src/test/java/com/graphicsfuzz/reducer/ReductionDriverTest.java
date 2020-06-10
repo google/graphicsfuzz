@@ -928,7 +928,7 @@ public class ReductionDriverTest {
       @Override
       public boolean isInteresting(File shaderJobFile, File shaderResultFileOutput) throws FileJudgeException {
         try {
-          fileOps.areShadersValid(shaderJobFile, true, false);
+          fileOps.areShadersValid(shaderJobFile, true);
         } catch (IOException | InterruptedException exception) {
           throw new FileJudgeException(exception);
         }

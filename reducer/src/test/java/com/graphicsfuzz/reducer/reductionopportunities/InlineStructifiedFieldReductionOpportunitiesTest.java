@@ -133,7 +133,7 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
       final File shaderJobFile = testFolder.newFile("temp.json");
       fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu),
           shaderJobFile);
-      assertTrue(fileOps.areShadersValid(shaderJobFile, false, false));
+      assertTrue(fileOps.areShadersValid(shaderJobFile, false));
       break;
     }
 
@@ -166,7 +166,7 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
     final File shaderJobFile = testFolder.newFile("temp.json");
     fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu),
         shaderJobFile);
-    assertTrue(fileOps.areShadersValid(shaderJobFile, false, false));
+    assertTrue(fileOps.areShadersValid(shaderJobFile, false));
 
   }
 

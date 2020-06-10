@@ -169,6 +169,13 @@ public class ShaderJobFileOperations {
     return true;
   }
 
+  public boolean areShadersValid(
+      File shaderJobFile,
+      boolean throwExceptionOnInvalid)
+      throws IOException, InterruptedException {
+    return areShadersValid(shaderJobFile, throwExceptionOnInvalid, false);
+  }
+
   public boolean areShadersValidShaderTranslator(
       File shaderJobFile,
       boolean throwExceptionOnInvalid)

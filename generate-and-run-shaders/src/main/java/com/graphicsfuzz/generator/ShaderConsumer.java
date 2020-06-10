@@ -193,7 +193,7 @@ public class ShaderConsumer implements Runnable {
 
     // shaderJobFileTemp -> validate()
     try {
-      final boolean valid = fileOps.areShadersValid(shaderJobFileTemp, false, false);
+      final boolean valid = fileOps.areShadersValid(shaderJobFileTemp, false);
       if (!valid) {
         fileOps.mkdir(invalidDirectory);
         final File shaderJobFileCopyForTriage = new File(

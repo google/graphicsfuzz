@@ -52,7 +52,7 @@ public class CheckValidReductionOpportunityDecorator implements IReductionOpport
           outputShaderJobFile
       );
 
-      boolean valid = fileOps.areShadersValid(outputShaderJobFile, false, false);
+      boolean valid = fileOps.areShadersValid(outputShaderJobFile, false);
       if (!valid) {
         throw new ReductionLedToInvalidException(before, shaderJob, delegate);
       }

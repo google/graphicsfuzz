@@ -50,7 +50,7 @@ public class Fragment2ComputeTest {
       Fragment2Compute.mainHelper(reference.getAbsolutePath(), outputShaderJob.getAbsolutePath());
       assertTrue(fileOps.getUnderlyingShaderFile(outputShaderJob, ShaderKind.COMPUTE)
         .isFile());
-      assertTrue(fileOps.areShadersValid(outputShaderJob, false, false));
+      assertTrue(fileOps.areShadersValid(outputShaderJob, false));
     }
 
   }

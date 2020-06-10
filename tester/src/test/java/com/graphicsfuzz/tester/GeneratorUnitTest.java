@@ -343,7 +343,7 @@ public class GeneratorUnitTest {
         shaderJob,
         shaderJobFile
     );
-    assertTrue(fileOps.areShadersValid(shaderJobFile, false, false));
+    assertTrue(fileOps.areShadersValid(shaderJobFile, false));
 
     if (!skipRender) {
       final File variantImage = Util.getImage(shaderJobFile, temporaryFolder, fileOps);
