@@ -29,12 +29,19 @@ public class ToolHelper {
     return runValidatorOnShader(redirectType, file, false);
   }
 
+  /**
+   * Run shader validator on a shader
+   * @param redirectType How shader validator output should be redirected (buffer, file, etc)
+   * @param file File to be checked
+   * @param isVulkan Tell the validator that this is a vulkan target
+   * @return Result of the validator execution
+   */
   public static ExecResult runValidatorOnShader(ExecHelper.RedirectType redirectType, File file,
-                                                boolean vulkan)
+                                                boolean isVulkan)
       throws IOException, InterruptedException {
 
     String[] command;
-    if (vulkan) {
+    if (isVulkan) {
       command = new String[] {
           ToolPaths.glslangValidator(),
           "-V100",

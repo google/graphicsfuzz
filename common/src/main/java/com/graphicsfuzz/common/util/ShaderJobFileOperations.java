@@ -154,15 +154,22 @@ public class ShaderJobFileOperations {
 
   }
 
+  /**
+   * Are shaders listed in shader job valid?
+   * @param shaderJobFile A shader job to check.
+   * @param throwExceptionOnInvalid Request exception if the validation fails
+   * @param vulkan Tell the validator that this is a vulkan target
+   * @return true if shaders pass validation.
+   */
   public boolean areShadersValid(
       File shaderJobFile,
       boolean throwExceptionOnInvalid,
-      boolean vulkan)
+      boolean isVulkan)
       throws IOException, InterruptedException {
     for (ShaderKind shaderKind : ShaderKind.values()) {
       //noinspection deprecation: OK from within this class.
       final File shaderFile = getUnderlyingShaderFile(shaderJobFile, shaderKind);
-      if (shaderFile.isFile() && !shaderIsValid(shaderFile, throwExceptionOnInvalid, vulkan)) {
+      if (shaderFile.isFile() && !shaderIsValid(shaderFile, throwExceptionOnInvalid, isVulkan)) {
         return false;
       }
     }
@@ -1089,10 +1096,10 @@ public class ShaderJobFileOperations {
   private boolean shaderIsValid(
       File shaderFile,
       boolean throwExceptionOnValidationError,
-      boolean vulkan)
+      boolean isVulkan)
       throws IOException, InterruptedException {
     return checkValidationResult(ToolHelper.runValidatorOnShader(ExecHelper.RedirectType.TO_BUFFER,
-        shaderFile, vulkan), shaderFile.getName(), throwExceptionOnValidationError);
+        shaderFile, isVulkan), shaderFile.getName(), throwExceptionOnValidationError);
   }
 
   private boolean shaderIsValidShaderTranslator(

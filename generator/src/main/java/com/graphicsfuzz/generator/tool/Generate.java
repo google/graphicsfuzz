@@ -211,7 +211,7 @@ public class Generate {
           Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX));
     }
 
-    if (args.getVulkan()) {
+    if (args.getIsVulkan()) {
       Optional<String> pushConstant = Optional.empty();
       boolean pushConstantsSupportedInAllShaders = true;
       for (TranslationUnit tu : shaders) {

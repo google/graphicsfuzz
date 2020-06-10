@@ -123,7 +123,7 @@ public class KnownValueShaderGenerator {
     final float bFloat = ns.getFloat("b");
     final float aFloat = ns.getFloat("a");
     final int maxUniforms = ns.getInt("max_uniforms");
-    final boolean generateUniformBindings = ns.getBoolean("vulkan");
+    final boolean isVulkan = ns.getBoolean("vulkan");
     final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
     final String version = ns.getString("version");
     final File shaderJobFile = ns.get("output");
@@ -173,7 +173,7 @@ public class KnownValueShaderGenerator {
       PruneUniforms.pruneIfNeeded(shaderJob, maxUniforms,
           Collections.singletonList(Constants.GLF_UNIFORM));
     }
-    if (generateUniformBindings) {
+    if (isVulkan) {
       shaderJob.makeUniformBindings(Optional.empty());
     }
 

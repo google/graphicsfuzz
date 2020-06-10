@@ -128,7 +128,7 @@ public class GenerateShaderFamily {
     final boolean writeProbabilities = ns.getBoolean("write_probabilities");
     final boolean keepBadVariants = ns.getBoolean("keep_bad_variants");
     final boolean stopOnFail = ns.getBoolean("stop_on_fail");
-    final boolean vulkan = ns.getBoolean("vulkan");
+    final boolean isVulkan = ns.getBoolean("vulkan");
     final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
     final int numVariants = ns.getInt("num_variants");
     Optional<Integer> maxBytes = ns.get("max_bytes") == null ? Optional.empty() :
@@ -163,7 +163,7 @@ public class GenerateShaderFamily {
           generatorArguments.getReplaceFloatLiterals(),
           // We subtract 1 because we need to be able to add injectionSwitch
           generatorArguments.getMaxUniforms() - 1,
-          generatorArguments.getVulkan(),
+          generatorArguments.getIsVulkan(),
           fileOps);
     } catch (ParseTimeoutException | GlslParserException exception) {
       // Remove the created output directory and all of its contents, so that we don't get a
@@ -178,7 +178,8 @@ public class GenerateShaderFamily {
 
     // Validate reference shaders.
     if (!disableGlslangValidator) {
-      if (!fileOps.areShadersValid(preparedReferenceShaderJob, false, vulkan)) {
+      if (!fileOps.areShadersValid(preparedReferenceShaderJob, false,
+          isVulkan)) {
         throw new RuntimeException("One or more of the prepared shaders of shader job "
             + preparedReferenceShaderJob.getAbsolutePath() + " is not valid according to "
             + "glslangValidator.");
@@ -248,7 +249,7 @@ public class GenerateShaderFamily {
           disableShaderTranslator,
           keepBadVariants,
           stopOnFail,
-          vulkan)) {
+          isVulkan)) {
         continue;
       }
 
@@ -343,11 +344,11 @@ public class GenerateShaderFamily {
                                                 boolean disableShaderTranslator,
                                                 boolean keepBadVariants,
                                                 boolean stopOnFail,
-                                                boolean vulkan)
+                                                boolean isVulkan)
       throws IOException, InterruptedException {
 
     final boolean shaderJobIsValid =
-        (disableGlslangValidator || fileOps.areShadersValid(variantShaderJobFile, false, vulkan))
+        (disableGlslangValidator || fileOps.areShadersValid(variantShaderJobFile, false, isVulkan))
           &&
         (disableShaderTranslator || fileOps.areShadersValidShaderTranslator(variantShaderJobFile,
           false));

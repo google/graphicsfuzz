@@ -37,7 +37,7 @@ def run_prepare_reference(
     cmd = [
         str(graphicsfuzz_tool_path),
         "com.graphicsfuzz.generator.tool.PrepareReference",
-        "--generate-uniform-bindings",
+        "--vulkan",
         "--max-uniforms",
         "10",
         str(input_reference_shader_json),
@@ -64,7 +64,7 @@ def run_generate(
         str(reference_shader_json),
         str(donors_path),
         str(output_shader_json),
-        "--generate-uniform-bindings",
+        "--vulkan",
         "--max-uniforms",
         "10",
     ]
