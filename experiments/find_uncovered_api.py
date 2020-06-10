@@ -46,6 +46,5 @@ filtered_functions = filter(lambda func: func['demangled_name'].startswith("vk")
 functions = sorted(filtered_functions, key=lambda func: func['demangled_name'])
 
 for function in functions:
-    if function['execution_count'] == 0:
-        print(function['demangled_name'])
+    print(f"{function['demangled_name']},{function['execution_count']}")
 
