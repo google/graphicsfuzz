@@ -31,6 +31,9 @@ jobs:
         python-version:
           - 3.6
           - 3.7
+        exclude: # Just to reduce the number of configs.
+          - os: windows-latest
+            python-version: 3.7
     runs-on: ${{ matrix.os }}
     steps:
 
