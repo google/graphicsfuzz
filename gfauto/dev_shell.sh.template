@@ -23,7 +23,7 @@ test -f ./Pipfile
 test -f ./dev_shell.sh.template
 
 # Sets PYTHON to python3, unless already defined.
-# Modify if needed; this should be a Python 3.6+ binary.
+# Modify if needed; this should be a Python 3.6 binary.
 # E.g. PYTHON=python3.6
 # Or, do `export PYTHON=python3.6` before executing this script.
 PYTHON=${PYTHON-python3}
@@ -32,7 +32,7 @@ PYTHON=${PYTHON-python3}
 # that is being used, and so pipenv will create a virtual environment using
 # some other version of Python. This line ensures the virtual environment
 # created uses the correct Python binary.
-export PIPENV_PYTHON="${PYTHON}"
+export PIPENV_PYTHON="$(which "${PYTHON}")"
 
 # Upgrade/install pip and pipenv if needed.
 "${PYTHON}" -m pip install --upgrade --user 'pip>=19.2.3' 'pipenv>=2018.11.26'
