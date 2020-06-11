@@ -213,7 +213,7 @@ def move_dir(
     source_dir_path: pathlib.Path, dest_dir_path: pathlib.Path
 ) -> pathlib.Path:
     file_mkdirs_parent(dest_dir_path)
-    shutil.move(source_dir_path, dest_dir_path)
+    shutil.move(str(source_dir_path), dest_dir_path)
     return dest_dir_path
 
 
