@@ -44,9 +44,6 @@ public class LiteralToUniformReductionOpportunity
   private final ConstantExpr literalExpr;
   private final TranslationUnit translationUnit;
   private final ShaderJob shaderJob;
-  private final Number numericValue;
-  private final String arrayName;
-  private final BasicType basicType;
 
   LiteralToUniformReductionOpportunity(ConstantExpr literalExpr,
                                        TranslationUnit translationUnit,
@@ -58,46 +55,50 @@ public class LiteralToUniformReductionOpportunity
     this.literalExpr = literalExpr;
     this.translationUnit = translationUnit;
     this.shaderJob = shaderJob;
-
-    // If the uniform array doesn't exist in the pipeline info adds an empty array
-    if (literalExpr instanceof IntConstantExpr) {
-      this.arrayName = Constants.INT_LITERAL_UNIFORM_VALUES;
-      this.basicType = BasicType.INT;
-      this.numericValue = ((IntConstantExpr) literalExpr).getNumericValue();
-    } else {
-      this.arrayName = Constants.FLOAT_LITERAL_UNIFORM_VALUES;
-      this.basicType = BasicType.FLOAT;
-      this.numericValue = Float.valueOf(((FloatConstantExpr) literalExpr).getValue());
-    }
-
-    if (!shaderJob.getPipelineInfo().hasUniform(this.arrayName)) {
-      shaderJob.getPipelineInfo().addUniform(this.arrayName, this.basicType,
-          Optional.of(0), new ArrayList<>());
-      shaderJob.getPipelineInfo().addUniformBinding(this.arrayName, false,
-          shaderJob.getPipelineInfo().getNumUniforms());
-    }
   }
 
   @Override
   void applyReductionImpl() {
 
+    final Number numericValue;
+    final String arrayName;
+    final BasicType basicType;
+
+    // If the uniform array doesn't exist in the pipeline info adds an empty array
+    if (literalExpr instanceof IntConstantExpr) {
+      arrayName = Constants.INT_LITERAL_UNIFORM_VALUES;
+      basicType = BasicType.INT;
+      numericValue = ((IntConstantExpr) literalExpr).getNumericValue();
+    } else {
+      arrayName = Constants.FLOAT_LITERAL_UNIFORM_VALUES;
+      basicType = BasicType.FLOAT;
+      numericValue = Float.valueOf(((FloatConstantExpr) literalExpr).getValue());
+    }
+
+    if (!shaderJob.getPipelineInfo().hasUniform(arrayName)) {
+      shaderJob.getPipelineInfo().addUniform(arrayName, basicType,
+          Optional.of(0), new ArrayList<>());
+      shaderJob.getPipelineInfo().addUniformBinding(arrayName, false,
+          shaderJob.getPipelineInfo().getNumUniforms());
+    }
+
     // Adds the literal to the array if it doesn't exist already and updates the index number to
     // point at the corresponding element in the array.
     final int index;
-    final List<Number> values = this.shaderJob.getPipelineInfo().getArgs(this.arrayName);
+    final List<Number> values = this.shaderJob.getPipelineInfo().getArgs(arrayName);
 
-    if (values.contains(this.numericValue)) {
-      index = values.indexOf(this.numericValue);
+    if (values.contains(numericValue)) {
+      index = values.indexOf(numericValue);
     } else {
-      index = this.shaderJob.getPipelineInfo().getArgs(this.arrayName).size();
-      values.add(this.numericValue);
+      index = this.shaderJob.getPipelineInfo().getArgs(arrayName).size();
+      values.add(numericValue);
     }
 
     // Removes the old uniform array and adds the new one to the associated json structure.
-    this.shaderJob.getPipelineInfo().removeUniform(this.arrayName);
-    this.shaderJob.getPipelineInfo().addUniform(this.arrayName, this.basicType,
+    this.shaderJob.getPipelineInfo().removeUniform(arrayName);
+    this.shaderJob.getPipelineInfo().addUniform(arrayName, basicType,
         Optional.of(values.size()), values);
-    this.shaderJob.getPipelineInfo().addUniformBinding(this.arrayName, false,
+    this.shaderJob.getPipelineInfo().addUniformBinding(arrayName, false,
         this.shaderJob.getPipelineInfo().getNumUniforms());
 
     // Adds the new array declaration to every translation unit.
@@ -108,17 +109,17 @@ public class LiteralToUniformReductionOpportunity
       Optional<Declaration> oldDeclaration = Optional.empty();
       final List<VariablesDeclaration> declarations = tu.getUniformDecls();
       for (VariablesDeclaration declaration : declarations) {
-        if (declaration.getDeclInfo(0).getName().equals(this.arrayName)) {
+        if (declaration.getDeclInfo(0).getName().equals(arrayName)) {
           oldDeclaration = Optional.of(declaration);
         }
       }
       oldDeclaration.ifPresent(tu::removeTopLevelDeclaration);
 
       final ArrayInfo arrayInfo = new ArrayInfo(new IntConstantExpr(String.valueOf(values.size())));
-      final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(this.arrayName,
+      final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(arrayName,
           arrayInfo, null);
       final VariablesDeclaration asd = new VariablesDeclaration(
-          new QualifiedType(this.basicType, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
+          new QualifiedType(basicType, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
       );
 
       tu.addDeclaration(asd);
@@ -126,7 +127,7 @@ public class LiteralToUniformReductionOpportunity
 
     // Replaces the literal with an element in the uniform array.
     final IParentMap parentMap = IParentMap.createParentMap(this.translationUnit);
-    final ArrayIndexExpr aie = new ArrayIndexExpr(new VariableIdentifierExpr(this.arrayName),
+    final ArrayIndexExpr aie = new ArrayIndexExpr(new VariableIdentifierExpr(arrayName),
         new IntConstantExpr(String.valueOf(index)));
 
     parentMap.getParent(this.literalExpr).replaceChild(this.literalExpr, aie);

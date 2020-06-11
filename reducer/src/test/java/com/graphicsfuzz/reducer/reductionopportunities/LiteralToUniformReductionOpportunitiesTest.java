@@ -109,9 +109,11 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<TranslationUnit> shaders = new ArrayList<>();
     shaders.add(ParseHelper.parse(vertexShader, ShaderKind.VERTEX));
     shaders.add(ParseHelper.parse(fragmentShader, ShaderKind.FRAGMENT));
+
     final PipelineInfo pipelineInfo = new PipelineInfo();
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         pipelineInfo, shaders);
+    assertEquals(0, pipelineInfo.getNumUniforms());
 
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
@@ -120,6 +122,7 @@ public class LiteralToUniformReductionOpportunitiesTest {
                     new IdGenerator()));
 
     assertEquals("There should be two opportunities", 2, ops.size());
+    assertEquals(0, pipelineInfo.getNumUniforms());
 
     ops.forEach(AbstractReductionOpportunity::applyReduction);
 
@@ -154,9 +157,11 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<TranslationUnit> shaders = new ArrayList<>();
     shaders.add(ParseHelper.parse(vertexShader, ShaderKind.VERTEX));
     shaders.add(ParseHelper.parse(fragmentShader, ShaderKind.FRAGMENT));
+
     final PipelineInfo pipelineInfo = new PipelineInfo();
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         pipelineInfo, shaders);
+    assertEquals(0, pipelineInfo.getNumUniforms());
 
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
@@ -165,6 +170,7 @@ public class LiteralToUniformReductionOpportunitiesTest {
                     new IdGenerator()));
 
     assertEquals("There should be two opportunities", 2, ops.size());
+    assertEquals(0, pipelineInfo.getNumUniforms());
 
     ops.forEach(AbstractReductionOpportunity::applyReduction);
 
