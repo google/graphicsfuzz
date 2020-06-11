@@ -61,9 +61,11 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<TranslationUnit> shaders = new ArrayList<>();
     shaders.add(ParseHelper.parse(vertexShader, ShaderKind.VERTEX));
     shaders.add(ParseHelper.parse(fragmentShader, ShaderKind.FRAGMENT));
+
     final PipelineInfo pipelineInfo = new PipelineInfo();
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         pipelineInfo, shaders);
+    assertEquals(0, pipelineInfo.getNumUniforms());
 
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
@@ -72,6 +74,7 @@ public class LiteralToUniformReductionOpportunitiesTest {
                 new IdGenerator()));
 
     assertEquals("There should be two opportunities", 2, ops.size());
+    assertEquals(0, pipelineInfo.getNumUniforms());
 
     ops.forEach(AbstractReductionOpportunity::applyReduction);
 
@@ -82,7 +85,7 @@ public class LiteralToUniformReductionOpportunitiesTest {
   }
 
   @Test
-  public void testReplaceSimpleIntAndFloat() throws Exception {
+  public void testReplaceIntAndFloat() throws Exception {
 
     final String vertexShader = "void main() { "
         + "int a = 1;}";
@@ -130,8 +133,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
+    assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
   }
-
 
   @Test
   public void testReplaceSameInt() throws Exception {
@@ -180,4 +183,120 @@ public class LiteralToUniformReductionOpportunitiesTest {
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
   }
 
+  @Test
+  public void testReplaceSameFloat() throws Exception {
+
+    final String vertexShader = "void main() { "
+        + "float a = 1.0;}";
+
+    final String vertexShaderReplaced = "uniform float _GLF_uniform_float_values[1];"
+        + "void main()"
+        + "{"
+        + "  float a = _GLF_uniform_float_values[0];"
+        + "}";
+
+    final String fragmentShader = "void main() { "
+        + "float a = 1.0;}";
+
+    final String fragmentShaderReplaced = "uniform float _GLF_uniform_float_values[1];"
+        + "void main()"
+        + "{"
+        + "  float a = _GLF_uniform_float_values[0];"
+        + "}";
+
+    final List<TranslationUnit> shaders = new ArrayList<>();
+    shaders.add(ParseHelper.parse(vertexShader, ShaderKind.VERTEX));
+    shaders.add(ParseHelper.parse(fragmentShader, ShaderKind.FRAGMENT));
+
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        pipelineInfo, shaders);
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    final List<LiteralToUniformReductionOpportunity> ops =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be two opportunities", 2, ops.size());
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    ops.forEach(AbstractReductionOpportunity::applyReduction);
+
+    CompareAsts.assertEqualAsts(fragmentShaderReplaced, shaderJob.getFragmentShader().get());
+    CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
+
+    assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
+  }
+
+  @Test
+  public void testReplaceMultipleLiterals() throws Exception {
+
+    final String vertexShader = "void main() { "
+        + "float a = 1.0;"
+        + "float b = 2.0;"
+        + "int c = 1;"
+        + "int d = 2;"
+        + "int e = 3;"
+        + "}";
+
+    final String vertexShaderReplaced =
+        "uniform int _GLF_uniform_int_values[3];"
+        + "uniform float _GLF_uniform_float_values[3];"
+        + "void main()"
+        + "{"
+        + "  float a = _GLF_uniform_float_values[0];"
+        + "  float b = _GLF_uniform_float_values[1];"
+        + "  int c = _GLF_uniform_int_values[0];"
+        + "  int d = _GLF_uniform_int_values[1];"
+        + "  int e = _GLF_uniform_int_values[2];"
+        + "}";
+
+    final String fragmentShader = "void main() { "
+        + "float a = 3.0;"
+        + "float b = 2.0;"
+        + "float c = 1.0;"
+        + "int d = 1;"
+        + "int e = 2;"
+        + "}";
+
+    final String fragmentShaderReplaced =
+          "uniform int _GLF_uniform_int_values[3];"
+        + "uniform float _GLF_uniform_float_values[3];"
+        + "void main()"
+        + "{"
+        + "  float a = _GLF_uniform_float_values[2];"
+        + "  float b = _GLF_uniform_float_values[1];"
+        + "  float c = _GLF_uniform_float_values[0];"
+        + "  int d = _GLF_uniform_int_values[0];"
+        + "  int e = _GLF_uniform_int_values[1];"
+        + "}";
+
+    final List<TranslationUnit> shaders = new ArrayList<>();
+    shaders.add(ParseHelper.parse(vertexShader, ShaderKind.VERTEX));
+    shaders.add(ParseHelper.parse(fragmentShader, ShaderKind.FRAGMENT));
+
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        pipelineInfo, shaders);
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    final List<LiteralToUniformReductionOpportunity> ops =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be 10 opportunities", 10, ops.size());
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    ops.forEach(AbstractReductionOpportunity::applyReduction);
+
+    CompareAsts.assertEqualAsts(fragmentShaderReplaced, shaderJob.getFragmentShader().get());
+    CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
+
+    assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
+    assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
+  }
 }
