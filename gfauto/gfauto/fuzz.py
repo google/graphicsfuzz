@@ -398,7 +398,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
             if iteration_seed_override is not None:
                 raise
             log(f"Staging directory already exists: {str(staging_dir)}")
-            log(f"Starting new iteration.")
+            log("Starting new iteration.")
             continue
 
         # Pseudocode:

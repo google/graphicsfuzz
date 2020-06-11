@@ -977,7 +977,7 @@ def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
     # Create bug_report.zip.
     zip_files = [
         util.ZipEntry(f, f.relative_to(bug_report_dir))
-        for f in sorted(bug_report_dir.rglob(f"*"))
+        for f in sorted(bug_report_dir.rglob("*"))
     ]
     util.create_zip(bug_report_dir.with_suffix(".zip"), zip_files)
 

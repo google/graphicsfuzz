@@ -227,7 +227,7 @@ def get_all_android_devices(  # pylint: disable=too-many-locals;
     stdout: str = adb_devices.stdout
     lines: List[str] = stdout.splitlines()
     # Remove empty lines.
-    lines = [l for l in lines if l]
+    lines = [line for line in lines if line]
     check(
         lines[0].startswith("List of devices"),
         AssertionError("Could find list of devices from 'adb devices'"),
@@ -326,7 +326,7 @@ def prepare_device(
         res_bootanim_exit = adb_can_fail(
             serial, ["shell", "getprop service.bootanim.exit"]
         )
-        if res_bootanim.returncode != 0 and res_bootanim_exit != 0:
+        if res_bootanim.returncode != 0 and res_bootanim_exit.returncode != 0:
             # Both commands failed so there is no point in trying to use either result.
             log("Could not check boot animation; continuing.")
             break
