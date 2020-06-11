@@ -29,10 +29,9 @@ import shutil
 import uuid
 import zipfile
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, BinaryIO, Dict, Iterator, List, Optional, TextIO, Tuple, cast
-
-import attr
 
 from gfauto import gflogging
 
@@ -315,7 +314,7 @@ def extract_archive(archive_file: Path, output_dir: Path) -> Path:
     return output_dir
 
 
-@attr.dataclass
+@dataclass
 class ZipEntry:
     path: Path
     path_in_archive: Optional[Path] = None

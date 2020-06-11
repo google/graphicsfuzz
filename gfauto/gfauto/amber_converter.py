@@ -24,11 +24,10 @@ import json
 import pathlib
 import re
 from copy import copy
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Match, Optional
-
-import attr
 
 from gfauto import binaries_util, shader_job_util, subprocess_util, util
 from gfauto.gflogging import log
@@ -37,7 +36,7 @@ from gfauto.util import check
 AMBER_FENCE_TIMEOUT_MS = 60000
 
 
-@attr.dataclass
+@dataclass
 class AmberfySettings:  # pylint: disable=too-many-instance-attributes
     copyright_header_text: Optional[str] = None
     add_generated_comment: bool = False
@@ -400,7 +399,7 @@ class ShaderType(Enum):
     COMPUTE = "compute"
 
 
-@attr.dataclass
+@dataclass
 class Shader:
     shader_type: ShaderType
     shader_spirv_asm: Optional[str]
@@ -408,14 +407,14 @@ class Shader:
     processing_info: str  # E.g. "optimized with spirv-opt -O"
 
 
-@attr.dataclass
+@dataclass
 class ShaderJob:
     name_prefix: str  # Can be used to create unique ssbo buffer names; uniform names are already unique.
     uniform_definitions: str  # E.g. BUFFER reference_resolution DATA_TYPE vec2<float> DATA 256.0 256.0 END ...
     uniform_bindings: str  # E.g. BIND BUFFER reference_resolution AS uniform DESCRIPTOR_SET 0 BINDING 2 ...
 
 
-@attr.dataclass
+@dataclass
 class ComputeShaderJob(ShaderJob):
 
     compute_shader: Shader
@@ -439,14 +438,14 @@ class ComputeShaderJob(ShaderJob):
     buffer_binding_template: str
 
 
-@attr.dataclass
+@dataclass
 class GraphicsShaderJob(ShaderJob):
     vertex_shader: Shader
     fragment_shader: Shader
     draw_command: str
 
 
-@attr.dataclass
+@dataclass
 class ShaderJobFile:
     name_prefix: str  # Uniform names will be prefixed with this name to ensure they are unique. E.g. "reference".
     asm_spirv_shader_job_json: Path
@@ -536,13 +535,13 @@ class ShaderJobFile:
         )
 
 
-@attr.dataclass
+@dataclass
 class ShaderJobBasedAmberTest:
     reference: Optional[ShaderJob]
     variants: List[ShaderJob]
 
 
-@attr.dataclass
+@dataclass
 class ShaderJobFileBasedAmberTest:
     reference_asm_spirv_job: Optional[ShaderJobFile]
     variants_asm_spirv_job: List[ShaderJobFile]
