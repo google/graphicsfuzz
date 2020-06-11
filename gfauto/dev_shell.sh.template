@@ -28,6 +28,12 @@ test -f ./dev_shell.sh.template
 # Or, do `export PYTHON=python3.6` before executing this script.
 PYTHON=${PYTHON-python3}
 
+# In some cases it seems that pipenv will NOT recognize the Python version
+# that is being used, and so pipenv will create a virtual environment using
+# some other version of Python. This line ensures the virtual environment
+# created uses the correct Python binary.
+export PIPENV_PYTHON="${PYTHON}"
+
 # Upgrade/install pip and pipenv if needed.
 "${PYTHON}" -m pip install --upgrade --user 'pip>=19.2.3' 'pipenv>=2018.11.26'
 
