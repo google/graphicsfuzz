@@ -40,7 +40,8 @@ export PIPENV_PYTHON="$(which "${PYTHON}")"
 export PIPENV_VENV_IN_PROJECT=1
 
 # Use the hard-coded versions of packages in Pipfile.lock.
-# Warning: delete the `Pipfile.lock` file if using Python >=3.8.
+# Warning: if using Python >= 3.8, delete `Pipfile.lock` BEFORE running this
+# script.
 export PIPENV_IGNORE_PIPFILE=1
 
 # Install project dependencies, including development dependencies, into the

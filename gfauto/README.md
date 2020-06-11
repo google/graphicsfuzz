@@ -38,7 +38,7 @@ Skip to [Fuzzing](#fuzzing) to start fuzzing Vulkan devices and tools.
 
 * Execute `./check_all.sh` to run various presubmit checks, linters, etc.
 * Execute `./fix_all.sh` to automatically fix certain issues, such as formatting.
-* Execute `./run_protoc.sh` re-generate protobuf files.
+* Execute `./run_protoc.sh` to re-generate protobuf files.
 
 ## PyCharm
 
