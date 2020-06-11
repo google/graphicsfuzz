@@ -31,5 +31,5 @@ git clone https://github.com/google/swiftshader.git
   mkdir -p build-coverage
   cd build-coverage
   cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DSWIFTSHADER_EMIT_COVERAGE=1 ..
-  cmake --build . --config Release
+  cmake --build . --config Debug
 )
