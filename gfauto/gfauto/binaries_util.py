@@ -22,10 +22,10 @@ Defines BinaryManager; see below.
 """
 
 import abc
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import attr
 import requests
 
 from gfauto import artifact_util, recipe_wrap, test_util, util
@@ -111,7 +111,7 @@ DEFAULT_BINARIES = [
 ]
 
 
-@attr.dataclass
+@dataclass
 class BinaryPathAndInfo:
     path: Path
     binary: Binary
@@ -131,7 +131,7 @@ class BinaryPathNotFound(Exception):
         super().__init__(f"Could not find binary path for binary: \n{binary}")
 
 
-@attr.dataclass
+@dataclass
 class ToolNameAndPath:
     name: str
     subpath: str

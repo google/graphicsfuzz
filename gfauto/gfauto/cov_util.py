@@ -16,6 +16,7 @@
 
 """Processes coverage files."""
 
+import dataclasses
 import io
 import json
 import os
@@ -23,12 +24,10 @@ import subprocess
 import threading
 import typing
 from collections import Counter
+from dataclasses import dataclass
 from queue import Queue
 from typing import Any, Dict, List, Optional, Tuple
 
-from attr import dataclass
-
-# Type:
 from gfauto import util
 
 LineCounts = Dict[str, typing.Counter[int]]
@@ -40,16 +39,16 @@ DirAndItsOutput = Tuple[str, str]
 IGNORED_MISSING_FILES = ["CMakeCXXCompilerId.cpp", "CMakeCCompilerId.c"]
 
 
-@dataclass  # pylint: disable=too-many-instance-attributes;
-class GetLineCountsData:
+@dataclass
+class GetLineCountsData:  # pylint: disable=too-many-instance-attributes;
     gcov_path: str
     gcov_uses_json_output: bool
     build_dir: str
     gcov_prefix_dir: str
     num_threads: int
-    gcno_files_queue: "Queue[DirAndItsFiles]" = Queue()
-    stdout_queue: "Queue[DirAndItsOutput]" = Queue()
-    line_counts: LineCounts = {}
+    gcno_files_queue: "Queue[DirAndItsFiles]" = dataclasses.field(default_factory=Queue)
+    stdout_queue: "Queue[DirAndItsOutput]" = dataclasses.field(default_factory=Queue)
+    line_counts: LineCounts = dataclasses.field(default_factory=dict)
 
 
 def _thread_gcov(data: GetLineCountsData) -> None:

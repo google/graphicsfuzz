@@ -16,13 +16,13 @@
 
 """RecipeWrap class."""
 
-import attr
+from dataclasses import dataclass
 
 from gfauto import artifact_util
 from gfauto.recipe_pb2 import Recipe
 
 
-@attr.dataclass
+@dataclass
 class RecipeWrap:
     """Wraps a Recipe proto with its path for convenience."""
 

@@ -19,10 +19,9 @@
 Used to convert shader jobs to Amber script tests that are suitable for adding to the VK-GL-CTS project.
 """
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional
-
-from attr import dataclass
 
 from gfauto import (
     amber_converter,
@@ -350,26 +349,6 @@ def glsl_shader_job_crash_to_amber_script_for_google_cts(
         extra_commands=extra_commands,
         is_coverage_gap=is_coverage_gap,
     )
-
-
-#
-# @dataclass
-# class Shader:
-#     suffix: str
-#     path: Path
-#
-#
-# @dataclass
-# class ShaderJob:
-#     name: str
-#     path: Path
-#     shader_files: Dict[str, Shader]
-#
-#
-# @dataclass
-# class SourceDirFiles:
-#     test_metadata: Path
-#     shader_jobs: Dict[str, ShaderJob]
 
 
 def get_shader_jobs(
