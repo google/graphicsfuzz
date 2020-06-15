@@ -40,6 +40,21 @@ const vec4 pal[16] = vec4[16](
   vec4(1.0, 0.0, 1.0, 1.0),
   vec4(0.0, 1.0, 1.0, 1.0),
   vec4(1.0, 1.0, 1.0, 1.0));
+  
+/*
+This shader is basically a fancy random number generator
+using a simple bifurcation algorithm. All the math is 
+done using integers, so as long as the integer width is
+sufficient (which "precision highp int" should provide),
+the math itself is deterministic.
+
+The randomness comes from the unstability of the
+algorithm as the number of iterations increase.
+
+To understand what's going on, this youtube video
+has a very good explanation:
+https://youtube.com/watch?v=ovJcsL7vyrk
+*/
 
 void main() {
   vec2 pos = gl_FragCoord.xy / resolution;

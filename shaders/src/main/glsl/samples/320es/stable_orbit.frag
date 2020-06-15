@@ -41,6 +41,18 @@ const vec4 pal[16] = vec4[16](
   vec4(0.0, 1.0, 1.0, 1.0),
   vec4(1.0, 1.0, 1.0, 1.0));
 
+/*
+This shader uses a simple iterative algorithm
+to generate random numbers. The function was
+inspired by simple orbit mechanism where several
+variables affect each other at the same time,
+leading to unpredictable movement.
+All of the math is integer based, so the result
+is deterministic.
+*/
+
+
+
 ivec2 iter(ivec2 p) {
   if (p.x > 0) {
     p.y--;

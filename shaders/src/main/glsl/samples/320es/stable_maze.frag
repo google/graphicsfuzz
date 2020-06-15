@@ -22,6 +22,29 @@ precision highp int;
 layout(location = 0) out vec4 _GLF_color;
 uniform vec2 resolution;
 
+/*
+This shader generates a little maze into the local array,
+and if it detects that the current pixel is part of the
+pathway, it exits early. Otherwise, when the whole maze
+has been generated (there's nowhere to "walk" anymore),
+the other color is sent out.
+
+During each iteration, the walker (vector p) checks
+the four cardinal directions whether it can take a step
+in those directions. Should there be no way to move,
+the whole map is checked for empty space, and should
+such be found, the walker is teleported there.
+
+If there are directions to walk to, steps are taken
+with a little bit of randomness based on how many
+legal moves have been possible and how many directions
+may be taken. All of this is done with integer math,
+so the result is deterministic.
+
+(For different kinds of mazes, just change the
+starting position of the walker) 
+*/
+
 int map[16 * 16];
 
 void main() {

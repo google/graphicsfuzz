@@ -22,6 +22,18 @@ precision highp int;
 layout(location = 0) out vec4 _GLF_color;
 uniform vec2 resolution;
 
+/*
+This shader performs simple point-rectangle
+collision test on each pixel. The match function
+goes through all of the rectangles and returns
+the last collision (so if rectangles overlap,
+the last one checked "wins").
+
+All of the math involved is linear, so there
+should be no ambiguity to the collisions.
+*/
+
+
 const vec4 pal[16] = vec4[16](
   vec4(0.0, 0.0, 0.0, 1.0),
   vec4(0.5, 0.0, 0.0, 1.0),

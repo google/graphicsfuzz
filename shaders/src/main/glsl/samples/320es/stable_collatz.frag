@@ -40,6 +40,25 @@ const vec4 pal[16] = vec4[16](
   vec4(1.0, 0.0, 1.0, 1.0),
   vec4(0.0, 1.0, 1.0, 1.0),
   vec4(1.0, 1.0, 1.0, 1.0));
+ 
+/*
+This shader uses the collatz formula to generate
+random numbers.
+
+The collatz formula is simply:
+f(n) = n / 2, if n is even
+f(n) = n * 3 + 1, if n is odd
+
+The algorithm, when iterated, seems to converge
+to 1, but the number of iterations required is
+not obvious from the input value, and it has not
+actually been proven that all values eventually
+converge to 1, but a counter-example has not 
+been found either.
+
+Since all the math uses integers, it is
+deterministic.
+*/
 
 int collatz(int v) {
   int count = 0;

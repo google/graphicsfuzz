@@ -22,6 +22,25 @@ precision highp int;
 layout(location = 0) out vec4 _GLF_color;
 uniform vec2 resolution;
 
+/*
+This shader produces an old Amiga demoscene effect
+in a very inefficient way.
+
+A precalculated table of 256 integer positions is used
+to see where the tops of the squigly pillars are. For each
+pixel in the output, we scan upwards to find the first
+pillar top we find, and color the current pixel based on
+that. If no pillar tops are found while tracing, we render
+black.
+
+Each of the pillars is considerered to be +/- 15 pixels
+from the value in the table, with a gradient fill.
+
+Apart from the gradient fill (which is a simple linear
+interpolation), everything is done with integer math, 
+making the result deterministic.
+*/
+
 const int dp[256] = int[256](
   115, 133, 150, 164, 176, 184, 190, 192, 191, 187, 181, 172, 163, 153, 143, 134,
   126, 120, 116, 114, 114, 117, 121, 127, 134, 141, 148, 154, 159, 162, 163, 161,
