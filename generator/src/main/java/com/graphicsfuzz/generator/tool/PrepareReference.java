@@ -61,7 +61,10 @@ public final class PrepareReference {
         .action(Arguments.storeTrue());
 
     parser.addArgument("--vulkan")
-        .help("Generate shader targeting Vulkan")
+        .help("Put all uniforms in uniform blocks and generate "
+            + "bindings; required for Vulkan compatibility. "
+            + "Also enables vulkan-specific features and performs "
+            + "shader validation as Vulkan target.")
         .action(Arguments.storeTrue());
 
     parser.addArgument("--max-uniforms")

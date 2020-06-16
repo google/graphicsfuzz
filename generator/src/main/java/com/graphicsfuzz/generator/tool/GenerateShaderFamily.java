@@ -128,7 +128,6 @@ public class GenerateShaderFamily {
     final boolean writeProbabilities = ns.getBoolean("write_probabilities");
     final boolean keepBadVariants = ns.getBoolean("keep_bad_variants");
     final boolean stopOnFail = ns.getBoolean("stop_on_fail");
-    final boolean isVulkan = ns.getBoolean("vulkan");
     final IRandom generator = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
     final int numVariants = ns.getInt("num_variants");
     Optional<Integer> maxBytes = ns.get("max_bytes") == null ? Optional.empty() :
@@ -179,7 +178,7 @@ public class GenerateShaderFamily {
     // Validate reference shaders.
     if (!disableGlslangValidator) {
       if (!fileOps.areShadersValid(preparedReferenceShaderJob, false,
-          isVulkan)) {
+          generatorArguments.getIsVulkan())) {
         throw new RuntimeException("One or more of the prepared shaders of shader job "
             + preparedReferenceShaderJob.getAbsolutePath() + " is not valid according to "
             + "glslangValidator.");
@@ -249,7 +248,7 @@ public class GenerateShaderFamily {
           disableShaderTranslator,
           keepBadVariants,
           stopOnFail,
-          isVulkan)) {
+          generatorArguments.getIsVulkan())) {
         continue;
       }
 

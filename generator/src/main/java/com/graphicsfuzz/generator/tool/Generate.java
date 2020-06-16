@@ -60,10 +60,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -138,7 +136,10 @@ public class Generate {
         .action(Arguments.storeTrue());
 
     parser.addArgument("--vulkan")
-        .help("Generate shader targeting Vulkan")
+        .help("Put all uniforms in uniform blocks and generate "
+            + "bindings; required for Vulkan compatibility. "
+            + "Also enables vulkan-specific features and performs "
+            + "shader validation as Vulkan target.")
         .action(Arguments.storeTrue());
 
     parser.addArgument("--max-uniforms")
@@ -217,14 +218,15 @@ public class Generate {
       for (TranslationUnit tu : shaders) {
         if (!tu.getShadingLanguageVersion().supportedPushConstants()) {
           pushConstantsSupportedInAllShaders = false;
+          break;
         }
       }
       if (pushConstantsSupportedInAllShaders
           && random.nextFloat() <= args.getPushConstantProbability()) {
         // Get the list of (unique) uniform names in all shaders which
-        // are eglible for being turned into push constants (so samplers, etc
+        // are eligible for being turned into push constants (so samplers, etc
         // are out)
-        final Set<String> allUniforms = new HashSet<String>();
+        final ArrayList<String> uniformList = new ArrayList<String>();
         for (TranslationUnit tu : shaders) {
           for (Declaration decl : tu.getTopLevelDeclarations()) {
             if (decl instanceof VariablesDeclaration
@@ -235,16 +237,17 @@ public class Generate {
                 .hasQualifier(TypeQualifier.UNIFORM)) {
               final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
               for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
-                allUniforms.add(declInfo.getName());
+                if (!uniformList.contains(declInfo.getName())) {
+                  uniformList.add(declInfo.getName());
+                }
               }
             }
           }
         }
 
         // Pick one uniform at random if we have any
-        if (!allUniforms.isEmpty()) {
-          pushConstant = Optional.of(new ArrayList<String>(allUniforms)
-              .get(random.nextInt(allUniforms.size())));
+        if (!uniformList.isEmpty()) {
+          pushConstant = Optional.of(uniformList.get(random.nextInt(uniformList.size())));
         }
       }
       // Note that by default we pass Optional.empty() here.

@@ -158,7 +158,7 @@ public class ShaderJobFileOperations {
    * Are shaders listed in shader job valid?
    * @param shaderJobFile A shader job to check.
    * @param throwExceptionOnInvalid Request exception if the validation fails
-   * @param vulkan Tell the validator that this is a vulkan target
+   * @param isVulkan Tell the validator that this is a vulkan target
    * @return true if shaders pass validation.
    */
   public boolean areShadersValid(
