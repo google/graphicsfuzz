@@ -35,7 +35,7 @@ usage: GlslGenerate [-h] [--seed SEED] [--small] [--allow-long-loops]
                     [--disable DISABLE] [--enable-only ENABLE_ONLY]
                     [--aggressively-complicate-control-flow]
                     [--single-pass] [--replace-float-literals]
-                    [--generate-uniform-bindings]
+                    [--vulkan]
                     [--max-uniforms MAX_UNIFORMS] [--no-injection-switch]
                     [--disable-validator] [--keep-bad-variants]
                     [--stop-on-fail] [--verbose] [--max-bytes MAX_BYTES]
@@ -73,9 +73,10 @@ optional arguments:
   --replace-float-literals
                          Replace float  literals  with  uniforms. (default:
                          false)
-  --generate-uniform-bindings
-                         Put all uniforms  in  uniform  blocks and generate
+  --vulkan               Put all uniforms  in  uniform  blocks and generate
                          bindings;  required   for   Vulkan  compatibility.
+                         Also enables vulkan-specific features and performs
+                         shader validation as vulkan target.
                          (default: false)
   --max-uniforms MAX_UNIFORMS
                          Ensure that generated  shaders  have  no more than

@@ -95,7 +95,7 @@ public class GenerateShaderFamilyTest {
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
         seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
             String.valueOf(10),
-            "--generate-uniform-bindings", "--single-pass"), ShadingLanguageVersion.ESSL_320);
+            "--vulkan", "--single-pass"), ShadingLanguageVersion.ESSL_320);
   }
 
   @Test
@@ -149,7 +149,7 @@ public class GenerateShaderFamilyTest {
     checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
         seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
             String.valueOf(10),
-            "--generate-uniform-bindings"), ShadingLanguageVersion.ESSL_320);
+            "--vulkan"), ShadingLanguageVersion.ESSL_320);
   }
 
   @Test

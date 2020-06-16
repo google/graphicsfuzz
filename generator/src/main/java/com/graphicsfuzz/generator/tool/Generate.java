@@ -60,10 +60,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -137,9 +135,11 @@ public class Generate {
         .help("Replace float literals with uniforms.")
         .action(Arguments.storeTrue());
 
-    parser.addArgument("--generate-uniform-bindings")
-        .help("Put all uniforms in uniform blocks and generate bindings; required for Vulkan "
-            + "compatibility.")
+    parser.addArgument("--vulkan")
+        .help("Put all uniforms in uniform blocks and generate "
+            + "bindings; required for Vulkan compatibility. "
+            + "Also enables vulkan-specific features and performs "
+            + "shader validation as Vulkan target.")
         .action(Arguments.storeTrue());
 
     parser.addArgument("--max-uniforms")
@@ -165,7 +165,7 @@ public class Generate {
         .help("Probability of converting a random uniform to push constant; "
             + "floating point 0..1. Defaults to 0.5. "
             + "Ignored if shader language version doesn't support push constants.")
-        .setDefault(new Float(0.0))
+        .setDefault(new Float(0.5))
         .type(Float.class);
 
   }
@@ -212,20 +212,21 @@ public class Generate {
           Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX));
     }
 
-    if (args.getGenerateUniformBindings()) {
+    if (args.getIsVulkan()) {
+      Optional<String> pushConstant = Optional.empty();
       boolean pushConstantsSupportedInAllShaders = true;
       for (TranslationUnit tu : shaders) {
         if (!tu.getShadingLanguageVersion().supportedPushConstants()) {
           pushConstantsSupportedInAllShaders = false;
+          break;
         }
       }
       if (pushConstantsSupportedInAllShaders
           && random.nextFloat() <= args.getPushConstantProbability()) {
         // Get the list of (unique) uniform names in all shaders which
-        // are eglible for being turned into push constants (so samplers, etc
+        // are eligible for being turned into push constants (so samplers, etc
         // are out)
-        Optional<String> pushConstant = Optional.empty();
-        final Set<String> allUniforms = new HashSet<String>();
+        final ArrayList<String> uniformList = new ArrayList<String>();
         for (TranslationUnit tu : shaders) {
           for (Declaration decl : tu.getTopLevelDeclarations()) {
             if (decl instanceof VariablesDeclaration
@@ -236,20 +237,21 @@ public class Generate {
                 .hasQualifier(TypeQualifier.UNIFORM)) {
               final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
               for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
-                allUniforms.add(declInfo.getName());
+                if (!uniformList.contains(declInfo.getName())) {
+                  uniformList.add(declInfo.getName());
+                }
               }
             }
           }
         }
 
         // Pick one uniform at random if we have any
-        if (!allUniforms.isEmpty()) {
-          pushConstant = Optional.of(new ArrayList<String>(allUniforms)
-              .get(random.nextInt(allUniforms.size())));
+        if (!uniformList.isEmpty()) {
+          pushConstant = Optional.of(uniformList.get(random.nextInt(uniformList.size())));
         }
-        // Note that by default we pass Optional.empty() here.
-        shaderJob.makeUniformBindings(pushConstant);
       }
+      // Note that by default we pass Optional.empty() here.
+      shaderJob.makeUniformBindings(pushConstant);
     }
 
     return result;
@@ -404,7 +406,7 @@ public class Generate {
         ns.getBoolean("aggressively_complicate_control_flow"),
         ns.getBoolean("replace_float_literals"),
         donors,
-        ns.get("generate_uniform_bindings"),
+        ns.get("vulkan"),
         ns.get("max_uniforms"),
         enabledTransformations,
         !ns.getBoolean("no_injection_switch"),
