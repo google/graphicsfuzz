@@ -143,17 +143,17 @@ const TBuiltInResource DefaultTBuiltInResource = {
     /* .maxMeshViewCountNV = */ 4,
 
     /* .limits = */
-    {
-        /* .nonInductiveForLoops = */ 1,
-        /* .whileLoops = */ 1,
-        /* .doWhileLoops = */ 1,
-        /* .generalUniformIndexing = */ 1,
-        /* .generalAttributeMatrixVectorIndexing = */ 1,
-        /* .generalVaryingIndexing = */ 1,
-        /* .generalSamplerIndexing = */ 1,
-        /* .generalVariableIndexing = */ 1,
-        /* .generalConstantMatrixVectorIndexing = */ 1,
-    }};
+                       {
+                           /* .nonInductiveForLoops = */ 1,
+                           /* .whileLoops = */ 1,
+                           /* .doWhileLoops = */ 1,
+                           /* .generalUniformIndexing = */ 1,
+                           /* .generalAttributeMatrixVectorIndexing = */ 1,
+                           /* .generalVaryingIndexing = */ 1,
+                           /* .generalSamplerIndexing = */ 1,
+                           /* .generalVariableIndexing = */ 1,
+                           /* .generalConstantMatrixVectorIndexing = */ 1,
+                       }};
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -193,12 +193,13 @@ const char* vertexShaderText = R"(
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(location = 0) in vec2 position;
-layout(location = 1) in vec2 offset;
+layout(location = 1) in float offset;
+layout(location = 2) in vec3 color_in;
 layout(location = 0) out vec4 color_out;
 void main()
 {
-  gl_Position = vec4(position.x + offset.x, position.y + offset.y, 0, 1);
-  color_out = vec4(0.5, 0.5, 0.5, 1.0);
+  gl_Position = vec4(position.x + offset, position.y, 0, 1);
+  color_out = vec4(color_in, 1.0);
 }
 )";
 
@@ -381,12 +382,8 @@ struct Vertex {
   }
 };
 
-const std::vector<Vertex> vertices = {
-    {{0.0f, 0.18f}}, {{-0.18f, -0.18f}}, {{0.18f, -0.18f}}};
-
 struct VertOffset {
-  glm::vec2 offset;
-
+  float offset;
   static VkVertexInputBindingDescription getBindingDescription() {
     VkVertexInputBindingDescription bindingDescription = {};
     bindingDescription.binding = 1;
@@ -397,16 +394,52 @@ struct VertOffset {
 
   static VkVertexInputAttributeDescription getAttributeDescriptions() {
     VkVertexInputAttributeDescription attributeDescriptions = {};
-    attributeDescriptions.binding = 1;
     attributeDescriptions.location = 1;
-    attributeDescriptions.format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescriptions.offset = static_cast<uint32_t>(offsetof(VertOffset, offset));
+    attributeDescriptions.binding = 1;
+    attributeDescriptions.format = VK_FORMAT_R32_SFLOAT;
+    attributeDescriptions.offset =
+        static_cast<uint32_t>(offsetof(VertOffset, offset));
     return attributeDescriptions;
   }
 };
+
+struct VertexColor {
+  glm::vec3 color;
+
+  static VkVertexInputBindingDescription getBindingDescription() {
+    VkVertexInputBindingDescription bindingDescription = {};
+    bindingDescription.binding = 2;
+    bindingDescription.stride = sizeof(VertexColor);
+    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+    return bindingDescription;
+  }
+
+  static VkVertexInputAttributeDescription getAttributeDescriptions() {
+    VkVertexInputAttributeDescription attributeDescriptions = {};
+    attributeDescriptions.location = 2;
+    attributeDescriptions.binding = 2;
+    attributeDescriptions.format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions.offset =
+        static_cast<uint32_t>(offsetof(VertexColor, color));
+    return attributeDescriptions;
+  }
+};
+
+const std::vector<Vertex> vertices = {
+    {{0.0f, 0.18f}}, {{-0.18f, -0.18f}}, {{0.18f, -0.18f}}};
+
 const std::vector<VertOffset> instance_offsets = {
     // From left to right
-    {{-0.6f, 0.0f}}, {{-0.2f, 0.0f}}, {{0.2f, 0.0f}}, {{0.6f, 0.0f}}};
+    {-0.6f},
+    {-0.2f},
+    {0.2f},
+    {0.6f}};
+
+const std::vector<VertexColor> instance_colors = {
+    {{0.5f, 0.5f, 0.5f}},   // gray
+    {{1.0f, 0.0f, 0.0f}},   // red
+    {{0.0f, 1.0f, 0.0f}},   // green
+    {{0.0f, 0.0f, 1.0f}}};  // blue
 
 int main() {
   VkInstance instance;
@@ -426,8 +459,10 @@ int main() {
   VkCommandPool commandPool;
   VkBuffer vertexBuffer;
   VkBuffer offset_buffer;
+  VkBuffer color_buffer;
   VkDeviceMemory vertexBufferMemory;
   VkDeviceMemory vertex_offset_buffer_memory;
+  VkDeviceMemory vertex_color_buffer_memory;
   VkCommandBuffer commandBuffer;
 
   try {
@@ -476,8 +511,8 @@ int main() {
     if (enableValidationLayers) {
       populateDebugMessengerCreateInfo(vkDebugUtilsMessengerCreateInfo);
       if (CreateDebugUtilsMessengerEXT(
-              instance, &vkDebugUtilsMessengerCreateInfo, nullptr,
-              &debugMessenger) != VK_SUCCESS) {
+          instance, &vkDebugUtilsMessengerCreateInfo, nullptr,
+          &debugMessenger) != VK_SUCCESS) {
         throw std::runtime_error("failed to set up debug messenger!");
       }
     }
@@ -703,14 +738,19 @@ int main() {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType =
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 2;
-    VkVertexInputBindingDescription bindingDescription[2] =
-        {Vertex::getBindingDescription(), VertOffset::getBindingDescription()};
+
+    vertexInputInfo.vertexBindingDescriptionCount = 3;
+    VkVertexInputBindingDescription bindingDescription[3] = {
+        Vertex::getBindingDescription(), VertOffset::getBindingDescription(),
+        VertexColor::getBindingDescription()};
     vertexInputInfo.pVertexBindingDescriptions = bindingDescription;
-    VkVertexInputAttributeDescription attributeDescriptions[2] =
-        {Vertex::getAttributeDescriptions(), VertOffset::getAttributeDescriptions()};
-    vertexInputInfo.vertexAttributeDescriptionCount = 2;
+    VkVertexInputAttributeDescription attributeDescriptions[3] = {
+        Vertex::getAttributeDescriptions(),
+        VertOffset::getAttributeDescriptions(),
+        VertexColor::getAttributeDescriptions()};
+    vertexInputInfo.vertexAttributeDescriptionCount = 3;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions;
+
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
     inputAssembly.sType =
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -854,7 +894,8 @@ int main() {
 
     // Create Offset buffer
     vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    vkBufferCreateInfo.size = sizeof(instance_offsets[0]) * instance_offsets.size();
+    vkBufferCreateInfo.size =
+        sizeof(instance_offsets[0]) * instance_offsets.size();
     vkBufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
     vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     if (vkCreateBuffer(device, &vkBufferCreateInfo, nullptr, &offset_buffer) !=
@@ -867,23 +908,24 @@ int main() {
     {
       VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
       vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-      vkMemoryAllocateInfo.allocationSize = vertex_offset_buffer_memory_requirements.size;
-      vkMemoryAllocateInfo.memoryTypeIndex =
-          findMemoryType(vertex_offset_buffer_memory_requirements.memoryTypeBits,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, physicalDevice);
+      vkMemoryAllocateInfo.allocationSize =
+          vertex_offset_buffer_memory_requirements.size;
+      vkMemoryAllocateInfo.memoryTypeIndex = findMemoryType(
+          vertex_offset_buffer_memory_requirements.memoryTypeBits,
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, physicalDevice);
       if (vkAllocateMemory(device, &vkMemoryAllocateInfo, nullptr,
                            &vertex_offset_buffer_memory) != VK_SUCCESS) {
         throw std::runtime_error("Failed to allocate offset buffer memory.");
       }
     }
-    if (vkBindBufferMemory(device, offset_buffer, vertex_offset_buffer_memory, 0) !=
-        VK_SUCCESS) {
+    if (vkBindBufferMemory(device, offset_buffer, vertex_offset_buffer_memory,
+                           0) != VK_SUCCESS) {
       throw std::runtime_error("Failed binding offset buffer memory.");
     }
     {
       void* data;
-      vkMapMemory(device, vertex_offset_buffer_memory, 0, vkBufferCreateInfo.size, 0,
-                  &data);
+      vkMapMemory(device, vertex_offset_buffer_memory, 0,
+                  vkBufferCreateInfo.size, 0, &data);
       memcpy(data, instance_offsets.data(),
              static_cast<uint32_t>(vkBufferCreateInfo.size));
       VkMappedMemoryRange rangeToFlush = {};
@@ -893,6 +935,51 @@ int main() {
       rangeToFlush.size = VK_WHOLE_SIZE;
       vkFlushMappedMemoryRanges(device, 1, &rangeToFlush);
       vkUnmapMemory(device, vertex_offset_buffer_memory);
+    }
+
+    // Create Color buffer
+    vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    vkBufferCreateInfo.size =
+        sizeof(instance_colors[0]) * instance_colors.size();
+    vkBufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    if (vkCreateBuffer(device, &vkBufferCreateInfo, nullptr, &color_buffer) !=
+        VK_SUCCESS) {
+      throw std::runtime_error("Failed to create Offset buffer.");
+    }
+    VkMemoryRequirements vertex_color_buffer_memory_requirements;
+    vkGetBufferMemoryRequirements(device, color_buffer,
+                                  &vertex_color_buffer_memory_requirements);
+    {
+      VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
+      vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      vkMemoryAllocateInfo.allocationSize =
+          vertex_color_buffer_memory_requirements.size;
+      vkMemoryAllocateInfo.memoryTypeIndex =
+          findMemoryType(vertex_color_buffer_memory_requirements.memoryTypeBits,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, physicalDevice);
+      if (vkAllocateMemory(device, &vkMemoryAllocateInfo, nullptr,
+                           &vertex_color_buffer_memory) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate offset buffer memory.");
+      }
+    }
+    if (vkBindBufferMemory(device, color_buffer, vertex_color_buffer_memory,
+                           0) != VK_SUCCESS) {
+      throw std::runtime_error("Failed binding offset buffer memory.");
+    }
+    {
+      void* data;
+      vkMapMemory(device, vertex_color_buffer_memory, 0,
+                  vkBufferCreateInfo.size, 0, &data);
+      memcpy(data, instance_colors.data(),
+             static_cast<uint32_t>(vkBufferCreateInfo.size));
+      VkMappedMemoryRange rangeToFlush = {};
+      rangeToFlush.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+      rangeToFlush.memory = vertex_color_buffer_memory;
+      rangeToFlush.offset = 0;
+      rangeToFlush.size = VK_WHOLE_SIZE;
+      vkFlushMappedMemoryRanges(device, 1, &rangeToFlush);
+      vkUnmapMemory(device, vertex_color_buffer_memory);
     }
 
     // Create command buffer
@@ -927,8 +1014,9 @@ int main() {
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, offsets);
     vkCmdBindVertexBuffers(commandBuffer, 1, 1, &offset_buffer, offsets);
-    //Note! draw 3 triangles out of 4 starting at second instance(1)
-    //Normal: instance count 4, first instance 0
+    vkCmdBindVertexBuffers(commandBuffer, 2, 1, &color_buffer, offsets);
+    // Note! draw 3 triangles out of 4 starting at second instance(1)
+    // Normal: vkCmdDraw(commandBuffer, 3, 4, 0, 0);
     vkCmdDraw(commandBuffer, 3, 3, 0, 1);
     vkCmdEndRenderPass(commandBuffer);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -1054,8 +1142,10 @@ int main() {
     vkFreeMemory(device, stagingBufferMemory, nullptr);
     vkDestroyBuffer(device, vertexBuffer, nullptr);
     vkDestroyBuffer(device, offset_buffer, nullptr);
+    vkDestroyBuffer(device, color_buffer, nullptr);
     vkFreeMemory(device, vertexBufferMemory, nullptr);
     vkFreeMemory(device, vertex_offset_buffer_memory, nullptr);
+    vkFreeMemory(device, vertex_color_buffer_memory, nullptr);
     vkDestroyCommandPool(device, commandPool, nullptr);
     vkDestroyFramebuffer(device, offScreenFramebuffer, nullptr);
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
