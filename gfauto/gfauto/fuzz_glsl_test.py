@@ -92,6 +92,7 @@ def fuzz_glsl(  # pylint: disable=too-many-locals;
                     template_source_dir
                     / test_util.REFERENCE_DIR
                     / test_util.SHADER_JOB,
+                    legacy_graphics_fuzz_vulkan_arg=settings.legacy_graphics_fuzz_vulkan_arg,
                 )
 
                 # Generate the variant (GraphicsFuzz requires the unprepared reference as input).
@@ -104,6 +105,7 @@ def fuzz_glsl(  # pylint: disable=too-many-locals;
                     other_args=list(settings.extra_graphics_fuzz_generate_args)
                     if settings.extra_graphics_fuzz_generate_args
                     else None,
+                    legacy_graphics_fuzz_vulkan_arg=settings.legacy_graphics_fuzz_vulkan_arg,
                 )
             finally:
                 gflogging.pop_stream_for_logging()
@@ -975,7 +977,7 @@ def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
     # Create bug_report.zip.
     zip_files = [
         util.ZipEntry(f, f.relative_to(bug_report_dir))
-        for f in sorted(bug_report_dir.rglob(f"*"))
+        for f in sorted(bug_report_dir.rglob("*"))
     ]
     util.create_zip(bug_report_dir.with_suffix(".zip"), zip_files)
 

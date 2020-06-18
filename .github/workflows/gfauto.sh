@@ -25,14 +25,17 @@ uname
 case "$(uname)" in
 "Linux")
   ACTIVATE_PATH=".venv/bin/activate"
+  export PYTHON=python
   ;;
 
 "Darwin")
   ACTIVATE_PATH=".venv/bin/activate"
+  export PYTHON=python
   ;;
 
 "MINGW"*|"MSYS_NT"*)
   ACTIVATE_PATH=".venv/Scripts/activate"
+  export PYTHON=python.exe
   ;;
 
 *)
@@ -43,7 +46,6 @@ esac
 
 python build/travis/check_headers.py
 cd gfauto
-export PYTHON=python
 ./dev_shell.sh.template
 # shellcheck disable=SC1090
 source "${ACTIVATE_PATH}"

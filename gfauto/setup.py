@@ -31,7 +31,12 @@ setup(
     license="Apache License 2.0",
     packages=["gfauto"],
     python_requires=">=3.6",
-    install_requires=["protobuf", "requests", "python-dateutil"],
+    install_requires=[
+        "protobuf",
+        "requests",
+        "python-dateutil",
+        'dataclasses;python_version<"3.7"',
+    ],
     package_data={"gfauto": ["*.proto", "*.pyi"]},
     classifiers=[
         "Environment :: Console",

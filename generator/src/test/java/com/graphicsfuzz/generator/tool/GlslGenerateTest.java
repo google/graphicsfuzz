@@ -66,7 +66,7 @@ public class GlslGenerateTest {
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
     final int seed = 1;
     checkFragmentShaderFamilyGeneration(references, references, numVariants, prefix,
-        outputDir, seed, Arrays.asList("--generate-uniform-bindings", "--max-uniforms",
+        outputDir, seed, Arrays.asList("--vulkan", "--max-uniforms",
             String.valueOf(10), "--stop-on-fail", "--max-factor", String.valueOf(100f),
             "--max-bytes", String.valueOf(500000), "--disable",
             DonateDeadCodeTransformation.NAME + "," + IdentityTransformation.NAME));
@@ -124,7 +124,7 @@ public class GlslGenerateTest {
     final String outputDir = temporaryFolder.getRoot().getAbsolutePath();
     final int seed = 10;
     checkComputeShaderFamilyGeneration(references, references, numVariants, prefix,
-        outputDir, seed, Arrays.asList("--generate-uniform-bindings", "--max-uniforms",
+        outputDir, seed, Arrays.asList("--vulkan", "--max-uniforms",
             String.valueOf(10), "--stop-on-fail"));
 
   }

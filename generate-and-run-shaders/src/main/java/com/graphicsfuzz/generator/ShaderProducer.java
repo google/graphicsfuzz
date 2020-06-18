@@ -84,7 +84,7 @@ public class ShaderProducer implements Runnable {
             ns.get("aggressively_complicate_control_flow"),
             ns.get("replace_float_literals"),
             donorsDir,
-            ns.get("generate_uniform_bindings"),
+            ns.get("vulkan"),
             ns.get("max_uniforms"),
             enabledTransformations,
             !ns.getBoolean("no_injection_switch"),

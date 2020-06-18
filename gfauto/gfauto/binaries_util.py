@@ -22,10 +22,10 @@ Defines BinaryManager; see below.
 """
 
 import abc
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import attr
 import requests
 
 from gfauto import artifact_util, recipe_wrap, test_util, util
@@ -75,7 +75,7 @@ PLATFORM_SUFFIXES_RELWITHDEBINFO = [
 
 DEFAULT_SPIRV_TOOLS_VERSION = "983b5b4fccea17cab053de24d51403efb4829158"
 
-DEFAULT_AMBER_VERSION = "4c57c691fe34c82d3e8954e1c2ac5d6b0aa9497d"
+DEFAULT_AMBER_VERSION = "298b24a4379658949bcc5256f9b54678613208c1"
 
 DEFAULT_BINARIES = [
     Binary(
@@ -111,7 +111,7 @@ DEFAULT_BINARIES = [
 ]
 
 
-@attr.dataclass
+@dataclass
 class BinaryPathAndInfo:
     path: Path
     binary: Binary
@@ -131,7 +131,7 @@ class BinaryPathNotFound(Exception):
         super().__init__(f"Could not find binary path for binary: \n{binary}")
 
 
-@attr.dataclass
+@dataclass
 class ToolNameAndPath:
     name: str
     subpath: str

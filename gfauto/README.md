@@ -10,23 +10,21 @@ gfauto is a set of tools for using the fuzzers and reducers from the [GraphicsFu
 
 ## Requirements
 
-* Python 3.6+.
-* Pip must be installed _for the Python binary you will use_. E.g. Try `python3 -m pip`.
+* Python 3.6+. If contributing, Python 3.6 (not 3.7, 3.8, etc.) is needed.
+* Pip must be installed _for the Python binary you will use_. E.g. Try `python3.6 -m pip`.
 
 ## Setup
 
-Clone this repo and enter the `gfauto/` directory that contains this README file. Execute:
+Clone this repo and enter the `gfauto/` directory that contains this `README.md` file. Execute:
 
 ```sh
 ./dev_shell.sh.template
 ```
 
-> Try `PYTHON=python3.6.8 ./dev_shell.sh.template` to override your preferred Python binary. Otherwise, if the default settings don't work, make a copy of the file called `dev_shell.sh`, modify according to the comments, and execute it.
+> If the default settings don't work, make a copy of the file called `dev_shell.sh`, modify according to the comments, and execute it.
 
 > Pip for Python 3.6 may be broken on certain Debian distributions.
-> You can just use Python 3.7+ from your
-> distribution.
-> See "Installing Python" below if you want to use Python 3.6.
+> See "Installing Python" to install Python 3.6 using ~3 commands.
 
 The script generates a Python virtual environment (located at `.venv/`) with all dependencies installed. To activate the virtual environment:
 
@@ -40,14 +38,17 @@ Skip to [Fuzzing](#fuzzing) to start fuzzing Vulkan devices and tools.
 
 * Execute `./check_all.sh` to run various presubmit checks, linters, etc.
 * Execute `./fix_all.sh` to automatically fix certain issues, such as formatting.
-* Execute `./run_protoc.sh` update/generate protobuf files.
+* Execute `./run_protoc.sh` to re-generate protobuf files.
 
 ## PyCharm
 
-Use PyCharm to open the top-level `gfauto/` directory (that contains this README file).
+Use PyCharm to open the top-level `gfauto/` directory (that contains this `README.md` file).
 It should detect the Python virtual environment (at `.venv/`) automatically
 for both the code
 and when you open a `Terminal` or `Python Console` tab.
+If you see import errors
+then configure the Python interpreter to be
+derived from the virtual environment at `.venv/`.
 
 Install and configure plugins:
 
@@ -157,7 +158,6 @@ pyenv install 3.6.9
 pyenv global 3.6.9
 
 # Now execute the development shell script, as usual.
-export PYTHON="python"
 ./dev_shell.sh.template
 ```
 

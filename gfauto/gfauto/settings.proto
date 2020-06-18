@@ -79,4 +79,9 @@ message Settings {
   // so the test remains self-contained. When running or reducing a test, the field from the test metadata is used.
   repeated string common_spirv_args = 16;
 
+  // If true, pass "--generate-uniform-bindings" to the GraphicsFuzz PrepareReference and Generate tools.
+  // This is needed for older versions of GraphicsFuzz.
+  // Otherwise, "--vulkan" is passed.
+  bool legacy_graphics_fuzz_vulkan_arg = 17;
+
 }

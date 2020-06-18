@@ -22,11 +22,16 @@ set -u
 test -f ./Pipfile
 test -f ./dev_shell.sh.template
 
-# Sets PYTHON to python3, unless already defined.
-# Modify if needed; this should be a Python 3.6+ binary.
-# E.g. PYTHON=python3.6
-# Or, do `export PYTHON=python3.6` before executing this script.
-PYTHON=${PYTHON-python3}
+# Modify if needed.
+# E.g. PYTHON=python3.7
+# Warning: read below if using Python >=3.8.
+PYTHON=${PYTHON-python3.6}
+
+# In some cases it seems that pipenv will NOT recognize the Python version
+# that is being used, and so pipenv will create a virtual environment using
+# some other version of Python. This line ensures the virtual environment
+# is created using the correct Python binary.
+export PIPENV_PYTHON="$(which "${PYTHON}")"
 
 # Upgrade/install pip and pipenv if needed.
 "${PYTHON}" -m pip install --upgrade --user 'pip>=19.2.3' 'pipenv>=2018.11.26'
@@ -35,6 +40,8 @@ PYTHON=${PYTHON-python3}
 export PIPENV_VENV_IN_PROJECT=1
 
 # Use the hard-coded versions of packages in Pipfile.lock.
+# Warning: if using Python >= 3.8, delete `Pipfile.lock` BEFORE running this
+# script.
 export PIPENV_IGNORE_PIPFILE=1
 
 # Install project dependencies, including development dependencies, into the

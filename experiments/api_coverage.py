@@ -38,9 +38,13 @@ if not lib_vulkan_record:
     print("libVulkan.cpp not found in gcov data")
     sys.exit(1)
 
-functions = lib_vulkan_record['functions']
+# Filter the function list in lib_vulkan_record
+# to remove any that don't start with 'vk'
+filtered_functions = filter(lambda func: func['demangled_name'].startswith("vk"), lib_vulkan_record['functions'])
+
+# Sort the function list by function name
+functions = sorted(filtered_functions, key=lambda func: func['demangled_name'])
 
 for function in functions:
-    if function['execution_count'] == 0:
-        print(function['demangled_name'])
+    print(f"{function['demangled_name']},{function['execution_count']}")
 
