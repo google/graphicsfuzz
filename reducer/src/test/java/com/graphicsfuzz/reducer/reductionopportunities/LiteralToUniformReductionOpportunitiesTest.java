@@ -17,6 +17,7 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -91,8 +92,7 @@ public class LiteralToUniformReductionOpportunitiesTest {
         + "int a = 1;}";
 
     final String vertexShaderReplaced =
-          "uniform float _GLF_uniform_float_values[1];"
-        + "uniform int _GLF_uniform_int_values[1];"
+        "uniform int _GLF_uniform_int_values[1];"
         + "void main()"
         + "{"
         + "  int a = _GLF_uniform_int_values[0];"
@@ -103,7 +103,6 @@ public class LiteralToUniformReductionOpportunitiesTest {
 
     final String fragmentShaderReplaced =
           "uniform float _GLF_uniform_float_values[1];"
-        + "uniform int _GLF_uniform_int_values[1];"
         + "void main()"
         + "{"
         + "  float a = _GLF_uniform_float_values[0];"
@@ -228,6 +227,100 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
+  }
+
+  /*
+   * This test adds two shaders to the shader job and applies only one reduction
+   * opportunity at first. Then checks that the one shader had the array uniform added,
+   * and the other shader stays the same. After that, another uniform is manually added to
+   * the pipeline info and the rest of the opportunities are applied. The test succeeds if
+   * the bindings have not changed, the amount of opportunies is correct and literals in the
+   * shaders are replaced as expected.
+   */
+  @Test
+  public void testManuallyAddedUniform() throws Exception {
+
+    final String vertexShader =
+        "void main()"
+        + "{ "
+        + "  int a = 1;"
+        + "  int b = 1;"
+        + "}";
+
+    final String vertexShaderReplaced = "uniform int _GLF_uniform_int_values[1];"
+        + "void main()"
+        + "{"
+        + "  int a = _GLF_uniform_int_values[0];"
+        + "  int b = 1;"
+        + "}";
+
+    final String vertexShaderReplaced2 = "uniform int _GLF_uniform_int_values[2];"
+        + "void main()"
+        + "{"
+        + "  int a = _GLF_uniform_int_values[0];"
+        + "  int b = _GLF_uniform_int_values[0];"
+        + "}";
+
+    final String fragmentShader =
+        "void main() "
+        + "{ "
+        + "  int b = 2;"
+        + "}";
+
+    final String fragmentShaderNotReplaced =
+        "void main()"
+            + "{"
+            + "  int b = 2;"
+            + "}";
+
+    final String fragmentShaderReplaced =
+        "uniform int _GLF_uniform_int_values[2];"
+            + "void main()"
+            + "{"
+            + "  int b = _GLF_uniform_int_values[1];"
+            + "}";
+
+    final List<TranslationUnit> shaders = new ArrayList<>();
+    shaders.add(ParseHelper.parse(vertexShader, ShaderKind.VERTEX));
+    shaders.add(ParseHelper.parse(fragmentShader, ShaderKind.FRAGMENT));
+
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        pipelineInfo, shaders);
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    final List<LiteralToUniformReductionOpportunity> ops =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be three opportunities", 3, ops.size());
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    ops.get(0).applyReduction();
+    CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
+    CompareAsts.assertEqualAsts(fragmentShaderNotReplaced, shaderJob.getFragmentShader().get());
+    assertEquals(1, pipelineInfo.getNumUniforms());
+
+    final int bindingNumber = shaderJob.getPipelineInfo().getBinding("_GLF_uniform_int_values");
+
+    final int nextUnusedBindingNumber = shaderJob.getPipelineInfo().getUnusedBindingNumber();
+    shaderJob.getPipelineInfo().addUniform("TEST", BasicType.INT,
+        Optional.of(0), new ArrayList<>());
+    shaderJob.getPipelineInfo().addUniformBinding("TEST", false,
+        nextUnusedBindingNumber);
+
+    ops.forEach(AbstractReductionOpportunity::applyReduction);
+    assertEquals("There should be three opportunities", 3, ops.size());
+    assertEquals(2, pipelineInfo.getNumUniforms());
+
+    CompareAsts.assertEqualAsts(vertexShaderReplaced2, shaderJob.getVertexShader().get());
+    CompareAsts.assertEqualAsts(fragmentShaderReplaced, shaderJob.getFragmentShader().get());
+
+    // check that the binding numbers remain the same.
+    assertEquals(bindingNumber, shaderJob.getPipelineInfo().getBinding("_GLF_uniform_int_values"));
+    assertEquals(nextUnusedBindingNumber, shaderJob.getPipelineInfo().getBinding("TEST"));
   }
 
   @Test
