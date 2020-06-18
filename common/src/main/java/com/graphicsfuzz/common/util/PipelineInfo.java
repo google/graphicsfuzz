@@ -19,6 +19,7 @@ package com.graphicsfuzz.common.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.graphicsfuzz.common.ast.TranslationUnit;
@@ -249,6 +250,42 @@ public final class PipelineInfo {
     } else {
       dictionary.getAsJsonObject(uniformName).remove("binding");
     }
+  }
+
+  public int appendValueToUniform(String uniformName, Number value) {
+
+    if (!dictionary.has(uniformName)) {
+      throw new IllegalArgumentException("Uniform declaration not found.");
+    }
+
+    JsonObject array = dictionary.getAsJsonObject(uniformName);
+
+    JsonElement args = array.get("args");
+    JsonArray values = args.getAsJsonArray();
+    values.add(value);
+
+    return values.size() - 1;
+  }
+
+  public int getUnusedBindingNumber() {
+    int number = 0;
+
+    List<Integer> bindings =
+        dictionary.entrySet().stream()
+            .filter(item -> item.getValue().getAsJsonObject().has("binding"))
+            .map(item -> item.getValue().getAsJsonObject()
+            .get("binding").getAsInt()).collect(Collectors.toList());
+
+    for (Integer binding: bindings) {
+      // If the result of subtraction is bigger than 1, an unused binding number was found.
+      if (binding - number > 1) {
+        break;
+      }
+
+      number++;
+    }
+
+    return number;
   }
 
   public List<String> getUniformNames() {

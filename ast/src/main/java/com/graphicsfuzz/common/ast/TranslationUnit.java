@@ -148,6 +148,16 @@ public class TranslationUnit implements IAstNode {
     throw new IllegalArgumentException("Existing declaration not found.");
   }
 
+  public void updateTopLevelDeclaration(Declaration newDecl, Declaration existingDecl) {
+    for (int i = 0; i < topLevelDeclarations.size(); i++) {
+      if (topLevelDeclarations.get(i) == existingDecl) {
+        topLevelDeclarations.set(i, newDecl);
+        return;
+      }
+    }
+    throw new IllegalArgumentException("Existing declaration not found.");
+  }
+
   public void removeTopLevelDeclaration(int index) {
     topLevelDeclarations.remove(index);
   }
@@ -182,6 +192,21 @@ public class TranslationUnit implements IAstNode {
         .stream()
         .filter(item -> item.getBaseType().hasQualifier(TypeQualifier.UNIFORM))
         .collect(Collectors.toList());
+  }
+
+  public VariablesDeclaration getUniformDeclaration(String name) {
+    return getGlobalVariablesDeclarations().stream()
+        .filter(item -> item.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
+            && item.getDeclInfo(0).getName().equals(name))
+        .findAny()
+        .get();
+  }
+
+  public boolean hasUniformDeclaration(String name) {
+
+    return getGlobalVariablesDeclarations().stream()
+        .anyMatch(item -> item.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
+            && item.getDeclInfo(0).getName().equals(name));
   }
 
   public List<StructDefinitionType> getStructDefinitions() {
