@@ -87,8 +87,6 @@ public class LiteralToUniformReductionOpportunity
     if (values.contains(numericValue)) {
       index = values.indexOf(numericValue);
     } else {
-      System.out.println(arrayName);
-      System.out.println(numericValue);
       index = shaderJob.getPipelineInfo().appendValueToUniform(arrayName, numericValue);
     }
 

@@ -19,7 +19,6 @@ package com.graphicsfuzz.common.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.graphicsfuzz.common.ast.TranslationUnit;
@@ -258,13 +257,9 @@ public final class PipelineInfo {
       throw new IllegalArgumentException("Uniform declaration not found.");
     }
 
-    JsonObject array = dictionary.getAsJsonObject(uniformName);
+    dictionary.getAsJsonObject(uniformName).get("args").getAsJsonArray().add(value);
 
-    JsonElement args = array.get("args");
-    JsonArray values = args.getAsJsonArray();
-    values.add(value);
-
-    return values.size() - 1;
+    return dictionary.getAsJsonObject(uniformName).get("args").getAsJsonArray().size() - 1;
   }
 
   public int getUnusedBindingNumber() {
@@ -281,7 +276,6 @@ public final class PipelineInfo {
       if (binding - number > 1) {
         break;
       }
-
       number++;
     }
 
