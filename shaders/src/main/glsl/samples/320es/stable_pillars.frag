@@ -27,7 +27,7 @@ This shader produces an old Amiga demoscene effect
 in a very inefficient way.
 
 A precalculated table of 256 integer positions is used
-to see where the tops of the squigly pillars are. For each
+to see where the tops of the pillars are. For each
 pixel in the output, we scan upwards to find the first
 pillar top we find, and color the current pixel based on
 that. If no pillar tops are found while tracing, we render
@@ -39,6 +39,11 @@ from the value in the table, with a gradient fill.
 Apart from the gradient fill (which is a simple linear
 interpolation), everything is done with integer math, 
 making the result deterministic.
+
+(The original effect was produced by having a single pixel
+high framebuffer and tricking the video chip to re-render
+it over and over again; by drawing just the single slice
+of a pillar, it would stretch downwards until overwritten).
 */
 
 const int dp[256] = int[256](
@@ -60,11 +65,15 @@ const int dp[256] = int[256](
 
 vec4 trace(ivec2 pos) {
   while (pos.y != 256) {
+    // check if the current scanline's pillar is hit
     if (pos.x < dp[pos.y] + 15 &&
-      pos.x > dp[pos.y] - 15) {
+        pos.x > dp[pos.y] - 15) {
+      // hit; calculate gradient
       float p = (15.0 - abs(float(pos.x - dp[pos.y]))) / 15.0;
+      // return pixel color
       return vec4(p, p, p, 1.0);
     }
+    // scan upwards
     pos.y++;
   }
   // miss
@@ -72,7 +81,9 @@ vec4 trace(ivec2 pos) {
 }
 
 void main() {
+  // pos is screen coodrdinates in 0..1 
   vec2 pos = gl_FragCoord.xy / resolution;
+  // ipos is screen coordinates in 0..255 in integer steps.
   ivec2 ipos = ivec2(int(pos.x * 256.0), int(pos.y * 256.0));
 
   _GLF_color = trace(ipos);

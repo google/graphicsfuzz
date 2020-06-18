@@ -25,39 +25,56 @@ uniform vec2 injectionSwitch;
 
 uniform vec2 resolution;
 
+/*
+This shader populates an floating point array with values
+in reverse order, and then uses bubble sort to put the values
+in the desired order.
+
+To make things a bit more interesting, the order is based on 
+the screen coordinates of the shader, so half of the screen
+sorts in one order and vice versa.
+
+The resulting data is then used to draw an image on the screen,
+dividing the screen in half in another direction.
+
+While the data being sorted is in floating point format, the
+data itself consists of integer values. The image drawing uses
+division to keep the values in a sane range. All of the operations
+are numerically stable.
+*/
+
+// Check which order to sort values. For half of the screen
+// vertically sort in one order, and for the other half the other.
 bool checkSwap(float a, float b)
 {
     return gl_FragCoord.y < resolution.y / 2.0 ? a > b : a < b;
 }
+
 void main()
 {
     float data[10];
-    for(
-        int i = 0;
-        i < 10;
-        i ++
-    )
+    // Populate the data array in a reversed order.
+    // Note the use of injectionSwitch to avoid compiler
+    // optimizations.
+    for (int i = 0; i < 10; i++)
         {
             data[i] = float(10 - i) * injectionSwitch.y;
         }
-    for(
-        int i = 0;
-        i < 9;
-        i ++
-    )
+ 
+    // Sort the values
+    for (int i = 0; i < 9; i++)
         {
-            for(
-                int j = 0;
-                j < 10;
-                j ++
-            )
+            for (int j = 0; j < 10; j++)
                 {
-                    if(j < i + 1)
+                    // Instead of using the lower bound of j 
+                    // directly, we use continue here to do the 
+                    // same thing.
+                    if (j < i + 1)
                         {
                             continue;
                         }
                     bool doSwap = checkSwap(data[i], data[j]);
-                    if(doSwap)
+                    if (doSwap)
                         {
                             float temp = data[i];
                             data[i] = data[j];
@@ -65,7 +82,11 @@ void main()
                         }
                 }
         }
-    if(gl_FragCoord.x < resolution.x / 2.0)
+ 
+    // Draw image based on the sorted values.
+    // For half the screen horizontally use one order,
+    // and for the other the inverse order of values.
+    if (gl_FragCoord.x < resolution.x / 2.0)
         {
             _GLF_color = vec4(data[0] / 10.0, data[5] / 10.0, data[9] / 10.0, 1.0);
         }

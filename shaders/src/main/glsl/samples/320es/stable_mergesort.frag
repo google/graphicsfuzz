@@ -25,6 +25,25 @@ uniform vec2 injectionSwitch;
 
 uniform vec2 resolution;
 
+/*
+This shader populates data array with reversed values,
+performs merge sort to get the data to the correct order,
+and then draws an image based on the sorted values and
+the screen coordinates.
+
+The sorting operation is purely integer math, and the
+image drawing uses only linear operations (division, 
+addition) making it numerically stable.
+
+Populating the input data uses an injection switch 
+uniform to avoid the shader compiler from optimizing
+the initialization.
+
+The image drawing portion also contains discard operation
+as one of the possible outputs.
+*/
+
+
 // Size of an array.
 const int N = 10;
 // An array and its temperary array whose elements will be sorted.
@@ -62,7 +81,7 @@ void mergeSort()
 {
  int low = 0;
  int high = N - 1;
- // Devide the array into blocks of size m.
+ // Divide the array into blocks of size m.
  // m = [1, 2, 4 ,8, 16...].
  for(int m = 1; m <= high; m = 2 * m)
   {
@@ -74,7 +93,22 @@ void mergeSort()
      int from = i;
      int mid = i + m - 1;
      int to = min(i + 2 * m - 1, high);
+     // Merge the sub-array
      merge(from, mid, to);
+     /*
+     Status after each merge operation:
+      3  4  2  1  0 -1 -2 -3 -4 -5
+      3  4  1  2  0 -1 -2 -3 -4 -5
+      3  4  1  2 -1  0 -2 -3 -4 -5
+      3  4  1  2 -1  0 -3 -2 -4 -5
+      3  4  1  2 -1  0 -3 -2 -5 -4
+      1  2  3  4 -1  0 -3 -2 -5 -4
+      1  2  3  4 -3 -2 -1  0 -5 -4
+      1  2  3  4 -3 -2 -1  0 -5 -4
+     -3 -2 -1  0  1  2  3  4 -5 -4
+     -3 -2 -1  0  1  2  3  4 -5 -4
+     -5 -4 -3 -2 -1  0  1  2  3  4
+     */
     }
   }
 }
@@ -83,50 +117,35 @@ void mergeSort()
 
 void main()
 {
+ // Note the use of injectionSwitch uniform to avoid compiler
+ // optimization of the population of initial data[] values. 
  int i = int(injectionSwitch.x);
  do
   {
    switch(i)
     {
-     case 0:
-     data[i] = 4;
-     break;
-     case 1:
-     data[i] = 3;
-     break;
-     case 2:
-     data[i] = 2;
-     break;
-     case 3:
-     data[i] = 1;
-     break;
-     case 4:
-     data[i] = 0;
-     break;
-     case 5:
-     data[i] = - 1;
-     break;
-     case 6:
-     data[i] = - 2;
-     break;
-     case 7:
-     data[i] = - 3;
-     break;
-     case 8:
-     data[i] = - 4;
-     break;
-     case 9:
-     data[i] = - 5;
-     break;
+     case 0: data[i] =  4; break;
+     case 1: data[i] =  3; break;
+     case 2: data[i] =  2; break;
+     case 3: data[i] =  1; break;
+     case 4: data[i] =  0; break;
+     case 5: data[i] = -1; break;
+     case 6: data[i] = -2; break;
+     case 7: data[i] = -3; break;
+     case 8: data[i] = -4; break;
+     case 9: data[i] = -5; break;
     }
-   i ++;
+   i++;
   }
  while(i < 10);
+
  for(int j = 0; j < 10; j ++)
   {
    temp[j] = data[j];
   }
+
  mergeSort();
+
  float grey;
  if(int(gl_FragCoord[1]) < 30)
   {

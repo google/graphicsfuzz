@@ -19,9 +19,42 @@
 precision highp float;
 precision highp int;
 
+/*
+This shader implements binary search tree using an array
+data structure. The elements of tree are kept in the array 
+that contains a list of BST object holding indices of left 
+and right subtree in the array.
+
+- Tree representation of the number used in this shader:
+           9
+        /    \
+       5      12
+     /  \      \
+    2   7      15
+       / \    /  \
+      6  8   13  17
+- Array representation:
+  [9, 5, 12, 15, 7, 8, 2, 6, 17, 13]
+
+After the tree is built, values 0..19 are searched
+in it. For every value that should be in the tree
+that is found, and for each value that should not
+be in the tree that is not found, checksum is
+incremented.
+
+If the checksum matches with what we expect, the 
+image will be red, and if not, the image will be blue.
+
+Screen coordinates do not matter for this shader;
+the exact same computation is done for all pixels.
+
+All computation is performed using integers, so the
+shader is numerically stable.
+*/
+
 layout(location = 0) out vec4 _GLF_color;
 
-struct BST{
+struct BST {
     int data;
     int leftIndex;
     int rightIndex;
@@ -69,7 +102,7 @@ void insert(int treeIndex, int data)
 }
 
 // Return element data if the given target exists in a tree. Otherwise, we simply return -1.
-int search(int target){
+int search(int target) {
     BST currentNode;
     int index = 0;
     while (index != -1) {
@@ -81,25 +114,6 @@ int search(int target){
     }
     return -1;
 }
-
-/*
-* This shader implements binary search tree using an array data structure. The elements of
-* tree are kept in the array that contains a list of BST object holding indices of left and
-* right subtree in the array.
-*
-* - Tree representation of the number used in this shader:
-*            9
-*         /    \
-*        5      12
-*      /  \      \
-*     2   7      15
-*        / \    /  \
-*       6  8   13  17
-*
-* - Array representation:
-* [9, 5, 12, 15, 7, 8, 2, 6, 17, 13]
-*
-*/
 
 void main() {
     int treeIndex = 0;

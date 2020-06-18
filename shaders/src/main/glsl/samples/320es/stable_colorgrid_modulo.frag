@@ -23,20 +23,39 @@ layout(location = 0) out vec4 _GLF_color;
 
 uniform vec2 resolution;
 
+/*
+This shader produces a grid of colored 32x32 pixel
+squares in a rather roundabout way. 
+
+While floating point numbers are used, the values
+are largely integer. The resulting image uses
+multiplication and normalize.
+*/
+
+/*
+For every 32 values in limit, returns the values:
+-0.500 -0.100 0.300 0.700 1.100 1.500 1.900 2.300
+(i.e, for 0..31 returns -0.5, for 32..63 returns -0.1, etc)
+*/
 float compute_value(float limit, float thirty_two) {
     float result = -0.5;
 
-    // The loop will not really execute 800 times, as 'limit' is bounded by gl_FragCoord, and there is an early exit based on 'limit'.
+    // The loop will not really execute 800 times, as 'limit' is bounded by 
+    // gl_FragCoord, and there is an early exit based on 'limit'.
     for (int i = 1; i < 800; i++) {
         if ((i % 32) == 0) {
-            // Avoid computing e.g. mod(float(32), round(32.0)), which could be sensitive to round-off if mutated.
+            // Avoid computing e.g. mod(float(32), round(32.0)), 
+            // which could be sensitive to round-off if mutated.
             result += 0.4;
         } else {
             if (mod(float(i), round(thirty_two)) <= 0.01) {
-            // This should never get executed, because the previous if condition would get triggered.
+            // This should never get executed, because the 
+            // previous if condition would get triggered.
                 result += 100.0;
             }
+            // if i % 32 isn't zero, result is untouched
         }
+        // early out based on gl_FragCoord:
         if (float(i) >= limit) {
             return result;
         }
@@ -49,6 +68,7 @@ void main()
     vec3 c = vec3(7.0, 8.0, 9.0);
     
     // This is guaranteed to be 32.0, as resolution.x is 256.0.
+    // Use of uniform avoids compiler optimizations.
     float thirty_two = round(resolution.x / 8.0);
 
     c.x = compute_value(gl_FragCoord.x, thirty_two);
@@ -60,5 +80,6 @@ void main()
             c[i] = c[i] * c[i];
         }
     }
+
     _GLF_color = vec4(normalize(abs(c)), 1.0);
 }

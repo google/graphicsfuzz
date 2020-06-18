@@ -25,7 +25,7 @@ uniform vec2 resolution;
 /*
 This shader generates a little maze into the local array,
 and if it detects that the current pixel is part of the
-pathway, it exits early. Otherwise, when the whole maze
+maze, it exits early. Otherwise, when the whole maze
 has been generated (there's nowhere to "walk" anymore),
 the other color is sent out.
 
@@ -48,21 +48,27 @@ starting position of the walker)
 int map[16 * 16];
 
 void main() {
+  // pos is screen position in 0..1 range
   vec2 pos = gl_FragCoord.xy / resolution;
+  // ipos is screen position in 0..15 range, in integer steps.
+  // This creates a tile pattern.
   ivec2 ipos = ivec2(int(pos.x * 16.0), int(pos.y * 16.0));
 
+  // Initialize map to zero values.
   int i;
   for (i = 0; i < 16 * 16; i++) {
     map[i] = 0;
   }
 
+  // Start walker at 0,0
   ivec2 p = ivec2(0, 0);
   bool canwalk = true;
+  // Counter which creates our apparent randomness
   int v = 0;
   do {
     v++;
     int directions = 0;
-
+    // For each direction we could possibly walk, increment directions
     if (p.x > 0 && map[(p.x - 2) + (p.y) * 16] == 0) {
       directions += 1;
     }
@@ -77,7 +83,10 @@ void main() {
     }
 
     if (directions == 0) {
+      // If all directions are exhausted, assume we're done..
       canwalk = false;
+      // ..but if we can find an unused tile, hop there and
+      // keep going:    
       int j;
       for (i = 0; i < 8; i++) {
         for (j = 0; j < 8; j++) {
@@ -88,11 +97,16 @@ void main() {
           }
         }
       }
+      // Either way, mark current position as wall.
       map[(p.x) + (p.y) * 16] = 1;
     } else {
+      // Number of steps to take (based on our counter and 
+      // possible steps to take)
       int d = v % directions;
+      // Increment the counter by the possible directions
       v += directions;
 
+      // If we have steps left and it's legal to move left, do so
       if (d >= 0 && p.x > 0 && map[(p.x - 2) + (p.y) * 16] == 0) {
         d--;
         map[(p.x) + (p.y) * 16] = 1;
@@ -100,6 +114,7 @@ void main() {
         map[(p.x - 2) + (p.y) * 16] = 1;
         p.x -= 2;
       }
+      // If we have steps left and it's legal to move up, do so
       if (d >= 0 && p.y > 0 && map[(p.x) + (p.y - 2) * 16] == 0) {
         d--;
         map[(p.x) + (p.y) * 16] = 1;
@@ -107,6 +122,7 @@ void main() {
         map[(p.x) + (p.y - 2) * 16] = 1;
         p.y -= 2;
       }
+      // If we have steps left and it's legal to move right, do so 
       if (d >= 0 && p.x < 14 && map[(p.x + 2) + (p.y) * 16] == 0) {
         d--;
         map[(p.x) + (p.y) * 16] = 1;
@@ -114,6 +130,7 @@ void main() {
         map[(p.x + 2) + (p.y) * 16] = 1;
         p.x += 2;
       }
+      // If we have steps left and it's legal to move down, do so
       if (d >= 0 && p.y < 14 && map[(p.x) + (p.y + 2) * 16] == 0) {
         d--;
         map[(p.x) + (p.y) * 16] = 1;
@@ -123,11 +140,15 @@ void main() {
       }
     }
     if (map[ipos.y * 16 + ipos.x] == 1) {
+      // Early out: our pixel is in a wall
       _GLF_color = vec4(1.0, 1.0, 1.0, 1.0);
       return;
     }
   }
   while (canwalk);
-
+  
+  // If we manage to get here, there's no legal moves left,
+  // and our pixel is in a non-wall tile.
   _GLF_color = vec4(0.0, 0.0, 0.0, 1.0);
 }
+

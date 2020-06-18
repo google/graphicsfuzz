@@ -25,8 +25,8 @@ uniform vec2 resolution;
 
 /*
 This shader rasterizes a triangle in perhaps the most
-inefficent way possible, by checking for each pixel
-whether we're inside a triangle.
+inefficent way possible apart from raytracing, by 
+checking for each pixel whether we're inside a triangle.
 
 The point in triangle code was based on 
 "Real Time Collision Detection", Morgan-Kaufmann 
@@ -43,13 +43,13 @@ float cross2d(vec2 a, vec2 b) {
 int pointInTriangle(vec2 p, vec2 a, vec2 b, vec2 c) {
   float pab = cross2d(vec2(p.x - a.x, p.y - a.y), vec2(b.x - a.x, b.y - a.y));
   float pbc = cross2d(vec2(p.x - b.x, p.y - b.y), vec2(c.x - b.x, c.y - b.y));
-  if (!((pab < 0.0 && pbc < 0.0) ||
-      (pab >= 0.0 && pbc >= 0.0))) {
+  if (!((pab <  0.0 && pbc <  0.0) ||
+        (pab >= 0.0 && pbc >= 0.0))) {
     return 0;
   }
   float pca = cross2d(vec2(p.x - c.x, p.y - c.y), vec2(a.x - c.x, a.y - c.y));
-  if (!((pab < 0.0 && pca < 0.0) ||
-      (pab >= 0.0 && pca >= 0.0))) {
+  if (!((pab <  0.0 && pca <  0.0) ||
+        (pab >= 0.0 && pca >= 0.0))) {
     return 0;
   }
   return 1;
