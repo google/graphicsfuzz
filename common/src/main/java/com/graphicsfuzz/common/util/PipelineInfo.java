@@ -271,12 +271,10 @@ public final class PipelineInfo {
             .map(item -> item.getValue().getAsJsonObject()
             .get("binding").getAsInt()).collect(Collectors.toList());
 
-    for (Integer binding: bindings) {
-      // If the result of subtraction is bigger than 1, an unused binding number was found.
-      if (binding - number > 1) {
+    for (;number < Integer.MAX_VALUE; number++) {
+      if (bindings.contains(number)) {
         break;
       }
-      number++;
     }
 
     return number;
