@@ -143,17 +143,17 @@ const TBuiltInResource DefaultTBuiltInResource = {
     /* .maxMeshViewCountNV = */ 4,
 
     /* .limits = */
-    {
-        /* .nonInductiveForLoops = */ 1,
-        /* .whileLoops = */ 1,
-        /* .doWhileLoops = */ 1,
-        /* .generalUniformIndexing = */ 1,
-        /* .generalAttributeMatrixVectorIndexing = */ 1,
-        /* .generalVaryingIndexing = */ 1,
-        /* .generalSamplerIndexing = */ 1,
-        /* .generalVariableIndexing = */ 1,
-        /* .generalConstantMatrixVectorIndexing = */ 1,
-    }};
+                       {
+                           /* .nonInductiveForLoops = */ 1,
+                           /* .whileLoops = */ 1,
+                           /* .doWhileLoops = */ 1,
+                           /* .generalUniformIndexing = */ 1,
+                           /* .generalAttributeMatrixVectorIndexing = */ 1,
+                           /* .generalVaryingIndexing = */ 1,
+                           /* .generalSamplerIndexing = */ 1,
+                           /* .generalVariableIndexing = */ 1,
+                           /* .generalConstantMatrixVectorIndexing = */ 1,
+                       }};
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -405,12 +405,15 @@ struct Vertex {
 
 // clang-format off
 const std::vector<Vertex> vertices =
-    {
-    // Red triangle
-     {{0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}},
-     {{1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-     {{-1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}
-};
+    {   // Red triangle
+        {{0.0f, -0.3f}, {1.0f, 0.0f, 0.0f}},
+        {{1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+        {{-1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+        // x triangle
+        {{0.0f, 0.3f}, {0.5f, 1.0f, 0.5f}},
+        {{-1.0f, -1.0f}, {0.5f, 1.0f, 0.5f}},
+        {{1.0f, -1.0f}, {0.5f, 1.0f, 0.5f}}
+    };
 // clang-format on
 
 int main() {
@@ -420,22 +423,22 @@ int main() {
   VkDevice device;
   VkQueue graphicsQueue;
   VkImage offScreenImage;
+  VkImage stencil_image;
   VkDeviceMemory offScreenImageMemory;
+  VkDeviceMemory stencil_image_memory;
   VkFormat offScreenImageFormat;
   VkFormat depth_stencil_format;
   VkExtent2D offScreenExtent;
   VkImageView offScreenImageView;
-  VkRenderPass renderPass;
+  VkImageView stencil_image_view;
+  VkRenderPass render_pass;
   VkPipelineLayout pipelineLayout;
-  VkPipeline graphicsPipeline;
+  VkPipeline graphics_pipeline;
   VkFramebuffer offScreenFramebuffer;
   VkCommandPool commandPool;
   VkBuffer vertexBuffer;
   VkDeviceMemory vertexBufferMemory;
   VkCommandBuffer commandBuffer;
-  VkImage depth_stencil_image;
-  VkImageView depth_stencil_view;
-  VkDeviceMemory depth_stencil_memory;
 
   try {
     // Initialize Vulkan
@@ -483,8 +486,8 @@ int main() {
     if (enableValidationLayers) {
       populateDebugMessengerCreateInfo(vkDebugUtilsMessengerCreateInfo);
       if (CreateDebugUtilsMessengerEXT(
-              instance, &vkDebugUtilsMessengerCreateInfo, nullptr,
-              &debugMessenger) != VK_SUCCESS) {
+          instance, &vkDebugUtilsMessengerCreateInfo, nullptr,
+          &debugMessenger) != VK_SUCCESS) {
         throw std::runtime_error("failed to set up debug messenger!");
       }
     }
@@ -607,79 +610,81 @@ int main() {
 
     // Setup depth/stencil
     {
-      depth_stencil_format = VK_FORMAT_D32_SFLOAT_S8_UINT;
-      VkImageCreateInfo create_info {};
+      depth_stencil_format = VK_FORMAT_S8_UINT;
+      VkImageCreateInfo create_info{};
       create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
       create_info.imageType = VK_IMAGE_TYPE_2D;
       create_info.format = depth_stencil_format;
-      create_info.extent = { WIDTH, HEIGHT, 1 };
+      create_info.extent = {WIDTH, HEIGHT, 1};
       create_info.mipLevels = 1;
       create_info.arrayLayers = 1;
       create_info.samples = VK_SAMPLE_COUNT_1_BIT;
       create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
       create_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
       RequireSuccess(
-          vkCreateImage(device, &create_info, nullptr, &depth_stencil_image), "Failed to create depth/stencil image.");
+          vkCreateImage(device, &create_info, nullptr, &stencil_image),
+          "Failed to create depth/stencil image.");
 
       VkMemoryRequirements memory_requirements{};
-      vkGetImageMemoryRequirements(device, depth_stencil_image,
-                                   &memory_requirements);
+      vkGetImageMemoryRequirements(device, stencil_image, &memory_requirements);
 
-      VkMemoryAllocateInfo memory_allocate_info {};
+      VkMemoryAllocateInfo memory_allocate_info{};
       memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
       memory_allocate_info.allocationSize = memory_requirements.size;
       memory_allocate_info.memoryTypeIndex =
           findMemoryType(memory_requirements.memoryTypeBits,
                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, physicalDevice);
       RequireSuccess(vkAllocateMemory(device, &memory_allocate_info, nullptr,
-                                      &depth_stencil_memory));
-      RequireSuccess(vkBindImageMemory(device, depth_stencil_image,
-                                       depth_stencil_memory, 0));
+                                      &stencil_image_memory));
+      RequireSuccess(
+          vkBindImageMemory(device, stencil_image, stencil_image_memory, 0));
 
       VkImageViewCreateInfo view_create_info{};
       view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
       view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-      view_create_info.image = depth_stencil_image;
+      view_create_info.image = stencil_image;
       view_create_info.format = depth_stencil_format;
       view_create_info.subresourceRange.baseMipLevel = 0;
       view_create_info.subresourceRange.levelCount = 1;
       view_create_info.subresourceRange.baseArrayLayer = 0;
       view_create_info.subresourceRange.layerCount = 1;
       view_create_info.subresourceRange.aspectMask =
-          VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+          VK_IMAGE_ASPECT_STENCIL_BIT;
       RequireSuccess(vkCreateImageView(device, &view_create_info, nullptr,
-                                       &depth_stencil_view));
+                                       &stencil_image_view));
     }
 
     // Create render pass
     {
-      std::array<VkAttachmentDescription, 2> attachments{};
       // Color attachment
-      attachments[0].format = offScreenImageFormat;
-      attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-      attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-      attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-      attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-      attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-      attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-      // Depth/stencil attachment
-      attachments[1].format = depth_stencil_format;
-      attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-      attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-      attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-      attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-      attachments[1].finalLayout =
-          VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+      VkAttachmentDescription color_attachment = {};
+      color_attachment.format = offScreenImageFormat;
+      color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+      color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+      color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+      color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+      color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+      color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      color_attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
       VkAttachmentReference colorAttachmentRef = {};
       colorAttachmentRef.attachment = 0;
       colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-      VkAttachmentReference depth_stencil_attachment_ref;
+      // Stencil attachment
+      VkAttachmentDescription stencil_attachment = {};
+      stencil_attachment.format = depth_stencil_format;
+      stencil_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+      stencil_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+      stencil_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+      stencil_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+      stencil_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+      stencil_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      stencil_attachment.finalLayout =
+          VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+      VkAttachmentReference depth_stencil_attachment_ref = {};
       depth_stencil_attachment_ref.attachment = 1;
       depth_stencil_attachment_ref.layout =
           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -689,10 +694,15 @@ int main() {
       subpass.colorAttachmentCount = 1;
       subpass.pColorAttachments = &colorAttachmentRef;
       subpass.pDepthStencilAttachment = &depth_stencil_attachment_ref;
+
+      std::array<VkAttachmentDescription, 2> render_pass_attachments = {
+          color_attachment, stencil_attachment};
+
       VkRenderPassCreateInfo renderPassCreateInfo = {};
       renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-      renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-      renderPassCreateInfo.pAttachments = attachments.data();
+      renderPassCreateInfo.attachmentCount =
+          static_cast<uint32_t>(render_pass_attachments.size());
+      renderPassCreateInfo.pAttachments = render_pass_attachments.data();
       renderPassCreateInfo.subpassCount = 1;
       renderPassCreateInfo.pSubpasses = &subpass;
       VkSubpassDependency dependency = {};
@@ -705,7 +715,7 @@ int main() {
       renderPassCreateInfo.dependencyCount = 1;
       renderPassCreateInfo.pDependencies = &dependency;
       if (vkCreateRenderPass(device, &renderPassCreateInfo, nullptr,
-                             &renderPass) != VK_SUCCESS) {
+                             &render_pass) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create render pass.");
       }
     }
@@ -834,16 +844,19 @@ int main() {
     colorBlending.pAttachments = &colorBlendAttachment;
 
     VkPipelineDepthStencilStateCreateInfo depth_stencil_state{};
-    depth_stencil_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth_stencil_state.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth_stencil_state.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depth_stencil_state.stencilTestEnable = VK_TRUE;
-    depth_stencil_state.back.compareOp = VK_COMPARE_OP_EQUAL;
-    depth_stencil_state.back.failOp = VK_STENCIL_OP_REPLACE;
-    depth_stencil_state.back.depthFailOp = VK_STENCIL_OP_REPLACE;
-    depth_stencil_state.back.passOp = VK_STENCIL_OP_REPLACE;
-    depth_stencil_state.back.compareMask = 0xff;
-    depth_stencil_state.back.writeMask = 0xff;
-    depth_stencil_state.back.reference = 1;
-    depth_stencil_state.front = depth_stencil_state.back;
+    depth_stencil_state.front.compareOp = VK_COMPARE_OP_EQUAL;
+    depth_stencil_state.front.failOp = VK_STENCIL_OP_REPLACE;
+    depth_stencil_state.front.depthFailOp = VK_STENCIL_OP_REPLACE;
+    depth_stencil_state.front.passOp = VK_STENCIL_OP_REPLACE;
+    depth_stencil_state.front.compareMask = 0xff;
+    depth_stencil_state.front.writeMask = 0xff;
+    depth_stencil_state.front.reference = 1;
+    depth_stencil_state.back = depth_stencil_state.front;
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -863,20 +876,20 @@ int main() {
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDepthStencilState = &depth_stencil_state;
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.renderPass = render_pass;
     pipelineInfo.subpass = 0;
     if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
-                                  nullptr, &graphicsPipeline) != VK_SUCCESS) {
+                                  nullptr, &graphics_pipeline) != VK_SUCCESS) {
       throw std::runtime_error("Failed to create graphics pipeline.");
     }
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 
     // Create framebuffer
-    VkImageView attachments[] = {offScreenImageView, depth_stencil_view};
+    VkImageView attachments[] = {offScreenImageView, stencil_image_view};
     VkFramebufferCreateInfo framebufferInfo = {};
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass = renderPass;
+    framebufferInfo.renderPass = render_pass;
     framebufferInfo.attachmentCount = 2;
     framebufferInfo.pAttachments = attachments;
     framebufferInfo.width = offScreenExtent.width;
@@ -886,7 +899,6 @@ int main() {
                             &offScreenFramebuffer) != VK_SUCCESS) {
       throw std::runtime_error("Failed to create framebuffer.");
     }
-
     // Create command pool
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -951,46 +963,57 @@ int main() {
                                  &commandBuffer) != VK_SUCCESS) {
       throw std::runtime_error("Failed to allocate command buffers.");
     }
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-      throw std::runtime_error("Failed to begin recording command buffer.");
-    }
-    VkClearValue clear_values[2];
-    clear_values[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-    clear_values[1].depthStencil = {0.0f, 1};
+    // Draw triangles
+    {
+      VkCommandBufferBeginInfo begin_info = {};
+      begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+      begin_info.pNext = nullptr;
+      begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+      begin_info.pInheritanceInfo = nullptr;
+      if (vkBeginCommandBuffer(commandBuffer, &begin_info) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to begin recording command buffer.");
+      }
+      std::array<VkClearValue, 2> clear_values = {};
+      clear_values[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+      clear_values[1].depthStencil = {0.0f, 0};
 
-    VkRenderPassBeginInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = offScreenFramebuffer;
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = offScreenExtent;
-    renderPassInfo.clearValueCount = 2;
-    renderPassInfo.pClearValues = clear_values;
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo,
-                         VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      graphicsPipeline);
-    VkBuffer vertexBuffers[] = {vertexBuffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-    vkCmdEndRenderPass(commandBuffer);
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-      throw std::runtime_error("Failed to record command buffer.");
-    }
+      VkRenderPassBeginInfo renderPassInfo = {};
+      renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+      renderPassInfo.renderPass = render_pass;
+      renderPassInfo.framebuffer = offScreenFramebuffer;
+      renderPassInfo.renderArea.offset = {0, 0};
+      renderPassInfo.renderArea.extent = offScreenExtent;
+      renderPassInfo.clearValueCount =
+          static_cast<uint32_t>(clear_values.size());
+      renderPassInfo.pClearValues = clear_values.data();
+      vkCmdBeginRenderPass(commandBuffer, &renderPassInfo,
+                           VK_SUBPASS_CONTENTS_INLINE);
+      vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        graphics_pipeline);
+      VkBuffer vertexBuffers[] = {vertexBuffer};
+      VkDeviceSize offsets[] = {0};
+      vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+      vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+      vkCmdEndRenderPass(commandBuffer);
+      if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to record command buffer.");
+      }
 
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) !=
-        VK_SUCCESS) {
-      throw std::runtime_error("Failed to submit draw command buffer.");
-    }
+      VkSubmitInfo submit_info = {};
+      submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+      submit_info.pNext = nullptr;
+      submit_info.waitSemaphoreCount = 0;
+      submit_info.pSignalSemaphores = nullptr;
+      submit_info.pWaitDstStageMask = nullptr;
+      submit_info.commandBufferCount = 1;
+      submit_info.pCommandBuffers = &commandBuffer;
+      if (vkQueueSubmit(graphicsQueue, 1, &submit_info, VK_NULL_HANDLE) !=
+          VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit draw command buffer.");
+      }
 
-    vkDeviceWaitIdle(device);
+      vkDeviceWaitIdle(device);
+    }
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -1102,15 +1125,15 @@ int main() {
     vkFreeMemory(device, vertexBufferMemory, nullptr);
     vkDestroyCommandPool(device, commandPool, nullptr);
     vkDestroyFramebuffer(device, offScreenFramebuffer, nullptr);
-    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    vkDestroyPipeline(device, graphics_pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-    vkDestroyRenderPass(device, renderPass, nullptr);
+    vkDestroyRenderPass(device, render_pass, nullptr);
     vkDestroyImageView(device, offScreenImageView, nullptr);
     vkDestroyImage(device, offScreenImage, nullptr);
     vkFreeMemory(device, offScreenImageMemory, nullptr);
-    vkDestroyImageView(device, depth_stencil_view, nullptr);
-    vkDestroyImage(device, depth_stencil_image, nullptr);
-    vkFreeMemory(device, depth_stencil_memory, nullptr);
+    vkDestroyImageView(device, stencil_image_view, nullptr);
+    vkDestroyImage(device, stencil_image, nullptr);
+    vkFreeMemory(device, stencil_image_memory, nullptr);
     vkDestroyDevice(device, nullptr);
     if (enableValidationLayers) {
       DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
