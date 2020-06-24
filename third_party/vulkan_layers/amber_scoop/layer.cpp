@@ -29,9 +29,17 @@ namespace graphicsfuzz_amber_scoop {
             PFN_vkCreateBuffer fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateBuffer;
             return graphicsfuzz_amber_scoop::vkCreateBuffer(fn, device, pCreateInfo, pAllocator, pBuffer);
         }
+        VKAPI_ATTR void VKAPI_CALL vkDestroyBuffer(VkDevice device, VkBuffer buffer, AllocationCallbacks pAllocator) {
+            PFN_vkDestroyBuffer fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkDestroyBuffer;
+            return graphicsfuzz_amber_scoop::vkDestroyBuffer(fn, device, buffer, pAllocator);
+        }
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreateCommandPool(VkDevice device, VkCommandPoolCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkCommandPool* pCommandPool) {
             PFN_vkCreateCommandPool fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateCommandPool;
             return graphicsfuzz_amber_scoop::vkCreateCommandPool(fn, device, pCreateInfo, pAllocator, pCommandPool);
+        }
+        VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(VkDevice device, VkCommandPool commandPool, AllocationCallbacks pAllocator) {
+            PFN_vkDestroyCommandPool fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkDestroyCommandPool;
+            return graphicsfuzz_amber_scoop::vkDestroyCommandPool(fn, device, commandPool, pAllocator);
         }
         VKAPI_ATTR void VKAPI_CALL vkCmdCopyBuffer(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, VkBufferCopy const* pRegions) {
             PFN_vkCmdCopyBuffer fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdCopyBuffer;
@@ -45,9 +53,17 @@ namespace graphicsfuzz_amber_scoop {
             PFN_vkCreateDescriptorSetLayout fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateDescriptorSetLayout;
             return graphicsfuzz_amber_scoop::vkCreateDescriptorSetLayout(fn, device, pCreateInfo, pAllocator, pSetLayout);
         }
+        VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, AllocationCallbacks pAllocator) {
+            PFN_vkDestroyDescriptorSetLayout fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkDestroyDescriptorSetLayout;
+            return graphicsfuzz_amber_scoop::vkDestroyDescriptorSetLayout(fn, device, descriptorSetLayout, pAllocator);
+        }
         VKAPI_ATTR uint32_t VKAPI_CALL vkAllocateDescriptorSets(VkDevice device, VkDescriptorSetAllocateInfo const* pAllocateInfo, VkDescriptorSet* pDescriptorSets) {
             PFN_vkAllocateDescriptorSets fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkAllocateDescriptorSets;
             return graphicsfuzz_amber_scoop::vkAllocateDescriptorSets(fn, device, pAllocateInfo, pDescriptorSets);
+        }
+        VKAPI_ATTR uint32_t VKAPI_CALL vkFreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, VkDescriptorSet const* pDescriptorSets) {
+            PFN_vkFreeDescriptorSets fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkFreeDescriptorSets;
+            return graphicsfuzz_amber_scoop::vkFreeDescriptorSets(fn, device, descriptorPool, descriptorSetCount, pDescriptorSets);
         }
         VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSets(VkDevice device, uint32_t descriptorWriteCount, VkWriteDescriptorSet const* pDescriptorWrites, uint32_t descriptorCopyCount, VkCopyDescriptorSet const* pDescriptorCopies) {
             PFN_vkUpdateDescriptorSets fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkUpdateDescriptorSets;
@@ -81,21 +97,41 @@ namespace graphicsfuzz_amber_scoop {
             PFN_vkCreateImage fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateImage;
             return graphicsfuzz_amber_scoop::vkCreateImage(fn, device, pCreateInfo, pAllocator, pImage);
         }
+        VKAPI_ATTR void VKAPI_CALL vkDestroyImage(VkDevice device, VkImage image, AllocationCallbacks pAllocator) {
+            PFN_vkDestroyImage fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkDestroyImage;
+            return graphicsfuzz_amber_scoop::vkDestroyImage(fn, device, image, pAllocator);
+        }
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreateSampler(VkDevice device, VkSamplerCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkSampler* pSampler) {
             PFN_vkCreateSampler fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateSampler;
             return graphicsfuzz_amber_scoop::vkCreateSampler(fn, device, pCreateInfo, pAllocator, pSampler);
+        }
+        VKAPI_ATTR void VKAPI_CALL vkDestroySampler(VkDevice device, VkSampler sampler, AllocationCallbacks pAllocator) {
+            PFN_vkDestroySampler fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkDestroySampler;
+            return graphicsfuzz_amber_scoop::vkDestroySampler(fn, device, sampler, pAllocator);
         }
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreatePipelineLayout(VkDevice device, VkPipelineLayoutCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkPipelineLayout* pPipelineLayout) {
             PFN_vkCreatePipelineLayout fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreatePipelineLayout;
             return graphicsfuzz_amber_scoop::vkCreatePipelineLayout(fn, device, pCreateInfo, pAllocator, pPipelineLayout);
         }
+        VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineLayout(VkDevice device, VkPipelineLayout pipelineLayout, AllocationCallbacks pAllocator) {
+            PFN_vkDestroyPipelineLayout fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkDestroyPipelineLayout;
+            return graphicsfuzz_amber_scoop::vkDestroyPipelineLayout(fn, device, pipelineLayout, pAllocator);
+        }
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, VkGraphicsPipelineCreateInfo const* pCreateInfos, AllocationCallbacks pAllocator, VkPipeline* pPipelines) {
             PFN_vkCreateGraphicsPipelines fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateGraphicsPipelines;
             return graphicsfuzz_amber_scoop::vkCreateGraphicsPipelines(fn, device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
         }
+        VKAPI_ATTR void VKAPI_CALL vkDestroyPipeline(VkDevice device, VkPipeline pipeline, AllocationCallbacks pAllocator) {
+            PFN_vkDestroyPipeline fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkDestroyPipeline;
+            return graphicsfuzz_amber_scoop::vkDestroyPipeline(fn, device, pipeline, pAllocator);
+        }
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreateShaderModule(VkDevice device, VkShaderModuleCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkShaderModule* pShaderModule) {
             PFN_vkCreateShaderModule fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateShaderModule;
             return graphicsfuzz_amber_scoop::vkCreateShaderModule(fn, device, pCreateInfo, pAllocator, pShaderModule);
+        }
+        VKAPI_ATTR void VKAPI_CALL vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, AllocationCallbacks pAllocator) {
+            PFN_vkDestroyShaderModule fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkDestroyShaderModule;
+            return graphicsfuzz_amber_scoop::vkDestroyShaderModule(fn, device, shaderModule, pAllocator);
         }
         VKAPI_ATTR void VKAPI_CALL vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) {
             PFN_vkCmdBindPipeline fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdBindPipeline;
@@ -113,9 +149,17 @@ namespace graphicsfuzz_amber_scoop {
             PFN_vkCreateFramebuffer fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateFramebuffer;
             return graphicsfuzz_amber_scoop::vkCreateFramebuffer(fn, device, pCreateInfo, pAllocator, pFramebuffer);
         }
+        VKAPI_ATTR void VKAPI_CALL vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, AllocationCallbacks pAllocator) {
+            PFN_vkDestroyFramebuffer fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkDestroyFramebuffer;
+            return graphicsfuzz_amber_scoop::vkDestroyFramebuffer(fn, device, framebuffer, pAllocator);
+        }
         VKAPI_ATTR uint32_t VKAPI_CALL vkCreateRenderPass(VkDevice device, VkRenderPassCreateInfo const* pCreateInfo, AllocationCallbacks pAllocator, VkRenderPass* pRenderPass) {
             PFN_vkCreateRenderPass fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkCreateRenderPass;
             return graphicsfuzz_amber_scoop::vkCreateRenderPass(fn, device, pCreateInfo, pAllocator, pRenderPass);
+        }
+        VKAPI_ATTR void VKAPI_CALL vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, AllocationCallbacks pAllocator) {
+            PFN_vkDestroyRenderPass fn = GetGlobalContext().GetVkDeviceData(device)->functions->vkDestroyRenderPass;
+            return graphicsfuzz_amber_scoop::vkDestroyRenderPass(fn, device, renderPass, pAllocator);
         }
         VKAPI_ATTR void VKAPI_CALL vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPassBeginInfo const* pRenderPassBegin, VkSubpassContents contents) {
             PFN_vkCmdBeginRenderPass fn = GetGlobalContext().GetVkCommandBufferData(commandBuffer)->functions->vkCmdBeginRenderPass;
@@ -385,11 +429,15 @@ namespace graphicsfuzz_amber_scoop {
             reinterpret_cast<PFN_##name>(get_device_proc_addr(*pDevice, #name))
             // Overrides
             GET_PROC(vkCreateBuffer);
+            GET_PROC(vkDestroyBuffer);
             GET_PROC(vkCreateCommandPool);
+            GET_PROC(vkDestroyCommandPool);
             GET_PROC(vkCmdCopyBuffer);
             GET_PROC(vkCmdCopyBufferToImage);
             GET_PROC(vkCreateDescriptorSetLayout);
+            GET_PROC(vkDestroyDescriptorSetLayout);
             GET_PROC(vkAllocateDescriptorSets);
+            GET_PROC(vkFreeDescriptorSets);
             GET_PROC(vkUpdateDescriptorSets);
             GET_PROC(vkCmdBindDescriptorSets);
             GET_PROC(vkCmdPushConstants);
@@ -398,14 +446,21 @@ namespace graphicsfuzz_amber_scoop {
             GET_PROC(vkCmdDraw);
             GET_PROC(vkCmdDrawIndexed);
             GET_PROC(vkCreateImage);
+            GET_PROC(vkDestroyImage);
             GET_PROC(vkCreateSampler);
+            GET_PROC(vkDestroySampler);
             GET_PROC(vkCreatePipelineLayout);
+            GET_PROC(vkDestroyPipelineLayout);
             GET_PROC(vkCreateGraphicsPipelines);
+            GET_PROC(vkDestroyPipeline);
             GET_PROC(vkCreateShaderModule);
+            GET_PROC(vkDestroyShaderModule);
             GET_PROC(vkCmdBindPipeline);
             GET_PROC(vkQueueSubmit);
             GET_PROC(vkCreateFramebuffer);
+            GET_PROC(vkDestroyFramebuffer);
             GET_PROC(vkCreateRenderPass);
+            GET_PROC(vkDestroyRenderPass);
             GET_PROC(vkCmdBeginRenderPass);
             GET_PROC(vkCmdPipelineBarrier);
             // Called Functions
@@ -458,11 +513,15 @@ namespace graphicsfuzz_amber_scoop {
             if (strcmp(pName, #func) == 0) \
             return reinterpret_cast<PFN_vkVoidFunction>(graphicsfuzz_amber_scoop::wrapped::func);
             INTERCEPT(vkCreateBuffer);
+            INTERCEPT(vkDestroyBuffer);
             INTERCEPT(vkCreateCommandPool);
+            INTERCEPT(vkDestroyCommandPool);
             INTERCEPT(vkCmdCopyBuffer);
             INTERCEPT(vkCmdCopyBufferToImage);
             INTERCEPT(vkCreateDescriptorSetLayout);
+            INTERCEPT(vkDestroyDescriptorSetLayout);
             INTERCEPT(vkAllocateDescriptorSets);
+            INTERCEPT(vkFreeDescriptorSets);
             INTERCEPT(vkUpdateDescriptorSets);
             INTERCEPT(vkCmdBindDescriptorSets);
             INTERCEPT(vkCmdPushConstants);
@@ -471,15 +530,22 @@ namespace graphicsfuzz_amber_scoop {
             INTERCEPT(vkCmdDraw);
             INTERCEPT(vkCmdDrawIndexed);
             INTERCEPT(vkCreateImage);
+            INTERCEPT(vkDestroyImage);
             INTERCEPT(vkCreateSampler);
+            INTERCEPT(vkDestroySampler);
             INTERCEPT(vkCreatePipelineLayout);
+            INTERCEPT(vkDestroyPipelineLayout);
             INTERCEPT(vkCreateGraphicsPipelines);
+            INTERCEPT(vkDestroyPipeline);
             INTERCEPT(vkCreateShaderModule);
+            INTERCEPT(vkDestroyShaderModule);
             INTERCEPT(vkCmdBindPipeline);
             INTERCEPT(vkGetPhysicalDeviceMemoryProperties);
             INTERCEPT(vkQueueSubmit);
             INTERCEPT(vkCreateFramebuffer);
+            INTERCEPT(vkDestroyFramebuffer);
             INTERCEPT(vkCreateRenderPass);
+            INTERCEPT(vkDestroyRenderPass);
             INTERCEPT(vkCmdBeginRenderPass);
             INTERCEPT(vkCmdPipelineBarrier);
             #undef INTERCEPT
@@ -624,7 +690,7 @@ namespace graphicsfuzz_amber_scoop {
         VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(VkDevice device, VkCommandPool commandPool, AllocationCallbacks pAllocator) {
             PFN_vkDestroyCommandPool next =
             GetGlobalContext().GetVkDeviceData(device)->destroy_command_pool;
-            next(device, commandPool, pAllocator);
+            graphicsfuzz_amber_scoop::vkDestroyCommandPool(next, device, commandPool, pAllocator);
             DestroyCommandPool(device, commandPool);
         }
         VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(VkDevice device, AllocationCallbacks pAllocator) {
@@ -685,11 +751,15 @@ namespace graphicsfuzz_amber_scoop {
             if (strcmp(pName, #func) == 0) \
             return reinterpret_cast<PFN_vkVoidFunction>(graphicsfuzz_amber_scoop::wrapped::func);
             INTERCEPT(vkCreateBuffer);
+            INTERCEPT(vkDestroyBuffer);
             INTERCEPT(vkCreateCommandPool);
+            INTERCEPT(vkDestroyCommandPool);
             INTERCEPT(vkCmdCopyBuffer);
             INTERCEPT(vkCmdCopyBufferToImage);
             INTERCEPT(vkCreateDescriptorSetLayout);
+            INTERCEPT(vkDestroyDescriptorSetLayout);
             INTERCEPT(vkAllocateDescriptorSets);
+            INTERCEPT(vkFreeDescriptorSets);
             INTERCEPT(vkUpdateDescriptorSets);
             INTERCEPT(vkCmdBindDescriptorSets);
             INTERCEPT(vkCmdPushConstants);
@@ -698,14 +768,21 @@ namespace graphicsfuzz_amber_scoop {
             INTERCEPT(vkCmdDraw);
             INTERCEPT(vkCmdDrawIndexed);
             INTERCEPT(vkCreateImage);
+            INTERCEPT(vkDestroyImage);
             INTERCEPT(vkCreateSampler);
+            INTERCEPT(vkDestroySampler);
             INTERCEPT(vkCreatePipelineLayout);
+            INTERCEPT(vkDestroyPipelineLayout);
             INTERCEPT(vkCreateGraphicsPipelines);
+            INTERCEPT(vkDestroyPipeline);
             INTERCEPT(vkCreateShaderModule);
+            INTERCEPT(vkDestroyShaderModule);
             INTERCEPT(vkCmdBindPipeline);
             INTERCEPT(vkQueueSubmit);
             INTERCEPT(vkCreateFramebuffer);
+            INTERCEPT(vkDestroyFramebuffer);
             INTERCEPT(vkCreateRenderPass);
+            INTERCEPT(vkDestroyRenderPass);
             INTERCEPT(vkCmdBeginRenderPass);
             INTERCEPT(vkCmdPipelineBarrier);
             #undef INTERCEPT

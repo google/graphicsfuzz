@@ -55,6 +55,8 @@ struct Cmd {
 
   explicit Cmd(Kind kind) : kind_(kind) {}
 
+  virtual ~Cmd() = default;
+
 // A bunch of methods for casting this type to a given type. Returns this if the
 // cast can be done, nullptr otherwise.
 // clang-format off
@@ -82,13 +84,17 @@ struct CmdBeginRenderPass : public Cmd {
   CmdBeginRenderPass(VkRenderPassBeginInfo const *pRenderPassBegin,
                      VkSubpassContents contents)
       : Cmd(kBeginRenderPass),
-        pRenderPassBegin_(DeepCopy(pRenderPassBegin)),
+        render_pass_begin_(DeepCopy(pRenderPassBegin)),
         contents_(contents) {}
 
   CmdBeginRenderPass *AsBeginRenderPass() override { return this; }
   const CmdBeginRenderPass *AsBeginRenderPass() const override { return this; }
 
-  VkRenderPassBeginInfo *pRenderPassBegin_;
+  ~CmdBeginRenderPass() override {
+    DeepDelete(render_pass_begin_);
+  }
+
+  VkRenderPassBeginInfo render_pass_begin_;
   VkSubpassContents contents_;
 };
 
@@ -102,11 +108,15 @@ struct CmdBindDescriptorSets : public Cmd {
       : Cmd(kBindDescriptorSets),
         pipelineBindPoint_(pipelineBindPoint),
         layout_(layout),
-        firstSet_(firstSet),
-        descriptorSetCount_(descriptorSetCount),
-        pDescriptorSets_(CopyArray(pDescriptorSets, firstSet + descriptorSetCount)),
-        dynamicOffsetCount_(dynamicOffsetCount),
-        pDynamicOffsets_(CopyArray(pDynamicOffsets, dynamicOffsetCount)) {}
+        firstSet_(firstSet) {
+    // Copy the whole array including descriptors before the "firstSet".
+    if (descriptorSetCount)
+      descriptor_sets_.insert(descriptor_sets_.end(), pDescriptorSets,
+                              pDescriptorSets + descriptorSetCount + firstSet);
+    if (dynamicOffsetCount)
+      dynamic_offsets_.insert(dynamic_offsets_.end(), pDynamicOffsets,
+                              pDynamicOffsets + dynamicOffsetCount);
+  }
 
   CmdBindDescriptorSets *AsBindDescriptorSets() override { return this; }
   const CmdBindDescriptorSets *AsBindDescriptorSets() const override {
@@ -116,10 +126,8 @@ struct CmdBindDescriptorSets : public Cmd {
   VkPipelineBindPoint pipelineBindPoint_;
   VkPipelineLayout layout_;
   uint32_t firstSet_;
-  uint32_t descriptorSetCount_;
-  VkDescriptorSet *pDescriptorSets_;
-  uint32_t dynamicOffsetCount_;
-  uint32_t *pDynamicOffsets_;
+  std::vector<VkDescriptorSet> descriptor_sets_;
+  std::vector<uint32_t> dynamic_offsets_;
 };
 
 struct CmdBindIndexBuffer : public Cmd {
@@ -156,9 +164,10 @@ struct CmdBindVertexBuffers : public Cmd {
                        VkBuffer const *pBuffers, VkDeviceSize const *pOffsets)
       : Cmd(kBindVertexBuffers),
         firstBinding_(firstBinding),
-        bindingCount_(bindingCount),
-        pBuffers_(CopyArray(pBuffers, firstBinding + bindingCount)),
-        pOffsets_(CopyArray(pOffsets, firstBinding + bindingCount)) {}
+        bindingCount_(bindingCount) {
+    buffers_.insert(buffers_.end(), pBuffers, pBuffers + firstBinding + bindingCount);
+    offsets_.insert(offsets_.end(), pOffsets, pOffsets + firstBinding + bindingCount);
+  }
 
   CmdBindVertexBuffers *AsBindVertexBuffers() override { return this; }
   const CmdBindVertexBuffers *AsBindVertexBuffers() const override {
@@ -167,8 +176,8 @@ struct CmdBindVertexBuffers : public Cmd {
 
   uint32_t firstBinding_;
   uint32_t bindingCount_;
-  VkBuffer const *pBuffers_;
-  VkDeviceSize const *pOffsets_;
+  std::vector<VkBuffer> buffers_;
+  std::vector<VkDeviceSize> offsets_;
 };
 
 struct CmdCopyBuffer : public Cmd {
@@ -176,17 +185,16 @@ struct CmdCopyBuffer : public Cmd {
                 VkBufferCopy const *pRegions)
       : Cmd(kCopyBuffer),
         srcBuffer_(srcBuffer),
-        dstBuffer_(dstBuffer),
-        regionCount_(regionCount),
-        pRegions_(CopyArray(pRegions, regionCount)) {}
+        dstBuffer_(dstBuffer) {
+    regions_.insert(regions_.end(), pRegions, pRegions + regionCount);
+  }
 
   CmdCopyBuffer *AsCopyBuffer() override { return this; }
   const CmdCopyBuffer *AsCopyBuffer() const override { return this; }
 
   VkBuffer srcBuffer_;
   VkBuffer dstBuffer_;
-  uint32_t regionCount_;
-  VkBufferCopy const *pRegions_;
+  std::vector<VkBufferCopy> regions_;
 };
 
 struct CmdCopyBufferToImage : public Cmd {
@@ -196,9 +204,9 @@ struct CmdCopyBufferToImage : public Cmd {
       : Cmd(kCopyBufferToImage),
         srcBuffer_(srcBuffer),
         dstImage_(dstImage),
-        dstImageLayout_(dstImageLayout),
-        regionCount_(regionCount),
-        pRegions_(CopyArray(pRegions, regionCount)) {}
+        dstImageLayout_(dstImageLayout) {
+    regions_.insert(regions_.end(), pRegions, pRegions + regionCount);
+  }
 
   CmdCopyBufferToImage *AsCopyBufferToImage() override { return this; }
   const CmdCopyBufferToImage *AsCopyBufferToImage() const override {
@@ -208,8 +216,7 @@ struct CmdCopyBufferToImage : public Cmd {
   VkBuffer srcBuffer_;
   VkImage dstImage_;
   VkImageLayout dstImageLayout_;
-  uint32_t regionCount_;
-  VkBufferImageCopy const *pRegions_;
+  std::vector<VkBufferImageCopy> regions_;
 };
 
 struct CmdDraw : public Cmd {
@@ -264,15 +271,19 @@ struct CmdPipelineBarrier : public Cmd {
       : Cmd(kPipelineBarrier),
         srcStageMask_(srcStageMask),
         dstStageMask_(dstStageMask),
-        dependencyFlags_(dependencyFlags),
-        memoryBarrierCount_(memoryBarrierCount),
-        pMemoryBarriers_(CopyArray(pMemoryBarriers, memoryBarrierCount)),
-        bufferMemoryBarrierCount_(bufferMemoryBarrierCount),
-        pBufferMemoryBarriers_(
-            CopyArray(pBufferMemoryBarriers, bufferMemoryBarrierCount)),
-        imageMemoryBarrierCount_(imageMemoryBarrierCount),
-        pImageMemoryBarriers_(
-            CopyArray(pImageMemoryBarriers, imageMemoryBarrierCount)) {}
+        dependencyFlags_(dependencyFlags) {
+    if (memoryBarrierCount)
+      memory_barriers_.insert(memory_barriers_.end(), pMemoryBarriers,
+                              pMemoryBarriers + memoryBarrierCount);
+    if (bufferMemoryBarrierCount)
+      buffer_memory_barriers_.insert(
+          buffer_memory_barriers_.end(), pBufferMemoryBarriers,
+          pBufferMemoryBarriers + bufferMemoryBarrierCount);
+    if (bufferMemoryBarrierCount)
+      image_memory_barriers_.insert(
+          image_memory_barriers_.end(), pImageMemoryBarriers,
+          pImageMemoryBarriers + imageMemoryBarrierCount);
+  }
 
   CmdPipelineBarrier *AsPipelineBarrier() override { return this; }
   const CmdPipelineBarrier *AsPipelineBarrier() const override { return this; }
@@ -280,12 +291,9 @@ struct CmdPipelineBarrier : public Cmd {
   VkPipelineStageFlags srcStageMask_;
   VkPipelineStageFlags dstStageMask_;
   VkDependencyFlags dependencyFlags_;
-  uint32_t memoryBarrierCount_;
-  VkMemoryBarrier const *pMemoryBarriers_;
-  uint32_t bufferMemoryBarrierCount_;
-  VkBufferMemoryBarrier const *pBufferMemoryBarriers_;
-  uint32_t imageMemoryBarrierCount_;
-  VkImageMemoryBarrier const *pImageMemoryBarriers_;
+  std::vector<VkMemoryBarrier> memory_barriers_;
+  std::vector<VkBufferMemoryBarrier> buffer_memory_barriers_;
+  std::vector<VkImageMemoryBarrier> image_memory_barriers_;
 };
 
 struct CmdPushConstants : public Cmd {

@@ -125,15 +125,16 @@ std::unordered_map<VkSampler, VkSamplerCreateInfo> samplers_;
 std::unordered_map<VkDescriptorSet, DescriptorSetData> descriptor_sets_;
 std::unordered_map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo>
     descriptor_set_layouts_;
-std::unordered_map<VkFramebuffer, VkFramebufferCreateInfo> framebuffers;
-std::unordered_map<VkPipeline, VkGraphicsPipelineCreateInfo> graphicsPipelines;
-std::unordered_map<VkPipelineLayout, PipelineLayoutData> pipeline_layouts;
-std::unordered_map<VkRenderPass, VkRenderPassCreateInfo> renderPasses;
-std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shaderModules;
+std::unordered_map<VkFramebuffer, VkFramebufferCreateInfo> framebuffers_;
+std::unordered_map<VkPipeline, VkGraphicsPipelineCreateInfo>
+    graphics_pipelines_;
+std::unordered_map<VkPipelineLayout, PipelineLayoutData> pipeline_layouts_;
+std::unordered_map<VkRenderPass, VkRenderPassCreateInfo> render_passes_;
+std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shader_modules_;
 std::unordered_map<VkCommandPool, uint32_t> commandPoolToQueueFamilyIndex;
 
 std::string GetDisassembly(VkShaderModule shaderModule) {
-  auto createInfo = shaderModules.at(shaderModule);
+  auto createInfo = shader_modules_.at(shaderModule);
   auto maybeTargetEnv = graphicsfuzz_vulkan_layers::GetTargetEnvFromSpirvBinary(
       createInfo.pCode[1]);
   assert(maybeTargetEnv.first && "SPIR-V version should be valid.");
@@ -167,6 +168,23 @@ VkResult vkAllocateDescriptorSets(
   return result;
 }
 
+VkResult vkFreeDescriptorSets(PFN_vkFreeDescriptorSets next, VkDevice device,
+                              VkDescriptorPool descriptorPool,
+                              uint32_t descriptorSetCount,
+                              VkDescriptorSet const *pDescriptorSets) {
+  DEBUG_LAYER(vkFreeDescriptorSets);
+  auto result =
+      next(device, descriptorPool, descriptorSetCount, pDescriptorSets);
+  if (result == VK_SUCCESS) {
+    for (uint32_t i = 0; i < descriptorSetCount; i++) {
+      if (descriptor_sets_.count(pDescriptorSets[i])) {
+        descriptor_sets_.erase(pDescriptorSets[i]);
+      }
+    }
+  }
+  return result;
+}
+
 VkResult vkCreateCommandPool(PFN_vkCreateCommandPool next, VkDevice device,
                              VkCommandPoolCreateInfo const *pCreateInfo,
                              AllocationCallbacks pAllocator,
@@ -178,6 +196,14 @@ VkResult vkCreateCommandPool(PFN_vkCreateCommandPool next, VkDevice device,
         {*pCommandPool, pCreateInfo->queueFamilyIndex});
   }
   return result;
+}
+
+void vkDestroyCommandPool(PFN_vkDestroyCommandPool next, VkDevice device,
+                          VkCommandPool commandPool,
+                          AllocationCallbacks pAllocator) {
+  DEBUG_LAYER(vkDestroyCommandPool);
+  next(device, commandPool, pAllocator);
+  commandPoolToQueueFamilyIndex.erase(commandPool);
 }
 
 void vkCmdBeginRenderPass(PFN_vkCmdBeginRenderPass next,
@@ -294,18 +320,11 @@ void vkCmdPipelineBarrier(
        memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount,
        pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
 
-  auto memoryBarriers =
-      CopyArray<VkMemoryBarrier>(pMemoryBarriers, memoryBarrierCount);
-
-  AddCommand(commandBuffer,
-             std::make_unique<CmdPipelineBarrier>(
-                 srcStageMask, dstStageMask, dependencyFlags,
-                 memoryBarrierCount, memoryBarriers, bufferMemoryBarrierCount,
-                 CopyArray<VkBufferMemoryBarrier>(pBufferMemoryBarriers,
-                                                  bufferMemoryBarrierCount),
-                 imageMemoryBarrierCount,
-                 CopyArray<VkImageMemoryBarrier>(pImageMemoryBarriers,
-                                                 imageMemoryBarrierCount)));
+  AddCommand(commandBuffer, std::make_unique<CmdPipelineBarrier>(
+                                srcStageMask, dstStageMask, dependencyFlags,
+                                memoryBarrierCount, pMemoryBarriers,
+                                bufferMemoryBarrierCount, pBufferMemoryBarriers,
+                                imageMemoryBarrierCount, pImageMemoryBarriers));
 }
 
 void vkCmdPushConstants(PFN_vkCmdPushConstants next,
@@ -342,6 +361,16 @@ VkResult vkCreateBuffer(PFN_vkCreateBuffer next, VkDevice device,
   return result;
 }
 
+void vkDestroyBuffer(PFN_vkDestroyBuffer next, VkDevice device, VkBuffer buffer,
+                     AllocationCallbacks pAllocator) {
+  next(device, buffer, pAllocator);
+  if (buffers.count(buffer)) {
+    auto buffer_create_info = buffers.at(buffer);
+    DeepDelete(buffer_create_info);
+    buffers.erase(buffer);
+  }
+}
+
 VkResult vkCreateSampler(PFN_vkCreateSampler next, VkDevice device,
                          VkSamplerCreateInfo const *pCreateInfo,
                          AllocationCallbacks pAllocator, VkSampler *pSampler) {
@@ -351,6 +380,15 @@ VkResult vkCreateSampler(PFN_vkCreateSampler next, VkDevice device,
     samplers_.insert({*pSampler, *pCreateInfo});
   }
   return result;
+}
+
+void vkDestroySampler(PFN_vkDestroySampler next, VkDevice device,
+                      VkSampler sampler, AllocationCallbacks pAllocator) {
+  DEBUG_LAYER(vkDestroySampler);
+  next(device, sampler, pAllocator);
+  if (samplers_.count(sampler)) {
+    samplers_.erase(sampler);
+  }
 }
 
 VkResult vkCreateDescriptorSetLayout(
@@ -365,6 +403,19 @@ VkResult vkCreateDescriptorSetLayout(
   return result;
 }
 
+void vkDestroyDescriptorSetLayout(PFN_vkDestroyDescriptorSetLayout next,
+                                  VkDevice device,
+                                  VkDescriptorSetLayout descriptorSetLayout,
+                                  AllocationCallbacks pAllocator) {
+  DEBUG_LAYER(vkDestroyDescriptorSetLayout);
+  next(device, descriptorSetLayout, pAllocator);
+  if (descriptor_set_layouts_.count(descriptorSetLayout)) {
+    const auto &create_info = descriptor_set_layouts_.at(descriptorSetLayout);
+    DeepDelete(create_info);
+    descriptor_set_layouts_.erase(descriptorSetLayout);
+  }
+}
+
 VkResult vkCreateFramebuffer(PFN_vkCreateFramebuffer next, VkDevice device,
                              VkFramebufferCreateInfo const *pCreateInfo,
                              AllocationCallbacks pAllocator,
@@ -372,9 +423,20 @@ VkResult vkCreateFramebuffer(PFN_vkCreateFramebuffer next, VkDevice device,
   DEBUG_LAYER(vkCreateFramebuffer);
   auto result = next(device, pCreateInfo, pAllocator, pFramebuffer);
   if (result == VK_SUCCESS) {
-    framebuffers.insert({*pFramebuffer, DeepCopy(*pCreateInfo)});
+    framebuffers_.insert({*pFramebuffer, DeepCopy(*pCreateInfo)});
   }
   return result;
+}
+
+void vkDestroyFramebuffer(PFN_vkDestroyFramebuffer next, VkDevice device,
+                          VkFramebuffer framebuffer,
+                          AllocationCallbacks pAllocator) {
+  DEBUG_LAYER(vkDestroyFramebuffer);
+  next(device, framebuffer, pAllocator);
+  if (framebuffers_.count(framebuffer)) {
+    const auto &create_info = framebuffers_.at(framebuffer);
+    DeepDelete(create_info);
+  }
 }
 
 VkResult vkCreateGraphicsPipelines(
@@ -387,17 +449,37 @@ VkResult vkCreateGraphicsPipelines(
                      pAllocator, pPipelines);
   if (result == VK_SUCCESS) {
     for (uint32_t i = 0; i < createInfoCount; i++) {
-      graphicsPipelines.insert({pPipelines[i], DeepCopy(pCreateInfos[i])});
+      graphics_pipelines_.insert({pPipelines[i], DeepCopy(pCreateInfos[i])});
     }
   }
   return result;
 }
 
+void vkDestroyPipeline(PFN_vkDestroyPipeline next, VkDevice device,
+                       VkPipeline pipeline, AllocationCallbacks pAllocator) {
+  DEBUG_LAYER(vkDestroyPipeline);
+  next(device, pipeline, pAllocator);
+  if (graphics_pipelines_.count(pipeline)) {
+    const auto &create_info = graphics_pipelines_.at(pipeline);
+    DeepDelete(create_info);
+    graphics_pipelines_.erase(pipeline);
+  }
+}
+
 VkResult vkCreateImage(PFN_vkCreateImage next, VkDevice device,
                        VkImageCreateInfo const *pCreateInfo,
                        AllocationCallbacks pAllocator, VkImage *pImage) {
+  DEBUG_LAYER(vkCreateImage);
   auto result = next(device, pCreateInfo, pAllocator, pImage);
+  // TODO
   return result;
+}
+
+void vkDestroyImage(PFN_vkDestroyImage next, VkDevice device, VkImage image,
+                    AllocationCallbacks pAllocator) {
+  DEBUG_LAYER(vkDestroyImage);
+  next(device, image, pAllocator);
+  // TODO
 }
 
 VkResult vkCreatePipelineLayout(PFN_vkCreatePipelineLayout next,
@@ -405,6 +487,7 @@ VkResult vkCreatePipelineLayout(PFN_vkCreatePipelineLayout next,
                                 VkPipelineLayoutCreateInfo const *pCreateInfo,
                                 AllocationCallbacks pAllocator,
                                 VkPipelineLayout *pPipelineLayout) {
+  DEBUG_LAYER(vkCreatePipelineLayout);
   auto result = next(device, pCreateInfo, pAllocator, pPipelineLayout);
   if (result == VK_SUCCESS) {
     uint32_t push_constant_size = 0;
@@ -414,11 +497,23 @@ VkResult vkCreatePipelineLayout(PFN_vkCreatePipelineLayout next,
                                   pCreateInfo->pPushConstantRanges[i].offset);
     }
 
-    pipeline_layouts.insert(
+    pipeline_layouts_.insert(
         {*pPipelineLayout,
          PipelineLayoutData(DeepCopy(*pCreateInfo), {}, push_constant_size)});
   }
   return result;
+}
+
+void vkDestroyPipelineLayout(PFN_vkDestroyPipelineLayout next, VkDevice device,
+                             VkPipelineLayout pipelineLayout,
+                             AllocationCallbacks pAllocator) {
+  DEBUG_LAYER(vkDestroyPipelineLayout);
+  next(device, pipelineLayout, pAllocator);
+  if (pipeline_layouts_.count(pipelineLayout)) {
+    const auto &pipeline_layout_data = pipeline_layouts_.at(pipelineLayout);
+    DeepDelete(pipeline_layout_data.create_info_);
+    pipeline_layouts_.erase(pipelineLayout);
+  }
 }
 
 VkResult vkCreateRenderPass(PFN_vkCreateRenderPass next, VkDevice device,
@@ -428,9 +523,21 @@ VkResult vkCreateRenderPass(PFN_vkCreateRenderPass next, VkDevice device,
   DEBUG_LAYER(vkCreateRenderPass);
   auto result = next(device, pCreateInfo, pAllocator, pRenderPass);
   if (result == VK_SUCCESS) {
-    renderPasses.insert({*pRenderPass, DeepCopy(*pCreateInfo)});
+    render_passes_.insert({*pRenderPass, DeepCopy(*pCreateInfo)});
   }
   return result;
+}
+
+void vkDestroyRenderPass(PFN_vkDestroyRenderPass next, VkDevice device,
+                         VkRenderPass renderPass,
+                         AllocationCallbacks pAllocator) {
+  DEBUG_LAYER(vkDestroyRenderPass);
+  next(device, renderPass, pAllocator);
+  if (render_passes_.count(renderPass)) {
+    const auto create_info = render_passes_.at(renderPass);
+    DeepDelete(create_info);
+    render_passes_.erase(renderPass);
+  }
 }
 
 VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device,
@@ -440,10 +547,25 @@ VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device,
   DEBUG_LAYER(vkCreateShaderModule);
   auto result = next(device, pCreateInfo, pAllocator, pShaderModule);
   if (result == VK_SUCCESS) {
-    shaderModules.insert({*pShaderModule, DeepCopy(*pCreateInfo)});
+    shader_modules_.insert({*pShaderModule, DeepCopy(*pCreateInfo)});
   }
   return result;
 }
+
+void vkDestroyShaderModule(PFN_vkDestroyShaderModule next, VkDevice device,
+                           VkShaderModule shaderModule,
+                           AllocationCallbacks pAllocator) {
+  DEBUG_LAYER(vkDestroyShaderModule);
+  next(device, shaderModule, pAllocator);
+  // TODO: Shader modules can't be deleted here because this function can be
+  // called before the shader is actually used (before the draw call).
+  /*if (shader_modules_.count(shaderModule)) {
+    const auto &create_info = shader_modules_.at(shaderModule);
+    DeepDelete(create_info);
+    shader_modules_.erase(shaderModule);
+  }*/
+}
+
 void vkGetPhysicalDeviceMemoryProperties(
     PFN_vkGetPhysicalDeviceMemoryProperties next,
     VkPhysicalDevice physicalDevice,
@@ -509,11 +631,11 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
       for (auto &cmd : commandBuffers.at(commandBuffer)) {
         if (auto cmdBeginRenderPass = cmd->AsBeginRenderPass()) {
           drawCallStateTracker.currentRenderPass =
-              cmdBeginRenderPass->pRenderPassBegin_;
+              &cmdBeginRenderPass->render_pass_begin_;
           drawCallStateTracker.currentSubpass = 0;
         } else if (auto cmdBindDescriptorSets = cmd->AsBindDescriptorSets()) {
           auto &pipeline_layout_data =
-              pipeline_layouts.at(cmdBindDescriptorSets->layout_);
+              pipeline_layouts_.at(cmdBindDescriptorSets->layout_);
           if (cmdBindDescriptorSets->pipelineBindPoint_ ==
               VK_PIPELINE_BIND_POINT_GRAPHICS) {
             // Check if there are already descriptor bindings for the pipeline
@@ -523,10 +645,10 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
             // Update / create the bindings
             for (uint32_t descriptor_set_idx = 0;
                  descriptor_set_idx <
-                 cmdBindDescriptorSets->descriptorSetCount_;
+                 cmdBindDescriptorSets->descriptor_sets_.size();
                  descriptor_set_idx++) {
               auto descriptor_set =
-                  cmdBindDescriptorSets->pDescriptorSets_[descriptor_set_idx];
+                  cmdBindDescriptorSets->descriptor_sets_[descriptor_set_idx];
               // Check if there's any UNIFORM_BUFFER_DYNAMIC or
               // STORAGE_BUFFER_DYNAMIC descriptors in the set and store the
               // dynamic offsets for them.
@@ -541,7 +663,7 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
                     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
                   buffer_binding.dynamic_offset_ =
                       cmdBindDescriptorSets
-                          ->pDynamicOffsets_[dynamic_offset_idx++];
+                          ->dynamic_offsets_[dynamic_offset_idx++];
                   /* // For debug. TODO: remove this
                   std::cout
                       << "dynamic offset: " << std::get<2>(binding_and_buffer)
@@ -556,7 +678,7 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
               pipeline_layout_data
                   .descriptor_set_bindings_[cmdBindDescriptorSets->firstSet_ +
                                             descriptor_set_idx] =
-                  cmdBindDescriptorSets->pDescriptorSets_[descriptor_set_idx];
+                  cmdBindDescriptorSets->descriptor_sets_[descriptor_set_idx];
             }
           }
         } else if (auto cmdBindIndexBuffer = cmd->AsBindIndexBuffer()) {
@@ -584,13 +706,13 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
                 .bound_vertex_buffers[bindingIdx +
                                       cmdBindVertexBuffers->firstBinding_] =
                 cmdBindVertexBuffers
-                    ->pBuffers_[bindingIdx +
+                    ->buffers_[bindingIdx +
                                 cmdBindVertexBuffers->firstBinding_];
             drawCallStateTracker
                 .vertex_buffer_offsets[bindingIdx +
                                        cmdBindVertexBuffers->firstBinding_] =
                 cmdBindVertexBuffers
-                    ->pOffsets_[bindingIdx +
+                    ->offsets_[bindingIdx +
                                 cmdBindVertexBuffers->firstBinding_];
           }
         } else if (auto cmdCopyBuffer = cmd->AsCopyBuffer()) {
@@ -611,11 +733,11 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
         } else if (auto cmdPushConstants = cmd->AsPushConstants()) {
           // Resize (increase) push constant storage size based on the ranges
           // defined in the pipeline layout currently being used.
-          if (pipeline_layouts.at(cmdPushConstants->layout_)
+          if (pipeline_layouts_.at(cmdPushConstants->layout_)
                   .push_constants_size_ >
               drawCallStateTracker.push_constants_.size()) {
             drawCallStateTracker.push_constants_.resize(
-                pipeline_layouts.at(cmdPushConstants->layout_)
+                pipeline_layouts_.at(cmdPushConstants->layout_)
                     .push_constants_size_);
           }
           // Store push constant values
@@ -626,7 +748,9 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
           throw std::runtime_error("Unknown command.");
         }
       }
-      if (draw_commands) exit(1);
+      // Delete recorded commands of this command buffer.
+      commandBuffers.erase(commandBuffer);
+      // if (draw_commands) exit(1);
     }
   }
   return next(queue, submitCount, pSubmits, fence);
@@ -717,7 +841,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   VkPipelineShaderStageCreateInfo *vertexShader = nullptr;
   VkPipelineShaderStageCreateInfo *fragmentShader = nullptr;
   auto graphicsPipelineCreateInfo =
-      graphicsPipelines.at(draw_call_state_tracker.graphics_pipeline_);
+      graphics_pipelines_.at(draw_call_state_tracker.graphics_pipeline_);
   for (uint32_t stageIndex = 0;
        stageIndex < graphicsPipelineCreateInfo.stageCount; stageIndex++) {
     auto &stageCreateInfo = graphicsPipelineCreateInfo.pStages[stageIndex];
@@ -910,9 +1034,9 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   if (!vertex_buffer_found) return;
 
   auto pipeline_layout =
-      graphicsPipelines.at(draw_call_state_tracker.graphics_pipeline_).layout;
+      graphics_pipelines_.at(draw_call_state_tracker.graphics_pipeline_).layout;
 
-  const auto &pipeline_layout_data = pipeline_layouts.at(pipeline_layout);
+  const auto &pipeline_layout_data = pipeline_layouts_.at(pipeline_layout);
 
   if (pipeline_layout_data.create_info_.pushConstantRangeCount) {
     if (pipeline_layout_data.create_info_.pushConstantRangeCount > 1) {
@@ -989,10 +1113,9 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
           // Check if at least one of the buffer memory barriers has
           // VK_ACCESS_UNIFORM_READ_BIT set.
           for (uint32_t bufMemBarrierIdx = 0;
-               bufMemBarrierIdx < barrier->bufferMemoryBarrierCount_;
+               bufMemBarrierIdx < barrier->buffer_memory_barriers_.size();
                bufMemBarrierIdx++) {
             descriptor_buffer_barriers.push_back(barrier);
-            break;  // TODO: Should this be removed?
           }
         }
       }
@@ -1207,7 +1330,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 
   // Create buffers for color attachments.
   VkRenderPassCreateInfo renderPassCreateInfo =
-      renderPasses.at(draw_call_state_tracker.currentRenderPass->renderPass);
+      render_passes_.at(draw_call_state_tracker.currentRenderPass->renderPass);
   for (uint colorAttachment = 0;
        colorAttachment <
        renderPassCreateInfo.pSubpasses[draw_call_state_tracker.currentSubpass]
@@ -1306,7 +1429,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
   amber_file << pipeline_str_stream.str();
 
   VkFramebufferCreateInfo framebufferCreateInfo =
-      framebuffers.at(draw_call_state_tracker.currentRenderPass->framebuffer);
+      framebuffers_.at(draw_call_state_tracker.currentRenderPass->framebuffer);
   amber_file << "  FRAMEBUFFER_SIZE " << framebufferCreateInfo.width << " "
              << framebufferCreateInfo.height << std::endl;
   amber_file << framebufferAttachmentStringStream.str();

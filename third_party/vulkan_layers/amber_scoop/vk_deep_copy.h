@@ -34,33 +34,50 @@ T *CopyArray(T const *pData, uint32_t numElements, uint32_t offset = 0) {
 
 VkBufferCreateInfo DeepCopy(const VkBufferCreateInfo &createInfo);
 
+void DeepDelete(const VkBufferCreateInfo &create_info);
+
 VkDescriptorSetLayoutBinding DeepCopy(
-    const VkDescriptorSetLayoutBinding &descriptorSetLayoutBinding);
+    const VkDescriptorSetLayoutBinding &descriptor_set_layout_binding);
 
 VkDescriptorSetLayoutCreateInfo DeepCopy(
     const VkDescriptorSetLayoutCreateInfo &createInfo);
 
+void DeepDelete(const VkDescriptorSetLayoutCreateInfo &create_info);
+
 VkFramebufferCreateInfo DeepCopy(const VkFramebufferCreateInfo &createInfo);
 
+void DeepDelete(const VkFramebufferCreateInfo &create_info);
+
 VkGraphicsPipelineCreateInfo DeepCopy(
-    const VkGraphicsPipelineCreateInfo &createInfo);
+    const VkGraphicsPipelineCreateInfo &create_info);
+
+void DeepDelete(const VkGraphicsPipelineCreateInfo &create_info);
 
 VkPipelineLayoutCreateInfo DeepCopy(
-    const VkPipelineLayoutCreateInfo &createInfo);
+    const VkPipelineLayoutCreateInfo &create_info);
+
+void DeepDelete(const VkPipelineLayoutCreateInfo &create_info);
 
 VkPipelineShaderStageCreateInfo DeepCopy(
-    const VkPipelineShaderStageCreateInfo &createInfo);
+    const VkPipelineShaderStageCreateInfo &create_info);
 
-VkRenderPassBeginInfo *DeepCopy(VkRenderPassBeginInfo const *pRenderPassBegin);
+void DeepDelete(const VkPipelineShaderStageCreateInfo &create_info);
 
-VkRenderPassCreateInfo DeepCopy(const VkRenderPassCreateInfo &createInfo);
+VkRenderPassBeginInfo DeepCopy(VkRenderPassBeginInfo const *p_render_pass_begin_info);
 
-VkPipelineVertexInputStateCreateInfo DeepCopy(
-    const VkPipelineVertexInputStateCreateInfo &vertexInputState);
+void DeepDelete(const VkRenderPassBeginInfo p_render_pass_begin_info);
 
-VkShaderModuleCreateInfo DeepCopy(const VkShaderModuleCreateInfo &createInfo);
+VkRenderPassCreateInfo DeepCopy(const VkRenderPassCreateInfo &create_info);
 
-VkSubpassDescription DeepCopy(const VkSubpassDescription &subpassDescription);
+void DeepDelete(const VkRenderPassCreateInfo &create_info);
+
+VkShaderModuleCreateInfo DeepCopy(const VkShaderModuleCreateInfo &create_info);
+
+void DeepDelete(const VkShaderModuleCreateInfo &create_info);
+
+VkSubpassDescription DeepCopy(const VkSubpassDescription &subpass_description);
+
+void DeepDelete(const VkSubpassDescription &subpass_description);
 
 }  // namespace graphicsfuzz_amber_scoop
 

@@ -84,19 +84,17 @@ void BufferCopy::CopyBuffer(
 
     for (const auto &pipeline_barrier : pipeline_barriers) {
       // Copy all global and buffer memory barriers
-      auto buffer_memory_barriers =
-          CopyArray(pipeline_barrier->pBufferMemoryBarriers_,
-                    pipeline_barrier->bufferMemoryBarrierCount_);
-      auto memory_barriers = CopyArray(pipeline_barrier->pMemoryBarriers_,
-                                       pipeline_barrier->memoryBarrierCount_);
+      auto buffer_memory_barriers = std::vector<VkBufferMemoryBarrier>(
+          pipeline_barrier->buffer_memory_barriers_);
+      auto memory_barriers =
+          std::vector<VkMemoryBarrier>(pipeline_barrier->memory_barriers_);
 
       // Set dstAccessMask(s) to VK_ACCESS_HOST_READ_BIT
-      for (uint32_t i = 0; i < pipeline_barrier->bufferMemoryBarrierCount_;
-           i++) {
-        buffer_memory_barriers[i].dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+      for (auto & buffer_memory_barrier : buffer_memory_barriers) {
+        buffer_memory_barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
       }
-      for (uint32_t i = 0; i < pipeline_barrier->memoryBarrierCount_; i++) {
-        memory_barriers[i].dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+      for (auto &memory_barrier : memory_barriers) {
+        memory_barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
       }
 
       // clang-format off
@@ -105,17 +103,14 @@ void BufferCopy::CopyBuffer(
           pipeline_barrier->srcStageMask_ | VK_PIPELINE_STAGE_TRANSFER_BIT,
           VK_PIPELINE_STAGE_HOST_BIT,
           0,
-          pipeline_barrier->memoryBarrierCount_,
-          memory_barriers,
-          pipeline_barrier->bufferMemoryBarrierCount_,
-          buffer_memory_barriers,
+          memory_barriers.size(),
+          memory_barriers.data(),
+          buffer_memory_barriers.size(),
+          buffer_memory_barriers.data(),
           0,
           nullptr
       );
       // clang-format on
-
-      delete[] buffer_memory_barriers;
-      delete[] memory_barriers;
     }
     VkBufferCopy copy_region = {0, 0, buffer_size};
     vkCmdCopyBuffer(command_buffer_, buffer, buffer_copy_, 1, &copy_region);
