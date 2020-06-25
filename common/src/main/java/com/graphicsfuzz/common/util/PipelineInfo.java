@@ -251,6 +251,12 @@ public final class PipelineInfo {
     }
   }
 
+  /**
+   * Inserts a new value into an existing uniform array.
+   * @param uniformName Name of the uniform.
+   * @param value A Number to be inserted.
+   * @return The index of the new value in the uniform array.
+   */
   public int appendValueToUniform(String uniformName, Number value) {
 
     if (!dictionary.has(uniformName)) {
@@ -262,22 +268,24 @@ public final class PipelineInfo {
     return dictionary.getAsJsonObject(uniformName).get("args").getAsJsonArray().size() - 1;
   }
 
+  /**
+   * Returns the next unused binding number.
+   * @return The next unused binding number.
+   */
   public int getUnusedBindingNumber() {
-    int number = 0;
-
     List<Integer> bindings =
         dictionary.entrySet().stream()
             .filter(item -> item.getValue().getAsJsonObject().has("binding"))
             .map(item -> item.getValue().getAsJsonObject()
             .get("binding").getAsInt()).collect(Collectors.toList());
 
-    for (;number < Integer.MAX_VALUE; number++) {
-      if (bindings.contains(number)) {
-        break;
+    for (int number = 0; number < Integer.MAX_VALUE; number++) {
+      if (!bindings.contains(number)) {
+        return number;
       }
     }
 
-    return number;
+    throw new RuntimeException("Unreachable code. MAX_VALUE should never been used in bindings.");
   }
 
   public List<String> getUniformNames() {
