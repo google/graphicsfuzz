@@ -63,7 +63,7 @@ public class LiteralToUniformReductionOpportunity
     final String arrayName;
     final BasicType basicType;
 
-    // If the uniform array doesn't exist in the pipeline info, adds an empty array.
+
     if (literalExpr instanceof IntConstantExpr) {
       arrayName = Constants.INT_LITERAL_UNIFORM_VALUES;
       basicType = BasicType.INT;
@@ -74,6 +74,7 @@ public class LiteralToUniformReductionOpportunity
       numericValue = Float.valueOf(((FloatConstantExpr) literalExpr).getValue());
     }
 
+    // If the uniform array doesn't exist in the pipeline info, adds an empty array.
     if (!shaderJob.getPipelineInfo().hasUniform(arrayName)) {
       shaderJob.getPipelineInfo().addUniform(arrayName, basicType,
           Optional.of(0), new ArrayList<>());
@@ -90,20 +91,22 @@ public class LiteralToUniformReductionOpportunity
       index = shaderJob.getPipelineInfo().appendValueToUniform(arrayName, numericValue);
     }
 
-    // Adds the new array declaration to the current translation unit and updates the size
-    // in every translation unit where the declaration is present.
     final int arraySize = shaderJob.getPipelineInfo().getArgs(arrayName).size();
     final ArrayInfo arrayInfo = new ArrayInfo(new IntConstantExpr(String.valueOf(arraySize)));
+    arrayInfo.setConstantSizeExpr(arraySize);
     final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(arrayName,
         arrayInfo, null);
     final VariablesDeclaration arrayDecl = new VariablesDeclaration(
         new QualifiedType(basicType, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
     );
 
+    // Adds the new uniform array to the current translation unit in the case it doesn't exist.
     if (!this.translationUnit.hasUniformDeclaration(arrayName)) {
       this.translationUnit.addDeclaration(arrayDecl);
     }
 
+    // Goes through each translation unit in the shader job and updates its existing uniform array
+    // to refer this new uniform array.
     for (TranslationUnit tu: shaderJob.getShaders()) {
       if (tu.hasUniformDeclaration(arrayName)) {
         tu.updateTopLevelDeclaration(arrayDecl, tu.getUniformDeclaration(arrayName));
