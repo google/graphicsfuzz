@@ -42,7 +42,7 @@ may be taken. All of this is done with integer math,
 so the result is deterministic.
 
 (For different kinds of mazes, just change the
-starting position of the walker) 
+starting position of the walker.)
 */
 
 int map[16 * 16];
@@ -86,7 +86,7 @@ void main() {
       // If all directions are exhausted, assume we're done..
       canwalk = false;
       // ..but if we can find an unused tile, hop there and
-      // keep going:    
+      // keep going:
       int j;
       for (i = 0; i < 8; i++) {
         for (j = 0; j < 8; j++) {
@@ -100,7 +100,7 @@ void main() {
       // Either way, mark current position as wall.
       map[(p.x) + (p.y) * 16] = 1;
     } else {
-      // Number of steps to take (based on our counter and 
+      // Number of steps to take (based on our counter and
       // possible steps to take)
       int d = v % directions;
       // Increment the counter by the possible directions
@@ -122,7 +122,7 @@ void main() {
         map[(p.x) + (p.y - 2) * 16] = 1;
         p.y -= 2;
       }
-      // If we have steps left and it's legal to move right, do so 
+      // If we have steps left and it's legal to move right, do so
       if (d >= 0 && p.x < 14 && map[(p.x + 2) + (p.y) * 16] == 0) {
         d--;
         map[(p.x) + (p.y) * 16] = 1;
@@ -146,8 +146,8 @@ void main() {
     }
   }
   while (canwalk);
-  
-  // If we manage to get here, there's no legal moves left,
+
+  // If we manage to get here, there are no legal moves left,
   // and our pixel is in a non-wall tile.
   _GLF_color = vec4(0.0, 0.0, 0.0, 1.0);
 }

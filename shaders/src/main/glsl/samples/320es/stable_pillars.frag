@@ -37,7 +37,7 @@ Each of the pillars is considerered to be +/- 15 pixels
 from the value in the table, with a gradient fill.
 
 Apart from the gradient fill (which is a simple linear
-interpolation), everything is done with integer math, 
+interpolation), everything is done with integer math,
 making the result deterministic.
 
 (The original effect was produced by having a single pixel
@@ -81,7 +81,7 @@ vec4 trace(ivec2 pos) {
 }
 
 void main() {
-  // pos is screen coodrdinates in 0..1 
+  // pos is screen coodrdinates in 0..1
   vec2 pos = gl_FragCoord.xy / resolution;
   // ipos is screen coordinates in 0..255 in integer steps.
   ivec2 ipos = ivec2(int(pos.x * 256.0), int(pos.y * 256.0));

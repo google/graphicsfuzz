@@ -25,11 +25,11 @@ uniform vec2 resolution;
 
 /*
 This shader rasterizes a triangle in perhaps the most
-inefficent way possible apart from raytracing, by 
+inefficent way possible apart from raytracing, by
 checking for each pixel whether we're inside a triangle.
 
-The point in triangle code was based on 
-"Real Time Collision Detection", Morgan-Kaufmann 
+The pointInTriangle code was based on
+"Real Time Collision Detection", Morgan-Kaufmann
 by Christer Ericson, page 206.
 
 While the code uses floating point, everything is

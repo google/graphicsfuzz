@@ -21,7 +21,7 @@ precision highp int;
 
 /*
 This shader implements a binary search tree using an array
-data structure. The elements of the tree are kept in an array
+data structure. The elements of the tree are kept in an array 
 that contains a list of BST objects, each of which holds the
 indices of left and right subrtrees in the array.
 
@@ -42,7 +42,7 @@ that is found, and for each value that should not
 be in the tree that is not found, checksum is
 incremented.
 
-If the checksum matches with what we expect, the
+If the checksum matches with what we expect, the 
 image will be red, and if not, the image will be blue.
 
 Screen coordinates do not matter for this shader;

@@ -40,16 +40,16 @@ const vec4 pal[16] = vec4[16](
   vec4(1.0, 0.0, 1.0, 1.0),
   vec4(0.0, 1.0, 1.0, 1.0),
   vec4(1.0, 1.0, 1.0, 1.0));
-  
+
 /*
 This shader is basically a fancy random number generator
-using a simple bifurcation algorithm. All the math is 
+using a simple bifurcation algorithm. All the math is
 done using integers, so as long as the integer width is
 sufficient (which "precision highp int" should provide),
 the math itself is deterministic.
 
 The randomness comes from the unstability of the
-algorithm as the number of iterations increase.
+algorithm as the number of iterations increases.
 
 To understand what's going on, this youtube video
 has a very good explanation:
@@ -74,10 +74,10 @@ void main() {
   /*
   Value of v after each iteration; after a few initial cycles
   the values become periodic.
-  360 921 291 825 577 976  93 337 893 382 944 211 665 891 388 
-  949 193 623 939 229  
-  706 830 564 983  66 246 741 767 714 816 600 960 153 518 
-  998   7  27 105 375 937 236 721 804 630 932 253 755 739 771 
+  360 921 291 825 577 976  93 337 893 382 944 211 665 891 388
+  949 193 623 939 229
+  706 830 564 983  66 246 741 767 714 816 600 960 153 518
+  998   7  27 105 375 937 236 721 804 630 932 253 755 739 771
   706 830 564 983  66 246 741 767 714 816 600 960 153 518
   998   7  27 105 375 937 236 721 804 630 932 253 755 739 771
   706 830 564 983  66 246 741 767 714 816 600 960 153 518
