@@ -21,6 +21,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <set>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -84,6 +85,24 @@ struct DescriptorBufferBinding {
   VkDescriptorBufferInfo descriptor_buffer_info_;
 };
 
+class ShaderModuleState {
+ public:
+  explicit ShaderModuleState(VkShaderModuleCreateInfo create_info)
+      : create_info_(create_info) {}
+
+  // Returns true if the shader modules is in use.
+  bool isUsed() { return !pipelines_.empty() && !is_destroyed_; };
+
+  // Create info of this shader module.
+  VkShaderModuleCreateInfo create_info_;
+
+  // Is this shader module destroyed (vkDestroyShaderModule).
+  bool is_destroyed_ = false;
+
+  // Pipelines using this shader module.
+  std::set<VkPipeline> pipelines_;
+};
+
 struct DescriptorSetData {
   explicit DescriptorSetData(
       VkDescriptorSetLayout descriptor_set_layout,
@@ -130,21 +149,21 @@ std::unordered_map<VkPipeline, VkGraphicsPipelineCreateInfo>
     graphics_pipelines_;
 std::unordered_map<VkPipelineLayout, PipelineLayoutData> pipeline_layouts_;
 std::unordered_map<VkRenderPass, VkRenderPassCreateInfo> render_passes_;
-std::unordered_map<VkShaderModule, VkShaderModuleCreateInfo> shader_modules_;
+std::unordered_map<VkShaderModule, ShaderModuleState> shader_modules_;
 std::unordered_map<VkCommandPool, uint32_t> commandPoolToQueueFamilyIndex;
 
-std::string GetDisassembly(VkShaderModule shaderModule) {
-  auto createInfo = shader_modules_.at(shaderModule);
+std::string GetDisassembly(VkShaderModule shader_module) {
+  auto create_info = shader_modules_.at(shader_module).create_info_;
   auto maybeTargetEnv = graphicsfuzz_vulkan_layers::GetTargetEnvFromSpirvBinary(
-      createInfo.pCode[1]);
+      create_info.pCode[1]);
   assert(maybeTargetEnv.first && "SPIR-V version should be valid.");
   spvtools::SpirvTools tools(maybeTargetEnv.second);
   assert(tools.IsValid() && "Invalid tools object created.");
   // |createInfo.codeSize| gives the size in bytes; convert it to words.
   const uint32_t code_size_in_words =
-      static_cast<uint32_t>(createInfo.codeSize) / 4;
+      static_cast<uint32_t>(create_info.codeSize) / 4;
   std::vector<uint32_t> binary;
-  binary.assign(createInfo.pCode, createInfo.pCode + code_size_in_words);
+  binary.assign(create_info.pCode, create_info.pCode + code_size_in_words);
   std::string disassembly;
   tools.Disassemble(binary, &disassembly, SPV_BINARY_TO_TEXT_OPTION_INDENT);
   return disassembly;
@@ -449,7 +468,18 @@ VkResult vkCreateGraphicsPipelines(
                      pAllocator, pPipelines);
   if (result == VK_SUCCESS) {
     for (uint32_t i = 0; i < createInfoCount; i++) {
-      graphics_pipelines_.insert({pPipelines[i], DeepCopy(pCreateInfos[i])});
+      auto create_info = DeepCopy(pCreateInfos[i]);
+      graphics_pipelines_.insert({pPipelines[i], create_info});
+
+      // Register pipeline to shader modules so they can be destroyed when no
+      // longer used by any pipeline.
+      for (uint32_t stage_idx = 0; stage_idx < create_info.stageCount;
+           stage_idx++) {
+        assert(shader_modules_.count(create_info.pStages[stage_idx].module) &&
+               "Shader module not registered.");
+        shader_modules_.at(create_info.pStages[stage_idx].module)
+            .pipelines_.insert(pPipelines[i]);
+      }
     }
   }
   return result;
@@ -461,6 +491,19 @@ void vkDestroyPipeline(PFN_vkDestroyPipeline next, VkDevice device,
   next(device, pipeline, pAllocator);
   if (graphics_pipelines_.count(pipeline)) {
     const auto &create_info = graphics_pipelines_.at(pipeline);
+
+    // Unregister pipeline from all of the used shader modules.
+    for (uint32_t i = 0; i < create_info.stageCount; i++) {
+      auto &shader_module_state =
+          shader_modules_.at(create_info.pStages[i].module);
+      shader_module_state.pipelines_.erase(pipeline);
+      // Destroy the shader module's create_info if it's no longer used.
+      if (!shader_module_state.isUsed()) {
+        DeepDelete(shader_module_state.create_info_);
+        shader_modules_.erase(create_info.pStages[i].module);
+      }
+    }
+
     DeepDelete(create_info);
     graphics_pipelines_.erase(pipeline);
   }
@@ -547,7 +590,8 @@ VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device,
   DEBUG_LAYER(vkCreateShaderModule);
   auto result = next(device, pCreateInfo, pAllocator, pShaderModule);
   if (result == VK_SUCCESS) {
-    shader_modules_.insert({*pShaderModule, DeepCopy(*pCreateInfo)});
+    shader_modules_.insert(
+        {*pShaderModule, ShaderModuleState(DeepCopy(*pCreateInfo))});
   }
   return result;
 }
@@ -557,13 +601,13 @@ void vkDestroyShaderModule(PFN_vkDestroyShaderModule next, VkDevice device,
                            AllocationCallbacks pAllocator) {
   DEBUG_LAYER(vkDestroyShaderModule);
   next(device, shaderModule, pAllocator);
-  // TODO: Shader modules can't be deleted here because this function can be
-  // called before the shader is actually used (before the draw call).
-  /*if (shader_modules_.count(shaderModule)) {
-    const auto &create_info = shader_modules_.at(shaderModule);
-    DeepDelete(create_info);
-    shader_modules_.erase(shaderModule);
-  }*/
+
+  // Mark the shader as destroyed, but don't delete it yet (it may be still in
+  // use).
+  if (shader_modules_.count(shaderModule)) {
+    auto &shader_module = shader_modules_.at(shaderModule);
+    shader_module.is_destroyed_ = true;
+  }
 }
 
 void vkGetPhysicalDeviceMemoryProperties(
@@ -707,13 +751,13 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
                                       cmdBindVertexBuffers->firstBinding_] =
                 cmdBindVertexBuffers
                     ->buffers_[bindingIdx +
-                                cmdBindVertexBuffers->firstBinding_];
+                               cmdBindVertexBuffers->firstBinding_];
             drawCallStateTracker
                 .vertex_buffer_offsets[bindingIdx +
                                        cmdBindVertexBuffers->firstBinding_] =
                 cmdBindVertexBuffers
                     ->offsets_[bindingIdx +
-                                cmdBindVertexBuffers->firstBinding_];
+                               cmdBindVertexBuffers->firstBinding_];
           }
         } else if (auto cmdCopyBuffer = cmd->AsCopyBuffer()) {
           // TODO: track buffer copies?
