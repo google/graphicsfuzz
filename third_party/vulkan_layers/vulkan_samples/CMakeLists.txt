@@ -23,11 +23,13 @@ set_property(TARGET simple PROPERTY CXX_STANDARD 17)
 
 add_executable(instance instance.cpp)
 target_include_directories(instance PRIVATE ../external/stb)
+target_include_directories(instance PRIVATE ../external/glm)
 target_link_libraries(instance PUBLIC Vulkan::Vulkan glslang SPIRV)
 set_property(TARGET instance PROPERTY CXX_STANDARD 17)
 
 add_executable(depth depth.cpp)
 target_include_directories(depth PRIVATE ../external/stb)
+target_include_directories(depth PRIVATE ../external/glm)
 target_link_libraries(depth PUBLIC Vulkan::Vulkan glslang SPIRV)
 set_property(TARGET depth PROPERTY CXX_STANDARD 17)
 
