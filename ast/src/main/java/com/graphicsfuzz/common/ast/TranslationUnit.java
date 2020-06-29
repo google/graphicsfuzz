@@ -208,10 +208,10 @@ public class TranslationUnit implements IAstNode {
    */
   public VariablesDeclaration getUniformDeclaration(String name) {
     return getGlobalVariablesDeclarations().stream()
-        .filter(item -> item.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
-            && item.getDeclInfo(0).getName().equals(name))
-        .findAny()
-        .get();
+        .filter(variablesDeclaration ->
+            variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
+                && variablesDeclaration.getDeclInfos().stream()
+                .anyMatch(variableDecl -> variableDecl.getName().equals(name))).findAny().get();
   }
 
   /**
@@ -220,8 +220,10 @@ public class TranslationUnit implements IAstNode {
    */
   public boolean hasUniformDeclaration(String name) {
     return getGlobalVariablesDeclarations().stream()
-        .anyMatch(item -> item.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
-            && item.getDeclInfo(0).getName().equals(name));
+        .anyMatch(variablesDeclaration ->
+            variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
+            && variablesDeclaration.getDeclInfos().stream()
+            .anyMatch(variableDecl -> variableDecl.getName().equals(name)));
   }
 
   public List<StructDefinitionType> getStructDefinitions() {
