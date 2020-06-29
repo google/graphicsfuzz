@@ -87,7 +87,7 @@ public class LiteralToUniformReductionOpportunity
     }
 
     final int index;
-    final List<Number> values = this.shaderJob.getPipelineInfo().getArgs(arrayName);
+    final List<Number> values = shaderJob.getPipelineInfo().getArgs(arrayName);
 
     if (values.contains(numericValue)) {
       index = values.indexOf(numericValue);
@@ -105,8 +105,8 @@ public class LiteralToUniformReductionOpportunity
     );
 
     // Adds the new uniform array to the current translation unit in the case it doesn't exist.
-    if (!this.translationUnit.hasUniformDeclaration(arrayName)) {
-      this.translationUnit.addDeclaration(arrayDecl);
+    if (!translationUnit.hasUniformDeclaration(arrayName)) {
+      translationUnit.addDeclaration(arrayDecl);
     }
 
     // Goes through each translation unit in the shader job and updates its existing uniform array
@@ -118,12 +118,12 @@ public class LiteralToUniformReductionOpportunity
     }
 
     // Replaces the literal with an access of the uniform.
-    final IParentMap parentMap = IParentMap.createParentMap(this.translationUnit);
+    final IParentMap parentMap = IParentMap.createParentMap(translationUnit);
     final ArrayIndexExpr aie = new ArrayIndexExpr(new VariableIdentifierExpr(arrayName),
         new IntConstantExpr(String.valueOf(index)));
 
-    if (parentMap.hasParent(this.literalExpr)) {
-      parentMap.getParent(this.literalExpr).replaceChild(this.literalExpr, aie);
+    if (parentMap.hasParent(literalExpr)) {
+      parentMap.getParent(literalExpr).replaceChild(literalExpr, aie);
     }
   }
 
