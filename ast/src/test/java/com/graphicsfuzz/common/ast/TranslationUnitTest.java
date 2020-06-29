@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TranslationUnitTest {
@@ -71,14 +72,18 @@ public class TranslationUnitTest {
   @Test
   public void testHasUniformDeclaration() throws Exception {
     final String shader =
-        "uniform float a[2];"
+        "uniform float a[2], b;"
+            + "uniform int;"
             + "void main()"
             + "{"
-            + "  float b = a[0];"
+            + "  float c = a[0];"
+            + "  float d = b;"
             + "}";
 
     final TranslationUnit translationUnit = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
     assertTrue(translationUnit.hasUniformDeclaration("a"));
+    assertTrue(translationUnit.hasUniformDeclaration("b"));
+    assertFalse(translationUnit.hasUniformDeclaration("c"));
   }
 
   @Test
@@ -136,8 +141,16 @@ public class TranslationUnitTest {
         + "}";
 
     final TranslationUnit translationUnit = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
-    final VariablesDeclaration variablesDeclaration = translationUnit.getUniformDeclaration("a");
+    final VariablesDeclaration variablesDeclaration =
+        translationUnit.getUniformDeclaration("a");
+
     assertEquals(variablesDeclaration.getDeclInfos().get(0).getName(), "a");
     assertEquals(variablesDeclaration.getDeclInfos().get(1).getName(), "b");
+
+    final VariablesDeclaration variablesDeclaration2 =
+        translationUnit.getUniformDeclaration("b");
+
+    assertEquals(variablesDeclaration2.getDeclInfos().get(0).getName(), "a");
+    assertEquals(variablesDeclaration2.getDeclInfos().get(1).getName(), "b");
   }
 }
