@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.util.ArrayList;
@@ -50,6 +51,13 @@ public final class LiteralToUniformReductionOpportunities {
         public void visitFloatConstantExpr(FloatConstantExpr floatConstantExpr) {
           super.visitFloatConstantExpr(floatConstantExpr);
           opportunities.add(new LiteralToUniformReductionOpportunity(floatConstantExpr, tu,
+              shaderJob, getVistitationDepth()));
+        }
+
+        @Override
+        public void visitUIntConstantExpr(UIntConstantExpr uintConstantExpr) {
+          super.visitUIntConstantExpr(uintConstantExpr);
+          opportunities.add(new LiteralToUniformReductionOpportunity(uintConstantExpr, tu,
               shaderJob, getVistitationDepth()));
         }
 

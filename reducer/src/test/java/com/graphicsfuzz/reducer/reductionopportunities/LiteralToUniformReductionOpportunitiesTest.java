@@ -229,6 +229,53 @@ public class LiteralToUniformReductionOpportunitiesTest {
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
   }
 
+  @Test
+  public void testReplaceUInts() throws Exception {
+
+    final String vertexShader = "void main() { "
+        + "uint a = 44u;}";
+
+    final String vertexShaderReplaced = "uniform uint _GLF_uniform_uint_values[2];"
+        + "void main()"
+        + "{"
+        + "  uint a = _GLF_uniform_uint_values[0];"
+        + "}";
+
+    final String fragmentShader = "void main() { "
+        + "uint a = 33u;}";
+
+    final String fragmentShaderReplaced = "uniform uint _GLF_uniform_uint_values[2];"
+        + "void main()"
+        + "{"
+        + "  uint a = _GLF_uniform_uint_values[1];"
+        + "}";
+
+    final List<TranslationUnit> shaders = new ArrayList<>();
+    shaders.add(ParseHelper.parse(vertexShader, ShaderKind.VERTEX));
+    shaders.add(ParseHelper.parse(fragmentShader, ShaderKind.FRAGMENT));
+
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        pipelineInfo, shaders);
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    final List<LiteralToUniformReductionOpportunity> ops =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be two opportunities", 2, ops.size());
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    ops.forEach(AbstractReductionOpportunity::applyReduction);
+
+    CompareAsts.assertEqualAsts(fragmentShaderReplaced, shaderJob.getFragmentShader().get());
+    CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
+
+    assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.UINT_LITERAL_UNIFORM_VALUES));
+  }
+
   /*
    * This test adds two shaders to the shader job and applies only one reduction
    * opportunity at first. Then checks that the one shader had the array uniform added,

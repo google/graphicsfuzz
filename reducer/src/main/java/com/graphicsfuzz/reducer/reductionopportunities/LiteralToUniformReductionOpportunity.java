@@ -25,6 +25,7 @@ import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.ConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
@@ -63,11 +64,14 @@ public class LiteralToUniformReductionOpportunity
     final String arrayName;
     final BasicType basicType;
 
-
     if (literalExpr instanceof IntConstantExpr) {
       arrayName = Constants.INT_LITERAL_UNIFORM_VALUES;
       basicType = BasicType.INT;
       numericValue = ((IntConstantExpr) literalExpr).getNumericValue();
+    } else if (literalExpr instanceof UIntConstantExpr) {
+      arrayName = Constants.UINT_LITERAL_UNIFORM_VALUES;
+      basicType = BasicType.UINT;
+      numericValue = ((UIntConstantExpr) literalExpr).getNumericValue();
     } else {
       arrayName = Constants.FLOAT_LITERAL_UNIFORM_VALUES;
       basicType = BasicType.FLOAT;
