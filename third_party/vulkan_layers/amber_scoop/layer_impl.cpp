@@ -749,15 +749,11 @@ VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
             drawCallStateTracker
                 .bound_vertex_buffers[bindingIdx +
                                       cmdBindVertexBuffers->firstBinding_] =
-                cmdBindVertexBuffers
-                    ->buffers_[bindingIdx +
-                               cmdBindVertexBuffers->firstBinding_];
+                cmdBindVertexBuffers->buffers_[bindingIdx];
             drawCallStateTracker
                 .vertex_buffer_offsets[bindingIdx +
                                        cmdBindVertexBuffers->firstBinding_] =
-                cmdBindVertexBuffers
-                    ->offsets_[bindingIdx +
-                               cmdBindVertexBuffers->firstBinding_];
+                cmdBindVertexBuffers->offsets_[bindingIdx];
           }
         } else if (auto cmdCopyBuffer = cmd->AsCopyBuffer()) {
           // TODO: track buffer copies?
@@ -995,9 +991,6 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     auto buffer_create_info = buffers.at(vertex_buffer);
     assert(buffer_create_info.usage & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-    if (binding_description.inputRate != VK_VERTEX_INPUT_RATE_VERTEX)
-      throw std::runtime_error("VK_VERTEX_INPUT_RATE_INSTANCE not implemented");
-
     vertex_buffer_found = true;
     BufferCopy *vertex_buffer_copy = nullptr;
     // Don't copy the buffer if it's already copied
@@ -1014,7 +1007,6 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
       for (auto barrier : draw_call_state_tracker.pipeline_barriers) {
         if (barrier->dstStageMask_ & VK_PIPELINE_STAGE_VERTEX_INPUT_BIT) {
           vertex_buffer_pipeline_barriers.push_back(barrier);
-          break;  // TODO: Should this be removed?
         }
       }
 
@@ -1031,9 +1023,6 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     std::stringstream bufferName;
     bufferName << "vert_" << location;
 
-    pipeline_str_stream << "  VERTEX_DATA " << bufferName.str() << " LOCATION "
-                        << location << std::endl;
-
     vkf::VulkanFormat format =
         vkf::VkFormatToVulkanFormat(attribute_description.format);
 
@@ -1042,27 +1031,47 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
                            << format.name << " DATA\n"
                            << "  ";
 
+    std::string input_rate_str;
+
     auto buffer_offset = draw_call_state_tracker.vertex_buffer_offsets.at(
         binding_description.binding);
 
     uint32_t stride =
         binding_description.stride == 0 ? 1 : binding_description.stride;
 
-    uint32_t element_count =
-        vertex_count == 0 ? max_index_value + 1 : vertex_count;
-
-    for (uint32_t i = 0; i < element_count; i++) {
-      uint32_t offset =
-          i * stride + attribute_description.offset + buffer_offset;
-      if (offset > buffer_create_info.size) {
-        throw std::runtime_error(
-            "Offset is greater than the size of the buffer.");
+    if (binding_description.inputRate == VK_VERTEX_INPUT_RATE_VERTEX) {
+      uint32_t element_count =
+          vertex_count == 0 ? max_index_value + 1 : vertex_count;
+      for (uint32_t i = 0; i < element_count; i++) {
+        uint32_t offset =
+            i * stride + attribute_description.offset + buffer_offset;
+        if (offset > buffer_create_info.size) {
+          throw std::runtime_error(
+              "Offset is greater than the size of the buffer.");
+        }
+        auto readPtr = vertex_buffer_copy->copied_data_ + offset;
+        readComponentsFromBufferAndWriteToStrStream(readPtr, format,
+                                                    buffer_declaration_str);
       }
-      auto readPtr = vertex_buffer_copy->copied_data_ + offset;
-
-      readComponentsFromBufferAndWriteToStrStream(readPtr, format,
-                                                  buffer_declaration_str);
+      input_rate_str = "vertex";
+    } else if (binding_description.inputRate == VK_VERTEX_INPUT_RATE_INSTANCE) {
+      // Copy all values starting from instance 0 even if the first instance is
+      // greater than 0. This makes the draw call more similar to the original
+      // draw call.
+      for (uint32_t i = 0; i < first_instance + instance_count; i++) {
+        uint32_t offset =
+            i * stride + attribute_description.offset + buffer_offset;
+        auto readPtr = vertex_buffer_copy->copied_data_ + offset;
+        readComponentsFromBufferAndWriteToStrStream(readPtr, format,
+                                                    buffer_declaration_str);
+      }
+      input_rate_str = "instance";
+    } else {
+      assert(false && "Invalid vertex input rate.");
     }
+
+    pipeline_str_stream << "  VERTEX_DATA " << bufferName.str() << " LOCATION "
+                        << location << " RATE " << input_rate_str << std::endl;
 
     bufferDeclarationStringStream << buffer_declaration_str.str() << std::endl
                                   << "END" << std::endl
