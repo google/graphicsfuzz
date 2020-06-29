@@ -200,8 +200,11 @@ public class TranslationUnit implements IAstNode {
   }
 
   /**
-   * Returns variable declarations of the given uniform.
+   * Returns variable declarations of the given uniform. A precondition of this method is
+   * that the uniform exists. NoSuchElementException is thrown in the case of a non-existent
+   * uniform.
    * @param name The name of the uniform of which variable declarations are returned.
+   * @throws java.util.NoSuchElementException thrown if the given uniform doesn't exist.
    */
   public VariablesDeclaration getUniformDeclaration(String name) {
     return getGlobalVariablesDeclarations().stream()
