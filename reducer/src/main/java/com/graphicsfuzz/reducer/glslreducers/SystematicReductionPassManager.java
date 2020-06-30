@@ -57,8 +57,17 @@ public class SystematicReductionPassManager implements IReductionPassManager {
     this.exhaustivePasses = new ArrayList<>();
     this.exhaustivePasses.addAll(exhaustivePasses);
     this.anotherRoundWorthwhile = false;
-    this.currentPasses = this.initialPasses;
     this.passIndex = 0;
+
+    if (!this.initialPasses.isEmpty()) {
+      this.currentPasses = this.initialPasses;
+    } else if (!this.corePasses.isEmpty()) {
+      this.currentPasses = this.corePasses;
+    } else if (!this.exhaustivePasses.isEmpty()) {
+      this.currentPasses = this.exhaustivePasses;
+    } else {
+      throw new IllegalArgumentException("At least one list of passes must be non-empty.");
+    }
   }
 
   @Override
@@ -79,10 +88,12 @@ public class SystematicReductionPassManager implements IReductionPassManager {
       } else if (anotherRoundWorthwhile) {
         LOGGER.info("Trying another round of the current set of passes");
         startNewRound(currentPasses);
-      } else if (currentPasses == initialPasses) {
+      } else if (currentPasses == initialPasses && !corePasses.isEmpty()) {
         LOGGER.info("Moving to core passes");
         startNewRound(corePasses);
-      } else if (currentPasses == corePasses) {
+      } else if (
+          (currentPasses == initialPasses || currentPasses == corePasses)
+          && !exhaustivePasses.isEmpty()) {
         LOGGER.info("Moving to exhaustive passes (cleanup)");
         startNewRound(exhaustivePasses);
       } else {
@@ -91,7 +102,7 @@ public class SystematicReductionPassManager implements IReductionPassManager {
     }
   }
 
-  public void startNewRound(List<IReductionPass> passes) {
+  private void startNewRound(List<IReductionPass> passes) {
     passIndex = 0;
     anotherRoundWorthwhile = false;
     currentPasses = passes;
