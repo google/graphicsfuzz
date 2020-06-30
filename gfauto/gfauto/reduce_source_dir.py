@@ -49,17 +49,30 @@ def main() -> None:
         default="settings.json",
     )
 
+    parser.add_argument(
+        "--literals_to_uniforms",
+        action="store_true",
+        help="Pass --literals-to-uniforms to glsl-reduce.",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     source_dir = Path(parsed_args.source_dir)
     output_dir = Path(parsed_args.output)
     settings = settings_util.read_or_create(Path(parsed_args.settings))
+    literals_to_uniforms: bool = parsed_args.literals_to_uniforms
 
     binary_manager = binaries_util.get_default_binary_manager(settings=settings)
 
     test = test_util.metadata_read_from_source_dir(source_dir)
 
     if test.HasField("glsl"):
+        if (
+            literals_to_uniforms
+            and "--literals-to-uniforms" not in settings.extra_graphics_fuzz_reduce_args
+        ):
+            settings.extra_graphics_fuzz_reduce_args.append("--literals-to-uniforms")
+
         fuzz_glsl_test.run_reduction(
             source_dir_to_reduce=source_dir,
             reduction_output_dir=output_dir,
