@@ -148,6 +148,21 @@ public class TranslationUnit implements IAstNode {
     throw new IllegalArgumentException("Existing declaration not found.");
   }
 
+  /**
+   * Replaces an existing top level declaration with another top level declaration.
+   * @param newDecl The new declaration.
+   * @param existingDecl The existing declaration to be replaced.
+   */
+  public void updateTopLevelDeclaration(Declaration newDecl, Declaration existingDecl) {
+    for (int i = 0; i < topLevelDeclarations.size(); i++) {
+      if (topLevelDeclarations.get(i) == existingDecl) {
+        topLevelDeclarations.set(i, newDecl);
+        return;
+      }
+    }
+    throw new IllegalArgumentException("Existing declaration not found.");
+  }
+
   public void removeTopLevelDeclaration(int index) {
     topLevelDeclarations.remove(index);
   }
@@ -182,6 +197,33 @@ public class TranslationUnit implements IAstNode {
         .stream()
         .filter(item -> item.getBaseType().hasQualifier(TypeQualifier.UNIFORM))
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Returns variable declarations of the given uniform. A precondition of this method is
+   * that the uniform exists. NoSuchElementException is thrown in the case of a non-existent
+   * uniform.
+   * @param name The name of the uniform of which variable declarations are returned.
+   * @throws java.util.NoSuchElementException thrown if the given uniform doesn't exist.
+   */
+  public VariablesDeclaration getUniformDeclaration(String name) {
+    return getGlobalVariablesDeclarations().stream()
+        .filter(variablesDeclaration ->
+            variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
+                && variablesDeclaration.getDeclInfos().stream()
+                .anyMatch(variableDecl -> variableDecl.getName().equals(name))).findAny().get();
+  }
+
+  /**
+   * Checks if a uniform declaration for the given uniform exists.
+   * @param name The name of the uniform declaration to be checked.
+   */
+  public boolean hasUniformDeclaration(String name) {
+    return getGlobalVariablesDeclarations().stream()
+        .anyMatch(variablesDeclaration ->
+            variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
+            && variablesDeclaration.getDeclInfos().stream()
+            .anyMatch(variableDecl -> variableDecl.getName().equals(name)));
   }
 
   public List<StructDefinitionType> getStructDefinitions() {

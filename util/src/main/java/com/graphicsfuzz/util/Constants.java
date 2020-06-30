@@ -64,6 +64,9 @@ public final class Constants {
   public static final String GLF_INIT_GLOBALS = "_GLF_init_globals";
   public static final String GLF_UNIFORM = "_GLF_UNIFORM";
 
+  public static final String INT_LITERAL_UNIFORM_VALUES = "_GLF_uniform_int_values";
+  public static final String UINT_LITERAL_UNIFORM_VALUES = "_GLF_uniform_uint_values";
+  public static final String FLOAT_LITERAL_UNIFORM_VALUES = "_GLF_uniform_float_values";
 
   public static final String INJECTED_LOOP_COUNTER = "_injected_loop_counter";
 
