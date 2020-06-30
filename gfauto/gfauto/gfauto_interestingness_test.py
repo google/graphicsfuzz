@@ -202,7 +202,9 @@ def main() -> None:  # pylint: disable=too-many-statements, too-many-locals, too
     # The |crash_regex_override| overrides all other checks.
     if test.crash_regex_override:
         log(f"Testing crash_regex_override: {test.crash_regex_override}")
-        override_pattern: Pattern[str] = re.compile(log_contents)
+        override_pattern: Pattern[str] = re.compile(
+            test.crash_regex_override, re.DOTALL
+        )
         match: Optional[Match[str]] = override_pattern.fullmatch(log_contents)
         if match:
             log("Match!")
