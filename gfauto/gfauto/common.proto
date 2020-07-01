@@ -18,6 +18,11 @@ package gfauto;
 
 
 // Defines a binary (or really, any file).
+// Note that Binary is used to:
+//  - Describe which version of a binary to find/download and use in settings.json (Settings proto) or test.json
+//    (Test proto) given the |name|, |tags|, and |version|. |path| is set to "".
+//  - Define a specific binary file in recipe.json (Recipe proto) or artifact.json (Artifact proto). |path| is a
+//    relative path to the binary, always using "/" as the directory separator.
 message Binary {
 
   // E.g. glslangValidator.
@@ -30,10 +35,12 @@ message Binary {
   // Typically, the current platform will also need to be found (e.g. "Linux") before the Binary can be chosen for use.
   repeated string tags = 2;
 
-  // Used when defining a binary within a recipe or artifact. Gives the path (always using "/" as the directory
-  // separator) relative from the artifact.json/recipe.json file to the binary, after the ArchiveSet has been extracted.
-  // Should be empty in Settings.
-  // Also used internally (but never written to disk) to store the resolved path of a binary.
+  // When describing which version of a binary to find/download and use in settings.json (Settings proto) or test.json
+  // (Test proto), is set to the empty string "". However, you can provide the path of a binary for testing purposes, in
+  // which case you will most likely want to provide the absolute path to the binary.
+  // When defining a specific binary file in recipe.json (Recipe proto) or artifact.json (Artifact proto), gives the
+  // path (always using "/" as the directory separator) relative from the artifact.json/recipe.json file to the binary,
+  // after the ArchiveSet has been extracted.
   string path = 3;
 
   // This should typically be a hash of some kind.
