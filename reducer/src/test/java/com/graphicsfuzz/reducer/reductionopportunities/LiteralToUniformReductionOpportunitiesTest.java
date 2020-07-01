@@ -439,4 +439,44 @@ public class LiteralToUniformReductionOpportunitiesTest {
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
   }
+
+  @Test
+  public void testArrayDeclaration() throws Exception {
+
+    final String shader =
+      "void main()"
+      + "{"
+      + "float a[10];"
+      + "float b = 1;"
+      + "a[0] = 2;"
+      + "}";
+
+    final String shaderReplaced =
+      "uniform int _GLF_uniform_int_values[3];"
+      + "void main()"
+      + "{"
+      + "float a[10];"
+      + "float b = _GLF_uniform_int_values[0];"
+      + "a[_GLF_uniform_int_values[1]] = _GLF_uniform_int_values[2];"
+      + "}";
+
+    final List<TranslationUnit> shaders = new ArrayList<>();
+    shaders.add(ParseHelper.parse(shader, ShaderKind.FRAGMENT));
+
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        pipelineInfo, shaders);
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    final List<LiteralToUniformReductionOpportunity> ops =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be three opportunities", 3, ops.size());
+    ops.forEach(AbstractReductionOpportunity::applyReduction);
+    assertEquals(1, pipelineInfo.getNumUniforms());
+    CompareAsts.assertEqualAsts(shaderReplaced, shaderJob.getFragmentShader().get());
+  }
 }

@@ -16,7 +16,9 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
@@ -43,8 +45,14 @@ public final class LiteralToUniformReductionOpportunities {
         @Override
         public void visitIntConstantExpr(IntConstantExpr intConstantExpr) {
           super.visitIntConstantExpr(intConstantExpr);
-          opportunities.add(new LiteralToUniformReductionOpportunity(intConstantExpr, tu,
-              shaderJob, getVistitationDepth()));
+          final IParentMap parentMap = IParentMap.createParentMap(tu);
+
+          // Do not add the literal into opportunities if the parent is an array declaration
+          // since they must be declared with a size initialized with a constant expression.
+          if (!(parentMap.getParent(intConstantExpr) instanceof ArrayInfo)) {
+            opportunities.add(new LiteralToUniformReductionOpportunity(intConstantExpr, tu,
+                shaderJob, getVistitationDepth()));
+          }
         }
 
         @Override
