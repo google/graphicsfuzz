@@ -84,4 +84,7 @@ message Settings {
   // Otherwise, "--vulkan" is passed.
   bool legacy_graphics_fuzz_vulkan_arg = 17;
 
+  // If true, skip running spirv-reduce when reducing a SPIR-V test. The spirv-fuzz shrinker will still run.
+  bool skip_spirv_reduce = 18;
+
 }
