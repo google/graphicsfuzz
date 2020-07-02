@@ -322,7 +322,10 @@ def run_reduction(
             settings=settings,
         )
 
-    if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
+    if (
+        test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE
+        and not settings.skip_spirv_reduce
+    ):
         for index, suffix in enumerate(shader_spv_suffixes):
             # E.g. .frag.spv -> .frag
             extension_to_reduce = str(Path(suffix).with_suffix(""))
