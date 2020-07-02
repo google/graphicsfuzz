@@ -74,7 +74,16 @@ public final class PipelineInfo {
   public void addUniform(String name, BasicType basicType,
       Optional<Integer> arrayCount, List<? extends Number> values) {
     assert isLegalUniformName(name);
-    if (!dictionary.has(name)) {
+    if (dictionary.has(name)) {
+      if (!((JsonObject)dictionary.get(name)).get("func").getAsString().equals(
+          PipelineInfo.get(basicType, arrayCount.isPresent()))) {
+        // Variable of this name already exists, but has different type
+        throw new RuntimeException("Uniform redefined as a different type");
+      }
+      // If the variable already exists and has the same type,
+      // we don't need to do anything.
+    } else {
+      // Add uniform to dictionary
       JsonObject info = new JsonObject();
       info.addProperty("func", PipelineInfo.get(basicType, arrayCount.isPresent()));
       JsonArray jsonValues = new JsonArray();
@@ -86,11 +95,6 @@ public final class PipelineInfo {
         info.addProperty("count", arrayCount.get());
       }
       dictionary.add(name, info);
-    } else {
-      if (!((JsonObject)dictionary.get(name)).get("func").getAsString().equals(
-          PipelineInfo.get(basicType, arrayCount.isPresent()))) {
-        throw new RuntimeException("Uniform redefined as a different type");
-      }
     }
   }
 
@@ -404,16 +408,19 @@ public final class PipelineInfo {
 
   public void addSamplerInfo(String name, String samplerType, String textureName) {
     assert isLegalUniformName(name);
-    if (!dictionary.has(name)) {
+    if (dictionary.has(name)) {
+      if (!((JsonObject)dictionary.get(name)).get("func").getAsString().equals(samplerType)) {
+        // A variable of this name already exists, but has different type
+        throw new RuntimeException("Sampler redefined as a different type");
+      }
+      // If name and type matches, we don't need to do anything.
+    } else {
+      // Add sampler to dictionary
       // "foo": { "func": "sampler2D", "texture": "SOME_STRING" }
       JsonObject info = new JsonObject();
       info.addProperty("func", samplerType);
       info.addProperty("texture", textureName);
       dictionary.add(name, info);
-    } else {
-      if (((JsonObject)dictionary.get(name)).get("func").getAsString() != samplerType) {
-        throw new RuntimeException("Sampler redefined as a different type");
-      }
     }
   }
 

@@ -86,6 +86,7 @@ public final class FragmentShaderToShaderJob {
 
     // Iterate through all uniforms in 'tu'.  For each, add an entry to 'pipelineInfo' with a
     // randomized value (using 'generator' as the source of randomness).
+    // For samplers, we set the texture to "DEFAULT"
     for (VariablesDeclaration vd : tu.getUniformDecls()) {
       if (vd.getBaseType().getWithoutQualifiers() instanceof SamplerType) {
         for (VariableDeclInfo vdi : vd.getDeclInfos()) {
