@@ -796,6 +796,9 @@ class BinaryManager(BinaryGetter):
         return None
 
     def get_binary_path(self, binary: Binary) -> Path:
+        # Special case: allow the path to be specified in the binary object itself for testing purposes:
+        if binary.path:
+            return Path(binary.path)
         # Try resolved cache first.
         result = self._resolved_paths.get(binary.SerializePartialToString())
         if result:
