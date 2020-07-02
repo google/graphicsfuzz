@@ -415,7 +415,7 @@ public class GenerateTest {
     final File output = temporaryFolder.newFile("output.json");
 
     Generate.mainHelper(new String[] { shaderJobFile.getAbsolutePath(), donors.getAbsolutePath(),
-        output.getAbsolutePath(), "--seed", "0", "--generate-uniform-bindings",
+        output.getAbsolutePath(), "--seed", "0", "--vulkan",
         "--no-injection-switch", "--push-constant-probability", "1.0" });
 
     final ShaderJob outputShaderJob = fileOps.readShaderJobFile(output);

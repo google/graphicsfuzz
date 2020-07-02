@@ -94,9 +94,9 @@ public class PrepareReferenceTest {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
     PrepareReference.mainHelper(new String[] { jsonFile.getAbsolutePath(),
-        output.getAbsolutePath(), "--generate-uniform-bindings" });
+        output.getAbsolutePath(), "--vulkan" });
 
-    assertTrue(fileOps.areShadersValid(output, false));
+    assertTrue(fileOps.areShadersValid(output, false, true));
 
     final PipelineInfo pipelineInfo = new PipelineInfo(output);
     assertTrue(pipelineInfo.hasUniform("f"));
@@ -143,7 +143,7 @@ public class PrepareReferenceTest {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
     PrepareReference.mainHelper(new String[] { jsonFile.getAbsolutePath(),
-        output.getAbsolutePath(), "--generate-uniform-bindings" });
+        output.getAbsolutePath(), "--vulkan" });
 
     assertTrue(fileOps.areShadersValid(output, false));
 

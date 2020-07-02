@@ -70,9 +70,10 @@ def log_returncode(
 def posix_kill_group(process: types.Popen) -> None:
     # Work around type warnings that will only show up on Windows:
     os_alias: Any = os
-    os_alias.killpg(process.pid, signal.SIGTERM)
+    signal_alias: Any = signal
+    os_alias.killpg(process.pid, signal_alias.SIGTERM)
     time.sleep(1)
-    os_alias.killpg(process.pid, signal.SIGKILL)
+    os_alias.killpg(process.pid, signal_alias.SIGKILL)
 
 
 def run_helper(
@@ -128,6 +129,16 @@ def run_helper(
             raise
 
         exit_code = process.poll()
+
+        if exit_code is None:
+            # Hopefully, it is impossible for poll() to return None at this stage, but if it does
+            # we set some recognizable, non-zero exit code and try one more time to kill the process.
+            exit_code = 999
+            try:
+                posix_kill_group(process)
+            except AttributeError:
+                process.kill()
+
         if check_exit_code and exit_code != 0:
             raise subprocess.CalledProcessError(exit_code, process.args, stdout, stderr)
         return subprocess.CompletedProcess(process.args, exit_code, stdout, stderr)

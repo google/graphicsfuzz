@@ -162,7 +162,7 @@ public class GenerateShaderFamily {
           generatorArguments.getReplaceFloatLiterals(),
           // We subtract 1 because we need to be able to add injectionSwitch
           generatorArguments.getMaxUniforms() - 1,
-          generatorArguments.getGenerateUniformBindings(),
+          generatorArguments.getIsVulkan(),
           fileOps);
     } catch (ParseTimeoutException | GlslParserException exception) {
       // Remove the created output directory and all of its contents, so that we don't get a
@@ -177,7 +177,8 @@ public class GenerateShaderFamily {
 
     // Validate reference shaders.
     if (!disableGlslangValidator) {
-      if (!fileOps.areShadersValid(preparedReferenceShaderJob, false)) {
+      if (!fileOps.areShadersValid(preparedReferenceShaderJob, false,
+          generatorArguments.getIsVulkan())) {
         throw new RuntimeException("One or more of the prepared shaders of shader job "
             + preparedReferenceShaderJob.getAbsolutePath() + " is not valid according to "
             + "glslangValidator.");
@@ -246,7 +247,8 @@ public class GenerateShaderFamily {
           disableGlslangValidator,
           disableShaderTranslator,
           keepBadVariants,
-          stopOnFail)) {
+          stopOnFail,
+          generatorArguments.getIsVulkan())) {
         continue;
       }
 
@@ -340,11 +342,12 @@ public class GenerateShaderFamily {
                                                 boolean disableGlslangValidator,
                                                 boolean disableShaderTranslator,
                                                 boolean keepBadVariants,
-                                                boolean stopOnFail)
+                                                boolean stopOnFail,
+                                                boolean isVulkan)
       throws IOException, InterruptedException {
 
     final boolean shaderJobIsValid =
-        (disableGlslangValidator || fileOps.areShadersValid(variantShaderJobFile, false))
+        (disableGlslangValidator || fileOps.areShadersValid(variantShaderJobFile, false, isVulkan))
           &&
         (disableShaderTranslator || fileOps.areShadersValidShaderTranslator(variantShaderJobFile,
           false));

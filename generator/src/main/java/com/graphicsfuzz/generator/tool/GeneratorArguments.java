@@ -28,7 +28,7 @@ public class GeneratorArguments {
   private final boolean aggressivelyComplicateControlFlow;
   private final boolean replaceFloatLiterals;
   private final File donorsFolder;
-  private final boolean generateUniformBindings;
+  private final boolean isVulkan;
   private final int maxUniforms;
   private final EnabledTransformations enabledTransformations;
   private final boolean addInjectionSwitch;
@@ -42,7 +42,7 @@ public class GeneratorArguments {
         boolean aggressivelyComplicateControlFlow,
         boolean replaceFloatLiterals,
         File donorsFolder,
-        boolean generateUniformBindings,
+        boolean isVulkan,
         int maxUniforms,
         EnabledTransformations enabledTransformations,
         boolean addInjectionSwitch,
@@ -54,7 +54,7 @@ public class GeneratorArguments {
     this.aggressivelyComplicateControlFlow = aggressivelyComplicateControlFlow;
     this.replaceFloatLiterals = replaceFloatLiterals;
     this.donorsFolder = donorsFolder;
-    this.generateUniformBindings = generateUniformBindings;
+    this.isVulkan = isVulkan;
     this.maxUniforms = maxUniforms;
     this.enabledTransformations = enabledTransformations;
     this.addInjectionSwitch = addInjectionSwitch;
@@ -90,8 +90,8 @@ public class GeneratorArguments {
     return donorsFolder;
   }
 
-  public boolean getGenerateUniformBindings() {
-    return generateUniformBindings;
+  public boolean getIsVulkan() {
+    return isVulkan;
   }
 
   public int getMaxUniforms() {
@@ -123,7 +123,7 @@ public class GeneratorArguments {
     sb.append("aggressivelyComplicateControlFlow: " + aggressivelyComplicateControlFlow + "\n");
     sb.append("replaceFloatLiterals: " + replaceFloatLiterals + "\n");
     sb.append("donorsFolder: " + donorsFolder.getName() + "\n");
-    sb.append("generateUniformBindings: " + generateUniformBindings + "\n");
+    sb.append("isVulkan: " + isVulkan + "\n");
     sb.append("maxUniforms: " + (limitUniforms() ? "-" : maxUniforms) + "\n");
     sb.append("enabledTransformations: " + enabledTransformations + "\n");
     sb.append("addInjectionSwitch: " + addInjectionSwitch + "\n");

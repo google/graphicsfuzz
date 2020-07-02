@@ -54,7 +54,7 @@ In March 2019, we deprecated our legacy Vulkan worker in favor of
 worker documentation](legacy-vulkan-worker.md) if you need to use the old worker.
 
 For testing Vulkan drivers on Android, you need to build [Amber](https://github.com/google/amber) as a native
-Android executable by following the 
+Android executable by following the
 [build instructions](https://github.com/google/amber), and push the `amber_ndk` binary to `/data/local/tmp/` on any device you want to test.
 Also ensure that the binary is executable.
 For testing Vulkan drivers on desktop, you need to build Amber on the relevant
@@ -201,10 +201,10 @@ glsl-generate --seed 0 samples/300es samples/300es 10 family_300es work/shaderfa
 glsl-generate --seed 0 samples/100 samples/100 10 family_100 work/shaderfamilies
 
 # Generate some "Vulkan-compatible" GLSL version 310 es fragment shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/310es samples/310es 10 family_vulkan work/shaderfamilies
+glsl-generate --seed 0 --vulkan --max-uniforms 10 samples/310es samples/310es 10 family_vulkan work/shaderfamilies
 
 # Generate some "Vulkan-compatible" GLSL version 310 es compute shaders that can be translated to SPIR-V for Vulkan testing.
-glsl-generate --seed 0 --generate-uniform-bindings --max-uniforms 10 samples/compute/310es samples/compute/310es 10 family_vulkan_compute work/shaderfamilies
+glsl-generate --seed 0 --vulkan --max-uniforms 10 samples/compute/310es samples/compute/310es 10 family_vulkan_compute work/shaderfamilies
 
 # Each line above will take approx. 1 minute, and will generate a shader family for every
 # shader in samples/300es, samples/100, samples/310es and samples/compute/310es:
@@ -554,7 +554,7 @@ the reference image and result image are shown for comparison,
 as well as the results of the individual image comparison metrics
 (if the images are different).
 The *histogram distance* is shown, which can be useful when
-launching a reduction, as explained below. 
+launching a reduction, as explained below.
 
 
 ## Queuing a bad image reduction
@@ -624,7 +624,7 @@ and click "Reduce result" to reveal the reduction panel:
 
 In the "Error string" text box, enter a substring from the "Run log" text box
 that will confirm the issue.  For example, in this case, we could enter
-"Calling vkWaitForFences Timeout" (without quotes). 
+"Calling vkWaitForFences Timeout" (without quotes).
 Another common string is: "Fatal signal 11".
 Ideally, we should enter something even more specific, such as a
 function name from a stack trace, but this is only possible if a stack trace is
@@ -634,7 +634,7 @@ shown in the run log.
 > without rendering an image, which is much faster.
 > However, you must ensure that this is still sufficient to trigger
 > the required error string output.
-> If you enable "Skip Render", 
+> If you enable "Skip Render",
 > the reduction will fail almost instantly if the error string output
 > does not appear, in which case you can try again without "Skip Render".
 
@@ -850,12 +850,12 @@ Your device must show in `adb devices`.  For
 example:
 
 ```sh
-# add --spirvopt=-O to run spirv-opt on your shader 
+# add --spirvopt=-O to run spirv-opt on your shader
 # add --serial 123ABC to specify the serial of your device from adb devices
 runspv android variant_005.json outdir
 ```
 
-However, note that `runspv` will fail if you have, for example, 
+However, note that `runspv` will fail if you have, for example,
 both `variant_005.frag` and `variant_005.frag.spv`;
 you must delete one of these files so `runspv` knows which file you want to test.
 The temporary files and results will be output to `outdir/`.
@@ -1046,7 +1046,7 @@ Here is an example uniform value entry:
 
 The key, `iDate`, is the name of the uniform.  This maps to a sub-dictionary specifying: via `func` the OpenGL function used to set the uniform (`glUniform4f` in this case, corresponding to a `vec4`), via `args` a sequence of values that should be used to populate the uniform (four floating point values in this case), and optionally via `binding` an integer which, if provided, must match the binding of the uniform buffer to which the uniform belongs.
 
-In the case of compute shaders, the JSON file has a single additional entry with the key `$compute`.  
+In the case of compute shaders, the JSON file has a single additional entry with the key `$compute`.
 
 Here is an example `$compute` entry:
 

@@ -86,7 +86,7 @@ def test_fuzz_and_reduce_llpc_bug_opt() -> None:
 
 def test_fuzz_and_reduce_swift_shader_bug_no_opt() -> None:
     def check_result() -> None:
-        bucket = Path() / "reports" / "crashes" / "vkGetInstanceProcAddr"
+        bucket = Path() / "reports" / "crashes" / "UNIMPLEMENTED_extensionFeaturessType"
         assert bucket.is_dir()
         test_dirs = list(bucket.iterdir())
         assert len(test_dirs) == 1
@@ -107,7 +107,7 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt() -> None:
 
 def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex() -> None:
     def check_result() -> None:
-        bucket = Path() / "reports" / "crashes" / "vkGetInstanceProcAddr"
+        bucket = Path() / "reports" / "crashes" / "UNIMPLEMENTED_extensionFeaturessType"
         assert bucket.is_dir()
         test_dirs = list(bucket.iterdir())
         assert len(test_dirs) == 1
@@ -122,7 +122,7 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex() -> None:
 
     settings = Settings()
     settings.CopyFrom(settings_util.DEFAULT_SETTINGS)
-    settings.only_reduce_signature_regex = "vkGetInstanceProcAddr"
+    settings.only_reduce_signature_regex = "UNIMPLEMENTED_extensionFeaturessType"
 
     fuzz_and_reduce_bug(
         active_device="swift_shader",
@@ -134,7 +134,7 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex() -> None:
 
 def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex_miss() -> None:
     def check_result() -> None:
-        bucket = Path() / "reports" / "crashes" / "vkGetInstanceProcAddr"
+        bucket = Path() / "reports" / "crashes" / "UNIMPLEMENTED_extensionFeaturessType"
         assert bucket.is_dir()
         test_dirs = list(bucket.iterdir())
         assert len(test_dirs) == 1
@@ -149,7 +149,7 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex_miss() -> None:
 
     settings = Settings()
     settings.CopyFrom(settings_util.DEFAULT_SETTINGS)
-    settings.only_reduce_signature_regex = "vk"  # Does not match.
+    settings.only_reduce_signature_regex = "extension"  # Does not match.
 
     fuzz_and_reduce_bug(
         active_device="swift_shader",
@@ -272,6 +272,9 @@ def fuzz_and_reduce_bug(
 
     settings.extra_graphics_fuzz_reduce_args.append("--max-steps")
     settings.extra_graphics_fuzz_reduce_args.append("2")
+
+    # We use an old version of GraphicsFuzz.
+    settings.legacy_graphics_fuzz_vulkan_arg = True
 
     settings_util.write(settings, settings_util.DEFAULT_SETTINGS_FILE_PATH)
 

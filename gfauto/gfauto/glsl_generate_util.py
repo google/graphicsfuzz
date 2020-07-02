@@ -32,12 +32,17 @@ def run_prepare_reference(
     graphicsfuzz_tool_path: Path,
     input_reference_shader_json: Path,
     output_reference_shader_json: Path,
+    legacy_graphics_fuzz_vulkan_arg: bool = False,
 ) -> Path:
     util.file_mkdirs_parent(output_reference_shader_json)
     cmd = [
         str(graphicsfuzz_tool_path),
         "com.graphicsfuzz.generator.tool.PrepareReference",
-        "--generate-uniform-bindings",
+        (
+            "--generate-uniform-bindings"
+            if legacy_graphics_fuzz_vulkan_arg
+            else "--vulkan"
+        ),
         "--max-uniforms",
         "10",
         str(input_reference_shader_json),
@@ -56,6 +61,7 @@ def run_generate(
     output_shader_json: pathlib.Path,
     seed: Optional[str] = None,
     other_args: Optional[List[str]] = None,
+    legacy_graphics_fuzz_vulkan_arg: bool = False,
 ) -> pathlib.Path:
     util.file_mkdirs_parent(output_shader_json)
     cmd = [
@@ -64,7 +70,11 @@ def run_generate(
         str(reference_shader_json),
         str(donors_path),
         str(output_shader_json),
-        "--generate-uniform-bindings",
+        (
+            "--generate-uniform-bindings"
+            if legacy_graphics_fuzz_vulkan_arg
+            else "--vulkan"
+        ),
         "--max-uniforms",
         "10",
     ]
