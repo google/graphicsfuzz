@@ -74,17 +74,24 @@ public final class PipelineInfo {
   public void addUniform(String name, BasicType basicType,
       Optional<Integer> arrayCount, List<? extends Number> values) {
     assert isLegalUniformName(name);
-    JsonObject info = new JsonObject();
-    info.addProperty("func", PipelineInfo.get(basicType, arrayCount.isPresent()));
-    JsonArray jsonValues = new JsonArray();
-    for (Number n : values) {
-      jsonValues.add(n);
+    if (!dictionary.has(name)) {
+      JsonObject info = new JsonObject();
+      info.addProperty("func", PipelineInfo.get(basicType, arrayCount.isPresent()));
+      JsonArray jsonValues = new JsonArray();
+      for (Number n : values) {
+        jsonValues.add(n);
+      }
+      info.add("args", jsonValues);
+      if (arrayCount.isPresent()) {
+        info.addProperty("count", arrayCount.get());
+      }
+      dictionary.add(name, info);
+    } else {
+      if (!((JsonObject)dictionary.get(name)).get("func").getAsString().equals(
+          PipelineInfo.get(basicType, arrayCount.isPresent()))) {
+        throw new RuntimeException("Uniform redefined as a different type");
+      }
     }
-    info.add("args", jsonValues);
-    if (arrayCount.isPresent()) {
-      info.addProperty("count", arrayCount.get());
-    }
-    dictionary.add(name, info);
   }
 
   private static boolean isLegalUniformName(String name) {
@@ -394,6 +401,22 @@ public final class PipelineInfo {
     gridDimensions.add("dimensions", dimensions);
     dictionary.add(Constants.GRID_DATA_KEY, gridDimensions);
   }
+
+  public void addSamplerInfo(String name, String samplerType, String textureName) {
+    assert isLegalUniformName(name);
+    if (!dictionary.has(name)) {
+      // "foo": { "func": "sampler2D", "texture": "SOME_STRING" }
+      JsonObject info = new JsonObject();
+      info.addProperty("func", samplerType);
+      info.addProperty("texture", textureName);
+      dictionary.add(name, info);
+    } else {
+      if (((JsonObject)dictionary.get(name)).get("func").getAsString() != samplerType) {
+        throw new RuntimeException("Sampler redefined as a different type");
+      }
+    }
+  }
+
 
   private JsonObject lookupUniform(String uniformName) {
     assert isLegalUniformName(uniformName);

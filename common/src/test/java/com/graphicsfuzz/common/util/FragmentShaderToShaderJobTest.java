@@ -181,4 +181,49 @@ public class FragmentShaderToShaderJobTest {
     assertTrue(fragdata.contains("layout(location = 0) out vec4 " + Constants.GLF_COLOR));
   }
 
+  @Test
+  public void samplerJsonGenerationTest() throws Exception {
+    final String frag =  "#version 320 es\n"
+        + "precision mediump float;\n"
+        + "\n"
+        + "layout(location = 0) out vec4 " + Constants.GLF_COLOR + ";\n"
+        + "layout(binding = 0) uniform sampler2D tex;\n"
+        + "\n"
+        + "\n"
+        + "void main(void)\n"
+        + "{\n"
+        + "  " + Constants.GLF_COLOR + " = texture(tex, " + Constants.GLF_COLOR + ".xy);\n"
+        + "}\n";
+
+    final File jsonFile = temporaryFolder.newFile("shader.json");
+    final File vertFile = temporaryFolder.newFile("shader.vert");
+    final File fragFile = temporaryFolder.newFile("shader.frag");
+
+    final TranslationUnit tu = ParseHelper.parse(frag);
+    final ShaderJob result = FragmentShaderToShaderJob.createShaderJob(tu,
+        new RandomWrapper(0));
+
+    final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+    fileOperations.writeShaderJobFile(result, jsonFile);
+
+    /* The result files contain random values so we can't do a
+       simple 1:1 comparison. So, check if the files exist,
+       read the contents and check that the files contain the
+       strings we expect to be in them.
+     */
+
+    assertTrue(jsonFile.isFile());
+    assertTrue(fragFile.isFile());
+    final String jsondata = fileOperations.readFileToString(jsonFile);
+    final String fragdata = fileOperations.readFileToString(fragFile);
+
+    assertTrue(jsondata.contains(
+              "\"tex\": {\n"
+            + "    \"func\": \"sampler2D\",\n"
+            + "    \"texture\": \"DEFAULT\"\n"
+            + "  }\n"));
+
+    assertTrue(fragdata.contains("layout(location = 0) out vec4 " + Constants.GLF_COLOR));
+  }
+
 }
