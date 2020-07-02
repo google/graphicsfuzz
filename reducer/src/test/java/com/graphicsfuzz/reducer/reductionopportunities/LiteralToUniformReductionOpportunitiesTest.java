@@ -446,7 +446,7 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final String shader =
       "void main()"
       + "{"
-      + "float a[10];"
+      + "float a[2*4];"
       + "float b = 1;"
       + "a[0] = 2;"
       + "}";
@@ -455,7 +455,7 @@ public class LiteralToUniformReductionOpportunitiesTest {
       "uniform int _GLF_uniform_int_values[3];"
       + "void main()"
       + "{"
-      + "float a[10];"
+      + "float a[2*4];"
       + "float b = _GLF_uniform_int_values[0];"
       + "a[_GLF_uniform_int_values[1]] = _GLF_uniform_int_values[2];"
       + "}";

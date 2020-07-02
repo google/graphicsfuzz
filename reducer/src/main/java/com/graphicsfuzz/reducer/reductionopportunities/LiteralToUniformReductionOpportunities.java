@@ -43,16 +43,17 @@ public final class LiteralToUniformReductionOpportunities {
       new StandardVisitor() {
 
         @Override
+        public void visitArrayInfo(ArrayInfo arrayInfo) {
+          // Overriding this prevents replacing the size in array definitions, which must be
+          // initialized with a constant expression, without descending into the internals of
+          // the object in other visit methods.
+        }
+
+        @Override
         public void visitIntConstantExpr(IntConstantExpr intConstantExpr) {
           super.visitIntConstantExpr(intConstantExpr);
-          final IParentMap parentMap = IParentMap.createParentMap(tu);
-
-          // Do not add the literal into opportunities if the parent is an array declaration
-          // since they must be declared with a size initialized with a constant expression.
-          if (!(parentMap.getParent(intConstantExpr) instanceof ArrayInfo)) {
-            opportunities.add(new LiteralToUniformReductionOpportunity(intConstantExpr, tu,
-                shaderJob, getVistitationDepth()));
-          }
+          opportunities.add(new LiteralToUniformReductionOpportunity(intConstantExpr, tu,
+              shaderJob, getVistitationDepth()));
         }
 
         @Override
