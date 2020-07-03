@@ -187,8 +187,17 @@ public class FragmentShaderToShaderJobTest {
         + "precision mediump float;\n"
         + "\n"
         + "layout(location = 0) out vec4 " + Constants.GLF_COLOR + ";\n"
-        + "layout(binding = 0) uniform sampler2D tex;\n"
         + "\n"
+        + "uniform float u_f;\n"
+        + "uniform vec2 u_v2;\n"
+        + "layout(binding = 0) uniform sampler2D tex;\n"
+        + "uniform vec3 u_v3;\n"
+        + "uniform vec4 u_v4;\n"
+        + "\n"
+        + "in float in_f;\n"
+        + "in vec2 in_v2;\n"
+        + "layout(location = 78) in vec3 in_v3;\n" // 78 expected to change to smaller value
+        + "in vec4 in_v4;\n"
         + "\n"
         + "void main(void)\n"
         + "{\n"
@@ -221,7 +230,22 @@ public class FragmentShaderToShaderJobTest {
               "\"tex\": {\n"
             + "    \"func\": \"sampler2D\",\n"
             + "    \"texture\": \"DEFAULT\"\n"
-            + "  }\n"));
+            + "  }"));
+
+    assertTrue(jsondata.contains("\"u_f\""));
+    assertTrue(jsondata.contains("\"u_v2\""));
+    assertTrue(jsondata.contains("\"u_v3\""));
+    assertTrue(jsondata.contains("\"u_v4\""));
+
+    assertTrue(fragdata.contains("layout(location = 1) in float in_f;"));
+    assertTrue(fragdata.contains("layout(location = 2) in vec2 in_v2;"));
+    assertTrue(fragdata.contains("layout(location = 3) in vec3 in_v3;"));
+    assertTrue(fragdata.contains("layout(location = 4) in vec4 in_v4;"));
+
+    assertTrue(jsondata.contains("\"glUniform1f\""));
+    assertTrue(jsondata.contains("\"glUniform2f\""));
+    assertTrue(jsondata.contains("\"glUniform3f\""));
+    assertTrue(jsondata.contains("\"glUniform4f\""));
 
     assertTrue(fragdata.contains("layout(location = 0) out vec4 " + Constants.GLF_COLOR));
   }
