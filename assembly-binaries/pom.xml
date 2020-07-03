@@ -51,14 +51,14 @@ limitations under the License.
     </repository>
 
     <repository>
-      <id>build-SPIRV-Tools</id>
-      <url>https://github.com/paulthomson/build-SPIRV-Tools/releases/download</url>
+      <id>gfbuild-SPIRV-Tools</id>
+      <url>https://github.com/google/gfbuild-SPIRV-Tools/releases/download</url>
     </repository>
 
   </repositories>
 
   <properties>
-    <spirv-tools-version>b97215064186d731eac68adcc5ade4c7b96b265b</spirv-tools-version>
+    <spirv-tools-version>bd2a9ea85210d3bb474bc5adb9ff4b0bb536b4fc</spirv-tools-version>
     <angle-version>9d3202492d78aae5ced08ff14679b81c98d71c15</angle-version>
     <swiftshader-version>0565d5aee279a4782689297ada0aa2489e24ad3e</swiftshader-version>
     <glslang-version>0f167ce7125795df62ae5893f553e5608c9652f4</glslang-version>
@@ -169,24 +169,24 @@ limitations under the License.
 
     <!-- build-SPIRV-Tools -->
     <dependency>
-      <groupId>github.paulthomson</groupId>
-      <artifactId>build-SPIRV-Tools</artifactId>
+      <groupId>github.google</groupId>
+      <artifactId>gfbuild-SPIRV-Tools</artifactId>
       <version>${spirv-tools-version}</version>
       <classifier>Linux_x64_Release</classifier>
       <type>zip</type>
     </dependency>
 
     <dependency>
-      <groupId>github.paulthomson</groupId>
-      <artifactId>build-SPIRV-Tools</artifactId>
+      <groupId>github.google</groupId>
+      <artifactId>gfbuild-SPIRV-Tools</artifactId>
       <version>${spirv-tools-version}</version>
       <classifier>Mac_x64_Release</classifier>
       <type>zip</type>
     </dependency>
 
     <dependency>
-      <groupId>github.paulthomson</groupId>
-      <artifactId>build-SPIRV-Tools</artifactId>
+      <groupId>github.google</groupId>
+      <artifactId>gfbuild-SPIRV-Tools</artifactId>
       <version>${spirv-tools-version}</version>
       <classifier>Windows_x64_Release</classifier>
       <type>zip</type>
@@ -279,11 +279,11 @@ limitations under the License.
 
                     <!-- build-SPIRV-Tools -->
                     <pathelement
-                        location="${github.paulthomson:build-SPIRV-Tools:zip:Windows_x64_Release}"/>
+                        location="${github.google:gfbuild-SPIRV-Tools:zip:Windows_x64_Release}"/>
                     <pathelement
-                        location="${github.paulthomson:build-SPIRV-Tools:zip:Mac_x64_Release}"/>
+                        location="${github.google:gfbuild-SPIRV-Tools:zip:Mac_x64_Release}"/>
                     <pathelement
-                        location="${github.paulthomson:build-SPIRV-Tools:zip:Linux_x64_Release}"/>
+                        location="${github.google:gfbuild-SPIRV-Tools:zip:Linux_x64_Release}"/>
 
                   </sourcefiles>
                   <targetfiles path="${touched-file}"/>
@@ -385,16 +385,16 @@ limitations under the License.
                       <arg value="bin/(get_image_egl.*)"/>
                       <arg value="bin/Windows/swiftshader/$1"/>
 
-                      <!-- build-SPIRV-Tools -->
-                      <arg value="${github.paulthomson:build-SPIRV-Tools:zip:Linux_x64_Release}"/>
+                      <!-- gfbuild-SPIRV-Tools -->
+                      <arg value="${github.google:gfbuild-SPIRV-Tools:zip:Linux_x64_Release}"/>
                       <arg value="bin/(.+)"/>
                       <arg value="bin/Linux/$1"/>
 
-                      <arg value="${github.paulthomson:build-SPIRV-Tools:zip:Mac_x64_Release}"/>
+                      <arg value="${github.google:gfbuild-SPIRV-Tools:zip:Mac_x64_Release}"/>
                       <arg value="bin/(.+)"/>
                       <arg value="bin/Mac/$1"/>
 
-                      <arg value="${github.paulthomson:build-SPIRV-Tools:zip:Windows_x64_Release}"/>
+                      <arg value="${github.google:gfbuild-SPIRV-Tools:zip:Windows_x64_Release}"/>
                       <arg value="bin/(.+)"/>
                       <arg value="bin/Windows/$1"/>
 
