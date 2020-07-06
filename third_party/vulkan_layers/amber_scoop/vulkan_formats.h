@@ -50,11 +50,11 @@ enum class FormatMode {
 };
 
 struct VulkanFormat {
-  const char *name;
+  const char *name_;
   // VkFormat type;
-  uint16_t width_bits;
-  bool isPacked;
-  uint8_t component_count;
+  uint16_t width_bits_;
+  bool is_packed_;
+  uint8_t component_count_;
   struct {
     FormatComponentType type;
     FormatMode mode;

@@ -28,7 +28,7 @@ set(AMBER_SCOOP_LAYER_SOURCES
         vulkan_commands.h
         vulkan_formats.cpp
         vulkan_formats.h
-        )
+        buffer_to_file.cpp buffer_to_file.h)
 
 add_library(VkLayer_graphicsfuzz_amber_scoop SHARED ${AMBER_SCOOP_LAYER_SOURCES})
 

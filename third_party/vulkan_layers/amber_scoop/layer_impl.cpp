@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "amber_scoop/buffer_copy.h"
+#include "amber_scoop/buffer_to_file.h"
 #include "amber_scoop/vk_deep_copy.h"
 #include "amber_scoop/vulkan_formats.h"
 #include "common/spirv_util.h"
@@ -35,6 +36,8 @@
 namespace graphicsfuzz_amber_scoop {
 
 #define DEBUG_AMBER_SCOOP 0
+
+#define DUMP_BUFFERS_TO_FILE
 
 #if DEBUG_AMBER_SCOOP
 #define DEBUG_LAYER(F) std::cout << "In " << #F << std::endl
@@ -873,10 +876,10 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     }
   }
 
-  /*if (current_draw_call_number != capture_draw_call_number) {
+  if (current_draw_call_number != capture_draw_call_number) {
     current_draw_call_number++;
     return;
-  }*/
+  }
 
   VkPipelineShaderStageCreateInfo *vertexShader = nullptr;
   VkPipelineShaderStageCreateInfo *fragmentShader = nullptr;
@@ -968,6 +971,15 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     index_buffer_copy.FreeResources();
   }
 
+  std::string base_file_name;
+  if (std::getenv("AMBER_FILE_NAME") == nullptr) {
+    auto order_string = std::to_string(current_draw_call_number);
+    base_file_name = "draw_call_" +
+                     std::string(4 - order_string.length(), '0') + order_string;
+  } else {
+    base_file_name = std::getenv("AMBER_FILE_NAME");
+  }
+
   bool vertex_buffer_found = false;
   std::unordered_map<VkBuffer, BufferCopy *> copied_buffers;
   for (uint32_t attr_idx = 0;
@@ -1020,28 +1032,43 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
       vertex_buffer_copy = copied_buffers.at(vertex_buffer);
     }
 
-    std::stringstream bufferName;
-    bufferName << "vert_" << location;
+    std::string buffer_name = "vert_";
+    buffer_name.append(std::to_string(location));
 
     vkf::VulkanFormat format =
         vkf::VkFormatToVulkanFormat(attribute_description.format);
-
     std::stringstream buffer_declaration_str;
-    buffer_declaration_str << "BUFFER " << bufferName.str() << " DATA_TYPE "
-                           << format.name << " DATA\n"
-                           << "  ";
 
     std::string input_rate_str;
-
     auto buffer_offset = draw_call_state_tracker.vertex_buffer_offsets.at(
         binding_description.binding);
+
+    uint32_t element_count;
+    if (binding_description.inputRate == VK_VERTEX_INPUT_RATE_VERTEX) {
+      element_count = vertex_count == 0 ? max_index_value + 1 : vertex_count;
+    } else if (binding_description.inputRate == VK_VERTEX_INPUT_RATE_INSTANCE) {
+      element_count = first_instance + instance_count;
+    } else {
+      assert(false && "Invalid vertex input rate.");
+    }
 
     uint32_t stride =
         binding_description.stride == 0 ? 1 : binding_description.stride;
 
+#ifdef DUMP_BUFFERS_TO_FILE
+    std::string buffer_file_name = base_file_name;
+    buffer_file_name.append("_").append(buffer_name).append(".bin");
+    BufferToFile buffer_to_file(buffer_file_name);
+    buffer_declaration_str << "BUFFER " << buffer_name << " DATA_TYPE "
+                           << format.name_ << " SIZE " << element_count << " FILE BINARY "
+                           << buffer_file_name;
+#else
+    buffer_declaration_str << "BUFFER " << buffer_name << " DATA_TYPE "
+                           << format.name << " DATA\n"
+                           << "  ";
+#endif
+
     if (binding_description.inputRate == VK_VERTEX_INPUT_RATE_VERTEX) {
-      uint32_t element_count =
-          vertex_count == 0 ? max_index_value + 1 : vertex_count;
       for (uint32_t i = 0; i < element_count; i++) {
         uint32_t offset =
             i * stride + attribute_description.offset + buffer_offset;
@@ -1049,32 +1076,42 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
           throw std::runtime_error(
               "Offset is greater than the size of the buffer.");
         }
-        auto readPtr = vertex_buffer_copy->copied_data_ + offset;
-        readComponentsFromBufferAndWriteToStrStream(readPtr, format,
+        auto data_ptr = vertex_buffer_copy->copied_data_ + offset;
+
+#ifdef DUMP_BUFFERS_TO_FILE
+        buffer_to_file.WriteComponents(data_ptr, format);
+#else
+        readComponentsFromBufferAndWriteToStrStream(data_ptr, format,
                                                     buffer_declaration_str);
+#endif
       }
       input_rate_str = "vertex";
-    } else if (binding_description.inputRate == VK_VERTEX_INPUT_RATE_INSTANCE) {
+    } else { // VK_VERTEX_INPUT_RATE_INSTANCE
       // Copy all values starting from instance 0 even if the first instance is
       // greater than 0. This makes the draw call more similar to the original
       // draw call.
-      for (uint32_t i = 0; i < first_instance + instance_count; i++) {
+      for (uint32_t i = 0; i < element_count; i++) {
         uint32_t offset =
             i * stride + attribute_description.offset + buffer_offset;
         auto readPtr = vertex_buffer_copy->copied_data_ + offset;
+#ifdef DUMP_BUFFERS_TO_FILE
+        buffer_to_file.WriteComponents(readPtr, format);
+#else
         readComponentsFromBufferAndWriteToStrStream(readPtr, format,
                                                     buffer_declaration_str);
+#endif
       }
       input_rate_str = "instance";
-    } else {
-      assert(false && "Invalid vertex input rate.");
     }
 
-    pipeline_str_stream << "  VERTEX_DATA " << bufferName.str() << " LOCATION "
+    pipeline_str_stream << "  VERTEX_DATA " << buffer_name << " LOCATION "
                         << location << " RATE " << input_rate_str << std::endl;
 
-    bufferDeclarationStringStream << buffer_declaration_str.str() << std::endl
+    bufferDeclarationStringStream << buffer_declaration_str.str()
+#ifndef DUMP_BUFFERS_TO_FILE
+                                  << std::endl
                                   << "END" << std::endl
+#endif
                                   << std::endl;
   }
 
@@ -1130,20 +1167,15 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
       std::stringstream strstr;
       strstr << "buf_" << descriptor_set_number << "_"
              << buffer_binding.binding_number_;
-      std::string bufferName = strstr.str();
+      std::string buffer_name = strstr.str();
 
       VkBufferCreateInfo bufferCreateInfo =
           buffers.at(buffer_binding.descriptor_buffer_info_.buffer);
 
-      bufferDeclarationStringStream << "BUFFER " << bufferName << " DATA_TYPE "
-                                    << "uint8"
-                                    << " DATA" << std::endl;
-      bufferDeclarationStringStream << "  ";
-
       const auto &layout_binding =
           descriptor_set.descriptor_set_layout_create_info_.pBindings;
       descriptorSetBindingStringStream
-          << "  BIND BUFFER " << bufferName << " AS "
+          << "  BIND BUFFER " << buffer_name << " AS "
           << GetDescriptorTypeString(layout_binding->descriptorType)
           << " DESCRIPTOR_SET " << descriptor_set_number << " BINDING "
           << buffer_binding.binding_number_ << std::endl;
@@ -1156,7 +1188,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
               .GetVkCommandBufferData(draw_call_state_tracker.commandBuffer)
               ->command_pool;
       auto queueFamilyIndex = commandPoolToQueueFamilyIndex.at(commandPool);
-      BufferCopy descriptorBufferCopy = BufferCopy();
+      BufferCopy descriptor_buffer_copy = BufferCopy();
 
       // Create list of pipeline barriers for the descriptor buffer
       std::vector<const CmdPipelineBarrier *> descriptor_buffer_barriers;
@@ -1173,30 +1205,41 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
         }
       }
 
-      descriptorBufferCopy.CopyBuffer(
+      descriptor_buffer_copy.CopyBuffer(
           draw_call_state_tracker.queue, queueFamilyIndex,
           descriptor_buffer_barriers, descriptor_buffer, bufferCreateInfo.size);
-
-      VkDeviceSize range =
+      VkDeviceSize byte_count =
           buffer_binding.descriptor_buffer_info_.range == VK_WHOLE_SIZE
               ? bufferCreateInfo.size
               : buffer_binding.descriptor_buffer_info_.range;
+      bufferDeclarationStringStream << "BUFFER " << buffer_name
+                                    << " DATA_TYPE uint8 ";
+      auto *data_ptr = descriptor_buffer_copy.copied_data_ +
+          buffer_binding.descriptor_buffer_info_.offset +
+          buffer_binding.dynamic_offset_;
 
-      auto *thePtr = descriptorBufferCopy.copied_data_;
+#ifdef DUMP_BUFFERS_TO_FILE
+      std::string buffer_file_name = base_file_name;
+      buffer_file_name.append("_").append(buffer_name).append(".bin");
+      BufferToFile buffer_to_file(buffer_file_name);
+      bufferDeclarationStringStream << "SIZE " << byte_count << "FILE BINARY " << buffer_file_name;
 
-      for (VkDeviceSize bidx = 0; bidx < range; bidx++) {
-        if (bidx > 0) {
+      buffer_to_file.WriteBytes(data_ptr, byte_count);
+#else
+      bufferDeclarationStringStream << "DATA" << std::endl << "  ";
+
+      for (VkDeviceSize byte_idx = 0; byte_idx < byte_count; byte_idx++) {
+        if (byte_idx > 0) {
           bufferDeclarationStringStream << " ";
         }
-        bufferDeclarationStringStream << (uint32_t)
-                thePtr[bidx + buffer_binding.descriptor_buffer_info_.offset +
-                       buffer_binding.dynamic_offset_];
+        bufferDeclarationStringStream << (uint32_t)data_ptr[byte_idx];
       }
-
       bufferDeclarationStringStream << std::endl;
-      bufferDeclarationStringStream << "END" << std::endl << std::endl;
+      bufferDeclarationStringStream << "END";
+#endif
+      bufferDeclarationStringStream << std::endl;
 
-      descriptorBufferCopy.FreeResources();
+      descriptor_buffer_copy.FreeResources();
     }
 
     for (const auto &binding_and_image :
@@ -1371,15 +1414,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     }
   }
 
-  std::string amber_file_name;
-  if (std::getenv("AMBER_FILE_NAME") == nullptr) {
-    auto order_string = std::to_string(current_draw_call_number);
-    amber_file_name = "draw_call_" +
-                      std::string(4 - order_string.length(), '0') +
-                      order_string + ".amber";
-  } else {
-    amber_file_name = std::getenv("AMBER_FILE_NAME");
-  }
+  std::string amber_file_name = base_file_name + ".amber";
 
   // Create buffers for color attachments.
   VkRenderPassCreateInfo renderPassCreateInfo =
@@ -1418,7 +1453,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
         renderPassCreateInfo.pAttachments[attachmentID].format);
 
     bufferDeclarationStringStream << "BUFFER depthstencil FORMAT "
-                                  << format.name << std::endl;
+                                  << format.name_ << std::endl;
     framebufferAttachmentStringStream
         << "  BIND BUFFER depthstencil AS depth_stencil" << std::endl;
   }
@@ -1577,14 +1612,14 @@ LOCATION 1 FRAMEBUFFER_SIZE 1280 720 BIND BUFFER framebuffer_0 AS color LOCATION
 void readComponentsFromBufferAndWriteToStrStream(uint8_t *buffer,
                                                  vkf::VulkanFormat format,
                                                  std::stringstream &bufStr) {
-  if (format.isPacked) {
+  if (format.is_packed_) {
     // Packed formats are 16 or 32 bits wide.
-    if (format.width_bits == 16)
+    if (format.width_bits_ == 16)
       bufStr << (uint32_t) * (uint16_t *)buffer << " ";
     else  // 32-bit
       bufStr << *(uint32_t *)buffer << " ";
   } else {
-    for (uint8_t cIdx = 0; cIdx < format.component_count; cIdx++) {
+    for (uint8_t cIdx = 0; cIdx < format.component_count_; cIdx++) {
       if (format.components[cIdx].isFloat()) {
         // TODO: implement 16-bit floats
         if (format.components[cIdx].num_bits == 32)

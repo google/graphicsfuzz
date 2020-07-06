@@ -279,7 +279,7 @@ struct CmdPipelineBarrier : public Cmd {
       buffer_memory_barriers_.insert(
           buffer_memory_barriers_.end(), pBufferMemoryBarriers,
           pBufferMemoryBarriers + bufferMemoryBarrierCount);
-    if (bufferMemoryBarrierCount)
+    if (imageMemoryBarrierCount)
       image_memory_barriers_.insert(
           image_memory_barriers_.end(), pImageMemoryBarriers,
           pImageMemoryBarriers + imageMemoryBarrierCount);
