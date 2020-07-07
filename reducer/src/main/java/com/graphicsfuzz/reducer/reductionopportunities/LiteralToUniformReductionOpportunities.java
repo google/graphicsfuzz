@@ -17,6 +17,7 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
@@ -39,6 +40,13 @@ public final class LiteralToUniformReductionOpportunities {
 
     for (TranslationUnit tu : shaderJob.getShaders()) {
       new StandardVisitor() {
+
+        @Override
+        public void visitArrayInfo(ArrayInfo arrayInfo) {
+          // Overriding this prevents replacing the size in array definitions, which must be
+          // initialized with a constant expression, without descending into the internals of
+          // the object in other visit methods.
+        }
 
         @Override
         public void visitIntConstantExpr(IntConstantExpr intConstantExpr) {
