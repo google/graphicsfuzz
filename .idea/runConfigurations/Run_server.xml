@@ -16,23 +16,12 @@ limitations under the License.
 
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Run server" type="Application" factoryName="Application">
-    <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
-      <pattern>
-        <option name="PATTERN" value="util.*" />
-        <option name="ENABLED" value="true" />
-      </pattern>
-    </extension>
     <option name="MAIN_CLASS_NAME" value="com.graphicsfuzz.server.Main" />
-    <option name="VM_PARAMETERS" value="-ea" />
-    <option name="PROGRAM_PARAMETERS" value="" />
-    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/temp/" />
-    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
-    <option name="ALTERNATIVE_JRE_PATH" />
-    <option name="ENABLE_SWING_INSPECTOR" value="false" />
-    <option name="ENV_VARIABLES" />
-    <option name="PASS_PARENT_ENVS" value="true" />
     <module name="server" />
-    <envs />
-    <method />
+    <option name="VM_PARAMETERS" value="-ea" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/temp/" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
   </configuration>
 </component>
