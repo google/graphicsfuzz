@@ -1,0 +1,18 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run reducer" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.graphicsfuzz.reducer.tool.GlslReduce" />
+    <module name="tool" />
+    <option name="PROGRAM_PARAMETERS" value="--help" />
+    <option name="VM_PARAMETERS" value="-ea" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/temp/" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="util.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
