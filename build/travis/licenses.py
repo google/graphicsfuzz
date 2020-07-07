@@ -1010,7 +1010,7 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': 'internal project',
         },
-        'github.paulthomson:build-SPIRV-Tools': {
+        'github.google:gfbuild-SPIRV-Tools': {
             'comment': '',
             'name': '',
             'url': '',
