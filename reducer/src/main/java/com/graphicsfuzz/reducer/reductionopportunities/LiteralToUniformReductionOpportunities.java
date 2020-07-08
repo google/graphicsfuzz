@@ -18,11 +18,14 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
+import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.expr.UIntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
+import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +43,18 @@ public final class LiteralToUniformReductionOpportunities {
 
     for (TranslationUnit tu : shaderJob.getShaders()) {
       new StandardVisitor() {
+
+        @Override
+        public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
+          // This prevents replacing the uniforms recursively. E.g. _GLF_int_values[0] does not
+          // become _GLF_int_values[_GLF_int_values[1]].
+          String name = ((VariableIdentifierExpr) arrayIndexExpr.getArray()).getName();
+          if (!name.equals(Constants.FLOAT_LITERAL_UNIFORM_VALUES)
+              && !name.equals(Constants.INT_LITERAL_UNIFORM_VALUES)
+              && !name.equals(Constants.UINT_LITERAL_UNIFORM_VALUES)) {
+            super.visitArrayIndexExpr(arrayIndexExpr);
+          }
+        }
 
         @Override
         public void visitArrayInfo(ArrayInfo arrayInfo) {

@@ -83,6 +83,16 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
+    assertEquals(1, pipelineInfo.getNumUniforms());
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -133,6 +143,15 @@ public class LiteralToUniformReductionOpportunitiesTest {
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -180,6 +199,15 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -227,6 +255,15 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -274,6 +311,15 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.UINT_LITERAL_UNIFORM_VALUES));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   /*
@@ -368,6 +414,15 @@ public class LiteralToUniformReductionOpportunitiesTest {
     // check that the binding numbers remain the same.
     assertEquals(bindingNumber, shaderJob.getPipelineInfo().getBinding("_GLF_uniform_int_values"));
     assertEquals(nextUnusedBindingNumber, shaderJob.getPipelineInfo().getBinding("TEST"));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -436,8 +491,19 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(fragmentShaderReplaced, shaderJob.getFragmentShader().get());
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
+    assertEquals(2, pipelineInfo.getNumUniforms());
+
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -478,5 +544,14 @@ public class LiteralToUniformReductionOpportunitiesTest {
     ops.forEach(AbstractReductionOpportunity::applyReduction);
     assertEquals(1, pipelineInfo.getNumUniforms());
     CompareAsts.assertEqualAsts(shaderReplaced, shaderJob.getFragmentShader().get());
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 }
