@@ -40,7 +40,7 @@ namespace graphicsfuzz_amber_scoop {
 #define DUMP_BUFFERS_TO_FILE
 
 #if DEBUG_AMBER_SCOOP
-#define DEBUG_LAYER(F) std::cout << "In " << #F << std::endl
+#define DEBUG_LAYER(F) std::cout << "In " << #F << std::endl;
 #else
 #define DEBUG_LAYER(F)
 #endif
@@ -176,7 +176,7 @@ VkResult vkAllocateDescriptorSets(
     PFN_vkAllocateDescriptorSets next, VkDevice device,
     VkDescriptorSetAllocateInfo const *pAllocateInfo,
     VkDescriptorSet *pDescriptorSets) {
-  DEBUG_LAYER(vkAllocateDescriptorSets);
+  DEBUG_LAYER(vkAllocateDescriptorSets)
   auto result = next(device, pAllocateInfo, pDescriptorSets);
   if (result == VK_SUCCESS) {
     for (uint32_t i = 0; i < pAllocateInfo->descriptorSetCount; i++) {
@@ -194,7 +194,7 @@ VkResult vkFreeDescriptorSets(PFN_vkFreeDescriptorSets next, VkDevice device,
                               VkDescriptorPool descriptorPool,
                               uint32_t descriptorSetCount,
                               VkDescriptorSet const *pDescriptorSets) {
-  DEBUG_LAYER(vkFreeDescriptorSets);
+  DEBUG_LAYER(vkFreeDescriptorSets)
   auto result =
       next(device, descriptorPool, descriptorSetCount, pDescriptorSets);
   if (result == VK_SUCCESS) {
@@ -211,7 +211,7 @@ VkResult vkCreateCommandPool(PFN_vkCreateCommandPool next, VkDevice device,
                              VkCommandPoolCreateInfo const *pCreateInfo,
                              AllocationCallbacks pAllocator,
                              VkCommandPool *pCommandPool) {
-  DEBUG_LAYER(vkCreateCommandPool);
+  DEBUG_LAYER(vkCreateCommandPool)
   auto result = next(device, pCreateInfo, pAllocator, pCommandPool);
   if (result == VK_SUCCESS) {
     commandPoolToQueueFamilyIndex.insert(
@@ -223,7 +223,7 @@ VkResult vkCreateCommandPool(PFN_vkCreateCommandPool next, VkDevice device,
 void vkDestroyCommandPool(PFN_vkDestroyCommandPool next, VkDevice device,
                           VkCommandPool commandPool,
                           AllocationCallbacks pAllocator) {
-  DEBUG_LAYER(vkDestroyCommandPool);
+  DEBUG_LAYER(vkDestroyCommandPool)
   next(device, commandPool, pAllocator);
   commandPoolToQueueFamilyIndex.erase(commandPool);
 }
@@ -232,7 +232,7 @@ void vkCmdBeginRenderPass(PFN_vkCmdBeginRenderPass next,
                           VkCommandBuffer commandBuffer,
                           VkRenderPassBeginInfo const *pRenderPassBegin,
                           VkSubpassContents contents) {
-  DEBUG_LAYER(vkCmdBeginRenderPass);
+  DEBUG_LAYER(vkCmdBeginRenderPass)
   next(commandBuffer, pRenderPassBegin, contents);
   AddCommand(commandBuffer,
              std::make_unique<CmdBeginRenderPass>(pRenderPassBegin, contents));
@@ -246,7 +246,7 @@ void vkCmdBindDescriptorSets(PFN_vkCmdBindDescriptorSets next,
                              VkDescriptorSet const *pDescriptorSets,
                              uint32_t dynamicOffsetCount,
                              uint32_t const *pDynamicOffsets) {
-  DEBUG_LAYER(vkCmdBindDescriptorSets);
+  DEBUG_LAYER(vkCmdBindDescriptorSets)
   next(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount,
        pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
   AddCommand(commandBuffer,
@@ -258,7 +258,7 @@ void vkCmdBindDescriptorSets(PFN_vkCmdBindDescriptorSets next,
 void vkCmdBindIndexBuffer(PFN_vkCmdBindIndexBuffer next,
                           VkCommandBuffer commandBuffer, VkBuffer buffer,
                           VkDeviceSize offset, VkIndexType indexType) {
-  DEBUG_LAYER(vkCmdBindIndexBuffer);
+  DEBUG_LAYER(vkCmdBindIndexBuffer)
   next(commandBuffer, buffer, offset, indexType);
   AddCommand(commandBuffer,
              std::make_unique<CmdBindIndexBuffer>(buffer, offset, indexType));
@@ -267,7 +267,7 @@ void vkCmdBindPipeline(PFN_vkCmdBindPipeline next,
                        VkCommandBuffer commandBuffer,
                        VkPipelineBindPoint pipelineBindPoint,
                        VkPipeline pipeline) {
-  DEBUG_LAYER(vkCmdBindPipeline);
+  DEBUG_LAYER(vkCmdBindPipeline)
   next(commandBuffer, pipelineBindPoint, pipeline);
   AddCommand(commandBuffer,
              std::make_unique<CmdBindPipeline>(pipelineBindPoint, pipeline));
@@ -278,7 +278,7 @@ void vkCmdBindVertexBuffers(PFN_vkCmdBindVertexBuffers next,
                             uint32_t firstBinding, uint32_t bindingCount,
                             VkBuffer const *pBuffers,
                             VkDeviceSize const *pOffsets) {
-  DEBUG_LAYER(vkCmdBindVertexBuffers);
+  DEBUG_LAYER(vkCmdBindVertexBuffers)
   next(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
   AddCommand(commandBuffer,
              std::make_unique<CmdBindVertexBuffers>(firstBinding, bindingCount,
@@ -288,7 +288,7 @@ void vkCmdBindVertexBuffers(PFN_vkCmdBindVertexBuffers next,
 void vkCmdCopyBuffer(PFN_vkCmdCopyBuffer next, VkCommandBuffer commandBuffer,
                      VkBuffer srcBuffer, VkBuffer dstBuffer,
                      uint32_t regionCount, VkBufferCopy const *pRegions) {
-  DEBUG_LAYER(vkCmdCopyBuffer);
+  DEBUG_LAYER(vkCmdCopyBuffer)
   next(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
   AddCommand(commandBuffer, std::make_unique<CmdCopyBuffer>(
                                 srcBuffer, dstBuffer, regionCount, pRegions));
@@ -299,7 +299,7 @@ void vkCmdCopyBufferToImage(PFN_vkCmdCopyBufferToImage next,
                             VkImage dstImage, VkImageLayout dstImageLayout,
                             uint32_t regionCount,
                             VkBufferImageCopy const *pRegions) {
-  DEBUG_LAYER(vkCmdCopyBufferToImage);
+  DEBUG_LAYER(vkCmdCopyBufferToImage)
   next(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount,
        pRegions);
   AddCommand(commandBuffer,
@@ -310,7 +310,7 @@ void vkCmdCopyBufferToImage(PFN_vkCmdCopyBufferToImage next,
 void vkCmdDraw(PFN_vkCmdDraw next, VkCommandBuffer commandBuffer,
                uint32_t vertexCount, uint32_t instanceCount,
                uint32_t firstVertex, uint32_t firstInstance) {
-  DEBUG_LAYER(vkCmdDraw);
+  DEBUG_LAYER(vkCmdDraw)
   next(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
   AddCommand(commandBuffer,
              std::make_unique<CmdDraw>(vertexCount, instanceCount, firstVertex,
@@ -321,7 +321,7 @@ void vkCmdDrawIndexed(PFN_vkCmdDrawIndexed next, VkCommandBuffer commandBuffer,
                       uint32_t indexCount, uint32_t instanceCount,
                       uint32_t firstIndex, int32_t vertexOffset,
                       uint32_t firstInstance) {
-  DEBUG_LAYER(vkCmdDrawIndexed);
+  DEBUG_LAYER(vkCmdDrawIndexed)
   next(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset,
        firstInstance);
   AddCommand(commandBuffer, std::make_unique<CmdDrawIndexed>(
@@ -337,7 +337,7 @@ void vkCmdPipelineBarrier(
     VkBufferMemoryBarrier const *pBufferMemoryBarriers,
     uint32_t imageMemoryBarrierCount,
     VkImageMemoryBarrier const *pImageMemoryBarriers) {
-  DEBUG_LAYER(vkCmdPipelineBarrier);
+  DEBUG_LAYER(vkCmdPipelineBarrier)
   next(commandBuffer, srcStageMask, dstStageMask, dependencyFlags,
        memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount,
        pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
@@ -353,7 +353,7 @@ void vkCmdPushConstants(PFN_vkCmdPushConstants next,
                         VkCommandBuffer commandBuffer, VkPipelineLayout layout,
                         VkShaderStageFlags stageFlags, uint32_t offset,
                         uint32_t size, void const *pValues) {
-  DEBUG_LAYER(vkCmdPushConstants);
+  DEBUG_LAYER(vkCmdPushConstants)
   next(commandBuffer, layout, stageFlags, offset, size, pValues);
 
   AddCommand(commandBuffer, std::make_unique<CmdPushConstants>(
@@ -363,7 +363,7 @@ void vkCmdPushConstants(PFN_vkCmdPushConstants next,
 VkResult vkCreateBuffer(PFN_vkCreateBuffer next, VkDevice device,
                         VkBufferCreateInfo const *pCreateInfo,
                         AllocationCallbacks pAllocator, VkBuffer *pBuffer) {
-  DEBUG_LAYER(vkCreateBuffer);
+  DEBUG_LAYER(vkCreateBuffer)
 
   VkBufferCreateInfo createInfo = *pCreateInfo;
   // Allow vertex/index/uniform/storage buffer to be used as transfer source
@@ -396,7 +396,7 @@ void vkDestroyBuffer(PFN_vkDestroyBuffer next, VkDevice device, VkBuffer buffer,
 VkResult vkCreateSampler(PFN_vkCreateSampler next, VkDevice device,
                          VkSamplerCreateInfo const *pCreateInfo,
                          AllocationCallbacks pAllocator, VkSampler *pSampler) {
-  DEBUG_LAYER(vkCreateSampler);
+  DEBUG_LAYER(vkCreateSampler)
   auto result = next(device, pCreateInfo, pAllocator, pSampler);
   if (result == VK_SUCCESS) {
     samplers_.insert({*pSampler, *pCreateInfo});
@@ -406,7 +406,7 @@ VkResult vkCreateSampler(PFN_vkCreateSampler next, VkDevice device,
 
 void vkDestroySampler(PFN_vkDestroySampler next, VkDevice device,
                       VkSampler sampler, AllocationCallbacks pAllocator) {
-  DEBUG_LAYER(vkDestroySampler);
+  DEBUG_LAYER(vkDestroySampler)
   next(device, sampler, pAllocator);
   if (samplers_.count(sampler)) {
     samplers_.erase(sampler);
@@ -417,7 +417,7 @@ VkResult vkCreateDescriptorSetLayout(
     PFN_vkCreateDescriptorSetLayout next, VkDevice device,
     VkDescriptorSetLayoutCreateInfo const *pCreateInfo,
     AllocationCallbacks pAllocator, VkDescriptorSetLayout *pSetLayout) {
-  DEBUG_LAYER(vkCreateDescriptorSetLayout);
+  DEBUG_LAYER(vkCreateDescriptorSetLayout)
   auto result = next(device, pCreateInfo, pAllocator, pSetLayout);
   if (result == VK_SUCCESS) {
     descriptor_set_layouts_.insert({*pSetLayout, DeepCopy(*pCreateInfo)});
@@ -429,7 +429,7 @@ void vkDestroyDescriptorSetLayout(PFN_vkDestroyDescriptorSetLayout next,
                                   VkDevice device,
                                   VkDescriptorSetLayout descriptorSetLayout,
                                   AllocationCallbacks pAllocator) {
-  DEBUG_LAYER(vkDestroyDescriptorSetLayout);
+  DEBUG_LAYER(vkDestroyDescriptorSetLayout)
   next(device, descriptorSetLayout, pAllocator);
   if (descriptor_set_layouts_.count(descriptorSetLayout)) {
     const auto &create_info = descriptor_set_layouts_.at(descriptorSetLayout);
@@ -442,7 +442,7 @@ VkResult vkCreateFramebuffer(PFN_vkCreateFramebuffer next, VkDevice device,
                              VkFramebufferCreateInfo const *pCreateInfo,
                              AllocationCallbacks pAllocator,
                              VkFramebuffer *pFramebuffer) {
-  DEBUG_LAYER(vkCreateFramebuffer);
+  DEBUG_LAYER(vkCreateFramebuffer)
   auto result = next(device, pCreateInfo, pAllocator, pFramebuffer);
   if (result == VK_SUCCESS) {
     framebuffers_.insert({*pFramebuffer, DeepCopy(*pCreateInfo)});
@@ -453,7 +453,7 @@ VkResult vkCreateFramebuffer(PFN_vkCreateFramebuffer next, VkDevice device,
 void vkDestroyFramebuffer(PFN_vkDestroyFramebuffer next, VkDevice device,
                           VkFramebuffer framebuffer,
                           AllocationCallbacks pAllocator) {
-  DEBUG_LAYER(vkDestroyFramebuffer);
+  DEBUG_LAYER(vkDestroyFramebuffer)
   next(device, framebuffer, pAllocator);
   if (framebuffers_.count(framebuffer)) {
     const auto &create_info = framebuffers_.at(framebuffer);
@@ -466,7 +466,7 @@ VkResult vkCreateGraphicsPipelines(
     VkPipelineCache pipelineCache, uint32_t createInfoCount,
     VkGraphicsPipelineCreateInfo const *pCreateInfos,
     AllocationCallbacks pAllocator, VkPipeline *pPipelines) {
-  DEBUG_LAYER(vkCreateGraphicsPipelines);
+  DEBUG_LAYER(vkCreateGraphicsPipelines)
   auto result = next(device, pipelineCache, createInfoCount, pCreateInfos,
                      pAllocator, pPipelines);
   if (result == VK_SUCCESS) {
@@ -490,7 +490,7 @@ VkResult vkCreateGraphicsPipelines(
 
 void vkDestroyPipeline(PFN_vkDestroyPipeline next, VkDevice device,
                        VkPipeline pipeline, AllocationCallbacks pAllocator) {
-  DEBUG_LAYER(vkDestroyPipeline);
+  DEBUG_LAYER(vkDestroyPipeline)
   next(device, pipeline, pAllocator);
   if (graphics_pipelines_.count(pipeline)) {
     const auto &create_info = graphics_pipelines_.at(pipeline);
@@ -515,7 +515,7 @@ void vkDestroyPipeline(PFN_vkDestroyPipeline next, VkDevice device,
 VkResult vkCreateImage(PFN_vkCreateImage next, VkDevice device,
                        VkImageCreateInfo const *pCreateInfo,
                        AllocationCallbacks pAllocator, VkImage *pImage) {
-  DEBUG_LAYER(vkCreateImage);
+  DEBUG_LAYER(vkCreateImage)
   auto result = next(device, pCreateInfo, pAllocator, pImage);
   // TODO
   return result;
@@ -523,7 +523,7 @@ VkResult vkCreateImage(PFN_vkCreateImage next, VkDevice device,
 
 void vkDestroyImage(PFN_vkDestroyImage next, VkDevice device, VkImage image,
                     AllocationCallbacks pAllocator) {
-  DEBUG_LAYER(vkDestroyImage);
+  DEBUG_LAYER(vkDestroyImage)
   next(device, image, pAllocator);
   // TODO
 }
@@ -533,7 +533,7 @@ VkResult vkCreatePipelineLayout(PFN_vkCreatePipelineLayout next,
                                 VkPipelineLayoutCreateInfo const *pCreateInfo,
                                 AllocationCallbacks pAllocator,
                                 VkPipelineLayout *pPipelineLayout) {
-  DEBUG_LAYER(vkCreatePipelineLayout);
+  DEBUG_LAYER(vkCreatePipelineLayout)
   auto result = next(device, pCreateInfo, pAllocator, pPipelineLayout);
   if (result == VK_SUCCESS) {
     uint32_t push_constant_size = 0;
@@ -553,7 +553,7 @@ VkResult vkCreatePipelineLayout(PFN_vkCreatePipelineLayout next,
 void vkDestroyPipelineLayout(PFN_vkDestroyPipelineLayout next, VkDevice device,
                              VkPipelineLayout pipelineLayout,
                              AllocationCallbacks pAllocator) {
-  DEBUG_LAYER(vkDestroyPipelineLayout);
+  DEBUG_LAYER(vkDestroyPipelineLayout)
   next(device, pipelineLayout, pAllocator);
   if (pipeline_layouts_.count(pipelineLayout)) {
     const auto &pipeline_layout_data = pipeline_layouts_.at(pipelineLayout);
@@ -566,7 +566,7 @@ VkResult vkCreateRenderPass(PFN_vkCreateRenderPass next, VkDevice device,
                             VkRenderPassCreateInfo const *pCreateInfo,
                             AllocationCallbacks pAllocator,
                             VkRenderPass *pRenderPass) {
-  DEBUG_LAYER(vkCreateRenderPass);
+  DEBUG_LAYER(vkCreateRenderPass)
   auto result = next(device, pCreateInfo, pAllocator, pRenderPass);
   if (result == VK_SUCCESS) {
     render_passes_.insert({*pRenderPass, DeepCopy(*pCreateInfo)});
@@ -577,7 +577,7 @@ VkResult vkCreateRenderPass(PFN_vkCreateRenderPass next, VkDevice device,
 void vkDestroyRenderPass(PFN_vkDestroyRenderPass next, VkDevice device,
                          VkRenderPass renderPass,
                          AllocationCallbacks pAllocator) {
-  DEBUG_LAYER(vkDestroyRenderPass);
+  DEBUG_LAYER(vkDestroyRenderPass)
   next(device, renderPass, pAllocator);
   if (render_passes_.count(renderPass)) {
     const auto create_info = render_passes_.at(renderPass);
@@ -590,7 +590,7 @@ VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device,
                               VkShaderModuleCreateInfo const *pCreateInfo,
                               AllocationCallbacks pAllocator,
                               VkShaderModule *pShaderModule) {
-  DEBUG_LAYER(vkCreateShaderModule);
+  DEBUG_LAYER(vkCreateShaderModule)
   auto result = next(device, pCreateInfo, pAllocator, pShaderModule);
   if (result == VK_SUCCESS) {
     shader_modules_.insert(
@@ -602,7 +602,7 @@ VkResult vkCreateShaderModule(PFN_vkCreateShaderModule next, VkDevice device,
 void vkDestroyShaderModule(PFN_vkDestroyShaderModule next, VkDevice device,
                            VkShaderModule shaderModule,
                            AllocationCallbacks pAllocator) {
-  DEBUG_LAYER(vkDestroyShaderModule);
+  DEBUG_LAYER(vkDestroyShaderModule)
   next(device, shaderModule, pAllocator);
 
   // Mark the shader as destroyed, but don't delete it yet (it may be still in
@@ -617,7 +617,7 @@ void vkGetPhysicalDeviceMemoryProperties(
     PFN_vkGetPhysicalDeviceMemoryProperties next,
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceMemoryProperties *pMemoryProperties) {
-  DEBUG_LAYER(vkGetPhysicalDeviceMemoryProperties);
+  DEBUG_LAYER(vkGetPhysicalDeviceMemoryProperties)
   next(physicalDevice, pMemoryProperties);
 }
 
@@ -650,7 +650,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 VkResult vkQueueSubmit(PFN_vkQueueSubmit next, VkQueue queue,
                        uint32_t submitCount, VkSubmitInfo const *pSubmits,
                        VkFence fence) {
-  DEBUG_LAYER(vkQueueSubmit);
+  DEBUG_LAYER(vkQueueSubmit)
 
   for (uint32_t submitIndex = 0; submitIndex < submitCount; submitIndex++) {
     for (uint32_t commandBufferIndex = 0;
@@ -1060,8 +1060,8 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
     buffer_file_name.append("_").append(buffer_name).append(".bin");
     BufferToFile buffer_to_file(buffer_file_name);
     buffer_declaration_str << "BUFFER " << buffer_name << " DATA_TYPE "
-                           << format.name_ << " SIZE " << element_count << " FILE BINARY "
-                           << buffer_file_name;
+                           << format.name_ << " SIZE " << element_count
+                           << " FILE BINARY " << buffer_file_name;
 #else
     buffer_declaration_str << "BUFFER " << buffer_name << " DATA_TYPE "
                            << format.name << " DATA\n"
@@ -1086,7 +1086,7 @@ void HandleDrawCall(const DrawCallStateTracker &draw_call_state_tracker,
 #endif
       }
       input_rate_str = "vertex";
-    } else { // VK_VERTEX_INPUT_RATE_INSTANCE
+    } else {  // VK_VERTEX_INPUT_RATE_INSTANCE
       // Copy all values starting from instance 0 even if the first instance is
       // greater than 0. This makes the draw call more similar to the original
       // draw call.
