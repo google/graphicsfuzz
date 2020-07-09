@@ -79,9 +79,12 @@ import com.graphicsfuzz.util.Constants;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class PrettyPrinterVisitor extends StandardVisitor {
 
@@ -94,15 +97,16 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   private boolean inFunctionDefinition = false;
   private final boolean emitGraphicsFuzzDefines;
   private final Optional<String> license;
+  private final Optional<UniformValueSupplier> uniformValues;
 
   // Allows different formatting of a declaration when part of the header of a for statement.
   private boolean insideForStatementHeader = false;
-
 
   public PrettyPrinterVisitor(PrintStream out) {
     this(out, DEFAULT_INDENTATION_WIDTH,
         DEFAULT_NEWLINE_SUPPLIER,
         false,
+        Optional.empty(),
         Optional.empty());
   }
 
@@ -110,12 +114,14 @@ public class PrettyPrinterVisitor extends StandardVisitor {
                               int indentationWidth,
                               Supplier<String> newLineSupplier,
                               boolean emitGraphicsFuzzDefines,
-                              Optional<String> license) {
+                              Optional<String> license,
+                              Optional<UniformValueSupplier> uniformValues) {
     this.out = out;
     this.indentationWidth = indentationWidth;
     this.newLineSupplier = newLineSupplier;
     this.emitGraphicsFuzzDefines = emitGraphicsFuzzDefines;
     this.license = license;
+    this.uniformValues = uniformValues;
   }
 
   /**
@@ -127,6 +133,24 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   public static String prettyPrintAsString(IAstNode node) {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     new PrettyPrinterVisitor(new PrintStream(bytes)).visit(node);
+    return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+  }
+
+  /**
+   * Returns, via pretty printing, a string representation of the given node.
+   *
+   * @param node Node for which string representation is required
+   * @param uniformValues Supplier that provides values for uniforms
+   * @return String representation of the node
+   */
+  public static String prettyPrintAsString(IAstNode node, UniformValueSupplier uniformValues) {
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    new PrettyPrinterVisitor(new PrintStream(bytes),
+        DEFAULT_INDENTATION_WIDTH,
+        DEFAULT_NEWLINE_SUPPLIER,
+        false,
+        Optional.empty(),
+        Optional.of(uniformValues)).visit(node);
     return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
   }
 
@@ -146,7 +170,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     }.test(shader);
 
     new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier,
-        usesGraphicsFuzzDefines, license).visit(shader);
+        usesGraphicsFuzzDefines, license, Optional.empty()).visit(shader);
   }
 
   private String newLine() {
@@ -176,6 +200,11 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     visit(baseType);
     out.append(" ");
     boolean first = true;
+
+    // If the uniform value supplier provides values for this variable, emit a comment that
+    // contains the values.
+    Map<String, String> values = new HashMap<>();
+
     for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
       if (!first) {
         out.append(", ");
@@ -186,6 +215,11 @@ public class PrettyPrinterVisitor extends StandardVisitor {
         out.append("[");
         visit(vdi.getArrayInfo().getSizeExpr());
         out.append("]");
+
+        if (uniformValues.isPresent() && uniformValues.get().getValues(vdi.getName()).isPresent()) {
+          values.put(vdi.getName(), "[" + uniformValues.get().getValues(vdi.getName()).get()
+              .stream().map(Object::toString).collect(Collectors.joining(", ")) + "]");
+        }
         assert !(baseType instanceof ArrayType);
       } else if (baseType instanceof ArrayType) {
         out.append("[");
@@ -196,6 +230,15 @@ public class PrettyPrinterVisitor extends StandardVisitor {
         out.append(" = ");
         visit(vdi.getInitializer());
       }
+    }
+
+    if (!values.isEmpty()) {
+      String valueString = String.join(", ", values.values());
+      if (values.size() > 1) {
+        valueString = values.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
+            .collect(Collectors.joining(", "));
+      }
+      out.append("; // Array contents will be " + valueString + " at runtime");
     }
   }
 
@@ -695,8 +738,18 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   protected <T extends IAstNode> void visitChildFromParent(Consumer<T> visitorMethod, T child,
       IAstNode parent) {
     super.visitChildFromParent(visitorMethod, child, parent);
-    if (parent instanceof TranslationUnit && child instanceof VariablesDeclaration) {
-      out.append(";" + newLine() + newLine());
+
+    if (parent instanceof TranslationUnit
+        && child instanceof VariablesDeclaration) {
+      // If the value supplier provides values for this declaration, a semicolon can be omitted
+      // since it's already been added elsewhere and from here it would end up at the end
+      // of a comment.
+      if (!uniformValues.isPresent()
+          || ((VariablesDeclaration)child).getDeclInfos().stream().noneMatch(decl ->
+          uniformValues.get().getValues(decl.getName()).isPresent())) {
+        out.append(";");
+      }
+      out.append(newLine() + newLine());
     }
   }
 

@@ -19,9 +19,10 @@ package com.graphicsfuzz.common.tool;
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.GlslParserException;
-import com.graphicsfuzz.common.util.MacroNames;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ToolHelper;
@@ -30,9 +31,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import org.apache.commons.io.FileUtils;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -55,6 +58,67 @@ public class PrettyPrinterVisitorTest {
         + "}\n";
     assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
     )));
+  }
+
+  @Test
+  public void testUniformArrayContentsInComments() throws Exception {
+
+    final String shader = ""
+    + "uniform int a[3], b[2];"
+        + "uniform float _GLF_uniform_float_values[3];"
+        + "uniform uint _GLF_uniform_uint_values[2];"
+        + "uniform int test[5];"
+        + "void main()"
+        + "{"
+        + "  float a = _GLF_uniform_float_values[0];"
+        + "  float b = _GLF_uniform_float_values[1];"
+        + "  int c = _GLF_uniform_int_values[0];"
+        + "  int d = _GLF_uniform_int_values[1];"
+        + "  int e = _GLF_uniform_int_values[2];"
+        + "  int f = _GLF_uniform_uint_values[0];"
+        + "  int g = _GLF_uniform_uint_values[1];"
+        + "}";
+
+    final String shaderPrettyPrinted = ""
+        + "uniform int a[3], b[2]; // Array contents will be a:[0, 1, 2], b:[3, 4, 5] at runtime\n"
+        + "\n"
+        + "uniform float _GLF_uniform_float_values[3]; // Array contents will be [0.0, 1.4, 22.2]"
+        + " at runtime\n"
+        + "\n"
+        + "uniform uint _GLF_uniform_uint_values[2]; // Array contents will be [2, 11, 22] at "
+        + "runtime\n"
+        + "\n"
+        + "uniform int test[5];\n"
+        + "\n"
+        + "void main()\n"
+        + "{\n"
+        + " float a = _GLF_uniform_float_values[0];\n"
+        + " float b = _GLF_uniform_float_values[1];\n"
+        + " int c = _GLF_uniform_int_values[0];\n"
+        + " int d = _GLF_uniform_int_values[1];\n"
+        + " int e = _GLF_uniform_int_values[2];\n"
+        + " int f = _GLF_uniform_uint_values[0];\n"
+        + " int g = _GLF_uniform_uint_values[1];\n"
+        + "}\n";
+
+    final List<TranslationUnit> shaders = new ArrayList<>();
+    shaders.add(ParseHelper.parse(shader, ShaderKind.FRAGMENT));
+
+    UniformValueSupplier uniformValues = name -> {
+      if (name.equals("a")) {
+        return Optional.of(Arrays.asList(0, 1, 2));
+      } else if (name.equals("b")) {
+        return Optional.of(Arrays.asList(3, 4, 5));
+      } else if (name.equals("_GLF_uniform_uint_values")) {
+        return Optional.of(Arrays.asList(2, 11, 22));
+      } else if (name.equals("_GLF_uniform_float_values")) {
+        return Optional.of(Arrays.asList(0.0, 1.4, 22.2));
+      }
+      return Optional.empty();
+    };
+
+    assertEquals(shaderPrettyPrinted,
+        PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader), uniformValues));
   }
 
   @Test
