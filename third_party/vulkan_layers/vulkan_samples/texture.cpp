@@ -432,7 +432,7 @@ const std::vector<Vertex> vertices =
     };
 // clang-format on
 
-// TODO single time command buffer
+// Single time command buffer
 VkCommandBuffer beginTemporaryCommandBuffer(VkDevice device,
                                             VkCommandPool commandPool) {
   VkCommandBufferAllocateInfo command_buffer_allocate_info{};
@@ -456,7 +456,7 @@ VkCommandBuffer beginTemporaryCommandBuffer(VkDevice device,
   return command_buffer_tmp;
 }
 
-// TODO end single time command buffer
+// End single time command buffer
 void endTemporaryCommandBuffer(VkDevice device, VkQueue graphicsQueue,
                                VkCommandPool commandPool,
                                VkCommandBuffer command_buffer_tmp) {
@@ -670,9 +670,9 @@ int main() {
       throw std::runtime_error("Failed to create image view.");
     }
 
-    // TODO texture image
+    // Texture image
     {
-      // TODO descriptor layout
+      // Descriptor layout
       VkDescriptorSetLayoutBinding sampler_layout_binding{};
       sampler_layout_binding.binding = 0;
       sampler_layout_binding.descriptorCount = 1;
@@ -695,7 +695,7 @@ int main() {
         throw std::runtime_error("failed to create descriptor set layout!");
       }
 
-      // TODO create command pool
+      // Create command pool
       VkCommandPoolCreateInfo poolInfo = {};
       poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
       poolInfo.queueFamilyIndex = graphicsQueueIndex.value();
@@ -704,7 +704,7 @@ int main() {
         throw std::runtime_error("Failed to create command pool.");
       }
 
-      // TODO Create texture image
+      // Create texture image
       // Load texture
       int tex_width = 0, tex_height = 0, tex_channels;
       stbi_uc* pixels_tex = stbi_load(
@@ -716,7 +716,7 @@ int main() {
         throw std::runtime_error("failed to load texture image!");
       }
 
-      // TODO staging buffer
+      // Staging buffer
       VkBuffer stagingBuffer_tex;
       VkDeviceMemory stagingBufferMemory_tex;
       createBuffer(image_tex_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -734,7 +734,7 @@ int main() {
         stbi_image_free(pixels_tex);
       }
 
-      // TODO image create info
+      // Image create info
       VkImageCreateInfo image_tex_info{};
       image_tex_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
       image_tex_info.imageType = VK_IMAGE_TYPE_2D;
@@ -757,7 +757,7 @@ int main() {
         throw std::runtime_error("failed to create image!");
       }
 
-      // TODO memory requirements
+      // Memory requirements
       VkMemoryRequirements memory_image_requirements;
       vkGetImageMemoryRequirements(device, texture_image,
                                    &memory_image_requirements);
@@ -778,7 +778,7 @@ int main() {
         throw std::runtime_error("failed to bind texture image memory!");
       }
 
-      // TODO layout transitions
+      // Layout transitions
       {
         VkCommandBuffer command_buffer_tmp =
             beginTemporaryCommandBuffer(device, commandPool);
@@ -808,7 +808,7 @@ int main() {
                                   command_buffer_tmp);
       }
 
-      // TODO copy buffer to image
+      // Copy buffer to image
       {
         VkCommandBuffer command_buffer_tmp =
             beginTemporaryCommandBuffer(device, commandPool);
@@ -833,7 +833,7 @@ int main() {
         endTemporaryCommandBuffer(device, graphicsQueue, commandPool,
                                   command_buffer_tmp);
       }
-      // TODO second transition image layout
+      // Second transition image layout
       {
         VkCommandBuffer command_buffer_tmp =
             beginTemporaryCommandBuffer(device, commandPool);
@@ -863,7 +863,7 @@ int main() {
         endTemporaryCommandBuffer(device, graphicsQueue, commandPool,
                                   command_buffer_tmp);
       }
-      // TODO create imageview
+      // Create imageview
       VkImageViewCreateInfo view_texture_info{};
       view_texture_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
       view_texture_info.image = texture_image;
@@ -880,7 +880,7 @@ int main() {
         throw std::runtime_error("failed to create texture image view!");
       }
 
-      // TODO Sampler
+      // Sampler
       VkSamplerCreateInfo tex_sampler_info{};
       tex_sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
       tex_sampler_info.magFilter = VK_FILTER_LINEAR;
@@ -904,7 +904,7 @@ int main() {
         throw std::runtime_error("failed to create texture sampler!");
       }
 
-      // TODO descriptor pool
+      // Descriptor pool
       std::array<VkDescriptorPoolSize, 1> descriptor_pool_sizes{};
       descriptor_pool_sizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       descriptor_pool_sizes[0].descriptorCount = 1;
@@ -922,7 +922,7 @@ int main() {
         throw std::runtime_error("failed to create descriptor pool!");
       }
 
-      // TODO allocate descriptor set
+      // Allocate descriptor set
       VkDescriptorSetAllocateInfo descriptor_set_allocate_info = {};
       descriptor_set_allocate_info.sType =
           VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -936,7 +936,7 @@ int main() {
         throw std::runtime_error("failed to allocate descriptor sets!");
       }
 
-      // TODO update descriptor set
+      // Update descriptor set
       VkDescriptorImageInfo descriptor_image_info = {};
       descriptor_image_info.imageLayout =
           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -956,7 +956,7 @@ int main() {
 
       vkUpdateDescriptorSets(device, 1, &write_descriptor_set, 0, nullptr);
 
-      // TODO clear stuff
+      // Clear stuff
       vkDestroyBuffer(device, stagingBuffer_tex, nullptr);
       vkFreeMemory(device, stagingBufferMemory_tex, nullptr);
     }
@@ -1132,7 +1132,7 @@ int main() {
     colorBlending.pAttachments = &colorBlendAttachment;
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-    // todo add descriptor set layout to pipeline layout
+    //Add descriptor set layout to pipeline layout
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout;
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1260,7 +1260,7 @@ int main() {
       VkBuffer vertexBuffers[] = {vertexBuffer};
       VkDeviceSize offsets[] = {0};
       vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-      // TODO bind descriptor sets
+      //Bind descriptor sets
       vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                               pipelineLayout, 0, 1, &descriptor_set, 0,
                               nullptr);
