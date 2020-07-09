@@ -45,6 +45,13 @@ target_include_directories(stencil PRIVATE ../external/glm)
 target_link_libraries(stencil PUBLIC Vulkan::Vulkan glslang SPIRV)
 set_property(TARGET stencil PROPERTY CXX_STANDARD 17)
 
+add_executable(texture texture.cpp)
+target_include_directories(texture PRIVATE ../external/stb)
+target_include_directories(texture PRIVATE ../external/glm)
+target_include_directories(texture PRIVATE vulkan_sample_images)
+target_link_libraries(texture PUBLIC Vulkan::Vulkan glslang SPIRV)
+set_property(TARGET texture PROPERTY CXX_STANDARD 17)
+
 add_executable(push_constants push_constants.cpp)
 target_include_directories(push_constants PRIVATE ../external/stb)
 target_include_directories(push_constants PRIVATE ../external/glm)
