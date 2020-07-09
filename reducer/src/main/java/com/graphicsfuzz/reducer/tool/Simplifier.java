@@ -60,7 +60,7 @@ public class Simplifier {
     PrintStream ps = fileOps.getStdOut();
     new PrettyPrinterVisitor(ps, PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
         PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER, true,
-        Optional.empty()).visit(shaderJob.getFragmentShader().get());
+        Optional.empty(),Optional.empty()).visit(shaderJob.getFragmentShader().get());
     ps.flush();
   }
 }
