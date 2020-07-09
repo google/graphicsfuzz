@@ -105,24 +105,33 @@ The `active_device_names` list should be modified to include only the unique dev
 * `host_preprocessor` should always be included first, as this virtual device detects failures in tools such as `glslangValidator` and `spirv-opt`, and will ensure such failures will not be logged for real devices.
 * You can use `--settings SETTINGS.json` to use a settings file other than `settings.json` (the default). In this way, you can run multiple instances of `gfauto_fuzz` in parallel to test *different* devices.
 
-You can generate a space-separated list of seeds as follows:
+### Parallel fuzzing and fixed seeds
+
+You can generate a space-separated list of 1000 seeds as follows:
 
 ```python
 import secrets
+from pathlib import Path
 
-" ".join([str(secrets.randbits(256)) for i in range(0, 1000)])
+content = " ".join([str(secrets.randbits(256)) for i in range(0, 1000)])
+Path("seeds.txt").write_text(content, encoding="utf-8", errors="ignore")
 ```
 
-Assuming you saved those to `../seeds.txt`, you can run parallel instances of `gfauto_fuzz` using:
+You can run
+the seeds in parallel using `gfauto_fuzz`:
 
 ```sh
 # Warning: assumes "parallel" is from the "moreutils" pakage.
 # Check with "man parallel".
 
-parallel -j 32 gfauto_fuzz --iteration_seed -- $(cat ../seeds.txt)
+parallel -j 32 gfauto_fuzz --iteration_seed -- $(cat seeds.txt)
 ```
 
-This is probably only suitable for testing the `host_preprocessor` and `swift_shader` virtual devices; running parallel tests on actual hardware is likely to give unreliable results.
+The above command runs 32 parallel instances
+of `gfauto_fuzz`, which is ideal for testing the
+`host_preprocessor` and `swift_shader` virtual devices;
+running parallel tests on actual hardware might give unreliable results.
+
 
 You can run parallel instances of gfauto (just for increased throughput, not with fixed seeds) using:
 
