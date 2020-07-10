@@ -48,12 +48,15 @@ public final class LiteralToUniformReductionOpportunities {
         public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
           // This prevents replacing the uniforms recursively. E.g. _GLF_int_values[0] does not
           // become _GLF_int_values[_GLF_int_values[1]].
-          String name = ((VariableIdentifierExpr) arrayIndexExpr.getArray()).getName();
-          if (!name.equals(Constants.FLOAT_LITERAL_UNIFORM_VALUES)
-              && !name.equals(Constants.INT_LITERAL_UNIFORM_VALUES)
-              && !name.equals(Constants.UINT_LITERAL_UNIFORM_VALUES)) {
-            super.visitArrayIndexExpr(arrayIndexExpr);
+          if (arrayIndexExpr.getArray() instanceof VariableIdentifierExpr) {
+            String name = ((VariableIdentifierExpr) arrayIndexExpr.getArray()).getName();
+            if (name.equals(Constants.FLOAT_LITERAL_UNIFORM_VALUES)
+                || name.equals(Constants.INT_LITERAL_UNIFORM_VALUES)
+                || name.equals(Constants.UINT_LITERAL_UNIFORM_VALUES)) {
+              return;
+            }
           }
+          super.visitArrayIndexExpr(arrayIndexExpr);
         }
 
         @Override

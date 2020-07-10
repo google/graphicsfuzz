@@ -554,4 +554,55 @@ public class LiteralToUniformReductionOpportunitiesTest {
 
     assertEquals("There should be no opportunities", 0, ops2.size());
   }
+
+  @Test
+  public void testArrayConstructor() throws Exception {
+
+    final String shader =
+        "void main() {"
+            + "int A[3] = int[3](1, 2, 3);"
+            + "int B[3] = int[3](4, 5, 6);"
+            + "int x = (true ? A : B)[2];"
+            + "}";
+
+    final String shaderReplaced =
+        "uniform int _GLF_uniform_int_values[6];"
+            + "\n"
+            + "void main()"
+            + "{"
+            + "int A[3] = int[3](_GLF_uniform_int_values[0], _GLF_uniform_int_values[1], "
+            + "_GLF_uniform_int_values[2]);"
+            + "int B[3] = int[3](_GLF_uniform_int_values[3], _GLF_uniform_int_values[4], "
+            + "_GLF_uniform_int_values[5]);"
+            + "int x = (true ? A : B)[_GLF_uniform_int_values[1]];"
+            + "}";
+
+    final List<TranslationUnit> shaders = new ArrayList<>();
+    shaders.add(ParseHelper.parse(shader, ShaderKind.FRAGMENT));
+
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        pipelineInfo, shaders);
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    final List<LiteralToUniformReductionOpportunity> ops =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be seven opportunities", 7, ops.size());
+    ops.forEach(AbstractReductionOpportunity::applyReduction);
+    assertEquals(1, pipelineInfo.getNumUniforms());
+    CompareAsts.assertEqualAsts(shaderReplaced, shaderJob.getFragmentShader().get());
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
+  }
 }
