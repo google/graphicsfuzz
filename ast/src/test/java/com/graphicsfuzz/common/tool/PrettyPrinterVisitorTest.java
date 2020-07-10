@@ -64,10 +64,10 @@ public class PrettyPrinterVisitorTest {
   public void testUniformArrayContentsInComments() throws Exception {
 
     final String shader = ""
-    + "uniform int a[3], b[2];"
-        + "uniform float _GLF_uniform_float_values[3];"
-        + "uniform uint _GLF_uniform_uint_values[2];"
-        + "uniform int test[5];"
+    + "uniform int a[3], b[2], X[1], Y[22], Z[1];"
+        + "uniform float _GLF_uniform_float_values[3], D;"
+        + "uniform uint _GLF_uniform_uint_values[2], E[33];"
+        + "uniform int test[5], test2[1], A;"
         + "void main()"
         + "{"
         + "  float a = _GLF_uniform_float_values[0];"
@@ -80,15 +80,16 @@ public class PrettyPrinterVisitorTest {
         + "}";
 
     final String shaderPrettyPrinted = ""
-        + "uniform int a[3], b[2]; // Array contents will be a:[0, 1, 2], b:[3, 4, 5] at runtime\n"
+        + "uniform int a[3], b[2], X[1], Y[22], Z[1]; // Contents of a: [0, 1, 2], b: [3, 4, 5], "
+        + "Z: 77\n"
         + "\n"
-        + "uniform float _GLF_uniform_float_values[3]; // Array contents will be [0.0, 1.4, 22.2]"
-        + " at runtime\n"
+        + "uniform float _GLF_uniform_float_values[3], D; // Contents of "
+        + "_GLF_uniform_float_values: [0.0, 1.4, 22.2]\n"
         + "\n"
-        + "uniform uint _GLF_uniform_uint_values[2]; // Array contents will be [2, 11, 22] at "
-        + "runtime\n"
+        + "uniform uint _GLF_uniform_uint_values[2], E[33]; // Contents of _GLF_uniform_uint_values: "
+        + "[2, 11, 22]\n"
         + "\n"
-        + "uniform int test[5];\n"
+        + "uniform int test[5], test2[1], A; // Contents of test2: 66\n"
         + "\n"
         + "void main()\n"
         + "{\n"
@@ -113,6 +114,10 @@ public class PrettyPrinterVisitorTest {
         return Optional.of(Arrays.asList(2, 11, 22));
       } else if (name.equals("_GLF_uniform_float_values")) {
         return Optional.of(Arrays.asList(0.0, 1.4, 22.2));
+      } else if (name.equals("test2")) {
+        return Optional.of(Arrays.asList(66));
+      } else if (name.equals("Z")) {
+        return Optional.of(Arrays.asList(77));
       }
       return Optional.empty();
     };

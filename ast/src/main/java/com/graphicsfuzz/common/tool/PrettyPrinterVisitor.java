@@ -79,8 +79,7 @@ import com.graphicsfuzz.util.Constants;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -201,10 +200,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append(" ");
     boolean first = true;
 
-    // If the uniform value supplier provides values for this variable, emit a comment that
-    // contains the values.
-    Map<String, String> values = new HashMap<>();
-
     for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
       if (!first) {
         out.append(", ");
@@ -216,10 +211,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
         visit(vdi.getArrayInfo().getSizeExpr());
         out.append("]");
 
-        if (uniformValues.isPresent() && uniformValues.get().getValues(vdi.getName()).isPresent()) {
-          values.put(vdi.getName(), "[" + uniformValues.get().getValues(vdi.getName()).get()
-              .stream().map(Object::toString).collect(Collectors.joining(", ")) + "]");
-        }
         assert !(baseType instanceof ArrayType);
       } else if (baseType instanceof ArrayType) {
         out.append("[");
@@ -232,13 +223,43 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       }
     }
 
-    if (!values.isEmpty()) {
-      String valueString = String.join(", ", values.values());
-      if (values.size() > 1) {
-        valueString = values.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
-            .collect(Collectors.joining(", "));
+    // If the uniform value supplier provides values for this variables declaration, emit a comment
+    // that contains the values.
+    if (uniformValues.isPresent()
+        && variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
+
+      List<VariableDeclInfo> variableDeclarationInfos =
+          variablesDeclaration.getDeclInfos().stream()
+          .filter(vdi2 -> uniformValues.get()
+              .getValues(vdi2.getName()).isPresent()).collect(Collectors.toList());
+
+      if (variableDeclarationInfos.size() > 0) {
+        out.append("; // Contents of ");
       }
-      out.append("; // Array contents will be " + valueString + " at runtime");
+
+      for (VariableDeclInfo vdi : variableDeclarationInfos) {
+        final Optional<List<Number>> values = uniformValues.get().getValues(vdi.getName());
+        values.ifPresent(item -> {
+
+          // If there are multiple of array declarations and the supplier provides values
+          // for more than one, the next values must be separated from the previously
+          // appended values.
+          if (variableDeclarationInfos.indexOf(vdi) > 0) {
+            out.append(", ");
+          }
+
+          out.append(vdi.getName());
+          out.append(": ");
+          if (item.size() > 1) {
+            out.append("[");
+          }
+          out.append(item.stream().map(Object::toString)
+              .reduce((item1, item2) -> item1 + ", " + item2).orElse(""));
+          if (item.size() > 1) {
+            out.append("]");
+          }
+        });
+      }
     }
   }
 
