@@ -322,9 +322,15 @@ def run_reduction(
             settings=settings,
         )
 
+    # Add a symlink to the semantics preserving reduction result.
+    util.make_directory_symlink(
+        new_symlink_file_path=reduction_output_dir / "1",
+        existing_dir=reduced_source_dir.parent,
+    )
+
     if (
         test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE
-        and not settings.skip_spirv_reduce
+        and not settings.skip_semantics_changing_reduction
     ):
         for index, suffix in enumerate(shader_spv_suffixes):
             # E.g. .frag.spv -> .frag
@@ -339,6 +345,11 @@ def run_reduction(
                 binary_manager=binary_manager,
                 settings=settings,
             )
+        # Add a symlink to the semantics changing reduction result.
+        util.make_directory_symlink(
+            new_symlink_file_path=reduction_output_dir / "2",
+            existing_dir=reduced_source_dir.parent,
+        )
 
     # Create and return a symlink to the "best" reduction.
     return util.make_directory_symlink(
