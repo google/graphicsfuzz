@@ -88,7 +88,7 @@ limitations under the License.
                   <sequential>
                     <echo message="Running thrift compiler ${thrift-compiler-exec}"/>
                     <exec dir="${project.build.directory}" executable="${thrift-compiler-exec}">
-                      <arg line="-gen java -gen py -gen js -gen cocoa ${thrift-input-file}"/>
+                      <arg line="-gen java:generated_annotations=suppress -gen py -gen js -gen cocoa ${thrift-input-file}"/>
                     </exec>
                     <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}-java.zip" basedir="${project.build.directory}/gen-java"/>
                     <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}-python.zip" basedir="${project.build.directory}/gen-py/graphicsfuzzserver"/>
