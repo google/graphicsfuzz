@@ -86,7 +86,7 @@ message Settings {
 
   // If true then the semantics changing reduction is skipped.
   // We always perform a semantics preserving reduction first, which involves removing transformations from the variant
-  // shader. If the bug is a crash and this option is true then we continue by performing a semantics changing
+  // shader. If the bug is a crash and this option is false then we continue by performing a semantics changing
   // reduction, which involves removing chunks of arbitrary code from the variant shader.
   bool skip_semantics_changing_reduction = 18;
 
