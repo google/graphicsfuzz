@@ -30,6 +30,7 @@ from gfauto import (
     android_device,
     binaries_util,
     fuzz,
+    fuzz_spirv_test,
     gflogging,
     glsl_generate_util,
     host_device_util,
@@ -513,7 +514,7 @@ def handle_test(
 
     # For each report, create a summary and reproduce the bug.
     for test_dir_in_reports in report_paths:
-        fuzz.create_summary_and_reproduce(test_dir_in_reports, binary_manager)
+        fuzz.create_summary_and_reproduce(test_dir_in_reports, binary_manager, settings)
 
     return issue_found
 
@@ -872,8 +873,8 @@ def run_glsl_reduce(
     return output_dir
 
 
-def create_summary_and_reproduce(
-    test_dir: Path, binary_manager: binaries_util.BinaryManager
+def create_summary_and_reproduce(  # pylint: disable=too-many-locals;
+    test_dir: Path, binary_manager: binaries_util.BinaryManager, settings: Settings
 ) -> None:
     test_metadata = test_util.metadata_read(test_dir)
 
@@ -926,6 +927,13 @@ def create_summary_and_reproduce(
                     renamed_shader_job,
                     renamed_shader_job.with_name(renamed_shader_job.name[1:]),
                 )
+
+        # Also, if this is a spirv_fuzz test then try to create a variant_2 shader job that is even more similar to the
+        # variant than the reference shader job.
+        if test_metadata.HasField("spirv_fuzz"):
+            fuzz_spirv_test.create_spirv_fuzz_variant_2(
+                reduced_1, binary_manager, settings
+            )
 
     # Run every source dir that we added to the summary dir.
     for summary_source_dir in summary_source_dirs:
