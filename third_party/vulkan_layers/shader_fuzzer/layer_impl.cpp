@@ -87,7 +87,8 @@ TryFuzzingShader(VkShaderModuleCreateInfo const *pCreateInfo) {
   // Create a fuzzer and the various parameters required for fuzzing.
   // TODO: a seed of 0 is used here at present.  It should be possible to
   //  provide a seed via an environment variable.
-  spvtools::fuzz::Fuzzer fuzzer(maybe_target_env.second, 0, false);
+  spvtools::ValidatorOptions validator_options;
+  spvtools::fuzz::Fuzzer fuzzer(maybe_target_env.second, 0, false, validator_options);
   std::vector<uint32_t> binary_in(pCreateInfo->pCode,
                                   pCreateInfo->pCode + code_size_in_words);
   std::vector<uint32_t> result;
