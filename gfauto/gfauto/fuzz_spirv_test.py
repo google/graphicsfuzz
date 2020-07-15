@@ -143,7 +143,11 @@ def run_spirv_reduce_or_shrink(  # pylint: disable=too-many-locals;
 
     if preserve_semantics:
         cmd = [
-            str(binary_manager.get_binary_path_by_name("spirv-fuzz").path),
+            str(
+                binary_manager.get_binary_path_by_name(
+                    binaries_util.SPIRV_FUZZ_NAME
+                ).path
+            ),
             str(original_spirv_file),
             "-o",
             str(final_shader),
@@ -452,7 +456,7 @@ def handle_test(
 
     # For each report, create a summary and reproduce the bug.
     for test_dir_in_reports in report_paths:
-        fuzz.create_summary_and_reproduce(test_dir_in_reports, binary_manager)
+        fuzz.create_summary_and_reproduce(test_dir_in_reports, binary_manager, settings)
 
     return issue_found
 
@@ -484,7 +488,9 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
             try:
                 gflogging.push_stream_for_logging(log_file)
                 spirv_fuzz_util.run_generate_on_shader_job(
-                    binary_manager.get_binary_path_by_name("spirv-fuzz").path,
+                    binary_manager.get_binary_path_by_name(
+                        binaries_util.SPIRV_FUZZ_NAME
+                    ).path,
                     reference_spirv_shader_job,
                     template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
                     donor_shader_job_paths=spirv_fuzz_shaders,
@@ -568,3 +574,43 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
         if handle_test(test_dir, reports_dir, active_devices, binary_manager, settings):
             # If we generated a report, don't bother trying other optimization combinations.
             break
+
+
+def create_spirv_fuzz_variant_2(
+    source_dir: Path, binary_manager: binaries_util.BinaryManager, settings: Settings,
+) -> Optional[Path]:
+    """
+    Replays all transformations except the last to get variant_2.
+
+    Replays all transformations except the last to get a variant_2 shader job, such that variant <-> variant_2 are
+    likely even more similar than reference <-> variant.
+
+    |source_dir| must be a spirv_fuzz test.
+    """
+    test_metadata: Test = test_util.metadata_read_from_source_dir(source_dir)
+    check(test_metadata.HasField("spirv_fuzz"), AssertionError("Not a spirv_fuzz test"))
+
+    variant_shader_job = source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
+    variant_2_shader_job = (
+        source_dir / f"{test_util.VARIANT_DIR}_2" / test_util.SHADER_JOB
+    )
+    if not variant_shader_job.is_file():
+        log(
+            f"Skip generating variant_2 for {str(source_dir)} because the variant shader job was not found."
+        )
+        return None
+
+    if variant_2_shader_job.is_file():
+        log(
+            f"Skip generating variant_2 for {str(source_dir)} because variant_2 shader job already exists."
+        )
+        return None
+
+    return spirv_fuzz_util.run_replay_on_shader_job(
+        spirv_fuzz_path=binary_manager.get_binary_path_by_name(
+            binaries_util.SPIRV_FUZZ_NAME
+        ).path,
+        variant_shader_job_json=variant_shader_job,
+        output_shader_job_json=variant_2_shader_job,
+        other_args=list(settings.common_spirv_args),
+    )

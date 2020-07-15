@@ -46,6 +46,7 @@ from gfauto import (
 )
 from gfauto.device_pb2 import Device, DevicePreprocess
 from gfauto.gflogging import log
+from gfauto.settings_pb2 import Settings
 from gfauto.util import check_dir_exists
 
 # Root:
@@ -460,14 +461,14 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
 
 
 def create_summary_and_reproduce(
-    test_dir: Path, binary_manager: binaries_util.BinaryManager
+    test_dir: Path, binary_manager: binaries_util.BinaryManager, settings: Settings,
 ) -> None:
     util.mkdirs_p(test_dir / "summary")
     test_metadata = test_util.metadata_read(test_dir)
 
     # noinspection PyTypeChecker
     if test_metadata.HasField("glsl") or test_metadata.HasField("spirv_fuzz"):
-        fuzz_glsl_test.create_summary_and_reproduce(test_dir, binary_manager)
+        fuzz_glsl_test.create_summary_and_reproduce(test_dir, binary_manager, settings)
     else:
         raise AssertionError("Unrecognized test type")
 

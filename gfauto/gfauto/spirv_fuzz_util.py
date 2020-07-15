@@ -29,6 +29,79 @@ from gfauto import shader_job_util, subprocess_util, util
 GENERATE_SEED_BITS = 32
 
 
+def run_replay(
+    spirv_fuzz_path: Path,
+    variant_shader_spv: Path,
+    output_shader_spv: Path,
+    other_args: Optional[List[str]] = None,
+) -> Path:
+    """Replays all transformations except the last to get a similar variant shader."""
+    util.check(
+        output_shader_spv.suffix == shader_job_util.SUFFIX_SPIRV,
+        AssertionError(f"Expected {str(output_shader_spv)} to end with .spv"),
+    )
+
+    util.file_mkdirs_parent(output_shader_spv)
+
+    # Copy shader.<STAGE>.facts.
+    if variant_shader_spv.with_suffix(shader_job_util.SUFFIX_FACTS).is_file():
+        util.copy_file(
+            variant_shader_spv.with_suffix(shader_job_util.SUFFIX_FACTS),
+            output_shader_spv.with_suffix(shader_job_util.SUFFIX_FACTS),
+        )
+
+    # Copy shader.<STAGE>.spv_orig.
+    orig_spv = util.copy_file(
+        variant_shader_spv.with_suffix(shader_job_util.SUFFIX_SPIRV_ORIG),
+        output_shader_spv.with_suffix(shader_job_util.SUFFIX_SPIRV_ORIG),
+    )
+
+    transformations = variant_shader_spv.with_suffix(
+        shader_job_util.SUFFIX_TRANSFORMATIONS
+    )
+
+    cmd = [
+        str(spirv_fuzz_path),
+        str(orig_spv),
+        "-o",
+        str(output_shader_spv),
+        f"--replay={str(transformations)}",
+        "--replay-range=-1",  # replays all transformations except the last
+    ]
+
+    if other_args:
+        cmd.extend(other_args)
+
+    subprocess_util.run(cmd)
+
+    return output_shader_spv
+
+
+def run_replay_on_shader_job(
+    spirv_fuzz_path: Path,
+    variant_shader_job_json: Path,
+    output_shader_job_json: Path,
+    other_args: Optional[List[str]] = None,
+) -> Path:
+    """Replays all transformations except the last on all shaders to get a similar variant shader job."""
+    util.copy_file(variant_shader_job_json, output_shader_job_json)
+
+    suffixes_that_exist = shader_job_util.get_related_suffixes_that_exist(
+        variant_shader_job_json, shader_job_util.EXT_ALL, [shader_job_util.SUFFIX_SPIRV]
+    )
+
+    for suffix in suffixes_that_exist:
+
+        run_replay(
+            spirv_fuzz_path,
+            variant_shader_job_json.with_suffix(suffix),
+            output_shader_job_json.with_suffix(suffix),
+            other_args=other_args,
+        )
+
+    return output_shader_job_json
+
+
 def run_generate(
     spirv_fuzz_path: Path,
     reference_shader_spv: Path,
