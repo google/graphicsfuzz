@@ -572,9 +572,11 @@ def get_amber_script_header(amberfy_settings: AmberfySettings) -> str:
 
     if amberfy_settings.add_graphics_fuzz_comment:
         if amberfy_settings.is_coverage_gap:
-            result += "\n# A test for a coverage-gap found by GraphicsFuzz.\n"
+            result += (
+                "\n# A test for a coverage-gap found by the GraphicsFuzz project.\n"
+            )
         else:
-            result += "\n# A test for a bug found by GraphicsFuzz.\n"
+            result += "\n# A test for a bug found by the GraphicsFuzz project.\n"
 
     if amberfy_settings.short_description:
         result += f"\n# Short description: {amberfy_settings.short_description}\n"
