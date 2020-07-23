@@ -235,8 +235,8 @@ def do_image_job(
             res.status = tt.JobStatus.CRASH
         elif status == 'TIMEOUT':
             res.status = tt.JobStatus.TIMEOUT
-        elif status == 'SANITY_ERROR':
-            res.status = tt.JobStatus.SANITY_ERROR
+        elif status == 'COHERENCE_ERROR':
+            res.status = tt.JobStatus.COHERENCE_ERROR
         elif status == 'UNEXPECTED_ERROR':
             res.status = tt.JobStatus.UNEXPECTED_ERROR
         elif status == 'NONDET':

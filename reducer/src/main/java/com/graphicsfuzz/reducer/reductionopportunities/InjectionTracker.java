@@ -108,7 +108,8 @@ class InjectionTracker {
   /**
    * Informs the tracker that a switch statement has been exited.
    * @param isInjected indicates whether the switch statement is part of the original shader, or one
-   *                   that has been injected.  It is just used for sanity-checking purposes here.
+   *                   that has been injected.  It is just used for coherence-checking purposes
+   *                   here.
    */
   void leaveSwitch(boolean isInjected) {
     assert !switchStmts.isEmpty();

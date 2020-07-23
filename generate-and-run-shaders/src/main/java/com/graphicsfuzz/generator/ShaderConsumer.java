@@ -140,7 +140,7 @@ public class ShaderConsumer implements Runnable {
         case LINK_ERROR:
         case TIMEOUT:
         case UNEXPECTED_ERROR:
-        case SANITY_ERROR:
+        case COHERENCE_ERROR:
         case NONDET:
           triageIssue(imageJobResult, shaderJobFile, shaderJobResultFile, counter);
           break;

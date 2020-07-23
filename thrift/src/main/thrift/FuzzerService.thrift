@@ -111,7 +111,7 @@ enum JobStatus {
 
   COMPILE_ERROR = 30
   LINK_ERROR = 40
-  SANITY_ERROR = 45
+  COHERENCE_ERROR = 45
 
   NONDET = 50 // image changed when rendering a few times
 

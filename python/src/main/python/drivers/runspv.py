@@ -579,8 +579,8 @@ def run_image_android_legacy(
     frag = prepare_shader(output_dir, frag_original, spirv_opt_args)
     status_file = os.path.join(output_dir, 'STATUS')
 
-    sanity_before = os.path.join(output_dir, 'sanity_before.png')
-    sanity_after = os.path.join(output_dir, 'sanity_after.png')
+    coherence_before = os.path.join(output_dir, 'coherence_before.png')
+    coherence_after = os.path.join(output_dir, 'coherence_after.png')
     ref_image = os.path.join(output_dir, 'image_0.png')
     next_image_template = os.path.join(output_dir, 'image_{}.png')
 
@@ -667,11 +667,11 @@ def run_image_android_legacy(
     # directory without creating "output_dir/graphicsfuzz"
     adb_check(['pull', ANDROID_SDCARD_GRAPHICSFUZZ_DIR + '/.', output_dir])
 
-    # Check sanity:
+    # Check coherence:
     if status == 'SUCCESS':
-        if os.path.isfile(sanity_before) and os.path.isfile(sanity_after):
-            if not filecmp.cmp(sanity_before, sanity_after, shallow=False):
-                status = 'SANITY_ERROR'
+        if os.path.isfile(coherence_before) and os.path.isfile(coherence_after):
+            if not filecmp.cmp(coherence_before, coherence_after, shallow=False):
+                status = 'COHERENCE_ERROR'
 
     # Check nondet:
     if status == 'SUCCESS':
@@ -759,8 +759,8 @@ def run_image_host_legacy(
         frag,
         json_file,
         '-png_template={}'.format(os.path.join(output_dir, 'image')),
-        '-sanity_before={}'.format(os.path.join(output_dir, 'sanity_before.png')),
-        '-sanity_after={}'.format(os.path.join(output_dir, 'sanity_after.png')),
+        '-coherence_before={}'.format(os.path.join(output_dir, 'coherence_before.png')),
+        '-coherence_after={}'.format(os.path.join(output_dir, 'coherence_after.png')),
         '-skip_render=' + ('true' if skip_render else 'false'),
     ]
     status = 'SUCCESS'
