@@ -6,6 +6,9 @@
 *.iml
 /.idea/
 
+# VSCode
+.vscode/
+
 # Maven.
 target/
 dependency-reduced-pom.xml

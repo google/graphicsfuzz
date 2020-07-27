@@ -30,6 +30,7 @@ from gfauto import (
     android_device,
     binaries_util,
     fuzz,
+    fuzz_spirv_test,
     gflogging,
     glsl_generate_util,
     host_device_util,
@@ -411,7 +412,10 @@ def run_reduction(
         settings=settings,
     )
 
-    if test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE:
+    if (
+        test.crash_signature != signature_util.BAD_IMAGE_SIGNATURE
+        and not settings.skip_semantics_changing_reduction
+    ):
         reduced_source_dir = run_reduction_part(
             reduction_part_output_dir=reduction_output_dir / "2",
             source_dir_to_reduce=reduced_source_dir,
@@ -510,7 +514,7 @@ def handle_test(
 
     # For each report, create a summary and reproduce the bug.
     for test_dir_in_reports in report_paths:
-        fuzz.create_summary_and_reproduce(test_dir_in_reports, binary_manager)
+        fuzz.create_summary_and_reproduce(test_dir_in_reports, binary_manager, settings)
 
     return issue_found
 
@@ -869,93 +873,92 @@ def run_glsl_reduce(
     return output_dir
 
 
-def create_summary_and_reproduce(
-    test_dir: Path, binary_manager: binaries_util.BinaryManager
+def create_summary_and_reproduce(  # pylint: disable=too-many-locals;
+    test_dir: Path, binary_manager: binaries_util.BinaryManager, settings: Settings
 ) -> None:
     test_metadata = test_util.metadata_read(test_dir)
 
     summary_dir = test_dir / "summary"
 
+    summary_source_dirs: List[Path] = []
+
     unreduced = util.copy_dir(
         test_util.get_source_dir(test_dir), summary_dir / "unreduced"
     )
+    summary_source_dirs.append(unreduced)
 
-    reduced_test_dir = test_util.get_reduced_test_dir(
-        test_dir, test_metadata.device.name, fuzz.BEST_REDUCTION_NAME
-    )
-
-    stage_one_reduction_dir = test_util.get_reduced_test_dir(
+    # For the `summary/reduced_1/` directory.
+    reduction_output_dir_1 = test_util.get_reduced_test_dir(
         test_dir, test_metadata.device.name, "1"
     )
+    reduced_1: Optional[Path] = None
+    if reduction_output_dir_1.is_dir():
+        reduction_output_source_dir_1 = test_util.get_source_dir(reduction_output_dir_1)
+        if reduction_output_source_dir_1.is_dir():
+            reduced_1 = util.copy_dir(
+                reduction_output_source_dir_1, summary_dir / "reduced_1"
+            )
+            summary_source_dirs.append(reduced_1)
 
-    stage_two_reduction_dir = test_util.get_reduced_test_dir(
+    # For the `summary/reduced_2/` directory.
+    reduction_output_dir_2 = test_util.get_reduced_test_dir(
         test_dir, test_metadata.device.name, "2"
     )
+    if reduction_output_dir_2.is_dir():
+        reduction_output_source_dir_2 = test_util.get_source_dir(reduction_output_dir_2)
+        if reduction_output_source_dir_2.is_dir():
+            reduced_2 = util.copy_dir(
+                reduction_output_source_dir_2, summary_dir / "reduced_2"
+            )
+            summary_source_dirs.append(reduced_2)
 
-    stage_one_reduced: Optional[Path] = None
+    # If this test was generated from a stable shader...
+    if test_metadata.derived_from.startswith("stable_") and reduced_1:
+        # Before running the reduced_1 source dir, find any renamed shader jobs (e.g. reference/ -> _reference/)
+        # and rename them back. Thus, the modified test becomes a wrong image test once again, even though
+        # the actual bug was probably a crash bug.
+        renamed_shader_jobs = list(reduced_1.glob("_*"))
+        renamed_shader_jobs = [
+            r for r in renamed_shader_jobs if (r / test_util.SHADER_JOB).is_file()
+        ]
+        if renamed_shader_jobs:
+            for renamed_shader_job in renamed_shader_jobs:
+                util.move_dir(
+                    renamed_shader_job,
+                    renamed_shader_job.with_name(renamed_shader_job.name[1:]),
+                )
 
-    if stage_one_reduction_dir.is_dir() and stage_two_reduction_dir.is_dir():
-        # This reduction had two stages. Save the first stage in addition to the second.
-        stage_one_reduced_source = test_util.get_source_dir(stage_one_reduction_dir)
-        if stage_one_reduced_source.is_dir():
-            stage_one_reduced = util.copy_dir(
-                stage_one_reduced_source, summary_dir / "reduced_stage_one"
+        # Also, if this is a spirv_fuzz test then try to create a variant_2 shader job that is even more similar to the
+        # variant than the reference shader job.
+        if test_metadata.HasField("spirv_fuzz"):
+            fuzz_spirv_test.create_spirv_fuzz_variant_2(
+                reduced_1, binary_manager, settings
             )
 
-    reduced_source_dir = test_util.get_source_dir(reduced_test_dir)
-    reduced: Optional[Path] = None
-    if reduced_source_dir.exists():
-        reduced = util.copy_dir(reduced_source_dir, summary_dir / "reduced")
-
-    run_shader_job(
-        source_dir=unreduced,
-        output_dir=(summary_dir / "unreduced_result"),
-        binary_manager=binary_manager,
-    )
-
-    variant_reduced_glsl_result: Optional[Path] = None
-    if reduced:
-        variant_reduced_glsl_result = run_shader_job(
-            source_dir=reduced,
-            output_dir=(summary_dir / "reduced_result"),
-            binary_manager=binary_manager,
-        )
-
-    if stage_one_reduced:
+    # Run every source dir that we added to the summary dir.
+    for summary_source_dir in summary_source_dirs:
         run_shader_job(
-            source_dir=stage_one_reduced,
-            output_dir=(summary_dir / "reduced_stage_one_result"),
+            source_dir=summary_source_dir,
+            output_dir=(summary_dir / f"{summary_source_dir.name}_result"),
             binary_manager=binary_manager,
         )
-
-    # Some post-processing for common error types.
-
-    if variant_reduced_glsl_result:
-        status = result_util.get_status(variant_reduced_glsl_result)
-        if status == fuzz.STATUS_TOOL_CRASH:
-            tool_crash_summary_bug_report_dir(
-                reduced_source_dir,
-                variant_reduced_glsl_result,
-                summary_dir,
-                binary_manager,
-            )
 
 
 def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
-    reduced_glsl_source_dir: Path,
-    variant_reduced_glsl_result_dir: Path,
+    source_dir: Path,
+    result_dir: Path,
     output_dir: Path,
     binary_manager: binaries_util.BinaryManager,
 ) -> Optional[Path]:
     # Create a simple script and README.
 
-    shader_job = reduced_glsl_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
+    shader_job = source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
 
     if not shader_job.is_file():
         return None
 
     test_metadata: Test = test_util.metadata_read_from_path(
-        reduced_glsl_source_dir / test_util.TEST_METADATA
+        source_dir / test_util.TEST_METADATA
     )
 
     shader_files = shader_job_util.get_related_files(
@@ -970,9 +973,7 @@ def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;
 
     shader_extension = shader_files[0].suffix
 
-    bug_report_dir = util.copy_dir(
-        variant_reduced_glsl_result_dir, output_dir / "bug_report"
-    )
+    bug_report_dir = util.copy_dir(result_dir, output_dir / "bug_report")
 
     # Create bug_report.zip.
     zip_files = [
