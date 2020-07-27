@@ -42,7 +42,8 @@ public class InlinerTest {
   @Test
   public void testInline2() throws Exception {
     final String program = "int foo() { return 2; } void main() { int x = foo(); }";
-    final String expected = "int foo() { return 2; } void main() { int foo_inline_return_value_0; { foo_inline_return_value_0 = 2; } int x = foo_inline_return_value_0; }";
+    final String expected = "int foo() { return 2; } void main() { int foo_inline_return_value_0;"
+        + "{ foo_inline_return_value_0 = 2; } int x = foo_inline_return_value_0; }";
     final TranslationUnit tu = ParseHelper.parse(program);
     FunctionCallExpr fce = getFunctionCallExprs(tu).get(0);
     Inliner.inline(fce, tu, ShadingLanguageVersion.ESSL_100,

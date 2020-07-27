@@ -18,13 +18,10 @@ package com.graphicsfuzz.common.glslversion;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.util.ShaderTranslatorShadingLanguageVersionSupport;
-import com.graphicsfuzz.util.ExecHelper;
 import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.IOException;
@@ -43,35 +40,40 @@ public class ShadingLanguageVersionTest {
 
   @Test
   public void testGlobalVariableInitializersMustBeConst() throws Exception {
-    for (ShadingLanguageVersion shadingLanguageVersion : ShadingLanguageVersion.allShadingLanguageVersions()) {
+    for (ShadingLanguageVersion shadingLanguageVersion :
+        ShadingLanguageVersion.allShadingLanguageVersions()) {
       checkGlobalVariableInitializersMustBeConst(shadingLanguageVersion);
     }
   }
 
   @Test
   public void testInitializersOfConstMustBeConst() throws Exception {
-    for (ShadingLanguageVersion shadingLanguageVersion : ShadingLanguageVersion.allShadingLanguageVersions()) {
+    for (ShadingLanguageVersion shadingLanguageVersion :
+        ShadingLanguageVersion.allShadingLanguageVersions()) {
       checkInitializersOfConstMustBeConst(shadingLanguageVersion);
     }
   }
 
   @Test
   public void testSupportedDoStmt() throws Exception {
-    for (ShadingLanguageVersion shadingLanguageVersion : ShadingLanguageVersion.allShadingLanguageVersions()) {
+    for (ShadingLanguageVersion shadingLanguageVersion :
+        ShadingLanguageVersion.allShadingLanguageVersions()) {
       checkDoStmtSupport(shadingLanguageVersion);
     }
   }
 
   @Test
   public void testSupportedSwitchStmt() throws Exception {
-    for (ShadingLanguageVersion shadingLanguageVersion : ShadingLanguageVersion.allShadingLanguageVersions()) {
+    for (ShadingLanguageVersion shadingLanguageVersion :
+        ShadingLanguageVersion.allShadingLanguageVersions()) {
       checkSwitchStmtSupport(shadingLanguageVersion);
     }
   }
 
   @Test
   public void testSupportedUnsigned() throws Exception {
-    for (ShadingLanguageVersion shadingLanguageVersion : ShadingLanguageVersion.allShadingLanguageVersions()) {
+    for (ShadingLanguageVersion shadingLanguageVersion :
+        ShadingLanguageVersion.allShadingLanguageVersions()) {
       checkUnsignedSupport(shadingLanguageVersion);
     }
   }
@@ -135,7 +137,8 @@ public class ShadingLanguageVersionTest {
     checkValidity(expectedInvalid, program, shadingLanguageVersion);
   }
 
-  private void checkGlobalVariableInitializersMustBeConst(ShadingLanguageVersion shadingLanguageVersion)
+  private void checkGlobalVariableInitializersMustBeConst(
+      ShadingLanguageVersion shadingLanguageVersion)
       throws IOException, InterruptedException {
     final boolean expectedInvalid = shadingLanguageVersion.globalVariableInitializersMustBeConst();
     final String program = globalWithNonConstInitializer(shadingLanguageVersion).toString();
@@ -168,7 +171,8 @@ public class ShadingLanguageVersionTest {
   }
 
 
-  private StringBuilder globalWithNonConstInitializer(ShadingLanguageVersion shadingLanguageVersion) {
+  private StringBuilder globalWithNonConstInitializer(
+      ShadingLanguageVersion shadingLanguageVersion) {
     final StringBuilder result = new StringBuilder();
     writeHeader(shadingLanguageVersion, result);
     result.append("float x = 1.5;\n"
@@ -186,7 +190,8 @@ public class ShadingLanguageVersionTest {
         + "\n");
   }
 
-  private StringBuilder constInitializedWithNonConst(ShadingLanguageVersion shadingLanguageVersion) {
+  private StringBuilder constInitializedWithNonConst(
+      ShadingLanguageVersion shadingLanguageVersion) {
     final StringBuilder result = new StringBuilder();
     writeHeader(shadingLanguageVersion, result);
     result.append("void main() {\n"

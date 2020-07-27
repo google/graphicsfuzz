@@ -105,8 +105,10 @@ public class TypeConstructorExprTest {
     assertEquals(tce.getTypename(), tce2.getTypename());
     assertFalse(tce.getArg(0) == tce2.getArg(0));
     assertFalse(tce.getArg(1) == tce2.getArg(1));
-    assertEquals(((VariableIdentifierExpr) tce.getArg(0)).getName(), ((VariableIdentifierExpr) tce2.getArg(0)).getName());
-    assertEquals(((VariableIdentifierExpr) tce.getArg(1)).getName(), ((VariableIdentifierExpr) tce2.getArg(1)).getName());
+    assertEquals(((VariableIdentifierExpr) tce.getArg(0)).getName(),
+        ((VariableIdentifierExpr) tce2.getArg(0)).getName());
+    assertEquals(((VariableIdentifierExpr) tce.getArg(1)).getName(),
+        ((VariableIdentifierExpr) tce2.getArg(1)).getName());
   }
 
   @Test(expected = IndexOutOfBoundsException.class)

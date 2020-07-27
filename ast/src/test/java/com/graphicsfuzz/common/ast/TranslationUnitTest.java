@@ -16,6 +16,10 @@
 
 package com.graphicsfuzz.common.ast;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -32,10 +36,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class TranslationUnitTest {
 
@@ -113,7 +113,7 @@ public class TranslationUnitTest {
     final VariableDeclInfo variableDeclInfo = new VariableDeclInfo("a",
           arrayInfo, null);
     final VariablesDeclaration newVariablesDeclaration = new VariablesDeclaration(
-      new QualifiedType(BasicType.INT, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
+        new QualifiedType(BasicType.INT, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
     );
 
     translationUnit.updateTopLevelDeclaration(newVariablesDeclaration, variablesDecl);

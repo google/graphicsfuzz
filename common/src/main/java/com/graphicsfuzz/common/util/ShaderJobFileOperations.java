@@ -155,7 +155,7 @@ public class ShaderJobFileOperations {
   }
 
   /**
-   * Are shaders listed in shader job valid?
+   * Checks whether the shaders listed in shader job are valid.
    * @param shaderJobFile A shader job to check.
    * @param throwExceptionOnInvalid Request exception if the validation fails
    * @param isVulkan Tell the validator that this is a vulkan target
@@ -336,7 +336,7 @@ public class ShaderJobFileOperations {
   }
 
   /**
-   * Is the given shaderJob a compute shader job?
+   * Check whether the given shaderJob a compute shader job.
    * @param shaderJobFile A shader job to check.
    * @return true if and only if this is a compute shader job.
    */
