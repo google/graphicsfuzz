@@ -23,8 +23,6 @@ layout(location = 0) out vec4 _GLF_color;
 
 uniform vec2 injectionSwitch;
 
-uniform vec2 resolution;
-
 /*
 This shader populates data array with reversed values,
 performs merge sort to get the data to the correct order,
