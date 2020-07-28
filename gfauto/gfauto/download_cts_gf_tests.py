@@ -119,6 +119,8 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
         if bad_test.is_file():
             bad_test.unlink()
 
+    return output_tests_dir
+
 
 GERRIT_COOKIE_INSTRUCTIONS = (
     "Log in to the Khronos Gerrit page in your "
@@ -128,7 +130,6 @@ GERRIT_COOKIE_INSTRUCTIONS = (
 
 
 def extract_shaders(tests_dir: Path, binaries: binaries_util.BinaryManager) -> None:
-
     for amber_file in tests_dir.glob("*.amber"):
         amber_converter.extract_shaders(
             amber_file, output_dir=amber_file.parent, binaries=binaries
