@@ -43,16 +43,16 @@ public class InlineInitializerReductionOpportunities
   // All variable identifier expressions that can be potentially replaced with initializers.
   private final List<Pair<VariableDeclInfo, VariableIdentifierExpr>> inlineableUsages;
 
-  // A blacklist of variable declarations that we realise we must not inline references to after
-  // all (used to filter the list of potentially inlineable uses).
-  private final Set<VariableDeclInfo> blackList;
+  // An exclusion list of variable declarations that we realise we must not inline references to
+  // after all (used to filter the list of potentially inlineable uses).
+  private final Set<VariableDeclInfo> exclusionList;
 
   private InlineInitializerReductionOpportunities(
         TranslationUnit tu,
         ReducerContext context) {
     super(tu, context);
     this.inlineableUsages = new LinkedList<>();
-    this.blackList = new HashSet<>();
+    this.exclusionList = new HashSet<>();
   }
 
   static List<SimplifyExprReductionOpportunity> findOpportunities(
@@ -76,7 +76,7 @@ public class InlineInitializerReductionOpportunities
 
   private void addOpportunities() {
     for (Pair<VariableDeclInfo, VariableIdentifierExpr> pair : inlineableUsages) {
-      if (!blackList.contains(pair.getLeft())) {
+      if (!exclusionList.contains(pair.getLeft())) {
         addOpportunity(new SimplifyExprReductionOpportunity(
             parentMap.getParent(pair.getRight()),
             new ParenExpr((pair.getLeft().getInitializer()).getExpr().clone()),
@@ -121,7 +121,7 @@ public class InlineInitializerReductionOpportunities
         //   x += x;
         // we end up with x == 8, but if we would inline the initializer to the r-value usage of
         // x we would get x == 6.
-        blackList.add(variableDeclInfo);
+        exclusionList.add(variableDeclInfo);
       }
       return;
     }

@@ -65,10 +65,10 @@ public class GeneratorUnitTest {
 
   // Toggle this to 'true' to focus on cases that used to fail but may
   // now work due to swiftshader fixes.
-  private static final boolean reverseBlacklist = false;
+  private static final boolean reverseExclusionList = false;
 
   // Toggle this to 'true' to run tests on all shaders.
-  private static final boolean ignoreBlacklist = false;
+  private static final boolean ignoreExclusionList = false;
 
   // TODO: Use ShaderJobFileOperations everywhere.
   private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
@@ -145,7 +145,7 @@ public class GeneratorUnitTest {
         "donatedead",
         Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_zoom.json"),
         Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_zoom.json"));
-    // Reason for blacklisting^: slow.
+    // Reason for excluding^: slow.
   }
 
   @Test
@@ -158,7 +158,7 @@ public class GeneratorUnitTest {
         "donatelive",
         Arrays.asList("squares.json"),
         Arrays.asList("squares.json"));
-    // Reason for blacklisting^: slow.
+    // Reason for excluding^: slow.
   }
 
   @Test
@@ -202,7 +202,7 @@ public class GeneratorUnitTest {
         "wrap",
         Arrays.asList("bubblesort_flag.json", "colorgrid_modulo.json"),
         Arrays.asList("bubblesort_flag.json", "colorgrid_modulo.json"));
-    // Reason for blacklisting^: slow.
+    // Reason for excluding^: slow.
   }
 
   @Test
@@ -227,7 +227,7 @@ public class GeneratorUnitTest {
   }
 
   private void testTransformation(List<ITransformationSupplier> transformations,
-        TransformationProbabilities probabilities, String suffix, List<String> blacklist,
+        TransformationProbabilities probabilities, String suffix, List<String> exclusionList,
         File[] referenceFiles)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     for (File originalShaderJobFile : referenceFiles) {
@@ -236,11 +236,11 @@ public class GeneratorUnitTest {
         transformationsList.add(supplier.get());
       }
       boolean skipRender;
-      if (ignoreBlacklist) {
+      if (ignoreExclusionList) {
         skipRender = false;
       } else {
         skipRender =
-            (reverseBlacklist != blacklist.contains(originalShaderJobFile.getName()));
+            (reverseExclusionList != exclusionList.contains(originalShaderJobFile.getName()));
       }
       File referenceImage = null;
       if (!skipRender) {
@@ -259,36 +259,36 @@ public class GeneratorUnitTest {
   }
 
   private void testTransformation100(List<ITransformationSupplier> transformations,
-        TransformationProbabilities probabilities, String suffix, List<String> blacklist)
+        TransformationProbabilities probabilities, String suffix, List<String> exclusionList)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    testTransformation(transformations, probabilities, suffix, blacklist,
+    testTransformation(transformations, probabilities, suffix, exclusionList,
           Util.getReferenceShaderJobFiles100es(fileOps));
   }
 
   private void testTransformation300es(List<ITransformationSupplier> transformations,
-        TransformationProbabilities probabilities, String suffix, List<String> blacklist)
+        TransformationProbabilities probabilities, String suffix, List<String> exclusionList)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    testTransformation(transformations, probabilities, suffix, blacklist,
+    testTransformation(transformations, probabilities, suffix, exclusionList,
         Util.getReferenceShaderJobFiles300es(fileOps));
   }
 
   private void testTransformationMultiVersions(List<ITransformationSupplier> transformations,
                                                TransformationProbabilities probabilities,
                                                String suffix,
-                                               List<String> blacklist100,
-                                               List<String> blacklist300es)
+                                               List<String> exclusionList100,
+                                               List<String> exclusionList300es)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    testTransformation100(transformations, probabilities, suffix, blacklist100);
-    testTransformation300es(transformations, probabilities, suffix, blacklist300es);
+    testTransformation100(transformations, probabilities, suffix, exclusionList100);
+    testTransformation300es(transformations, probabilities, suffix, exclusionList300es);
   }
 
   private void testTransformationMultiVersions(ITransformationSupplier transformation,
       TransformationProbabilities probabilities, String suffix,
-                                               List<String> blacklist100,
-                                               List<String> blacklist300es)
+                                               List<String> exclusionList100,
+                                               List<String> exclusionList300es)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformationMultiVersions(Arrays.asList(transformation), probabilities,
-        suffix, blacklist100, blacklist300es);
+        suffix, exclusionList100, exclusionList300es);
   }
 
   private void testTransformationMultiVersions(List<ITransformationSupplier> transformations,
