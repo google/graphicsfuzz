@@ -603,7 +603,15 @@ def get_amber_script_shader_def(shader: Shader, name: str) -> str:
         result += f"\n# {name} is derived from the following GLSL:\n"
         result += get_text_as_comment(shader.shader_source)
     if shader.shader_spirv_asm:
-        result += f"\nSHADER {str(shader.shader_type.value)} {name} SPIRV-ASM\n"
+        groups = re.findall(r"\n; Version: ([\d.]*)", shader.shader_spirv_asm)
+        check(
+            len(groups) == 1,
+            AssertionError(
+                f"Could not find version comment in SPIR-V shader {name} (or there were multiple)"
+            ),
+        )
+        spirv_version = groups[0]
+        result += f"\nSHADER {str(shader.shader_type.value)} {name} SPIRV-ASM TARGET_ENV spv{spirv_version}\n"
         result += shader.shader_spirv_asm
         result += "END\n"
     else:
