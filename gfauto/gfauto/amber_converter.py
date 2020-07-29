@@ -965,20 +965,63 @@ def extract_shaders_amber_script(
         parts = line.strip().split()
         shader_type = parts[1]
         shader_name = parts[2]
-        shader_language = parts[3]
-        if shader_language == "PASSTHROUGH":
+        shader_format = parts[3]
+        if shader_format == "PASSTHROUGH":
             continue
         check(
-            shader_language == "SPIRV-ASM",
+            shader_format == "SPIRV-ASM",
             AssertionError(
-                f"For {str(amber_file)}: unsupported shader language: {shader_language}"
+                f"{str(amber_file)}:{i+1}: unsupported shader format: {shader_format}"
             ),
         )
+
+        # Get the target environment string. We do an extra check because this element was introduced more recently.
+        check(
+            len(parts) >= 6 and parts[4] == "TARGET_ENV",
+            AssertionError(f"{str(amber_file)}:{i+1}: missing TARGET_ENV"),
+        )
+
+        shader_target_env = parts[5]
+
+        # We only support target environments that specify a version of SPIR-V.
+        # E.g. TARGET_ENV spv1.5
+        check(
+            shader_target_env.startswith("spv"),
+            AssertionError(f"{str(amber_file)}:{i+1}: TARGET_ENV must start with spv"),
+        )
+
+        spirv_version_from_target_env = util.remove_start(shader_target_env, "spv")
+
         i += 1
         shader_asm = ""
-        while not lines[i].strip().startswith("END"):
+        spirv_version_from_comment = ""
+        while not lines[i].startswith("END"):
+            # We should come across the version comment. E.g.
+            # "; Version: 1.0"
+            if lines[i].startswith("; Version: "):
+                check(
+                    not spirv_version_from_comment,
+                    AssertionError(
+                        f"{str(amber_file)}:{i+1}: Multiple version comments?"
+                    ),
+                )
+                spirv_version_from_comment = lines[i].split()[2]
+                check(
+                    spirv_version_from_comment == spirv_version_from_target_env,
+                    AssertionError(
+                        f"{str(amber_file)}:{i+1}: TARGET_ENV and version comment mismatch."
+                    ),
+                )
+
             shader_asm += lines[i]
             i += 1
+
+        check(
+            bool(spirv_version_from_comment),
+            AssertionError(
+                f"{str(amber_file)}:{i+1}: missing version comment in SPIRV-ASM."
+            ),
+        )
 
         files_written += write_shader(
             shader_asm=shader_asm,

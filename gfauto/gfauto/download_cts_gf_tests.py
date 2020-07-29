@@ -130,7 +130,7 @@ GERRIT_COOKIE_INSTRUCTIONS = (
 
 
 def extract_shaders(tests_dir: Path, binaries: binaries_util.BinaryManager) -> None:
-    for amber_file in tests_dir.glob("*.amber"):
+    for amber_file in sorted(tests_dir.glob("*.amber")):
         amber_converter.extract_shaders(
             amber_file, output_dir=amber_file.parent, binaries=binaries
         )
