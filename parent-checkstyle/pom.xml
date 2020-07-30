@@ -42,7 +42,7 @@ limitations under the License.
           <sourceDirectories>
             <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
           </sourceDirectories>
-	  <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <configLocation>graphicsfuzz/checkstyle.xml</configLocation>
           <encoding>UTF-8</encoding>
           <consoleOutput>true</consoleOutput>
