@@ -93,7 +93,7 @@ public final class PruneUniforms {
 
   private static void inlineUniform(TranslationUnit tu, PipelineInfo pipelineInfo,
                                     String uniformName) {
-    boolean found = false; // For sanity-checking
+    boolean found = false; // For coherence-checking
 
     final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
     for (Declaration decl : tu.getTopLevelDeclarations()) {

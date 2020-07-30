@@ -188,8 +188,8 @@ public class StructDefinitionType extends UnqualifiedType {
       return false;
     }
     if (hasStructNameType()) {
-      // We sanity check, in the event that the types have the same struct name type, that the
-      // fields match.
+      // Coherence check: in the event that the types have the same struct name, the fields must
+      // match.
       assert equalFields(thatStructDefinitionType);
       return true;
     }
