@@ -82,8 +82,6 @@ public class LiteralToUniformReductionOpportunity
     if (!shaderJob.getPipelineInfo().hasUniform(arrayName)) {
       shaderJob.getPipelineInfo().addUniform(arrayName, basicType,
           Optional.of(0), new ArrayList<>());
-      shaderJob.getPipelineInfo().addUniformBinding(arrayName, false,
-          shaderJob.getPipelineInfo().getUnusedBindingNumber());
     }
 
     final int index;
