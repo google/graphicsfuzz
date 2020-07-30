@@ -16,24 +16,23 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
-import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.IdGenerator;
-import com.graphicsfuzz.common.util.RandomWrapper;
-import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.util.CompareAsts;
+import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.OpenGlConstants;
 import com.graphicsfuzz.common.util.ParseHelper;
+import com.graphicsfuzz.common.util.RandomWrapper;
+import com.graphicsfuzz.util.Constants;
 import java.util.List;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class LiveOutputVariableWriteReductionOpportunitiesTest {
 
   @Test
-  public void testLiveGLFragColorWriteOpportunity() throws Exception {
+  public void testLiveGlFragColorWriteOpportunity() throws Exception {
     final String backupName = Constants.GLF_OUT_VAR_BACKUP_PREFIX + OpenGlConstants.GL_FRAG_COLOR;
     final String program = "void main() {"
         + "  {"
@@ -52,14 +51,15 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities
               .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                  new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+                  new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                      new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(reducedProgram, tu);
   }
 
   @Test
-  public void testLiveGLFragColorWriteOpportunityAtRootOfMain() throws Exception {
+  public void testLiveGlFragColorWriteOpportunityAtRootOfMain() throws Exception {
     // Checks that we can eliminate a live color write if it is at the root of a function, i.e.
     // not enclosed in any additional block.
     final String backupName = Constants.GLF_OUT_VAR_BACKUP_PREFIX + OpenGlConstants.GL_FRAG_COLOR;
@@ -74,7 +74,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     List<LiveOutputVariableWriteReductionOpportunity> ops =
         LiveOutputVariableWriteReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(
-                    false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+                    false, ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(reducedProgram, tu);
@@ -97,8 +98,9 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
         + "}\n";
     final String expected = "void main() { { } }";
     final TranslationUnit tu = ParseHelper.parse(program);
-    List<LiveOutputVariableWriteReductionOpportunity> ops =
-      LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    final List<LiveOutputVariableWriteReductionOpportunity> ops =
+        LiveOutputVariableWriteReductionOpportunities
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                 new IdGenerator()));
     assertEquals(1, ops.size());
@@ -120,7 +122,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final String expected = "void main() { { } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
-          LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+          LiveOutputVariableWriteReductionOpportunities
+              .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
                 new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
     assertEquals(1, ops.size());
@@ -143,8 +146,10 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final String expected = "void main() { { } }";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<LiveOutputVariableWriteReductionOpportunity> ops =
-          LiveOutputVariableWriteReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+          LiveOutputVariableWriteReductionOpportunities
+              .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+                new ReducerContext(false,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);

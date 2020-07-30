@@ -16,10 +16,13 @@
 
 package com.graphicsfuzz.common.tool;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.util.GlslParserException;
-import com.graphicsfuzz.common.util.MacroNames;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.util.Constants;
@@ -32,14 +35,9 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import org.apache.commons.io.FileUtils;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class PrettyPrinterVisitorTest {
 
@@ -134,7 +132,8 @@ public class PrettyPrinterVisitorTest {
 
   @Test
   public void testParseAndPrintQualifiers() throws Exception {
-    // const volatile is not useful here, but this is just to test that qualifier order is preserved.
+    // const volatile is not useful here, but this is just to test that qualifier order is
+    // preserved.
     final String program = ""
         + "const volatile float x;\n\n";
     assertEquals(program, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
@@ -296,7 +295,7 @@ public class PrettyPrinterVisitorTest {
   }
 
   @Test
-  public void testParseAndPrintVersionES() throws Exception {
+  public void testParseAndPrintVersionEs() throws Exception {
     final String program = "#\tversion 320 es\nvoid main() { }\n";
     final String expected = "#version 320 es\nvoid main()\n{\n}\n";
     assertEquals(expected, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program
@@ -356,46 +355,46 @@ public class PrettyPrinterVisitorTest {
   @Test
   public void testSamplers() throws Exception {
     final String program =
-        "uniform sampler1D s1;\n\n"
-      + "uniform sampler2D s2;\n\n"
-      + "uniform sampler2DRect s3;\n\n"
-      + "uniform sampler3D s4;\n\n"
-      + "uniform samplerCube s5;\n\n"
-      + "uniform sampler1DShadow s7;\n\n"
-      + "uniform sampler2DShadow s8;\n\n"
-      + "uniform sampler2DRectShadow s9;\n\n"
-      + "uniform samplerCubeShadow s10;\n\n"
-      + "uniform sampler1DArray s11;\n\n"
-      + "uniform sampler2DArray s12;\n\n"
-      + "uniform sampler1DArrayShadow s13;\n\n"
-      + "uniform sampler2DArrayShadow s14;\n\n"
-      + "uniform samplerBuffer s15;\n\n"
-      + "uniform samplerCubeArray s16;\n\n"
-      + "uniform samplerCubeArrayShadow s17;\n\n"
-      + "uniform isampler1D s18;\n\n"
-      + "uniform isampler2D s19;\n\n"
-      + "uniform isampler2DRect s20;\n\n"
-      + "uniform isampler3D s21;\n\n"
-      + "uniform isamplerCube s22;\n\n"
-      + "uniform isampler1DArray s23;\n\n"
-      + "uniform isampler2DArray s24;\n\n"
-      + "uniform isamplerBuffer s25;\n\n"
-      + "uniform isamplerCubeArray s26;\n\n"
-      + "uniform usampler1D s27;\n\n"
-      + "uniform usampler2D s28;\n\n"
-      + "uniform usampler2DRect s29;\n\n"
-      + "uniform usampler3D s30;\n\n"
-      + "uniform usamplerCube s31;\n\n"
-      + "uniform usampler1DArray s32;\n\n"
-      + "uniform usampler2DArray s33;\n\n"
-      + "uniform usamplerBuffer s34;\n\n"
-      + "uniform usamplerCubeArray s35;\n\n"
-      + "uniform sampler2DMS s36;\n\n"
-      + "uniform isampler2DMS s37;\n\n"
-      + "uniform usampler2DMS s38;\n\n"
-      + "uniform sampler2DMSArray s39;\n\n"
-      + "uniform isampler2DMSArray s40;\n\n"
-      + "uniform usampler2DMSArray s41;\n\n";
+          "uniform sampler1D s1;\n\n"
+        + "uniform sampler2D s2;\n\n"
+        + "uniform sampler2DRect s3;\n\n"
+        + "uniform sampler3D s4;\n\n"
+        + "uniform samplerCube s5;\n\n"
+        + "uniform sampler1DShadow s7;\n\n"
+        + "uniform sampler2DShadow s8;\n\n"
+        + "uniform sampler2DRectShadow s9;\n\n"
+        + "uniform samplerCubeShadow s10;\n\n"
+        + "uniform sampler1DArray s11;\n\n"
+        + "uniform sampler2DArray s12;\n\n"
+        + "uniform sampler1DArrayShadow s13;\n\n"
+        + "uniform sampler2DArrayShadow s14;\n\n"
+        + "uniform samplerBuffer s15;\n\n"
+        + "uniform samplerCubeArray s16;\n\n"
+        + "uniform samplerCubeArrayShadow s17;\n\n"
+        + "uniform isampler1D s18;\n\n"
+        + "uniform isampler2D s19;\n\n"
+        + "uniform isampler2DRect s20;\n\n"
+        + "uniform isampler3D s21;\n\n"
+        + "uniform isamplerCube s22;\n\n"
+        + "uniform isampler1DArray s23;\n\n"
+        + "uniform isampler2DArray s24;\n\n"
+        + "uniform isamplerBuffer s25;\n\n"
+        + "uniform isamplerCubeArray s26;\n\n"
+        + "uniform usampler1D s27;\n\n"
+        + "uniform usampler2D s28;\n\n"
+        + "uniform usampler2DRect s29;\n\n"
+        + "uniform usampler3D s30;\n\n"
+        + "uniform usamplerCube s31;\n\n"
+        + "uniform usampler1DArray s32;\n\n"
+        + "uniform usampler2DArray s33;\n\n"
+        + "uniform usamplerBuffer s34;\n\n"
+        + "uniform usamplerCubeArray s35;\n\n"
+        + "uniform sampler2DMS s36;\n\n"
+        + "uniform isampler2DMS s37;\n\n"
+        + "uniform usampler2DMS s38;\n\n"
+        + "uniform sampler2DMSArray s39;\n\n"
+        + "uniform isampler2DMSArray s40;\n\n"
+        + "uniform usampler2DMSArray s41;\n\n";
 
     final File shaderFile = temporaryFolder.newFile("shader.frag");
     FileUtils.writeStringToFile(shaderFile, "#version 410\n\n" + program, StandardCharsets.UTF_8);
@@ -409,7 +408,8 @@ public class PrettyPrinterVisitorTest {
    * To allow testing of the 'emitShader' method, this parses a shader from the given string,
    * invokes 'emitShader' on the resulting parsed shader, and returns the result as a string.
    */
-  private String getStringViaEmitShader(String shader) throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
+  private String getStringViaEmitShader(String shader)
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     PrettyPrinterVisitor.emitShader(ParseHelper.parse(shader), Optional.empty(),
         new PrintStream(bytes), PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
@@ -419,43 +419,51 @@ public class PrettyPrinterVisitorTest {
 
   @Test
   public void testNoMacrosUsedSoNoGraphicsFuzzHeader() throws Exception {
-    assertFalse(getStringViaEmitShader("void main() { }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+    assertFalse(getStringViaEmitShader("void main() { }")
+        .contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
   @Test
   public void testNoMacrosUsedSoNoGraphicsFuzzHeader2() throws Exception {
     // Even though this uses a macro name, it doesn't use it as a function invocation.
-    assertFalse(getStringViaEmitShader("void main() { int " + Constants.GLF_FUZZED + "; }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+    assertFalse(getStringViaEmitShader("void main() { int " + Constants.GLF_FUZZED + "; }")
+        .contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
   @Test
   public void testGraphicsFuzzMacrosDueToIdentityMacro() throws Exception {
-    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_IDENTITY + "(1, 1); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_IDENTITY + "(1, 1); }")
+        .contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
   @Test
   public void testGraphicsFuzzMacrosDueToZeroMacro() throws Exception {
-    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_ZERO + "(0); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_ZERO + "(0); }")
+        .contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
   @Test
   public void testGraphicsFuzzMacrosDueToOneMacro() throws Exception {
-    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_ONE + "(1); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_ONE + "(1); }")
+        .contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
   @Test
   public void testGraphicsFuzzMacrosDueToFalseMacro() throws Exception {
-    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_FALSE + "(false); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_FALSE + "(false); }")
+        .contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
   @Test
   public void testGraphicsFuzzMacrosDueToTrueMacro() throws Exception {
-    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_TRUE + "(true); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_TRUE + "(true); }")
+        .contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
   @Test
   public void testGraphicsFuzzMacrosDueToFuzzedMacro() throws Exception {
-    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_FUZZED + "(1234); }").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
+    assertTrue(getStringViaEmitShader("void main() { " + Constants.GLF_FUZZED + "(1234); }")
+        .contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
   @Test
@@ -466,8 +474,8 @@ public class PrettyPrinterVisitorTest {
 
   @Test
   public void testGraphicsFuzzMacrosDueToLoopWrapperMacro() throws Exception {
-    assertTrue(getStringViaEmitShader("void main() { while(" + Constants.GLF_WRAPPED_LOOP +
-        "(false))"
+    assertTrue(getStringViaEmitShader("void main() { while(" + Constants.GLF_WRAPPED_LOOP
+        + "(false))"
         + " {"
         + " } "
         + "}").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
@@ -475,21 +483,22 @@ public class PrettyPrinterVisitorTest {
 
   @Test
   public void testGraphicsFuzzMacrosDueToIfFalseWrapperMacro() throws Exception {
-    assertTrue(getStringViaEmitShader("void main() { if(" + Constants.GLF_WRAPPED_IF_FALSE + "(false)) { } "
+    assertTrue(getStringViaEmitShader("void main() { if(" + Constants.GLF_WRAPPED_IF_FALSE
+        + "(false)) { } "
         + "}").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
   @Test
   public void testGraphicsFuzzMacrosDueToIfTrueWrapperMacro() throws Exception {
-    assertTrue(getStringViaEmitShader("void main() { if(" + Constants.GLF_WRAPPED_IF_TRUE +
-        "(true)) { } "
+    assertTrue(getStringViaEmitShader("void main() { if(" + Constants.GLF_WRAPPED_IF_TRUE
+        + "(true)) { } "
         + "}").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 
   @Test
   public void testGraphicsFuzzMacrosDueToSwitchMacro() throws Exception {
-    assertTrue(getStringViaEmitShader("void main() { switch(" + Constants.GLF_SWITCH +
-        "(0)) { case 0: break; default: break; } "
+    assertTrue(getStringViaEmitShader("void main() { switch(" + Constants.GLF_SWITCH
+        + "(0)) { case 0: break; default: break; } "
         + "}").contains(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES));
   }
 

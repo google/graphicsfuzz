@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
@@ -24,8 +26,6 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class OutlinedStatementReductionOpportunitiesTest {
 
@@ -39,8 +39,10 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+            new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();
@@ -60,8 +62,10 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+            new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
 
     ops.get(0).applyReduction();
@@ -83,8 +87,10 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+            new RandomWrapper(0), new IdGenerator()));
 
     assertEquals(1, ops.size());
 
@@ -97,13 +103,16 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
   @Test
   public void testOutline4() throws Exception {
-    String program = "int _GLF_outlined_1(int x, int y, int z) { if(_GLF_DEAD(false)) { } return injectionSwitch.y * x + (x + y) + z; }"
+    String program = "int _GLF_outlined_1(int x, int y, int z) { if(_GLF_DEAD(false)) { } "
+        + "return injectionSwitch.y * x + (x + y) + z; }"
         + "void main() { int a, b, c; y = _GLF_outlined_1(0, a, b + c); }";
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+            new RandomWrapper(0), new IdGenerator()));
 
     assertEquals(0, ops.size());
 

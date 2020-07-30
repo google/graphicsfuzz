@@ -16,15 +16,18 @@
 
 package com.graphicsfuzz.clienttests;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.graphicsfuzz.server.FuzzerServer;
 import com.graphicsfuzz.shadersets.RunShaderFamily;
+import com.graphicsfuzz.shadersets.ShaderDispatchException;
+import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -42,9 +45,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.graphicsfuzz.util.ToolPaths;
-import com.graphicsfuzz.server.FuzzerServer;
-import com.graphicsfuzz.shadersets.ShaderDispatchException;
 
 public class DesktopClientTest extends CommonClientTest {
 
@@ -146,7 +146,7 @@ public class DesktopClientTest extends CommonClientTest {
   }
 
   @Test
-  public void compileFailComputeES() throws Exception {
+  public void compileFailComputeEs() throws Exception {
     File outputDir = runComputeShader("compile_fail.comp", temporaryFolder);
     checkStatus(new File(outputDir, "compile_fail.info.json"), "COMPILE_ERROR");
     // This is driver-dependent:
@@ -154,7 +154,7 @@ public class DesktopClientTest extends CommonClientTest {
   }
 
   @Test
-  public void simpleComputeShaderES() throws Exception {
+  public void simpleComputeShaderEs() throws Exception {
     File outputDir = runComputeShader("42es.comp", temporaryFolder);
     checkStatus(new File(outputDir, "42es.info.json"), "SUCCESS");
     checkOutput(new File(outputDir, "42es.info.json"), new int[] { 42 });
@@ -190,7 +190,8 @@ public class DesktopClientTest extends CommonClientTest {
   }
 
 
-  private void checkComputeShaderLogContains(File jsonFile, String expected) throws FileNotFoundException {
+  private void checkComputeShaderLogContains(File jsonFile, String expected)
+      throws FileNotFoundException {
     JsonObject json = new Gson().fromJson(new FileReader(jsonFile),
         JsonObject.class);
     assertTrue(json.get("Log").getAsString().contains(expected));
@@ -215,8 +216,8 @@ public class DesktopClientTest extends CommonClientTest {
 
   public static int[] getIntArray(JsonArray argsJson) {
     int[] intArgs = new int[argsJson.size()];
-    Iterator<JsonElement> it = argsJson.iterator();
-    for(int i = 0; i < intArgs.length; ++i) {
+    final Iterator<JsonElement> it = argsJson.iterator();
+    for (int i = 0; i < intArgs.length; ++i) {
       intArgs[i] = it.next().getAsInt();
     }
     return intArgs;

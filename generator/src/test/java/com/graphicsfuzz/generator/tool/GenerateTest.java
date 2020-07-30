@@ -16,6 +16,10 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -44,22 +48,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 public class GenerateTest {
 
-  private static final String A_VERTEX_SHADER = "#version 300 es\n" +
-      "layout(location=0) in highp vec4 a_position;" +
-      "float foo(float b) {" +
-      "  for (int i = 0; i < 10; i++) {" +
-      "    b += float(i);" +
-      "  }" +
-      "  return b;" +
-      "}" +
-      "" +
-      "void main()"
+  private static final String A_VERTEX_SHADER = "#version 300 es\n"
+      + "layout(location=0) in highp vec4 a_position;"
+      + "float foo(float b) {"
+      + "  for (int i = 0; i < 10; i++) {"
+      + "    b += float(i);"
+      + "  }"
+      + "  return b;"
+      + "}"
+      + ""
+      + "void main()"
       + "{\n"
       + "  float x = 0.0;"
       + "  int a;"
@@ -169,7 +169,8 @@ public class GenerateTest {
     }
     final String reference = "void main() { ; { ; ; ; }; ; { ; ; ; }; ; ; ; ; ; ; }";
     final TranslationUnit tu = ParseHelper.parse(reference);
-    new DonateLiveCodeTransformation(TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
+    new DonateLiveCodeTransformation(TransformationProbabilities
+        .likelyDonateLiveCode()::donateLiveCodeAtStmt,
         donorsFolder, GenerationParams.normal(ShaderKind.FRAGMENT, true), false)
         .apply(tu,
             TransformationProbabilities.likelyDonateLiveCode(),
@@ -233,12 +234,9 @@ public class GenerateTest {
     testValidityOfVertexShaderTransformations(new ArrayList<>(), 0);
   }
 
-  @Test
-  public void testValidityOfVertexShaderJumpTransformations() throws Exception {
-    testValidityOfVertexShaderTransformations(Arrays.asList("--enable-only", "add_jump"), 5);
-  }
-
-  private void testValidityOfVertexShaderTransformations(List<String> extraArgs, int repeatCount) throws IOException, InterruptedException, ParseTimeoutException, ArgumentParserException, GlslParserException {
+  private void testValidityOfVertexShaderTransformations(List<String> extraArgs, int repeatCount)
+      throws IOException, InterruptedException, ParseTimeoutException, ArgumentParserException,
+      GlslParserException {
 
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
@@ -278,16 +276,21 @@ public class GenerateTest {
   }
 
   @Test
+  public void testValidityOfVertexShaderJumpTransformations() throws Exception {
+    testValidityOfVertexShaderTransformations(Arrays.asList("--enable-only", "add_jump"), 5);
+  }
+
+  @Test
   public void testInjectionSwitchAddedByDefault() throws Exception {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    final String program = "#version 100\n" +
-        "precision mediump float;" +
-        "void main() {" +
-        " int x = 0;" +
-        " for (int i = 0; i < 100; i++) {" +
-        "  x = x + i;" +
-        " }" +
-        "}";
+    final String program = "#version 100\n"
+        + "precision mediump float;"
+        + "void main() {"
+        + " int x = 0;"
+        + " for (int i = 0; i < 100; i++) {"
+        + "  x = x + i;"
+        + " }"
+        + "}";
     final File shaderJobFile = temporaryFolder.newFile("shader.json");
     fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(),
         new PipelineInfo(), ParseHelper.parse(program, ShaderKind.FRAGMENT)),
@@ -320,14 +323,14 @@ public class GenerateTest {
   @Test
   public void testNoInjectionSwitchIfDisabled() throws Exception {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    final String program = "#version 100\n" +
-        "precision highp float;" +
-        "void main() {" +
-        " int x = 0;" +
-        " for (int i = 0; i < 100; i++) {" +
-        "  x = x + i;" +
-        " }" +
-        "}";
+    final String program = "#version 100\n"
+        + "precision highp float;"
+        + "void main() {"
+        + " int x = 0;"
+        + " for (int i = 0; i < 100; i++) {"
+        + "  x = x + i;"
+        + " }"
+        + "}";
     final File shaderJobFile = temporaryFolder.newFile("shader.json");
     fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(),
             ParseHelper.parse(program, ShaderKind.FRAGMENT)),
@@ -359,8 +362,8 @@ public class GenerateTest {
   @Test
   public void testBeRobustWhenNoDonors() throws Exception {
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    final String program = "#version 100\n" +
-        "void main() { }";
+    final String program = "#version 100\n"
+        + "void main() { }";
     final File shaderJobFile = temporaryFolder.newFile("shader.json");
     fileOps.writeShaderJobFile(new GlslShaderJob(Optional.empty(), new PipelineInfo(),
             ParseHelper.parse(program, ShaderKind.FRAGMENT)),

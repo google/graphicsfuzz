@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.tester;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -57,9 +60,6 @@ import org.bytedeco.javacpp.opencv_imgcodecs;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class GeneratorUnitTest {
 
@@ -106,32 +106,35 @@ public class GeneratorUnitTest {
 
   @Test
   public void testStructify() throws Exception {
-    testTransformationMultiVersions(() -> new StructificationTransformation(), TransformationProbabilities.DEFAULT_PROBABILITIES,
+    testTransformationMultiVersions(StructificationTransformation::new,
+        TransformationProbabilities.DEFAULT_PROBABILITIES,
         "structs");
   }
 
   @Test
   public void testDeadJumps() throws Exception {
-    testTransformationMultiVersions(() -> new AddJumpTransformation(), TransformationProbabilities.onlyAddJumps(),
+    testTransformationMultiVersions(AddJumpTransformation::new,
+        TransformationProbabilities.onlyAddJumps(),
         "jumps");
   }
 
   @Test
   public void testIdentity() throws Exception {
-    testTransformationMultiVersions(() -> new IdentityTransformation(), TransformationProbabilities
+    testTransformationMultiVersions(IdentityTransformation::new,
+        TransformationProbabilities
         .onlyMutateExpressions(), "mutate");
   }
 
   @Test
   public void testOutlineStatements() throws Exception {
-    testTransformationMultiVersions(() -> new OutlineStatementTransformation(),
+    testTransformationMultiVersions(OutlineStatementTransformation::new,
         TransformationProbabilities.onlyOutlineStatements(),
         "outline");
   }
 
   @Test
   public void testSplitForLoops() throws Exception {
-    testTransformationMultiVersions(() -> new SplitForLoopTransformation(), TransformationProbabilities
+    testTransformationMultiVersions(SplitForLoopTransformation::new, TransformationProbabilities
         .onlySplitLoops(), "split");
   }
 
@@ -156,48 +159,53 @@ public class GeneratorUnitTest {
             GenerationParams.normal(ShaderKind.FRAGMENT, true),
         false), TransformationProbabilities.likelyDonateLiveCode(),
         "donatelive",
-        Arrays.asList("squares.json"),
-        Arrays.asList("squares.json"));
+        Collections.singletonList("squares.json"),
+        Collections.singletonList("squares.json"));
     // Reason for excluding^: slow.
   }
 
   @Test
   public void testAddDeadFragColorWrites() throws Exception {
-    testTransformationMultiVersions(() -> new AddDeadOutputWriteTransformation(), TransformationProbabilities
-        .onlyAddDeadFragColorWrites(), "deadfragcolor", Arrays.asList(), Arrays.asList());
+    testTransformationMultiVersions(AddDeadOutputWriteTransformation::new,
+        TransformationProbabilities
+        .onlyAddDeadFragColorWrites(), "deadfragcolor", Collections.emptyList(),
+        Collections.emptyList());
   }
 
   @Test
   public void testAddLiveOutputVariableWrites() throws Exception {
-    testTransformationMultiVersions(() -> new AddLiveOutputWriteTransformation(), TransformationProbabilities
-        .onlyAddLiveFragColorWrites(), "liveoutvar", Arrays.asList(), Arrays.asList());
+    testTransformationMultiVersions(AddLiveOutputWriteTransformation::new,
+        TransformationProbabilities
+        .onlyAddLiveFragColorWrites(), "liveoutvar", Collections.emptyList(),
+        Collections.emptyList());
   }
 
   @Test
   public void testVectorize() throws Exception {
-    testTransformationMultiVersions(() -> new VectorizeTransformation(),
+    testTransformationMultiVersions(VectorizeTransformation::new,
         TransformationProbabilities.onlyVectorize(),
-        "vectorize", Arrays.asList(), Arrays.asList());
+        "vectorize", Collections.emptyList(), Collections.emptyList());
   }
 
   @Test
   public void mutateAndVectorize() throws Exception {
-    testTransformationMultiVersions(Arrays.asList(() -> new IdentityTransformation(), () -> new VectorizeTransformation()),
+    testTransformationMultiVersions(Arrays.asList(IdentityTransformation::new,
+        VectorizeTransformation::new),
         TransformationProbabilities.onlyVectorizeAndMutate(),
         "mutate_and_vectorize",
-        Arrays.asList(), Arrays.asList());
+        Collections.emptyList(), Collections.emptyList());
   }
 
   @Test
   public void testStructification() throws Exception {
-    testTransformationMultiVersions(() -> new StructificationTransformation(),
+    testTransformationMultiVersions(StructificationTransformation::new,
         TransformationProbabilities.onlyStructify(),
-        "structify", Arrays.asList(), Arrays.asList());
+        "structify", Collections.emptyList(), Collections.emptyList());
   }
 
   @Test
   public void testWrap() throws Exception {
-    testTransformationMultiVersions(() -> new AddWrappingConditionalTransformation(),
+    testTransformationMultiVersions(AddWrappingConditionalTransformation::new,
         TransformationProbabilities.onlyWrap(),
         "wrap",
         Arrays.asList("bubblesort_flag.json", "colorgrid_modulo.json"),
@@ -220,7 +228,7 @@ public class GeneratorUnitTest {
     shader += "_GLF_color = vec4(1.0, 0.0, 1.0, 1.0);";
     shader += "}\n";
     testTransformationForSpecificShader(
-        Collections.singletonList(() -> new IdentityTransformation()),
+        Collections.singletonList(IdentityTransformation::new),
         TransformationProbabilities.onlyMutateExpressions(),
         "mutate.frag",
         shader);
@@ -289,19 +297,15 @@ public class GeneratorUnitTest {
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     testTransformationMultiVersions(Arrays.asList(transformation), probabilities,
         suffix, exclusionList100, exclusionList300es);
-  }
-
-  private void testTransformationMultiVersions(List<ITransformationSupplier> transformations,
-        TransformationProbabilities probabilities, String suffix)
-      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    testTransformationMultiVersions(transformations, probabilities, suffix, new ArrayList<>(),
-        new ArrayList<>());
+    testTransformationMultiVersions(Collections.singletonList(transformation), probabilities,
+        suffix, exclusionList100, exclusionList300es);
   }
 
   private void testTransformationMultiVersions(ITransformationSupplier transformation,
       TransformationProbabilities probabilities, String suffix)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    testTransformationMultiVersions(Arrays.asList(transformation), probabilities, suffix,
+    testTransformationMultiVersions(Collections.singletonList(transformation), probabilities,
+        suffix,
         new ArrayList<>(), new ArrayList<>());
   }
 
@@ -315,7 +319,7 @@ public class GeneratorUnitTest {
   ) throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
 
     // skipRender if and only if reference image is null.
-    assert(skipRender == (referenceImage == null));
+    assert skipRender == (referenceImage == null);
 
     final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShaderJobFile);
     assertEquals(1, shaderJob.getShaders().size());
@@ -376,13 +380,13 @@ public class GeneratorUnitTest {
     // aborting.
     final File donors = temporaryFolder.newFolder();
     final ShaderJob declaresSingleStruct = new GlslShaderJob(Optional.empty(),
-      new PipelineInfo(), ParseHelper.parse("#version 300 es\n"
-        + "precision highp float;\n"
-        + "struct S {\n"
-        + "  int x;\n"
-        + "};\n"
-        + "void main() {\n"
-        + "}\n"));
+        new PipelineInfo(), ParseHelper.parse("#version 300 es\n"
+          + "precision highp float;\n"
+          + "struct S {\n"
+          + "  int x;\n"
+          + "};\n"
+          + "void main() {\n"
+          + "}\n"));
     for (int i = 0; i < 3; i++) {
       fileOps.writeShaderJobFile(declaresSingleStruct, new File(donors, "donor_" + i + ".json"));
     }

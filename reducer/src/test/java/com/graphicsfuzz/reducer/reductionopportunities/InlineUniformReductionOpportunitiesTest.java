@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -36,28 +39,25 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class InlineUniformReductionOpportunitiesTest {
 
   @Test
   public void inlineUniforms() throws Exception {
     final String prog =
-        "uniform float f;" +
-            "uniform int i, j;" +
-            "uniform vec2 v;" +
-            "uniform uint u;" +
-            "void main() {" +
-            "  if (f > float(i + i)) {" +
-            "    int i = 2;" + // Hides the uniform declaration of i
-            "    f + v.x + v.y + float(i) + float(u) + float(j);" +
-            "    {" +
-            "       uint u = 4u;" + // Hides the uniform declaration of u
-            "       u += u;" +
-            "    }" +
-            "  }" +
-            "}";
+        "uniform float f;"
+            + "uniform int i, j;"
+            + "uniform vec2 v;"
+            + "uniform uint u;"
+            + "void main() {"
+            + "  if (f > float(i + i)) {"
+            + "    int i = 2;" // Hides the uniform declaration of i
+            + "    f + v.x + v.y + float(i) + float(u) + float(j);"
+            + "    {"
+            + "       uint u = 4u;" // Hides the uniform declaration of u
+            + "       u += u;"
+            + "    }"
+            + "  }"
+            + "}";
     final TranslationUnit tu = ParseHelper.parse(prog);
     final PipelineInfo pipelineInfo = new PipelineInfo();
     pipelineInfo.addUniform("f", BasicType.FLOAT, Optional.empty(), Arrays.asList(3.2));
@@ -68,133 +68,130 @@ public class InlineUniformReductionOpportunitiesTest {
 
     ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), pipelineInfo, tu);
 
-    shaderJob = checkCanReduceToTarget(shaderJob, 8,
-        "uniform float f;" +
-        "uniform int i, j;" +
-        "uniform vec2 v;" +
-        "uniform uint u;" +
-        "void main() {" +
-        "  if (f > float(10 + i)) {" +
-        "    int i = 2;" + // Hides the uniform declaration of i
-        "    f + v.x + v.y + float(i) + float(u) + float(j);" +
-        "    {" +
-        "       uint u = 4u;" + // Hides the uniform declaration of u
-        "       u += u;" +
-        "    }" +
-        "  }" +
-        "}");
+    shaderJob = checkCanReduceToTarget(shaderJob, 8, "uniform float f;"
+            + "uniform int i, j;"
+            + "uniform vec2 v;"
+            + "uniform uint u;"
+            + "void main() {"
+            + "  if (f > float(10 + i)) {"
+            + "    int i = 2;" // Hides the uniform declaration of i
+            + "    f + v.x + v.y + float(i) + float(u) + float(j);"
+            + "    {"
+            + "       uint u = 4u;" // Hides the uniform declaration of u
+            + "       u += u;"
+            + "    }"
+            + "  }"
+            + "}");
 
-    shaderJob = checkCanReduceToTarget(shaderJob, 7,
-        "uniform float f;" +
-        "uniform int i, j;" +
-        "uniform vec2 v;" +
-        "uniform uint u;" +
-        "void main() {" +
-        "  if (f > float(10 + 10)) {" +
-        "    int i = 2;" + // Hides the uniform declaration of i
-        "    f + v.x + v.y + float(i) + float(u) + float(j);" +
-        "    {" +
-        "       uint u = 4u;" + // Hides the uniform declaration of u
-        "       u += u;" +
-        "    }" +
-        "  }" +
-        "}");
+    shaderJob = checkCanReduceToTarget(shaderJob, 7, "uniform float f;"
+            + "uniform int i, j;"
+            + "uniform vec2 v;"
+            + "uniform uint u;"
+            + "void main() {"
+            + "  if (f > float(10 + 10)) {"
+            + "    int i = 2;" // Hides the uniform declaration of i
+            + "    f + v.x + v.y + float(i) + float(u) + float(j);"
+            + "    {"
+            + "       uint u = 4u;" // Hides the uniform declaration of u
+            + "       u += u;"
+            + "    }"
+            + "  }"
+            + "}");
 
-    shaderJob = checkCanReduceToTarget(shaderJob, 6,
-        "uniform float f;" +
-        "uniform int i, j;" +
-        "uniform vec2 v;" +
-        "uniform uint u;" +
-        "void main() {" +
-        "  if (3.2 > float(10 + 10)) {" +
-        "    int i = 2;" + // Hides the uniform declaration of i
-        "    f + v.x + v.y + float(i) + float(u) + float(j);" +
-        "    {" +
-        "       uint u = 4u;" + // Hides the uniform declaration of u
-        "       u += u;" +
-        "    }" +
-        "  }" +
-        "}");
+    shaderJob = checkCanReduceToTarget(shaderJob, 6, "uniform float f;"
+            + "uniform int i, j;"
+            + "uniform vec2 v;"
+            + "uniform uint u;"
+            + "void main() {"
+            + "  if (3.2 > float(10 + 10)) {"
+            + "    int i = 2;" // Hides the uniform declaration of i
+            + "    f + v.x + v.y + float(i) + float(u) + float(j);"
+            + "    {"
+            + "       uint u = 4u;" // Hides the uniform declaration of u
+            + "       u += u;"
+            + "    }"
+            + "  }"
+            + "}");
 
     shaderJob = checkCanReduceToTarget(shaderJob, 5,
-        "uniform float f;" +
-            "uniform int i, j;" +
-            "uniform vec2 v;" +
-            "uniform uint u;" +
-            "void main() {" +
-            "  if (3.2 > float(10 + 10)) {" +
-            "    int i = 2;" + // Hides the uniform declaration of i
-            "    3.2 + v.x + v.y + float(i) + float(u) + float(j);" +
-            "    {" +
-            "       uint u = 4u;" + // Hides the uniform declaration of u
-            "       u += u;" +
-            "    }" +
-            "  }" +
-            "}");
+        "uniform float f;"
+            + "uniform int i, j;"
+            + "uniform vec2 v;"
+            + "uniform uint u;"
+            + "void main() {"
+            + "  if (3.2 > float(10 + 10)) {"
+            + "    int i = 2;" // Hides the uniform declaration of i
+            + "    3.2 + v.x + v.y + float(i) + float(u) + float(j);"
+            + "    {"
+            + "       uint u = 4u;" // Hides the uniform declaration of u
+            + "       u += u;"
+            + "    }"
+            + "  }"
+            + "}");
 
     shaderJob = checkCanReduceToTarget(shaderJob, 4,
-        "uniform float f;" +
-            "uniform int i, j;" +
-            "uniform vec2 v;" +
-            "uniform uint u;" +
-            "void main() {" +
-            "  if (3.2 > float(10 + 10)) {" +
-            "    int i = 2;" + // Hides the uniform declaration of i
-            "    3.2 + vec2(2.2, 2.3).x + v.y + float(i) + float(u) + float(j);" +
-            "    {" +
-            "       uint u = 4u;" + // Hides the uniform declaration of u
-            "       u += u;" +
-            "    }" +
-            "  }" +
-            "}");
+        "uniform float f;"
+            + "uniform int i, j;"
+            + "uniform vec2 v;"
+            + "uniform uint u;"
+            + "void main() {"
+            + "  if (3.2 > float(10 + 10)) {"
+            + "    int i = 2;" // Hides the uniform declaration of i
+            + "    3.2 + vec2(2.2, 2.3).x + v.y + float(i) + float(u) + float(j);"
+            + "    {"
+            + "       uint u = 4u;" // Hides the uniform declaration of u
+            + "       u += u;"
+            + "    }"
+            + "  }"
+            + "}");
 
     shaderJob = checkCanReduceToTarget(shaderJob, 3,
-        "uniform float f;" +
-            "uniform int i, j;" +
-            "uniform vec2 v;" +
-            "uniform uint u;" +
-            "void main() {" +
-            "  if (3.2 > float(10 + 10)) {" +
-            "    int i = 2;" + // Hides the uniform declaration of i
-            "    3.2 + vec2(2.2, 2.3).x + v.y + float(i) + float(17u) + float(j);" +
-            "    {" +
-            "       uint u = 4u;" + // Hides the uniform declaration of u
-            "       u += u;" +
-            "    }" +
-            "  }" +
-            "}");
+        "uniform float f;"
+            + "uniform int i, j;"
+            + "uniform vec2 v;"
+            + "uniform uint u;"
+            + "void main() {"
+            + "  if (3.2 > float(10 + 10)) {"
+            + "    int i = 2;" // Hides the uniform declaration of i
+            + "    3.2 + vec2(2.2, 2.3).x + v.y + float(i) + float(17u) + float(j);"
+            + "    {"
+            + "       uint u = 4u;" // Hides the uniform declaration of u
+            + "       u += u;"
+            + "    }"
+            + "  }"
+            + "}");
 
     shaderJob = checkCanReduceToTarget(shaderJob, 2,
-        "uniform float f;" +
-            "uniform int i, j;" +
-            "uniform vec2 v;" +
-            "uniform uint u;" +
-            "void main() {" +
-            "  if (3.2 > float(10 + 10)) {" +
-            "    int i = 2;" + // Hides the uniform declaration of i
-            "    3.2 + vec2(2.2, 2.3).x + v.y + float(i) + float(17u) + float(20);" +
-            "    {" +
-            "       uint u = 4u;" + // Hides the uniform declaration of u
-            "       u += u;" +
-            "    }" +
-            "  }" +
-            "}");
+        "uniform float f;"
+            + "uniform int i, j;"
+            + "uniform vec2 v;"
+            + "uniform uint u;"
+            + "void main() {"
+            + "  if (3.2 > float(10 + 10)) {"
+            + "    int i = 2;" // Hides the uniform declaration of i
+            + "    3.2 + vec2(2.2, 2.3).x + v.y + float(i) + float(17u) + float(20);"
+            + "    {"
+            + "       uint u = 4u;" // Hides the uniform declaration of u
+            + "       u += u;"
+            + "    }"
+            + "  }"
+            + "}");
 
     checkCanReduceToTarget(shaderJob, 1,
-        "uniform float f;" +
-            "uniform int i, j;" +
-            "uniform vec2 v;" +
-            "uniform uint u;" +
-            "void main() {" +
-            "  if (3.2 > float(10 + 10)) {" +
-            "    int i = 2;" + // Hides the uniform declaration of i
-            "    3.2 + vec2(2.2, 2.3).x + vec2(2.2, 2.3).y + float(i) + float(17u) + float(20);" +
-            "    {" +
-            "       uint u = 4u;" + // Hides the uniform declaration of u
-            "       u += u;" +
-            "    }" +
-            "  }" +
-            "}");
+        "uniform float f;"
+            + "uniform int i, j;"
+            + "uniform vec2 v;"
+            + "uniform uint u;"
+            + "void main() {"
+            + "  if (3.2 > float(10 + 10)) {"
+            + "    int i = 2;" // Hides the uniform declaration of i
+            + "    3.2 + vec2(2.2, 2.3).x + vec2(2.2, 2.3).y + float(i) + float(17u) + float(20);"
+            + "    {"
+            + "       uint u = 4u;" // Hides the uniform declaration of u
+            + "       u += u;"
+            + "    }"
+            + "  }"
+            + "}");
 
   }
 
@@ -366,7 +363,8 @@ public class InlineUniformReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(shader);
     final PipelineInfo pipelineInfo = new PipelineInfo();
     pipelineInfo.addUniform("u", BasicType.INT, Optional.empty(), Collections.singletonList(2));
-    pipelineInfo.addUniform(Constants.LIVE_PREFIX + "v", BasicType.INT, Optional.empty(), Collections.singletonList(3));
+    pipelineInfo.addUniform(Constants.LIVE_PREFIX + "v", BasicType.INT, Optional.empty(),
+        Collections.singletonList(3));
     final List<SimplifyExprReductionOpportunity> opportunities =
         InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
             pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,

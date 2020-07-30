@@ -41,8 +41,8 @@ limitations under the License.
         <configuration>
           <sourceDirectories>
             <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-<!--            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>-->
           </sourceDirectories>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <configLocation>graphicsfuzz/checkstyle.xml</configLocation>
           <encoding>UTF-8</encoding>
           <consoleOutput>true</consoleOutput>

@@ -31,33 +31,30 @@ import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import java.util.Arrays;
+import java.util.Collections;
 import org.junit.Test;
 
 public class OutlinedStatementReductionOpportunityTest {
 
   @Test
   public void applyReduction() throws Exception {
-    FunctionDefinition defn = new FunctionDefinition(
+    final FunctionDefinition defn = new FunctionDefinition(
         new FunctionPrototype("foo", BasicType.INT,
             Arrays.asList(new ParameterDecl("x", BasicType.INT, null))),
-        new BlockStmt(Arrays.asList(
+        new BlockStmt(Collections.singletonList(
             new ReturnStmt(new VariableIdentifierExpr("x"))), false)
     );
-    ExprStmt eBefore = new ExprStmt(new BinaryExpr(new VariableIdentifierExpr("y"),
-        new FunctionCallExpr("foo", Arrays.asList(new VariableIdentifierExpr("x"))),
+    final ExprStmt exprBefore = new ExprStmt(new BinaryExpr(new VariableIdentifierExpr("y"),
+        new FunctionCallExpr("foo", Collections.singletonList(new VariableIdentifierExpr("x"))),
         BinOp.ASSIGN));
 
-    ExprStmt eAfter = eBefore.clone();
-    ((BinaryExpr) eAfter.getExpr()).setRhs(new VariableIdentifierExpr("x"));
+    final ExprStmt exprAfter = exprBefore.clone();
+    ((BinaryExpr) exprAfter.getExpr()).setRhs(new VariableIdentifierExpr("x"));
 
-    new OutlinedStatementReductionOpportunity(eBefore, defn, new VisitationDepth(0))
+    new OutlinedStatementReductionOpportunity(exprBefore, defn, new VisitationDepth(0))
         .applyReduction();
 
-    assertEquals(eBefore.getText(), eAfter.getText());
-
-
-
-
+    assertEquals(exprBefore.getText(), exprAfter.getText());
   }
 
 }

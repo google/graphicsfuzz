@@ -77,7 +77,7 @@ public class FunctionCallExprTest {
   @Test
   public void accept() throws Exception {
     assertEquals("someFunction(1 + 1, true, vec2(0.0), voidArgsFunction())",
-      fce.getText());
+        fce.getText());
   }
 
   @Test

@@ -60,21 +60,21 @@ public class BinaryExprTest {
     theExpr = new BinaryExpr(theExpr.clone(), theExpr.clone(), BinOp.ADD);
 
     int numBinariesInExpr =
-      new StandardVisitor() {
-        private int numBinaries;
+        new StandardVisitor() {
+          private int numBinaries;
 
-        @Override
-        public void visitBinaryExpr(BinaryExpr binaryExpr) {
-          super.visitBinaryExpr(binaryExpr);
-          numBinaries++;
-        }
+          @Override
+          public void visitBinaryExpr(BinaryExpr binaryExpr) {
+            super.visitBinaryExpr(binaryExpr);
+            numBinaries++;
+          }
 
-        public int getNumBinaries(Expr e) {
-          numBinaries = 0;
-          visit(e);
-          return numBinaries;
-        }
-      }.getNumBinaries(theExpr);
+          int getNumBinaries(Expr e) {
+            numBinaries = 0;
+            visit(e);
+            return numBinaries;
+          }
+        }.getNumBinaries(theExpr);
 
     assertEquals(7, numBinariesInExpr);
 

@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -32,9 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class LiteralToUniformReductionOpportunitiesTest {
 
@@ -437,16 +437,16 @@ public class LiteralToUniformReductionOpportunitiesTest {
         + "}";
 
     final String vertexShaderReplaced =
-        "uniform int _GLF_uniform_int_values[3];"
-        + "uniform float _GLF_uniform_float_values[3];"
-        + "void main()"
-        + "{"
-        + "  float a = _GLF_uniform_float_values[0];"
-        + "  float b = _GLF_uniform_float_values[1];"
-        + "  int c = _GLF_uniform_int_values[0];"
-        + "  int d = _GLF_uniform_int_values[1];"
-        + "  int e = _GLF_uniform_int_values[2];"
-        + "}";
+          "uniform int _GLF_uniform_int_values[3];"
+          + "uniform float _GLF_uniform_float_values[3];"
+          + "void main()"
+          + "{"
+          + "  float a = _GLF_uniform_float_values[0];"
+          + "  float b = _GLF_uniform_float_values[1];"
+          + "  int c = _GLF_uniform_int_values[0];"
+          + "  int d = _GLF_uniform_int_values[1];"
+          + "  int e = _GLF_uniform_int_values[2];"
+          + "}";
 
     final String fragmentShader = "void main() { "
         + "float a = 3.0;"
@@ -510,21 +510,21 @@ public class LiteralToUniformReductionOpportunitiesTest {
   public void testArrayDeclaration() throws Exception {
 
     final String shader =
-      "void main()"
-      + "{"
-      + "float a[2*4];"
-      + "float b = 1;"
-      + "a[0] = 2;"
-      + "}";
+        "void main()"
+        + "{"
+        + "float a[2*4];"
+        + "float b = 1;"
+        + "a[0] = 2;"
+        + "}";
 
     final String shaderReplaced =
-      "uniform int _GLF_uniform_int_values[3];"
-      + "void main()"
-      + "{"
-      + "float a[2*4];"
-      + "float b = _GLF_uniform_int_values[0];"
-      + "a[_GLF_uniform_int_values[1]] = _GLF_uniform_int_values[2];"
-      + "}";
+        "uniform int _GLF_uniform_int_values[3];"
+        + "void main()"
+        + "{"
+        + "float a[2*4];"
+        + "float b = _GLF_uniform_int_values[0];"
+        + "a[_GLF_uniform_int_values[1]] = _GLF_uniform_int_values[2];"
+        + "}";
 
     final List<TranslationUnit> shaders = new ArrayList<>();
     shaders.add(ParseHelper.parse(shader, ShaderKind.FRAGMENT));

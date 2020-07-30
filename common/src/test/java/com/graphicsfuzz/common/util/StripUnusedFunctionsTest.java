@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.generator.util;
+package com.graphicsfuzz.common.util;
+
+import static org.junit.Assert.assertEquals;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.ParseHelper;
-import com.graphicsfuzz.common.util.ParseTimeoutException;
-import com.graphicsfuzz.common.util.StripUnusedFunctions;
-import java.io.IOException;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class StripUnusedFunctionsTest {
 
@@ -69,7 +65,7 @@ public class StripUnusedFunctionsTest {
     TranslationUnit tuAfter = ParseHelper.parse(programAfter);
     StripUnusedFunctions.strip(tuBefore);
     assertEquals(
-      PrettyPrinterVisitor.prettyPrintAsString(tuAfter),
+        PrettyPrinterVisitor.prettyPrintAsString(tuAfter),
         PrettyPrinterVisitor.prettyPrintAsString(tuBefore)
     );
 

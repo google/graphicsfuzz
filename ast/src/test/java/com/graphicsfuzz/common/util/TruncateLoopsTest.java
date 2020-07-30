@@ -16,13 +16,11 @@
 
 package com.graphicsfuzz.common.util;
 
-import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import java.io.IOException;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class TruncateLoopsTest {
 

@@ -16,13 +16,12 @@
 
 package com.graphicsfuzz.common.util;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.util.Constants;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class MakeArrayAccessesInBoundsTest {
 
@@ -30,7 +29,7 @@ public class MakeArrayAccessesInBoundsTest {
   public void testBasic() throws Exception {
     final String shader = "#version 300 es\nvoid main() { int A[5]; int x = 17; A[x] = 2; }";
     final String expected = "#version 300 es\nvoid main() { int A[5]; int x = 17; A["
-    + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 5)] = 2; }";
+        + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 5)] = 2; }";
     final TranslationUnit tu = ParseHelper.parse(shader);
     MakeArrayAccessesInBounds.makeInBounds(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
@@ -39,11 +38,24 @@ public class MakeArrayAccessesInBoundsTest {
 
   @Test
   public void testMatrixVector() throws Exception {
-    final String shader = "#version 300 es\nvoid main() { mat4x2 As[5]; int x = 17; int y = -22; int z = 100; As[x][y][z] = 2.0; }";
-    final String expected = "#version 300 es\nvoid main() { mat4x2 As[5]; int x = 17; int y = -22; int z = 100;"
-          + "As[" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 5)]"
-          + "  /* column */ [" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(y, 4)]"
-          + "  /* row */ [" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(z, 2)] = 2.0; }";
+    final String shader = "#version 300 es\n"
+        + "void main() {"
+        + "  mat4x2 As[5];"
+        + "  int x = 17;"
+        + "  int y = -22;"
+        + "  int z = 100;"
+        + "  As[x][y][z] = 2.0;"
+        + "}";
+    final String expected = "#version 300 es\n"
+        + "void main() {"
+        + "  mat4x2 As[5];"
+        + "  int x = 17;"
+        + "  int y = -22;"
+        + "  int z = 100;"
+        + "  As[" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(x, 5)]"
+        + "    /* column */ [" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(y, 4)]"
+        + "    /* row */ [" + Constants.GLF_MAKE_IN_BOUNDS_INT + "(z, 2)] = 2.0;"
+        + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
     MakeArrayAccessesInBounds.makeInBounds(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),

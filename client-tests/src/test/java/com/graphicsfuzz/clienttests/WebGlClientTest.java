@@ -16,13 +16,13 @@
 
 package com.graphicsfuzz.clienttests;
 
+import com.graphicsfuzz.server.FuzzerServer;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import com.graphicsfuzz.server.FuzzerServer;
 
 public class WebGlClientTest extends CommonClientTest {
 

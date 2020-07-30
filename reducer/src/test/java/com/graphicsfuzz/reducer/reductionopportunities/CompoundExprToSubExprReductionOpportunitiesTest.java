@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
@@ -30,9 +33,6 @@ import java.util.List;
 import java.util.Set;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class CompoundExprToSubExprReductionOpportunitiesTest {
 
   @Test
@@ -40,7 +40,8 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
     final String original = "void main() { int a = 2; int b = 3; a + b + b; }";
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<SimplifyExprReductionOpportunity> ops = CompoundExprToSubExprReductionOpportunities
-          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+              new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
                 new RandomWrapper(0), new IdGenerator()));
     assertTrue(ops.isEmpty());
   }
@@ -167,7 +168,8 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
 
   private List<SimplifyExprReductionOpportunity> getOps(TranslationUnit tu,
         boolean reduceEverywhere) {
-    return CompoundExprToSubExprReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    return CompoundExprToSubExprReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(reduceEverywhere, ShadingLanguageVersion.GLSL_440,
           new RandomWrapper(0), new IdGenerator()));
   }
@@ -182,8 +184,8 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
         + "  }\n"
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
-    final List<SimplifyExprReductionOpportunity> ops =
-        CompoundExprToSubExprReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    final List<SimplifyExprReductionOpportunity> ops = CompoundExprToSubExprReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
         new ReducerContext(true, ShadingLanguageVersion.ESSL_310, new RandomWrapper(0),
             new IdGenerator()));
     assertEquals(0, ops.size());

@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
@@ -28,8 +30,6 @@ import com.graphicsfuzz.util.Constants;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class IdentityMutationReductionOpportunitiesTest {
 
@@ -166,7 +166,8 @@ public class IdentityMutationReductionOpportunitiesTest {
         new IdGenerator());
   }
 
-  private void checkOneReductionOpportunity(String program, String afterReduction) throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
+  private void checkOneReductionOpportunity(String program, String afterReduction)
+      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     final ShaderJob shaderJob = MakeShaderJobFromFragmentShader.make(
         ParseHelper.parse(program));
     final List<IdentityMutationReductionOpportunity> ops =

@@ -27,29 +27,28 @@ import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
-import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.GlslParserException;
-import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.FileHelper;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
-import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
 import com.graphicsfuzz.reducer.reductionopportunities.MakeShaderJobFromFragmentShader;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
+import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -60,7 +59,6 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -112,9 +110,7 @@ public class ReductionDriverTest {
       }
     };
 
-    List<IReductionOpportunity> ops =
-        ReductionOpportunities.
-            getReductionOpportunities(
+    List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
                 MakeShaderJobFromFragmentShader.make(tu),
                 new ReducerContext(false, version, generator, new IdGenerator()),
                 fileOps);
@@ -206,8 +202,8 @@ public class ReductionDriverTest {
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     assertFalse(new File(testFolder.getRoot(), "temp.frag").exists());
     File tempFragmentShaderFile = testFolder.newFile("temp.frag");
-    Optional<File> tempVertexShaderFile = vertexShader.isPresent() ?
-        Optional.of(testFolder.newFile("temp.vert")) : Optional.empty();
+    Optional<File> tempVertexShaderFile = vertexShader.isPresent()
+        ? Optional.of(testFolder.newFile("temp.vert")) : Optional.empty();
     File tempJsonFile = testFolder.newFile("temp.json");
 
     FileUtils.writeStringToFile(tempFragmentShaderFile, fragmentShader, StandardCharsets.UTF_8);
@@ -268,24 +264,29 @@ public class ReductionDriverTest {
         Optional.empty(), new PipelineInfo(tempJsonFile), tu);
 
     IFileJudge referencesSinCosAnd3 = (shaderJobFile, shaderResultFileOutput) -> {
-        try {
-          final String contents = FileUtils.readFileToString(
-              FileHelper.replaceExtension(shaderJobFile, ".frag"), StandardCharsets.UTF_8);
-          return contents.contains("float GLF_live3_x = 3.0 + sin(7.0);") && contents.contains("float GLF_live3_y = GLF_live3_x + cos(8.0);")
-                      || contents.contains("float GLF_live3_x = 3.0 + sin(7.0);") && contents.contains("float GLF_live3_y = (3.0 + sin(7.0)) + cos(8.0);")
-                      || contents.contains("float GLF_live3_x = 3.0;") && contents.contains("float GLF_live3_y = (3.0 + sin(7.0)) + cos(8.0);")
-                      || contents.contains("float GLF_live3_x = 3.0;") && contents.contains("float GLF_live3_y = (sin(7.0)) + cos(8.0);")
-                      || contents.contains("float GLF_live3_x = 3.0;") && contents.contains("float GLF_live3_y = sin(7.0) + cos(8.0);");
-        } catch (IOException e) {
-          return false;
-        }
-      };
+      try {
+        final String contents = FileUtils.readFileToString(
+            FileHelper.replaceExtension(shaderJobFile, ".frag"), StandardCharsets.UTF_8);
+        return contents.contains("float GLF_live3_x = 3.0 + sin(7.0);")
+                    && contents.contains("float GLF_live3_y = GLF_live3_x + cos(8.0);")
+            || contents.contains("float GLF_live3_x = 3.0 + sin(7.0);")
+                    && contents.contains("float GLF_live3_y = (3.0 + sin(7.0)) + cos(8.0);")
+            || contents.contains("float GLF_live3_x = 3.0;")
+                    && contents.contains("float GLF_live3_y = (3.0 + sin(7.0)) + cos(8.0);")
+            || contents.contains("float GLF_live3_x = 3.0;")
+                    && contents.contains("float GLF_live3_y = (sin(7.0)) + cos(8.0);")
+            || contents.contains("float GLF_live3_x = 3.0;")
+                    && contents.contains("float GLF_live3_y = sin(7.0) + cos(8.0);");
+      } catch (IOException e) {
+        return false;
+      }
+    };
 
     final String reducedFilesPrefix = new ReductionDriver(
         new ReducerContext(false, version, generator, new IdGenerator()),
         false, fileOps,
         referencesSinCosAnd3, testFolder.getRoot())
-        .doReduction(state, getPrefix(tempFile), 0,-1);
+        .doReduction(state, getPrefix(tempFile), 0, -1);
 
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(
@@ -294,7 +295,7 @@ public class ReductionDriverTest {
   }
 
   @Test
-  public void testLiveGLFragColorWriteOpportunity() throws Exception {
+  public void testLiveGlFragColorWriteOpportunity() throws Exception {
     IFileJudge judge = (shaderJobFile, shaderResultFileOutput) -> {
       try {
         return
@@ -318,8 +319,7 @@ public class ReductionDriverTest {
             + "       }\n"
             + "    }"
             + "  }"
-            + "}",
-    "{ }", false);
+            + "}", "{ }", false);
     final String expected = "void main() {"
           + "   if(true) {"
           + "   }"
@@ -333,18 +333,18 @@ public class ReductionDriverTest {
   @Test
   public void testInlineReduceEverywhere() throws Exception {
     final IFileJudge judge = new CheckAstFeaturesFileJudge(
-          Arrays.asList(
-                () -> new CheckAstFeatureVisitor() {
-                  @Override
-                  public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-                    super.visitFunctionCallExpr(functionCallExpr);
-                    if (functionCallExpr.getCallee().equals("sin")) {
-                      trigger();
-                    }
-                  }
-                }), ShaderKind.FRAGMENT, fileOps);
+        Collections.singletonList(
+            () -> new CheckAstFeatureVisitor() {
+              @Override
+              public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+                super.visitFunctionCallExpr(functionCallExpr);
+                if (functionCallExpr.getCallee().equals("sin")) {
+                  trigger();
+                }
+              }
+            }), ShaderKind.FRAGMENT, fileOps);
 
-    final String resultFilesPrefix = reduce(judge,"float foo(float a) { return sin(a); }"
+    final String resultFilesPrefix = reduce(judge, "float foo(float a) { return sin(a); }"
                 + "void main() {"
                 + "  float f = foo(42.0);"
                 + "}",
@@ -361,16 +361,16 @@ public class ReductionDriverTest {
   @Test
   public void testInlineLiveCode() throws Exception {
     final IFileJudge judge = new CheckAstFeaturesFileJudge(
-          Arrays.asList(
-                () -> new CheckAstFeatureVisitor() {
-                  @Override
-                  public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-                    super.visitFunctionCallExpr(functionCallExpr);
-                    if (functionCallExpr.getCallee().equals("sin")) {
-                      trigger();
-                    }
-                  }
-                }), ShaderKind.FRAGMENT, fileOps);
+        Collections.singletonList(
+            () -> new CheckAstFeatureVisitor() {
+              @Override
+              public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+                super.visitFunctionCallExpr(functionCallExpr);
+                if (functionCallExpr.getCallee().equals("sin")) {
+                  trigger();
+                }
+              }
+            }), ShaderKind.FRAGMENT, fileOps);
 
     final String resultFilesPrefix = reduce(judge,
         "vec3 GLF_live3intersects(vec3 GLF_live3src, vec3 GLF_live3direction) {"
@@ -429,8 +429,7 @@ public class ReductionDriverTest {
     assertTrue(new File(testFolder.getRoot(), Constants.REDUCTION_INCOMPLETE).exists());
 
     CompareAsts.assertEqualAsts(program,
-        ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix +
-        ".frag")));
+        ParseHelper.parse(new File(testFolder.getRoot(), resultFilesPrefix + ".frag")));
 
   }
 
@@ -524,17 +523,17 @@ public class ReductionDriverTest {
 
   @Test
   public void testReductionWithUniformBindings() throws Exception {
-    final TranslationUnit fragShader = ParseHelper.parse("layout(location = 0) out vec4 " +
-        "_GLF_color;" +
-        "uniform float a; " +
-        "uniform float b;" +
-        "void main() {" +
-        "  if (a > b) {" +
-        "    _GLF_color = vec4(1.0);" +
-        "  } else {" +
-        "    _GLF_color = vec4(0.0);" +
-        "  }" +
-        "}");
+    final TranslationUnit fragShader = ParseHelper.parse("layout(location = 0) out vec4 "
+        + "_GLF_color;"
+        + "uniform float a; "
+        + "uniform float b;"
+        + "void main() {"
+        + "  if (a > b) {"
+        + "    _GLF_color = vec4(1.0);"
+        + "  } else {"
+        + "    _GLF_color = vec4(0.0);"
+        + "  }"
+        + "}");
     final String expected = "void main() { }";
     PipelineInfo pipelineInfo = new PipelineInfo();
     pipelineInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Arrays.asList(1.0));
@@ -557,23 +556,24 @@ public class ReductionDriverTest {
         (unused, item) -> true, workDir)
         .doReduction(shaderJob, "temp", 0, 100);
 
-    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(),
+        resultsPrefix + ".frag")));
 
   }
 
   @Test
   public void testReductionWithPushConstantBinding() throws Exception {
-    final TranslationUnit fragShader = ParseHelper.parse("layout(location = 0) out vec4 " +
-        "_GLF_color;" +
-        "uniform float a; " +
-        "uniform float b;" +
-        "void main() {" +
-        "  if (a > b) {" +
-        "    _GLF_color = vec4(1.0);" +
-        "  } else {" +
-        "    _GLF_color = vec4(0.0);" +
-        "  }" +
-        "}");
+    final TranslationUnit fragShader = ParseHelper.parse("layout(location = 0) out vec4 "
+        + "_GLF_color;"
+        + "uniform float a; "
+        + "uniform float b;"
+        + "void main() {"
+        + "  if (a > b) {"
+        + "    _GLF_color = vec4(1.0);"
+        + "  } else {"
+        + "    _GLF_color = vec4(0.0);"
+        + "  }"
+        + "}");
     final String expected = "layout(location = 0) out vec4 _GLF_color;\n"
         + "\n"
         + "layout(push_constant) uniform buf_push {\n"
@@ -610,7 +610,8 @@ public class ReductionDriverTest {
         (unused, item) -> true, workDir)
         .doReduction(shaderJob, "temp", 0, 100);
 
-    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(),
+        resultsPrefix + ".frag")));
 
   }
 
@@ -701,7 +702,8 @@ public class ReductionDriverTest {
         workDir)
         .doReduction(shaderJob, "temp", 0, 100);
 
-    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(),
+        resultsPrefix + ".frag")));
 
   }
 
@@ -743,20 +745,20 @@ public class ReductionDriverTest {
     final IFileJudge usesFooFileJudge =
         new CheckAstFeaturesFileJudge(Arrays.asList(
             () -> new CheckAstFeatureVisitor() {
-          @Override
-          public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-                super.visitFunctionCallExpr(functionCallExpr);
-                if (functionCallExpr.getCallee().equals("foo")) {
-                  trigger();
-                }
-              }
-            },
+              @Override
+              public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+                    super.visitFunctionCallExpr(functionCallExpr);
+                    if (functionCallExpr.getCallee().equals("foo")) {
+                      trigger();
+                    }
+                  }
+                },
             () -> new CheckAstFeatureVisitor() {
               @Override
               public void visitReturnStmt(ReturnStmt returnStmt) {
                 super.visitReturnStmt(returnStmt);
-                if (returnStmt.hasExpr() && returnStmt.getExpr() instanceof IntConstantExpr &&
-                    ((IntConstantExpr) returnStmt.getExpr()).getNumericValue() == 1) {
+                if (returnStmt.hasExpr() && returnStmt.getExpr() instanceof IntConstantExpr
+                    && ((IntConstantExpr) returnStmt.getExpr()).getNumericValue() == 1) {
                   trigger();
                 }
               }
@@ -774,7 +776,8 @@ public class ReductionDriverTest {
         workDir)
         .doReduction(shaderJob, "temp", 0, 100);
 
-    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(),
+        resultsPrefix + ".frag")));
 
   }
 
@@ -846,7 +849,8 @@ public class ReductionDriverTest {
           workDir)
           .doReduction(shaderJob, "temp", 0, 100);
 
-      CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+      CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(),
+          resultsPrefix + ".frag")));
     }
 
   }
@@ -899,7 +903,8 @@ public class ReductionDriverTest {
         workDir)
         .doReduction(shaderJob, "temp", 0, 100);
 
-    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(), resultsPrefix + ".frag")));
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(),
+        resultsPrefix + ".frag")));
 
   }
 
@@ -926,7 +931,8 @@ public class ReductionDriverTest {
 
     final IFileJudge customFileJudge = new IFileJudge() {
       @Override
-      public boolean isInteresting(File shaderJobFile, File shaderResultFileOutput) throws FileJudgeException {
+      public boolean isInteresting(File shaderJobFile, File shaderResultFileOutput)
+          throws FileJudgeException {
         try {
           fileOps.areShadersValid(shaderJobFile, true);
         } catch (IOException | InterruptedException exception) {

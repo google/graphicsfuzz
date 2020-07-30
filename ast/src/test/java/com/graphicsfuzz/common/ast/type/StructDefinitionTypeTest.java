@@ -16,14 +16,14 @@
 
 package com.graphicsfuzz.common.ast.type;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.typing.Scope;
 import java.util.Arrays;
 import java.util.Optional;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 
 public class StructDefinitionTypeTest {
 
@@ -103,20 +103,23 @@ public class StructDefinitionTypeTest {
 
   @Test
   public void testEquals() {
-    StructDefinitionType t1 = new StructDefinitionType(new StructNameType("astruct"),
+    final StructDefinitionType t1 = new StructDefinitionType(new StructNameType("astruct"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
-    StructDefinitionType t2 = new StructDefinitionType(new StructNameType("astruct"),
+    final StructDefinitionType t2 = new StructDefinitionType(new StructNameType("astruct"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
-    StructDefinitionType t3 = new StructDefinitionType(new StructNameType("anotherstruct"),
+    final StructDefinitionType t3 = new StructDefinitionType(new StructNameType("anotherstruct"),
         Arrays.asList("x", "y"),
         Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
-    StructDefinitionType t4 = new StructDefinitionType(Optional.empty(), Arrays.asList("x", "y"),
+    final StructDefinitionType t4 = new StructDefinitionType(Optional.empty(),
+        Arrays.asList("x", "y"),
         Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
-    StructDefinitionType t5 = new StructDefinitionType(Optional.empty(), Arrays.asList("x", "y"),
+    final StructDefinitionType t5 = new StructDefinitionType(Optional.empty(),
+        Arrays.asList("x", "y"),
         Arrays.asList(BasicType.MAT4X4, BasicType.VEC4));
-    StructDefinitionType t6 = new StructDefinitionType(Optional.empty(), Arrays.asList("x", "y"),
+    final StructDefinitionType t6 = new StructDefinitionType(Optional.empty(),
+        Arrays.asList("x", "y"),
         Arrays.asList(BasicType.MAT3X4, BasicType.VEC4));
 
     assertEquals(t1, t2);
