@@ -159,12 +159,9 @@ public class GeneratorUnitTest {
             GenerationParams.normal(ShaderKind.FRAGMENT, true),
         false), TransformationProbabilities.likelyDonateLiveCode(),
         "donatelive",
-        Arrays.asList("squares.json"),
-        Arrays.asList("squares.json"));
-        // Reason for excluding^: slow.
         Collections.singletonList("squares.json"),
         Collections.singletonList("squares.json"));
-        // Reason for excluding^: slow.
+    // Reason for excluding^: slow.
   }
 
   @Test
