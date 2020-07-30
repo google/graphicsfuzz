@@ -16,14 +16,14 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class FunctionReductionOpportunitiesTest {
 
@@ -32,9 +32,10 @@ public class FunctionReductionOpportunitiesTest {
     String program = "void notCalled() { }"
         + "void main() { }";
     TranslationUnit tu = ParseHelper.parse(program);
-    assertEquals(1, FunctionReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()))
-    .size());
+    assertEquals(1, FunctionReductionOpportunities.findOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu),
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+              new RandomWrapper(0), new IdGenerator())).size());
   }
 
 }

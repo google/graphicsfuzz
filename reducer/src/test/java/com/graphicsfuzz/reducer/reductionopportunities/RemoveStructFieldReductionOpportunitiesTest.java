@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
@@ -24,9 +27,6 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 public class RemoveStructFieldReductionOpportunitiesTest {
 
@@ -42,13 +42,16 @@ public class RemoveStructFieldReductionOpportunitiesTest {
         + "};\n"
         + "void f(float x)\n"
         + "{\n"
-        + "    _GLF_struct_16 _GLF_struct_replacement_17 = _GLF_struct_16(_GLF_struct_15(1, x + 1.0, mat3(1.0)));\n"
+        + "    _GLF_struct_16 _GLF_struct_replacement_17 = _GLF_struct_16(_GLF_struct_15(1, "
+                + "x + 1.0, mat3(1.0)));\n"
         + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program);
 
     assertEquals(2, RemoveStructFieldReductionOpportunities
-          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator())).size());
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+              new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                  new RandomWrapper(0), new IdGenerator())).size());
 
   }
 
@@ -67,8 +70,10 @@ public class RemoveStructFieldReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    assertEquals(0, RemoveStructFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator())).size());
+    assertEquals(0, RemoveStructFieldReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+              new RandomWrapper(0), new IdGenerator())).size());
 
   }
 
@@ -100,10 +105,12 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveStructFieldReductionOpportunity> ops = RemoveStructFieldReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-              new ReducerContext(true, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+              new ReducerContext(true, ShadingLanguageVersion.ESSL_100,
+                  new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu), PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)));
+    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(tu),
+        PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)));
   }
 
   @Test
@@ -117,7 +124,8 @@ public class RemoveStructFieldReductionOpportunitiesTest {
           + "};\n"
           + "void f(float x)\n"
           + "{\n"
-          + "    _GLF_struct_16 _GLF_struct_replacement_17 = _GLF_struct_16(_GLF_struct_15(1, 2));\n"
+          + "    _GLF_struct_16 _GLF_struct_replacement_17 = "
+                  + "_GLF_struct_16(_GLF_struct_15(1, 2));\n"
           + "}\n";
     final String expected = "struct _GLF_struct_15 {\n"
           + "    int _f1;\n"
@@ -133,7 +141,9 @@ public class RemoveStructFieldReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(program);
 
     final List<RemoveStructFieldReductionOpportunity> ops = RemoveStructFieldReductionOpportunities
-          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+              new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                  new RandomWrapper(0), new IdGenerator()));
     assertEquals(2, ops
           .size());
     ops.stream().filter(item -> item.getFieldToRemove().equals("_f0"))
@@ -142,7 +152,8 @@ public class RemoveStructFieldReductionOpportunitiesTest {
           PrettyPrinterVisitor.prettyPrintAsString(tu));
     // Now that we have removed this field, removing the other field should have no effect
     // as the reduction opportunity's precondititon should no longer hold.
-    final RemoveStructFieldReductionOpportunity op = ops.stream().filter(item -> item.getFieldToRemove().equals("_f1"))
+    final RemoveStructFieldReductionOpportunity op = ops.stream()
+        .filter(item -> item.getFieldToRemove().equals("_f1"))
           .findAny().get();
     assertFalse(op.preconditionHolds());
     op.applyReduction();

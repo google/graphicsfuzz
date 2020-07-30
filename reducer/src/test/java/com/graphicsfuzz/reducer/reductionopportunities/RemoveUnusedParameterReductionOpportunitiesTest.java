@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
@@ -25,33 +27,31 @@ import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 public class RemoveUnusedParameterReductionOpportunitiesTest {
 
   @Test
   public void testRemoveParam() throws Exception {
-    final String shader = "float foo(int a, float b, float c) {" +
-      "  return b;" +
-      "}" +
-      "" +
-      "void main() {" +
-      "  foo(5, 4.0, 2.0);" +
-      "}";
-    final String expectedResult = "float foo(float b) {" +
-      "  return b;" +
-      "}" +
-      "" +
-      "void main() {" +
-      "  foo(4.0);" +
-      "}";
+    final String shader = "float foo(int a, float b, float c) {"
+        + "  return b;"
+        + "}"
+        + ""
+        + "void main() {"
+        + "  foo(5, 4.0, 2.0);"
+        + "}";
+    final String expectedResult = "float foo(float b) {"
+        + "  return b;"
+        + "}"
+        + ""
+        + "void main() {"
+        + "  foo(4.0);"
+        + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
-      findOpportunities(tu, true);
+        findOpportunities(tu, true);
     assertEquals(2, opportunities.size());
     opportunities.get(0).applyReduction();
     opportunities =
-      findOpportunities(tu, true);
+        findOpportunities(tu, true);
     assertEquals(1, opportunities.size());
     opportunities.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expectedResult, tu);
@@ -59,23 +59,23 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
 
   @Test
   public void testRemoveParam2() throws Exception {
-    final String shader = "float foo(int a);" +
-      "float foo(int a) {" +
-      "  return 0.0;" +
-      "}" +
-      "void main() {" +
-      "  foo(2.0);" +
-      "}";
-    final String expectedResult = "float foo();" +
-      "float foo() {" +
-      "  return 0.0;" +
-      "}" +
-      "void main() {" +
-      "  foo();" +
-      "}";
+    final String shader = "float foo(int a);"
+        + "float foo(int a) {"
+        + "  return 0.0;"
+        + "}"
+        + "void main() {"
+        + "  foo(2.0);"
+        + "}";
+    final String expectedResult = "float foo();"
+        + "float foo() {"
+        + "  return 0.0;"
+        + "}"
+        + "void main() {"
+        + "  foo();"
+        + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
-      findOpportunities(tu, true);
+        findOpportunities(tu, true);
     assertEquals(1, opportunities.size());
     opportunities.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expectedResult, tu);
@@ -83,49 +83,49 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
 
   @Test
   public void testDoNotRemoveParamIfOverloaded() throws Exception {
-    final String shader = "float foo(int a, float b) {" +
-      "  return float(a);" +
-      "}" +
-      "void foo(int a) {" +
-      "}" +
-      "void main() {" +
-      "  foo(2, 3.0);" +
-      "  foo(2);" +
-      "}";
+    final String shader = "float foo(int a, float b) {"
+        + "  return float(a);"
+        + "}"
+        + "void foo(int a) {"
+        + "}"
+        + "void main() {"
+        + "  foo(2, 3.0);"
+        + "  foo(2);"
+        + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
-      findOpportunities(tu, true);
+        findOpportunities(tu, true);
     assertEquals(0, opportunities.size());
   }
 
   @Test
   public void testRemoveParamOnlyIfReduceEverywhere() throws Exception {
-    final String shader = "" +
-      "float x = 0.0;" +
-      "void bar(float a) { }" +
-      "float foo() {" +
-      "  x = 1.0;" +
-      "  return 3.0;" +
-      "}" +
-      "void main() {" +
-      "  bar(foo());" +
-      "  gl_FragColor = vec4(x);" +
-      "}";
-    final String shaderIfReduced = "" +
-      "float x = 0.0;" +
-      "void bar() { }" +
-      "float foo() {" +
-      "  x = 1.0;" +
-      "  return 3.0;" +
-      "}" +
-      "void main() {" +
-      "  bar();" +
-      "  gl_FragColor = vec4(x);" +
-      "}";
+    final String shader = ""
+        + "float x = 0.0;"
+        + "void bar(float a) { }"
+        + "float foo() {"
+        + "  x = 1.0;"
+        + "  return 3.0;"
+        + "}"
+        + "void main() {"
+        + "  bar(foo());"
+        + "  gl_FragColor = vec4(x);"
+        + "}";
+    final String shaderIfReduced = ""
+        + "float x = 0.0;"
+        + "void bar() { }"
+        + "float foo() {"
+        + "  x = 1.0;"
+        + "  return 3.0;"
+        + "}"
+        + "void main() {"
+        + "  bar();"
+        + "  gl_FragColor = vec4(x);"
+        + "}";
 
     TranslationUnit tu = ParseHelper.parse(shader);
     List<RemoveUnusedParameterReductionOpportunity> opportunities =
-      findOpportunities(tu, true);
+        findOpportunities(tu, true);
     assertEquals(1, opportunities.size());
     opportunities.get(0).applyReduction();
     CompareAsts.assertEqualAsts(shaderIfReduced, tu);
@@ -136,11 +136,13 @@ public class RemoveUnusedParameterReductionOpportunitiesTest {
     assertEquals(0, opportunities.size());
   }
 
-  private List<RemoveUnusedParameterReductionOpportunity> findOpportunities(TranslationUnit tu,
-                                                                            boolean reduceEverywhere) {
-    return RemoveUnusedParameterReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-      new ReducerContext(reduceEverywhere,
-        ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+  private List<RemoveUnusedParameterReductionOpportunity> findOpportunities(
+      TranslationUnit tu,
+      boolean reduceEverywhere) {
+    return RemoveUnusedParameterReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(reduceEverywhere,
+                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
   }
 
 }

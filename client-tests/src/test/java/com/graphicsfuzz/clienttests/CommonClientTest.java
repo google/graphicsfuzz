@@ -16,13 +16,16 @@
 
 package com.graphicsfuzz.clienttests;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.graphicsfuzz.common.util.ImageUtil;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.shadersets.RunShaderFamily;
+import com.graphicsfuzz.shadersets.ShaderDispatchException;
+import com.graphicsfuzz.util.ToolPaths;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -33,9 +36,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.graphicsfuzz.util.ToolPaths;
-import com.graphicsfuzz.common.util.ImageUtil;
-import com.graphicsfuzz.shadersets.ShaderDispatchException;
 
 public abstract class CommonClientTest {
 
@@ -123,7 +123,8 @@ public abstract class CommonClientTest {
       throws ShaderDispatchException, InterruptedException, IOException, ArgumentParserException {
     final File outputDir = temporaryFolder.newFolder();
     String[] args = {
-        FilenameUtils.removeExtension(Paths.get(getTestShadersDirectory(), fragmentShader).toString()) + ".json",
+        FilenameUtils.removeExtension(Paths.get(getTestShadersDirectory(),
+            fragmentShader).toString()) + ".json",
         "--worker", WORKERNAME, "--server", "http://localhost:8080", "--output",
         outputDir.getAbsolutePath()};
     RunShaderFamily.mainHelper(
@@ -166,7 +167,8 @@ public abstract class CommonClientTest {
     assertSimilarImages(expected, actual, 50.0);
   }
 
-  void assertSimilarImages(File expected, File actual, double threshold) throws FileNotFoundException {
+  void assertSimilarImages(File expected, File actual, double threshold)
+      throws FileNotFoundException {
     double histoDistance = ImageUtil.compareHistograms(
         ImageUtil.getHistogram(expected.getAbsolutePath()),
         ImageUtil.getHistogram(actual.getAbsolutePath()));

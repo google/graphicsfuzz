@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.tester;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -63,9 +65,7 @@ import com.graphicsfuzz.util.ExecResult;
 import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -80,8 +80,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.Assert.assertEquals;
 
 public class ReducerUnitTest {
 
@@ -129,7 +127,8 @@ public class ReducerUnitTest {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
           new GlslShaderJob(Optional.empty(), pipelineInfo,
               fragmentShader),
-          new ReducerContext(false, fragmentShader.getShadingLanguageVersion(), generator, idGenerator),
+          new ReducerContext(false, fragmentShader.getShadingLanguageVersion(),
+              generator, idGenerator),
           fileOps);
       if (ops.isEmpty()) {
         break;
@@ -203,7 +202,8 @@ public class ReducerUnitTest {
         boolean throwExceptionOnInvalid) throws Exception {
 
     final File shaderJobFile =
-        Paths.get(TestShadersDirectory.getTestShadersDirectory(), "reducerregressions", shaderJobFileName).toFile();
+        Paths.get(TestShadersDirectory.getTestShadersDirectory(), "reducerregressions",
+            shaderJobFileName).toFile();
 
     final ShaderJob initialState = fileOps.readShaderJobFile(shaderJobFile);
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion
@@ -215,7 +215,8 @@ public class ReducerUnitTest {
     for (int i = 0; i < numIterations; i++) {
 
       final File workDir = temporaryFolder.newFolder();
-      fileOps.copyShaderJobFileTo(shaderJobFile, new File(workDir, shaderJobFileName), false);
+      fileOps.copyShaderJobFileTo(shaderJobFile, new File(workDir, shaderJobFileName),
+          false);
       final String shaderJobShortName = FilenameUtils.removeExtension(shaderJobFile.getName());
 
       new ReductionDriver(new ReducerContext(false,
@@ -281,7 +282,8 @@ public class ReducerUnitTest {
   @Test
   public void testIntricateReduction() throws Exception {
 
-    final Supplier<CheckAstFeatureVisitor> involvesFloatLiteral1 = () -> new CheckAstFeatureVisitor() {
+    final Supplier<CheckAstFeatureVisitor> involvesFloatLiteral1 = () ->
+        new CheckAstFeatureVisitor() {
       @Override
       public void visitFloatConstantExpr(FloatConstantExpr floatConstantExpr) {
         super.visitFloatConstantExpr(floatConstantExpr);
@@ -291,7 +293,8 @@ public class ReducerUnitTest {
       }
     };
 
-    final Supplier<CheckAstFeatureVisitor> involvesFloatLiteral2 = () -> new CheckAstFeatureVisitor() {
+    final Supplier<CheckAstFeatureVisitor> involvesFloatLiteral2 = () ->
+        new CheckAstFeatureVisitor() {
       @Override
       public void visitFloatConstantExpr(FloatConstantExpr floatConstantExpr) {
         super.visitFloatConstantExpr(floatConstantExpr);
@@ -301,7 +304,8 @@ public class ReducerUnitTest {
       }
     };
 
-    final Supplier<CheckAstFeatureVisitor> involvesVariable1 = () -> new CheckAstFeatureVisitor() {
+    final Supplier<CheckAstFeatureVisitor> involvesVariable1 = () ->
+        new CheckAstFeatureVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
@@ -311,7 +315,8 @@ public class ReducerUnitTest {
       }
     };
 
-    final Supplier<CheckAstFeatureVisitor> involvesVariable2 = () -> new CheckAstFeatureVisitor() {
+    final Supplier<CheckAstFeatureVisitor> involvesVariable2 = () ->
+        new CheckAstFeatureVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
@@ -321,7 +326,8 @@ public class ReducerUnitTest {
       }
     };
 
-    final Supplier<CheckAstFeatureVisitor> involvesVariable3 = () -> new CheckAstFeatureVisitor() {
+    final Supplier<CheckAstFeatureVisitor> involvesVariable3 = () ->
+        new CheckAstFeatureVisitor() {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
@@ -331,7 +337,8 @@ public class ReducerUnitTest {
       }
     };
 
-    final Supplier<CheckAstFeatureVisitor> involvesSpecialAssignment = () -> new CheckAstFeatureVisitor() {
+    final Supplier<CheckAstFeatureVisitor> involvesSpecialAssignment = () ->
+        new CheckAstFeatureVisitor() {
       @Override
       public void visitBinaryExpr(BinaryExpr binaryExpr) {
         super.visitBinaryExpr(binaryExpr);
@@ -341,10 +348,12 @@ public class ReducerUnitTest {
         if (!(binaryExpr.getLhs() instanceof MemberLookupExpr)) {
           return;
         }
-        if (!(((MemberLookupExpr) binaryExpr.getLhs()).getStructure() instanceof VariableIdentifierExpr)) {
+        if (!(((MemberLookupExpr) binaryExpr.getLhs()).getStructure()
+            instanceof VariableIdentifierExpr)) {
           return;
         }
-        if (!((VariableIdentifierExpr)((MemberLookupExpr) binaryExpr.getLhs()).getStructure()).getName()
+        if (!((VariableIdentifierExpr)((MemberLookupExpr) binaryExpr.getLhs()).getStructure())
+            .getName()
               .equals("GLF_merged2_0_1_10_1_1_11GLF_live0tGLF_live0v2")) {
           return;
         }
@@ -362,7 +371,8 @@ public class ReducerUnitTest {
     };
 
     IFileJudge judge = new CheckAstFeaturesFileJudge(Arrays.asList(
-          involvesFloatLiteral1, involvesFloatLiteral2, involvesVariable1, involvesVariable2, involvesVariable3, involvesSpecialAssignment),
+          involvesFloatLiteral1, involvesFloatLiteral2, involvesVariable1, involvesVariable2,
+        involvesVariable3, involvesSpecialAssignment),
           ShaderKind.FRAGMENT, fileOps);
     final File shaderJobFile = Paths.get(TestShadersDirectory.getTestShadersDirectory(),
         "reducerregressions", "intricate.json").toFile();
@@ -427,6 +437,23 @@ public class ReducerUnitTest {
     int numSteps = 20;
 
     GlslReduce.mainHelper(new String[] {
+        referenceJson.getAbsolutePath(),
+        "--swiftshader",
+        "--reduction-kind",
+        "IDENTICAL",
+        "--reference",
+        referenceJsonFakeResult.getAbsolutePath(),
+        "--max-steps",
+        String.valueOf(numSteps),
+        "--seed",
+        "0",
+        "--output",
+        output.getAbsolutePath()
+    }, null);
+
+    while (new File(output, Constants.REDUCTION_INCOMPLETE).exists()) {
+      numSteps += 5;
+      GlslReduce.mainHelper(new String[] {
           referenceJson.getAbsolutePath(),
           "--swiftshader",
           "--reduction-kind",
@@ -438,30 +465,13 @@ public class ReducerUnitTest {
           "--seed",
           "0",
           "--output",
-          output.getAbsolutePath()
-    }, null);
-
-    while (new File(output, Constants.REDUCTION_INCOMPLETE).exists()) {
-      numSteps += 5;
-      GlslReduce.mainHelper(new String[] {
-            referenceJson.getAbsolutePath(),
-            "--swiftshader",
-            "--reduction-kind",
-            "IDENTICAL",
-            "--reference",
-            referenceJsonFakeResult.getAbsolutePath(),
-            "--max-steps",
-            String.valueOf(numSteps),
-            "--seed",
-            "0",
-            "--output",
-            output.getAbsolutePath(),
-            "--continue-previous-reduction"
+          output.getAbsolutePath(),
+          "--continue-previous-reduction"
       }, null);
     }
 
     final File[] finalResults = output.listFiles((dir, file)
-          -> file.contains("final") && file.endsWith(".frag"));
+        -> file.contains("final") && file.endsWith(".frag"));
     assertEquals(1, finalResults.length);
     assertEquals(
           PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse("#version 100\n"
@@ -483,9 +493,9 @@ public class ReducerUnitTest {
     // This should throw a FileNotFoundException, because REDUCTION_INCOMPLETE
     // will not be present.
     GlslReduce.mainHelper(new String[] { "--swiftshader", "--continue-previous-reduction",
-          json.getAbsolutePath(), "--output",
-          output.getAbsolutePath(),
-          "--reduction-kind", "NO_IMAGE" }, null);
+        json.getAbsolutePath(), "--output",
+        output.getAbsolutePath(),
+        "--reduction-kind", "NO_IMAGE" }, null);
   }
 
   @Test
@@ -508,18 +518,18 @@ public class ReducerUnitTest {
     assertEquals(0, referenceResult.res);
     final File output = temporaryFolder.newFolder();
     GlslReduce.mainHelper(new String[] {
-          referenceJson.getAbsolutePath(),
-          "--swiftshader",
-          "--reduction-kind",
-          "IDENTICAL",
-          "--reference",
-          referenceJsonFakeResult.getAbsolutePath(),
-          "--max-steps",
-          "-1",
-          "--seed",
-          "0",
-          "--output",
-          output.getAbsolutePath() }, null);
+        referenceJson.getAbsolutePath(),
+        "--swiftshader",
+        "--reduction-kind",
+        "IDENTICAL",
+        "--reference",
+        referenceJsonFakeResult.getAbsolutePath(),
+        "--max-steps",
+        "-1",
+        "--seed",
+        "0",
+        "--output",
+        output.getAbsolutePath() }, null);
   }
 
 }

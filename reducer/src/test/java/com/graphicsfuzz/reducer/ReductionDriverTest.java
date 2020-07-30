@@ -286,7 +286,7 @@ public class ReductionDriverTest {
         new ReducerContext(false, version, generator, new IdGenerator()),
         false, fileOps,
         referencesSinCosAnd3, testFolder.getRoot())
-        .doReduction(state, getPrefix(tempFile), 0,-1);
+        .doReduction(state, getPrefix(tempFile), 0, -1);
 
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
           PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(
@@ -344,7 +344,7 @@ public class ReductionDriverTest {
               }
             }), ShaderKind.FRAGMENT, fileOps);
 
-    final String resultFilesPrefix = reduce(judge,"float foo(float a) { return sin(a); }"
+    final String resultFilesPrefix = reduce(judge, "float foo(float a) { return sin(a); }"
                 + "void main() {"
                 + "  float f = foo(42.0);"
                 + "}",

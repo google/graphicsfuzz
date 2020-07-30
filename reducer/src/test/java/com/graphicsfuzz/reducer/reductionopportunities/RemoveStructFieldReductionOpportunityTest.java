@@ -61,35 +61,41 @@ public class RemoveStructFieldReductionOpportunityTest {
     VariableDeclInfo v2 = new VariableDeclInfo("v2", null,
         new Initializer(fooConstructor.clone()));
 
-    DeclarationStmt declarationStmt = new DeclarationStmt(new VariablesDeclaration(foo.getStructNameType(),
+    DeclarationStmt declarationStmt = new DeclarationStmt(
+        new VariablesDeclaration(foo.getStructNameType(),
         Arrays.asList(v1, v2)));
 
     BlockStmt b = new BlockStmt(
         Arrays.asList(
             declarationStmt), false);
 
-    assertEquals("foo v1 = foo(1.0, bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0))), v2 = foo(1.0, bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)));\n",
+    assertEquals("foo v1 = foo(1.0, bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), "
+            + "bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0))), v2 = foo(1.0, bar(vec2(0.0, 0.0), "
+            + "vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)));\n",
         declarationStmt.getText());
 
-    IReductionOpportunity ro1 = new RemoveStructFieldReductionOpportunity(foo, "a", b,
-        new VisitationDepth(0));
-    IReductionOpportunity ro2 = new RemoveStructFieldReductionOpportunity(bar, "x", b,
-        new VisitationDepth(0));
-    IReductionOpportunity ro3 = new RemoveStructFieldReductionOpportunity(foo, "c", b,
-        new VisitationDepth(0));
+    final IReductionOpportunity ro1 = new RemoveStructFieldReductionOpportunity(foo, "a",
+        b, new VisitationDepth(0));
+    final IReductionOpportunity ro2 = new RemoveStructFieldReductionOpportunity(bar, "x",
+        b, new VisitationDepth(0));
+    final IReductionOpportunity ro3 = new RemoveStructFieldReductionOpportunity(foo, "c",
+        b, new VisitationDepth(0));
 
     assertEquals(2, bar.getNumFields());
     assertEquals(3, foo.getNumFields());
 
     ro1.applyReduction();
-    assertEquals("foo v1 = foo(bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0))), v2 = foo(bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)));\n",
+    assertEquals("foo v1 = foo(bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), bar(vec2(0.0, 0.0), "
+            + "vec3(0.0, 0.0, 0.0))), v2 = foo(bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)), "
+            + "bar(vec2(0.0, 0.0), vec3(0.0, 0.0, 0.0)));\n",
         declarationStmt.getText());
 
     assertEquals(2, bar.getNumFields());
     assertEquals(2, foo.getNumFields());
 
     ro2.applyReduction();
-    assertEquals("foo v1 = foo(bar(vec3(0.0, 0.0, 0.0)), bar(vec3(0.0, 0.0, 0.0))), v2 = foo(bar(vec3(0.0, 0.0, 0.0)), bar(vec3(0.0, 0.0, 0.0)));\n",
+    assertEquals("foo v1 = foo(bar(vec3(0.0, 0.0, 0.0)), bar(vec3(0.0, 0.0, 0.0))), "
+            + "v2 = foo(bar(vec3(0.0, 0.0, 0.0)), bar(vec3(0.0, 0.0, 0.0)));\n",
         declarationStmt.getText());
 
     assertEquals(1, bar.getNumFields());

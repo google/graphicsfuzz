@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.generator.transformation.injection;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
@@ -23,18 +25,17 @@ import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class InjectionPointsTest {
 
   @Test
   public void testNoInjectAtStartOfSwitch() throws Exception {
-    final String prog = "void main() { /* injection point */ switch(1) { /* not injection point */ default: /* injection point */ break; /* injection point */ } /* injection point */ }";
+    final String prog = "void main() { /* injection point */ switch(1) { /* not injection point */"
+        + " default: /* injection point */ break; /* injection point */ } /* injection point */ }";
     TranslationUnit tu = ParseHelper.parse(prog);
-    List<IInjectionPoint> injectionPointList = new InjectionPoints(tu, new RandomWrapper(0), item -> true).getAllInjectionPoints();
+    List<IInjectionPoint> injectionPointList = new InjectionPoints(tu, new RandomWrapper(0),
+        item -> true).getAllInjectionPoints();
     assertEquals(4, injectionPointList.size());
   }
 
@@ -43,7 +44,8 @@ public class InjectionPointsTest {
     final String prog = "void main() { ; ; ; ; ; ; }";
     final String expected = "void main() { ; ; ; 1; ; ; }";
     TranslationUnit tu = ParseHelper.parse(prog);
-    List<IInjectionPoint> injectionPointList = new InjectionPoints(tu, new RandomWrapper(0), item -> true).getAllInjectionPoints();
+    List<IInjectionPoint> injectionPointList = new InjectionPoints(tu, new RandomWrapper(0),
+        item -> true).getAllInjectionPoints();
     assertEquals(7, injectionPointList.size());
     injectionPointList.get(3).replaceNext(new ExprStmt(new IntConstantExpr("1")));
     CompareAsts.assertEqualAsts(expected, tu);
@@ -54,7 +56,8 @@ public class InjectionPointsTest {
     final String prog = "void main() { discard; discard; discard; discard; discard; discard; }";
     final String expected = "void main() { discard; discard; discard; 1; discard; discard; }";
     TranslationUnit tu = ParseHelper.parse(prog);
-    List<IInjectionPoint> injectionPointList = new InjectionPoints(tu, new RandomWrapper(0), item -> true).getAllInjectionPoints();
+    List<IInjectionPoint> injectionPointList = new InjectionPoints(tu, new RandomWrapper(0),
+        item -> true).getAllInjectionPoints();
     assertEquals(7, injectionPointList.size());
     injectionPointList.get(3).replaceNext(new ExprStmt(new IntConstantExpr("1")));
     CompareAsts.assertEqualAsts(expected, tu);
@@ -65,7 +68,8 @@ public class InjectionPointsTest {
     final String prog = "void main() { for(;;) { break; break; break; } };";
     final String expected = "void main() { for(;;) { 1; break; break; } };";
     TranslationUnit tu = ParseHelper.parse(prog);
-    List<IInjectionPoint> injectionPointList = new InjectionPoints(tu, new RandomWrapper(0), item -> true).getAllInjectionPoints();
+    List<IInjectionPoint> injectionPointList = new InjectionPoints(tu, new RandomWrapper(0),
+        item -> true).getAllInjectionPoints();
     assertEquals(6, injectionPointList.size());
     injectionPointList.get(2).replaceNext(new ExprStmt(new IntConstantExpr("1")));
     //CompareAsts.assertEqualAsts(expected, tu);

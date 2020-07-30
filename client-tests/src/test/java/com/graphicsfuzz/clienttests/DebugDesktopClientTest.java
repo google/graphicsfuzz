@@ -17,11 +17,11 @@
 package com.graphicsfuzz.clienttests;
 
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
+import com.graphicsfuzz.server.FuzzerServer;
 import java.io.File;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import com.graphicsfuzz.server.FuzzerServer;
 
 public class DebugDesktopClientTest {
 
