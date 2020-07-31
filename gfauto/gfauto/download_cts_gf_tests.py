@@ -99,7 +99,7 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
 
     subprocess_util.run(cmd, verbose=True, working_dir=work_dir)
 
-    return util.copy_dir(
+    util.copy_dir(
         cts_out
         / "external"
         / "vulkancts"
@@ -109,6 +109,17 @@ def download_cts_graphicsfuzz_tests(  # pylint: disable=too-many-locals;
         / "graphicsfuzz",
         output_tests_dir,
     )
+
+    # Sometimes dEQP contributors add non-GraphicsFuzz AmberScript files to the graphicsfuzz directory.
+    # We remove these.
+    bad_test_names = ["texel_offset.amber"]
+
+    for bad_test_name in bad_test_names:
+        bad_test = output_tests_dir / bad_test_name
+        if bad_test.is_file():
+            bad_test.unlink()
+
+    return output_tests_dir
 
 
 GERRIT_COOKIE_INSTRUCTIONS = (
