@@ -327,8 +327,7 @@ public class LiteralToUniformReductionOpportunitiesTest {
    * opportunity at first. Then checks that the one shader had the array uniform added,
    * and the other shader stays the same. After that, another uniform is manually added to
    * the pipeline info and the rest of the opportunities are applied. The test succeeds if
-   * the bindings have not changed, the amount of opportunies is correct and literals in the
-   * shaders are replaced as expected.
+   * the number of opportunities is correct and literals in the shaders are replaced as expected.
    */
   @Test
   public void testManuallyAddedUniform() throws Exception {
@@ -396,13 +395,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(fragmentShaderNotReplaced, shaderJob.getFragmentShader().get());
     assertEquals(1, pipelineInfo.getNumUniforms());
 
-    final int bindingNumber = shaderJob.getPipelineInfo().getBinding("_GLF_uniform_int_values");
-
-    final int nextUnusedBindingNumber = shaderJob.getPipelineInfo().getUnusedBindingNumber();
     shaderJob.getPipelineInfo().addUniform("TEST", BasicType.INT,
         Optional.of(0), new ArrayList<>());
-    shaderJob.getPipelineInfo().addUniformBinding("TEST", false,
-        nextUnusedBindingNumber);
 
     ops.forEach(AbstractReductionOpportunity::applyReduction);
     assertEquals("There should be three opportunities", 3, ops.size());
@@ -410,10 +404,6 @@ public class LiteralToUniformReductionOpportunitiesTest {
 
     CompareAsts.assertEqualAsts(vertexShaderReplaced2, shaderJob.getVertexShader().get());
     CompareAsts.assertEqualAsts(fragmentShaderReplaced, shaderJob.getFragmentShader().get());
-
-    // check that the binding numbers remain the same.
-    assertEquals(bindingNumber, shaderJob.getPipelineInfo().getBinding("_GLF_uniform_int_values"));
-    assertEquals(nextUnusedBindingNumber, shaderJob.getPipelineInfo().getBinding("TEST"));
 
     // Check that the uniforms won't be recursively replaced in the next pass.
     final List<LiteralToUniformReductionOpportunity> ops2 =
