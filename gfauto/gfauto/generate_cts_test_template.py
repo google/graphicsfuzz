@@ -22,7 +22,6 @@ to generate an Amber script test suitable for adding to the CTS.
 In particular, the Amber script test is suitable for use with |add_amber_tests_to_cts.py|.
 """
 
-import sys
 from pathlib import Path
 
 from gfauto import tool, util
@@ -69,4 +68,3 @@ should be the same.""",
 
 if __name__ == "__main__":
     main()
-    sys.exit(0)
