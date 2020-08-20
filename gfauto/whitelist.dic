@@ -246,3 +246,4 @@ SIGSEGV
 SIGABRT
 DOTALL
 shrinker
+quicksort
