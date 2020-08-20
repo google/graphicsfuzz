@@ -34,7 +34,7 @@ PYTHON=${PYTHON-python3.6}
 export PIPENV_PYTHON="$(which "${PYTHON}")"
 
 # Upgrade/install pip and pipenv if needed.
-"${PYTHON}" -m pip install --upgrade --user 'pip>=20.2.2' 'pipenv>=2020.8.13'
+"${PYTHON}" -m pip install --upgrade --user 'pip>=19.2.3' 'pipenv>=2018.11.26'
 
 # Place the virtual environment at `gfauto/.venv`.
 export PIPENV_VENV_IN_PROJECT=1
