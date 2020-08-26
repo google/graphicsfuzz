@@ -402,34 +402,7 @@ public final class PipelineInfo {
 
   @Override
   public PipelineInfo clone() {
-
-    final PipelineInfo pipelineinfo = new PipelineInfo(toString());
-
-    // These are copied separately since constructing PipelineInfo from a string converts
-    // Number objects into LazilyParsedNumber objects.
-    String[] names = {Constants.FLOAT_LITERAL_UNIFORM_VALUES, Constants.INT_LITERAL_UNIFORM_VALUES,
-        Constants.UINT_LITERAL_UNIFORM_VALUES};
-    BasicType[] types = {BasicType.FLOAT, BasicType.INT, BasicType.UINT};
-
-    for (int i = 0; i < names.length; i++) {
-
-      if (hasUniform(names[i])) {
-
-        pipelineinfo.removeUniform(names[i]);
-
-        final Optional<Integer> count;
-        if (dictionary.getAsJsonObject(names[i]).has("count")) {
-          count = Optional.of(dictionary.getAsJsonObject(names[i]).get("count").getAsInt());
-        } else {
-          count = Optional.empty();
-        }
-
-        pipelineinfo.addUniform(names[i], types[i], count, getArgs(names[i]));
-      }
-
-    }
-
-    return pipelineinfo;
+    return new PipelineInfo(toString());
   }
 
 }

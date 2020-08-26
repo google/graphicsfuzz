@@ -349,29 +349,5 @@ public class PipelineInfoTest {
     assertEquals(new PipelineInfo(expectedUniforms).toString(), uniforms.toString());
   }
 
-  @Test
-  public void testClone() throws Exception {
-    final String uniforms = "{"
-        + "  \"GLF_uniform_int_values\": {"
-        + "    \"args\": ["
-        + "      1.0,"
-        + "      2.0"
-        + "    ], "
-        + "    \"func\": \"glUniform1f\", "
-        + "    \"binding\": 0"
-        + "  }, "
-        + "  \"a\": {"
-        + "    \"args\": ["
-        + "      0.0"
-        + "    ], "
-        + "    \"func\": \"glUniform1f\""
-        + "  }"
-        + "}";
-
-    final PipelineInfo pipelineInfo = new PipelineInfo(uniforms);
-    final PipelineInfo pipelineInfo2 = pipelineInfo.clone();
-    assertEquals(pipelineInfo.toString(), pipelineInfo2.toString());
-
-  }
 
 }
