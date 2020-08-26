@@ -82,8 +82,8 @@ public class SystematicReductionPassManager implements IReductionPassManager {
       }
       // This pass did not have any impact, so move on to the next pass.
       LOGGER.info("Pass " + getCurrentPass().getName() + " did not make a reduction step.");
-      passIndex++;
-      if (passIndex < currentPasses.size()) {
+      if (passIndex < currentPasses.size() - 1) {
+        passIndex++;
         anotherRoundWorthwhile |= !getCurrentPass().reachedMinimumGranularity();
       } else if (anotherRoundWorthwhile) {
         LOGGER.info("Trying another round of the current set of passes");
@@ -116,7 +116,7 @@ public class SystematicReductionPassManager implements IReductionPassManager {
     }
   }
 
-  private IReductionPass getCurrentPass() {
+  public IReductionPass getCurrentPass() {
     return currentPasses.get(passIndex);
   }
 

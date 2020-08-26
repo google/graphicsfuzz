@@ -36,4 +36,10 @@ public interface IReductionPassManager {
    */
   void notifyInteresting(boolean isInteresting);
 
+  /**
+   * Returns the pass currently being applied.
+   * @return The current reduction pass.
+   */
+  IReductionPass getCurrentPass();
+
 }

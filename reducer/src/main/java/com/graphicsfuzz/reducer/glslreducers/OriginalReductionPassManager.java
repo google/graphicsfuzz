@@ -96,7 +96,7 @@ public class OriginalReductionPassManager implements IReductionPassManager {
     getCurrentPass().notifyInteresting(isInteresting);
   }
 
-  private IReductionPass getCurrentPass() {
+  public IReductionPass getCurrentPass() {
     return passes.get(passIndex);
   }
 

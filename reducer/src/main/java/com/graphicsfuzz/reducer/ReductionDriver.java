@@ -283,24 +283,45 @@ public class ReductionDriver {
         LOGGER.info("Trying reduction attempt " + stepCount + " (" + numSuccessfulReductions
             + " successful so far).");
         final Optional<ShaderJob> maybeNewState = passManager.applyReduction(currentState);
-        if (!maybeNewState.isPresent()) {
+        if (!maybeNewState.isPresent()
+            && passManager.getCurrentPass().reachedMinimumGranularity()) {
           LOGGER.info("No more to reduce; stopping.");
           break;
         }
-        final ShaderJob newState = maybeNewState.get();
+
+        final ShaderJob newState;
+        if (maybeNewState.isPresent()) {
+          newState = maybeNewState.get();
+        } else {
+          newState = currentState;
+        }
+
         stepCount++;
         final int currentReductionAttempt = stepCount + fileCountOffset;
         String currentShaderJobShortName =
             getReductionStepShaderJobShortName(
                 shaderJobShortName,
                 currentReductionAttempt);
-        final boolean interesting = isInterestingWithCache(newState,
-            requiresUniformBindings,
-            pushConstant,
-            addGlobalLoopLimiters,
-            makeArrayAccessesInBounds,
-            addInitializers,
-            currentShaderJobShortName);
+
+        final boolean interesting;
+        if (maybeNewState.isPresent()) {
+          interesting = isInterestingWithCache(newState,
+              requiresUniformBindings,
+              pushConstant,
+              addGlobalLoopLimiters,
+              makeArrayAccessesInBounds,
+              addInitializers,
+              currentShaderJobShortName);
+        } else {
+          interesting = isInterestingNoCache(newState,
+              requiresUniformBindings,
+              pushConstant,
+              addGlobalLoopLimiters,
+              makeArrayAccessesInBounds,
+              addInitializers,
+              currentShaderJobShortName);
+        }
+
         passManager.notifyInteresting(interesting);
         final String currentStepShaderJobShortNameWithOutcome =
             getReductionStepShaderJobShortName(

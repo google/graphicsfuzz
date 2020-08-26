@@ -66,12 +66,10 @@ public class SystematicReductionPass extends AbstractReductionPass {
 
     assert granularity > 0;
 
-    if (granularity > 1) {
-      granularity = Math.max(1, granularity / 2);
-    }
 
     if (index >= opportunities.size()) {
       index = 0;
+      granularity = Math.max(1, granularity / 2);
       return Optional.empty();
     }
 
