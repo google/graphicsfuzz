@@ -23,11 +23,11 @@ import static org.junit.Assert.assertTrue;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class PipelineInfoTest {
@@ -73,11 +73,11 @@ public class PipelineInfoTest {
   @Test
   public void testAppendValueToUniform() {
     final PipelineInfo pipelineInfo = new PipelineInfo();
-    pipelineInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Arrays.asList(1.0));
+    pipelineInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Collections.singletonList(1.0));
     assertTrue(pipelineInfo.hasUniform("a"));
 
-    final List<Number> args = pipelineInfo.getArgs("a");
-    assertEquals(args, Arrays.asList(1.0));
+    final List<String> args = pipelineInfo.getArgs("a");
+    assertEquals(args, Collections.singletonList("1.0"));
 
     final String pipelineBefore = "{\n"
         + "  \"a\": {\n"
@@ -92,8 +92,8 @@ public class PipelineInfoTest {
     final int index = pipelineInfo.appendValueToUniform("a", 2.0);
     assertEquals(index, 1);
 
-    final List<Number> args2 = pipelineInfo.getArgs("a");
-    assertEquals(args2, Arrays.asList(1.0, 2.0));
+    final List<String> args2 = pipelineInfo.getArgs("a");
+    assertEquals(args2, Arrays.asList("1.0", "2.0"));
 
     final String pipelineAfter = "{\n"
         + "  \"a\": {\n"
@@ -351,18 +351,17 @@ public class PipelineInfoTest {
   }
 
   @Test
-  @Ignore
   public void testClone() throws Exception {
     final Integer one = 1;
-    
+
     final PipelineInfo pipelineInfo = new PipelineInfo();
     pipelineInfo.addUniform("GLF_uniform_int_values", BasicType.INT,
         Optional.of(0), new ArrayList<>());
     pipelineInfo.appendValueToUniform("GLF_uniform_int_values", one);
 
-    assertTrue(pipelineInfo.getArgs("GLF_uniform_int_values").contains(one));
+    assertTrue(pipelineInfo.getArgs("GLF_uniform_int_values").contains(one.toString()));
 
-    assertTrue(pipelineInfo.clone().getArgs("GLF_uniform_int_values").contains(one));
+    assertTrue(pipelineInfo.clone().getArgs("GLF_uniform_int_values").contains(one.toString()));
   }
 
 }

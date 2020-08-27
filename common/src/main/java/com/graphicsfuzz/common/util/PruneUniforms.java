@@ -138,7 +138,7 @@ public final class PruneUniforms {
 
   private static Initializer makeInitializer(BasicType baseType,
                                              ArrayInfo arrayInfo,
-                                             List<Number> args) {
+                                             List<String> args) {
     if (arrayInfo != null) {
       assert arrayInfo.getConstantSize() * baseType.getNumElements() == args.size();
       List<Expr> argExprs = new ArrayList<>();
@@ -154,10 +154,12 @@ public final class PruneUniforms {
     return new Initializer(getBasicTypeLiteralExpr(baseType, args));
   }
 
-  public static Expr getBasicTypeLiteralExpr(BasicType baseType, List<Number> args) {
+  public static Expr getBasicTypeLiteralExpr(BasicType baseType, List<String> args) {
     List<Expr> argExprs;
     if (baseType.getElementType() == BasicType.BOOL) {
-      argExprs = args.stream().map(item -> new BoolConstantExpr(item.intValue() == 1))
+      // If the type is bool then each element of "args" is required to have an integer value, thus
+      // "parseInt" should not fail.
+      argExprs = args.stream().map(item -> new BoolConstantExpr(Integer.parseInt(item) == 1))
           .collect(Collectors.toList());
     } else if (baseType.getElementType() == BasicType.FLOAT) {
       argExprs = args.stream().map(item -> new FloatConstantExpr(item.toString()))
