@@ -966,4 +966,92 @@ public class ReductionDriverTest {
     return FilenameUtils.removeExtension(tempFile.getName());
   }
 
+  @Test
+  public void testGranularityAtMinimum() throws Exception {
+
+    final String shader =
+        "#version 310 es\n"
+            + "void main() {\n"
+            + "  int a = 1;\n"
+            + "  int b = 2;\n"
+            + "  int c = 3;\n"
+            + "  int d = 4;\n"
+            + "  int e = 5;\n"
+            + "  int f = 6;\n"
+            + "}\n";
+
+    final String expected =
+        "#version 310 es\n"
+            + "layout(set = 0, binding = 0) uniform buf0 {"
+            + "int _GLF_uniform_int_values[5];"
+            + "};"
+            + "void main() {\n"
+            + "  int a = _GLF_uniform_int_values[0];\n"
+            + "  int b = _GLF_uniform_int_values[1];\n"
+            + "  int c = _GLF_uniform_int_values[2];\n"
+            + "  int d = _GLF_uniform_int_values[3];\n"
+            + "  int e = _GLF_uniform_int_values[4];\n"
+            + "  int f = 6;\n"
+            + "}\n";
+
+    class GranularityJudge implements IFileJudge {
+
+      private int counter;
+      private final ShaderJobFileOperations fileOps;
+
+      public GranularityJudge(ShaderJobFileOperations fileOps) {
+        this.counter = 0;
+        this.fileOps = fileOps;
+      }
+
+      @Override
+      public boolean isInteresting(
+          File shaderJobFile,
+          File shaderResultFileOutput
+      ) {
+        try {
+          if (!fileOps.areShadersValid(shaderJobFile, true)) {
+            return false;
+          }
+        } catch (IOException | InterruptedException ex) {
+          throw new RuntimeException(ex);
+        }
+        counter++;
+
+        // Initial state should be interesting but after the first reduction attempt, in which all
+        // the literals are replaced, the shader becomes non-interesting. However, if the reduction
+        // algorithm is correct, it keeps on running until every literal except one has been
+        // replaced.
+        if (counter == 2) {
+          return false;
+        }
+        return true;
+      }
+    }
+
+    final IFileJudge granularityJudge = new GranularityJudge(fileOps);
+
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        new PipelineInfo(),
+        ParseHelper.parse(shader));
+
+    final File workDir = testFolder.getRoot();
+    final File tempShaderJobFile = new File(workDir, "temp.json");
+    fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
+
+    final String resultsPrefix = new ReductionDriver(new ReducerContext(false,
+        ShadingLanguageVersion.ESSL_310,
+        new RandomWrapper(0),
+        new IdGenerator()),
+        false,
+        fileOps,
+        granularityJudge,
+        workDir,
+        true)
+        .doReduction(shaderJob, "temp", 0, 100);
+
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(),
+        resultsPrefix + ".frag")));
+  }
+
 }
