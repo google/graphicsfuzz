@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class PipelineInfoTest {
@@ -349,5 +350,19 @@ public class PipelineInfoTest {
     assertEquals(new PipelineInfo(expectedUniforms).toString(), uniforms.toString());
   }
 
+  @Test
+  @Ignore
+  public void testClone() throws Exception {
+    final Integer one = 1;
+    
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("GLF_uniform_int_values", BasicType.INT,
+        Optional.of(0), new ArrayList<>());
+    pipelineInfo.appendValueToUniform("GLF_uniform_int_values", one);
+
+    assertTrue(pipelineInfo.getArgs("GLF_uniform_int_values").contains(one));
+
+    assertTrue(pipelineInfo.clone().getArgs("GLF_uniform_int_values").contains(one));
+  }
 
 }
