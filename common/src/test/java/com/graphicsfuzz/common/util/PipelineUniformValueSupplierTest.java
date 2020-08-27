@@ -45,9 +45,14 @@ public class PipelineUniformValueSupplierTest {
         + "}\n";
 
     final String shaderPrettyPrinted = ""
-        + "uniform int A[3], B[2], C[1]; // Contents of A: [0, 1, 2], B: [3, 4, 5], C: 1\n"
+        + "// Contents of A: [0, 1, 2]\n"
+        + "// Contents of B: [3, 4, 5]\n"
+        + "// Contents of C: 1\n"
+        + "uniform int A[3], B[2], C[1];\n"
         + "\n"
-        + "uniform float D[3], E[1]; // Contents of D: 1.0, E: \n"
+        + "// Contents of D: 1.0\n"
+        + "// Contents of E: \n"
+        + "uniform float D[3], E[1];\n"
         + "\n"
         + "void main()\n"
         + "{\n"

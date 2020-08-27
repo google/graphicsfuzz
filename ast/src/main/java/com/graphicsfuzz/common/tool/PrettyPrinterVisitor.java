@@ -195,6 +195,38 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+
+    // If uniform variables are being declared and we have a uniform supplier that provides known
+    // values for one or more of the uniforms, we emit details of those known values in comments,
+    // one line per uniform.
+    if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
+            && uniformValues.isPresent()) {
+      // Find the variable declarations for which we have known uniform values.
+      final List<VariableDeclInfo> knownUniforms =
+          variablesDeclaration.getDeclInfos().stream()
+              .filter(uniform -> uniformValues.get()
+                  .getValues(uniform.getName()).isPresent()).collect(Collectors.toList());
+
+      // Emit a comment per known uniform.
+      for (VariableDeclInfo knownUniform : knownUniforms) {
+        final Optional<List<Number>> values = uniformValues.get().getValues(knownUniform.getName());
+        values.ifPresent(item -> {
+          out.append("// Contents of ")
+              .append(knownUniform.getName())
+              .append(": ");
+          if (item.size() > 1) {
+            out.append("[");
+          }
+          out.append(item.stream().map(Object::toString)
+              .reduce((item1, item2) -> item1 + ", " + item2).orElse(""));
+          if (item.size() > 1) {
+            out.append("]");
+          }
+        });
+        out.append("\n");
+      }
+    }
+
     final Type baseType = variablesDeclaration.getBaseType();
     visit(baseType);
     out.append(" ");
@@ -223,44 +255,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       }
     }
 
-    // If the uniform value supplier provides values for this variables declaration, emit a comment
-    // that contains the values.
-    if (uniformValues.isPresent()
-        && variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
-
-      List<VariableDeclInfo> variableDeclarationInfos =
-          variablesDeclaration.getDeclInfos().stream()
-          .filter(vdi2 -> uniformValues.get()
-              .getValues(vdi2.getName()).isPresent()).collect(Collectors.toList());
-
-      if (variableDeclarationInfos.size() > 0) {
-        out.append("; // Contents of ");
-      }
-
-      for (VariableDeclInfo vdi : variableDeclarationInfos) {
-        final Optional<List<Number>> values = uniformValues.get().getValues(vdi.getName());
-        values.ifPresent(item -> {
-
-          // If there are multiple of array declarations and the supplier provides values
-          // for more than one, the next values must be separated from the previously
-          // appended values.
-          if (variableDeclarationInfos.indexOf(vdi) > 0) {
-            out.append(", ");
-          }
-
-          out.append(vdi.getName());
-          out.append(": ");
-          if (item.size() > 1) {
-            out.append("[");
-          }
-          out.append(item.stream().map(Object::toString)
-              .reduce((item1, item2) -> item1 + ", " + item2).orElse(""));
-          if (item.size() > 1) {
-            out.append("]");
-          }
-        });
-      }
-    }
   }
 
   @Override
@@ -760,17 +754,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       IAstNode parent) {
     super.visitChildFromParent(visitorMethod, child, parent);
 
-    if (parent instanceof TranslationUnit
-        && child instanceof VariablesDeclaration) {
-      // If the value supplier provides values for this declaration, a semicolon can be omitted
-      // since it's already been added elsewhere and from here it would end up at the end
-      // of a comment.
-      if (!uniformValues.isPresent()
-          || ((VariablesDeclaration)child).getDeclInfos().stream().noneMatch(decl ->
-          uniformValues.get().getValues(decl.getName()).isPresent())) {
-        out.append(";");
-      }
-      out.append(newLine() + newLine());
+    if (parent instanceof TranslationUnit && child instanceof VariablesDeclaration) {
+      out.append(";" + newLine() + newLine());
     }
   }
 
