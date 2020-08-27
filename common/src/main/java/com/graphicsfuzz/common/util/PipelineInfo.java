@@ -75,7 +75,8 @@ public final class PipelineInfo {
       Optional<Integer> arrayCount, List<? extends Number> values) {
     assert isLegalUniformName(name);
     JsonObject info = new JsonObject();
-    info.addProperty("func", PipelineInfo.get(basicType, arrayCount.isPresent()));
+    info.addProperty("func", PipelineInfo.getGlUniformFunctionName(basicType,
+        arrayCount.isPresent()));
     JsonArray jsonValues = new JsonArray();
     for (Number n : values) {
       jsonValues.add(n);
@@ -173,14 +174,14 @@ public final class PipelineInfo {
 
   public void zeroUnsetUniforms(TranslationUnit tu) {
     // Find all uniforms not yet set, and make them zero
-    final Supplier<Float> floatSupplier = () -> new Float(0.0);
-    final Supplier<Integer> intSupplier = () -> new Integer(0);
-    final Supplier<Integer> uintSupplier = () -> new Integer(0);
-    final Supplier<Integer> boolSupplier = () -> new Integer(0);
+    final Supplier<Float> floatSupplier = () -> 0.0f;
+    final Supplier<Integer> intSupplier = () -> 0;
+    final Supplier<Integer> uintSupplier = () -> 0;
+    final Supplier<Integer> boolSupplier = () -> 0;
     setUniforms(tu, floatSupplier, intSupplier, uintSupplier, boolSupplier);
   }
 
-  private static String get(BasicType type, boolean isArray) {
+  private static String getGlUniformFunctionName(BasicType type, boolean isArray) {
     String result = "glUniform";
 
     if (type.isMatrix()) {
@@ -314,12 +315,19 @@ public final class PipelineInfo {
     return new PipelineInfo(newUniformsInfo);
   }
 
-  public List<Number> getArgs(String uniformName) {
-    final List<Number> result = new ArrayList<>();
+  /**
+   * Returns the contents of the numeric arguments associated with "uniformName" as strings.
+   * Strings are used in order to insulate against internal details of the way numbers are
+   * represented by the underlying JSON library.
+   * @param uniformName The name of the uniform whose numeric arguments are to be retrieved.
+   * @return The numeric arguments associated with the uniforms, as strings.
+   */
+  public List<String> getArgs(String uniformName) {
+    final List<String> result = new ArrayList<>();
     final JsonArray args = lookupUniform(uniformName).get("args")
           .getAsJsonArray();
     for (int i = 0; i < args.size(); i++) {
-      result.add(args.get(i).getAsNumber());
+      result.add(args.get(i).toString());
     }
     return result;
   }
