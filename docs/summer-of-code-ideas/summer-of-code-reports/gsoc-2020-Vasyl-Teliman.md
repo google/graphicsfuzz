@@ -12,7 +12,7 @@
 ## High-level feedback
 I've decided to put this section first since it's somewhat unlikely that a potential GSoC student will read through all the information in this document :)
 
-In any way, I'm glad I've had an opportunity to participate in this project. It was a pleasure working with my mentors, doing code reviews and implementing various
+I'm glad I've had the opportunity to participate in this project. It was a pleasure working with my mentors, doing code reviews and implementing various
 interesting features.
 
 Don't be afraid to apply even if you have very little experience in the field at hand. You will learn everything you need to know along the way.
@@ -263,9 +263,9 @@ must be satisfied. Specific transformations and various challenging implementati
 #### [#3477](https://github.com/KhronosGroup/SPIRV-Tools/pull/3477): Permute instructions in the basic block
 There are simple algorithms that produce a random permutation of the sequence of elements. However, they can't be used to permute instructions in the basic block.
 This is because:
-1. Domination rules must be satisfied. That being said, every definition must dominate (read 'precede') all of its users. There are exceptions to this rule but
+1. Domination rules must be satisfied. Thus, every definition must dominate (read 'precede') all of its users. There are exceptions to this rule but
 we won't discuss them here.
-2. Swapping some instructions might change the semantics of the program. This is usually the case with instructions that cause side-effects: deal with memory, synchronization etc.
+2. Swapping some instructions might change the semantics of the program. This is usually the case with instructions that have side-effects: deal with memory, synchronization etc.
 
 Thus, the transformation simply swaps two consecutive instructions instead of permuting a range of them. This approach simplifies the implementation
 and makes the code more readable. Moreover, it is still able to produce a random permutation of all instructions since the transformation can be applied
@@ -276,13 +276,18 @@ This transformation is part of the idea of being able to permute instructions in
 
 This transformation has the same challenges as the previous one and more.
 1. Domination rules must be satisfied. We must make sure that all dependencies of the original instruction (before the instruction is propagated) dominate all the
-propagated copies of the original instruction. In the case of this transformation, `dominates` does not mean `syntactically precedes` if the original instruction is in the loop.
+propagated copies of the original instruction. In the case of this transformation, `dominates` does not mean `syntactically precedes` if the original instruction is in a loop.
 2. We can't always guarantee that the propagated copy of the original instruction dominates all users of the original instruction. Thus, we do not preserve the id of
 the original instruction and instead decide if we can replace all usages of that id with propagated ids.
-3. Some propagated instructions might cause side-effects (e.g. write to memory etc). Thus, we might change the semantics of the program if we try to propagate them.
+3. Some propagated instructions might have side-effects (e.g. write to memory etc). Thus, we might change the semantics of the program if we try to propagate them.
 
-There seems to be no single simple approach to overcome all these challenges. Thus, the transformation contains a sequence of conditions that must be satisfied to make
-sure that the program's semantics remain the same.
+There seems to be no single simple approach to overcome all these challenges. Thus, the transformation contains a sequence of conditions that must be satisfied to make sure that the program's semantics remain the same. Some of those conditions are:
+1. Check that all users of the original instruction are dominated by at least one propagated copy of that instruction.
+2. We can't propagate an instruction into its block's successor if the latter has an `OpPhi` that uses the original instruction. This is because the original
+instruction will be removed from its block.
+3. Check that all dependencies of the original instruction dominate all propagated copies of that instruction.
+
+All these conditions (and some more) must be satisfied to make sure that domination rules are satisfied as well.
 
 #### [#3674](https://github.com/KhronosGroup/SPIRV-Tools/pull/3674): Outline selection constructs
 The idea behind this transformation can be simply explained as follows.
@@ -330,6 +335,11 @@ Thus, the transformation does not create any new basic blocks and instead reuses
     </td>
   </tr>
 </table>
+
+Some of the conditions, required by this transformation, are:
+1. An outlined region of blocks must be single-entry, single-exit (i.e. all blocks in the region are dominated by the entry block and postdominated by the exit block). This particular condition can be relaxed in the future, though.
+2. The entry block may not be a header block of any construct.
+3. The exit block may not be a merge block of any construct.
 
 ## References
 1. T.Y. Chen, S.C. Cheung, and S.M. Yiu. 1998. Metamorphic testing: a new approach for generating next test cases. Technical Report HKUST-CS98-01. Hong Kong University of Science and Technology.
