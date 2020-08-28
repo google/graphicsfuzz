@@ -109,17 +109,17 @@ public class PrettyPrinterVisitorTest {
 
     UniformValueSupplier uniformValues = name -> {
       if (name.equals("a")) {
-        return Optional.of(Arrays.asList(0, 1, 2));
+        return Optional.of(Arrays.asList("0", "1", "2"));
       } else if (name.equals("b")) {
-        return Optional.of(Arrays.asList(3, 4, 5));
+        return Optional.of(Arrays.asList("3", "4", "5"));
       } else if (name.equals("_GLF_uniform_uint_values")) {
-        return Optional.of(Arrays.asList(2, 11, 22));
+        return Optional.of(Arrays.asList("2", "11", "22"));
       } else if (name.equals("_GLF_uniform_float_values")) {
-        return Optional.of(Arrays.asList(0.0, 1.4, 22.2));
+        return Optional.of(Arrays.asList("0.0", "1.4", "22.2"));
       } else if (name.equals("test2")) {
-        return Optional.of(Arrays.asList(66));
+        return Optional.of(Arrays.asList("66"));
       } else if (name.equals("Z")) {
-        return Optional.of(Arrays.asList(77));
+        return Optional.of(Arrays.asList("77"));
       }
       return Optional.empty();
     };

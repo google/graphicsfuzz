@@ -29,7 +29,7 @@ public class PipelineUniformValueSupplier implements UniformValueSupplier {
   }
 
   @Override
-  public Optional<List<Number>> getValues(String name) {
+  public Optional<List<String>> getValues(String name) {
     return Optional.of(this.pipelineInfo.getArgs(name));
   }
 }

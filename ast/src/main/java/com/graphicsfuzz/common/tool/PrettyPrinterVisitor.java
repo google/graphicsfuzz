@@ -209,7 +209,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
       // Emit a comment per known uniform.
       for (VariableDeclInfo knownUniform : knownUniforms) {
-        final Optional<List<Number>> values = uniformValues.get().getValues(knownUniform.getName());
+        final Optional<List<String>> values = uniformValues.get().getValues(knownUniform.getName());
         values.ifPresent(item -> {
           out.append("// Contents of ")
               .append(knownUniform.getName())
