@@ -114,11 +114,11 @@ PATTERN_CATCH_ALL_ERROR = re.compile(r"\nERROR: (.*)", flags=re.IGNORECASE)
 
 # [\s\S] matches anything, including newlines.
 PATTERN_LLVM_FATAL_ERROR = re.compile(
-    r"LLVM FATAL ERROR:Broken function found, compilation aborted![\s\S]*STDERR:\n(.*)"
+    r"LLVM FATAL ERROR:[ ]*Broken function found, compilation aborted![\s\S]*STDERR:\n(.*)"
 )
 
 PATTERN_LLVM_MACHINE_CODE_ERROR = re.compile(
-    r"ERROR: LLVM FATAL ERROR:Found .* machine code error[\s\S]*Bad machine code: (.*)"
+    r"ERROR: LLVM FATAL ERROR:[ ]*Found .* machine code error[\s\S]*Bad machine code: (.*)"
 )
 
 PATTERN_LLVM_ERROR_DIAGNOSIS = re.compile(r"ERROR: LLVM DIAGNOSIS INFO: (.*)")

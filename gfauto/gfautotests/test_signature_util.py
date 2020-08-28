@@ -95,3 +95,63 @@ Backtrace:
 """
     signature = signature_util.get_signature_from_log_contents(log)
     assert signature == "LiveIntervalcpp_ZNllvmLiveRangeMergeValueNumberInt"
+
+
+def test_llvm_fatal_error_1() -> None:
+    log = """
+STDOUT:
+ERROR: LLVM FATAL ERROR: Broken function found, compilation aborted!
+
+
+STDERR:
+PHINode should have one entry for each predecessor of its parent basic block!
+  %__llpc_output_proxy_.0.0 = phi float [ %.6, %163 ]
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "PHINode_should_have_one_entry_for_each_predecessor"
+
+
+def test_llvm_fatal_error_2() -> None:
+    log = """
+RETURNCODE: 1
+STDOUT:
+ERROR: LLVM FATAL ERROR:Broken function found, compilation aborted!
+
+
+STDERR:
+Instruction does not dominate all uses!
+  %97 = insertelement <3 x float> %96, float %.0.2, i32 2
+  %92 = extractelement <3 x float> %97, i32 2
+Instruction does not dominate all uses!
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "Instruction_does_not_dominate_all_uses"
+
+
+def test_llvm_machine_code_error() -> None:
+    log = """
+RETURNCODE: 1
+STDOUT:
+ERROR: LLVM FATAL ERROR:Found 1 machine code errors.
+
+
+STDERR:
+
+# Machine code for function _amdgpu_ps_main: NoPHIs, TracksLiveness
+Frame Objects:
+  fi#0: size=256, align=16, at location [SP]
+Function Live Ins: $sgpr2 in %37, $vgpr2 in %39, $vgpr3 in %40
+
+bb.0..entry:
+  successors: %bb.1(0x40000000), %bb.3(0x40000000); %bb.1(50.00%), %bb.3(50.00%)
+
+# End machine code for function _amdgpu_ps_main.
+
+*** Bad machine code: Using an undefined physical register ***
+- function:    _amdgpu_ps_main
+- basic block: %bb.17  (0x6f52380)
+- instruction: $vcc = S_AND_B64 $exec, $vcc, implicit-def dead $scc
+- operand 2:   $vcc
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "Using_an_undefined_physical_register"
