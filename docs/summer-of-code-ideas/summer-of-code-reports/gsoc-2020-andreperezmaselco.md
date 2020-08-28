@@ -328,7 +328,3 @@ It was great to participate in the *Google Summer of Code 2020* program. I was a
 [2] Donaldson, A.; Lascu, A. [Metamorphic Testing for (Graphics) Compilers. 2016](http://www.doc.ic.ac.uk/~afd/homepages/papers/pdfs/2016/MET.pdf).
 
 [3] Thomson, P. [Finding a Vulkan driver bug using spirv-fuzz](https://github.com/google/graphicsfuzz/blob/master/docs/finding-a-vulkan-driver-bug-using-spirv-fuzz.md).
-
-[4] Briggs, A. [Enhancing Metamorphic Testing Tools For Graphics Drivers. 2019](https://github.com/google/graphicsfuzz/blob/master/docs/summer-of-code-ideas/summer-of-code-reports/gsoc-2019-abelbriggs.md).
-
-[5] Ounjai, J. [Improve Shading Language Support in GraphicsFuzz](https://github.com/google/graphicsfuzz/blob/master/docs/summer-of-code-ideas/2019-JiradetOunjai.md).
