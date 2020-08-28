@@ -146,17 +146,17 @@ The bug is triggered when the transformation moves increment and comparison inst
     <td>
       <pre>
         <code>
-        ...
-        %493 = OpLabel
-               OpBranch %495
-        %495 = OpLabel
-        %527 = OpPhi %6 %522 %493 %508 %500
-        <strong>%499 = OpSLessThanEqual %31 %527 %416</strong>
-               OpLoopMerge %509 %500 None
-               OpBranchConditional %499 %500 %509
-        %500 = OpLabel
-        <strong>%508 = OpIAdd %6 %527 %22</strong>
-               OpBranch %495
+...
+%493 = OpLabel
+       OpBranch %495
+%495 = OpLabel
+%527 = OpPhi %6 %522 %493 %508 %500
+<strong>%499 = OpSLessThanEqual %31 %527 %416</strong>
+       OpLoopMerge %509 %500 None
+       OpBranchConditional %499 %500 %509
+%500 = OpLabel
+<strong>%508 = OpIAdd %6 %527 %22</strong>
+       OpBranch %495
 ...
 </code>
       </pre>
