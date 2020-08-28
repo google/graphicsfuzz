@@ -63,7 +63,7 @@ public class PrettyPrinterVisitorTest {
   public void testUniformArrayContentsInComments() throws Exception {
 
     final String shader = ""
-    + "uniform int a[3], b[2], X[1], Y[22], Z[1];"
+        + "uniform int a[3], b[2], X[1], Y[22], Z[1];"
         + "uniform float _GLF_uniform_float_values[3], D;"
         + "uniform uint _GLF_uniform_uint_values[2], E[33];"
         + "uniform int test[5], test2[1], A;"
