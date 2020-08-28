@@ -101,10 +101,10 @@ In SPIR-V-like pseudocode:
         <code>
 %1 = OpLabel
      OpBranch %3
-
+<br />
 %2 = OpLabel
      OpBranch %3
-
+<br />
 %3 = OpLabel
 <strong>%4 = OpIAdd %int %a %b</strong>
 ...
@@ -117,11 +117,11 @@ In SPIR-V-like pseudocode:
 %1 = OpLabel
 <strong>%5 = OpIAdd %int %a %b</strong>
      OpBranch %3
-
+<br />
 %2 = OpLabel
 <strong>%6 = OpIAdd %int %a %b</strong>
      OpBranch %3
-
+<br />
 %3 = OpLabel
 <strong>%4 = OpPhi %int %5 %1 %6 %2</strong>
 ...
@@ -153,13 +153,13 @@ The bug is triggered when the transformation moves increment and comparison inst
 ...
 %493 = OpLabel
        OpBranch %495
-
+<br />
 %495 = OpLabel
 %527 = OpPhi %6 %522 %493 %508 %500
 <strong>%499 = OpSLessThanEqual %31 %527 %416</strong>
        OpLoopMerge %509 %500 None
        OpBranchConditional %499 %500 %509
- 
+<br />
 %500 = OpLabel
 <strong>%508 = OpIAdd %6 %527 %22</strong>
        OpBranch %495
@@ -174,7 +174,7 @@ The bug is triggered when the transformation moves increment and comparison inst
 %493 = OpLabel
 <strong>%761 = OpSLessThanEqual %31 %522 %416</strong>
        OpBranch %495
-
+<br />
 %495 = OpLabel
 <strong>%499 = OpPhi %31 %761 %493 %762 %500</strong>
 %527 = OpPhi %6 %522 %493 %508 %500
@@ -182,7 +182,7 @@ The bug is triggered when the transformation moves increment and comparison inst
 <strong>%763 = OpSLessThanEqual %31 %655 %416</strong>
        OpLoopMerge %509 %500 None
        OpBranchConditional %499 %500 %509
-
+<br />
 %500 = OpLabel
 <strong>%762 = OpPhi %31 %763 %495</strong>
 <strong>%508 = OpPhi %6 %655 %495</strong>
@@ -321,10 +321,10 @@ Thus, the transformation does not create any new basic blocks and instead reuses
         <code>
 %1 = OpLabel
      OpBranch %2
-
+<br />
 %2 = OpLabel
      OpBranch %3
-
+<br />
 %3 = OpLabel
      ...
         </code>
@@ -336,10 +336,10 @@ Thus, the transformation does not create any new basic blocks and instead reuses
 %1 = OpLabel
      <strong>OpSelectionMerge %3 None
      OpBranchConditional %true %2 %2</strong>
-
+<br />
 %2 = OpLabel
      OpBranch %3
-
+<br />
 %3 = OpLabel
      ...
         </code>
