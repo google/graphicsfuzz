@@ -246,7 +246,7 @@ Contributions to *spirv-fuzz*:
 - [#3630](https://github.com/KhronosGroup/SPIRV-Tools/pull/3630): Remove `OpFunctionCall` operands in correct order.
 
 ### Potential ideas for the future
-SOm interesting ideas might be worthwhile implementing soon. Those include:
+Some interesting ideas might be worthwhile implementing soon. Those include:
 
 [#3695](https://github.com/KhronosGroup/SPIRV-Tools/issues/3695): Transformation to inline pointer parameters.
 
