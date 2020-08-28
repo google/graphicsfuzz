@@ -15,7 +15,7 @@
 
 ## Abstract
 
-During the *Google Summer of Code 2020* program, I worked on the development of new *semantics-preserving transformations*, fuzzer passes and enhancements for the [*spirv-fuzz*](https://github.com/google/graphicsfuzz/blob/master/docs/finding-a-vulkan-driver-bug-using-spirv-fuzz.md) tool.
+During the *Google Summer of Code 2020* program, I worked on the development of new *semantics-preserving transformations*, fuzzer passes and enhancements for the [*spirv-fuzz*](https://github.com/google/graphicsfuzz/blob/master/docs/finding-a-vulkan-driver-bug-using-spirv-fuzz.md) [3] tool.
 Also, I developed [Amber Fuzz](https://github.com/andreperezmaselco/amber-fuzz), a simple graphics tool that takes an [Amber](https://github.com/google/amber) script as input and outputs a new script by fuzzing the reference shaders.
 
 ## Introduction
