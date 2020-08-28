@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.common.util;
 
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.util.Constants;
@@ -24,8 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.assertTrue;
-
 public class FragmentShaderToShaderJobTest {
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -33,48 +33,48 @@ public class FragmentShaderToShaderJobTest {
   @Test
   public void basicJsonGenerationTest() throws Exception {
     final String frag =  "#version 320 es\n"
-    + "precision mediump float;\n"
-    + "\n"
-    + "layout(location = 0) out vec4 " + Constants.GLF_COLOR + ";\n"
-    + "\n"
-    + "uniform float u_f;\n"
-    + "uniform vec2 u_v2;\n"
-    + "uniform vec3 u_v3;\n"
-    + "uniform vec4 u_v4;\n"
-    + "\n"
-    + "in float in_f;\n"
-    + "in vec2 in_v2;\n"
-    + "layout(location = 78) in vec3 in_v3;\n" // 78 expected to change to smaller value
-    + "in vec4 in_v4;\n"
-    + "\n"
-    + "in float in_a, in_b, in_c;\n"
-    + "in mat4 in_mat4;\n"
-    + "in mat3 in_mat3;\n"
-    + "in mat2 in_mat2;\n"
-    + "in mat2x3 in_mat2x3;\n"
-    + "in mat2x4 in_mat2x4;\n"
-    + "in mat3x2 in_mat3x2;\n"
-    + "in mat3x4 in_mat3x4;\n"
-    + "in mat4x2 in_mat4x2;\n"
-    + "in mat4x3 in_mat4x3;\n"
-    + "\n"
-    + "in bool in_bool;\n"
-    + "in bvec2 in_bvec2;\n"
-    + "in bvec3 in_bvec3;\n"
-    + "in bvec4 in_bvec4;\n"
-    + "in int in_int;\n"
-    + "in ivec2 in_ivec2;\n"
-    + "in ivec3 in_ivec3;\n"
-    + "in ivec4 in_ivec4;\n"
-    + "in uint in_uint;\n"
-    + "in uvec2 in_uvec2;\n"
-    + "in uvec3 in_uvec3;\n"
-    + "in uvec4 in_uvec4;\n"
-    + "\n"
-    + "void main(void)\n"
-    + "{\n"
-    + "  " + Constants.GLF_COLOR + " = vec4(0.0, 0.0, 0.0, 1.0);\n"
-    + "}\n";
+        + "precision mediump float;\n"
+        + "\n"
+        + "layout(location = 0) out vec4 " + Constants.GLF_COLOR + ";\n"
+        + "\n"
+        + "uniform float u_f;\n"
+        + "uniform vec2 u_v2;\n"
+        + "uniform vec3 u_v3;\n"
+        + "uniform vec4 u_v4;\n"
+        + "\n"
+        + "in float in_f;\n"
+        + "in vec2 in_v2;\n"
+        + "layout(location = 78) in vec3 in_v3;\n" // 78 expected to change to smaller value
+        + "in vec4 in_v4;\n"
+        + "\n"
+        + "in float in_a, in_b, in_c;\n"
+        + "in mat4 in_mat4;\n"
+        + "in mat3 in_mat3;\n"
+        + "in mat2 in_mat2;\n"
+        + "in mat2x3 in_mat2x3;\n"
+        + "in mat2x4 in_mat2x4;\n"
+        + "in mat3x2 in_mat3x2;\n"
+        + "in mat3x4 in_mat3x4;\n"
+        + "in mat4x2 in_mat4x2;\n"
+        + "in mat4x3 in_mat4x3;\n"
+        + "\n"
+        + "in bool in_bool;\n"
+        + "in bvec2 in_bvec2;\n"
+        + "in bvec3 in_bvec3;\n"
+        + "in bvec4 in_bvec4;\n"
+        + "in int in_int;\n"
+        + "in ivec2 in_ivec2;\n"
+        + "in ivec3 in_ivec3;\n"
+        + "in ivec4 in_ivec4;\n"
+        + "in uint in_uint;\n"
+        + "in uvec2 in_uvec2;\n"
+        + "in uvec3 in_uvec3;\n"
+        + "in uvec4 in_uvec4;\n"
+        + "\n"
+        + "void main(void)\n"
+        + "{\n"
+        + "  " + Constants.GLF_COLOR + " = vec4(0.0, 0.0, 0.0, 1.0);\n"
+        + "}\n";
 
     final File jsonFile = temporaryFolder.newFile("shader.json");
     final File vertFile = temporaryFolder.newFile("shader.vert");

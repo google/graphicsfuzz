@@ -16,6 +16,13 @@
 
 package com.graphicsfuzz.common.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.Declaration;
@@ -34,7 +41,6 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ReturnStmt;
-import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
@@ -57,8 +63,6 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.*;
 
 public class ParseHelperTest {
 
@@ -386,13 +390,12 @@ public class ParseHelperTest {
         + "  int x = 031;"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(shader);
-    assertTrue(
-      new CheckPredicateVisitor() {
+    assertTrue(new CheckPredicateVisitor() {
         @Override
         public void visitInitializer(Initializer initializer) {
           super.visitInitializer(initializer);
           if (initializer.getExpr() instanceof IntConstantExpr
-            && ((IntConstantExpr) initializer.getExpr()).getValue().equals("031")) {
+              && ((IntConstantExpr) initializer.getExpr()).getValue().equals("031")) {
             predicateHolds();
           }
         }
@@ -467,8 +470,8 @@ public class ParseHelperTest {
           @Override
           public void visitReturnStmt(ReturnStmt returnStmt) {
             super.visitReturnStmt(returnStmt);
-            if (returnStmt.getExpr() instanceof UIntConstantExpr &&
-                ((UIntConstantExpr) returnStmt.getExpr()).getValue().equals("0u")) {
+            if (returnStmt.getExpr() instanceof UIntConstantExpr
+                && ((UIntConstantExpr) returnStmt.getExpr()).getValue().equals("0u")) {
               predicateHolds();
             }
           }
@@ -542,8 +545,7 @@ public class ParseHelperTest {
         + "\n"
         + "void main() { }\n";
     final TranslationUnit tu = ParseHelper.parse(program, ShaderKind.COMPUTE);
-    assertTrue(
-      new CheckPredicateVisitor() {
+    assertTrue(new CheckPredicateVisitor() {
         @Override
         public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
           super.visitVariablesDeclaration(variablesDeclaration);
@@ -579,29 +581,27 @@ public class ParseHelperTest {
    * @param expectedSize Expected size of the array
    * @throws Exception Producing the AST may throw exceptions
    */
-  private void
-  validateFolding(String shaderSource, int expectedSize) throws Exception
-  {
+  private void validateFolding(String shaderSource, int expectedSize) throws Exception {
     final BlockStmt block = ParseHelper.parse(shaderSource)
         .getMainFunction().getBody();
-    assertTrue(((DeclarationStmt)block.getStmt(block.getNumStmts()-1)).getVariablesDeclaration()
-        .getDeclInfo(0).getArrayInfo().getConstantSize() == expectedSize);
+    assertEquals(expectedSize,
+        (int) ((DeclarationStmt) block.getStmt(block.getNumStmts() - 1))
+            .getVariablesDeclaration().getDeclInfo(0).getArrayInfo().getConstantSize());
   }
 
   /**
-   * Test various forms of statements that may occur inside array size declaration
+   * Tests various forms of statements that may occur inside array size declaration.
    * @throws Exception Producing the AST may throw exceptions
    */
   @Test
-  public void
-  testSupportedArrayLength() throws Exception {
+  public void testSupportedArrayLength() throws Exception {
     try {
       validateFolding("void main() {\n"
           + "  int A[3 + 4];\n"
-          + "}\n",7);
+          + "}\n", 7);
       validateFolding("void main() {\n"
           + "  int A[4 - 3];\n"
-          + "}\n",1);
+          + "}\n", 1);
       validateFolding("void main() {\n"
           + "  int A[3 * 4];\n"
           + "}\n", 12);

@@ -154,38 +154,38 @@ public class ObfuscatorTest {
         + " float b = m + f + float(t) + g;\n"
         + "}\n";
 
-    final String originalUniforms = "{\n" +
-        "  \"f\": {\n" +
-        "    \"args\": [\n" +
-        "      3.0\n" +
-        "    ], \n" +
-        "    \"func\": \"glUniform1f\"\n" +
-        "  }, \n" +
-        "  \"g\": {\n" +
-        "    \"args\": [\n" +
-        "      2.0\n" +
-        "    ], \n" +
-        "    \"func\": \"glUniform1f\"\n" +
-        "  }, \n" +
-        "  \"h\": {\n" +
-        "    \"args\": [\n" +
-        "      10\n" +
-        "    ], \n" +
-        "    \"func\": \"glUniform1i\"\n" +
-        "  }, \n" +
-        "  \"m\": {\n" +
-        "    \"args\": [\n" +
-        "      20.0\n" +
-        "    ], \n" +
-        "    \"func\": \"glUniform1f\"\n" +
-        "  }, \n" +
-        "  \"t\": {\n" +
-        "    \"args\": [\n" +
-        "      3\n" +
-        "    ], \n" +
-        "    \"func\": \"glUniform1i\"\n" +
-        "  } \n" +
-        "}";
+    final String originalUniforms = "{\n"
+        + "  \"f\": {\n"
+        + "    \"args\": [\n"
+        + "      3.0\n"
+        + "    ], \n"
+        + "    \"func\": \"glUniform1f\"\n"
+        + "  }, \n"
+        + "  \"g\": {\n"
+        + "    \"args\": [\n"
+        + "      2.0\n"
+        + "    ], \n"
+        + "    \"func\": \"glUniform1f\"\n"
+        + "  }, \n"
+        + "  \"h\": {\n"
+        + "    \"args\": [\n"
+        + "      10\n"
+        + "    ], \n"
+        + "    \"func\": \"glUniform1i\"\n"
+        + "  }, \n"
+        + "  \"m\": {\n"
+        + "    \"args\": [\n"
+        + "      20.0\n"
+        + "    ], \n"
+        + "    \"func\": \"glUniform1f\"\n"
+        + "  }, \n"
+        + "  \"t\": {\n"
+        + "    \"args\": [\n"
+        + "      3\n"
+        + "    ], \n"
+        + "    \"func\": \"glUniform1i\"\n"
+        + "  } \n"
+        + "}";
 
     final String expectedVert = "#version 100\n"
         + "uniform float v0;\n"
@@ -204,38 +204,38 @@ public class ObfuscatorTest {
         + " float v6 = v4 + v0 + float(v5) + v1;\n"
         + "}\n";
 
-    final String expectedUniforms = "{\n" +
-        "  \"v0\": {\n" +
-        "    \"args\": [\n" +
-        "      3.0\n" +
-        "    ], \n" +
-        "    \"func\": \"glUniform1f\"\n" +
-        "  }, \n" +
-        "  \"v1\": {\n" +
-        "    \"args\": [\n" +
-        "      2.0\n" +
-        "    ], \n" +
-        "    \"func\": \"glUniform1f\"\n" +
-        "  }, \n" +
-        "  \"v2\": {\n" +
-        "    \"args\": [\n" +
-        "      10\n" +
-        "    ], \n" +
-        "    \"func\": \"glUniform1i\"\n" +
-        "  }, \n" +
-        "  \"v4\": {\n" +
-        "    \"args\": [\n" +
-        "      20.0\n" +
-        "    ], \n" +
-        "    \"func\": \"glUniform1f\"\n" +
-        "  }, \n" +
-        "  \"v5\": {\n" +
-        "    \"args\": [\n" +
-        "      3\n" +
-        "    ], \n" +
-        "    \"func\": \"glUniform1i\"\n" +
-        "  } \n" +
-        "}";
+    final String expectedUniforms = "{\n"
+        + "  \"v0\": {\n"
+        + "    \"args\": [\n"
+        + "      3.0\n"
+        + "    ], \n"
+        + "    \"func\": \"glUniform1f\"\n"
+        + "  }, \n"
+        + "  \"v1\": {\n"
+        + "    \"args\": [\n"
+        + "      2.0\n"
+        + "    ], \n"
+        + "    \"func\": \"glUniform1f\"\n"
+        + "  }, \n"
+        + "  \"v2\": {\n"
+        + "    \"args\": [\n"
+        + "      10\n"
+        + "    ], \n"
+        + "    \"func\": \"glUniform1i\"\n"
+        + "  }, \n"
+        + "  \"v4\": {\n"
+        + "    \"args\": [\n"
+        + "      20.0\n"
+        + "    ], \n"
+        + "    \"func\": \"glUniform1f\"\n"
+        + "  }, \n"
+        + "  \"v5\": {\n"
+        + "    \"args\": [\n"
+        + "      3\n"
+        + "    ], \n"
+        + "    \"func\": \"glUniform1i\"\n"
+        + "  } \n"
+        + "}";
 
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         new PipelineInfo(originalUniforms),
@@ -246,7 +246,8 @@ public class ObfuscatorTest {
         Obfuscator.obfuscate(shaderJob, generator);
     CompareAsts.assertEqualAsts(expectedVert, obfuscated.getShaders().get(0));
     CompareAsts.assertEqualAsts(expectedFrag, obfuscated.getShaders().get(1));
-    assertEquals(new PipelineInfo(expectedUniforms).toString(), obfuscated.getPipelineInfo().toString());
+    assertEquals(new PipelineInfo(expectedUniforms).toString(), obfuscated.getPipelineInfo()
+        .toString());
   }
 
 }

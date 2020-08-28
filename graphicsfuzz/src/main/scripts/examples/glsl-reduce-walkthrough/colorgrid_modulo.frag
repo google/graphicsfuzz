@@ -19,7 +19,6 @@
 precision highp int;
 precision highp float;
 
-uniform vec2 injectionSwitch;
 uniform vec2 resolution;
 
 float nb_mod(float limit, float ref) {

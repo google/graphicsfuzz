@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.util.ToolPaths;
@@ -25,8 +27,6 @@ import java.util.Arrays;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertTrue;
 
 public class Fragment2ComputeTest {
 
@@ -49,7 +49,7 @@ public class Fragment2ComputeTest {
       File outputShaderJob = temporaryFolder.newFile(reference.getName());
       Fragment2Compute.mainHelper(reference.getAbsolutePath(), outputShaderJob.getAbsolutePath());
       assertTrue(fileOps.getUnderlyingShaderFile(outputShaderJob, ShaderKind.COMPUTE)
-        .isFile());
+          .isFile());
       assertTrue(fileOps.areShadersValid(outputShaderJob, false));
     }
 

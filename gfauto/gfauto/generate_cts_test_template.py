@@ -22,7 +22,6 @@ to generate an Amber script test suitable for adding to the CTS.
 In particular, the Amber script test is suitable for use with |add_amber_tests_to_cts.py|.
 """
 
-import sys
 from pathlib import Path
 
 from gfauto import tool, util
@@ -40,18 +39,32 @@ def main() -> None:
     bug_dir = util.norm_path(Path(__file__).absolute()).parent
 
     tool.glsl_shader_job_crash_to_amber_script_for_google_cts(
-        source_dir=bug_dir / "reduced_manual",
-        output_amber=bug_dir / "name-of-test-TODO.amber",
+        source_dir=bug_dir / "reduced_1",
+        # Look at the "derived_from" field in `reduced_1/test.json` to find the original shader name.
+        # If the shader was stable (e.g. "stable_quicksort") then you must prefix the .amber file name
+        # with the name of the shader (using dashes instead of underscores).
+        # The rest of the test name should describe the DIFFERENCE between the reference and variant shaders.
+        # E.g. "stable-quicksort-composite-insert-with-constant.amber".
+        # If the original shader was not stable then you should probably not add this test (with a few exceptions).
+        # If you still want to add the test then the test name should approximately describe the contents of the variant
+        # shader. E.g. "loop-with-early-return-and-function-call.amber".
+        output_amber=bug_dir / "test-name-TODO.amber",
         work_dir=bug_dir / "work",
         # One sentence, 58 characters max., no period, no line breaks.
-        short_description="A fragment shader with TODO",
-        comment_text="""The test passes because TODO""",
+        # Describe the difference between the shaders, as described above for the .amber file name.
+        # E.g. Two shaders with diff: composite insert with constant
+        short_description="Two shaders with diff: TODO",
+        comment_text="""
+The test renders two images using semantically equivalent shaders, and then
+checks that the images are similar.
+The test passes because the shaders have the same semantics and so the images
+should be the same.""",
         copyright_year="2020",
-        extra_commands=tool.AMBER_COMMAND_EXPECT_RED,
+        # Pass |tool.AMBER_COMMAND_EXPECT_RED| to check that the shader renders red.
+        extra_commands="",
         is_coverage_gap=False,
     )
 
 
 if __name__ == "__main__":
     main()
-    sys.exit(0)

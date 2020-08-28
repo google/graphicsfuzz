@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -32,9 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class LiteralToUniformReductionOpportunitiesTest {
 
@@ -83,6 +83,16 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
+    assertEquals(1, pipelineInfo.getNumUniforms());
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -133,6 +143,15 @@ public class LiteralToUniformReductionOpportunitiesTest {
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -180,6 +199,15 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -227,6 +255,15 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -274,6 +311,15 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.UINT_LITERAL_UNIFORM_VALUES));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   /*
@@ -281,8 +327,7 @@ public class LiteralToUniformReductionOpportunitiesTest {
    * opportunity at first. Then checks that the one shader had the array uniform added,
    * and the other shader stays the same. After that, another uniform is manually added to
    * the pipeline info and the rest of the opportunities are applied. The test succeeds if
-   * the bindings have not changed, the amount of opportunies is correct and literals in the
-   * shaders are replaced as expected.
+   * the number of opportunities is correct and literals in the shaders are replaced as expected.
    */
   @Test
   public void testManuallyAddedUniform() throws Exception {
@@ -350,13 +395,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(fragmentShaderNotReplaced, shaderJob.getFragmentShader().get());
     assertEquals(1, pipelineInfo.getNumUniforms());
 
-    final int bindingNumber = shaderJob.getPipelineInfo().getBinding("_GLF_uniform_int_values");
-
-    final int nextUnusedBindingNumber = shaderJob.getPipelineInfo().getUnusedBindingNumber();
     shaderJob.getPipelineInfo().addUniform("TEST", BasicType.INT,
         Optional.of(0), new ArrayList<>());
-    shaderJob.getPipelineInfo().addUniformBinding("TEST", false,
-        nextUnusedBindingNumber);
 
     ops.forEach(AbstractReductionOpportunity::applyReduction);
     assertEquals("There should be three opportunities", 3, ops.size());
@@ -365,9 +405,14 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(vertexShaderReplaced2, shaderJob.getVertexShader().get());
     CompareAsts.assertEqualAsts(fragmentShaderReplaced, shaderJob.getFragmentShader().get());
 
-    // check that the binding numbers remain the same.
-    assertEquals(bindingNumber, shaderJob.getPipelineInfo().getBinding("_GLF_uniform_int_values"));
-    assertEquals(nextUnusedBindingNumber, shaderJob.getPipelineInfo().getBinding("TEST"));
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
@@ -382,16 +427,16 @@ public class LiteralToUniformReductionOpportunitiesTest {
         + "}";
 
     final String vertexShaderReplaced =
-        "uniform int _GLF_uniform_int_values[3];"
-        + "uniform float _GLF_uniform_float_values[3];"
-        + "void main()"
-        + "{"
-        + "  float a = _GLF_uniform_float_values[0];"
-        + "  float b = _GLF_uniform_float_values[1];"
-        + "  int c = _GLF_uniform_int_values[0];"
-        + "  int d = _GLF_uniform_int_values[1];"
-        + "  int e = _GLF_uniform_int_values[2];"
-        + "}";
+          "uniform int _GLF_uniform_int_values[3];"
+          + "uniform float _GLF_uniform_float_values[3];"
+          + "void main()"
+          + "{"
+          + "  float a = _GLF_uniform_float_values[0];"
+          + "  float b = _GLF_uniform_float_values[1];"
+          + "  int c = _GLF_uniform_int_values[0];"
+          + "  int d = _GLF_uniform_int_values[1];"
+          + "  int e = _GLF_uniform_int_values[2];"
+          + "}";
 
     final String fragmentShader = "void main() { "
         + "float a = 3.0;"
@@ -436,29 +481,40 @@ public class LiteralToUniformReductionOpportunitiesTest {
     CompareAsts.assertEqualAsts(fragmentShaderReplaced, shaderJob.getFragmentShader().get());
     CompareAsts.assertEqualAsts(vertexShaderReplaced, shaderJob.getVertexShader().get());
 
+    assertEquals(2, pipelineInfo.getNumUniforms());
+
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.FLOAT_LITERAL_UNIFORM_VALUES));
     assertTrue(shaderJob.getPipelineInfo().hasUniform(Constants.INT_LITERAL_UNIFORM_VALUES));
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 
   @Test
   public void testArrayDeclaration() throws Exception {
 
     final String shader =
-      "void main()"
-      + "{"
-      + "float a[2*4];"
-      + "float b = 1;"
-      + "a[0] = 2;"
-      + "}";
+        "void main()"
+        + "{"
+        + "float a[2*4];"
+        + "float b = 1;"
+        + "a[0] = 2;"
+        + "}";
 
     final String shaderReplaced =
-      "uniform int _GLF_uniform_int_values[3];"
-      + "void main()"
-      + "{"
-      + "float a[2*4];"
-      + "float b = _GLF_uniform_int_values[0];"
-      + "a[_GLF_uniform_int_values[1]] = _GLF_uniform_int_values[2];"
-      + "}";
+        "uniform int _GLF_uniform_int_values[3];"
+        + "void main()"
+        + "{"
+        + "float a[2*4];"
+        + "float b = _GLF_uniform_int_values[0];"
+        + "a[_GLF_uniform_int_values[1]] = _GLF_uniform_int_values[2];"
+        + "}";
 
     final List<TranslationUnit> shaders = new ArrayList<>();
     shaders.add(ParseHelper.parse(shader, ShaderKind.FRAGMENT));
@@ -478,5 +534,65 @@ public class LiteralToUniformReductionOpportunitiesTest {
     ops.forEach(AbstractReductionOpportunity::applyReduction);
     assertEquals(1, pipelineInfo.getNumUniforms());
     CompareAsts.assertEqualAsts(shaderReplaced, shaderJob.getFragmentShader().get());
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
+  }
+
+  @Test
+  public void testArrayConstructor() throws Exception {
+
+    final String shader =
+        "void main() {"
+            + "int A[3] = int[3](1, 2, 3);"
+            + "int B[3] = int[3](4, 5, 6);"
+            + "int x = (true ? A : B)[2];"
+            + "}";
+
+    final String shaderReplaced =
+        "uniform int _GLF_uniform_int_values[6];"
+            + "\n"
+            + "void main()"
+            + "{"
+            + "int A[3] = int[3](_GLF_uniform_int_values[0], _GLF_uniform_int_values[1], "
+            + "_GLF_uniform_int_values[2]);"
+            + "int B[3] = int[3](_GLF_uniform_int_values[3], _GLF_uniform_int_values[4], "
+            + "_GLF_uniform_int_values[5]);"
+            + "int x = (true ? A : B)[_GLF_uniform_int_values[1]];"
+            + "}";
+
+    final List<TranslationUnit> shaders = new ArrayList<>();
+    shaders.add(ParseHelper.parse(shader, ShaderKind.FRAGMENT));
+
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        pipelineInfo, shaders);
+    assertEquals(0, pipelineInfo.getNumUniforms());
+
+    final List<LiteralToUniformReductionOpportunity> ops =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be seven opportunities", 7, ops.size());
+    ops.forEach(AbstractReductionOpportunity::applyReduction);
+    assertEquals(1, pipelineInfo.getNumUniforms());
+    CompareAsts.assertEqualAsts(shaderReplaced, shaderJob.getFragmentShader().get());
+
+    // Check that the uniforms won't be recursively replaced in the next pass.
+    final List<LiteralToUniformReductionOpportunity> ops2 =
+        LiteralToUniformReductionOpportunities
+            .findOpportunities(shaderJob,
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                    new IdGenerator()));
+
+    assertEquals("There should be no opportunities", 0, ops2.size());
   }
 }

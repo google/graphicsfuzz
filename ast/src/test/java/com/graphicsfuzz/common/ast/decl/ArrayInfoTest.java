@@ -16,13 +16,13 @@
 
 package com.graphicsfuzz.common.ast.decl;
 
-import com.graphicsfuzz.common.ast.expr.Expr;
-import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
+
+import com.graphicsfuzz.common.ast.expr.Expr;
+import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import org.junit.Test;
 
 public class ArrayInfoTest {
 

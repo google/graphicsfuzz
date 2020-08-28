@@ -238,7 +238,7 @@ public class SplitForLoopMutation implements Mutation {
       }
     }
 
-    // Now do some sanity checking: if we're going up, endValue should be larger than
+    // Now do some coherence checking: if we're going up, endValue should be larger than
     // startValue, reverse should be true otherwise.
     // If we're going up, test should be <, <= or !=.
     // If we're going down, test should be >, >= or !=.

@@ -16,7 +16,7 @@
 
 [flake8]
 filename = */gfauto/*.py, */gfautotests/*.py
-exclude = *_pb2.py*
+exclude = *_pb2.py*, build/lib
 max-line-length = 88
 ignore =
   E203

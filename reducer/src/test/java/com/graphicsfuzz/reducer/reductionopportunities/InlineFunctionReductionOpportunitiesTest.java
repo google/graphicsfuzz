@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
@@ -26,26 +28,24 @@ import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 public class InlineFunctionReductionOpportunitiesTest {
 
   @Test
   public void testBasicInline() throws Exception {
 
-    final String program = "int inlineme(int x) { int y = 2; return y + x; }" +
-        "void main() { int z = inlineme(5); }";
+    final String program = "int inlineme(int x) { int y = 2; return y + x; }"
+        + "void main() { int z = inlineme(5); }";
 
-    final String expected = "int inlineme(int x) { int y = 2; return y + x; }" +
-        "void main() { " +
-        " int inlineme_inline_return_value_0;" +
-        " {" +
-        "  int x = 5;" +
-        "  int y = 2;" +
-        "  inlineme_inline_return_value_0 = y + x;" +
-        " }" +
-        " int z = inlineme_inline_return_value_0;" +
-        "}";
+    final String expected = "int inlineme(int x) { int y = 2; return y + x; }"
+        + "void main() { "
+        + " int inlineme_inline_return_value_0;"
+        + " {"
+        + "  int x = 5;"
+        + "  int y = 2;"
+        + "  inlineme_inline_return_value_0 = y + x;"
+        + " }"
+        + " int z = inlineme_inline_return_value_0;"
+        + "}";
 
     final TranslationUnit tu = ParseHelper.parse(program);
     final ShaderJob shaderJob = MakeShaderJobFromFragmentShader.make(tu);

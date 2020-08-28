@@ -16,31 +16,25 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
-import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.util.Constants;
-import com.graphicsfuzz.common.util.ParseHelper;
-import com.graphicsfuzz.util.ExecHelper.RedirectType;
-import com.graphicsfuzz.util.ExecResult;
-import com.graphicsfuzz.util.ToolHelper;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class InlineStructifiedFieldReductionOpportunitiesTest {
 
@@ -62,7 +56,8 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "    ivec2 _f3;\n"
         + "};\n"
         + "void main() {\n"
-        + "  _GLF_struct_1698 " + Constants.STRUCTIFICATION_STRUCT_PREFIX + "_mine = _GLF_struct_1698(0, _GLF_struct_1687(1.0, vec3(1.0)), vec4(1.0), ivec2(1));\n"
+        + "  _GLF_struct_1698 " + Constants.STRUCTIFICATION_STRUCT_PREFIX + "_mine = "
+                + "_GLF_struct_1698(0, _GLF_struct_1687(1.0, vec3(1.0)), vec4(1.0), ivec2(1));\n"
         + "}\n";
 
     String programAfter = "struct _GLF_struct_1687 {\n"
@@ -77,17 +72,22 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "    ivec2 _f3;\n"
         + "};\n"
         + "void main() {\n"
-        + "  _GLF_struct_1698 " + Constants.STRUCTIFICATION_STRUCT_PREFIX + "_mine = _GLF_struct_1698(0, 1.0, vec3(1.0), vec4(1.0), ivec2(1));\n"
+        + "  _GLF_struct_1698 " + Constants.STRUCTIFICATION_STRUCT_PREFIX + "_mine = "
+                + "_GLF_struct_1698(0, 1.0, vec3(1.0), vec4(1.0), ivec2(1));\n"
         + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1,
-        InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator())).size());
-    InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
-              new IdGenerator())).get(0).applyReduction();
+        InlineStructifiedFieldReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                    new RandomWrapper(0), new IdGenerator())).size());
+    InlineStructifiedFieldReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+              new RandomWrapper(0), new IdGenerator())).get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(programAfter)),
-      PrettyPrinterVisitor.prettyPrintAsString(tu));
+        PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
   @Test
@@ -114,13 +114,17 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "}\n"
         + "void main()\n"
         + "{\n"
-        + "    _GLF_struct_A _GLF_struct_replacement_838 = _GLF_struct_A(1.0, _GLF_struct_B(_GLF_struct_F(f(), _GLF_struct_D(true, mat4(1.0)))));\n"
+        + "    _GLF_struct_A _GLF_struct_replacement_838 = _GLF_struct_A(1.0, "
+                + "_GLF_struct_B(_GLF_struct_F(f(), _GLF_struct_D(true, mat4(1.0)))));\n"
         + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program).clone();
 
     List<InlineStructifiedFieldReductionOpportunity> ops =
-        InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+        InlineStructifiedFieldReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                    new RandomWrapper(0), new IdGenerator()));
     assertEquals(3, ops.size());
 
     File tempFile = testFolder.newFile("temp.frag");
@@ -150,14 +154,18 @@ public class InlineStructifiedFieldReductionOpportunitiesTest {
         + "};\n"
         + "void f()\n"
         + "{\n"
-        + "    _GLF_struct_762 _GLF_struct_replacement_763 = _GLF_struct_762(_GLF_struct_761(bvec2(true)));\n"
+        + "    _GLF_struct_762 _GLF_struct_replacement_763 = _GLF_struct_762(_GLF_struct_761("
+                + "bvec2(true)));\n"
         + "    _GLF_struct_762(_GLF_struct_761(bvec2(true)))._f0._f0;\n"
         + "}\n";
 
     TranslationUnit tu = ParseHelper.parse(program).clone();
 
-    List<InlineStructifiedFieldReductionOpportunity> ops = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+    List<InlineStructifiedFieldReductionOpportunity> ops =
+        InlineStructifiedFieldReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                    new RandomWrapper(0),
               new IdGenerator()));
     assertEquals(1, ops.size());
 

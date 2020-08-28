@@ -29,7 +29,7 @@ public class Constants
   public static String PERSISTENT_KEY_TIME_FIRST_RENDER = "timeFirstRender";
   public static String PERSISTENT_KEY_TIME_OTHER_RENDER = "timeOrderRender";
   public static String PERSISTENT_KEY_TIME_CAPTURE = "timeCapture";
-  public static String PERSISTENT_KEY_SANITY = "sanity";
+  public static String PERSISTENT_KEY_COHERENCE = "coherence";
   public static String PERSISTENT_KEY_IMG1 = "img1";
   public static String PERSISTENT_KEY_IMG2 = "img2";
 }

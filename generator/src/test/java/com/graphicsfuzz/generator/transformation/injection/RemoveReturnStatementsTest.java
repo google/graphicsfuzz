@@ -16,13 +16,13 @@
 
 package com.graphicsfuzz.generator.transformation.injection;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.generator.util.RemoveReturnStatements;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class RemoveReturnStatementsTest {
 
@@ -33,7 +33,7 @@ public class RemoveReturnStatementsTest {
     TranslationUnit tu = ParseHelper.parse(prog);
     new RemoveReturnStatements(tu);
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProg)),
-      PrettyPrinterVisitor.prettyPrintAsString(tu));
+        PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
   @Test

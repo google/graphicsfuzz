@@ -10,7 +10,7 @@
 *.egg-info/
 __pycache__/
 .mypy_cache/
-
+/build/
 
 .pytest_cache/
 .vscode/

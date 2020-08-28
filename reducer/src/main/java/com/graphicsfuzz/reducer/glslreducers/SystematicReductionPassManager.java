@@ -80,11 +80,15 @@ public class SystematicReductionPassManager implements IReductionPassManager {
         LOGGER.info("Pass " + getCurrentPass().getName() + " made a reduction step.");
         return maybeResult;
       }
-      // This pass did not have any impact, so move on to the next pass.
+      // This pass did not have any impact.
       LOGGER.info("Pass " + getCurrentPass().getName() + " did not make a reduction step.");
-      passIndex++;
-      if (passIndex < currentPasses.size()) {
-        anotherRoundWorthwhile |= !getCurrentPass().reachedMinimumGranularity();
+      // If the pass could have been applied at a finer level of granularity then it's worth doing
+      // another round of passes: this pass might fare better when applied in a more fine-grained
+      // fashion.
+      anotherRoundWorthwhile |= !getCurrentPass().reachedMinimumGranularity();
+      if (passIndex < currentPasses.size() - 1) {
+        LOGGER.info("Moving on to the next pass");
+        passIndex++;
       } else if (anotherRoundWorthwhile) {
         LOGGER.info("Trying another round of the current set of passes");
         startNewRound(currentPasses);
@@ -93,7 +97,7 @@ public class SystematicReductionPassManager implements IReductionPassManager {
         startNewRound(corePasses);
       } else if (
           (currentPasses == initialPasses || currentPasses == corePasses)
-          && !exhaustivePasses.isEmpty()) {
+              && !exhaustivePasses.isEmpty()) {
         LOGGER.info("Moving to exhaustive passes (cleanup)");
         startNewRound(exhaustivePasses);
       } else {

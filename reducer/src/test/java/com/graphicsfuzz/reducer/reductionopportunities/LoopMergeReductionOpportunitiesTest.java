@@ -22,9 +22,9 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.IdGenerator;
+import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.util.Constants;
-import com.graphicsfuzz.common.util.ParseHelper;
 import java.util.List;
 import org.junit.Test;
 
@@ -66,7 +66,8 @@ public class LoopMergeReductionOpportunitiesTest {
 
     List<LoopMergeReductionOpportunity> opportunities =
         LoopMergeReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0), new IdGenerator()));
 
     assertEquals(1, opportunities.size());
 

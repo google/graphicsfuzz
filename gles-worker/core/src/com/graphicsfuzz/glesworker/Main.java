@@ -148,9 +148,9 @@ public class Main extends ApplicationAdapter {
 
   private WorkerState state = WorkerState.NO_CONNECTION;
 
-  // Sanity check
+  // Coherence check
 
-  private static final String sanityFragmentSource100 = ""
+  private static final String coherenceFragmentSource100 = ""
           + "#version 100\n"
           + "#ifdef GL_ES\n"
           + "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
@@ -167,19 +167,17 @@ public class Main extends ApplicationAdapter {
           + "  gl_FragColor = vec4(gl_FragCoord.x/resolution.x, gl_FragCoord.y/resolution.y, 1.0, 1.0);\n"
           + "}\n";
 
-  //private String sanityFragmentSource = sanityFragmentSource100;
-
-  private final String sanityUniformsInfo = ""
+  private final String coherenceUniformsInfo = ""
       + "{\n"
       + "  \"resolution\": { \"func\":  \"glUniform2f\", \"args\": [ 256.0, 256.0 ] }\n"
       + "}\n";
 
-  private final int numSanityRender = 3;
-  private int sanityCounter = 0;
-  private ByteBuffer sanityReferenceImage;
-  private ByteBuffer sanityCheckImage;
-  private ByteBuffer sanityCheckImageTmp;
-  private boolean passSanityCheck;
+  private final int numCoherenceRender = 3;
+  private int coherenceCounter = 0;
+  private ByteBuffer coherenceReferenceImage;
+  private ByteBuffer coherenceCheckImage;
+  private ByteBuffer coherenceCheckImageTmp;
+  private boolean passCoherenceCheck;
 
   // For writing text
   private Stage GdxStage;
@@ -245,9 +243,9 @@ public class Main extends ApplicationAdapter {
     PlatformInfoUtil.getPlatformDetails(platformInfoJson);
     PlatformInfoUtil.getGlVersionInfo(platformInfoJson, gl30);
 
-    sanityReferenceImage = createPixelBuffer();
-    sanityCheckImage = createPixelBuffer();
-    sanityCheckImageTmp = createPixelBuffer();
+    coherenceReferenceImage = createPixelBuffer();
+    coherenceCheckImage = createPixelBuffer();
+    coherenceCheckImageTmp = createPixelBuffer();
 
     GdxStage = new Stage(new ScreenViewport());
     Label.LabelStyle label1Style = new Label.LabelStyle();
@@ -428,8 +426,8 @@ public class Main extends ApplicationAdapter {
       res.setStage(stage);
       if (persistentData.getBool(Constants.PERSISTENT_KEY_TIMEOUT, false)) {
         res.setStatus(JobStatus.TIMEOUT);
-      } else if (persistentData.getBool(Constants.PERSISTENT_KEY_SANITY, true) == false) {
-        res.setStatus(JobStatus.SANITY_ERROR);
+      } else if (persistentData.getBool(Constants.PERSISTENT_KEY_COHERENCE, true) == false) {
+        res.setStatus(JobStatus.COHERENCE_ERROR);
       } else {
         res.setStatus(JobStatus.CRASH);
       }
@@ -450,7 +448,7 @@ public class Main extends ApplicationAdapter {
           .setOtherRendersTime(persistentData.getInt(Constants.PERSISTENT_KEY_TIME_OTHER_RENDER, -1))
           .setCaptureTime(persistentData.getInt(Constants.PERSISTENT_KEY_TIME_CAPTURE, -1)));
       res.setLog(errMsg.toString())
-          .setPassSanityCheck(persistentData.getBool(Constants.PERSISTENT_KEY_SANITY, true));
+          .setPassCoherenceCheck(persistentData.getBool(Constants.PERSISTENT_KEY_COHERENCE, true));
 
       byte[] imgData1 = persistentData.getBinaryBlob(Constants.PERSISTENT_KEY_IMG1);
       byte[] imgData2 = persistentData.getBinaryBlob(Constants.PERSISTENT_KEY_IMG2);
@@ -480,7 +478,7 @@ public class Main extends ApplicationAdapter {
     Gdx.app.log("Main", "RESET_LAUNCHER_LOG");
 
     timingInfo.clear();
-    passSanityCheck = true;
+    passCoherenceCheck = true;
     persistentData.reset();
 
     job = jobGetter.getJob();
@@ -726,29 +724,29 @@ public class Main extends ApplicationAdapter {
         if (initOK) {
           assert (jobGetter != null);
           Gdx.app.log("Main","Got connection");
-          updateState(WorkerState.SANITY_INIT_PREPARE);
+          updateState(WorkerState.COHERENCE_INIT_PREPARE);
         }
         break;
 
-      case SANITY_INIT_PREPARE:
-        Gdx.app.log("Main", "SANITY_INIT_PREPARE");
+      case COHERENCE_INIT_PREPARE:
+        Gdx.app.log("Main", "COHERENCE_INIT_PREPARE");
         clearProgram();
-        // For sanity checking, always use GLSL ES 100 shaders.  It really should not matter,
+        // For coherence checking, always use GLSL ES 100 shaders.  It really should not matter,
         // and we can rely on all platforms supporting these.
         prepareProgram(defaultVertexShader100,
-                sanityFragmentSource100,
-                sanityUniformsInfo,
+                coherenceFragmentSource100,
+                coherenceUniformsInfo,
                 false);
-        sanityCounter = 0;
-        updateState(WorkerState.SANITY_INIT_RENDER);
+        coherenceCounter = 0;
+        updateState(WorkerState.COHERENCE_INIT_RENDER);
         break;
 
-      case SANITY_INIT_RENDER:
-        Gdx.app.log("Main", "SANITY_INIT_RENDER");
-        renderCurrentShader("sanity", standardMesh);
-        sanityCounter++;
-        if (sanityCounter >= numSanityRender) {
-          readPixels(sanityReferenceImage);
+      case COHERENCE_INIT_RENDER:
+        Gdx.app.log("Main", "COHERENCE_INIT_RENDER");
+        renderCurrentShader("coherence", standardMesh);
+        coherenceCounter++;
+        if (coherenceCounter >= numCoherenceRender) {
+          readPixels(coherenceReferenceImage);
           updateState(WorkerState.GET_JOB);
         }
         break;
@@ -790,7 +788,7 @@ public class Main extends ApplicationAdapter {
                   .setTimingInfo(timingInfo)
                   .setStage(JobStage.IMAGE_PREPARE));
           clearProgram();
-          updateState(WorkerState.PREPARE_SANITY);
+          updateState(WorkerState.PREPARE_COHERENCE);
         }
         break;
 
@@ -816,7 +814,7 @@ public class Main extends ApplicationAdapter {
                   .setTimingInfo(timingInfo)
                   .setStage(JobStage.IMAGE_VALIDATE_PROGRAM));
           clearProgram();
-          updateState(WorkerState.PREPARE_SANITY);
+          updateState(WorkerState.PREPARE_COHERENCE);
           break;
         }
 
@@ -825,7 +823,7 @@ public class Main extends ApplicationAdapter {
             appendTimedErrMsg("Skip Render");
           }
           Gdx.app.log("Main","Skip Render");
-          updateState(WorkerState.PREPARE_SANITY);
+          updateState(WorkerState.PREPARE_COHERENCE);
         } else {
           watchdog.start(watchdogMutex, "RenderLoopWatchdog", RENDER_LOOP_WATCHDOG_TIME_SECONDS,
               persistentData);
@@ -889,7 +887,7 @@ public class Main extends ApplicationAdapter {
                             .setStage(JobStage.IMAGE_RENDER)
                             .setPNG(png1)
                             .setPNG2(png2));
-            updateState(WorkerState.PREPARE_SANITY);
+            updateState(WorkerState.PREPARE_COHERENCE);
             break;
           }
           if (!waitIfNeeded(false)) {
@@ -900,7 +898,7 @@ public class Main extends ApplicationAdapter {
 
             otherPNG = getPNG(getBackbuffer());
             persistentData.setBinaryBlob(Constants.PERSISTENT_KEY_IMG1, otherPNG);
-            updateState(WorkerState.PREPARE_SANITY);
+            updateState(WorkerState.PREPARE_COHERENCE);
 
             long capture_time_end = System.nanoTime();
 
@@ -918,54 +916,54 @@ public class Main extends ApplicationAdapter {
           }
         }
 
-      case PREPARE_SANITY:
-        Gdx.app.log("Main", "PREPARE_SANITY");
+      case PREPARE_COHERENCE:
+        Gdx.app.log("Main", "PREPARE_COHERENCE");
         appendTimedErrMsg(state.toString());
-        persistentData.setBool(Constants.PERSISTENT_KEY_SANITY, false);
+        persistentData.setBool(Constants.PERSISTENT_KEY_COHERENCE, false);
         clearProgram();
         try {
-          // For sanity checking, it should suffice to use shaders with version GLSL 100 ES.
+          // For coherence checking, it should suffice to use shaders with version GLSL 100 ES.
           prepareProgram(defaultVertexShader100,
-                  sanityFragmentSource100,
-                  sanityUniformsInfo,
+                  coherenceFragmentSource100,
+                  coherenceUniformsInfo,
                   false);
         } catch (PrepareShaderException e) {
-          Gdx.app.log("Main", "Sanity preparation failed");
-          persistentData.appendErrMsg("ERROR PREPARE_SANITY");
+          Gdx.app.log("Main", "Coherence preparation failed");
+          persistentData.appendErrMsg("ERROR PREPARE_COHERENCE");
           updateState(WorkerState.IMAGE_REPLY_JOB);
           break;
         }
-        sanityCounter = 0;
-        updateState(WorkerState.RENDER_SANITY);
+        coherenceCounter = 0;
+        updateState(WorkerState.RENDER_COHERENCE);
         break;
 
-      case RENDER_SANITY:
-        Gdx.app.log("Main", "RENDER_SANITY");
+      case RENDER_COHERENCE:
+        Gdx.app.log("Main", "RENDER_COHERENCE");
         appendTimedErrMsg(state.toString());
-        renderCurrentShader("sanity", standardMesh);
-        sanityCheckImageTmp = createPixelBuffer();
-        readPixels(sanityCheckImageTmp);
-        if (sanityCounter > 0) {
-          // check sanity determinism
-          passSanityCheck = byteBuffersEqual(sanityCheckImageTmp, sanityCheckImage);
-          if (!passSanityCheck) {
-            Gdx.app.log("Main", "sanity check: NONDET");
-            persistentData.appendErrMsg("NONDET RENDER_SANITY");
-            persistentData.setBool(Constants.PERSISTENT_KEY_SANITY, false);
+        renderCurrentShader("coherence", standardMesh);
+        coherenceCheckImageTmp = createPixelBuffer();
+        readPixels(coherenceCheckImageTmp);
+        if (coherenceCounter > 0) {
+          // check coherence determinism
+          passCoherenceCheck = byteBuffersEqual(coherenceCheckImageTmp, coherenceCheckImage);
+          if (!passCoherenceCheck) {
+            Gdx.app.log("Main", "coherence check: NONDET");
+            persistentData.appendErrMsg("NONDET RENDER_COHERENCE");
+            persistentData.setBool(Constants.PERSISTENT_KEY_COHERENCE, false);
             updateState(WorkerState.IMAGE_REPLY_JOB);
             break;
           }
         }
-        sanityCounter++;
-        sanityCheckImage = sanityCheckImageTmp;
-        passSanityCheck = byteBuffersEqual(sanityCheckImage, sanityReferenceImage);
-        if (!passSanityCheck) {
-          Gdx.app.log("Main", "sanity check: FAILED");
-          persistentData.setBool(Constants.PERSISTENT_KEY_SANITY, false);
+        coherenceCounter++;
+        coherenceCheckImage = coherenceCheckImageTmp;
+        passCoherenceCheck = byteBuffersEqual(coherenceCheckImage, coherenceReferenceImage);
+        if (!passCoherenceCheck) {
+          Gdx.app.log("Main", "coherence check: FAILED");
+          persistentData.setBool(Constants.PERSISTENT_KEY_COHERENCE, false);
           updateState(WorkerState.IMAGE_REPLY_JOB);
           break;
         }
-        if (sanityCounter > numSanityRender) {
+        if (coherenceCounter > numCoherenceRender) {
           updateState(WorkerState.IMAGE_REPLY_JOB);
         }
         break;
@@ -977,11 +975,11 @@ public class Main extends ApplicationAdapter {
         // Safety programming: if there was any watchdog going on, stop it.
         watchdog.stop();
 
-        persistentData.appendErrMsg("passSanityCheck: " + passSanityCheck);
+        persistentData.appendErrMsg("passCoherenceCheck: " + passCoherenceCheck);
 
         // If there was an issue earlier, then job already has a jobresult field.
         if (job.isSetImageJob() && job.getImageJob().isSetResult()) {
-          job.getImageJob().getResult().setPassSanityCheck(passSanityCheck);
+          job.getImageJob().getResult().setPassCoherenceCheck(passCoherenceCheck);
           job.getImageJob().getResult().setLog(persistentData.getString(Constants.PERSISTENT_KEY_ERROR_MSG));
           jobGetter.replyJob(job);
         } else {
@@ -1002,9 +1000,9 @@ public class Main extends ApplicationAdapter {
             job.getImageJob().getResult()
                 .setTimingInfo(timingInfo)
                 .setStage(JobStage.IMAGE_REPLY_JOB)
-                .setPassSanityCheck(passSanityCheck);
-            if (!passSanityCheck) {
-              job.getImageJob().getResult().setStatus(JobStatus.SANITY_ERROR);
+                .setPassCoherenceCheck(passCoherenceCheck);
+            if (!passCoherenceCheck) {
+              job.getImageJob().getResult().setStatus(JobStatus.COHERENCE_ERROR);
             }
             synchronized (watchdogMutex) {
                 job.getImageJob().getResult()
@@ -1016,8 +1014,8 @@ public class Main extends ApplicationAdapter {
           }
         }
 
-        if (passSanityCheck == false) {
-          Gdx.app.log("Main", "Driver loosed sanity, force crash");
+        if (passCoherenceCheck == false) {
+          Gdx.app.log("Main", "Driver lost coherence, force crash");
           // Job has already been replied, make sure to clear the persistent data
           persistentData.reset();
           // sleep a little to make sure changes are propagated before killing ourselves

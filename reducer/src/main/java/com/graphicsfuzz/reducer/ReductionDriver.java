@@ -185,7 +185,12 @@ public class ReductionDriver {
         int stepLimit) throws IOException {
 
     // This is used for Vulkan compatibility.
-    final boolean requiresUniformBindings = initialState.hasUniformBindings();
+    // TODO(https://github.com/google/graphicsfuzz/issues/1046): The check for zero uniforms is a
+    //  workaround for the fact that we don't have a way to infer what the right thing to do is
+    //  when there are no uniforms.  As per the issue, we should really have a --vulkan option that
+    //  instructs the reducer as to whether we want Vulkan-style uniform blocks.
+    final boolean requiresUniformBindings =
+        initialState.getPipelineInfo().getNumUniforms() == 0 || initialState.hasUniformBindings();
     final Optional<String> pushConstant = initialState.getPushConstant();
     if (initialState.hasUniformBindings()) {
       // We eliminate uniform bindings while applying reduction steps, and re-introduce them
