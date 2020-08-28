@@ -24,14 +24,13 @@ This document describes what was accomplished during this project, including:
 - Potential ideas for the future
 
 ## Objectives and their implementation
-A number of deliverables were determined during the early days of the project:
-- Extend the set of transformations in spirv-fuzz by implementing new ones
+Project's deliverables were determined during the early days of the project:
+- Extend the set of transformations in *spirv-fuzz* by implementing new ones
 - Find bugs in existing graphics drivers
 - Improve the implementation of the tooling
 
 ### Extend the set of transformations in spirv-fuzz
-SPIRV-fuzz works by applying a set of transformations to the original (reference) shader to produce a modified one (variant shader) (learn more about metamorphic
-fuzzing technique in [1]). Those transformations do not change 
+*spirv-fuzz* works by applying a set of transformations to the original (reference) shader to produce a modified one (variant shader) (learn more about metamorphic testing and fuzzing in [1, 7, 8]). Those transformations do not change 
 the semantics of the program. Thus, differences in the output of the reference and variant shaders might be caused by bugs in the graphics driver. Hence, it is important to
 have a sufficiently rich set of transformations. To that end, the following pull requests were implemented containing new transformations for the tool.
 
@@ -61,24 +60,24 @@ have a sufficiently rich set of transformations. To that end, the following pull
 
 [#3692](https://github.com/KhronosGroup/SPIRV-Tools/pull/3692): Propagate instructions from the basic block into its successors
 
-[#3737](https://github.com/KhronosGroup/SPIRV-Tools/pull/3737): Back up pointer, write through the pointer, restore the original value
+[#3737](https://github.com/KhronosGroup/SPIRV-Tools/pull/3737): Back up the pointer, write through the pointer, restore the original value
 
 ### Bugs in graphics shaders
-The implemented transformations have been used to find bugs in graphics drivers and supporting tooling. As a result, a number of bugs have been found in Mesa open-source project [2] and spirv-opt tool [3] for SPIR-V optimization.
-Additionally, some inconsistencies in the SPIR-V specification [4] and spirv-val [5] tool were found and reported. Links to the corresponding issues are provided below.
+The implemented transformations have been used to find bugs in graphics drivers and supporting tooling. As a result, several bugs have been found in Mesa open-source project [2] and *spirv-opt* tool [3] for SPIR-V optimization.
+Additionally, some inconsistencies in the SPIR-V specification [4] and *spirv-val* [5] tool were found and reported. Links to the corresponding issues are provided below.
 
 Mesa issues: [#3418](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3418), [#3427](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3427),
 [#3428](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3428), [#3452](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3452),
 [#3453](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3453).
 
-spirv-opt issues: [#3643](https://github.com/KhronosGroup/SPIRV-Tools/issues/3643), [#3738](https://github.com/KhronosGroup/SPIRV-Tools/issues/3738),
+*spirv-opt* issues: [#3643](https://github.com/KhronosGroup/SPIRV-Tools/issues/3643), [#3738](https://github.com/KhronosGroup/SPIRV-Tools/issues/3738),
 [#3631](https://github.com/KhronosGroup/SPIRV-Tools/issues/3631),
 [#3715](https://github.com/KhronosGroup/SPIRV-Tools/issues/3715), [#3708](https://github.com/KhronosGroup/SPIRV-Tools/issues/3708),
 [#3707](https://github.com/KhronosGroup/SPIRV-Tools/issues/3707), [#3706](https://github.com/KhronosGroup/SPIRV-Tools/issues/3706),
 [#3635](https://github.com/KhronosGroup/SPIRV-Tools/issues/3635), [#3650](https://github.com/KhronosGroup/SPIRV-Tools/issues/3650),
 [#3515](https://github.com/KhronosGroup/SPIRV-Tools/issues/3515).
 
-SPIR-V specification and spirv-val: [#3716](https://github.com/KhronosGroup/SPIRV-Tools/issues/3716), [#3650](https://github.com/KhronosGroup/SPIRV-Tools/issues/3650).
+SPIR-V specification and *spirv-val*: [#3716](https://github.com/KhronosGroup/SPIRV-Tools/issues/3716), [#3650](https://github.com/KhronosGroup/SPIRV-Tools/issues/3650).
 
 #### Example
 One of the implemented transformations was very helpful in uncovering a bug in the Mesa open-source library. The transformation propagates an instruction from its
@@ -133,43 +132,77 @@ Reference shader output | Variant shader output
 --- | ---
 ![Reference shader output](https://imgur.com/LPQxiRr.png) | ![Variant output shader](https://imgur.com/o383jfp.png)
 
-The bug is triggered when the transformation moves increment and comparison instructions from the loop's back-edge block into its header as follows.
-```
+The bug is triggered when the transformation moves increment and comparison instructions in the loop as follows:
+<table>
+  <tr>
+    <th>
+      Reference shader
+    </th>
+    <th>
+      Variant shader
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+        <code>
+        ...
+        %493 = OpLabel
+               OpBranch %495
+        %495 = OpLabel
+        %527 = OpPhi %6 %522 %493 %508 %500
+        <strong>%499 = OpSLessThanEqual %31 %527 %416</strong>
+               OpLoopMerge %509 %500 None
+               OpBranchConditional %499 %500 %509
+        %500 = OpLabel
+        <strong>%508 = OpIAdd %6 %527 %22</strong>
+               OpBranch %495
+...
+</code>
+      </pre>
+    </td>
+    <td>
+      <pre>
+        <code>
 ...
 %493 = OpLabel
-%761 = OpSLessThanEqual %31 %522 %416
+<strong>%761 = OpSLessThanEqual %31 %522 %416</strong>
        OpBranch %495
 %495 = OpLabel
-%499 = OpPhi %31 %761 %493 %762 %500
+<strong>%499 = OpPhi %31 %761 %493 %762 %500</strong>
 %527 = OpPhi %6 %522 %493 %508 %500
-%655 = OpIAdd %6 %527 %22
-%763 = OpSLessThanEqual %31 %655 %416
+<strong>%655 = OpIAdd %6 %527 %22</strong>
+<strong>%763 = OpSLessThanEqual %31 %655 %416</strong>
        OpLoopMerge %509 %500 None
        OpBranchConditional %499 %500 %509
 %500 = OpLabel
-%762 = OpPhi %31 %763 %495
-%508 = OpPhi %6 %655 %495
+<strong>%762 = OpPhi %31 %763 %495</strong>
+<strong>%508 = OpPhi %6 %655 %495</strong>
        OpBranch %495
 ...
-```
+</code>
+      </pre>
+    </td>
+  </tr>
+</table>
 
-In the example above, `OpSLessThanEqual` instruction is propagated from the loop's header block (`%495`) into its predecessors: `%493` and the back-edge block `%500`. 
-Then, both `OpSLessThanEqual` and `OpIAdd` instructions are propagated from the loop's back-edge block (`%500`) into its header (`%495`).
+In the example above, `OpSLessThanEqual` instruction is propagated from the loop's header block (`%495`) into its predecessors: `%493` and the back-edge block `%500`. This produces ids `%762` and `%761`.
+Then, both `OpSLessThanEqual` and `OpIAdd` instructions are propagated from the loop's back-edge block (`%500`) into its header (`%495`) producing `%763` and `%655`.
 
 According to the discussion in [#3428](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3428), the internal optimization in the Mesa library has a bug that skips
 the last iteration of the loop.
 
 ### Improve the implementation of the tooling
-A number of contributions to spirv-fuzz and spirv-opt tools have been made to fulfil this objective. Those contributions mostly fixed existing bugs and implemented additional features.
+Several contributions to *spirv-fuzz* and *spirv-opt* tools have been made to fulfil this objective. Those contributions mostly fixed existing bugs and implemented additional features.
 
-Constributions to spirv-opt:
+Contributions to *spirv-opt*:
 - [#3435](https://github.com/KhronosGroup/SPIRV-Tools/pull/3435): Fix type of the value, returned by iterators.
 - [#3437](https://github.com/KhronosGroup/SPIRV-Tools/pull/3437): Add `RemoveParameter` method.
 - [#3516](https://github.com/KhronosGroup/SPIRV-Tools/pull/3516): Support `OpLabel` instructions in dominator analyses.
 - [#3680](https://github.com/KhronosGroup/SPIRV-Tools/pull/3680): Fix off-by-1 error in constant folding.
 - [#3683](https://github.com/KhronosGroup/SPIRV-Tools/pull/3683): Add support for `OpConstantNull` to loop unroller.
 
-Contributions to spirv-fuzz:
+Contributions to *spirv-fuzz*:
 - [#3225](https://github.com/KhronosGroup/SPIRV-Tools/pull/3225): Support `OpPhi` instructions when adding dead break and continue blocks.
 - [#3220](https://github.com/KhronosGroup/SPIRV-Tools/pull/3220): Remove duplicated functionality from `TransformationFunctionCall`.
 - [#3238](https://github.com/KhronosGroup/SPIRV-Tools/pull/3238): Add a test for `OpTypeRuntimeArray` to `FuzzerPassDonateModules`.
@@ -213,7 +246,7 @@ Contributions to spirv-fuzz:
 - [#3630](https://github.com/KhronosGroup/SPIRV-Tools/pull/3630): Remove `OpFunctionCall` operands in correct order.
 
 ### Potential ideas for the future
-There is a number of interesting ideas that might be worthwhile implementing in the near future. Those include:
+SOm interesting ideas might be worthwhile implementing soon. Those include:
 
 [#3695](https://github.com/KhronosGroup/SPIRV-Tools/issues/3695): Transformation to inline pointer parameters.
 
@@ -232,14 +265,14 @@ There are simple algorithms that produce a random permutation of the sequence of
 This is because:
 1. Domination rules must be satisfied. That being said, every definition must dominate (read 'precede') all of its users. There are exceptions to this rule but
 we won't discuss them here.
-2. Swapping some instructions might change semantics of the program. This is usually the case with instructions that cause side-effects: deal with memory, synchronization etc.
+2. Swapping some instructions might change the semantics of the program. This is usually the case with instructions that cause side-effects: deal with memory, synchronization etc.
 
 Thus, the transformation simply swaps two consecutive instructions instead of permuting a range of them. This approach simplifies the implementation
 and makes the code more readable. Moreover, it is still able to produce a random permutation of all instructions since the transformation can be applied
 many times to the same basic block.
 
 #### [#3692](https://github.com/KhronosGroup/SPIRV-Tools/pull/3692): Propagate instructions from the basic block into its successors
-This tranformation is part of the idea of being able to permute instructions in the program.
+This transformation is part of the idea of being able to permute instructions in the program.
 
 This transformation has the same challenges as the previous one and more.
 1. Domination rules must be satisfied. We must make sure that all dependencies of the original instruction (before the instruction is propagated) dominate all the
@@ -248,7 +281,7 @@ propagated copies of the original instruction. In the case of this transformatio
 the original instruction and instead decide if we can replace all usages of that id with propagated ids.
 3. Some propagated instructions might cause side-effects (e.g. write to memory etc). Thus, we might change the semantics of the program if we try to propagate them.
 
-There seem to be no sigle simple approach to overcome all these challenges. Thus, the transformation contains a sequence of conditions that must be satisfied to make
+There seems to be no single simple approach to overcome all these challenges. Thus, the transformation contains a sequence of conditions that must be satisfied to make
 sure that the program's semantics remain the same.
 
 #### [#3674](https://github.com/KhronosGroup/SPIRV-Tools/pull/3674): Outline selection constructs
@@ -305,3 +338,5 @@ Thus, the transformation does not create any new basic blocks and instead reuses
 4. [SPIR-V specification](https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.html)
 5. [spirv-val](https://github.com/KhronosGroup/SPIRV-Tools#validator)
 6. [Rules of structured control flow](https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.html#_a_id_structuredcontrolflow_a_structured_control_flow)
+7. Alastair F. Donaldson, Hugues Evrard, Andrei Lascu, and Paul Thomson. 2017. Automated testing of graphics shader compilers. Proc. ACM Program. Lang. 1, OOPSLA, Article 93 (October 2017), 29 pages. DOI:https://doi.org/10.1145/3133917
+8. Alastair F. Donaldson and Andrei Lascu. 2016. Metamorphic testing for (graphics) compilers. In Proceedings of the 1st International Workshop on Metamorphic Testing (MET '16). Association for Computing Machinery, New York, NY, USA, 44–47. DOI:https://doi.org/10.1145/2896971.2896978
