@@ -342,3 +342,7 @@ Add Push Constants to CreatePipelineLayout
 
 [#180](https://github.com/google/vulkan_test_applications/pull/180):
 Fix missing allocator in PipelineLayout constructor
+
+### Conclusion
+
+It was a great opportunity to have been able to work with the Android Graphics Tools team for Google Summer of Code 2020. I was able to learn in-depth about my areas of interest: Vulkan, GPU programming and computer graphics. I would like to thank my mentors Hugues Evrard, Paul Thomson and Andrew Woloszyn for all their support.
