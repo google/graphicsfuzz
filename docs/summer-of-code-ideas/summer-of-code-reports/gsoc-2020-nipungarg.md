@@ -18,7 +18,7 @@ Over the course of the project, code was contributed to two separate repos:
 * [GraphicsFuzz](https://github.com/google/graphicsfuzz/) for Code Coverage Scripts
 * [Vulkan Test Applications](https://github.com/google/vulkan_test_applications) for the new Sample and various maintenance fixes
 
-This report will describe the deliverables and results of the project over the summer in more detail.
+This report describes the deliverables and results of the project over the summer in more detail.
  
 ### GraphicsFuzz - Coverage Analysis Tools for Vulkan Samples
 
@@ -272,14 +272,13 @@ This PR adds a `vkTrimCommandPool` call to the `CreateResetDestroyCommandPool\_t
 
 ### Vulkan Test Applications - Add Overlapping Frames Sample
 
-The idea behind this was sample was to implement the Overlapping Frames method of preparing multiple frames at once in the GPU. This work was beyond the original goal of extending the coverage of Vulkan primitives, but we decided to do this because this particular technique is now being adopted into game engines and software that depends on heavy graphics processing. This presents a challenge for Vulkan tools, such as the AGI, to know exactly when and where one frame ends and the next one begins.
+The idea behind this sample is to implement the Overlapping Frames method of preparing multiple frames at once in the GPU. This work was beyond the original goal of extending the coverage of Vulkan primitives, but we decided to do this because this particular technique is now being adopted into game engines and software that depends on heavy graphics processing. This presents a challenge for Vulkan tools, such as AGI, to know exactly when and where one frame ends and the next one begins.
 
-Since none of the existing samples that we found had implemented this method, we decided to implement the new Overlapping Frames Sample.
+Since none of the existing samples that we found had implemented this method, we decided to implement the new Overlapping Frames sample.
 
-This sample renders a triangle with a post-processing effect split into multiple
-interleaved render passes.
+This sample renders a triangle with a post-processing effect split into multiple interleaved render passes.
 
-The idea was to create a sample that can be used to test the Overlapping Frames Synchronization pattern on the AGI. This pattern is described in more detail below.
+The idea is to create a sample that can be used to test the Overlapping Frames Synchronization pattern on AGI. This pattern is described in more detail below.
 
 ##### Frame Creation Pattern
 
@@ -315,13 +314,13 @@ This PR creates a simple overlapping frames sample where we first draw a triangl
 This PR modifies the overlapping_frames sample for different image each frame.
 
 ### Vulkan Test Applications - Combining Graphics and Compute with Raymarching and Noise Texture
-The idea behind this sample was to combine the Compute and Graphics capabilities of Vulkan in order to visualize 3D Noise Textures. For the sample, we would procedurally generate a 3D Perlin Texture using the Compute queue and then use the resulting texture and a given surface level as inputs for a Raymarching Renderer.
+The idea behind this sample is to combine the Compute and Graphics capabilities of Vulkan in order to visualize 3D Noise Textures. For the sample, we would procedurally generate a 3D Perlin Texture using the Compute queue and then use the resulting texture and a given surface level as inputs for a Raymarching Renderer.
 
-This was the final sample that was planned under the project. However, I could not get it to work satisfactorily under the current schedule. Currently, the setup for Graphics of the project exists. However, the shaders need to be re-written as they do not work as desired right now. The Compute side of the project is unimplemented till now.
+This is the final sample that was planned under the project. However, I could not get it to work satisfactorily under the current schedule. Currently, the setup for Graphics of the project exists. Still, the shaders need to be re-written as they do not work as desired right now. The Compute side of the project is unimplemented at the time of writing this report.
 
 [Current Work Link](https://github.com/nipunG314/vulkan_test_applications/tree/noise_visual_raymarcher)
 
-I would like to spend a couple weeks after the program to get this up and running.
+I plan to spend a couple weeks after the program to get this up and running.
 
 ### Vulkan Test Applications - Additional Fixes
 
