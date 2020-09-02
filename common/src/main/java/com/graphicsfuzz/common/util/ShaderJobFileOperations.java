@@ -24,6 +24,7 @@ import com.graphicsfuzz.alphanumcomparator.AlphanumComparator;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.tool.UniformValueSupplier;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.gifsequencewriter.GifSequenceWriter;
@@ -695,6 +696,13 @@ public class ShaderJobFileOperations {
   public void writeShaderJobFile(
       final ShaderJob shaderJob,
       final File outputShaderJobFile) throws FileNotFoundException {
+    writeShaderJobFile(shaderJob, outputShaderJobFile, Optional.empty());
+  }
+
+  public void writeShaderJobFile(
+      final ShaderJob shaderJob,
+      final File outputShaderJobFile,
+      final Optional<UniformValueSupplier> uniformValues) throws FileNotFoundException {
 
     assertIsShaderJobFile(outputShaderJobFile);
 
@@ -704,7 +712,8 @@ public class ShaderJobFileOperations {
       writeShader(
           tu,
           shaderJob.getLicense(),
-          new File(outputFileNoExtension + "." + tu.getShaderKind().getFileExtension())
+          new File(outputFileNoExtension + "." + tu.getShaderKind().getFileExtension()),
+          uniformValues
       );
     }
 
@@ -857,7 +866,8 @@ public class ShaderJobFileOperations {
   private static void writeShader(
       TranslationUnit tu,
       Optional<String> license,
-      File outputFile
+      File outputFile,
+      Optional<UniformValueSupplier> uniformValues
   ) throws FileNotFoundException {
     try (PrintStream stream = ps(outputFile)) {
       PrettyPrinterVisitor.emitShader(
@@ -865,7 +875,8 @@ public class ShaderJobFileOperations {
           license,
           stream,
           PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER
+          PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER,
+          uniformValues
       );
     }
   }

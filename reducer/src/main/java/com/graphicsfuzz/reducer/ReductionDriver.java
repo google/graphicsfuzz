@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.AddInitializers;
 import com.graphicsfuzz.common.util.GloballyTruncateLoops;
 import com.graphicsfuzz.common.util.MakeArrayAccessesInBounds;
+import com.graphicsfuzz.common.util.PipelineUniformValueSupplier;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.glslreducers.IReductionPass;
 import com.graphicsfuzz.reducer.glslreducers.IReductionPassManager;
@@ -70,6 +71,8 @@ public class ReductionDriver {
 
   private final IReductionPassManager passManager;
 
+  private final Optional<IReductionPassManager> literalToUniformPassManager;
+
   public ReductionDriver(ReducerContext context,
                          boolean verbose,
                          ShaderJobFileOperations fileOps,
@@ -98,11 +101,14 @@ public class ReductionDriver {
     this.failHashCacheHits = 0;
 
     if (literalsToUniforms) {
-      this.passManager = ReductionDriver.getLiteralsToUniformsPassManager(context, verbose);
+      this.literalToUniformPassManager =
+          Optional.of(ReductionDriver.getLiteralsToUniformsPassManager(context,
+          verbose));
     } else {
-      this.passManager = ReductionDriver.getDefaultPassManager(context, verbose);
+      this.literalToUniformPassManager = Optional.empty();
     }
 
+    this.passManager = ReductionDriver.getDefaultPassManager(context, verbose);
   }
 
   private static IReductionPassManager getDefaultPassManager(
@@ -282,7 +288,13 @@ public class ReductionDriver {
       while (true) {
         LOGGER.info("Trying reduction attempt " + stepCount + " (" + numSuccessfulReductions
             + " successful so far).");
-        final Optional<ShaderJob> maybeNewState = passManager.applyReduction(currentState);
+        final Optional<ShaderJob> maybeNewState;
+        if (literalToUniformPassManager.isPresent()) {
+          maybeNewState = literalToUniformPassManager.get().applyReduction(currentState);
+        } else {
+          maybeNewState = passManager.applyReduction(currentState);
+        }
+
         if (!maybeNewState.isPresent()) {
           LOGGER.info("No more to reduce; stopping.");
           break;
@@ -301,7 +313,12 @@ public class ReductionDriver {
             makeArrayAccessesInBounds,
             addInitializers,
             currentShaderJobShortName);
-        passManager.notifyInteresting(interesting);
+        if (literalToUniformPassManager.isPresent()) {
+          literalToUniformPassManager.get().notifyInteresting(interesting);
+        } else {
+          passManager.notifyInteresting(interesting);
+        }
+
         final String currentStepShaderJobShortNameWithOutcome =
             getReductionStepShaderJobShortName(
                 shaderJobShortName,
@@ -450,10 +467,20 @@ public class ReductionDriver {
     if (addInitializers) {
       AddInitializers.addInitializers(stateToWrite);
     }
-    fileOps.writeShaderJobFile(
-        stateToWrite,
-        shaderJobFileOutput
-    );
+
+    if (literalToUniformPassManager.isPresent()) {
+      fileOps.writeShaderJobFile(
+          stateToWrite,
+          shaderJobFileOutput,
+          Optional.of(new PipelineUniformValueSupplier(stateToWrite.getPipelineInfo()))
+      );
+    } else {
+      fileOps.writeShaderJobFile(
+          stateToWrite,
+          shaderJobFileOutput,
+          Optional.empty()
+      );
+    }
   }
 
   public static String getReductionStepShaderJobShortName(String variantPrefix,

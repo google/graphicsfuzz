@@ -60,6 +60,40 @@ public class PrettyPrinterVisitorTest {
   }
 
   @Test
+  public void testUniformBlockContentsInComments() throws Exception {
+    final String shaderWithBindings = ""
+        + "layout(set = 0, binding = 0) uniform buf0 { int _GLF_uniform_int_values[2]; };"
+        + "layout(set = 0, binding = 1) uniform buf1 { float _GLF_uniform_float_values[1]; };"
+        + "void main() { }";
+
+    final String shaderPrettyPrinted = ""
+        + "// Contents of _GLF_uniform_int_values: [0, 1]\n"
+        + "layout(set = 0, binding = 0) uniform buf0 {\n"
+        + " int _GLF_uniform_int_values[2];\n"
+        + "};\n"
+        + "// Contents of _GLF_uniform_float_values: 3.0\n"
+        + "layout(set = 0, binding = 1) uniform buf1 {\n"
+        + " float _GLF_uniform_float_values[1];\n"
+        + "};\n"
+        + "void main()\n"
+        + "{\n"
+        + "}\n";
+
+    UniformValueSupplier uniformValues = name -> {
+      if (name.equals("_GLF_uniform_int_values")) {
+        return Optional.of(Arrays.asList("0", "1"));
+      } else if (name.equals("_GLF_uniform_float_values")) {
+        return Optional.of(Arrays.asList("3.0"));
+      }
+      return Optional.empty();
+    };
+
+    assertEquals(shaderPrettyPrinted,
+        PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shaderWithBindings),
+            uniformValues));
+  }
+
+  @Test
   public void testUniformArrayContentsInComments() throws Exception {
 
     final String shader = ""

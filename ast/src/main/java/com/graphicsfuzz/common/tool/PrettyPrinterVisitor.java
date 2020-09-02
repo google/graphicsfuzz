@@ -158,6 +158,15 @@ public class PrettyPrinterVisitor extends StandardVisitor {
                                 PrintStream stream,
                                 int indentationWidth,
                                 Supplier<String> newlineSupplier) {
+    emitShader(shader, license, stream, indentationWidth, newlineSupplier, Optional.empty());
+  }
+
+  public static void emitShader(TranslationUnit shader,
+                                Optional<String> license,
+                                PrintStream stream,
+                                int indentationWidth,
+                                Supplier<String> newlineSupplier,
+                                Optional<UniformValueSupplier> uniformValueSupplier) {
     final boolean usesGraphicsFuzzDefines = new CheckPredicateVisitor() {
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
@@ -169,7 +178,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     }.test(shader);
 
     new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier,
-        usesGraphicsFuzzDefines, license, Optional.empty()).visit(shader);
+        usesGraphicsFuzzDefines, license, uniformValueSupplier).visit(shader);
   }
 
   private String newLine() {
@@ -665,6 +674,32 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
+
+    if (interfaceBlock.getInterfaceQualifier().equals(TypeQualifier.UNIFORM)) {
+      // It is guaranteed that a block, for which getInterfaceQualifier() returns "uniform",
+      // has a single field.
+      assert interfaceBlock.getMemberNames().size() == 1;
+
+      final String memberName = interfaceBlock.getMemberNames().get(0);
+      if (uniformValues.isPresent()) {
+        final Optional<List<String>> values = uniformValues.get().getValues(memberName);
+        values.ifPresent(item -> {
+          out.append("// Contents of ")
+              .append(memberName)
+              .append(": ");
+          if (item.size() > 1) {
+            out.append("[");
+          }
+          out.append(item.stream().map(Object::toString)
+              .reduce((item1, item2) -> item1 + ", " + item2).orElse(""));
+          if (item.size() > 1) {
+            out.append("]");
+          }
+          out.append(newLine());
+        });
+      }
+    }
+
     out.append(indent());
     if (interfaceBlock.hasLayoutQualifierSequence()) {
       out.append(interfaceBlock.getLayoutQualifierSequence().toString() + " ");
@@ -677,6 +712,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     for (String memberName : interfaceBlock.getMemberNames()) {
       out.append(indent());
       final Type memberType = interfaceBlock.getMemberType(memberName).get();
+
       visit(memberType);
       out.append(" " + memberName);
       processArrayInfo(memberType);
