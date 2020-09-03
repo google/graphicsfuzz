@@ -99,10 +99,11 @@ public class ReductionDriver {
     this.failHashCacheHits = 0;
 
     if (literalsToUniforms) {
-      this.passManager = ReductionDriver.getLiteralsToUniformsPassManager(context,  verbose);
+      this.passManager = ReductionDriver.getLiteralsToUniformsPassManager(context, verbose);
     } else {
       this.passManager = ReductionDriver.getDefaultPassManager(context, verbose);
     }
+
   }
 
   private static IReductionPassManager getDefaultPassManager(
