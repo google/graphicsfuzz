@@ -71,8 +71,6 @@ public class ReductionDriver {
 
   private final IReductionPassManager passManager;
 
-  private final Optional<IReductionPassManager> literalToUniformPassManager;
-
   public ReductionDriver(ReducerContext context,
                          boolean verbose,
                          ShaderJobFileOperations fileOps,
@@ -101,14 +99,10 @@ public class ReductionDriver {
     this.failHashCacheHits = 0;
 
     if (literalsToUniforms) {
-      this.literalToUniformPassManager =
-          Optional.of(ReductionDriver.getLiteralsToUniformsPassManager(context,
-          verbose));
+      this.passManager = ReductionDriver.getLiteralsToUniformsPassManager(context,  verbose);
     } else {
-      this.literalToUniformPassManager = Optional.empty();
+      this.passManager = ReductionDriver.getDefaultPassManager(context, verbose);
     }
-
-    this.passManager = ReductionDriver.getDefaultPassManager(context, verbose);
   }
 
   private static IReductionPassManager getDefaultPassManager(
@@ -289,11 +283,7 @@ public class ReductionDriver {
         LOGGER.info("Trying reduction attempt " + stepCount + " (" + numSuccessfulReductions
             + " successful so far).");
         final Optional<ShaderJob> maybeNewState;
-        if (literalToUniformPassManager.isPresent()) {
-          maybeNewState = literalToUniformPassManager.get().applyReduction(currentState);
-        } else {
-          maybeNewState = passManager.applyReduction(currentState);
-        }
+        maybeNewState = passManager.applyReduction(currentState);
 
         if (!maybeNewState.isPresent()) {
           LOGGER.info("No more to reduce; stopping.");
@@ -313,11 +303,7 @@ public class ReductionDriver {
             makeArrayAccessesInBounds,
             addInitializers,
             currentShaderJobShortName);
-        if (literalToUniformPassManager.isPresent()) {
-          literalToUniformPassManager.get().notifyInteresting(interesting);
-        } else {
-          passManager.notifyInteresting(interesting);
-        }
+        passManager.notifyInteresting(interesting);
 
         final String currentStepShaderJobShortNameWithOutcome =
             getReductionStepShaderJobShortName(
@@ -468,19 +454,11 @@ public class ReductionDriver {
       AddInitializers.addInitializers(stateToWrite);
     }
 
-    if (literalToUniformPassManager.isPresent()) {
-      fileOps.writeShaderJobFile(
-          stateToWrite,
-          shaderJobFileOutput,
-          Optional.of(new PipelineUniformValueSupplier(stateToWrite.getPipelineInfo()))
-      );
-    } else {
-      fileOps.writeShaderJobFile(
-          stateToWrite,
-          shaderJobFileOutput,
-          Optional.empty()
-      );
-    }
+    fileOps.writeShaderJobFile(
+        stateToWrite,
+        shaderJobFileOutput,
+        Optional.of(new PipelineUniformValueSupplier(stateToWrite.getPipelineInfo()))
+    );
   }
 
   public static String getReductionStepShaderJobShortName(String variantPrefix,

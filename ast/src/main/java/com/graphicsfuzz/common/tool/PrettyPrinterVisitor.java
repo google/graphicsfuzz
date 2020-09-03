@@ -240,7 +240,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     visit(baseType);
     out.append(" ");
     boolean first = true;
-
     for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
       if (!first) {
         out.append(", ");
@@ -251,7 +250,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
         out.append("[");
         visit(vdi.getArrayInfo().getSizeExpr());
         out.append("]");
-
         assert !(baseType instanceof ArrayType);
       } else if (baseType instanceof ArrayType) {
         out.append("[");
@@ -263,7 +261,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
         visit(vdi.getInitializer());
       }
     }
-
   }
 
   @Override
@@ -675,6 +672,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
 
+    // If a uniform block is being declared and we have a uniform supplier that provides known
+    // values for the uniform wrapped in, we emit details of those known values in comments.
     if (interfaceBlock.getInterfaceQualifier().equals(TypeQualifier.UNIFORM)) {
       // It is guaranteed that a block, for which getInterfaceQualifier() returns "uniform",
       // has a single field.
@@ -712,7 +711,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     for (String memberName : interfaceBlock.getMemberNames()) {
       out.append(indent());
       final Type memberType = interfaceBlock.getMemberType(memberName).get();
-
       visit(memberType);
       out.append(" " + memberName);
       processArrayInfo(memberType);
@@ -789,7 +787,6 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   protected <T extends IAstNode> void visitChildFromParent(Consumer<T> visitorMethod, T child,
       IAstNode parent) {
     super.visitChildFromParent(visitorMethod, child, parent);
-
     if (parent instanceof TranslationUnit && child instanceof VariablesDeclaration) {
       out.append(";" + newLine() + newLine());
     }
