@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.AddInitializers;
 import com.graphicsfuzz.common.util.GloballyTruncateLoops;
 import com.graphicsfuzz.common.util.MakeArrayAccessesInBounds;
+import com.graphicsfuzz.common.util.PipelineUniformValueSupplier;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.reducer.glslreducers.IReductionPass;
 import com.graphicsfuzz.reducer.glslreducers.IReductionPassManager;
@@ -452,7 +453,8 @@ public class ReductionDriver {
     }
     fileOps.writeShaderJobFile(
         stateToWrite,
-        shaderJobFileOutput
+        shaderJobFileOutput,
+        Optional.of(new PipelineUniformValueSupplier(stateToWrite.getPipelineInfo()))
     );
   }
 
