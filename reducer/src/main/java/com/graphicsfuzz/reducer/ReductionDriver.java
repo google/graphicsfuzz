@@ -282,9 +282,7 @@ public class ReductionDriver {
       while (true) {
         LOGGER.info("Trying reduction attempt " + stepCount + " (" + numSuccessfulReductions
             + " successful so far).");
-        final Optional<ShaderJob> maybeNewState;
-        maybeNewState = passManager.applyReduction(currentState);
-
+        final Optional<ShaderJob> maybeNewState = passManager.applyReduction(currentState);
         if (!maybeNewState.isPresent()) {
           LOGGER.info("No more to reduce; stopping.");
           break;
@@ -304,7 +302,6 @@ public class ReductionDriver {
             addInitializers,
             currentShaderJobShortName);
         passManager.notifyInteresting(interesting);
-
         final String currentStepShaderJobShortNameWithOutcome =
             getReductionStepShaderJobShortName(
                 shaderJobShortName,
@@ -453,7 +450,6 @@ public class ReductionDriver {
     if (addInitializers) {
       AddInitializers.addInitializers(stateToWrite);
     }
-
     fileOps.writeShaderJobFile(
         stateToWrite,
         shaderJobFileOutput,
