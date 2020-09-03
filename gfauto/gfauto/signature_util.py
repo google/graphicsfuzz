@@ -123,6 +123,9 @@ PATTERN_LLVM_MACHINE_CODE_ERROR = re.compile(
 
 PATTERN_LLVM_ERROR_DIAGNOSIS = re.compile(r"ERROR: LLVM DIAGNOSIS INFO: (.*)")
 
+PATTERN_ADDRESS_SANITIZER_ERROR = re.compile(
+    r"SUMMARY: AddressSanitizer: ([a-z\-]+) .* in (.*)"
+)
 
 PATTERN_AMBER_TOLERANCE_ERROR = re.compile(
     r"is greater th[ae]n tolerance|Buffers have different values"
@@ -190,6 +193,14 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
     # LLVM ERROR DIAGNOSIS: should come before PATTERN_ASSERTION_FAILURE.
     group = basic_match(PATTERN_LLVM_ERROR_DIAGNOSIS, log_contents)
     if group:
+        return group
+
+    # AddressSanitizer error.
+    match: Optional[Match[str]] = re.search(PATTERN_ADDRESS_SANITIZER_ERROR, log_contents)
+    if match:
+        group = match.group(1) + "_" + match.group(2)
+        group = clean_up(group)
+        group = reduce_length(group)
         return group
 
     # glslang error.
