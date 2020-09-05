@@ -138,7 +138,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   /**
    * Returns, via pretty printing, a string representation of the given node.
    *
-   * @param node Node for which string representation is required
+   * @param node          Node for which string representation is required
    * @param uniformValues Supplier that provides values for uniforms
    * @return String representation of the node
    */
@@ -187,13 +187,14 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitPrecisionDeclaration(PrecisionDeclaration precisionDeclaration) {
-    out.append(indent() + precisionDeclaration.getText() + "\n\n");
+    indent();
+    out.append(precisionDeclaration.getText()).append("\n\n");
   }
 
   @Override
   public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
     if (!insideForStatementHeader) {
-      out.append(indent());
+      indent();
     }
     super.visitDeclarationStmt(declarationStmt);
     out.append(";");
@@ -209,7 +210,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     // values for one or more of the uniforms, we emit details of those known values in comments,
     // one line per uniform.
     if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
-            && uniformValues.isPresent()) {
+        && uniformValues.isPresent()) {
       // Find the variable declarations for which we have known uniform values.
       final List<VariableDeclInfo> knownUniforms =
           variablesDeclaration.getDeclInfos().stream()
@@ -275,7 +276,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
     visit(functionPrototype.getReturnType());
-    out.append(" " + functionPrototype.getName() + "(");
+    out.append(" ").append(functionPrototype.getName()).append("(");
     boolean first = true;
     for (ParameterDecl p : functionPrototype.getParameters()) {
       if (!first) {
@@ -295,7 +296,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   public void visitParameterDecl(ParameterDecl parameterDecl) {
     visit(parameterDecl.getType());
     if (parameterDecl.getName() != null) {
-      out.append(" " + parameterDecl.getName());
+      out.append(" ").append(parameterDecl.getName());
     }
     if (parameterDecl.hasArrayInfo()) {
       out.append("[");
@@ -306,33 +307,35 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitBlockStmt(BlockStmt stmt) {
-    out.append(indent() + "{" + newLine());
+    indent();
+    out.append("{").append(newLine());
     increaseIndent();
     for (Stmt s : stmt.getStmts()) {
       visit(s);
     }
     decreaseIndent();
-    out.append(indent() + "}" + newLine());
+    indent();
+    out.append("}").append(newLine());
   }
 
-  private String indent() {
-    String result = "";
+  void indent() {
     for (int i = 0; i < indentationCount; i++) {
-      result += " ";
+      out.append(" ");
     }
-    return result;
   }
 
   @Override
   public void visitIfStmt(IfStmt ifStmt) {
-    out.append(indent() + "if(");
+    indent();
+    out.append("if(");
     visit(ifStmt.getCondition());
-    out.append(")" + newLine());
+    out.append(")").append(newLine());
     increaseIndent();
     visit(ifStmt.getThenStmt());
     decreaseIndent();
     if (ifStmt.hasElseStmt()) {
-      out.append(indent() + "else" + newLine());
+      indent();
+      out.append("else").append(newLine());
       increaseIndent();
       visit(ifStmt.getElseStmt());
       decreaseIndent();
@@ -342,7 +345,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitBinaryExpr(BinaryExpr binaryExpr) {
     visit(binaryExpr.getLhs());
-    out.append(" " + binaryExpr.getOp().getText() + " ");
+    out.append(" ").append(binaryExpr.getOp().getText()).append(" ");
     visit(binaryExpr.getRhs());
   }
 
@@ -367,7 +370,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       case MINUS:
       case BNEG:
       case LNOT:
-        out.append(unaryExpr.getOp().getText() + " ");
+        out.append(unaryExpr.getOp().getText()).append(" ");
         break;
       case POST_DEC:
       case POST_INC:
@@ -379,7 +382,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     switch (unaryExpr.getOp()) {
       case POST_DEC:
       case POST_INC:
-        out.append(" " + unaryExpr.getOp().getText());
+        out.append(" ").append(unaryExpr.getOp().getText());
         break;
       case PRE_INC:
       case PRE_DEC:
@@ -396,7 +399,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
     visit(memberLookupExpr.getStructure());
-    out.append("." + memberLookupExpr.getMember());
+    out.append(".").append(memberLookupExpr.getMember());
   }
 
   @Override
@@ -421,42 +424,46 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitBreakStmt(BreakStmt breakStmt) {
-    out.append(indent() + "break");
-    out.append(";" + newLine());
+    indent();
+    out.append("break");
+    out.append(";").append(newLine());
   }
 
   @Override
   public void visitContinueStmt(ContinueStmt continueStmt) {
-    out.append(indent() + "continue");
-    out.append(";" + newLine());
+    indent();
+    out.append("continue");
+    out.append(";").append(newLine());
   }
 
   @Override
   public void visitDiscardStmt(DiscardStmt discardStmt) {
-    out.append(indent() + "discard");
-    out.append(";" + newLine());
+    indent();
+    out.append("discard");
+    out.append(";").append(newLine());
   }
 
   @Override
   public void visitReturnStmt(ReturnStmt returnStmt) {
-    out.append(indent() + "return");
+    indent();
+    out.append("return");
     if (returnStmt.hasExpr()) {
       out.append(" ");
       visit(returnStmt.getExpr());
     }
-    out.append(";" + newLine());
+    out.append(";").append(newLine());
   }
 
   @Override
   public void visitExprStmt(ExprStmt exprStmt) {
-    out.append(indent());
+    indent();
     visit(exprStmt.getExpr());
-    out.append(";" + newLine());
+    out.append(";").append(newLine());
   }
 
   @Override
   public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-    out.append(functionCallExpr.getCallee() + "(");
+    out.append(functionCallExpr.getCallee()).append("(");
     boolean first = true;
     for (Expr e : functionCallExpr.getArgs()) {
       if (!first) {
@@ -470,7 +477,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
-    out.append(typeConstructorExpr.getTypename() + "(");
+    out.append(typeConstructorExpr.getTypename()).append("(");
     boolean first = true;
     for (Expr e : typeConstructorExpr.getArgs()) {
       if (!first) {
@@ -485,7 +492,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitQualifiedType(QualifiedType qualifiedType) {
     for (TypeQualifier q : qualifiedType.getQualifiers()) {
-      out.append(q + " ");
+      out.append(q.toString()).append(" ");
     }
     visit(qualifiedType.getTargetType());
   }
@@ -517,14 +524,16 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitNullStmt(NullStmt nullStmt) {
-    out.append(indent() + ";" + newLine());
+    indent();
+    out.append(";").append(newLine());
   }
 
   @Override
   public void visitWhileStmt(WhileStmt whileStmt) {
-    out.append(indent() + "while(");
+    indent();
+    out.append("while(");
     visit(whileStmt.getCondition());
-    out.append(")" + newLine());
+    out.append(")").append(newLine());
     increaseIndent();
     visit(whileStmt.getBody());
     decreaseIndent();
@@ -533,7 +542,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitForStmt(ForStmt forStmt) {
     insideForStatementHeader = true;
-    out.append(indent() + "for(");
+    indent();
+    out.append("for(");
     visit(forStmt.getInit());
     out.append(" ");
     if (forStmt.hasCondition()) {
@@ -543,7 +553,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     if (forStmt.hasIncrement()) {
       visit(forStmt.getIncrement());
     }
-    out.append(")" + newLine());
+    out.append(")").append(newLine());
     insideForStatementHeader = false;
     increaseIndent();
     visit(forStmt.getBody());
@@ -552,13 +562,15 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitDoStmt(DoStmt doStmt) {
-    out.append(indent() + "do" + newLine());
+    indent();
+    out.append("do").append(newLine());
     increaseIndent();
     visit(doStmt.getBody());
     decreaseIndent();
-    out.append(indent() + "while(");
+    indent();
+    out.append("while(");
     visit(doStmt.getCondition());
-    out.append(");" + newLine());
+    out.append(");").append(newLine());
   }
 
   @Override
@@ -641,17 +653,17 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       visit(structDefinitionType.getStructNameType());
       out.append(" ");
     }
-    out.append("{" + newLine());
+    out.append("{").append(newLine());
     increaseIndent();
     for (String name : structDefinitionType.getFieldNames()) {
-      out.append(indent());
+      indent();
       visit(structDefinitionType.getFieldType(name));
-      out.append(" " + name);
+      out.append(" ").append(name);
       processArrayInfo(structDefinitionType.getFieldType(name));
-      out.append(";" + newLine());
+      out.append(";").append(newLine());
     }
     decreaseIndent();
-    out.append(indent());
+    indent();
     out.append("}");
   }
 
@@ -675,9 +687,10 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitSwitchStmt(SwitchStmt switchStmt) {
-    out.append(indent() + "switch(");
+    indent();
+    out.append("switch(");
     visit(switchStmt.getExpr());
-    out.append(")" + newLine());
+    out.append(")").append(newLine());
     increaseIndent();
     visitBlockStmt(switchStmt.getBody());
     decreaseIndent();
@@ -685,16 +698,16 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitDefaultCaseLabel(DefaultCaseLabel defaultCaseLabel) {
-    out.append(indent());
-    out.append("default:" + newLine());
+    indent();
+    out.append("default:").append(newLine());
   }
 
   @Override
   public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
-    out.append(indent());
+    indent();
     out.append("case ");
     visit(exprCaseLabel.getExpr());
-    out.append(":" + newLine());
+    out.append(":").append(newLine());
   }
 
   @Override
@@ -727,40 +740,43 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       }
     }
 
-    out.append(indent());
+    indent();
     if (interfaceBlock.hasLayoutQualifierSequence()) {
-      out.append(interfaceBlock.getLayoutQualifierSequence().toString() + " ");
+      out.append(interfaceBlock.getLayoutQualifierSequence().toString()).append(" ");
     }
-    out.append(interfaceBlock.getInterfaceQualifier() + " "
-        + interfaceBlock.getStructName() + " {" + newLine());
+    out.append(interfaceBlock.getInterfaceQualifier().toString())
+        .append(" ")
+        .append(interfaceBlock.getStructName())
+        .append(" {")
+        .append(newLine());
 
     increaseIndent();
 
     for (String memberName : interfaceBlock.getMemberNames()) {
-      out.append(indent());
+      indent();
       final Type memberType = interfaceBlock.getMemberType(memberName).get();
       visit(memberType);
-      out.append(" " + memberName);
+      out.append(" ").append(memberName);
       processArrayInfo(memberType);
-      out.append(";" + newLine());
+      out.append(";").append(newLine());
     }
 
     decreaseIndent();
 
     out.append("}");
     if (interfaceBlock.hasIdentifierName()) {
-      out.append(" " + interfaceBlock.getInstanceName());
+      out.append(" ").append(interfaceBlock.getInstanceName());
     }
-    out.append(";" + newLine());
+    out.append(";").append(newLine());
   }
 
   @Override
   public void visitDefaultLayout(DefaultLayout defaultLayout) {
-    out.append(indent());
+    indent();
     out.append(defaultLayout.getLayoutQualifierSequence().toString());
     out.append(" ");
     out.append(defaultLayout.getTypeQualifier().toString());
-    out.append(";" + newLine());
+    out.append(";").append(newLine());
   }
 
   private void emitKnownUniformDefines(String knownUniformArrayName, String prefix) {
@@ -784,16 +800,15 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   public void visitTranslationUnit(TranslationUnit translationUnit) {
 
     if (translationUnit.hasShadingLanguageVersion()) {
-      out.append("#version " + translationUnit.getShadingLanguageVersion().getVersionString()
-          + "\n");
+      out.append("#version ")
+          .append(translationUnit.getShadingLanguageVersion().getVersionString())
+          .append("\n");
       if (translationUnit.getShadingLanguageVersion().isWebGl()) {
         out.append("//WebGL\n");
       }
     }
 
-    if (license.isPresent()) {
-      out.append(license.get() + "\n");
-    }
+    license.ifPresent(s -> out.append(s).append("\n"));
 
     if (emitGraphicsFuzzDefines) {
       emitGraphicsFuzzDefines(out, translationUnit.getShadingLanguageVersion());
@@ -819,8 +834,10 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitExtensionStatement(ExtensionStatement extensionStatement) {
     super.visitExtensionStatement(extensionStatement);
-    out.append("#extension " + extensionStatement.getExtensionName() + " : "
-        + extensionStatement.getExtensionStatus() + "\n");
+    out.append("#extension ")
+        .append(extensionStatement.getExtensionName())
+        .append(" : ").append(extensionStatement.getExtensionStatus())
+        .append("\n");
   }
 
   private void decreaseIndent() {
@@ -838,15 +855,16 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   protected <T extends IAstNode> void visitChildFromParent(Consumer<T> visitorMethod, T child,
-      IAstNode parent) {
+                                                           IAstNode parent) {
     super.visitChildFromParent(visitorMethod, child, parent);
     if (parent instanceof TranslationUnit && child instanceof VariablesDeclaration) {
-      out.append(";" + newLine() + newLine());
+      out.append(";").append(newLine()).append(newLine());
     }
   }
 
   /**
    * Used by test classes to mimic default indentation.
+   *
    * @param level The number of times to indent.
    * @return An appropriate string of blanks.
    */
@@ -864,17 +882,17 @@ public class PrettyPrinterVisitor extends StandardVisitor {
                                              ShadingLanguageVersion shadingLanguageVersion) {
     out.append("\n");
     out.append("#ifndef REDUCER\n");
-    out.append("#define " + Constants.GLF_ZERO + "(X, Y)                   (Y)\n");
-    out.append("#define " + Constants.GLF_ONE + "(X, Y)                    (Y)\n");
-    out.append("#define " + Constants.GLF_FALSE + "(X, Y)                  (Y)\n");
-    out.append("#define " + Constants.GLF_TRUE + "(X, Y)                   (Y)\n");
-    out.append("#define " + Constants.GLF_IDENTITY + "(X, Y)               (Y)\n");
-    out.append("#define " + Constants.GLF_DEAD + "(X)                      (X)\n");
-    out.append("#define " + Constants.GLF_FUZZED + "(X)                    (X)\n");
-    out.append("#define " + Constants.GLF_WRAPPED_LOOP + "(X)              X\n");
-    out.append("#define " + Constants.GLF_WRAPPED_IF_TRUE + "(X)           X\n");
-    out.append("#define " + Constants.GLF_WRAPPED_IF_FALSE + "(X)          X\n");
-    out.append("#define " + Constants.GLF_SWITCH + "(X)                    X\n");
+    out.append("#define ").append(Constants.GLF_ZERO).append("(X, Y)                   (Y)\n");
+    out.append("#define ").append(Constants.GLF_ONE).append("(X, Y)                    (Y)\n");
+    out.append("#define ").append(Constants.GLF_FALSE).append("(X, Y)                  (Y)\n");
+    out.append("#define ").append(Constants.GLF_TRUE).append("(X, Y)                   (Y)\n");
+    out.append("#define ").append(Constants.GLF_IDENTITY).append("(X, Y)               (Y)\n");
+    out.append("#define ").append(Constants.GLF_DEAD).append("(X)                      (X)\n");
+    out.append("#define ").append(Constants.GLF_FUZZED).append("(X)                    (X)\n");
+    out.append("#define ").append(Constants.GLF_WRAPPED_LOOP).append("(X)              X\n");
+    out.append("#define ").append(Constants.GLF_WRAPPED_IF_TRUE).append("(X)           X\n");
+    out.append("#define ").append(Constants.GLF_WRAPPED_IF_FALSE).append("(X)          X\n");
+    out.append("#define ").append(Constants.GLF_SWITCH).append("(X)                    X\n");
 
     // The preferred way to make array accesses in bounds is to use 'clamp'.  However, 'clamp'
     // on integer types is not available in all shading language versions.  When it is not
@@ -886,24 +904,24 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     // collisions with user-defined integer clamp functions).
 
     if (shadingLanguageVersion.supportedClampInt()) {
-      out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_INT + "(IDX, SZ)  clamp(IDX, 0, SZ - 1)"
-          + "\n");
+      out.append("#define ").append(Constants.GLF_MAKE_IN_BOUNDS_INT).append("(IDX, SZ)  clamp"
+          + "(IDX, 0, SZ - 1)").append("\n");
     } else {
-      out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_INT + "(IDX, SZ)  ((IDX) < 0 ? 0 : ("
-          + "(IDX) >= SZ ? SZ - 1 : (IDX)))\n");
+      out.append("#define ").append(Constants.GLF_MAKE_IN_BOUNDS_INT).append("(IDX, SZ)  ((IDX) <"
+          + " 0 ? 0 : (").append("(IDX) >= SZ ? SZ - 1 : (IDX)))\n");
     }
 
     if (shadingLanguageVersion.supportedClampUint()) {
-      out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_UINT + "(IDX, SZ) clamp(IDX, 0u, SZ - "
-          + "1u)\n");
+      out.append("#define ").append(Constants.GLF_MAKE_IN_BOUNDS_UINT).append("(IDX, SZ) clamp"
+          + "(IDX, 0u, SZ - ").append("1u)\n");
     } else {
-      out.append("#define " + Constants.GLF_MAKE_IN_BOUNDS_UINT + "(IDX, SZ)  ((IDX) >= SZ ? SZ - "
-          + "1u : (IDX))\n");
+      out.append("#define ").append(Constants.GLF_MAKE_IN_BOUNDS_UINT).append("(IDX, SZ)  ((IDX) "
+          + ">= SZ ? SZ - ").append("1u : (IDX))\n");
     }
 
     out.append("#endif\n");
     out.append("\n");
-    out.append(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES + "\n");
+    out.append(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES).append("\n");
   }
 
 }
