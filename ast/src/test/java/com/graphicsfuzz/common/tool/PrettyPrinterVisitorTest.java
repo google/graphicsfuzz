@@ -60,6 +60,71 @@ public class PrettyPrinterVisitorTest {
   }
 
   @Test
+  public void testLiteralUniformDefines() throws Exception {
+    final String shaderWithBindings = ""
+        + "layout(set = 0, binding = 0) uniform buf0 { int _GLF_uniform_int_values[2]; };"
+        + "layout(set = 0, binding = 1) uniform buf1 { uint _GLF_uniform_uint_values[1]; };"
+        + "layout(set = 0, binding = 2) uniform buf2 { float _GLF_uniform_float_values[3]; };"
+        + "void main() { "
+        + "int a = _GLF_uniform_int_values[0];"
+        + "int b = _GLF_uniform_int_values[1];"
+        + "uint c = _GLF_uniform_uint_values[0];"
+        + "float d = _GLF_uniform_float_values[0];"
+        + "float e = _GLF_uniform_float_values[1];"
+        + "float f = _GLF_uniform_float_values[2];"
+        + "}";
+
+    final String shaderPrettyPrinted = ""
+        + "#define _int_0 _GLF_uniform_int_values[0]\n"
+        + "#define _int_2 _GLF_uniform_int_values[1]\n"
+        + "#define _uint_72 _GLF_uniform_uint_values[0]\n"
+        + "#define _float_0_0 _GLF_uniform_float_values[0]\n"
+        + "#define _float_22_4 _GLF_uniform_float_values[1]\n"
+        + "#define _float_11_3 _GLF_uniform_float_values[2]\n"
+        + "\n"
+        + "// Contents of _GLF_uniform_int_values: [0, 2]\n"
+        + "layout(set = 0, binding = 0) uniform buf0 {\n"
+        + " int _GLF_uniform_int_values[2];\n"
+        + "};\n"
+
+        + "// Contents of _GLF_uniform_uint_values: 72\n"
+        + "layout(set = 0, binding = 1) uniform buf1 {\n"
+        + " uint _GLF_uniform_uint_values[1];\n"
+        + "};\n"
+
+        + "// Contents of _GLF_uniform_float_values: [0.0, 22.4, 11.3]\n"
+        + "layout(set = 0, binding = 2) uniform buf2 {\n"
+        + " float _GLF_uniform_float_values[3];\n"
+        + "};\n"
+
+        + "void main()\n"
+        + "{\n"
+
+        + " int a = _int_0;\n"
+        + " int b = _int_2;\n"
+        + " uint c = _uint_72;\n"
+        + " float d = _float_0_0;\n"
+        + " float e = _float_22_4;\n"
+        + " float f = _float_11_3;\n"
+        + "}\n";
+
+    UniformValueSupplier uniformValues = name -> {
+      if (name.equals("_GLF_uniform_int_values")) {
+        return Optional.of(Arrays.asList("0", "2"));
+      } else if (name.equals("_GLF_uniform_float_values")) {
+        return Optional.of(Arrays.asList("0.0", "22.4", "11.3"));
+      } else if (name.equals("_GLF_uniform_uint_values")) {
+        return Optional.of(Arrays.asList("72"));
+      }
+      return Optional.empty();
+    };
+
+    assertEquals(shaderPrettyPrinted,
+        PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shaderWithBindings),
+            uniformValues));
+  }
+
+  @Test
   public void testUniformBlockContentsInComments() throws Exception {
     final String shaderWithBindings = ""
         + "layout(set = 0, binding = 0) uniform buf0 { int _GLF_uniform_int_values[2]; };"
@@ -67,6 +132,10 @@ public class PrettyPrinterVisitorTest {
         + "void main() { }";
 
     final String shaderPrettyPrinted = ""
+        + "#define _int_0 _GLF_uniform_int_values[0]\n"
+        + "#define _int_1 _GLF_uniform_int_values[1]\n"
+        + "#define _float_3_0 _GLF_uniform_float_values[0]\n"
+        + "\n"
         + "// Contents of _GLF_uniform_int_values: [0, 1]\n"
         + "layout(set = 0, binding = 0) uniform buf0 {\n"
         + " int _GLF_uniform_int_values[2];\n"
@@ -113,6 +182,13 @@ public class PrettyPrinterVisitorTest {
         + "}";
 
     final String shaderPrettyPrinted = ""
+        + "#define _uint_2 _GLF_uniform_uint_values[0]\n"
+        + "#define _uint_11 _GLF_uniform_uint_values[1]\n"
+        + "#define _uint_22 _GLF_uniform_uint_values[2]\n"
+        + "#define _float_0_0 _GLF_uniform_float_values[0]\n"
+        + "#define _float_1_4 _GLF_uniform_float_values[1]\n"
+        + "#define _float_22_2 _GLF_uniform_float_values[2]\n"
+        + "\n"
         + "// Contents of a: [0, 1, 2]\n"
         + "// Contents of b: [3, 4, 5]\n"
         + "// Contents of Z: 77\n"
@@ -129,13 +205,13 @@ public class PrettyPrinterVisitorTest {
         + "\n"
         + "void main()\n"
         + "{\n"
-        + " float a = _GLF_uniform_float_values[0];\n"
-        + " float b = _GLF_uniform_float_values[1];\n"
+        + " float a = _float_0_0;\n"
+        + " float b = _float_1_4;\n"
         + " int c = _GLF_uniform_int_values[0];\n"
         + " int d = _GLF_uniform_int_values[1];\n"
         + " int e = _GLF_uniform_int_values[2];\n"
-        + " int f = _GLF_uniform_uint_values[0];\n"
-        + " int g = _GLF_uniform_uint_values[1];\n"
+        + " int f = _uint_2;\n"
+        + " int g = _uint_11;\n"
         + "}\n";
 
     final List<TranslationUnit> shaders = new ArrayList<>();
