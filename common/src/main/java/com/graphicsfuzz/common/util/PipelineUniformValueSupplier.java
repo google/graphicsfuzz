@@ -32,8 +32,7 @@ public class PipelineUniformValueSupplier implements UniformValueSupplier {
   public Optional<List<String>> getValues(String name) {
     if (pipelineInfo.hasUniform(name)) {
       return Optional.of(this.pipelineInfo.getArgs(name));
-    } else {
-      return Optional.empty();
     }
+    return Optional.empty();
   }
 }

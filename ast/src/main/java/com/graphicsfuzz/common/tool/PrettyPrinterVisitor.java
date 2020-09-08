@@ -570,36 +570,40 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     visit(ternaryExpr.getElseExpr());
   }
 
+  private boolean maybeEmitKnownUniformMacro(ArrayIndexExpr arrayIndexExpr,
+                                           String knownUniformArrayName, String prefix) {
+    /* If arrayIndexExpr indexes into a literal-to-uniform array, output a macro name instead. */
+    if (arrayIndexExpr.getArray() instanceof VariableIdentifierExpr
+        && ((VariableIdentifierExpr) arrayIndexExpr.getArray()).getName()
+        .contains(knownUniformArrayName)
+        && uniformValues.isPresent()
+        && uniformValues.get().getValues(knownUniformArrayName).isPresent()) {
+
+      int index = ((IntConstantExpr) arrayIndexExpr.getIndex()).getNumericValue();
+      List<String> values = uniformValues.get().getValues(knownUniformArrayName).get();
+      out.append("_").append(prefix).append("_").append(values.get(index).replace(".", "_"));
+      return true;
+    }
+    return false;
+  }
+
   @Override
   public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
-    /* If arrayIndexExpr indexes into a literal-to-uniform array, output a #define instead. */
-    if (arrayIndexExpr.getArray().getText().contains(Constants.INT_LITERAL_UNIFORM_VALUES)
-        && uniformValues.isPresent()
-        && uniformValues.get().getValues(Constants.INT_LITERAL_UNIFORM_VALUES).isPresent()) {
-      int index = ((IntConstantExpr) arrayIndexExpr.getIndex()).getNumericValue();
-      List<String> values =
-          uniformValues.get().getValues(Constants.INT_LITERAL_UNIFORM_VALUES).get();
-      out.append("_int_" + values.get(index));
-    } else if (arrayIndexExpr.getArray().getText().contains(Constants.UINT_LITERAL_UNIFORM_VALUES)
-        && uniformValues.isPresent()
-        && uniformValues.get().getValues(Constants.UINT_LITERAL_UNIFORM_VALUES).isPresent()) {
-      int index = ((IntConstantExpr) arrayIndexExpr.getIndex()).getNumericValue();
-      List<String> values =
-          uniformValues.get().getValues(Constants.UINT_LITERAL_UNIFORM_VALUES).get();
-      out.append("_uint_" + values.get(index));
-    } else if (arrayIndexExpr.getArray().getText().contains(Constants.FLOAT_LITERAL_UNIFORM_VALUES)
-        && uniformValues.isPresent()
-        && uniformValues.get().getValues(Constants.FLOAT_LITERAL_UNIFORM_VALUES).isPresent()) {
-      int index = ((IntConstantExpr) arrayIndexExpr.getIndex()).getNumericValue();
-      List<String> values =
-          uniformValues.get().getValues(Constants.FLOAT_LITERAL_UNIFORM_VALUES).get();
-      out.append("_float_" + values.get(index).replace(".", "_"));
-    } else {
-      visit(arrayIndexExpr.getArray());
-      out.append("[");
-      visit(arrayIndexExpr.getIndex());
-      out.append("]");
+    if (maybeEmitKnownUniformMacro(arrayIndexExpr, Constants.INT_LITERAL_UNIFORM_VALUES, "int")) {
+      return;
     }
+    if (maybeEmitKnownUniformMacro(arrayIndexExpr, Constants.UINT_LITERAL_UNIFORM_VALUES, "uint")) {
+      return;
+    }
+    if (maybeEmitKnownUniformMacro(arrayIndexExpr, Constants.FLOAT_LITERAL_UNIFORM_VALUES,
+        "float")) {
+      return;
+    }
+
+    visit(arrayIndexExpr.getArray());
+    out.append("[");
+    visit(arrayIndexExpr.getIndex());
+    out.append("]");
   }
 
   @Override
@@ -759,6 +763,23 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append(";" + newLine());
   }
 
+  private void emitKnownUniformDefines(String knownUniformArrayName, String prefix) {
+    final Optional<List<String>> values =
+        uniformValues.get().getValues(knownUniformArrayName);
+    if (values.isPresent()) {
+      int index = 0;
+      for (String value : values.get()) {
+        out.append("#define").append(" ").append("_").append(prefix).append("_")
+            .append(value.replace(".", "_"))
+            .append(" ").append(knownUniformArrayName)
+            .append("[").append(String.valueOf(index)).append("]")
+            .append(newLine());
+        index++;
+      }
+
+    }
+  }
+
   @Override
   public void visitTranslationUnit(TranslationUnit translationUnit) {
 
@@ -780,36 +801,9 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
     // Emit a #define for each value in the literal-to-uniform arrays.
     if (uniformValues.isPresent()) {
-      if (uniformValues.get().getValues(Constants.INT_LITERAL_UNIFORM_VALUES).isPresent()) {
-        List<String> intValues =
-            uniformValues.get().getValues(Constants.INT_LITERAL_UNIFORM_VALUES).get();
-        int index = 0;
-        for (String value : intValues) {
-          out.append("#define _int_" + value + " " + Constants.INT_LITERAL_UNIFORM_VALUES
-              + "[" + index + "]" + newLine());
-          index++;
-        }
-      }
-      if (uniformValues.get().getValues(Constants.UINT_LITERAL_UNIFORM_VALUES).isPresent()) {
-        List<String> uintValues =
-            uniformValues.get().getValues(Constants.UINT_LITERAL_UNIFORM_VALUES).get();
-        int index = 0;
-        for (String value : uintValues) {
-          out.append("#define _uint_" + value + " " + Constants.UINT_LITERAL_UNIFORM_VALUES
-              + "[" + index + "]" + newLine());
-          index++;
-        }
-      }
-      if (uniformValues.get().getValues(Constants.FLOAT_LITERAL_UNIFORM_VALUES).isPresent()) {
-        List<String> floatValues =
-            uniformValues.get().getValues(Constants.FLOAT_LITERAL_UNIFORM_VALUES).get();
-        int index = 0;
-        for (String value : floatValues) {
-          out.append("#define _float_" + value.replace(".", "_") + " "
-              + Constants.FLOAT_LITERAL_UNIFORM_VALUES + "[" + index + "]" + newLine());
-          index++;
-        }
-      }
+      emitKnownUniformDefines(Constants.INT_LITERAL_UNIFORM_VALUES, "int");
+      emitKnownUniformDefines(Constants.UINT_LITERAL_UNIFORM_VALUES, "uint");
+      emitKnownUniformDefines(Constants.FLOAT_LITERAL_UNIFORM_VALUES, "float");
       out.append(newLine());
     }
 
