@@ -570,8 +570,36 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     visit(ternaryExpr.getElseExpr());
   }
 
+  private boolean maybeEmitKnownUniformMacro(ArrayIndexExpr arrayIndexExpr,
+                                           String knownUniformArrayName, String prefix) {
+    /* If arrayIndexExpr indexes into a literal-to-uniform array, output a macro name instead. */
+    if (arrayIndexExpr.getArray() instanceof VariableIdentifierExpr
+        && ((VariableIdentifierExpr) arrayIndexExpr.getArray()).getName()
+        .contains(knownUniformArrayName)
+        && uniformValues.isPresent()
+        && uniformValues.get().getValues(knownUniformArrayName).isPresent()) {
+
+      int index = ((IntConstantExpr) arrayIndexExpr.getIndex()).getNumericValue();
+      List<String> values = uniformValues.get().getValues(knownUniformArrayName).get();
+      out.append("_").append(prefix).append("_").append(values.get(index).replace(".", "_"));
+      return true;
+    }
+    return false;
+  }
+
   @Override
   public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
+    if (maybeEmitKnownUniformMacro(arrayIndexExpr, Constants.INT_LITERAL_UNIFORM_VALUES, "int")) {
+      return;
+    }
+    if (maybeEmitKnownUniformMacro(arrayIndexExpr, Constants.UINT_LITERAL_UNIFORM_VALUES, "uint")) {
+      return;
+    }
+    if (maybeEmitKnownUniformMacro(arrayIndexExpr, Constants.FLOAT_LITERAL_UNIFORM_VALUES,
+        "float")) {
+      return;
+    }
+
     visit(arrayIndexExpr.getArray());
     out.append("[");
     visit(arrayIndexExpr.getIndex());
@@ -735,6 +763,23 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append(";" + newLine());
   }
 
+  private void emitKnownUniformDefines(String knownUniformArrayName, String prefix) {
+    final Optional<List<String>> values =
+        uniformValues.get().getValues(knownUniformArrayName);
+    if (values.isPresent()) {
+      int index = 0;
+      for (String value : values.get()) {
+        out.append("#define").append(" ").append("_").append(prefix).append("_")
+            .append(value.replace(".", "_"))
+            .append(" ").append(knownUniformArrayName)
+            .append("[").append(String.valueOf(index)).append("]")
+            .append(newLine());
+        index++;
+      }
+
+    }
+  }
+
   @Override
   public void visitTranslationUnit(TranslationUnit translationUnit) {
 
@@ -752,6 +797,14 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
     if (emitGraphicsFuzzDefines) {
       emitGraphicsFuzzDefines(out, translationUnit.getShadingLanguageVersion());
+    }
+
+    // Emit a #define for each value in the literal-to-uniform arrays.
+    if (uniformValues.isPresent()) {
+      emitKnownUniformDefines(Constants.INT_LITERAL_UNIFORM_VALUES, "int");
+      emitKnownUniformDefines(Constants.UINT_LITERAL_UNIFORM_VALUES, "uint");
+      emitKnownUniformDefines(Constants.FLOAT_LITERAL_UNIFORM_VALUES, "float");
+      out.append(newLine());
     }
 
     super.visitTranslationUnit(translationUnit);

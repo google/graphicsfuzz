@@ -30,6 +30,9 @@ public class PipelineUniformValueSupplier implements UniformValueSupplier {
 
   @Override
   public Optional<List<String>> getValues(String name) {
-    return Optional.of(this.pipelineInfo.getArgs(name));
+    if (pipelineInfo.hasUniform(name)) {
+      return Optional.of(this.pipelineInfo.getArgs(name));
+    }
+    return Optional.empty();
   }
 }
