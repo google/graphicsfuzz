@@ -43,6 +43,8 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.Scope;
+import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
+import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.typing.TyperHelper;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
@@ -260,6 +262,13 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
     // To avoid undefined behaviours, make all array access in bounds for every donor.
     MakeArrayAccessesInBounds.makeInBounds(tu);
+
+    // To avoid undefined behaviours, make sure all variables are initialized for every donor.
+    // We do this regardless of whether we are injecting live or dead code, because global
+    // variables from dead code injection may end up getting used in fuzzed expressions.  We could
+    // avoid initializing local variables from dead code injection, but it seems harmless to
+    // initialize everything.
+    initializeAllVariables(tu, generator);
 
     adaptTranslationUnitForSpecificDonation(tu, generator);
 
@@ -485,17 +494,15 @@ public abstract class DonateCodeTransformation implements ITransformation {
                                    IRandom generator,
                                    ShadingLanguageVersion shadingLanguageVersion) {
     final boolean isConst = type.hasQualifier(TypeQualifier.CONST);
+    // We may need to generate an initializer for a free variable of struct type.  The struct
+    // will be present in the donor but not yet added to the recipient.  We thus make a
+    // temporary scope identical to the scope at the injection point, but with all of the
+    // structs from the donation context added.
+    final Scope scopeForFuzzing = injectionPoint.scopeAtInjectionPoint().shallowClone();
+    for (StructDefinitionType sdt : donationContext.getAvailableStructs()) {
+      scopeForFuzzing.addStructDefinition(sdt);
+    }
     try {
-
-      // We may need to generate an initializer for a free variable of struct type.  The struct
-      // will be present in the donor but not yet added to the recipient.  We thus make a
-      // temporary scope identical to the scope at the injection point, but with all of the
-      // structs from the donation context added.
-      final Scope scopeForFuzzing = injectionPoint.scopeAtInjectionPoint().shallowClone();
-      for (StructDefinitionType sdt : donationContext.getAvailableStructs()) {
-        scopeForFuzzing.addStructDefinition(sdt);
-      }
-
       return new Initializer(
           new OpaqueExpressionGenerator(generator, generationParams, shadingLanguageVersion)
               .fuzzedConstructor(
@@ -581,6 +588,70 @@ public abstract class DonateCodeTransformation implements ITransformation {
 
   String addPrefix(String name) {
     return getPrefix() + translationUnitCount + name;
+  }
+
+  private void initializeAllVariables(TranslationUnit tu, IRandom generator) {
+    // We consider every variable declaration in the translation unit, and give it an initializer
+    // if it doesn't have one.
+
+    new ScopeTrackingVisitor() {
+
+      // This gives us access to the base type of the group of variable declarations we are
+      // currently visiting, if any.
+      private VariablesDeclaration currentVariablesDeclaration = null;
+
+      @Override
+      public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+        // Skip variables for which initializers are illegal.
+        if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
+            || variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.SHARED)) {
+          return;
+        }
+        // We now let the scope tracking visitor process the variables declaration, and we
+        // override visitVariableDeclInfo() to ensure that each declaration is initialized.  It is
+        // important to do it this way because:
+        // - giving initializers to each declaration before invoking the superclass doesn't work in
+        //   the case where the base type for the variables declaration introduces a struct type,
+        //   as the struct type will not have been added to the current scope.
+        // - giving initializers to each declaration after invoking the superclass doesn't work
+        //   because a variable is then made available to the expression fuzzer at the point where
+        //   we fuzz an initializer for the variable, so that a variable can appear in its own
+        //   initialization expression, which is illegal.
+        assert currentVariablesDeclaration == null;
+        currentVariablesDeclaration = variablesDeclaration;
+        super.visitVariablesDeclaration(variablesDeclaration);
+        assert currentVariablesDeclaration != null;
+        currentVariablesDeclaration = null;
+      }
+
+      @Override
+      public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
+        assert currentVariablesDeclaration != null;
+        if (variableDeclInfo.hasInitializer()) {
+          return;
+        }
+        if (variableDeclInfo.hasArrayInfo()
+            && !tu.getShadingLanguageVersion().supportedArrayConstructors()) {
+          // We cannot initialize this variable: it is an array, and the shading language doesn't
+          // support array constructors.
+          return;
+        }
+        final Type type = Typer.combineBaseTypeAndArrayInfo(
+            currentVariablesDeclaration.getBaseType(),
+            variableDeclInfo.getArrayInfo());
+        final boolean restrictToConst = atGlobalScope()
+            || currentVariablesDeclaration.getBaseType().hasQualifier(TypeQualifier.CONST);
+        variableDeclInfo.setInitializer(new Initializer(
+            new OpaqueExpressionGenerator(generator, generationParams,
+                tu.getShadingLanguageVersion())
+                .fuzzedConstructor(
+                    new Fuzzer(new FuzzingContext(getCurrentScope()),
+                        tu.getShadingLanguageVersion(),
+                        generator,
+                        generationParams)
+                        .fuzzExpr(type, false, restrictToConst, 0))));
+      }
+    }.visit(tu);
   }
 
 }
