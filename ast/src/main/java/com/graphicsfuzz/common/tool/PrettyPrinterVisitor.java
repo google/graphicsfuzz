@@ -138,7 +138,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   /**
    * Returns, via pretty printing, a string representation of the given node.
    *
-   * @param node          Node for which string representation is required
+   * @param node Node for which string representation is required
    * @param uniformValues Supplier that provides values for uniforms
    * @return String representation of the node
    */
@@ -181,8 +181,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
         usesGraphicsFuzzDefines, license, uniformValueSupplier).visit(shader);
   }
 
-  private String newLine() {
-    return newLineSupplier.get();
+  private void newLine() {
+    out.append(newLineSupplier.get());
   }
 
   @Override
@@ -199,7 +199,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     super.visitDeclarationStmt(declarationStmt);
     out.append(";");
     if (!insideForStatementHeader) {
-      out.append(newLine());
+      newLine();
     }
   }
 
@@ -289,7 +289,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     if (!inFunctionDefinition) {
       out.append(";");
     }
-    out.append(newLine());
+    newLine();
   }
 
   @Override
@@ -308,14 +308,16 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitBlockStmt(BlockStmt stmt) {
     indent();
-    out.append("{").append(newLine());
+    out.append("{");
+    newLine();
     increaseIndent();
     for (Stmt s : stmt.getStmts()) {
       visit(s);
     }
     decreaseIndent();
     indent();
-    out.append("}").append(newLine());
+    out.append("}");
+    newLine();
   }
 
   void indent() {
@@ -329,13 +331,15 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     indent();
     out.append("if(");
     visit(ifStmt.getCondition());
-    out.append(")").append(newLine());
+    out.append(")");
+    newLine();
     increaseIndent();
     visit(ifStmt.getThenStmt());
     decreaseIndent();
     if (ifStmt.hasElseStmt()) {
       indent();
-      out.append("else").append(newLine());
+      out.append("else");
+      newLine();
       increaseIndent();
       visit(ifStmt.getElseStmt());
       decreaseIndent();
@@ -426,21 +430,24 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   public void visitBreakStmt(BreakStmt breakStmt) {
     indent();
     out.append("break");
-    out.append(";").append(newLine());
+    out.append(";");
+    newLine();
   }
 
   @Override
   public void visitContinueStmt(ContinueStmt continueStmt) {
     indent();
     out.append("continue");
-    out.append(";").append(newLine());
+    out.append(";");
+    newLine();
   }
 
   @Override
   public void visitDiscardStmt(DiscardStmt discardStmt) {
     indent();
     out.append("discard");
-    out.append(";").append(newLine());
+    out.append(";");
+    newLine();
   }
 
   @Override
@@ -451,14 +458,16 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       out.append(" ");
       visit(returnStmt.getExpr());
     }
-    out.append(";").append(newLine());
+    out.append(";");
+    newLine();
   }
 
   @Override
   public void visitExprStmt(ExprStmt exprStmt) {
     indent();
     visit(exprStmt.getExpr());
-    out.append(";").append(newLine());
+    out.append(";");
+    newLine();
   }
 
   @Override
@@ -525,7 +534,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitNullStmt(NullStmt nullStmt) {
     indent();
-    out.append(";").append(newLine());
+    out.append(";");
+    newLine();
   }
 
   @Override
@@ -533,7 +543,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     indent();
     out.append("while(");
     visit(whileStmt.getCondition());
-    out.append(")").append(newLine());
+    out.append(")");
+    newLine();
     increaseIndent();
     visit(whileStmt.getBody());
     decreaseIndent();
@@ -553,7 +564,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     if (forStmt.hasIncrement()) {
       visit(forStmt.getIncrement());
     }
-    out.append(")").append(newLine());
+    out.append(")");
+    newLine();
     insideForStatementHeader = false;
     increaseIndent();
     visit(forStmt.getBody());
@@ -563,14 +575,16 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitDoStmt(DoStmt doStmt) {
     indent();
-    out.append("do").append(newLine());
+    out.append("do");
+    newLine();
     increaseIndent();
     visit(doStmt.getBody());
     decreaseIndent();
     indent();
     out.append("while(");
     visit(doStmt.getCondition());
-    out.append(");").append(newLine());
+    out.append(");");
+    newLine();
   }
 
   @Override
@@ -653,14 +667,16 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       visit(structDefinitionType.getStructNameType());
       out.append(" ");
     }
-    out.append("{").append(newLine());
+    out.append("{");
+    newLine();
     increaseIndent();
     for (String name : structDefinitionType.getFieldNames()) {
       indent();
       visit(structDefinitionType.getFieldType(name));
       out.append(" ").append(name);
       processArrayInfo(structDefinitionType.getFieldType(name));
-      out.append(";").append(newLine());
+      out.append(";");
+      newLine();
     }
     decreaseIndent();
     indent();
@@ -690,7 +706,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     indent();
     out.append("switch(");
     visit(switchStmt.getExpr());
-    out.append(")").append(newLine());
+    out.append(")");
+    newLine();
     increaseIndent();
     visitBlockStmt(switchStmt.getBody());
     decreaseIndent();
@@ -699,7 +716,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   @Override
   public void visitDefaultCaseLabel(DefaultCaseLabel defaultCaseLabel) {
     indent();
-    out.append("default:").append(newLine());
+    out.append("default:");
+    newLine();
   }
 
   @Override
@@ -707,7 +725,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     indent();
     out.append("case ");
     visit(exprCaseLabel.getExpr());
-    out.append(":").append(newLine());
+    out.append(":");
+    newLine();
   }
 
   @Override
@@ -735,7 +754,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
           if (item.size() > 1) {
             out.append("]");
           }
-          out.append(newLine());
+          newLine();
         });
       }
     }
@@ -747,8 +766,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append(interfaceBlock.getInterfaceQualifier().toString())
         .append(" ")
         .append(interfaceBlock.getStructName())
-        .append(" {")
-        .append(newLine());
+        .append(" {");
+    newLine();
 
     increaseIndent();
 
@@ -758,7 +777,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       visit(memberType);
       out.append(" ").append(memberName);
       processArrayInfo(memberType);
-      out.append(";").append(newLine());
+      out.append(";");
+      newLine();
     }
 
     decreaseIndent();
@@ -767,7 +787,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     if (interfaceBlock.hasIdentifierName()) {
       out.append(" ").append(interfaceBlock.getInstanceName());
     }
-    out.append(";").append(newLine());
+    out.append(";");
+    newLine();
   }
 
   @Override
@@ -776,7 +797,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append(defaultLayout.getLayoutQualifierSequence().toString());
     out.append(" ");
     out.append(defaultLayout.getTypeQualifier().toString());
-    out.append(";").append(newLine());
+    out.append(";");
+    newLine();
   }
 
   private void emitKnownUniformDefines(String knownUniformArrayName, String prefix) {
@@ -788,8 +810,8 @@ public class PrettyPrinterVisitor extends StandardVisitor {
         out.append("#define").append(" ").append("_").append(prefix).append("_")
             .append(value.replace(".", "_"))
             .append(" ").append(knownUniformArrayName)
-            .append("[").append(String.valueOf(index)).append("]")
-            .append(newLine());
+            .append("[").append(String.valueOf(index)).append("]");
+        newLine();
         index++;
       }
 
@@ -819,7 +841,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       emitKnownUniformDefines(Constants.INT_LITERAL_UNIFORM_VALUES, "int");
       emitKnownUniformDefines(Constants.UINT_LITERAL_UNIFORM_VALUES, "uint");
       emitKnownUniformDefines(Constants.FLOAT_LITERAL_UNIFORM_VALUES, "float");
-      out.append(newLine());
+      newLine();
     }
 
     super.visitTranslationUnit(translationUnit);
@@ -858,7 +880,9 @@ public class PrettyPrinterVisitor extends StandardVisitor {
                                                            IAstNode parent) {
     super.visitChildFromParent(visitorMethod, child, parent);
     if (parent instanceof TranslationUnit && child instanceof VariablesDeclaration) {
-      out.append(";").append(newLine()).append(newLine());
+      out.append(";");
+      newLine();
+      newLine();
     }
   }
 
