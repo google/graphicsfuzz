@@ -29,6 +29,7 @@ import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.PushConstantLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.SamplerType;
 import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
@@ -45,6 +46,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+
 
 public class GlslShaderJob implements ShaderJob {
 
@@ -133,36 +135,53 @@ public class GlslShaderJob implements ShaderJob {
             // The member's type is the combination of the base type and array info for the decl.
             // We clone this type, having created it, as we will use the same base type for other
             // decls in this variables declaration and we do not want to have aliasing.
+            final Type baseType = variablesDeclaration.getBaseType();
             final Type memberType =
-                Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
+                Typer.combineBaseTypeAndArrayInfo(baseType,
                     declInfo.getArrayInfo()).clone();
+            final Type targetType = ((QualifiedType)baseType).getTargetType();
 
-            ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
-
-            if (pipelineInfo.isPushConstant(uniformName)) {
-              // Handle push constants separately
-              newTopLevelDeclarations.add(
-                  new InterfaceBlock(
-                      of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
-                      TypeQualifier.UNIFORM,
-                      "buf_push",
-                      Collections.singletonList(uniformName),
-                      Collections.singletonList(memberType),
-                      Optional.empty())
-              );
-            } else {
-              // Not a push constant, so it's a normal uniform
+            if (targetType instanceof SamplerType) {
+              // Samplers may not exist as part of uniform blocks.
               final int binding = pipelineInfo.getBinding(uniformName);
               newTopLevelDeclarations.add(
-                  new InterfaceBlock(
-                      of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
-                          new BindingLayoutQualifier(binding))),
-                      TypeQualifier.UNIFORM,
-                      "buf" + binding,
-                      Collections.singletonList(uniformName),
-                      Collections.singletonList(memberType),
-                      Optional.empty())
-              );
+                  new VariablesDeclaration(
+                      new QualifiedType(targetType,
+                      Arrays.asList(
+                          new LayoutQualifierSequence(
+                              new SetLayoutQualifier(0),
+                              new BindingLayoutQualifier(binding)),
+                          TypeQualifier.UNIFORM
+                          )), declInfo));
+            } else {
+
+              ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
+
+              if (pipelineInfo.isPushConstant(uniformName)) {
+                // Handle push constants separately
+                newTopLevelDeclarations.add(
+                    new InterfaceBlock(
+                        of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
+                        TypeQualifier.UNIFORM,
+                        "buf_push",
+                        Collections.singletonList(uniformName),
+                        Collections.singletonList(memberType),
+                        Optional.empty())
+                );
+              } else {
+                // Not a push constant, so it's a normal uniform
+                final int binding = pipelineInfo.getBinding(uniformName);
+                newTopLevelDeclarations.add(
+                    new InterfaceBlock(
+                        of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
+                            new BindingLayoutQualifier(binding))),
+                        TypeQualifier.UNIFORM,
+                        "buf" + binding,
+                        Collections.singletonList(uniformName),
+                        Collections.singletonList(memberType),
+                        Optional.empty())
+                );
+              }
             }
           }
         } else {
@@ -201,12 +220,20 @@ public class GlslShaderJob implements ShaderJob {
     for (TranslationUnit tu : shaders) {
       final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
       for (Declaration decl : tu.getTopLevelDeclarations()) {
-        if (decl instanceof VariablesDeclaration) {
-          // We are assuming that there are no plain uniforms - all uniforms should be in
-          // interface blocks, which we shall remove.
-          assert !((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM);
-        }
-        if (decl instanceof InterfaceBlock && ((InterfaceBlock) decl).getInterfaceQualifier()
+
+        if (decl instanceof VariablesDeclaration
+            && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
+          final Type targetType = ((QualifiedType)((VariablesDeclaration) decl).getBaseType())
+              .getTargetType();
+          VariableDeclInfo declInfo = ((VariablesDeclaration) decl).getDeclInfos().get(0);
+          newTopLevelDeclarations.add(
+              new VariablesDeclaration(
+                  new QualifiedType(targetType,
+                      Collections.singletonList(
+                          TypeQualifier.UNIFORM
+                      )), declInfo));
+
+        } else if (decl instanceof InterfaceBlock && ((InterfaceBlock) decl).getInterfaceQualifier()
             .equals(TypeQualifier.UNIFORM)) {
           final InterfaceBlock interfaceBlock = (InterfaceBlock) decl;
           // We are assuming that each uniform block wraps precisely one uniform.

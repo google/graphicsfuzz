@@ -530,6 +530,134 @@ public class GlslShaderJobTest {
 
   }
 
+  private static final String VERT_SHADER_WITH_SAMPLERS_NO_BINDINGS = ""
+      + "uniform float a;"
+      + "uniform sampler2D vtex;"
+      + "uniform float b;"
+      + "void main() { }";
+
+  private static final String FRAG_SHADER_WITH_SAMPLERS_NO_BINDINGS = ""
+      + "uniform float b;"
+      + "uniform sampler3D ftex[2];"
+      + "uniform float f[2];"
+      + "void main() { }";
+
+  private static final String JSON_WITH_SAMPLERS_NO_BINDINGS = "{"
+      + "  \"a\": {"
+      + "    \"args\": ["
+      + "      1.0"
+      + "    ], "
+      + "    \"func\": \"glUniform1f\""
+      + "  }, "
+      + "  \"b\": {"
+      + "    \"args\": ["
+      + "      0.0"
+      + "    ], "
+      + "    \"func\": \"glUniform1f\""
+      + "  }, "
+      + "  \"f\": {"
+      + "    \"args\": ["
+      + "      100.0, 50.0"
+      + "    ], "
+      + "    \"func\": \"glUniform1f\""
+      + "  },"
+      + "  \"vtex\": {"
+      + "    \"func\": \"sampler2D\","
+      + "    \"texture\": \"DEFAULT\""
+      + "  },"
+      + "  \"ftex\": {"
+      + "    \"func\": \"sampler3D\","
+      + "    \"texture\": \"DEFAULT\""
+      + "  }"
+      + "}";
+
+  private static final String VERT_SHADER_WITH_SAMPLERS_WITH_BINDINGS = ""
+      + "layout(set = 0, binding = 0) uniform buf0 { float a; };"
+      + "layout(set = 0, binding = 1) uniform sampler2D vtex;"
+      + "layout(set = 0, binding = 2) uniform buf2 { float b; };"
+      + "void main() { }";
+
+  private static final String FRAG_SHADER_WITH_SAMPLERS_WITH_BINDINGS = ""
+      + "layout(set = 0, binding = 2) uniform buf2 { float b; };"
+      + "layout(set = 0, binding = 3) uniform sampler3D ftex[2];"
+      + "layout(set = 0, binding = 4) uniform buf4 { float f[2]; };"
+      + "void main() { }";
+
+  private static final String JSON_WITH_SAMPLERS_WITH_BINDINGS = "{"
+      + "  \"a\": {"
+      + "    \"args\": ["
+      + "      1.0"
+      + "    ], "
+      + "    \"func\": \"glUniform1f\", "
+      + "    \"binding\": 0"
+      + "  }, "
+      + "  \"b\": {"
+      + "    \"args\": ["
+      + "      0.0"
+      + "    ], "
+      + "    \"func\": \"glUniform1f\", "
+      + "    \"binding\": 2"
+      + "  }, "
+      + "  \"f\": {"
+      + "    \"args\": ["
+      + "      100.0, 50.0"
+      + "    ], "
+      + "    \"func\": \"glUniform1f\", "
+      + "    \"binding\": 4"
+      + "  },"
+      + "  \"vtex\": {"
+      + "    \"func\": \"sampler2D\","
+      + "    \"texture\": \"DEFAULT\","
+      + "    \"binding\": 1"
+      + "  },"
+      + "  \"ftex\": {"
+      + "    \"func\": \"sampler3D\","
+      + "    \"texture\": \"DEFAULT\","
+      + "    \"binding\": 3"
+      + "  }"
+      + "}";
+
+
+  @Test
+  public void testMakeUniformBindingsWithSamplers() throws Exception {
+
+    final GlslShaderJob job = new GlslShaderJob(
+        Optional.empty(),
+        new PipelineInfo(JSON_WITH_SAMPLERS_NO_BINDINGS),
+        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_WITH_SAMPLERS_NO_BINDINGS)),
+        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_WITH_SAMPLERS_NO_BINDINGS)));
+
+    job.makeUniformBindings(Optional.empty());
+
+    CompareAsts.assertEqualAsts(VERT_SHADER_WITH_SAMPLERS_WITH_BINDINGS,
+        job.getVertexShader().get());
+    CompareAsts.assertEqualAsts(FRAG_SHADER_WITH_SAMPLERS_WITH_BINDINGS,
+        job.getFragmentShader().get());
+    assertEquals(new PipelineInfo(JSON_WITH_SAMPLERS_WITH_BINDINGS).toString(),
+        job.getPipelineInfo().toString());
+  }
+
+  @Test
+  public void testRemoveUniformBindingsWithSamplers() throws Exception {
+
+    final GlslShaderJob job = new GlslShaderJob(
+        Optional.empty(),
+        new PipelineInfo(JSON_WITH_SAMPLERS_WITH_BINDINGS),
+        ParseHelper.parse(getShaderFile("vert", VERT_SHADER_WITH_SAMPLERS_WITH_BINDINGS)),
+        ParseHelper.parse(getShaderFile("frag", FRAG_SHADER_WITH_SAMPLERS_WITH_BINDINGS)));
+
+    job.removeUniformBindings();
+
+    CompareAsts.assertEqualAsts(VERT_SHADER_WITH_SAMPLERS_NO_BINDINGS,
+        job.getVertexShader().get());
+    CompareAsts.assertEqualAsts(FRAG_SHADER_WITH_SAMPLERS_NO_BINDINGS,
+        job.getFragmentShader().get());
+    assertEquals(new PipelineInfo(JSON_WITH_SAMPLERS_NO_BINDINGS).toString(),
+        job.getPipelineInfo().toString());
+
+  }
+
+
   private File getShaderFile(String extension, String content) throws IOException {
     final File file = temporaryFolder.newFile("shader." + extension);
     FileUtils.writeStringToFile(file, content, StandardCharsets.UTF_8);

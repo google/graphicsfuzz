@@ -74,18 +74,29 @@ public final class PipelineInfo {
   public void addUniform(String name, BasicType basicType,
       Optional<Integer> arrayCount, List<? extends Number> values) {
     assert isLegalUniformName(name);
-    JsonObject info = new JsonObject();
-    info.addProperty("func", PipelineInfo.getGlUniformFunctionName(basicType,
-        arrayCount.isPresent()));
-    JsonArray jsonValues = new JsonArray();
-    for (Number n : values) {
-      jsonValues.add(n);
+    if (dictionary.has(name)) {
+      if (!((JsonObject)dictionary.get(name)).get("func").getAsString().equals(
+          PipelineInfo.getGlUniformFunctionName(basicType, arrayCount.isPresent()))) {
+        // Variable of this name already exists, but has different type
+        throw new RuntimeException("Uniform redefined as a different type");
+      }
+      // If the variable already exists and has the same type,
+      // we don't need to do anything.
+    } else {
+      // Add uniform to dictionary
+      JsonObject info = new JsonObject();
+      info.addProperty("func", PipelineInfo.getGlUniformFunctionName(basicType,
+          arrayCount.isPresent()));
+      JsonArray jsonValues = new JsonArray();
+      for (Number n : values) {
+        jsonValues.add(n);
+      }
+      info.add("args", jsonValues);
+      if (arrayCount.isPresent()) {
+        info.addProperty("count", arrayCount.get());
+      }
+      dictionary.add(name, info);
     }
-    info.add("args", jsonValues);
-    if (arrayCount.isPresent()) {
-      info.addProperty("count", arrayCount.get());
-    }
-    dictionary.add(name, info);
   }
 
   private static boolean isLegalUniformName(String name) {
@@ -269,26 +280,6 @@ public final class PipelineInfo {
     return dictionary.getAsJsonObject(uniformName).get("args").getAsJsonArray().size() - 1;
   }
 
-  /**
-   * Returns the next unused binding number.
-   * @return The next unused binding number.
-   */
-  public int getUnusedBindingNumber() {
-    List<Integer> bindings =
-        dictionary.entrySet().stream()
-            .filter(item -> item.getValue().getAsJsonObject().has("binding"))
-            .map(item -> item.getValue().getAsJsonObject()
-            .get("binding").getAsInt()).collect(Collectors.toList());
-
-    for (int number = 0; number < Integer.MAX_VALUE; number++) {
-      if (!bindings.contains(number)) {
-        return number;
-      }
-    }
-
-    throw new RuntimeException("Unreachable code. MAX_VALUE should never been used in bindings.");
-  }
-
   public List<String> getUniformNames() {
     return dictionary.entrySet()
         .stream()
@@ -402,6 +393,45 @@ public final class PipelineInfo {
     gridDimensions.add("dimensions", dimensions);
     dictionary.add(Constants.GRID_DATA_KEY, gridDimensions);
   }
+
+  /**
+   * Returns the next unused binding number.
+   * @return The next unused binding number.
+   */
+  public int getUnusedBindingNumber() {
+    List<Integer> bindings =
+        dictionary.entrySet().stream()
+            .filter(item -> item.getValue().getAsJsonObject().has("binding"))
+            .map(item -> item.getValue().getAsJsonObject()
+                .get("binding").getAsInt()).collect(Collectors.toList());
+
+    for (int number = 0; number < Integer.MAX_VALUE; number++) {
+      if (!bindings.contains(number)) {
+        return number;
+      }
+    }
+
+    throw new RuntimeException("Unreachable code. MAX_VALUE should never been used in bindings.");
+  }
+
+  public void addSamplerInfo(String name, String samplerType, String textureName) {
+    assert isLegalUniformName(name);
+    if (dictionary.has(name)) {
+      if (!((JsonObject)dictionary.get(name)).get("func").getAsString().equals(samplerType)) {
+        // A variable of this name already exists, but has different type
+        throw new RuntimeException("Sampler redefined as a different type");
+      }
+      // If name and type matches, we don't need to do anything.
+    } else {
+      // Add sampler to dictionary
+      // "foo": { "func": "sampler2D", "texture": "SOME_STRING" }
+      JsonObject info = new JsonObject();
+      info.addProperty("func", samplerType);
+      info.addProperty("texture", textureName);
+      dictionary.add(name, info);
+    }
+  }
+
 
   private JsonObject lookupUniform(String uniformName) {
     assert isLegalUniformName(uniformName);
