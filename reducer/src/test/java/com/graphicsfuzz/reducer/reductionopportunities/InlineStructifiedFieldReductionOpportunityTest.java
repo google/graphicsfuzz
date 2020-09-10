@@ -22,7 +22,6 @@ import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.Initializer;
-import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
@@ -36,6 +35,7 @@ import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DeclarationStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
+import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
@@ -52,7 +52,8 @@ public class InlineStructifiedFieldReductionOpportunityTest {
   public void applyReduction() throws Exception {
 
     final String innerStructTypeName = makeStructName(0);
-    final StructDefinitionType innerStructDefinitionType = new StructDefinitionType(new StructNameType(innerStructTypeName),
+    final StructDefinitionType innerStructDefinitionType = new StructDefinitionType(
+        new StructNameType(innerStructTypeName),
         Arrays.asList(
             makeFieldname(0),
             makeFieldname(1),
@@ -62,7 +63,8 @@ public class InlineStructifiedFieldReductionOpportunityTest {
         innerStructDefinitionType);
 
     final String outerStructTypeName = makeStructName(1);
-    final StructDefinitionType outerStructDefinitionType = new StructDefinitionType(new StructNameType(outerStructTypeName),
+    final StructDefinitionType outerStructDefinitionType = new StructDefinitionType(
+        new StructNameType(outerStructTypeName),
         Arrays.asList(
             makeFieldname(0),
             makeFieldname(1)),
@@ -71,7 +73,8 @@ public class InlineStructifiedFieldReductionOpportunityTest {
         new VariablesDeclaration(
             outerStructDefinitionType);
 
-    final MemberLookupExpr myOuterF0 = new MemberLookupExpr(new VariableIdentifierExpr("myOuter"),
+    final MemberLookupExpr myOuterF0 = new MemberLookupExpr(
+        new VariableIdentifierExpr("myOuter"),
         makeFieldname(0));
     final MemberLookupExpr myOuterF0F1 = new MemberLookupExpr(
         myOuterF0,
@@ -82,7 +85,8 @@ public class InlineStructifiedFieldReductionOpportunityTest {
 
     final BlockStmt block = new BlockStmt(
         Arrays.asList(
-            new DeclarationStmt(new VariablesDeclaration(outerStructDefinitionType.getStructNameType(),
+            new DeclarationStmt(new VariablesDeclaration(outerStructDefinitionType
+                .getStructNameType(),
                 new VariableDeclInfo("myOuter", null,
                     new Initializer(
                         new TypeConstructorExpr(outerStructTypeName,
@@ -115,7 +119,8 @@ public class InlineStructifiedFieldReductionOpportunityTest {
 
     final String expected =
           "{\n"
-        + PrettyPrinterVisitor.defaultIndent(1) + Constants.STRUCTIFICATION_STRUCT_PREFIX + "1 myOuter = " + Constants.STRUCTIFICATION_STRUCT_PREFIX + "1(5, 5.0, 5.2, 4.2);\n"
+        + PrettyPrinterVisitor.defaultIndent(1) + Constants.STRUCTIFICATION_STRUCT_PREFIX
+              + "1 myOuter = " + Constants.STRUCTIFICATION_STRUCT_PREFIX + "1(5, 5.0, 5.2, 4.2);\n"
         + PrettyPrinterVisitor.defaultIndent(1) + "myOuter._f0_f1 = myOuter._f0_f2;\n"
         + "}\n";
 

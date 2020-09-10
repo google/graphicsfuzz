@@ -34,7 +34,7 @@ public class InjectionPointTest {
 
     final Scope scope = new Scope();
     assertNotNull(
-      new InjectionPoint(null, false, false, scope) {
+        new InjectionPoint(null, false, false, scope) {
 
         @Override
         public void inject(Stmt stmt) {

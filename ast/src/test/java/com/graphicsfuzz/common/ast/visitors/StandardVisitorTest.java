@@ -16,11 +16,11 @@
 
 package com.graphicsfuzz.common.ast.visitors;
 
+import static org.junit.Assert.fail;
+
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.util.ParseHelper;
 import org.junit.Test;
-
-import static org.junit.Assert.fail;
 
 public class StandardVisitorTest {
 

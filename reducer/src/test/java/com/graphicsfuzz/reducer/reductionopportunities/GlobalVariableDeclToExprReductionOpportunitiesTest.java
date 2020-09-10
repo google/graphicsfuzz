@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
@@ -24,8 +27,6 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class GlobalVariableDeclToExprReductionOpportunitiesTest {
 
@@ -144,9 +145,9 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
   @Test
   public void testMultipleLineDeclarationsOneLine() throws Exception {
     final String program = ""
-        + "int b = 1, c, d = foo(), e, f = bar();"  // This variable declaration has many
-                                                    // declaration infos but we consider only
-                                                    // the one that has initializer (b, d, and f).
+        // This variable declaration has many declaration infos but we consider only the one that
+        // has initializer (b, d, and f).
+        + "int b = 1, c, d = foo(), e, f = bar();"
         + "void main() { }";
     final String expected = ""
         + "int b, c, d, e, f;"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The GraphicsFuzz Project Authors
+ * Copyright 2020 The GraphicsFuzz Project Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package com.graphicsfuzz.common.ast.stmt;
+package com.graphicsfuzz.common.tool;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import java.util.List;
+import java.util.Optional;
 
-import org.junit.Test;
-
-public class BreakStmtTest {
-
-  @Test
-  public void testBreakStmt() {
-    assertEquals("break;\n", new BreakStmt().getText());
-    final BreakStmt breakStmt = new BreakStmt();
-    assertNotSame(breakStmt, breakStmt.clone());
-  }
-
+public interface UniformValueSupplier {
+  Optional<List<String>> getValues(String name);
 }

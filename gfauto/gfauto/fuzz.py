@@ -46,6 +46,7 @@ from gfauto import (
 )
 from gfauto.device_pb2 import Device, DevicePreprocess
 from gfauto.gflogging import log
+from gfauto.settings_pb2 import Settings
 from gfauto.util import check_dir_exists
 
 # Root:
@@ -221,6 +222,14 @@ def main() -> None:
         type=str,
     )
 
+    parser.add_argument(
+        "--iteration_limit",
+        help="Stop after this many fuzzing iterations.",
+        action="store",
+        default=None,
+        type=int,
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     settings_path = Path(parsed_args.settings)
@@ -234,6 +243,7 @@ def main() -> None:
     update_ignored_crash_signatures_gerrit_cookie: Optional[str] = (
         parsed_args.update_ignored_crash_signatures
     )
+    iteration_limit: Optional[int] = parsed_args.iteration_limit
 
     # E.g. [GLSL_FUZZ, GLSL_FUZZ, SPIRV_FUZZ] will run glsl-fuzz twice, then spirv-fuzz once, then repeat.
     fuzzing_tool_pattern = get_fuzzing_tool_pattern(
@@ -251,6 +261,7 @@ def main() -> None:
                 allow_no_stack_traces,
                 active_device_names=active_device_names,
                 update_ignored_crash_signatures_gerrit_cookie=update_ignored_crash_signatures_gerrit_cookie,
+                iteration_limit=iteration_limit,
             )
         except settings_util.NoSettingsFile as exception:
             log(str(exception))
@@ -278,6 +289,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     use_amber_vulkan_loader: bool = False,
     active_device_names: Optional[List[str]] = None,
     update_ignored_crash_signatures_gerrit_cookie: Optional[str] = None,
+    iteration_limit: Optional[int] = None,
 ) -> None:
 
     if not fuzzing_tool_pattern:
@@ -375,8 +387,14 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
         util.add_library_paths_to_environ([library_path], os.environ)
 
     fuzzing_tool_index = 0
+    iteration_count = 0
 
     while True:
+
+        # We use "is not None" because iteration_limit could be 0.
+        if iteration_limit is not None and iteration_count >= iteration_limit:
+            log(f"Stopping after {iteration_count} iterations.")
+            break
 
         interrupt_util.interrupt_if_needed()
 
@@ -439,17 +457,18 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
             log("Stopping due to iteration_seed")
             break
         shutil.rmtree(staging_dir)
+        iteration_count += 1
 
 
 def create_summary_and_reproduce(
-    test_dir: Path, binary_manager: binaries_util.BinaryManager
+    test_dir: Path, binary_manager: binaries_util.BinaryManager, settings: Settings,
 ) -> None:
     util.mkdirs_p(test_dir / "summary")
     test_metadata = test_util.metadata_read(test_dir)
 
     # noinspection PyTypeChecker
     if test_metadata.HasField("glsl") or test_metadata.HasField("spirv_fuzz"):
-        fuzz_glsl_test.create_summary_and_reproduce(test_dir, binary_manager)
+        fuzz_glsl_test.create_summary_and_reproduce(test_dir, binary_manager, settings)
     else:
         raise AssertionError("Unrecognized test type")
 

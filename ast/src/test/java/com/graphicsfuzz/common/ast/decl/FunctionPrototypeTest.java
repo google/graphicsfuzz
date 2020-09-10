@@ -16,13 +16,12 @@
 
 package com.graphicsfuzz.common.ast.decl;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.Type;
-import org.junit.Test;
-
 import java.util.Arrays;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 public class FunctionPrototypeTest {
 
@@ -31,7 +30,8 @@ public class FunctionPrototypeTest {
   final ParameterDecl p1 = new ParameterDecl("a", BasicType.FLOAT, null);
   final ParameterDecl p2 = new ParameterDecl("b", BasicType.VEC2, null);
   final ParameterDecl p3 = new ParameterDecl("c", BasicType.VEC3, null);
-  final FunctionPrototype proto = new FunctionPrototype(name, returnType, Arrays.asList(p1, p2, p3));
+  final FunctionPrototype proto = new FunctionPrototype(name, returnType,
+      Arrays.asList(p1, p2, p3));
 
   @Test
   public void testGetters() {

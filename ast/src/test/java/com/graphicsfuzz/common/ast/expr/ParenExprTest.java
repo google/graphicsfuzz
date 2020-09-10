@@ -17,7 +17,7 @@
 package com.graphicsfuzz.common.ast.expr;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import org.junit.Before;
@@ -25,29 +25,29 @@ import org.junit.Test;
 
 public class ParenExprTest {
 
-  private VariableIdentifierExpr x;
+  private VariableIdentifierExpr vie;
   private ParenExpr pe;
 
   @Before
   public void setUp() {
-    x = new VariableIdentifierExpr("x");
-    pe = new ParenExpr(x);
+    vie = new VariableIdentifierExpr("x");
+    pe = new ParenExpr(vie);
   }
 
   @Test
-  public void getExpr() throws Exception {
-    assertEquals(x, pe.getExpr());
+  public void getExpr() {
+    assertEquals(vie, pe.getExpr());
   }
 
   @Test
-  public void accept() throws Exception {
+  public void accept() {
     ParenExpr nested =
-      new ParenExpr(
-          new ParenExpr(
-              new ParenExpr(
-                  new ParenExpr(
-                      new ParenExpr(
-                          x)))));
+        new ParenExpr(
+            new ParenExpr(
+                new ParenExpr(
+                    new ParenExpr(
+                        new ParenExpr(
+                            vie)))));
     assertEquals(5,
         new StandardVisitor() {
 
@@ -59,7 +59,7 @@ public class ParenExprTest {
             numParens++;
           }
 
-          public int getNumParens(ParenExpr expr) {
+          int getNumParens(ParenExpr expr) {
             numParens = 0;
             visit(expr);
             return numParens;
@@ -71,38 +71,39 @@ public class ParenExprTest {
   }
 
   @Test
-  public void testClone() throws Exception {
+  public void testClone() {
     ParenExpr pe2 = pe.clone();
-    assertFalse(pe == pe2);
-    assertFalse(pe.getExpr() == pe2.getExpr());
-    assertEquals(((VariableIdentifierExpr) pe.getExpr()).getName(), ((VariableIdentifierExpr) pe2.getExpr()).getName());
+    assertNotSame(pe, pe2);
+    assertNotSame(pe.getExpr(), pe2.getExpr());
+    assertEquals(((VariableIdentifierExpr) pe.getExpr()).getName(),
+        ((VariableIdentifierExpr) pe2.getExpr()).getName());
   }
 
   @Test
-  public void getChild() throws Exception {
-    assertEquals(x, pe.getChild(0));
+  public void getChild() {
+    assertEquals(vie, pe.getChild(0));
   }
 
   @Test(expected = IndexOutOfBoundsException.class)
-  public void getChildBad() throws Exception {
+  public void getChildBad() {
     pe.getChild(1);
   }
 
   @Test
-  public void setChild() throws Exception {
+  public void setChild() {
     VariableIdentifierExpr y = new VariableIdentifierExpr("y");
     pe.setChild(0, y);
     assertEquals(y, pe.getChild(0));
   }
 
   @Test(expected = IndexOutOfBoundsException.class)
-  public void setChildBad() throws Exception {
+  public void setChildBad() {
     VariableIdentifierExpr y = new VariableIdentifierExpr("y");
     pe.setChild(1, y);
   }
 
   @Test
-  public void getNumChildren() throws Exception {
+  public void getNumChildren() {
     assertEquals(1, pe.getNumChildren());
   }
 

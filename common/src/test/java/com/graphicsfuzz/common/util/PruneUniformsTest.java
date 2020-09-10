@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.common.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import java.io.File;
@@ -29,9 +32,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class PruneUniformsTest {
 
@@ -163,7 +163,8 @@ public class PruneUniformsTest {
     final String expectedProgram = "#version 310 es\n"
           + "precision highp float;"
           + "int liveI[10] = int[10](1, 2, 3, 4, 5, 6, 7, 8, 9, 10);"
-          + "vec3 deadF[3] = vec3[3](vec3(1.0, 2.0, 3.0), vec3(4.0, 5.0, 6.0), vec3(7.0, 8.0, 9.0));"
+          + "vec3 deadF[3] = vec3[3](vec3(1.0, 2.0, 3.0), vec3(4.0, 5.0, 6.0), "
+                  + "vec3(7.0, 8.0, 9.0));"
           + "vec2 deadH = vec2(258.0, 259.0);"
           + "vec2 liveG = vec2(256.0, 257.0);"
           + "uint liveA = 25u;"

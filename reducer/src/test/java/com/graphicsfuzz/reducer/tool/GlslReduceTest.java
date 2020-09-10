@@ -16,6 +16,10 @@
 
 package com.graphicsfuzz.reducer.tool;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
@@ -28,10 +32,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 public class GlslReduceTest {
 
   @Rule
@@ -43,9 +43,8 @@ public class GlslReduceTest {
 
       GlslReduce.mainHelper(new String[]{"--server", "some_server", "--worker", "some_worker",
               makeShaderJobAndReturnJsonFilename(), "--reduction-kind", "CUSTOM", "--output",
-              temporaryFolder.getRoot().getAbsolutePath()}
-          , null);
-      assertTrue(false);
+              temporaryFolder.getRoot().getAbsolutePath()}, null);
+      fail();
     } catch (RuntimeException exception) {
       checkOptionNotAllowed(exception, "server");
     }
@@ -96,11 +95,11 @@ public class GlslReduceTest {
   public void noCustomJudgeAllowedInNonCustomReduction() throws Exception {
     try {
       GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(),
-              "--reduction-kind", "NO_IMAGE",
-              "somejudgescript", "--output",
-              temporaryFolder.getRoot().getAbsolutePath()},
+          "--reduction-kind", "NO_IMAGE",
+          "somejudgescript", "--output",
+          temporaryFolder.getRoot().getAbsolutePath()},
           null);
-      assertTrue(false);
+      fail();
     } catch (RuntimeException exception) {
       assertTrue(exception.getMessage().contains("An interestingness test is only supported when "
           + "a custom reduction is used."));
@@ -110,9 +109,10 @@ public class GlslReduceTest {
   @Test
   public void customJudgeRequiredInCustomReduction() throws Exception {
     try {
-      GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "--reduction-kind", "CUSTOM", "--output",
+      GlslReduce.mainHelper(new String[]{makeShaderJobAndReturnJsonFilename(), "--reduction-kind",
+          "CUSTOM", "--output",
           temporaryFolder.getRoot().getAbsolutePath()}, null);
-      assertTrue(false);
+      fail();
     } catch (RuntimeException exception) {
       assertTrue(exception.getMessage().contains("A custom reduction requires an interestingness "
           + "test to be specified."));
@@ -166,16 +166,16 @@ public class GlslReduceTest {
 
   private File getShaderJobReady() throws IOException, ParseTimeoutException, InterruptedException,
       GlslParserException {
-    final String fragmentShader = "#version 100\n" +
-        "int a;" +
-        "int b;" +
-        "int c;" +
-        "void foo() { }" +
-        "void main() {" +
-        "  a = 2;" +
-        "  b = 3;" +
-        "  foo();" +
-        "}";
+    final String fragmentShader = "#version 100\n"
+        + "int a;"
+        + "int b;"
+        + "int c;"
+        + "void foo() { }"
+        + "void main() {"
+        + "  a = 2;"
+        + "  b = 3;"
+        + "  foo();"
+        + "}";
     final File jsonFile = temporaryFolder.newFile("orig.json");
     final File fragmentFile = temporaryFolder.newFile("orig.frag");
     final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();

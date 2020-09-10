@@ -29,8 +29,8 @@
 // Command line options
 DEFINE_bool(info, false, "Dump worker information and exit");
 DEFINE_bool(skip_render, false, "Prepare graphics pipeline but skip rendering");
-DEFINE_string(sanity_before, "sanity_before.png", "Path to save sanity image recorded before test");
-DEFINE_string(sanity_after, "sanity_after.png", "Path to save sanity image recorded after test");
+DEFINE_string(coherence_before, "coherence_before.png", "Path to save coherence image recorded before test");
+DEFINE_string(coherence_after, "coherence_after.png", "Path to save coherence image recorded after test");
 DEFINE_int32(num_render, 3, "Number of times to render");
 DEFINE_string(png_template, "image", "Path template to image output, '_<#id>.png' will be added");
 
@@ -41,8 +41,8 @@ static const VkFormat depth_format_ = VK_FORMAT_D24_UNORM_S8_UINT;
 static const uint64_t fence_timeout_nanoseconds_ = 100000000;
 // Clear with opaque black
 static const float clear_color_[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-// Sanity
-const char *sanity_uniforms_string = "{}";
+// Coherence
+const char *coherence_uniforms_string = "{}";
 
 // Hardcoded quad
 #define RED2D(_x, _y)  (_x), (_y), 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f
@@ -61,16 +61,16 @@ static const Vertex vertex_input_data[] = {
     {BLUE2D( 1.0f,  1.0f)},
 };
 
-// Sanity shader binaries are stored as byte arrays, see sanity/sanity.sh
-#include "sanity/sanity_vert.inc"
-#include "sanity/sanity_frag.inc"
+// Coherence shader binaries are stored as byte arrays, see coherence/coherence.sh
+#include "coherence/coherence_vert.inc"
+#include "coherence/coherence_frag.inc"
 
 VulkanWorker::VulkanWorker(PlatformData *platform_data) {
   platform_data_ = platform_data;
   PlatformGetWidthHeight(platform_data_, &width_, &height_);
 
-  LoadSpirvFromArray(sanity_vert_spv, sanity_vert_spv_len, sanity_vertex_shader_spv_);
-  LoadSpirvFromArray(sanity_frag_spv, sanity_frag_spv_len, sanity_fragment_shader_spv_);
+  LoadSpirvFromArray(coherence_vert_spv, coherence_vert_spv_len, coherence_vertex_shader_spv_);
+  LoadSpirvFromArray(coherence_frag_spv, coherence_frag_spv_len, coherence_fragment_shader_spv_);
 
   CreateInstance();
   EnumeratePhysicalDevices();
@@ -1624,9 +1624,9 @@ void VulkanWorker::DrawTest(const char *png_filename, bool skip_render) {
 
 void VulkanWorker::RunTest(FILE *vertex_file, FILE *fragment_file, FILE *uniforms_file, bool skip_render) {
 
-  // Sanity before
-  PrepareTest(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_uniforms_string);
-  DrawTest(FLAGS_sanity_before.c_str(), false);
+  // Coherence before
+  PrepareTest(coherence_vertex_shader_spv_, coherence_fragment_shader_spv_, coherence_uniforms_string);
+  DrawTest(FLAGS_coherence_before.c_str(), false);
   CleanTest();
 
   // Test workload
@@ -1646,9 +1646,9 @@ void VulkanWorker::RunTest(FILE *vertex_file, FILE *fragment_file, FILE *uniform
   CleanTest();
   free(uniforms_string);
 
-  // Sanity after
-  PrepareTest(sanity_vertex_shader_spv_, sanity_fragment_shader_spv_, sanity_uniforms_string);
-  DrawTest(FLAGS_sanity_after.c_str(), false);
+  // Coherence after
+  PrepareTest(coherence_vertex_shader_spv_, coherence_fragment_shader_spv_, coherence_uniforms_string);
+  DrawTest(FLAGS_coherence_after.c_str(), false);
   CleanTest();
 }
 

@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.CompareAsts;
@@ -31,9 +33,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class FlattenControlFlowReductionOpportunitiesTest {
 
@@ -977,7 +976,8 @@ public class FlattenControlFlowReductionOpportunitiesTest {
 
   private List<AbstractReductionOpportunity> getOps(TranslationUnit tu,
                                                     boolean reduceEverywhere) {
-    return FlattenControlFlowReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    return FlattenControlFlowReductionOpportunities.findOpportunities(
+        MakeShaderJobFromFragmentShader.make(tu),
         new ReducerContext(reduceEverywhere,
             tu.getShadingLanguageVersion(), new RandomWrapper(0),
             new IdGenerator()));

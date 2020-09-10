@@ -23,19 +23,19 @@ import static org.junit.Assert.assertTrue;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
-import com.graphicsfuzz.common.util.GlslParserException;
-import com.graphicsfuzz.util.Constants;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.CompareAsts;
+import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
+import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.ZeroCannedRandom;
+import com.graphicsfuzz.util.Constants;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +49,8 @@ public class ReductionOpportunitiesTest {
   @Test
   public void testDeadConditionalNotReplaced() throws Exception {
     // Regression test for a bug where the guard of a dead conditional was being replaced by "true"
-    String prog = "void main() {" +
-      "if(" + Constants.GLF_DEAD + "(" + Constants.GLF_IDENTITY + "(false, true && "
+    String prog = "void main() {"
+        + "if(" + Constants.GLF_DEAD + "(" + Constants.GLF_IDENTITY + "(false, true && "
         + Constants.GLF_IDENTITY + "(false, (true ? false : " + Constants.GLF_FUZZED
         + "(true)))))) {"
         + "  }"
@@ -63,7 +63,8 @@ public class ReductionOpportunitiesTest {
             new RandomWrapper(0), new IdGenerator()), fileOps);
     // There should be no ExprToConstant reduction opportunity, because the expressions do not occur
     // under dead code, and the fuzzed expression is too simple to be reduced.
-    assertFalse(opportunities.stream().anyMatch(item -> item instanceof SimplifyExprReductionOpportunity));
+    assertFalse(opportunities.stream().anyMatch(
+        item -> item instanceof SimplifyExprReductionOpportunity));
   }
 
   @Test
@@ -77,14 +78,16 @@ public class ReductionOpportunitiesTest {
         new RandomWrapper(0), new IdGenerator()), fileOps);
   }
 
-  private void stressTestStructification(String variantProgram, String reducedProgram) throws Exception{
-
-    TranslationUnit tu = ParseHelper.parse(variantProgram);
+  private void stressTestStructification(String variantProgram, String reducedProgram)
+      throws Exception {
+    final TranslationUnit tu = ParseHelper.parse(variantProgram);
     IRandom generator = new RandomWrapper(0);
     while (true) {
-      List<InlineStructifiedFieldReductionOpportunity> ops
-          = InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-              new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+      List<InlineStructifiedFieldReductionOpportunity> ops =
+          InlineStructifiedFieldReductionOpportunities
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+              new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                  new RandomWrapper(0), new IdGenerator()));
       if (ops.isEmpty()) {
         break;
       }
@@ -92,8 +95,10 @@ public class ReductionOpportunitiesTest {
     }
 
     while (true) {
-      List<DestructifyReductionOpportunity> ops
-          = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+      List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+              new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                  new RandomWrapper(0), new IdGenerator()));
       if (ops.isEmpty()) {
         break;
       }
@@ -101,8 +106,8 @@ public class ReductionOpportunitiesTest {
     }
 
     while (true) {
-      List<IReductionOpportunity> ops
-          = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+      List<IReductionOpportunity> ops = ReductionOpportunities
+          .getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
@@ -201,8 +206,10 @@ public class ReductionOpportunitiesTest {
         + "    _GLF_struct_16 _GLF_struct_replacement_17;\n"
         + "    _GLF_struct_replacement_17._f0._f0.y = 3;\n"
         + "    _GLF_struct_18 _GLF_struct_replacement_19;\n"
-        + "    _GLF_struct_replacement_19.z = _GLF_struct_replacement_4.x + _GLF_struct_replacement_17._f0._f0.y;\n"
-        + "    _GLF_struct_replacement_17._f0._f0.y = _GLF_struct_replacement_19.z + _GLF_struct_replacement_4.x;\n"
+        + "    _GLF_struct_replacement_19.z = _GLF_struct_replacement_4.x + "
+                + "_GLF_struct_replacement_17._f0._f0.y;\n"
+        + "    _GLF_struct_replacement_17._f0._f0.y = _GLF_struct_replacement_19.z + "
+                + "_GLF_struct_replacement_4.x;\n"
         + "}\n";
 
     String reducedProgram = "void main() {\n"
@@ -274,7 +281,11 @@ public class ReductionOpportunitiesTest {
         + "  {\n"
         + "    _GLF_struct_0 _GLF_struct_replacement_1 = _GLF_struct_0(2, ivec3(1));\n"
         + "    _GLF_struct_replacement_1.x++;\n"
-        + "    _GLF_struct_9 _GLF_struct_replacement_10 = _GLF_struct_9(vec3(1.0), _GLF_struct_2(mat3(1.0)), _GLF_struct_7(_GLF_struct_6(_GLF_struct_replacement_1.x, _GLF_struct_3(1, true, ivec2(1), vec4(1.0), mat3(1.0)), _GLF_struct_4(1.0, vec4(1.0)), _GLF_struct_5(1.0, 1), ivec3(1)), ivec2(1)), _GLF_struct_8(mat3(1.0)));\n"
+        + "    _GLF_struct_9 _GLF_struct_replacement_10 = _GLF_struct_9(vec3(1.0), "
+                + "_GLF_struct_2(mat3(1.0)), _GLF_struct_7(_GLF_struct_6(_GLF_struct_replacement_1"
+                + ".x, _GLF_struct_3(1, true, ivec2(1), vec4(1.0), mat3(1.0)), _GLF_struct_4(1.0, "
+                + "vec4(1.0)), _GLF_struct_5(1.0, 1), ivec3(1)), ivec2(1)), _GLF_struct_8(mat3(1"
+                + ".0)));\n"
         + "    S z = S(_GLF_struct_replacement_1.x, _GLF_struct_replacement_10._f2._f0.y);\n"
         + "    _GLF_struct_replacement_10._f2._f0.y = z.a;\n"
         + "    z.a = _GLF_struct_replacement_1.x + _GLF_struct_replacement_10._f2._f0.y;\n"
@@ -332,9 +343,11 @@ public class ReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    List<InlineStructifiedFieldReductionOpportunity> ops =
-        InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
-        InlineStructifiedFieldReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    final List<InlineStructifiedFieldReductionOpportunity> ops =
+        InlineStructifiedFieldReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                    new RandomWrapper(0), new IdGenerator()));
 
     assertEquals(1, ops.size());
 
@@ -378,9 +391,10 @@ public class ReductionOpportunitiesTest {
 
     TranslationUnit tu = ParseHelper.parse(program);
 
-    List<DestructifyReductionOpportunity> ops =
-        DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-              new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+              new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                  new RandomWrapper(0), new IdGenerator()));
 
     assertEquals(1, ops.size());
 
@@ -423,7 +437,8 @@ public class ReductionOpportunitiesTest {
 
     List<Integer> indicesOfExprToConstOps = new ArrayList<>();
     {
-      List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+      List<IReductionOpportunity> ops = ReductionOpportunities
+          .getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()), fileOps);
       for (int i = 0; i < ops.size(); i++) {
@@ -436,16 +451,16 @@ public class ReductionOpportunitiesTest {
     // Check that applying an ExprToConstant followed by all loop merges does not fail.
 
     for (Integer index : indicesOfExprToConstOps) {
-      TranslationUnit aClone = tu.clone();
+      final TranslationUnit tuClone = tu.clone();
       {
-        List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
-              MakeShaderJobFromFragmentShader.make(aClone),
+        final List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
+              MakeShaderJobFromFragmentShader.make(tuClone),
               new ReducerContext(false,
             ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()), fileOps);
         ((SimplifyExprReductionOpportunity) ops.get(index)).applyReduction();
       }
-      for (IReductionOpportunity op :
-          ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(aClone),
+      for (IReductionOpportunity op : ReductionOpportunities
+              .getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tuClone),
             new ReducerContext(false,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()), fileOps)) {
         if (op instanceof LoopMergeReductionOpportunity) {
@@ -506,20 +521,22 @@ public class ReductionOpportunitiesTest {
   private void tryAllCompatibleOpportunities(String program)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
     TranslationUnit tu = ParseHelper.parse(program);
-    int numOps = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false,
-        ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()), fileOps).size();
+    int numOps = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader
+            .make(tu), new ReducerContext(false,
+        ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()), fileOps)
+        .size();
 
     for (int i = 0; i < numOps; i++) {
       for (int j = 0; j < numOps; j++) {
         if (i == j) {
           continue;
         }
-        TranslationUnit aClone = tu.clone();
-        List<IReductionOpportunity> ops =
-            ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(aClone),
+        final TranslationUnit tuClone = tu.clone();
+        final List<IReductionOpportunity> ops = ReductionOpportunities
+                .getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tuClone),
                   new ReducerContext(false,
-                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()), fileOps);
+                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()),
+                    fileOps);
 
         if (Compatibility.compatible(ops.get(i).getClass(), ops.get(j).getClass())) {
           ops.get(i).applyReduction();
@@ -536,7 +553,8 @@ public class ReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     while (true) {
       List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
-            MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+            MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+              ShadingLanguageVersion.GLSL_440,
             new RandomWrapper(0), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
         break;
@@ -554,7 +572,10 @@ public class ReductionOpportunitiesTest {
           + "  float GLF_live3x = sin(1.0);"
           + "  float GLF_live3y = GLF_live3x + GLF_live3x;"
           + "}");
-    List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+    List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0), new IdGenerator()));
     assertEquals(4, ops.size());
   }
 
@@ -606,7 +627,8 @@ public class ReductionOpportunitiesTest {
           + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
     List<? extends IReductionOpportunity> ops = StmtReductionOpportunities.findOpportunities(
-          MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+          MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+            ShadingLanguageVersion.ESSL_100,
           new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -633,7 +655,8 @@ public class ReductionOpportunitiesTest {
         + "  }\n"
         + "}\n");
     while (true) {
-      List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+      List<IReductionOpportunity> ops = ReductionOpportunities
+          .getReductionOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(false,
               ShadingLanguageVersion.GLSL_440, new RandomWrapper(0), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
@@ -656,17 +679,21 @@ public class ReductionOpportunitiesTest {
         + "  float b;"
         + "  vec2 GLF_merged2_0_1_1_1_1_1ab;"
         + "  GLF_merged2_0_1_1_1_1_1ab.x = 5.0;"
-        + "  GLF_merged2_0_1_1_1_1_1ab.y = _GLF_IDENTITY(GLF_merged2_0_1_1_1_1_1ab, GLF_merged2_0_1_1_1_1_1ab + vec2(0.0)).x;"
+        + "  GLF_merged2_0_1_1_1_1_1ab.y = _GLF_IDENTITY(GLF_merged2_0_1_1_1_1_1ab, "
+                + "GLF_merged2_0_1_1_1_1_1ab + vec2(0.0)).x;"
         + "}");
     {
-      List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+      List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+              new RandomWrapper(0), new IdGenerator()));
       assertEquals(0, ops.size());
     }
     {
-      List<IdentityMutationReductionOpportunity> ops =
-          IdentityMutationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+      List<IdentityMutationReductionOpportunity> ops = IdentityMutationReductionOpportunities
+              .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+              new RandomWrapper(0), new IdGenerator()));
       assertEquals(1, ops.size());
       ops.get(0).applyReduction();
       CompareAsts.assertEqualAsts("void main() {"
@@ -678,8 +705,10 @@ public class ReductionOpportunitiesTest {
           + "}", tu);
     }
     {
-      List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+      List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
+          .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+              new RandomWrapper(0), new IdGenerator()));
       assertEquals(2, ops.size());
       ops.get(0).applyReduction();
       ops.get(1).applyReduction();
@@ -692,9 +721,10 @@ public class ReductionOpportunitiesTest {
           + "}", tu);
     }
     {
-      List<VariableDeclReductionOpportunity> ops =
-          VariableDeclReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+      List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
+              .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+          new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+              new RandomWrapper(0), new IdGenerator()));
       assertEquals(1, ops.size());
       ops.get(0).applyReduction();
       CompareAsts.assertEqualAsts("void main() {"
@@ -708,7 +738,8 @@ public class ReductionOpportunitiesTest {
     {
       List<StmtReductionOpportunity> ops =
           StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-              new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+              new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                  new RandomWrapper(0), new IdGenerator()));
       assertEquals(1, ops.size());
       ops.get(0).applyReduction();
       CompareAsts.assertEqualAsts("void main() {"
@@ -730,23 +761,29 @@ public class ReductionOpportunitiesTest {
             + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
             + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
             + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
-            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = "
+                    + "GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
             + "    float a = 1;\n"
             + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
-            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = "
+                    + "GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
             + "    float b = 2;\n"
             + "    GLF_merged2_0_1_1_1_1_1bc.x = b;\n"
-            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = GLF_merged2_0_1_1_1_1_1bc.x;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = "
+                    + "GLF_merged2_0_1_1_1_1_1bc.x;\n"
             + "    float c = 3;\n"
             + "    GLF_merged2_0_1_1_1_1_1bc.y = c;\n"
-            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = GLF_merged2_0_1_1_1_1_1bc.y;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = "
+                    + "GLF_merged2_0_1_1_1_1_1bc.y;\n"
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y;\n"
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
             + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
             + "}\n";
     final TranslationUnit tu = ParseHelper.parse(original);
-    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+    List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(4, ops.size());
 
@@ -757,25 +794,30 @@ public class ReductionOpportunitiesTest {
             + "    vec2 GLF_merged2_0_1_1_1_1_1bc;\n"
             + "    vec4 GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca;\n"
             + "    vec3 GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
-            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz = "
+                    + "GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
             + "    float a = 1;\n"
             + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
-            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x = "
+                    + "GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
             + "    float b = 2;\n"
             + "    b = b;\n"
             + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.y = b;\n"
             + "    float c = 3;\n"
             + "    GLF_merged2_0_1_1_1_1_1bc.y = c;\n"
-            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = GLF_merged2_0_1_1_1_1_1bc.y;\n"
+            + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.z = "
+                    + "GLF_merged2_0_1_1_1_1_1bc.y;\n"
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y;\n"
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
             + "    return GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.xyz.x;\n"
             + "}\n";
-    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_1_1_1_1_1bc") && item.getComponentName().equals("b")).findAny().get().applyReduction();
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_1_1_1_1_1bc")
+        && item.getComponentName().equals("b")).findAny().get().applyReduction();
     CompareAsts.assertEqualAsts(expected1, tu);
 
-    // (2) remove GLF_merged3_0_1_1_1_1_1_2_1_1abc from GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca
+    // (2) remove GLF_merged3_0_1_1_1_1_1_2_1_1abc from
+    //            GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca
     final String expected2 =
         "void main()\n"
             + "{\n"
@@ -785,7 +827,8 @@ public class ReductionOpportunitiesTest {
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
             + "    float a = 1;\n"
             + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
-            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = "
+                    + "GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
             + "    float b = 2;\n"
             + "    b = b;\n"
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
@@ -797,7 +840,10 @@ public class ReductionOpportunitiesTest {
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
             + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
             + "}\n";
-    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca") && item.getComponentName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc")).findAny().get().applyReduction();
+    ops.stream().filter(item -> item.getVectorName().equals(
+        "GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca")
+        && item.getComponentName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc")).findAny().get()
+        .applyReduction();
     CompareAsts.assertEqualAsts(expected2, tu);
 
     // (3) remove c from GLF_merged2_0_1_1_1_1_1bc
@@ -810,7 +856,8 @@ public class ReductionOpportunitiesTest {
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc = GLF_merged3_0_1_1_1_1_1_2_1_1abc;\n"
             + "    float a = 1;\n"
             + "    GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w = a;\n"
-            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
+            + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.x = "
+                    + "GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca.w;\n"
             + "    float b = 2;\n"
             + "    b = b;\n"
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.y = b;\n"
@@ -822,7 +869,8 @@ public class ReductionOpportunitiesTest {
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
             + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
             + "}\n";
-    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_1_1_1_1_1bc") && item.getComponentName().equals("c")).findAny().get().applyReduction();
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_1_1_1_1_1bc")
+        && item.getComponentName().equals("c")).findAny().get().applyReduction();
     CompareAsts.assertEqualAsts(expected3, tu);
 
     // (4) remove a from GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca
@@ -847,7 +895,9 @@ public class ReductionOpportunitiesTest {
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z;\n"
             + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
             + "}\n";
-    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca") && item.getComponentName().equals("a")).findAny().get().applyReduction();
+    ops.stream().filter(item -> item.getVectorName().equals(
+        "GLF_merged2_0_3_32_3_1_1GLF_merged3_0_1_1_1_1_1_2_1_1abca")
+        && item.getComponentName().equals("a")).findAny().get().applyReduction();
     CompareAsts.assertEqualAsts(expected4, tu);
 
     // (5) remove dud statements (assignments of form t = t, and side-effect free expression
@@ -866,7 +916,8 @@ public class ReductionOpportunitiesTest {
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
             + "    return GLF_merged3_0_1_1_1_1_1_2_1_1abc.x;\n"
             + "}\n";
-    List<StmtReductionOpportunity> stmtOps = StmtReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    List<StmtReductionOpportunity> stmtOps = StmtReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
         new ReducerContext(false,
         ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), new IdGenerator()));
@@ -876,7 +927,9 @@ public class ReductionOpportunitiesTest {
     }
     CompareAsts.assertEqualAsts(expected5, tu);
 
-    ops = VectorizationReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+    ops = VectorizationReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(3, ops.size());
 
@@ -895,7 +948,8 @@ public class ReductionOpportunitiesTest {
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
             + "    return a;\n"
             + "}\n";
-    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc") && item.getComponentName().equals("a")).findAny().get().applyReduction();
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc")
+        && item.getComponentName().equals("a")).findAny().get().applyReduction();
     CompareAsts.assertEqualAsts(expected6, tu);
 
     // (7) remove b from GLF_merged3_0_1_1_1_1_1_2_1_1abc
@@ -913,7 +967,8 @@ public class ReductionOpportunitiesTest {
             + "    GLF_merged3_0_1_1_1_1_1_2_1_1abc.z = c;\n"
             + "    return a;\n"
             + "}\n";
-    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc") && item.getComponentName().equals("b")).findAny().get().applyReduction();
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc")
+        && item.getComponentName().equals("b")).findAny().get().applyReduction();
     CompareAsts.assertEqualAsts(expected7, tu);
 
     // (8) remove c from GLF_merged3_0_1_1_1_1_1_2_1_1abc
@@ -931,7 +986,8 @@ public class ReductionOpportunitiesTest {
             + "    c = c;\n"
             + "    return a;\n"
             + "}\n";
-    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc") && item.getComponentName().equals("c")).findAny().get().applyReduction();
+    ops.stream().filter(item -> item.getVectorName().equals("GLF_merged3_0_1_1_1_1_1_2_1_1abc")
+        && item.getComponentName().equals("c")).findAny().get().applyReduction();
     CompareAsts.assertEqualAsts(expected8, tu);
 
     // (9) remove dud statements
@@ -968,8 +1024,8 @@ public class ReductionOpportunitiesTest {
             + "    float ;\n"
             + "    return a;\n"
             + "}\n";
-    List<VariableDeclReductionOpportunity> varDeclOps =
-        VariableDeclReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    List<VariableDeclReductionOpportunity> varDeclOps = VariableDeclReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
             new ReducerContext(false,
                 ShadingLanguageVersion.GLSL_440,
                 new ZeroCannedRandom(), new IdGenerator()));
@@ -1011,61 +1067,64 @@ public class ReductionOpportunitiesTest {
         + "void main() { }";
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(4, ops.size());
     for (VariableDeclReductionOpportunity op : ops) {
       op.applyReduction();
     }
     final List<StmtReductionOpportunity> moreOps = StmtReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(4, moreOps.size());
   }
 
   @Test
   public void testUniformsGetRemoved() throws Exception {
-    final String program = "#version 310 es\n" +
-        "\n" +
-        "#ifdef GL_ES\n" +
-        "#ifdef GL_FRAGMENT_PRECISION_HIGH\n" +
-        "precision highp float;\n" +
-        "precision highp int;\n" +
-        "#else\n" +
-        "precision mediump float;\n" +
-        "precision mediump int;\n" +
-        "#endif\n" +
-        "#endif\n" +
-        "\n" +
-        "#ifndef REDUCER\n" +
-        "#define _GLF_ZERO(X, Y)          (Y)\n" +
-        "#define _GLF_ONE(X, Y)           (Y)\n" +
-        "#define _GLF_FALSE(X, Y)         (Y)\n" +
-        "#define _GLF_TRUE(X, Y)          (Y)\n" +
-        "#define _GLF_IDENTITY(X, Y)      (Y)\n" +
-        "#define _GLF_DEAD(X)             (X)\n" +
-        "#define _GLF_FUZZED(X)           (X)\n" +
-        "#define _GLF_WRAPPED_LOOP(X)     X\n" +
-        "#define _GLF_WRAPPED_IF_TRUE(X)  X\n" +
-        "#define _GLF_WRAPPED_IF_FALSE(X) X\n" +
-        "#define _GLF_SWITCH(X)           X\n" +
-        "#endif\n" +
-        "\n" +
-        "// END OF GENERATED HEADER\n" +
-        "\n" +
-        "layout(set=0,binding=0) uniform buf0 {\n" +
-        " vec2 injectionSwitch;\n" +
-        "} ;\n" +
-        "void main() { }";
+    final String program = "#version 310 es\n"
+        + "\n"
+        + "#ifdef GL_ES\n"
+        + "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
+        + "precision highp float;\n"
+        + "precision highp int;\n"
+        + "#else\n"
+        + "precision mediump float;\n"
+        + "precision mediump int;\n"
+        + "#endif\n"
+        + "#endif\n"
+        + "\n"
+        + "#ifndef REDUCER\n"
+        + "#define _GLF_ZERO(X, Y)          (Y)\n"
+        + "#define _GLF_ONE(X, Y)           (Y)\n"
+        + "#define _GLF_FALSE(X, Y)         (Y)\n"
+        + "#define _GLF_TRUE(X, Y)          (Y)\n"
+        + "#define _GLF_IDENTITY(X, Y)      (Y)\n"
+        + "#define _GLF_DEAD(X)             (X)\n"
+        + "#define _GLF_FUZZED(X)           (X)\n"
+        + "#define _GLF_WRAPPED_LOOP(X)     X\n"
+        + "#define _GLF_WRAPPED_IF_TRUE(X)  X\n"
+        + "#define _GLF_WRAPPED_IF_FALSE(X) X\n"
+        + "#define _GLF_SWITCH(X)           X\n"
+        + "#endif\n"
+        + "\n"
+        + "// END OF GENERATED HEADER\n"
+        + "\n"
+        + "layout(set=0,binding=0) uniform buf0 {\n"
+        + " vec2 injectionSwitch;\n"
+        + "} ;\n"
+        + "void main() { }";
     final TranslationUnit tu = ParseHelper.parse(program);
-    final String json = "{ \"injectionSwitch\": { \"args\": [ 1.0, 2.0 ], " +
-        "    \"func\": \"glUniform2f\", \"binding\": 0 } }";
+    final String json = "{ \"injectionSwitch\": { \"args\": [ 1.0, 2.0 ], "
+        + "    \"func\": \"glUniform2f\", \"binding\": 0 } }";
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         new PipelineInfo(json), tu);
     shaderJob.removeUniformBindings();
 
     List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
-        MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+        MakeShaderJobFromFragmentShader.make(tu),
+        new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
             new RandomWrapper(0), new IdGenerator()), fileOps);
     assertEquals(1, ops.size());
     assertTrue(ops.get(0) instanceof VariableDeclReductionOpportunity);

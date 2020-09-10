@@ -79,9 +79,11 @@ import com.graphicsfuzz.util.Constants;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class PrettyPrinterVisitor extends StandardVisitor {
 
@@ -94,15 +96,16 @@ public class PrettyPrinterVisitor extends StandardVisitor {
   private boolean inFunctionDefinition = false;
   private final boolean emitGraphicsFuzzDefines;
   private final Optional<String> license;
+  private final Optional<UniformValueSupplier> uniformValues;
 
   // Allows different formatting of a declaration when part of the header of a for statement.
   private boolean insideForStatementHeader = false;
-
 
   public PrettyPrinterVisitor(PrintStream out) {
     this(out, DEFAULT_INDENTATION_WIDTH,
         DEFAULT_NEWLINE_SUPPLIER,
         false,
+        Optional.empty(),
         Optional.empty());
   }
 
@@ -110,12 +113,14 @@ public class PrettyPrinterVisitor extends StandardVisitor {
                               int indentationWidth,
                               Supplier<String> newLineSupplier,
                               boolean emitGraphicsFuzzDefines,
-                              Optional<String> license) {
+                              Optional<String> license,
+                              Optional<UniformValueSupplier> uniformValues) {
     this.out = out;
     this.indentationWidth = indentationWidth;
     this.newLineSupplier = newLineSupplier;
     this.emitGraphicsFuzzDefines = emitGraphicsFuzzDefines;
     this.license = license;
+    this.uniformValues = uniformValues;
   }
 
   /**
@@ -130,11 +135,38 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
   }
 
+  /**
+   * Returns, via pretty printing, a string representation of the given node.
+   *
+   * @param node Node for which string representation is required
+   * @param uniformValues Supplier that provides values for uniforms
+   * @return String representation of the node
+   */
+  public static String prettyPrintAsString(IAstNode node, UniformValueSupplier uniformValues) {
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    new PrettyPrinterVisitor(new PrintStream(bytes),
+        DEFAULT_INDENTATION_WIDTH,
+        DEFAULT_NEWLINE_SUPPLIER,
+        false,
+        Optional.empty(),
+        Optional.of(uniformValues)).visit(node);
+    return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+  }
+
   public static void emitShader(TranslationUnit shader,
                                 Optional<String> license,
                                 PrintStream stream,
                                 int indentationWidth,
                                 Supplier<String> newlineSupplier) {
+    emitShader(shader, license, stream, indentationWidth, newlineSupplier, Optional.empty());
+  }
+
+  public static void emitShader(TranslationUnit shader,
+                                Optional<String> license,
+                                PrintStream stream,
+                                int indentationWidth,
+                                Supplier<String> newlineSupplier,
+                                Optional<UniformValueSupplier> uniformValueSupplier) {
     final boolean usesGraphicsFuzzDefines = new CheckPredicateVisitor() {
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
@@ -146,7 +178,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     }.test(shader);
 
     new PrettyPrinterVisitor(stream, indentationWidth, newlineSupplier,
-        usesGraphicsFuzzDefines, license).visit(shader);
+        usesGraphicsFuzzDefines, license, uniformValueSupplier).visit(shader);
   }
 
   private String newLine() {
@@ -172,6 +204,38 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+
+    // If uniform variables are being declared and we have a uniform supplier that provides known
+    // values for one or more of the uniforms, we emit details of those known values in comments,
+    // one line per uniform.
+    if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
+            && uniformValues.isPresent()) {
+      // Find the variable declarations for which we have known uniform values.
+      final List<VariableDeclInfo> knownUniforms =
+          variablesDeclaration.getDeclInfos().stream()
+              .filter(uniform -> uniformValues.get()
+                  .getValues(uniform.getName()).isPresent()).collect(Collectors.toList());
+
+      // Emit a comment per known uniform.
+      for (VariableDeclInfo knownUniform : knownUniforms) {
+        final Optional<List<String>> values = uniformValues.get().getValues(knownUniform.getName());
+        values.ifPresent(item -> {
+          out.append("// Contents of ")
+              .append(knownUniform.getName())
+              .append(": ");
+          if (item.size() > 1) {
+            out.append("[");
+          }
+          out.append(item.stream().map(Object::toString)
+              .reduce((item1, item2) -> item1 + ", " + item2).orElse(""));
+          if (item.size() > 1) {
+            out.append("]");
+          }
+        });
+        out.append("\n");
+      }
+    }
+
     final Type baseType = variablesDeclaration.getBaseType();
     visit(baseType);
     out.append(" ");
@@ -506,8 +570,36 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     visit(ternaryExpr.getElseExpr());
   }
 
+  private boolean maybeEmitKnownUniformMacro(ArrayIndexExpr arrayIndexExpr,
+                                           String knownUniformArrayName, String prefix) {
+    /* If arrayIndexExpr indexes into a literal-to-uniform array, output a macro name instead. */
+    if (arrayIndexExpr.getArray() instanceof VariableIdentifierExpr
+        && ((VariableIdentifierExpr) arrayIndexExpr.getArray()).getName()
+        .contains(knownUniformArrayName)
+        && uniformValues.isPresent()
+        && uniformValues.get().getValues(knownUniformArrayName).isPresent()) {
+
+      int index = ((IntConstantExpr) arrayIndexExpr.getIndex()).getNumericValue();
+      List<String> values = uniformValues.get().getValues(knownUniformArrayName).get();
+      out.append("_").append(prefix).append("_").append(values.get(index).replace(".", "_"));
+      return true;
+    }
+    return false;
+  }
+
   @Override
   public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
+    if (maybeEmitKnownUniformMacro(arrayIndexExpr, Constants.INT_LITERAL_UNIFORM_VALUES, "int")) {
+      return;
+    }
+    if (maybeEmitKnownUniformMacro(arrayIndexExpr, Constants.UINT_LITERAL_UNIFORM_VALUES, "uint")) {
+      return;
+    }
+    if (maybeEmitKnownUniformMacro(arrayIndexExpr, Constants.FLOAT_LITERAL_UNIFORM_VALUES,
+        "float")) {
+      return;
+    }
+
     visit(arrayIndexExpr.getArray());
     out.append("[");
     visit(arrayIndexExpr.getIndex());
@@ -607,6 +699,34 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
+
+    // If a uniform block is being declared and we have a uniform supplier that provides known
+    // values for the uniform wrapped in, we emit details of those known values in comments.
+    if (interfaceBlock.getInterfaceQualifier().equals(TypeQualifier.UNIFORM)) {
+      // It is guaranteed that a block, for which getInterfaceQualifier() returns "uniform",
+      // has a single field.
+      assert interfaceBlock.getMemberNames().size() == 1;
+
+      final String memberName = interfaceBlock.getMemberNames().get(0);
+      if (uniformValues.isPresent()) {
+        final Optional<List<String>> values = uniformValues.get().getValues(memberName);
+        values.ifPresent(item -> {
+          out.append("// Contents of ")
+              .append(memberName)
+              .append(": ");
+          if (item.size() > 1) {
+            out.append("[");
+          }
+          out.append(item.stream().map(Object::toString)
+              .reduce((item1, item2) -> item1 + ", " + item2).orElse(""));
+          if (item.size() > 1) {
+            out.append("]");
+          }
+          out.append(newLine());
+        });
+      }
+    }
+
     out.append(indent());
     if (interfaceBlock.hasLayoutQualifierSequence()) {
       out.append(interfaceBlock.getLayoutQualifierSequence().toString() + " ");
@@ -643,6 +763,23 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append(";" + newLine());
   }
 
+  private void emitKnownUniformDefines(String knownUniformArrayName, String prefix) {
+    final Optional<List<String>> values =
+        uniformValues.get().getValues(knownUniformArrayName);
+    if (values.isPresent()) {
+      int index = 0;
+      for (String value : values.get()) {
+        out.append("#define").append(" ").append("_").append(prefix).append("_")
+            .append(value.replace(".", "_"))
+            .append(" ").append(knownUniformArrayName)
+            .append("[").append(String.valueOf(index)).append("]")
+            .append(newLine());
+        index++;
+      }
+
+    }
+  }
+
   @Override
   public void visitTranslationUnit(TranslationUnit translationUnit) {
 
@@ -660,6 +797,14 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
     if (emitGraphicsFuzzDefines) {
       emitGraphicsFuzzDefines(out, translationUnit.getShadingLanguageVersion());
+    }
+
+    // Emit a #define for each value in the literal-to-uniform arrays.
+    if (uniformValues.isPresent()) {
+      emitKnownUniformDefines(Constants.INT_LITERAL_UNIFORM_VALUES, "int");
+      emitKnownUniformDefines(Constants.UINT_LITERAL_UNIFORM_VALUES, "uint");
+      emitKnownUniformDefines(Constants.FLOAT_LITERAL_UNIFORM_VALUES, "float");
+      out.append(newLine());
     }
 
     super.visitTranslationUnit(translationUnit);

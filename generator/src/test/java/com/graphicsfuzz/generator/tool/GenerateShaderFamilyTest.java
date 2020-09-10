@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -34,8 +36,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.*;
 
 public class GenerateShaderFamilyTest {
 
@@ -170,10 +170,11 @@ public class GenerateShaderFamilyTest {
     FileUtils.writeStringToFile(referenceFragFile, reference, StandardCharsets.UTF_8);
     FileUtils.writeStringToFile(referenceJsonFile, "{}", StandardCharsets.UTF_8);
 
-    final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
         "webgl1").toString();
     // Disable shader_translator, so we should still get family generated
-    checkShaderFamilyGeneration(2, 0, Collections.singletonList("--disable-shader-translator"),
+    checkShaderFamilyGeneration(2, 0,
+        Collections.singletonList("--disable-shader-translator"),
         referenceJsonFile.getAbsolutePath(),
         donors);
   }
@@ -193,7 +194,7 @@ public class GenerateShaderFamilyTest {
     FileUtils.writeStringToFile(referenceFragFile, reference, StandardCharsets.UTF_8);
     FileUtils.writeStringToFile(referenceJsonFile, "{}", StandardCharsets.UTF_8);
 
-    final String donors = Paths.get(ToolPaths.getShadersDirectory(),"samples",
+    final String donors = Paths.get(ToolPaths.getShadersDirectory(), "samples",
         "320es").toString();
     // Disabling glslangValidator should lead to a family being generated, as the rest of the tool
     // chain will just ignore the imaginary extension.
@@ -206,13 +207,15 @@ public class GenerateShaderFamilyTest {
   private void checkShaderFamilyGeneration(String samplesSubdir, String referenceShaderName,
                                            int numVariants, int seed,
                                            List<String> extraOptions,
-                                           ShadingLanguageVersion shadingLanguageVersion) throws ArgumentParserException,
-      InterruptedException, IOException, ReferencePreparationException {
+                                           ShadingLanguageVersion shadingLanguageVersion)
+      throws ArgumentParserException, InterruptedException, IOException,
+      ReferencePreparationException {
 
     final File samplesPrepared = temporaryFolder.newFolder();
     final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
-    for (File shaderJobFile : fileOperations.listShaderJobFiles(Paths.get(ToolPaths.getShadersDirectory(),"samples",
-        samplesSubdir).toFile())) {
+    for (File shaderJobFile : fileOperations
+        .listShaderJobFiles(Paths.get(ToolPaths.getShadersDirectory(), "samples", samplesSubdir)
+            .toFile())) {
       final File newShaderJobFile = new File(samplesPrepared,
           shaderJobFile.getName());
       fileOperations.copyShaderJobFileTo(shaderJobFile, newShaderJobFile, false);
@@ -221,36 +224,17 @@ public class GenerateShaderFamilyTest {
 
     final String reference = Paths.get(samplesPrepared.getAbsolutePath(), referenceShaderName
         + ".json").toString();
-    checkShaderFamilyGeneration(numVariants, seed, extraOptions, reference, samplesPrepared.getAbsolutePath());
+    checkShaderFamilyGeneration(numVariants, seed, extraOptions, reference,
+        samplesPrepared.getAbsolutePath());
   }
 
-  /**
-   * If the shading language version is 300 es or higher, and there is a fragment shader but no
-   * vertex shader, a trivial vertex shader is added.  This is to give vertex shader transformation
-   * a workout for these shading language versions, and to ensure that attempts are not made to
-   * donate code between shader kinds.
-   */
-  private void maybeAddVertexShaderIfMissing(ShadingLanguageVersion shadingLanguageVersion, ShaderJobFileOperations fileOperations, File newShaderJobFile) throws IOException {
-    if (!Arrays.asList(ShadingLanguageVersion.ESSL_300, ShadingLanguageVersion.ESSL_320,
-        ShadingLanguageVersion.ESSL_320).contains(shadingLanguageVersion)) {
-      return;
-    }
-    if (fileOperations.doesShaderExist(newShaderJobFile,
-        ShaderKind.FRAGMENT) && !fileOperations.doesShaderExist(newShaderJobFile, ShaderKind.VERTEX)) {
-      final String trivialVertexShader = "#version " + shadingLanguageVersion.getVersionString() + "\n"
-          + "\n"
-          + "layout (location = 0) in vec4 pos;\n"
-          + "\n"
-          + "void main() {\n"
-          + "   gl_Position = pos;\n"
-          + "}\n";
-      fileOperations.writeStringToFile(fileOperations.getUnderlyingShaderFile(newShaderJobFile,
-          ShaderKind.VERTEX), trivialVertexShader);
-    }
-  }
-
-  private void checkShaderFamilyGeneration(int numVariants, int seed, List<String> extraOptions, String reference,
-                                           String donors) throws ArgumentParserException, InterruptedException, IOException, ReferencePreparationException {
+  private void checkShaderFamilyGeneration(int numVariants,
+                                           int seed,
+                                           List<String> extraOptions,
+                                           String reference,
+                                           String donors)
+      throws ArgumentParserException, InterruptedException, IOException,
+      ReferencePreparationException {
     final List<String> options = new ArrayList<>();
 
     options.addAll(Arrays.asList(
@@ -278,6 +262,34 @@ public class GenerateShaderFamilyTest {
           "variant_" + String.format("%03d", i) + ".frag").isFile());
       assertTrue(new File(temporaryFolder.getRoot(),
           "variant_" + String.format("%03d", i) + ".json").isFile());
+    }
+  }
+
+  /**
+   * If the shading language version is 300 es or higher, and there is a fragment shader but no
+   * vertex shader, a trivial vertex shader is added.  This is to give vertex shader transformation
+   * a workout for these shading language versions, and to ensure that attempts are not made to
+   * donate code between shader kinds.
+   */
+  private void maybeAddVertexShaderIfMissing(ShadingLanguageVersion shadingLanguageVersion,
+                                             ShaderJobFileOperations fileOperations,
+                                             File newShaderJobFile) throws IOException {
+    if (!Arrays.asList(ShadingLanguageVersion.ESSL_300, ShadingLanguageVersion.ESSL_320,
+        ShadingLanguageVersion.ESSL_320).contains(shadingLanguageVersion)) {
+      return;
+    }
+    if (fileOperations.doesShaderExist(newShaderJobFile, ShaderKind.FRAGMENT)
+        && !fileOperations.doesShaderExist(newShaderJobFile, ShaderKind.VERTEX)) {
+      final String trivialVertexShader = "#version " + shadingLanguageVersion.getVersionString()
+          + "\n"
+          + "\n"
+          + "layout (location = 0) in vec4 pos;\n"
+          + "\n"
+          + "void main() {\n"
+          + "   gl_Position = pos;\n"
+          + "}\n";
+      fileOperations.writeStringToFile(fileOperations.getUnderlyingShaderFile(newShaderJobFile,
+          ShaderKind.VERTEX), trivialVertexShader);
     }
   }
 

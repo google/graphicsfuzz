@@ -23,8 +23,8 @@
 
 DECLARE_bool(info);
 DECLARE_bool(skip_render);
-DECLARE_string(sanity_before);
-DECLARE_string(sanity_after);
+DECLARE_string(coherence_before);
+DECLARE_string(coherence_after);
 DECLARE_int32(num_render);
 DECLARE_string(png_template);
 
@@ -51,8 +51,8 @@ class VulkanWorker {
   // Shader binaries
   std::vector<uint32_t> vertex_shader_spv_;
   std::vector<uint32_t> fragment_shader_spv_;
-  std::vector<uint32_t> sanity_vertex_shader_spv_;
-  std::vector<uint32_t> sanity_fragment_shader_spv_;
+  std::vector<uint32_t> coherence_vertex_shader_spv_;
+  std::vector<uint32_t> coherence_fragment_shader_spv_;
 
 
   // Vulkan specific

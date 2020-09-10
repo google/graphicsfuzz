@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.common.util;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
@@ -27,16 +30,12 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
 import com.graphicsfuzz.common.ast.stmt.ForStmt;
-import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import java.util.Collections;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.*;
 
 public class SideEffectCheckerTest {
 
@@ -92,7 +91,8 @@ public class SideEffectCheckerTest {
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr expr) {
         assertTrue(expr.getCallee().equals("uaddCarry"));
-        assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310, ShaderKind.FRAGMENT));
+        assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310,
+            ShaderKind.FRAGMENT));
       }
     }.visit(tu);
   }
@@ -117,7 +117,8 @@ public class SideEffectCheckerTest {
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr expr) {
         assertTrue(expr.getCallee().equals("modf"));
-        assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310, ShaderKind.FRAGMENT));
+        assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310,
+            ShaderKind.FRAGMENT));
       }
     }.visit(tu);
   }
@@ -142,7 +143,8 @@ public class SideEffectCheckerTest {
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr expr) {
         assertTrue(expr.getCallee().equals("frexp"));
-        assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310, ShaderKind.FRAGMENT));
+        assertFalse(SideEffectChecker.isSideEffectFree(expr, ShadingLanguageVersion.ESSL_310,
+            ShaderKind.FRAGMENT));
       }
     }.visit(tu);
   }

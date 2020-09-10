@@ -16,6 +16,11 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.graphicsfuzz.generator.transformation.DonateDeadCodeTransformation;
@@ -37,8 +42,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.*;
 
 public class GlslGenerateTest {
 

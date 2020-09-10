@@ -16,6 +16,10 @@
 
 package com.graphicsfuzz.generator.tool;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import java.io.File;
@@ -25,8 +29,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.*;
 
 public class PrepareReferenceTest {
 

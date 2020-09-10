@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
@@ -27,8 +29,6 @@ import com.graphicsfuzz.common.util.RandomWrapper;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class FoldConstantReductionOpportunitiesTest {
 
@@ -306,64 +306,63 @@ public class FoldConstantReductionOpportunitiesTest {
 
   @Test
   public void testRemoveParens() throws Exception {
-    check("void main() {" +
-            "int x, y, z;" +
-            "vec2 v;" +
-            "(x);" +
-            "(x + y) * z;" +
-            "(v).x;" +
-            "(v.x);" +
-            "(v + vec2(2.0)).x;" +
-            "(1.0);" +
-            "(vec2(1.0));" +
-            "(sin(3.0));" +
-            "}",
+    check("void main() {"
+            + "int x, y, z;"
+            + "vec2 v;"
+            + "(x);"
+            + "(x + y) * z;"
+            + "(v).x;"
+            + "(v.x);"
+            + "(v + vec2(2.0)).x;"
+            + "(1.0);"
+            + "(vec2(1.0));"
+            + "(sin(3.0));"
+            + "}",
         6,
-        "void main() {" +
-            "int x, y, z;" +
-            "vec2 v;" +
-            "x;" +
-            "(x + y) * z;" +
-            "v.x;" +
-            "v.x;" +
-            "(v + vec2(2.0)).x;" +
-            "1.0;" +
-            "vec2(1.0);" +
-            "sin(3.0);" +
-            "}"
-        );
+        "void main() {"
+            + "int x, y, z;"
+            + "vec2 v;"
+            + "x;"
+            + "(x + y) * z;"
+            + "v.x;"
+            + "v.x;"
+            + "(v + vec2(2.0)).x;"
+            + "1.0;"
+            + "vec2(1.0);"
+            + "sin(3.0);"
+            + "}");
   }
 
   @Test
   public void testSimplifyVectorLookup() throws Exception {
-    check("" +
-            "int glob;" +
-            "uint foo() { glob++; return 0u; }" +
-            "void main() {" +
-            "int a, b, c;" +
-            "float d, e, f;" +
-            "uint g, h, i;" +
-            "vec2(1.0, 0.0).x;" +
-            "vec3(1.0, d, f).g;" +
-            "ivec4(5, 2, a, b + 2).q;" +
-            "ivec3(a++, 2, 3, 4).t;" +
-            "uvec4(g, h, 5u, 3u).w;" +
-            "uvec4(foo(), h, 5u, 3u).w;" +
-            "}",
+    check(""
+            + "int glob;"
+            + "uint foo() { glob++; return 0u; }"
+            + "void main() {"
+            + "int a, b, c;"
+            + "float d, e, f;"
+            + "uint g, h, i;"
+            + "vec2(1.0, 0.0).x;"
+            + "vec3(1.0, d, f).g;"
+            + "ivec4(5, 2, a, b + 2).q;"
+            + "ivec3(a++, 2, 3, 4).t;"
+            + "uvec4(g, h, 5u, 3u).w;"
+            + "uvec4(foo(), h, 5u, 3u).w;"
+            + "}",
             4,
-        "int glob;" +
-            "uint foo() { glob++; return 0u; }" +
-            "void main() {" +
-            "int a, b, c;" +
-            "float d, e, f;" +
-            "uint g, h, i;" +
-            "(1.0);" +
-            "(d);" +
-            "(b + 2);" +
-            "ivec3(a++, 2, 3, 4).t;" +
-            "(3u);" +
-            "uvec4(foo(), h, 5u, 3u).w;" +
-            "}");
+        "int glob;"
+            + "uint foo() { glob++; return 0u; }"
+            + "void main() {"
+            + "int a, b, c;"
+            + "float d, e, f;"
+            + "uint g, h, i;"
+            + "(1.0);"
+            + "(d);"
+            + "(b + 2);"
+            + "ivec3(a++, 2, 3, 4).t;"
+            + "(3u);"
+            + "uvec4(foo(), h, 5u, 3u).w;"
+            + "}");
   }
 
   @Test
@@ -608,8 +607,9 @@ public class FoldConstantReductionOpportunitiesTest {
         + "  int(-.0);\n" // Not folded as '-' is interpreted as a unary operator
         + "  int(1.1);\n"
         + "  int(-1.1);\n"
-        + "  int(0.0);\n" // The unary '-' is folded away, but it would take another round of
-                          // constant folding to further simplify this to 0.
+        // The unary '-' is folded away, but it would take another round of constant folding to
+        // further simplify this to 0.
+        + "  int(0.0);\n"
         + "  int(.1);\n"
         + "  int(1.00001e1000000);\n"
         + "  uint(-1.0);\n"

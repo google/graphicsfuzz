@@ -72,10 +72,12 @@ public class StripUnusedGlobalsTest {
     final String original = ""
         + "struct S { int a; };"
         + "void main() {"
-        + "  vec2(1.0, 2.0);" // Present to check that struct removal analysis is robust in the
-                              // presence of non-struct type constructors.
-        + "  S(3);" // Present to check that the use of a type constructor is enough to ensure that
-                    // "S" does not get removed.
+        // Present to check that struct removal analysis is robust in the presence of non-struct
+        // type constructors.
+        + "  vec2(1.0, 2.0);"
+        // Present to check that the use of a type constructor is enough to ensure that "S" does not
+        // get removed.
+        + "  S(3);"
         + "}";
     final TranslationUnit tu = ParseHelper.parse(original);
     StripUnusedGlobals.strip(tu);

@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.tester;
 
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.Obfuscator;
@@ -26,8 +28,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertTrue;
 
 public class ObfuscatorUnitTest {
 

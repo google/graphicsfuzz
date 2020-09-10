@@ -40,6 +40,7 @@ BINARY_RECIPES_PREFIX = "//binaries"
 LATEST_GRAPHICSFUZZ_ARTIFACT = f"{BINARY_RECIPES_PREFIX}/graphicsfuzz_v1.2.1"
 
 GLSLANG_VALIDATOR_NAME = "glslangValidator"
+SPIRV_FUZZ_NAME = "spirv-fuzz"
 SPIRV_OPT_NAME = "spirv-opt"
 SPIRV_VAL_NAME = "spirv-val"
 SPIRV_DIS_NAME = "spirv-dis"

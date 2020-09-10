@@ -17,7 +17,7 @@
 package com.graphicsfuzz.common.ast.expr;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import org.junit.Before;
@@ -25,40 +25,40 @@ import org.junit.Test;
 
 public class TernaryExprTest {
 
-  private VariableIdentifierExpr x;
-  private VariableIdentifierExpr y;
-  private VariableIdentifierExpr z;
+  private VariableIdentifierExpr conditionVar;
+  private VariableIdentifierExpr thenVar;
+  private VariableIdentifierExpr elseVar;
 
   @Before
   public void setUp() {
-    x = new VariableIdentifierExpr("x");
-    y = new VariableIdentifierExpr("y");
-    z = new VariableIdentifierExpr("z");
+    conditionVar = new VariableIdentifierExpr("x");
+    thenVar = new VariableIdentifierExpr("y");
+    elseVar = new VariableIdentifierExpr("z");
   }
 
   private TernaryExpr makeTernary() {
-    return new TernaryExpr(x, y, z);
+    return new TernaryExpr(conditionVar, thenVar, elseVar);
   }
 
   @Test
   public void getTest() throws Exception {
     TernaryExpr te = makeTernary();
-    assertEquals(x, te.getTest());
-    assertEquals(x, te.getChild(0));
+    assertEquals(conditionVar, te.getTest());
+    assertEquals(conditionVar, te.getChild(0));
   }
 
   @Test
   public void getThenExpr() throws Exception {
     TernaryExpr te = makeTernary();
-    assertEquals(y, te.getThenExpr());
-    assertEquals(y, te.getChild(1));
+    assertEquals(thenVar, te.getThenExpr());
+    assertEquals(thenVar, te.getChild(1));
   }
 
   @Test
   public void getElseExpr() throws Exception {
     TernaryExpr te = makeTernary();
-    assertEquals(z, te.getElseExpr());
-    assertEquals(z, te.getChild(2));
+    assertEquals(elseVar, te.getElseExpr());
+    assertEquals(elseVar, te.getChild(2));
   }
 
   @Test
@@ -91,25 +91,28 @@ public class TernaryExprTest {
   public void testClone() throws Exception {
     TernaryExpr te = makeTernary();
     TernaryExpr te2 = te.clone();
-    assertFalse(te == te2);
-    assertFalse(te.getTest() == te2.getTest());
-    assertFalse(te.getThenExpr() == te2.getThenExpr());
-    assertFalse(te.getElseExpr() == te2.getElseExpr());
+    assertNotSame(te, te2);
+    assertNotSame(te.getTest(), te2.getTest());
+    assertNotSame(te.getThenExpr(), te2.getThenExpr());
+    assertNotSame(te.getElseExpr(), te2.getElseExpr());
 
-    assertEquals(((VariableIdentifierExpr) te.getTest()).getName(), ((VariableIdentifierExpr) te2.getTest()).getName());
-    assertEquals(((VariableIdentifierExpr) te.getThenExpr()).getName(), ((VariableIdentifierExpr) te2.getThenExpr()).getName());
-    assertEquals(((VariableIdentifierExpr) te.getElseExpr()).getName(), ((VariableIdentifierExpr) te2.getElseExpr()).getName());
+    assertEquals(((VariableIdentifierExpr) te.getTest()).getName(),
+        ((VariableIdentifierExpr) te2.getTest()).getName());
+    assertEquals(((VariableIdentifierExpr) te.getThenExpr()).getName(),
+        ((VariableIdentifierExpr) te2.getThenExpr()).getName());
+    assertEquals(((VariableIdentifierExpr) te.getElseExpr()).getName(),
+        ((VariableIdentifierExpr) te2.getElseExpr()).getName());
   }
 
   @Test
   public void setChild() throws Exception {
     TernaryExpr te = makeTernary();
-    te.setChild(0, z);
-    te.setChild(1, x);
-    te.setChild(2, y);
-    assertEquals(z, te.getTest());
-    assertEquals(x, te.getThenExpr());
-    assertEquals(y, te.getElseExpr());
+    te.setChild(0, elseVar);
+    te.setChild(1, conditionVar);
+    te.setChild(2, thenVar);
+    assertEquals(elseVar, te.getTest());
+    assertEquals(conditionVar, te.getThenExpr());
+    assertEquals(thenVar, te.getElseExpr());
   }
 
   @Test
@@ -124,7 +127,7 @@ public class TernaryExprTest {
 
   @Test(expected = IndexOutOfBoundsException.class)
   public void setChildBad() {
-    makeTernary().setChild(3, x);
+    makeTernary().setChild(3, conditionVar);
   }
 
 }

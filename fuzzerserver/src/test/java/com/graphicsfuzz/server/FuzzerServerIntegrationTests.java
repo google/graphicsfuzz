@@ -62,10 +62,10 @@ public class FuzzerServerIntegrationTests {
     final FuzzerServiceImpl fuzzerServiceImpl = new FuzzerServiceImpl(processing, executorService);
     this.fuzzerService = fuzzerServiceImpl;
     this.fuzzerServiceManager = new FuzzerServiceManagerImpl(fuzzerServiceImpl,
-          (command, manager) -> {
-            throw new RuntimeException("TODO: Need to decide what dispatcher to "
-                  + "provide for these tests.");
-          });
+        (command, manager) -> {
+          throw new RuntimeException("TODO: Need to decide what dispatcher to "
+                + "provide for these tests.");
+        });
   }
 
   @Test

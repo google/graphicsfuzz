@@ -34,9 +34,9 @@ PREPROCESSOR_CACHE_HIT_STRING = "Preprocessor cache: hit"
 
 
 def check_common_summary_files(summary_dir: Path) -> None:
-    reduced_dir = summary_dir / "reduced"
+    reduced_dir = summary_dir / "reduced_1"
     assert reduced_dir.is_dir()
-    stage_one_reduced_result = summary_dir / "reduced_stage_one_result" / "STATUS"
+    stage_one_reduced_result = summary_dir / "reduced_1_result" / "STATUS"
     assert stage_one_reduced_result.is_file()
 
 
@@ -144,7 +144,7 @@ def test_fuzz_and_reduce_swift_shader_bug_no_opt_regex_miss() -> None:
             util.file_read_text(log_path).count(PREPROCESSOR_CACHE_HIT_STRING) == 1
         ), f"{log_path}"
         summary_dir = test_dirs[0] / "summary"
-        reduced_dir = summary_dir / "reduced"
+        reduced_dir = summary_dir / "reduced_1"
         assert not reduced_dir.is_dir()  # No reduction because of regex below.
 
     settings = Settings()

@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
@@ -24,8 +26,6 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class DestructifyReductionOpportunitiesTest {
 
@@ -40,7 +40,8 @@ public class DestructifyReductionOpportunitiesTest {
           + "  _GLF_struct_1 _GLF_struct_replacement_2 = _GLF_struct_1(1.0);\n"
           + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
-    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     // There should be no opportunities as there is already a variable called 'dist' in scope
     assertEquals(0, ops.size());
@@ -69,10 +70,12 @@ public class DestructifyReductionOpportunitiesTest {
           + "  }\n"
           + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
-    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(false,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
-    // There should be one opportunity as variable dist is in a different scope and not used in this scope.
+    // There should be one opportunity as variable dist is in a different scope and not used in this
+    // scope.
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expected)),
@@ -93,7 +96,8 @@ public class DestructifyReductionOpportunitiesTest {
           + "  }\n"
           + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
-    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
           new ReducerContext(false,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     // There should be no opportunities as there is already a variable called 'dist' in scope,
@@ -111,8 +115,11 @@ public class DestructifyReductionOpportunitiesTest {
           + "};\n"
           + "void main() {\n"
           + "  float GLF_live6formuparam = 31.97;\n"
-          + "  _GLF_struct_65 _GLF_struct_replacement_66 = _GLF_struct_65(vec3(1.0), mat2(1.0), bvec3(true), bvec3(true));\n"
-          + "  _GLF_struct_replacement_66.GLF_live6p2 = abs(_GLF_struct_replacement_66.GLF_live6p2) / dot(_GLF_struct_replacement_66.GLF_live6p2, _GLF_struct_replacement_66.GLF_live6p2) - GLF_live6formuparam;\n"
+          + "  _GLF_struct_65 _GLF_struct_replacement_66 = _GLF_struct_65(vec3(1.0), mat2(1.0), "
+                  + "bvec3(true), bvec3(true));\n"
+          + "  _GLF_struct_replacement_66.GLF_live6p2 = abs(_GLF_struct_replacement_66.GLF_live6p2)"
+                  + " / dot(_GLF_struct_replacement_66.GLF_live6p2, _GLF_struct_replacement_66"
+                  + ".GLF_live6p2) - GLF_live6formuparam;\n"
           + "}\n";
     final String expected = "struct _GLF_struct_65 {\n"
           + "    vec3 GLF_live6p2;\n"
@@ -123,10 +130,12 @@ public class DestructifyReductionOpportunitiesTest {
           + "void main() {\n"
           + "  float GLF_live6formuparam = 31.97;\n"
           + "  vec3 GLF_live6p2 = vec3(1.0);\n"
-          + "  GLF_live6p2 = abs(GLF_live6p2) / dot(GLF_live6p2, GLF_live6p2) - GLF_live6formuparam;\n"
+          + "  GLF_live6p2 = abs(GLF_live6p2) / dot(GLF_live6p2, GLF_live6p2) - "
+          + "GLF_live6formuparam;\n"
           + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
-    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
+    final List<DestructifyReductionOpportunity> ops = DestructifyReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
           ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
     // There should be no opportunities as there is already a variable called 'dist' in scope,
     // and it is used.

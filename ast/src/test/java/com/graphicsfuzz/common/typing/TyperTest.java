@@ -16,6 +16,13 @@
 
 package com.graphicsfuzz.common.typing;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.Initializer;
@@ -62,13 +69,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class TyperTest {
 
@@ -143,22 +143,21 @@ public class TyperTest {
 
     TranslationUnit tu = ParseHelper.parse(prog);
 
-    int actualCount =
-          new NullCheckTyper(tu) {
+    int actualCount = new NullCheckTyper(tu) {
 
-            private int count;
+      private int count;
 
-            public int getCount() {
-              return count;
-            }
+      private int getCount() {
+        return count;
+      }
 
-            @Override
-            public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
-              super.visitMemberLookupExpr(memberLookupExpr);
-              assertNotNull(lookupType(memberLookupExpr));
-              count++;
-            }
-          }.getCount();
+      @Override
+      public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
+          super.visitMemberLookupExpr(memberLookupExpr);
+          assertNotNull(lookupType(memberLookupExpr));
+          count++;
+      }
+    }.getCount();
 
     assertEquals(3, actualCount);
 
@@ -466,7 +465,7 @@ public class TyperTest {
   }
 
   @Test
-  public void testGLWorkGroupSizeTyped() throws Exception {
+  public void testGlWorkGroupSizeTyped() throws Exception {
     checkComputeShaderBuiltin(
         "gl_WorkGroupSize",
         OpenGlConstants.GL_WORK_GROUP_SIZE,
@@ -475,7 +474,7 @@ public class TyperTest {
   }
 
   @Test
-  public void testGlWorkGroupIDTyped() throws Exception {
+  public void testGlWorkGroupIdTyped() throws Exception {
     checkComputeShaderBuiltin(
         "gl_WorkGroupID",
         OpenGlConstants.GL_WORK_GROUP_ID,
@@ -484,7 +483,7 @@ public class TyperTest {
   }
 
   @Test
-  public void testGlLocalInvocationIDTyped() throws Exception {
+  public void testGlLocalInvocationIdTyped() throws Exception {
     checkComputeShaderBuiltin(
         "gl_LocalInvocationID",
         OpenGlConstants.GL_LOCAL_INVOCATION_ID,
@@ -493,7 +492,7 @@ public class TyperTest {
   }
 
   @Test
-  public void testGlGlobalInvocationIDTyped() throws Exception {
+  public void testGlGlobalInvocationIdTyped() throws Exception {
     checkComputeShaderBuiltin(
         "gl_GlobalInvocationID",
         OpenGlConstants.GL_GLOBAL_INVOCATION_ID,
@@ -509,6 +508,7 @@ public class TyperTest {
         BasicType.UINT,
         TypeQualifier.SHADER_INPUT);
   }
+
   @Test
   public void testOctalIntLiteralTyped() throws Exception {
     final TranslationUnit tu = ParseHelper.parse("#version 300 es\n"
@@ -793,7 +793,7 @@ public class TyperTest {
       @Override
       public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
         super.visitVariableIdentifierExpr(variableIdentifierExpr);
-        assert(variableIdentifierExpr.getName().equals("A"));
+        assertEquals("A", variableIdentifierExpr.getName());
         final Type type = lookupType(variableIdentifierExpr);
         assertTrue(type.hasQualifier(TypeQualifier.CONST));
         assertTrue(type.getWithoutQualifiers() instanceof ArrayType);
@@ -1101,7 +1101,8 @@ public class TyperTest {
     result.append("#endif\n");
     int counter = 0;
     for (String name : TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind).keySet()) {
-      for (FunctionPrototype fp : TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind).get(name)) {
+      for (FunctionPrototype fp : TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
+          .get(name)) {
         counter++;
         result.append(fp.getReturnType() + " test" + counter + "_" + fp.getName() + "(");
         boolean first = true;

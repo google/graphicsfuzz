@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
@@ -31,8 +33,6 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
 
   @Test
@@ -41,7 +41,8 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     // state such that the uniform is not used.
     final String emptyShader = "void main() { }";
     final PipelineInfo pipelineInfo = new PipelineInfo();
-    pipelineInfo.addUniform("unused", BasicType.FLOAT, Optional.empty(), Collections.singletonList(10.0));
+    pipelineInfo.addUniform("unused", BasicType.FLOAT, Optional.empty(),
+        Collections.singletonList(10.0));
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         pipelineInfo, ParseHelper.parse(emptyShader));
     // Check that initially there is indeed one uniform in the pipeline state.
@@ -81,7 +82,8 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
         RemoveRedundantUniformMetadataReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                    new RandomWrapper(0),
                 new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -99,7 +101,8 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     // of the uniform would have to actually disappear first.
     final String emptyShader = "uniform float unused; void main() { }";
     final PipelineInfo pipelineInfo = new PipelineInfo();
-    pipelineInfo.addUniform("unused", BasicType.FLOAT, Optional.empty(), Collections.singletonList(10.0));
+    pipelineInfo.addUniform("unused", BasicType.FLOAT, Optional.empty(),
+        Collections.singletonList(10.0));
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
         pipelineInfo, ParseHelper.parse(emptyShader));
     // Check that initially there is indeed one uniform in the pipeline state.

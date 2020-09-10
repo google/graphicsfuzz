@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.tester;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
@@ -32,14 +34,12 @@ import com.graphicsfuzz.generator.transformation.AddWrappingConditionalTransform
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.reducer.reductionopportunities.IReductionOpportunity;
-import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
 import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
+import com.graphicsfuzz.reducer.reductionopportunities.ReductionOpportunities;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class MiscellaneousGenerateThenReduceTest {
 
@@ -73,7 +73,7 @@ public class MiscellaneousGenerateThenReduceTest {
 
     System.out.println(PrettyPrinterVisitor.prettyPrintAsString(tu));
 
-    while(true) {
+    while (true) {
       List<IReductionOpportunity> ops = ReductionOpportunities
           .getReductionOpportunities(new GlslShaderJob(Optional.empty(),
                   new PipelineInfo(), tu),
@@ -86,7 +86,7 @@ public class MiscellaneousGenerateThenReduceTest {
     }
 
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program)),
-      PrettyPrinterVisitor.prettyPrintAsString(tu));
+        PrettyPrinterVisitor.prettyPrintAsString(tu));
   }
 
 }

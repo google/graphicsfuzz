@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.common.util;
 
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.transformreduce.GlslShaderJob;
@@ -27,8 +29,6 @@ import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertTrue;
 
 public class FragmentShaderJobToVertexShaderJobTest {
   @Rule

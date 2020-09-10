@@ -245,3 +245,5 @@ gf
 SIGSEGV
 SIGABRT
 DOTALL
+shrinker
+quicksort

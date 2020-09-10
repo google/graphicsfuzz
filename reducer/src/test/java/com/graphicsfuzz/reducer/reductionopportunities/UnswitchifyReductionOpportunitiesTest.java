@@ -16,6 +16,8 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
+import static org.junit.Assert.assertEquals;
+
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.IdGenerator;
@@ -24,16 +26,14 @@ import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 public class UnswitchifyReductionOpportunitiesTest {
 
   @Test
   public void testNotInjected() throws Exception {
     final String program = "void foo(int x) { switch(x) { case 0: default: break; } }";
     final TranslationUnit tu = ParseHelper.parse(program);
-    List<UnswitchifyReductionOpportunity> ops =
-        UnswitchifyReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+    List<UnswitchifyReductionOpportunity> ops = UnswitchifyReductionOpportunities
+            .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
               new ReducerContext(false,
               ShadingLanguageVersion.GLSL_130,
                     new RandomWrapper(0),

@@ -16,6 +16,9 @@
 
 package com.graphicsfuzz.tester;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ImageUtil;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
@@ -29,9 +32,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public final class Util {
 

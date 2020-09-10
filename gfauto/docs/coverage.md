@@ -1,4 +1,12 @@
-# Coverage
+# Coverage tools
+
+`gfauto` includes a set of tools for generating differential
+code coverage.
+The example below demonstrates how to generate and view
+differential code coverage on the SwiftShader Vulkan driver,
+comparing a run of `gfauto_fuzz` vs. a run of dEQP.
+
+The main coverage tools are executed near the end of the example script.
 
 ```sh
 # Make sure gfauto_* is available.
@@ -86,19 +94,36 @@ cd $COV_ROOT
 
 gfauto_cov_from_gcov -h
 # Check help text.
-# You may need to add --gcov_uses_json depending on your version of GCC.
-# This flag has not been tested yet.
+# You need to add --gcov_uses_json for GCC 9+.
 
+# Process the .gcda files from the dEQP run into "deqp.cov".
+# Do not replace "PROC_ID" with a number; gfauto understands this special
+# directory name.
 gfauto_cov_from_gcov --out deqp.cov $BUILD_DIR $COV_ROOT/prefix_deqp/PROC_ID --num_threads 32
 
+# Process the .gcda files from the gfauto run into "gfauto.cov".
+# Do not replace "PROC_ID" with a number; gfauto understands this special
+# directory name.
 gfauto_cov_from_gcov --out gfauto.cov $BUILD_DIR $COV_ROOT/prefix_gfauto/PROC_ID --num_threads 32
 
+# Output just the *newly-covered* lines from the gfauto run into "new.cov".
 gfauto_cov_new deqp.cov gfauto.cov new.cov
 
+# Output two parallel source directories, "new_cov_zero/" and "new_cov/".
+# Each directory contains the original project source tree with each line
+# prefixed with an execution count.
+# The parallel source directories can be compared with any existing diff
+# viewer.
 gfauto_cov_to_source --coverage_out new_cov --zero_coverage_out new_cov_zero --cov new.cov $BUILD_DIR
 
+# E.g. We can use the meld diff viewer.
 # Note: Install meld if needed.
 
 meld new_cov_zero/ new_cov/
+
+# The lines that are "different" are the newly-covered lines. The execution
+# count on the right (in "new_cov/") is the execution count for the line from
+# the gfauto run. The execution count from the dEQP run is zero (because only
+# newly-covered lines are highlighted in the diff viewer).
 
 ```
