@@ -196,7 +196,7 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
         return group
 
     # AddressSanitizer error.
-    match: Optional[Match[str]] = re.search(PATTERN_ADDRESS_SANITIZER_ERROR, log_contents)
+    match = re.search(PATTERN_ADDRESS_SANITIZER_ERROR, log_contents)
     if match:
         group = match.group(1) + "_" + match.group(2)
         group = clean_up(group)
