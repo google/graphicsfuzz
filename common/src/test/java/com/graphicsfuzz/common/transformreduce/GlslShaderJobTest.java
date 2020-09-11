@@ -538,7 +538,7 @@ public class GlslShaderJobTest {
 
   private static final String FRAG_SHADER_WITH_SAMPLERS_NO_BINDINGS = ""
       + "uniform float b;"
-      + "uniform sampler3D ftex[2];"
+      + "uniform sampler3D ftex;"
       + "uniform float f[2];"
       + "void main() { }";
 
@@ -579,7 +579,7 @@ public class GlslShaderJobTest {
 
   private static final String FRAG_SHADER_WITH_SAMPLERS_WITH_BINDINGS = ""
       + "layout(set = 0, binding = 2) uniform buf2 { float b; };"
-      + "layout(set = 0, binding = 3) uniform sampler3D ftex[2];"
+      + "layout(set = 0, binding = 3) uniform sampler3D ftex;"
       + "layout(set = 0, binding = 4) uniform buf4 { float f[2]; };"
       + "void main() { }";
 

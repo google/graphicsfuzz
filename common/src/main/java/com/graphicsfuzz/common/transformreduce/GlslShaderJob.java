@@ -47,7 +47,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
-
 public class GlslShaderJob implements ShaderJob {
 
   private final Optional<String> license;
@@ -118,8 +117,9 @@ public class GlslShaderJob implements ShaderJob {
         if (decl instanceof VariablesDeclaration
             && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
           final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
-          // We cannot yet deal with uniforms with array base types, such as 'uniform float[5] A;'.
-          assert !(variablesDeclaration.getBaseType().getWithoutQualifiers() instanceof ArrayType);
+          assert !(variablesDeclaration.getBaseType().getWithoutQualifiers() instanceof ArrayType)
+              : "We cannot yet deal with uniforms with array base types, such as "
+              + "'uniform float[5] A;'.";
           for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
             final String uniformName = declInfo.getName();
             assert pipelineInfo.hasUniform(uniformName);
@@ -132,16 +132,14 @@ public class GlslShaderJob implements ShaderJob {
                 nextBinding++;
               } while (usedBindings.contains(nextBinding));
             }
-            // The member's type is the combination of the base type and array info for the decl.
-            // We clone this type, having created it, as we will use the same base type for other
-            // decls in this variables declaration and we do not want to have aliasing.
-            final Type baseType = variablesDeclaration.getBaseType();
-            final Type memberType =
-                Typer.combineBaseTypeAndArrayInfo(baseType,
-                    declInfo.getArrayInfo()).clone();
-            final Type targetType = ((QualifiedType)baseType).getTargetType();
 
+            final Type baseType = variablesDeclaration.getBaseType();
+            final Type targetType = baseType.getWithoutQualifiers();
             if (targetType instanceof SamplerType) {
+              assert !declInfo.hasArrayInfo() : "We cannot yet deal with arrays of samplers.";
+              assert !pipelineInfo.isPushConstant(uniformName) : "A sampler cannot be a push "
+                  + "constant";
+
               // Samplers may not exist as part of uniform blocks.
               final int binding = pipelineInfo.getBinding(uniformName);
               newTopLevelDeclarations.add(
@@ -154,6 +152,12 @@ public class GlslShaderJob implements ShaderJob {
                           TypeQualifier.UNIFORM
                           )), declInfo));
             } else {
+              // The member's type is the combination of the base type and array info for the decl.
+              // We clone this type, having created it, as we will use the same base type for other
+              // decls in this variables declaration and we do not want to have aliasing.
+              final Type memberType =
+                  Typer.combineBaseTypeAndArrayInfo(baseType,
+                      declInfo.getArrayInfo()).clone();
 
               ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
 
@@ -221,23 +225,26 @@ public class GlslShaderJob implements ShaderJob {
       final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
       for (Declaration decl : tu.getTopLevelDeclarations()) {
 
-        if (decl instanceof VariablesDeclaration
-            && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
-          final Type targetType = ((QualifiedType)((VariablesDeclaration) decl).getBaseType())
-              .getTargetType();
-          VariableDeclInfo declInfo = ((VariablesDeclaration) decl).getDeclInfos().get(0);
+        if (decl instanceof VariablesDeclaration && ((VariablesDeclaration) decl).getBaseType()
+            .hasQualifier(TypeQualifier.UNIFORM)) {
+          final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
+          final Type targetType = variablesDeclaration.getBaseType().getWithoutQualifiers();
+          assert targetType instanceof SamplerType : "Only samplers may exist as top-level "
+              + "uniforms with bindings.";
+          assert variablesDeclaration.getNumDecls() == 1 : "A bound sampler must appear on its "
+              + "own.";
+          final VariableDeclInfo declInfo = variablesDeclaration.getDeclInfos().get(0);
           newTopLevelDeclarations.add(
               new VariablesDeclaration(
                   new QualifiedType(targetType,
                       Collections.singletonList(
                           TypeQualifier.UNIFORM
                       )), declInfo));
-
         } else if (decl instanceof InterfaceBlock && ((InterfaceBlock) decl).getInterfaceQualifier()
             .equals(TypeQualifier.UNIFORM)) {
           final InterfaceBlock interfaceBlock = (InterfaceBlock) decl;
-          // We are assuming that each uniform block wraps precisely one uniform.
-          assert interfaceBlock.getMemberNames().size() == 1;
+          assert interfaceBlock.getMemberNames().size() == 1 : "We assume that each uniform block"
+              + " wraps precisely one uniform.";
 
           // Split the block member's type into a base type and array info.
           final ImmutablePair<Type, ArrayInfo> baseTypeAndArrayInfo =
