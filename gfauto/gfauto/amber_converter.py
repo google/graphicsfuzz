@@ -312,27 +312,27 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
         "glUniform2ui": "vec2<uint32>",
         "glUniform3ui": "vec3<uint32>",
         "glUniform4ui": "vec4<uint32>",
-        "glUniform1fv": "float",
-        "glUniform2fv": "vec2<float>",
-        "glUniform3fv": "vec3<float>",
-        "glUniform4fv": "vec4<float>",
-        "glUniform1iv": "int32",
-        "glUniform2iv": "vec2<int32>",
-        "glUniform3iv": "vec3<int32>",
-        "glUniform4iv": "vec4<int32>",
-        "glUniform1uiv": "int32",
-        "glUniform2uiv": "vec2<uint32>",
-        "glUniform3uiv": "vec3<uint32>",
-        "glUniform4uiv": "vec4<uint32>",
-        "glUniformMatrix2fv": "mat2x2<float>",
-        "glUniformMatrix3fv": "mat3x3<float>",
-        "glUniformMatrix4fv": "mat4x4<float>",
-        "glUniformMatrix2x3fv": "mat2x3<float>",
-        "glUniformMatrix3x2fv": "mat3x2<float>",
-        "glUniformMatrix2x4fv": "mat2x4<float>",
-        "glUniformMatrix4x2fv": "mat4x2<float>",
-        "glUniformMatrix3x4fv": "mat3x4<float>",
-        "glUniformMatrix4x3fv": "mat4x3<float>",
+        "glUniform1fv": "float[]",
+        "glUniform2fv": "vec2<float>[]",
+        "glUniform3fv": "vec3<float>[]",
+        "glUniform4fv": "vec4<float>[]",
+        "glUniform1iv": "int32[]",
+        "glUniform2iv": "vec2<int32>[]",
+        "glUniform3iv": "vec3<int32>[]",
+        "glUniform4iv": "vec4<int32>[]",
+        "glUniform1uiv": "int32[]",
+        "glUniform2uiv": "vec2<uint32>[]",
+        "glUniform3uiv": "vec3<uint32>[]",
+        "glUniform4uiv": "vec4<uint32>[]",
+        "glUniformMatrix2fv": "mat2x2<float>[]",
+        "glUniformMatrix3fv": "mat3x3<float>[]",
+        "glUniformMatrix4fv": "mat4x4<float>[]",
+        "glUniformMatrix2x3fv": "mat2x3<float>[]",
+        "glUniformMatrix3x2fv": "mat3x2<float>[]",
+        "glUniformMatrix2x4fv": "mat2x4<float>[]",
+        "glUniformMatrix4x2fv": "mat4x2<float>[]",
+        "glUniformMatrix3x4fv": "mat3x4<float>[]",
+        "glUniformMatrix4x3fv": "mat4x3<float>[]",
     }
 
     uniforms = json.loads(uniform_json_contents)
@@ -356,7 +356,7 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
         uniform_type = uniform_types[func]
 
         result += f"# {name}\n"
-        result += f"BUFFER {prefix}_{name} DATA_TYPE {uniform_type} DATA\n"
+        result += f"BUFFER {prefix}_{name} DATA_TYPE {uniform_type} STD140 DATA\n"
         for arg in entry["args"]:
             result += f" {arg}"
         result += "\n"
