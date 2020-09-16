@@ -260,7 +260,13 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
     for name, entry in uniforms.items():
         if name.startswith("$"):
             continue
-        if "binding" in entry.keys():
+        if entry["func"] in ["sampler2D", "sampler3D"]:
+            assert "texture" in entry.keys()
+            if entry["texture"] == "DEFAULT":
+                result += f"  BIND BUFFER default_texture AS combined_image_sampler SAMPLER {prefix}_{name} DESCRIPTOR_SET 0 BINDING 0\n"
+            else:
+                raise AssertionError("Non-default textures not implemented")
+        elif "binding" in entry.keys():
             assert "push_constant" not in entry.keys()
             result += f"  BIND BUFFER {prefix}_{name} AS uniform DESCRIPTOR_SET 0 BINDING {entry['binding']}\n"
         elif "push_constant" in entry.keys():
@@ -333,6 +339,8 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
         "glUniformMatrix4x2fv": "mat4x2<float>[]",
         "glUniformMatrix3x4fv": "mat3x4<float>[]",
         "glUniformMatrix4x3fv": "mat4x3<float>[]",
+        "sampler2D": "sampler",
+        "sampler3D": "sampler",
     }
 
     uniforms = json.loads(uniform_json_contents)
@@ -355,12 +363,17 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
             raise ValueError("Error: unknown uniform type for function: " + func)
         uniform_type = uniform_types[func]
 
-        result += f"# {name}\n"
-        result += f"BUFFER {prefix}_{name} DATA_TYPE {uniform_type} STD140 DATA\n"
-        for arg in entry["args"]:
-            result += f" {arg}"
-        result += "\n"
-        result += "END\n"
+        if uniform_type == "sampler":
+            result += f"# {name}\n"
+            result += f"SAMPLER {prefix}_{name}\n"
+            result += "\n"
+        else:
+            result += f"# {name}\n"
+            result += f"BUFFER {prefix}_{name} DATA_TYPE {uniform_type} STD140 DATA\n"
+            for arg in entry["args"]:
+                result += f" {arg}"
+            result += "\n"
+            result += "END\n"
 
     return result
 
@@ -620,6 +633,41 @@ def get_amber_script_shader_def(shader: Shader, name: str) -> str:
     return result
 
 
+def get_amber_texture_generation_shader_def() -> str:
+    result = ""
+    result += "\nSHADER vertex texgen_vert PASSTHROUGH\n"
+    result += "\n"
+    result += "SHADER fragment texgen_frag GLSL\n"
+    result += "#version 430\n"
+    result += "precision highp float;\n"
+    result += "\n"
+    result += "layout(location = 0) out vec4 _GLF_color;\n"
+    result += "\n"
+    result += "void main()\n"
+    result += "{\n"
+    result += " _GLF_color = vec4(\n"
+    result += " gl_FragCoord.x * (1.0 / 256.0),\n"
+    result += " (int(gl_FragCoord.x) ^ int(gl_FragCoord.y)) * (1.0 / 256.0),\n"
+    result += " gl_FragCoord.y * (1.0 / 256.0),\n"
+    result += " 1.0);\n"
+    result += "}\n"
+    result += "END\n"
+    return result
+
+
+def get_amber_texture_generation_pipeline_def() -> str:
+    result = ""
+    result += "BUFFER default_texture FORMAT B8G8R8A8_UNORM\n"
+    result += "\n"
+    result += "PIPELINE graphics texgen_pipeline\n"
+    result += "  ATTACH texgen_vert\n"
+    result += "  ATTACH texgen_frag\n"
+    result += "  FRAMEBUFFER_SIZE 256 256\n"
+    result += "  BIND BUFFER default_texture AS color LOCATION 0\n"
+    result += "END\n"
+    return result
+
+
 # noinspection DuplicatedCode
 def graphics_shader_job_amber_test_to_amber_script(
     shader_job_amber_test: ShaderJobBasedAmberTest, amberfy_settings: AmberfySettings
@@ -637,6 +685,10 @@ def graphics_shader_job_amber_test_to_amber_script(
         # Guaranteed, and needed for type checker.
         assert isinstance(job, GraphicsShaderJob)  # noqa
 
+        texture_generation = False
+        if "default_texture" in job.uniform_bindings:
+            texture_generation = True
+
         prefix = job.name_prefix
 
         vertex_shader_name = f"{prefix}_vertex_shader"
@@ -648,12 +700,18 @@ def graphics_shader_job_amber_test_to_amber_script(
 
         result += get_amber_script_shader_def(job.fragment_shader, fragment_shader_name)
 
+        if texture_generation:
+            result += get_amber_texture_generation_shader_def()
+
         # Define uniforms for shader job.
 
         result += "\n"
         result += job.uniform_definitions
 
         result += f"\nBUFFER {prefix}_framebuffer FORMAT B8G8R8A8_UNORM\n"
+
+        if texture_generation:
+            result += get_amber_texture_generation_pipeline_def()
 
         # Create a pipeline.
 
@@ -667,6 +725,11 @@ def graphics_shader_job_amber_test_to_amber_script(
         result += f"CLEAR_COLOR {prefix}_pipeline 0 0 0 255\n"
 
         # Run the pipeline.
+
+        if texture_generation:
+            result += "\nCLEAR_COLOR texgen_pipeline 0 0 0 255\n"
+            result += "CLEAR texgen_pipeline\n"
+            result += "RUN texgen_pipeline DRAW_RECT POS 0 0  SIZE 256 256\n"
 
         result += f"\nCLEAR {prefix}_pipeline\n"
         result += f"RUN {prefix}_pipeline {job.draw_command}\n"
