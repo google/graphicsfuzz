@@ -155,3 +155,38 @@ bb.0..entry:
 """
     signature = signature_util.get_signature_from_log_contents(log)
     assert signature == "Using_an_undefined_physical_register"
+
+
+def test_llpc_assertion_failure() -> None:
+    log = """
+amdllpc: /home/runner/work/gfbuild-llpc/gfbuild-llpc/vulkandriver/drivers/llvm-project/llvm/include/llvm/Support/Alignment.h:77: llvm::Align::Align(uint64_t): Assertion `Value > 0 && "Value must not be 0"' failed.
+PLEASE submit a bug report to https://bugs.llvm.org/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: /data/binaries/built_in/gfbuild-llpc-c9c9a410565ece5c5a8735ddef7c8b24a8446db6-Linux_x64_Debug/llpc/bin/amdllpc -gfxip=9.0.0 -verify-ir -auto-layout-desc llvmAlignAlignuint_t_Assertion/9aa1fdd9_no_opt_test_amdllpc/results/amdllpc/result/variant/1_spirv/shader.frag.spv
+1.	Running pass 'CallGraph Pass Manager' on module 'lgcPipeline'.
+2.	Running pass 'AMDGPU DAG->DAG Pattern Instruction Selection' on function '@_amdgpu_ps_main'
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "llvmAlignAlignuint_t_Assertion"
+
+
+def test_asan_error() -> None:
+    log = """
+=================================================================
+==2244339==ERROR: AddressSanitizer: use-after-poison on address 0x62500192def0 at pc 0x000006da0c70 bp 0x7ffd691028c0 sp 0x7ffd691028b8
+READ of size 8 at 0x62500192def0 thread T0
+    #0 0x6da0c6f in getParent /vulkandriver/drivers/llvm-project/llvm/include/llvm/CodeGen/MachineInstr.h:281:43
+    #1 0x6da0c6f in llvm::LiveVariables::VarInfo::findKill(llvm::MachineBasicBlock const*) const /vulkandriver/drivers/llvm-project/llvm/lib/CodeGen/LiveVariables.cpp:62:19
+
+0x62500192def0 is located 3568 bytes inside of 8192-byte region [0x62500192d100,0x62500192f100)
+allocated by thread T0 here:
+    #0 0x7f01fb89331d in operator new(unsigned long) /build/llvm-toolchain-9-uSl4bC/llvm-toolchain-9-9/projects/compiler-rt/lib/asan/asan_new_delete.cc:99:3
+    #1 0x54dc395 in Allocate /vulkandriver/drivers/llvm-project/llvm/include/llvm/Support/AllocatorBase.h:85:12
+
+SUMMARY: AddressSanitizer: use-after-poison /vulkandriver/drivers/llvm-project/llvm/include/llvm/CodeGen/MachineInstr.h:281:43 in getParent
+Shadow bytes around the buggy address:
+  0x0c4a8031db80: f7 00 00 00 00 00 00 00 00 f7 00 00 00 00 00 00
+  0x0c4a8031db90: 00 00 f7 00 00 00 00 00 00 00 00 f7 00 00 00 00
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "useafterpoison_getParent"

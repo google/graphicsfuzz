@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -800,6 +801,35 @@ public class PrettyPrinterVisitorTest {
     final String prettiedFrag = FileUtils.readFileToString(outFile, StandardCharsets.UTF_8);
 
     CompareAstsDuplicate.assertEqualAsts(prettiedFrag, expected);
+  }
+
+  @Test
+  public void testEmitGraphicsFuzzDefines() throws Exception {
+
+    final String expected = "\n"
+        + "#ifndef REDUCER\n"
+        + "#define _GLF_ZERO(X, Y)                   (Y)\n"
+        + "#define _GLF_ONE(X, Y)                    (Y)\n"
+        + "#define _GLF_FALSE(X, Y)                  (Y)\n"
+        + "#define _GLF_TRUE(X, Y)                   (Y)\n"
+        + "#define _GLF_IDENTITY(X, Y)               (Y)\n"
+        + "#define _GLF_DEAD(X)                      (X)\n"
+        + "#define _GLF_FUZZED(X)                    (X)\n"
+        + "#define _GLF_WRAPPED_LOOP(X)              X\n"
+        + "#define _GLF_WRAPPED_IF_TRUE(X)           X\n"
+        + "#define _GLF_WRAPPED_IF_FALSE(X)          X\n"
+        + "#define _GLF_SWITCH(X)                    X\n"
+        + "#define _GLF_MAKE_IN_BOUNDS_INT(IDX, SZ)  ((IDX) < 0 ? 0 "
+            + ": ((IDX) >= SZ ? SZ - 1 : (IDX)))\n"
+        + "#define _GLF_MAKE_IN_BOUNDS_UINT(IDX, SZ)  ((IDX) >= SZ ? SZ - 1u : (IDX))\n"
+        + "#endif\n"
+        + "\n"
+        + "// END OF GENERATED HEADER\n";
+
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    PrintStream printStream = new PrintStream(bytes);
+    PrettyPrinterVisitor.emitGraphicsFuzzDefines(printStream, ShadingLanguageVersion.ESSL_100);
+    assertEquals(expected, new String(bytes.toByteArray(), StandardCharsets.UTF_8));
   }
 
 }
