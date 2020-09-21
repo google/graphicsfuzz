@@ -94,6 +94,9 @@ public class GlslShaderJob implements ShaderJob {
    * <p>The method then puts every uniform in its own uniform block and assigns bindings.
    * If a uniform is declared in both shaders, the binding it is given is common to them.</p>
    *
+   * <p>Since samplers cannot be placed in uniform blocks, they get binding assignment but are
+   * left outside uniform blocks.</p>
+   *
    * <p>The pushConstant parameter can name one uniform as a candidate to be turned into a push
    * contant.</p>
    */
@@ -212,6 +215,9 @@ public class GlslShaderJob implements ShaderJob {
    * <p>This method works under the assumption that uniforms in the vertex and fragment
    * shader are enclosed in uniform blocks, with associated bindings.  That is, there are no
    * "plain" uniform declarations.</p>
+   *
+   * <p>Since samplers are not allowed to be inside uniform blocks, they are allowed to exist
+   * outside the uniform blocks in the input.</p>
    *
    * <p>The method removes all bindings and demotes the uniform blocks to plain uniforms.</p>
    */

@@ -364,4 +364,11 @@ public class PipelineInfoTest {
     assertTrue(pipelineInfo.clone().getArgs("GLF_uniform_int_values").contains(one.toString()));
   }
 
+  @Test(expected = java.lang.RuntimeException.class)
+  public void testTypeMismatch() {
+    final PipelineInfo pipelineInfo = new PipelineInfo();
+    pipelineInfo.addUniform("a", BasicType.FLOAT, Optional.empty(), Arrays.asList(1.0));
+    pipelineInfo.addUniform("a", BasicType.VEC2, Optional.empty(), Arrays.asList(2.0, 5.0));
+  }
+
 }

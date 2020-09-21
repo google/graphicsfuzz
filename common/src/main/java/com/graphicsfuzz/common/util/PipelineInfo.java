@@ -72,20 +72,31 @@ public final class PipelineInfo {
    * @param values A series of value of the base type with which the uniform should be populated.
    */
   public void addUniform(String name, BasicType basicType,
-      Optional<Integer> arrayCount, List<? extends Number> values) {
+                         Optional<Integer> arrayCount, List<? extends Number> values) {
     assert isLegalUniformName(name);
-    JsonObject info = new JsonObject();
-    info.addProperty("func", PipelineInfo.getGlUniformFunctionName(basicType,
-        arrayCount.isPresent()));
-    JsonArray jsonValues = new JsonArray();
-    for (Number n : values) {
-      jsonValues.add(n);
+    if (dictionary.has(name)) {
+      if (!((JsonObject)dictionary.get(name)).get("func").getAsString().equals(
+          PipelineInfo.getGlUniformFunctionName(basicType, arrayCount.isPresent()))) {
+        // Variable of this name already exists, but has different type
+        throw new RuntimeException("Uniform redefined as a different type");
+      }
+      // If the variable already exists and has the same type,
+      // we don't need to do anything.
+    } else {
+      // Add uniform to dictionary
+      JsonObject info = new JsonObject();
+      info.addProperty("func", PipelineInfo.getGlUniformFunctionName(basicType,
+          arrayCount.isPresent()));
+      JsonArray jsonValues = new JsonArray();
+      for (Number n : values) {
+        jsonValues.add(n);
+      }
+      info.add("args", jsonValues);
+      if (arrayCount.isPresent()) {
+        info.addProperty("count", arrayCount.get());
+      }
+      dictionary.add(name, info);
     }
-    info.add("args", jsonValues);
-    if (arrayCount.isPresent()) {
-      info.addProperty("count", arrayCount.get());
-    }
-    dictionary.add(name, info);
   }
 
   private static boolean isLegalUniformName(String name) {
