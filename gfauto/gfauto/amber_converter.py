@@ -248,12 +248,25 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
         "args": [ 42.0 ],
         "binding": 3
       },
+      "mypushconstant": {
+        "func": "glUniform1f",
+        "args": [ 42.0 ],
+        "push_constant": true
+      },
+      "mysampler": {
+        "func": "sampler2D",
+        "texture": "DEFAULT",
+        "binding": 7
+      },
       "$compute": { ... will be ignored ... }
     }
 
     becomes:
 
       BIND BUFFER {prefix}_myuniform AS uniform DESCRIPTOR_SET 0 BINDING 3
+      BIND BUFFER {prefix}_mypushconstant AS push_constant
+      BIND BUFFER default_texture AS combined_image_sampler SAMPLER {prefix}_mysampler DESCRIPTOR_SET 0 BINDING 7
+
     """
     result = ""
     uniforms = json.loads(uniform_json)
@@ -263,7 +276,7 @@ def amberscript_uniform_buffer_bind(uniform_json: str, prefix: str) -> str:
         if entry["func"] in ["sampler2D", "sampler3D"]:
             assert "texture" in entry.keys()
             if entry["texture"] == "DEFAULT":
-                result += f"  BIND BUFFER default_texture AS combined_image_sampler SAMPLER {prefix}_{name} DESCRIPTOR_SET 0 BINDING 0\n"
+                result += f"  BIND BUFFER default_texture AS combined_image_sampler SAMPLER {prefix}_{name} DESCRIPTOR_SET 0 BINDING {entry['binding']}\n"
             else:
                 raise AssertionError("Non-default textures not implemented")
         elif "binding" in entry.keys():
@@ -289,6 +302,16 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
         "args": [ 42.0 ],
         "binding": 3
       },
+      "mypushconstant": {
+        "func": "glUniform1f",
+        "args": [ 42.0 ],
+        "push_constant": true
+      },
+      "mysampler": {
+        "func": "sampler2D",
+        "texture": "DEFAULT",
+        "binding": 5
+      },
       "$compute": { ... will be ignored ... }
     }
 
@@ -300,6 +323,14 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
     BUFFER {prefix}_myuniform DATA_TYPE float DATA
       42.0
     END
+
+    # mypushconstant
+    BUFFER {prefix}_mypushconstant DATA_TYPE float DATA
+      42.0
+    END
+
+    # mysampler
+    SAMPLER {prefix}_mysampler
 
     :param uniform_json_contents:
     :param prefix: E.g. "reference" or "variant". The buffer names will include this prefix to avoid name
