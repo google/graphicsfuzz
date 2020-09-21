@@ -37,6 +37,7 @@ import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.LocationLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.SamplerType;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.ast.type.VoidType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -85,29 +86,41 @@ public final class FragmentShaderToShaderJob {
 
     // Iterate through all uniforms in 'tu'.  For each, add an entry to 'pipelineInfo' with a
     // randomized value (using 'generator' as the source of randomness).
+    // For samplers, we set the texture to "DEFAULT"
     for (VariablesDeclaration vd : tu.getUniformDecls()) {
-      if (!(vd.getBaseType().getWithoutQualifiers() instanceof BasicType)) {
-        throw new RuntimeException("Non-basic types not implemented, found "
-            + vd.getBaseType().toString());
-      }
-      BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
-      for (VariableDeclInfo vdi : vd.getDeclInfos()) {
-        // Non-array uniforms are handled as single-element arrays.
-        final int arrayLength = vdi.hasArrayInfo() ? vdi.getArrayInfo().getConstantSize() : 1;
-        final List<Number> values = new ArrayList<>();
-        for (int i = 0; i < basicType.getNumElements() * arrayLength; i++) {
-          if (basicType.getElementType() == BasicType.FLOAT) {
-            values.add(generator.nextFloat());
-          } else if (basicType.getElementType() == BasicType.INT) {
-            values.add(generator.nextInt(0xffffff));
-          } else if (basicType.getElementType() == BasicType.UINT) {
-            values.add(generator.nextPositiveInt(0xffffff));
-          } else {
-            assert basicType.getElementType() == BasicType.BOOL;
-            values.add(generator.nextBoolean() ? 1 : 0);
+      if (vd.getBaseType().getWithoutQualifiers() instanceof SamplerType) {
+        for (VariableDeclInfo vdi : vd.getDeclInfos()) {
+          if (vdi.hasArrayInfo() && (!vdi.getArrayInfo().hasConstantSize()
+              || vdi.getArrayInfo().getConstantSize() > 1)) {
+            throw new RuntimeException("Sampler arrays not implemented");
           }
+          pipelineInfo.addSamplerInfo(vdi.getName(),
+              vd.getBaseType().getWithoutQualifiers().getText(), "DEFAULT");
         }
-        pipelineInfo.addUniform(vdi.getName(), basicType, maybeGetArrayCount(vdi), values);
+      } else {
+        if (!(vd.getBaseType().getWithoutQualifiers() instanceof BasicType)) {
+          throw new RuntimeException("Non-basic types not implemented, found "
+              + vd.getBaseType().toString());
+        }
+        BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
+        for (VariableDeclInfo vdi : vd.getDeclInfos()) {
+          // Non-array uniforms are handled as single-element arrays.
+          final int arrayLength = vdi.hasArrayInfo() ? vdi.getArrayInfo().getConstantSize() : 1;
+          final List<Number> values = new ArrayList<>();
+          for (int i = 0; i < basicType.getNumElements() * arrayLength; i++) {
+            if (basicType.getElementType() == BasicType.FLOAT) {
+              values.add(generator.nextFloat());
+            } else if (basicType.getElementType() == BasicType.INT) {
+              values.add(generator.nextInt(0xffffff));
+            } else if (basicType.getElementType() == BasicType.UINT) {
+              values.add(generator.nextPositiveInt(0xffffff));
+            } else {
+              assert basicType.getElementType() == BasicType.BOOL;
+              values.add(generator.nextBoolean() ? 1 : 0);
+            }
+          }
+          pipelineInfo.addUniform(vdi.getName(), basicType, maybeGetArrayCount(vdi), values);
+        }
       }
     }
 

@@ -29,6 +29,7 @@ import com.graphicsfuzz.common.ast.type.BindingLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
 import com.graphicsfuzz.common.ast.type.PushConstantLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
+import com.graphicsfuzz.common.ast.type.SamplerType;
 import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.ast.type.TypeQualifier;
@@ -116,8 +117,9 @@ public class GlslShaderJob implements ShaderJob {
         if (decl instanceof VariablesDeclaration
             && ((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
           final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
-          // We cannot yet deal with uniforms with array base types, such as 'uniform float[5] A;'.
-          assert !(variablesDeclaration.getBaseType().getWithoutQualifiers() instanceof ArrayType);
+          assert !(variablesDeclaration.getBaseType().getWithoutQualifiers() instanceof ArrayType)
+              : "We cannot yet deal with uniforms with array base types, such as "
+              + "'uniform float[5] A;'.";
           for (VariableDeclInfo declInfo : variablesDeclaration.getDeclInfos()) {
             final String uniformName = declInfo.getName();
             assert pipelineInfo.hasUniform(uniformName);
@@ -130,39 +132,60 @@ public class GlslShaderJob implements ShaderJob {
                 nextBinding++;
               } while (usedBindings.contains(nextBinding));
             }
-            // The member's type is the combination of the base type and array info for the decl.
-            // We clone this type, having created it, as we will use the same base type for other
-            // decls in this variables declaration and we do not want to have aliasing.
-            final Type memberType =
-                Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
-                    declInfo.getArrayInfo()).clone();
 
-            ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
+            final Type baseType = variablesDeclaration.getBaseType();
+            final Type targetType = baseType.getWithoutQualifiers();
+            if (targetType instanceof SamplerType) {
+              assert !declInfo.hasArrayInfo() : "We cannot yet deal with arrays of samplers.";
+              assert !pipelineInfo.isPushConstant(uniformName) : "A sampler cannot be a push "
+                  + "constant";
 
-            if (pipelineInfo.isPushConstant(uniformName)) {
-              // Handle push constants separately
-              newTopLevelDeclarations.add(
-                  new InterfaceBlock(
-                      of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
-                      TypeQualifier.UNIFORM,
-                      "buf_push",
-                      Collections.singletonList(uniformName),
-                      Collections.singletonList(memberType),
-                      Optional.empty())
-              );
-            } else {
-              // Not a push constant, so it's a normal uniform
+              // Samplers may not exist as part of uniform blocks.
               final int binding = pipelineInfo.getBinding(uniformName);
               newTopLevelDeclarations.add(
-                  new InterfaceBlock(
-                      of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
-                          new BindingLayoutQualifier(binding))),
-                      TypeQualifier.UNIFORM,
-                      "buf" + binding,
-                      Collections.singletonList(uniformName),
-                      Collections.singletonList(memberType),
-                      Optional.empty())
-              );
+                  new VariablesDeclaration(
+                      new QualifiedType(targetType,
+                      Arrays.asList(
+                          new LayoutQualifierSequence(
+                              new SetLayoutQualifier(0),
+                              new BindingLayoutQualifier(binding)),
+                          TypeQualifier.UNIFORM
+                          )), declInfo));
+            } else {
+              // The member's type is the combination of the base type and array info for the decl.
+              // We clone this type, having created it, as we will use the same base type for other
+              // decls in this variables declaration and we do not want to have aliasing.
+              final Type memberType =
+                  Typer.combineBaseTypeAndArrayInfo(baseType,
+                      declInfo.getArrayInfo()).clone();
+
+              ((QualifiedType) memberType).removeQualifier(TypeQualifier.UNIFORM);
+
+              if (pipelineInfo.isPushConstant(uniformName)) {
+                // Handle push constants separately
+                newTopLevelDeclarations.add(
+                    new InterfaceBlock(
+                        of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
+                        TypeQualifier.UNIFORM,
+                        "buf_push",
+                        Collections.singletonList(uniformName),
+                        Collections.singletonList(memberType),
+                        Optional.empty())
+                );
+              } else {
+                // Not a push constant, so it's a normal uniform
+                final int binding = pipelineInfo.getBinding(uniformName);
+                newTopLevelDeclarations.add(
+                    new InterfaceBlock(
+                        of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
+                            new BindingLayoutQualifier(binding))),
+                        TypeQualifier.UNIFORM,
+                        "buf" + binding,
+                        Collections.singletonList(uniformName),
+                        Collections.singletonList(memberType),
+                        Optional.empty())
+                );
+              }
             }
           }
         } else {
@@ -201,16 +224,27 @@ public class GlslShaderJob implements ShaderJob {
     for (TranslationUnit tu : shaders) {
       final List<Declaration> newTopLevelDeclarations = new ArrayList<>();
       for (Declaration decl : tu.getTopLevelDeclarations()) {
-        if (decl instanceof VariablesDeclaration) {
-          // We are assuming that there are no plain uniforms - all uniforms should be in
-          // interface blocks, which we shall remove.
-          assert !((VariablesDeclaration) decl).getBaseType().hasQualifier(TypeQualifier.UNIFORM);
-        }
-        if (decl instanceof InterfaceBlock && ((InterfaceBlock) decl).getInterfaceQualifier()
+
+        if (decl instanceof VariablesDeclaration && ((VariablesDeclaration) decl).getBaseType()
+            .hasQualifier(TypeQualifier.UNIFORM)) {
+          final VariablesDeclaration variablesDeclaration = (VariablesDeclaration) decl;
+          final Type targetType = variablesDeclaration.getBaseType().getWithoutQualifiers();
+          assert targetType instanceof SamplerType : "Only samplers may exist as top-level "
+              + "uniforms with bindings.";
+          assert variablesDeclaration.getNumDecls() == 1 : "A bound sampler must appear on its "
+              + "own.";
+          final VariableDeclInfo declInfo = variablesDeclaration.getDeclInfos().get(0);
+          newTopLevelDeclarations.add(
+              new VariablesDeclaration(
+                  new QualifiedType(targetType,
+                      Collections.singletonList(
+                          TypeQualifier.UNIFORM
+                      )), declInfo));
+        } else if (decl instanceof InterfaceBlock && ((InterfaceBlock) decl).getInterfaceQualifier()
             .equals(TypeQualifier.UNIFORM)) {
           final InterfaceBlock interfaceBlock = (InterfaceBlock) decl;
-          // We are assuming that each uniform block wraps precisely one uniform.
-          assert interfaceBlock.getMemberNames().size() == 1;
+          assert interfaceBlock.getMemberNames().size() == 1 : "We assume that each uniform block"
+              + " wraps precisely one uniform.";
 
           // Split the block member's type into a base type and array info.
           final ImmutablePair<Type, ArrayInfo> baseTypeAndArrayInfo =
