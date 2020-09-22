@@ -74,7 +74,7 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
       final Type typeWithRestrictedQualifiers =
           dropQualifiersThatCannotBeUsedForLocalVariable(type);
 
-      Initializer initializer;
+      final Initializer initializer;
       // We fuzz a const expression because we need to ensure we don't generate side-effects to
       // non-injected code
       if (isLoopLimiter(vars.getKey(), typeWithRestrictedQualifiers.getWithoutQualifiers())) {

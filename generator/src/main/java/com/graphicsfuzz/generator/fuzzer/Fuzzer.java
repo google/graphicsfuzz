@@ -194,6 +194,17 @@ public class Fuzzer {
           .stream().map(item -> makeExpr(item, false, constContext, depth + 1))
           .collect(Collectors.toList()));
     }
+    if (targetType instanceof StructDefinitionType) {
+      final StructDefinitionType structDefinitionType = (StructDefinitionType) targetType;
+      if (structDefinitionType.hasStructNameType()) {
+        return makeExpr(structDefinitionType.getStructNameType(),
+            isLValue,
+            constContext,
+            depth);
+      }
+      // We cannot fuzz a constructor for an un-named struct type.
+      throw new FuzzedIntoACornerException();
+    }
     throw new FuzzedIntoACornerException();
 
   }

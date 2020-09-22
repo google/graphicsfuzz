@@ -438,7 +438,7 @@ public class DonateDeadCodeTransformationTest {
       // Do live code donation.
       final DonateDeadCodeTransformation transformation =
           new DonateDeadCodeTransformation(IRandom::nextBoolean, donors,
-              GenerationParams.normal(ShaderKind.FRAGMENT, true));
+              GenerationParams.normal(ShaderKind.FRAGMENT, false));
 
       assert referenceShaderJob.getFragmentShader().isPresent();
 
@@ -446,7 +446,7 @@ public class DonateDeadCodeTransformationTest {
           referenceShaderJob.getFragmentShader().get(),
           TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
           new RandomWrapper(seed),
-          GenerationParams.normal(ShaderKind.FRAGMENT, true)
+          GenerationParams.normal(ShaderKind.FRAGMENT, false)
       );
 
       if (result) {
