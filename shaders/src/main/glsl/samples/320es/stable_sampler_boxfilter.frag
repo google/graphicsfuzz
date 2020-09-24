@@ -53,7 +53,7 @@ void main()
     {
         for (int j = 0; j < 3; j++)
         {
-            res += texture(tex, coord + vec2((i - 1) * step, (j - 1) * step)) * weights[i*3+j];
+            res += texture(tex, coord + vec2(float(i - 1) * step, float(j - 1) * step)) * weights[i * 3 + j];
         }
     }
 

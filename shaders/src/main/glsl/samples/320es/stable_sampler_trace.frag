@@ -54,6 +54,6 @@ void main()
         h = texture(tex, coord).y;
         i++;
     }
-    _GLF_color = vec4(vec3(i * (1.0 / 32.0)), 1.0);
+    _GLF_color = vec4(vec3(float(i) * (1.0 / 32.0)), 1.0);
 }
 

@@ -48,7 +48,7 @@ float ReallyApproxNormalizedAtan2(vec2 v)
     
     if (length(v) < 0.001)
     {
-        return 0;
+        return 0.0;
     }
 
     vec2 a = abs(v);
@@ -70,12 +70,12 @@ float ReallyApproxNormalizedAtan2(vec2 v)
         th = 0.5 - th;
     }
     
-    if (v.x < 0) 
+    if (v.x < 0.0) 
     {
-        th = 1 - th;
+        th = 1.0 - th;
     }
     
-    if (v.y < 0)
+    if (v.y < 0.0)
     {
         th = -th;
     }
@@ -96,12 +96,12 @@ void main()
 {
     vec2 coord = gl_FragCoord.xy * (1.0 / 256.0);
 
-    vec2 coord1 = polarize(coord + vec2(20 / 256.0, -80 / 256.0));
-    vec2 coord2 = polarize(coord + vec2(-60 / 256.0, 40 / 256.0));
+    vec2 coord1 = polarize(coord + vec2(20.0 / 256.0, -80.0 / 256.0));
+    vec2 coord2 = polarize(coord + vec2(-60.0 / 256.0, 40.0 / 256.0));
     vec2 coord3 = polarize(coord);
 
     coord = coord1 - coord2 + coord3;
-    coord = floor(coord * 256) / 256;
+    coord = floor(coord * 256.0) / 256.0;
     _GLF_color = vec4(texture(tex, coord).xyz, 1.0);
 }
 
