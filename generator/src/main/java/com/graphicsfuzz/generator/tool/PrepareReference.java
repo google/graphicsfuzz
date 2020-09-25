@@ -27,7 +27,6 @@ import com.graphicsfuzz.common.util.ShaderJobFileOperations;
 import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Optional;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -144,7 +143,7 @@ public final class PrepareReference {
       // If the reference shader job has more uniforms than the specified limit, some of them must
       // be pruned, being replaced with global variables initialized to the value that the uniform
       // would take.
-      PruneUniforms.pruneIfNeeded(shaderJob, maxUniforms, Collections.emptyList());
+      PruneUniforms.pruneIfNeeded(shaderJob, maxUniforms);
     }
 
     if (generateUniformBindings) {

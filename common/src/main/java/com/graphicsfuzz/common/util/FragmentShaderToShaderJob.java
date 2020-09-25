@@ -95,7 +95,7 @@ public final class FragmentShaderToShaderJob {
             throw new RuntimeException("Sampler arrays not implemented");
           }
           pipelineInfo.addSamplerInfo(vdi.getName(),
-              vd.getBaseType().getWithoutQualifiers().getText(), "DEFAULT");
+              vd.getBaseType().getWithoutQualifiers().getText(), BuiltInTexture.DEFAULT.toString());
         }
       } else {
         if (!(vd.getBaseType().getWithoutQualifiers() instanceof BasicType)) {

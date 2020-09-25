@@ -49,7 +49,6 @@ import com.graphicsfuzz.generator.knownvaluegeneration.ExpressionGenerator;
 import com.graphicsfuzz.generator.knownvaluegeneration.FactManager;
 import com.graphicsfuzz.generator.knownvaluegeneration.NumericValue;
 import com.graphicsfuzz.util.ArgsUtil;
-import com.graphicsfuzz.util.Constants;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -173,8 +172,7 @@ public class KnownValueShaderGenerator {
     final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(), pipelineInfo, tu);
 
     if (maxUniforms > 0) {
-      PruneUniforms.pruneIfNeeded(shaderJob, maxUniforms,
-          Collections.singletonList(Constants.GLF_UNIFORM));
+      PruneUniforms.pruneIfNeeded(shaderJob, maxUniforms);
     }
     if (isVulkan) {
       shaderJob.makeUniformBindings(Optional.empty());
