@@ -2,6 +2,60 @@
 
 `gfauto` includes a set of tools for generating differential
 code coverage.
+
+## A simple example
+
+```sh
+
+# Make sure gfauto_* is available. Check the README.md file above this
+# directory for setup instructions.
+#
+# E.g.
+# source /path/to/gfauto/.venv/activate
+
+# Run your program once.
+
+export GCOV_PREFIX=/data/gcda_files/run1
+./program 1 2 3
+unset GCOV_PREFIX
+
+# Run your program a second time with a different input.
+
+export GCOV_PREFIX=/data/gcda_files/run2
+./program 4 5 6
+unset GCOV_PREFIX
+
+# The --gcov_uses_json flag below is needed for GCC 9+.
+
+# Process the .gcda files from run1.
+gfauto_cov_from_gcov --gcov_uses_json --out run1.cov $BUILD_DIR /data/gcda_files/run1 --num_threads 32
+
+# Process the .gcda files from run2.
+gfauto_cov_from_gcov --gcov_uses_json --out run2.cov $BUILD_DIR /data/gcda_files/run2 --num_threads 32
+
+# Output just the *newly-covered* lines from run2 into "new.cov".
+gfauto_cov_new run1.cov run2.cov new.cov
+
+# Output two parallel source directories, "new_cov_zero/" and "new_cov/".
+# Each directory contains the original project source tree with each line
+# prefixed with an execution count.
+# The parallel source directories can be compared with any existing diff
+# viewer.
+gfauto_cov_to_source --coverage_out new_cov --zero_coverage_out new_cov_zero --cov new.cov $BUILD_DIR
+
+# E.g. We can use the meld diff viewer.
+# Note: Install meld if needed.
+
+meld new_cov_zero/ new_cov/
+
+# The lines that are "different" are the newly-covered lines. The execution
+# count on the right (in "new_cov/") is the execution count for the line from
+# run2. The execution count from the run1 is zero (because only newly-covered
+# lines are highlighted in the diff viewer).
+```
+
+## dEQP and gfauto example
+
 The example below demonstrates how to generate and view
 differential code coverage on the SwiftShader Vulkan driver,
 comparing a run of `gfauto_fuzz` vs. a run of dEQP.
@@ -92,19 +146,17 @@ cd $COV_ROOT
 
 ### Process coverage info ###
 
-gfauto_cov_from_gcov -h
-# Check help text.
-# You need to add --gcov_uses_json for GCC 9+.
+# The --gcov_uses_json flag below is needed for GCC 9+.
 
 # Process the .gcda files from the dEQP run into "deqp.cov".
 # Do not replace "PROC_ID" with a number; gfauto understands this special
 # directory name.
-gfauto_cov_from_gcov --out deqp.cov $BUILD_DIR $COV_ROOT/prefix_deqp/PROC_ID --num_threads 32
+gfauto_cov_from_gcov --gcov_uses_json --out deqp.cov $BUILD_DIR $COV_ROOT/prefix_deqp/PROC_ID --num_threads 32
 
 # Process the .gcda files from the gfauto run into "gfauto.cov".
 # Do not replace "PROC_ID" with a number; gfauto understands this special
 # directory name.
-gfauto_cov_from_gcov --out gfauto.cov $BUILD_DIR $COV_ROOT/prefix_gfauto/PROC_ID --num_threads 32
+gfauto_cov_from_gcov --gcov_uses_json --out gfauto.cov $BUILD_DIR $COV_ROOT/prefix_gfauto/PROC_ID --num_threads 32
 
 # Output just the *newly-covered* lines from the gfauto run into "new.cov".
 gfauto_cov_new deqp.cov gfauto.cov new.cov
