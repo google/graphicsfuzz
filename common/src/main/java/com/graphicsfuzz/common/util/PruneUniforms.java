@@ -68,7 +68,7 @@ public final class PruneUniforms {
     }
 
     // Determine those uniforms we would prefer to prune (donated uniforms) and those uniforms we
-    //will only prune if necessary (uniforms from the original shader).
+    // will only prune if necessary (uniforms from the original shader).
     final List<String> pruneFirst = new ArrayList<>();
     final List<String> pruneIfNecessary = new ArrayList<>();
 
@@ -124,8 +124,7 @@ public final class PruneUniforms {
       for (TranslationUnit tu : shaderJob.getShaders()) {
         if (shaderJob.getPipelineInfo().isSampler(uniformName)) {
           assert canonicalSampler.isPresent();
-          replaceWithCanonicalSampler(tu, shaderJob.getPipelineInfo(), uniformName,
-              canonicalSampler.get());
+          replaceWithCanonicalSampler(tu, uniformName, canonicalSampler.get());
         } else {
           inlineUniform(tu, shaderJob.getPipelineInfo(), uniformName);
         }
@@ -217,11 +216,15 @@ public final class PruneUniforms {
         argExprs);
   }
 
-  private static void replaceWithCanonicalSampler(TranslationUnit tu, PipelineInfo pipelineInfo,
-                                                  String samplerName, String canonicalSamplerName) {
+  private static void replaceWithCanonicalSampler(TranslationUnit tu, String samplerName,
+                                                  String canonicalSamplerName) {
     assert !samplerName.equals(canonicalSamplerName) : "We must not prune the canonical sampler.";
     assert isDonated(samplerName) : "We do not prune non-donated sampler uniforms.";
-    boolean useOfCanonicalSamplerWasAdded = new ScopeTrackingVisitor() {
+
+    // This visitor replaces any uses of |samplerName| with |canonicalSamplerName|.  True is
+    // returned if at least one replacement was made - i.e., if an additional use of the canonical
+    // sampler was added.
+    final boolean useOfCanonicalSamplerWasAdded = new ScopeTrackingVisitor() {
       private boolean madeReplacement = false;
 
       @Override
@@ -239,6 +242,13 @@ public final class PruneUniforms {
       }
     }.replaceSamplerUses(tu);
 
+    // We need to get rid of the pruned sampler, if it indeed exists in this translation unit.
+    // If an extra use of the canonical sampler was introduced then we need to move the declaration
+    // of the canonical sampler to the top of the translation unit, in case the new use occurs
+    // above its current declaration.
+
+    // First, we find the variables declarations in which these samplers are declared (if they are
+    // declared at all).
     Optional<VariablesDeclaration> prunedSamplerDeclaration = Optional.empty();
     Optional<VariablesDeclaration> canonicalSamplerDeclaration = Optional.empty();
     for (Declaration declaration : tu.getTopLevelDeclarations()) {
@@ -258,10 +268,18 @@ public final class PruneUniforms {
       }
     }
 
+    // We remove the sampler declaration that is being pruned.
     prunedSamplerDeclaration.ifPresent(variablesDeclaration -> removeSamplerDeclaration(tu,
         samplerName, variablesDeclaration));
 
     if (useOfCanonicalSamplerWasAdded) {
+      // A use of the canonical sampler was added, so we need to move it to the top of the
+      // translation unit (or add it, if it wasn't present in the first place).
+
+      // We remove the canonical sampler (if it was present in the first place), and then add a
+      // declaration of the canonical sampler to the start of the module.
+      // TODO(https://github.com/google/graphicsfuzz/issues/1075): This is currently special-cased
+      //  for the sampler2D type.
       canonicalSamplerDeclaration.ifPresent(variablesDeclaration -> removeSamplerDeclaration(tu,
           canonicalSamplerName, variablesDeclaration));
       tu.addDeclaration(new VariablesDeclaration(
