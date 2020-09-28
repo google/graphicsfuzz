@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,7 +66,27 @@ public final class PipelineInfo {
   }
 
   /**
-   * Records the type and values for a uniform.
+   * Determines whether a uniform with the same name and associated function exists, throwing an
+   * exception if there is a name match but a function clash.
+   * @param name The name of a uniform, whose existence is to be checked.
+   * @param func The function that an existing uniform with this name should have if it does exist.
+   * @return True if and only if a uniform with matching name and function exists.
+   * @throws RuntimeException if there is a name match but a function clash - this situation should
+   *         never arise.
+   */
+  private boolean uniformAlreadyExists(String name, String func) {
+    if (!dictionary.has(name)) {
+      return false;
+    }
+    if (!((JsonObject)dictionary.get(name)).get("func").getAsString().equals(func)) {
+      // Variable of this name already exists, but has different type
+      throw new RuntimeException("Uniform redefined as a different type");
+    }
+    return true;
+  }
+
+  /**
+   * Records the type and values for a non-sampler uniform.
    * @param name Name of the uniform.
    * @param basicType The base type of the uniform; e.g. float for a vec3, int for an ivec4.
    * @param arrayCount The number of array elements if this is a uniform array.
@@ -74,29 +95,41 @@ public final class PipelineInfo {
   public void addUniform(String name, BasicType basicType,
                          Optional<Integer> arrayCount, List<? extends Number> values) {
     assert isLegalUniformName(name);
-    if (dictionary.has(name)) {
-      if (!((JsonObject)dictionary.get(name)).get("func").getAsString().equals(
-          PipelineInfo.getGlUniformFunctionName(basicType, arrayCount.isPresent()))) {
-        // Variable of this name already exists, but has different type
-        throw new RuntimeException("Uniform redefined as a different type");
-      }
-      // If the variable already exists and has the same type,
-      // we don't need to do anything.
-    } else {
-      // Add uniform to dictionary
-      JsonObject info = new JsonObject();
-      info.addProperty("func", PipelineInfo.getGlUniformFunctionName(basicType,
-          arrayCount.isPresent()));
-      JsonArray jsonValues = new JsonArray();
-      for (Number n : values) {
-        jsonValues.add(n);
-      }
-      info.add("args", jsonValues);
-      if (arrayCount.isPresent()) {
-        info.addProperty("count", arrayCount.get());
-      }
-      dictionary.add(name, info);
+    if (uniformAlreadyExists(name, PipelineInfo.getGlUniformFunctionName(basicType,
+        arrayCount.isPresent()))) {
+      // A uniform already exists and has the same type.  We don't need to do anything.
+      return;
     }
+    // Add uniform to dictionary
+    JsonObject info = new JsonObject();
+    info.addProperty("func", PipelineInfo.getGlUniformFunctionName(basicType,
+        arrayCount.isPresent()));
+    JsonArray jsonValues = new JsonArray();
+    for (Number n : values) {
+      jsonValues.add(n);
+    }
+    info.add("args", jsonValues);
+    arrayCount.ifPresent(integer -> info.addProperty("count", integer));
+    dictionary.add(name, info);
+  }
+
+  /**
+   * Records the type and value for a sampler uniform.
+   * @param name Name of the uniform.
+   * @param samplerType The sampler type for the uniform.
+   * @param value A GraphicsFuzz built-in texture that the sampler will sample from.
+   */
+  public void addUniform(String name, SamplerType samplerType, BuiltInTexture value) {
+    assert isLegalUniformName(name);
+    if (uniformAlreadyExists(name, samplerType.toString())) {
+      // A uniform already exists and has the same type.  We don't need to do anything.
+      return;
+    }
+    // Add uniform to dictionary
+    JsonObject info = new JsonObject();
+    info.addProperty("func", samplerType.toString());
+    info.addProperty("texture", value.toString());
+    dictionary.add(name, info);
   }
 
   private static boolean isLegalUniformName(String name) {
@@ -128,50 +161,61 @@ public final class PipelineInfo {
   public void setUniforms(TranslationUnit tu,
       Supplier<Float> floatSupplier, Supplier<Integer> intSupplier,
       Supplier<Integer> uintSupplier,
-      Supplier<Integer> boolSupplier) {
+      Supplier<Integer> boolSupplier,
+      Supplier<BuiltInTexture> textureSupplier) {
     for (VariablesDeclaration vd : tu.getUniformDecls()) {
       final Type withoutQualifiers = vd.getBaseType().getWithoutQualifiers();
-      if (!(withoutQualifiers instanceof BasicType)) {
-        if (withoutQualifiers instanceof SamplerType) {
-          // TODO(415) Need to work out how to do default initialization of samplers.
-          // For now, just leave them.
-          continue;
+      if (withoutQualifiers instanceof StructNameType
+          || withoutQualifiers instanceof StructDefinitionType) {
+        // TODO(414) Need to work out how to do default initialization of structs.
+        // For now, just leave them.
+        continue;
+      }
+      if (withoutQualifiers instanceof BasicType) {
+        final BasicType basicType = (BasicType) withoutQualifiers;
+        for (VariableDeclInfo vdi : vd.getDeclInfos()) {
+          if (hasUniform(vdi.getName())) {
+            continue;
+          }
+          int arrayLength;
+          if (vdi.hasArrayInfo()) {
+            arrayLength = vdi.getArrayInfo().getConstantSize();
+          } else {
+            arrayLength = 1;
+          }
+          List<Number> values = new ArrayList<>();
+          for (int i = 0; i < basicType.getNumElements() * arrayLength; i++) {
+            if (basicType.getElementType() == BasicType.FLOAT) {
+              values.add(floatSupplier.get());
+            } else if (basicType.getElementType() == BasicType.INT) {
+              values.add(intSupplier.get());
+            } else if (basicType.getElementType() == BasicType.UINT) {
+              values.add(uintSupplier.get());
+            } else {
+              assert basicType.getElementType() == BasicType.BOOL;
+              values.add(boolSupplier.get());
+            }
+          }
+          addUniform(vdi.getName(), basicType, maybeGetArrayCount(vdi), values);
         }
-        if (withoutQualifiers instanceof StructNameType
-            || withoutQualifiers instanceof StructDefinitionType) {
-          // TODO(414) Need to work out how to do default initialization of structs.
-          // For now, just leave them.
-          continue;
+      } else if (withoutQualifiers == SamplerType.SAMPLER2D) {
+        // TODO(https://github.com/google/graphicsfuzz/issues/1075): This code should be generalised
+        //  if we do support more sampler types.  For that reason we copy SAMPLER2D into a variable,
+        //  to future-proof for this variable not necessarily always being SAMPLER2D.
+        final SamplerType samplerType = SamplerType.SAMPLER2D;
+        for (VariableDeclInfo vdi : vd.getDeclInfos()) {
+          if (hasUniform(vdi.getName())) {
+            continue;
+          }
+          if (vdi.hasArrayInfo()) {
+            throw new RuntimeException("Arrays of samplers are not currently supported.");
+          }
+          addUniform(vdi.getName(), samplerType, textureSupplier.get());
         }
+      } else {
         // We should be able to deal with other types as they crop up.
         throw new RuntimeException("Not able to deal with type "
             + withoutQualifiers);
-      }
-      final BasicType basicType = (BasicType) withoutQualifiers;
-      for (VariableDeclInfo vdi : vd.getDeclInfos()) {
-        if (hasUniform(vdi.getName())) {
-          continue;
-        }
-        int arrayLength;
-        if (vdi.hasArrayInfo()) {
-          arrayLength = vdi.getArrayInfo().getConstantSize();
-        } else {
-          arrayLength = 1;
-        }
-        List<Number> values = new ArrayList<>();
-        for (int i = 0; i < basicType.getNumElements() * arrayLength; i++) {
-          if (basicType.getElementType() == BasicType.FLOAT) {
-            values.add(floatSupplier.get());
-          } else if (basicType.getElementType() == BasicType.INT) {
-            values.add(intSupplier.get());
-          } else if (basicType.getElementType() == BasicType.UINT) {
-            values.add(uintSupplier.get());
-          } else {
-            assert basicType.getElementType() == BasicType.BOOL;
-            values.add(boolSupplier.get());
-          }
-        }
-        addUniform(vdi.getName(), basicType, maybeGetArrayCount(vdi), values);
       }
     }
   }
@@ -189,7 +233,8 @@ public final class PipelineInfo {
     final Supplier<Integer> intSupplier = () -> 0;
     final Supplier<Integer> uintSupplier = () -> 0;
     final Supplier<Integer> boolSupplier = () -> 0;
-    setUniforms(tu, floatSupplier, intSupplier, uintSupplier, boolSupplier);
+    final Supplier<BuiltInTexture> textureSupplier = () -> BuiltInTexture.DEFAULT;
+    setUniforms(tu, floatSupplier, intSupplier, uintSupplier, boolSupplier, textureSupplier);
   }
 
   private static String getGlUniformFunctionName(BasicType type, boolean isArray) {
@@ -323,16 +368,48 @@ public final class PipelineInfo {
     return result;
   }
 
+  /**
+   * Requires that a uniform of the given name exists, and returns true if and only if it is has a
+   * descriptor set binding or is a push constant.
+   * @param uniformName The name of a uniform that must already exist.
+   * @return True if and only if the uniform has a descriptor set binding or is a push constant.
+   */
   public boolean hasBindingOrIsPushConstant(String uniformName) {
     return hasBinding(uniformName) || isPushConstant(uniformName);
   }
 
+  /**
+   * Requires that a uniform of the given name exists, and returns true if and only if it has a
+   * descriptor set binding.
+   * @param uniformName The name of a uniform that must already exist.
+   * @return True if and only if the uniform has a descriptor set binding.
+   */
   public boolean hasBinding(String uniformName) {
     return lookupUniform(uniformName).has("binding");
   }
 
+  /**
+   * Requires that a uniform of the given name exists, and returns true if and only if it is a
+   * push constant.
+   * @param uniformName The name of a uniform that must already exist.
+   * @return True if and only if the uniform is a push constant.
+   */
   public boolean isPushConstant(String uniformName) {
     return lookupUniform(uniformName).has("push_constant");
+  }
+
+  /**
+   * Requires that a uniform of the given name exists, and returns true if and only if it is a
+   * sampler.
+   * @param uniformName The name of a uniform that must already exist.
+   * @return True if and only if the uniform is a sampler.
+   */
+  public boolean isSampler(String uniformName) {
+    // TODO(https://github.com/google/graphicsfuzz/issues/1075): Ultimately we should support more
+    //  sampler types.
+    final List<String> supportedSamplers = Collections.singletonList(SamplerType
+        .SAMPLER2D.toString());
+    return supportedSamplers.contains(lookupUniform(uniformName).get("func").getAsString());
   }
 
   public int getBinding(String uniformName) {

@@ -26,6 +26,7 @@ import com.graphicsfuzz.common.ast.type.TypeQualifier;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.Typer;
+import com.graphicsfuzz.common.util.BuiltInTexture;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
@@ -208,8 +209,7 @@ public class Generate {
 
     if (args.limitUniforms()) {
       // Prune uniforms from the shader job, preferring to prune donated uniforms.
-      PruneUniforms.pruneIfNeeded(shaderJob, args.getMaxUniforms(),
-          Arrays.asList(Constants.DEAD_PREFIX, Constants.LIVE_PREFIX));
+      PruneUniforms.pruneIfNeeded(shaderJob, args.getMaxUniforms());
     }
 
     if (args.getIsVulkan()) {
@@ -653,7 +653,11 @@ public class Generate {
     final Supplier<Integer> intSupplier = () -> generator.nextInt(1 << 15);
     final Supplier<Integer> uintSupplier = () -> generator.nextInt(1 << 15);
     final Supplier<Integer> boolSupplier = () -> generator.nextInt(2);
-    pipelineInfo.setUniforms(tu, floatSupplier, intSupplier, uintSupplier, boolSupplier);
+    // TODO(https://github.com/google/graphicsfuzz/issues/1074): If we have more built-in textures
+    //  then the texture supplier should make a random choice among them.
+    final Supplier<BuiltInTexture> textureSupplier = () -> BuiltInTexture.DEFAULT;
+    pipelineInfo.setUniforms(tu, floatSupplier, intSupplier, uintSupplier, boolSupplier,
+        textureSupplier);
   }
 
   public static void addInjectionSwitchIfNotPresent(TranslationUnit tu) {
