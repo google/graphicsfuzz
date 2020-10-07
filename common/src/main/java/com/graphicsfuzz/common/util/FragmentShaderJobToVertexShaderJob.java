@@ -26,6 +26,7 @@ import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
+import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
@@ -35,7 +36,7 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.ast.stmt.BlockStmt;
 import com.graphicsfuzz.common.ast.stmt.DiscardStmt;
 import com.graphicsfuzz.common.ast.stmt.ExprStmt;
-import com.graphicsfuzz.common.ast.stmt.NullStmt;
+import com.graphicsfuzz.common.ast.stmt.IfStmt;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.ast.type.LayoutQualifierSequence;
@@ -85,6 +86,11 @@ public final class FragmentShaderJobToVertexShaderJob {
     class FragmentBuiltinUsageAnalysis extends StandardVisitor {
       private boolean usesFragCoord = false;
       private boolean usesFragDepth = false;
+      private boolean usesDiscard = false;
+
+      public boolean getUsesDiscard() {
+        return usesDiscard;
+      }
 
       public boolean getUsesFragCoord() {
         return usesFragCoord;
@@ -103,6 +109,11 @@ public final class FragmentShaderJobToVertexShaderJob {
         if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_DEPTH)) {
           usesFragDepth = true;
         }
+      }
+
+      @Override
+      public void visitDiscardStmt(DiscardStmt discardStmt) {
+        usesDiscard = true;
       }
     }
 
@@ -123,6 +134,7 @@ public final class FragmentShaderJobToVertexShaderJob {
         }
     */
     final String fragColor = "frag_color";
+    final String glfDiscard = "_GLF_discard";
 
     final TranslationUnit fragmentShader = new TranslationUnit(ShaderKind.FRAGMENT,
         Optional.of(vertexShader.getShadingLanguageVersion()), Arrays.asList(
@@ -145,7 +157,42 @@ public final class FragmentShaderJobToVertexShaderJob {
                     new VariableIdentifierExpr(fragColor),
                     BinOp.ASSIGN))), false))));
 
-    // Find the first declaration that is not a precision declaration.
+    // Find the first fragment shader declaration that is not a precision declaration.
+    Declaration firstFragmentNonPrecisionDeclaration = null;
+    for (Declaration decl : fragmentShader.getTopLevelDeclarations()) {
+      if (decl instanceof PrecisionDeclaration) {
+        continue;
+      }
+      firstFragmentNonPrecisionDeclaration = decl;
+      break;
+    }
+
+    assert firstFragmentNonPrecisionDeclaration != null;
+
+    if (fragmentBuiltinUsage.getUsesDiscard()) {
+      System.err.println(
+          "Warning: discard instruction found while converting from fragment shader to vertex "
+              + "shader.\nDiscard is signaled to the new fragment shader, but the vertex shader "
+              + "execution is not stopped, which may yield undesirable side effects.");
+
+      // Add a global _GLF_Discard that will be used to transmit discard information to frag shader
+      fragmentShader.addDeclarationBefore(
+          new VariablesDeclaration(new QualifiedType(BasicType.BOOL,
+              Arrays.asList(new LayoutQualifierSequence(
+                      new LocationLayoutQualifier(1)),
+                  TypeQualifier.SHADER_INPUT)),
+              new VariableDeclInfo(glfDiscard, null, null)),
+          firstFragmentNonPrecisionDeclaration);
+
+      // If the incoming discard variable is true, issue discard
+      fragmentShader.getMainFunction().getBody().insertStmt(0,
+              new IfStmt(
+                  new VariableIdentifierExpr(glfDiscard),
+                  new DiscardStmt(),
+                  null));
+    }
+
+    // Find the first vertex shader declaration that is not a precision declaration.
     Declaration firstNonPrecisionDeclaration = null;
     for (Declaration decl : vertexShader.getTopLevelDeclarations()) {
       if (decl instanceof PrecisionDeclaration) {
@@ -194,6 +241,25 @@ public final class FragmentShaderJobToVertexShaderJob {
                           new FloatConstantExpr("1.0"),
                           new FloatConstantExpr("1.0")),
                       BinOp.MUL),
+                  BinOp.ASSIGN)));
+    }
+
+    if (fragmentBuiltinUsage.getUsesDiscard()) {
+      // Add a global _GLF_Discard that will be used to transmit discard information to frag shader
+      vertexShader.addDeclarationBefore(
+          new VariablesDeclaration(new QualifiedType(BasicType.BOOL,
+              Arrays.asList(new LayoutQualifierSequence(
+                      new LocationLayoutQualifier(1)),
+                  TypeQualifier.SHADER_OUTPUT)),
+              new VariableDeclInfo(glfDiscard, null, null)),
+          firstNonPrecisionDeclaration);
+
+      // At start of main, set the discard variable to false.
+      vertexShader.getMainFunction().getBody().insertStmt(0,
+          new ExprStmt(
+              new BinaryExpr(
+                  new VariableIdentifierExpr(glfDiscard),
+                  new BoolConstantExpr(false),
                   BinOp.ASSIGN)));
     }
 
@@ -258,11 +324,15 @@ public final class FragmentShaderJobToVertexShaderJob {
         }
       }
 
-      // Replace discard with a null statement
+      // Replace discard with discard variable set to true
       @Override
       public void visitDiscardStmt(DiscardStmt discardStmt) {
-        // Re
-        parentMap.getParent(discardStmt).replaceChild(discardStmt, new NullStmt());
+        parentMap.getParent(discardStmt).replaceChild(discardStmt,
+            new ExprStmt(
+                new BinaryExpr(
+                    new VariableIdentifierExpr(glfDiscard),
+                    new BoolConstantExpr(true),
+                    BinOp.ASSIGN)));
       }
 
       // Replace fragment-only functions with parenthesis expression
