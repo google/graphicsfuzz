@@ -1,0 +1,6 @@
+{
+  "tex": {
+    "func": "sampler2D",
+    "texture": "DEFAULT"
+  }
+}
