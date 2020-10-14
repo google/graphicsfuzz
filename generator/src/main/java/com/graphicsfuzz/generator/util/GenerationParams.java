@@ -20,10 +20,6 @@ import com.graphicsfuzz.common.util.ShaderKind;
 
 public class GenerationParams {
 
-  // Expression fuzzing
-  public static final boolean COMMA_OPERATOR_ENABLED = false;
-  public static final boolean NON_SQUARE_MATRICES_ENABLED = true;
-
   // What sort of shader are we generating?
   private final ShaderKind shaderKind;
 
