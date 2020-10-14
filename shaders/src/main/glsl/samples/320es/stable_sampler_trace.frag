@@ -40,16 +40,16 @@ uniform sampler2D tex;
 void main()
 {
     int i = 0;
-    vec2 step = vec2(1.0) * (1.0 / 256.0);
+    vec2 uvstep = vec2(1.0) * (1.0 / 256.0);
     float slope = 2.0 / 256.0;
     vec2 coord = gl_FragCoord.xy * (1.0 / 256.0);
     float refh = texture(tex, coord).y;
-    coord -= step;
+    coord -= uvstep;
     refh += slope;
     float h = texture(tex, coord).y;
     while (h < refh && i < 32)
     {
-        coord -= step;
+        coord -= uvstep;
         refh += slope;
         h = texture(tex, coord).y;
         i++;

@@ -45,7 +45,7 @@ const float weights[9] = float[9](
 void main()
 {
     vec2 coord = gl_FragCoord.xy * (1.0 / 256.0);
-    float step = 1.0 / 256.0;
+    float uvstep = 1.0 / 256.0;
 
     vec4 res = vec4(0);
 
@@ -53,7 +53,7 @@ void main()
     {
         for (int j = 0; j < 3; j++)
         {
-            res += texture(tex, coord + vec2(float(i - 1) * step, float(j - 1) * step)) * weights[i * 3 + j];
+            res += texture(tex, coord + vec2(float(i - 1) * uvstep, float(j - 1) * uvstep)) * weights[i * 3 + j];
         }
     }
 
