@@ -106,6 +106,9 @@ from gfauto.util import check_dir_exists
 DONORS_DIR = "donors"
 REFERENCES_DIR = "references"
 
+SPIRV_DONORS_DIR = "spirv_fuzz_donors"
+SPIRV_REFERENCES_DIR = "spirv_fuzz_references"
+
 REFERENCE_IMAGE_FILE_NAME = "reference.png"
 VARIANT_IMAGE_FILE_NAME = "variant.png"
 BUFFER_FILE_NAME = "buffer.bin"
@@ -356,19 +359,23 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     fuzz_failures_dir = reports_dir / FUZZ_FAILURES_DIR_NAME
     references_dir = Path() / REFERENCES_DIR
     donors_dir = Path() / DONORS_DIR
-    spirv_fuzz_shaders_dir = Path() / "spirv_fuzz_shaders"
+    spirv_fuzz_references_dir = Path() / SPIRV_REFERENCES_DIR
+    spirv_fuzz_donors_dir = Path() / SPIRV_DONORS_DIR
 
     # Log a warning if there is no tool on the PATH for printing stack traces.
     prepended = util.prepend_catchsegv_if_available([], log_warning=True)
     if not allow_no_stack_traces and not prepended:
         raise AssertionError("Stopping because we cannot get stack traces.")
 
-    spirv_fuzz_shaders: List[Path] = []
+    spirv_fuzz_reference_shaders: List[Path] = []
+    spirv_fuzz_donor_shaders: List[Path] = []
     references: List[Path] = []
 
     if FuzzingTool.SPIRV_FUZZ in fuzzing_tool_pattern:
-        check_dir_exists(spirv_fuzz_shaders_dir)
-        spirv_fuzz_shaders = sorted(spirv_fuzz_shaders_dir.rglob("*.json"))
+        check_dir_exists(spirv_fuzz_references_dir)
+        check_dir_exists(spirv_fuzz_donors_dir)
+        spirv_fuzz_reference_shaders = sorted(spirv_fuzz_references_dir.rglob("*.json"))
+        spirv_fuzz_donor_shaders = sorted(spirv_fuzz_donors_dir.rglob("*.json"))
 
     if FuzzingTool.GLSL_FUZZ in fuzzing_tool_pattern:
         check_dir_exists(references_dir)
@@ -435,7 +442,8 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
                 reports_dir,
                 fuzz_failures_dir,
                 active_devices,
-                spirv_fuzz_shaders,
+                spirv_fuzz_reference_shaders,
+                spirv_fuzz_donor_shaders,
                 settings,
                 binary_manager,
             )
