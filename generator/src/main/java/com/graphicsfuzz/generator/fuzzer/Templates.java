@@ -20,7 +20,6 @@ import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.UnOp;
 import com.graphicsfuzz.common.ast.type.BasicType;
-import com.graphicsfuzz.common.ast.type.Type;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.SupportedTypes;
 import com.graphicsfuzz.common.typing.TyperHelper;
@@ -35,7 +34,6 @@ import com.graphicsfuzz.generator.fuzzer.templates.TernaryExprTemplate;
 import com.graphicsfuzz.generator.fuzzer.templates.TypeConstructorExprTemplate;
 import com.graphicsfuzz.generator.fuzzer.templates.UnaryExprTemplate;
 import com.graphicsfuzz.generator.fuzzer.templates.VectorMatrixIndexExprTemplate;
-import com.graphicsfuzz.generator.util.GenerationParams;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -679,12 +677,10 @@ public class Templates {
       the right-most expression in a comma separated list of expressions. All expressions are
       evaluated, in order, from left to right.
       */
-    if (GenerationParams.COMMA_OPERATOR_ENABLED) {
-      for (BasicType type : supportedBasicTypes(shadingLanguageVersion)) {
-        addTemplate(templates,
-              new BinaryExprTemplate(supportedBasicTypes(shadingLanguageVersion),
-                  type, type, BinOp.COMMA));
-      }
+    for (BasicType type : supportedBasicTypes(shadingLanguageVersion)) {
+      addTemplate(templates,
+            new BinaryExprTemplate(supportedBasicTypes(shadingLanguageVersion),
+                type, type, BinOp.COMMA));
     }
 
     /*
@@ -1095,18 +1091,7 @@ public class Templates {
   }
 
   private static void addTemplate(List<IExprTemplate> templates, IExprTemplate template) {
-    if (isBannedType(template.getResultType())) {
-      return;
-    }
     templates.add(template);
-  }
-
-  private static boolean isBannedType(Type type) {
-    if (!GenerationParams.NON_SQUARE_MATRICES_ENABLED) {
-      return Arrays.asList(BasicType.MAT2X3, BasicType.MAT2X4, BasicType.MAT3X2, BasicType.MAT3X4,
-            BasicType.MAT4X2, BasicType.MAT4X3).contains(type);
-    }
-    return false;
   }
 
 }
