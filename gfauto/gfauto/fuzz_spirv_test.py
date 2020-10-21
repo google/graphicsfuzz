@@ -153,6 +153,7 @@ def run_spirv_reduce_or_shrink(  # pylint: disable=too-many-locals;
             str(final_shader),
             f"--shrink={str(transformations_file)}",
             f"--shrinker-temp-file-prefix={str(output_dir / 'temp_')}",
+            "--replay-validation",
         ]
         cmd += list(settings.extra_spirv_fuzz_shrink_args)
         cmd += list(test.common_spirv_args)
