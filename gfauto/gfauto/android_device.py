@@ -185,6 +185,9 @@ def ensure_amber_installed(
     adb_check(device_serial, ["install", "-r", str(amber_apk_binary.path)])
     adb_check(device_serial, ["install", "-r", str(amber_apk_test_binary.path)])
 
+    # Run Amber once to ensure the external cache directory (on /sdcard) gets created by the application.
+    adb_check(device_serial, ["shell", get_amber_adb_shell_cmd(["-d"])], verbose=True)
+
 
 def update_details(binary_manager: binaries_util.BinaryManager, device: Device) -> None:
 
@@ -371,6 +374,9 @@ def prepare_device(
         )
         time.sleep(WAIT_AFTER_BOOT_AND_UNLOCK)
 
+    # We do NOT use "mkdir -p" here; it is important that the Amber app creates the
+    # "/sdcard/Android/data/com.google.amber/cache" directory, and then we can create additional directories within
+    # this.
     adb_check(
         serial,
         [
@@ -378,8 +384,10 @@ def prepare_device(
             # One string:
             # Remove graphicsfuzz directory.
             f"rm -rf {ANDROID_DEVICE_GRAPHICSFUZZ_DIR} && "
-            # Make result directory.
-            f"mkdir -p {ANDROID_DEVICE_RESULT_DIR}",
+            # Make the graphicsfuzz directory.
+            f"mkdir {ANDROID_DEVICE_GRAPHICSFUZZ_DIR} && "
+            # Make the result directory.
+            f"mkdir {ANDROID_DEVICE_RESULT_DIR}",
         ],
     )
 
