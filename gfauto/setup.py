@@ -64,5 +64,6 @@ setup(
         "gfauto_cov_from_gcov = gfauto.cov_from_gcov:main",
         "gfauto_settings_update = gfauto.settings_update:main",
         "gfauto_reduce_source_dir = gfauto.reduce_source_dir:main",
+        "gfauto_bucket_via_transformations = gfauto.bucket_via_transformations:main",
     ]},
 )
