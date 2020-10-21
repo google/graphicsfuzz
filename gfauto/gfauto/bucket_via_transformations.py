@@ -77,9 +77,9 @@ def main() -> None:  # pylint: disable=too-many-locals;
         AssertionError(f"No summary dirs found under {str(tests_dir)}"),
     )
 
-    signature_to_dir: Dict[str, List[Path]] = {}
+    signature_to_dirs: Dict[str, List[Path]] = {}
     # For each summary directory, get its signature based on the transformation types remaining
-    # and add the info to |signature_to_dir|.
+    # and add the info to |signature_to_dirs|.
     for summary_dir in summary_dirs:
         log(f"Checking {summary_dir}")
         transformations_json = util.file_read_text(
@@ -126,12 +126,12 @@ def main() -> None:  # pylint: disable=too-many-locals;
         log(f"signature: {signature}")
 
         # Add to or update the map.
-        signature_to_dir.setdefault(signature, []).append(summary_dir)
+        signature_to_dirs.setdefault(signature, []).append(summary_dir)
 
     log("\n\nTable:\n")
 
     for (signature, cases) in sorted(
-        signature_to_dir.items(), key=lambda item: item[0]
+        signature_to_dirs.items(), key=lambda item: item[0]
     ):
         log(f"{signature}:")
         for case in cases:
