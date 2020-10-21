@@ -29,9 +29,7 @@ from gfauto.util import check, check_dir_exists
 COMMON_TRANSFORMATION_TYPES = {
     "addConstantBoolean",
     "addConstantComposite",
-    "addConstantComposite",
     "addConstantNull",
-    "addConstantScalar",
     "addConstantScalar",
     "addDeadBlock",
     "addDeadBreak",
