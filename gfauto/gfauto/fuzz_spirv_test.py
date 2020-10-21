@@ -466,7 +466,8 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
     reports_dir: Path,
     fuzz_failures_dir: Path,
     active_devices: List[Device],
-    spirv_fuzz_shaders: List[Path],
+    spirv_fuzz_reference_shaders: List[Path],
+    spirv_fuzz_donor_shaders: List[Path],
     settings: Settings,
     binary_manager: binaries_util.BinaryManager,
 ) -> None:
@@ -474,7 +475,9 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
     staging_name = staging_dir.name
     template_source_dir = staging_dir / "source_template"
 
-    reference_spirv_shader_job_orig_path: Path = random.choice(spirv_fuzz_shaders)
+    reference_spirv_shader_job_orig_path: Path = random.choice(
+        spirv_fuzz_reference_shaders
+    )
 
     # Copy in a randomly chosen reference.
     reference_spirv_shader_job = shader_job_util.copy(
@@ -493,7 +496,7 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
                     ).path,
                     reference_spirv_shader_job,
                     template_source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB,
-                    donor_shader_job_paths=spirv_fuzz_shaders,
+                    donor_shader_job_paths=spirv_fuzz_donor_shaders,
                     seed=str(random.getrandbits(spirv_fuzz_util.GENERATE_SEED_BITS)),
                     other_args=list(settings.extra_spirv_fuzz_generate_args)
                     + list(settings.common_spirv_args),
