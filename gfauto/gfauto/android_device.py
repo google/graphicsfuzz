@@ -220,7 +220,7 @@ def update_details(binary_manager: binaries_util.BinaryManager, device: Device) 
 
 
 def get_all_android_devices(  # pylint: disable=too-many-locals;
-    binary_manager: binaries_util.BinaryManager,
+    binary_manager: binaries_util.BinaryManager, include_device_details: bool = True,
 ) -> List[Device]:
     result: List[Device] = []
 
@@ -256,10 +256,12 @@ def get_all_android_devices(  # pylint: disable=too-many-locals;
             name=f"{device_model}_{device_serial}",
             android=DeviceAndroid(serial=device_serial, model=device_model),
         )
+        if include_device_details:
+            update_details(binary_manager, device)
+            log(f"Android device details:\n{str(device)}")
+        else:
+            log(f"Skipped getting Android device details:\n{str(device)}")
 
-        update_details(binary_manager, device)
-
-        log(f"Android device details:\n{str(device)}")
         result.append(device)
 
     return result
