@@ -65,5 +65,6 @@ setup(
         "gfauto_settings_update = gfauto.settings_update:main",
         "gfauto_reduce_source_dir = gfauto.reduce_source_dir:main",
         "gfauto_bucket_via_transformations = gfauto.bucket_via_transformations:main",
+        "gfauto_run_amber_android = gfauto.run_amber_android:main",
     ]},
 )
