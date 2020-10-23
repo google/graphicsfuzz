@@ -712,13 +712,23 @@ def graphics_shader_job_amber_test_to_amber_script(
         assert isinstance(shader_job_amber_test.reference, GraphicsShaderJob)  # noqa
         jobs.insert(0, shader_job_amber_test.reference)
 
+    # Check if any of the shader jobs requires texture generation
+    texture_generation = False
+    for job in jobs:
+        if "default_texture" in job.uniform_bindings:
+            texture_generation = True
+
+    # If we need a generated texture, do it before anything else.
+    if texture_generation:
+        result += get_amber_texture_generation_shader_def()
+        result += get_amber_texture_generation_pipeline_def()
+        result += "\nCLEAR_COLOR texgen_pipeline 0 0 0 255\n"
+        result += "CLEAR texgen_pipeline\n"
+        result += "RUN texgen_pipeline DRAW_RECT POS 0 0  SIZE 256 256\n"
+
     for job in jobs:
         # Guaranteed, and needed for type checker.
         assert isinstance(job, GraphicsShaderJob)  # noqa
-
-        texture_generation = False
-        if "default_texture" in job.uniform_bindings:
-            texture_generation = True
 
         prefix = job.name_prefix
 
@@ -731,18 +741,12 @@ def graphics_shader_job_amber_test_to_amber_script(
 
         result += get_amber_script_shader_def(job.fragment_shader, fragment_shader_name)
 
-        if texture_generation:
-            result += get_amber_texture_generation_shader_def()
-
         # Define uniforms for shader job.
 
         result += "\n"
         result += job.uniform_definitions
 
         result += f"\nBUFFER {prefix}_framebuffer FORMAT B8G8R8A8_UNORM\n"
-
-        if texture_generation:
-            result += get_amber_texture_generation_pipeline_def()
 
         # Create a pipeline.
 
@@ -756,11 +760,6 @@ def graphics_shader_job_amber_test_to_amber_script(
         result += f"CLEAR_COLOR {prefix}_pipeline 0 0 0 255\n"
 
         # Run the pipeline.
-
-        if texture_generation:
-            result += "\nCLEAR_COLOR texgen_pipeline 0 0 0 255\n"
-            result += "CLEAR texgen_pipeline\n"
-            result += "RUN texgen_pipeline DRAW_RECT POS 0 0  SIZE 256 256\n"
 
         result += f"\nCLEAR {prefix}_pipeline\n"
         result += f"RUN {prefix}_pipeline {job.draw_command}\n"
