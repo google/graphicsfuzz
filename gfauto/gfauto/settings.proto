@@ -90,4 +90,11 @@ message Settings {
   // reduction, which involves removing chunks of arbitrary code from the variant shader.
   bool skip_semantics_changing_reduction = 18;
 
+  // If true, then only use `spirv-opt -O ...` to enhance tests. Once we have a SPIR-V test from a fuzzer, we also
+  // generate some additional tests by running spirv-opt with `-O`, `-Os`, and three sets of randomly chosen flags, on
+  // the shaders. The `-O` flag is the best-supported configuration. The other flags may provide limited benefit at the
+  // cost of having to run 4 extra tests per fuzzed test. Thus, setting |spirv_opt_just_o| to true can save a lot of
+  // time while still enhancing the fuzzed test.
+  bool spirv_opt_just_o = 19;
+
 }

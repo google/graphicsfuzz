@@ -141,43 +141,47 @@ def fuzz_glsl(  # pylint: disable=too-many-locals;
             stable_shader=stable_shader,
             common_spirv_args=common_spirv_args,
         ),
-        make_test(
-            template_source_dir,
-            staging_dir / f"{staging_name}_opt_Os_test",
-            spirv_opt_args=["-Os"],
-            binary_manager=binary_manager,
-            derived_from=reference_name,
-            stable_shader=stable_shader,
-            common_spirv_args=common_spirv_args,
-        ),
-        make_test(
-            template_source_dir,
-            staging_dir / f"{staging_name}_opt_rand1_test",
-            spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
-            binary_manager=binary_manager,
-            derived_from=reference_name,
-            stable_shader=stable_shader,
-            common_spirv_args=common_spirv_args,
-        ),
-        make_test(
-            template_source_dir,
-            staging_dir / f"{staging_name}_opt_rand2_test",
-            spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
-            binary_manager=binary_manager,
-            derived_from=reference_name,
-            stable_shader=stable_shader,
-            common_spirv_args=common_spirv_args,
-        ),
-        make_test(
-            template_source_dir,
-            staging_dir / f"{staging_name}_opt_rand3_test",
-            spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
-            binary_manager=binary_manager,
-            derived_from=reference_name,
-            stable_shader=stable_shader,
-            common_spirv_args=common_spirv_args,
-        ),
     ]
+
+    if not settings.spirv_opt_just_o:
+        test_dirs += [
+            make_test(
+                template_source_dir,
+                staging_dir / f"{staging_name}_opt_Os_test",
+                spirv_opt_args=["-Os"],
+                binary_manager=binary_manager,
+                derived_from=reference_name,
+                stable_shader=stable_shader,
+                common_spirv_args=common_spirv_args,
+            ),
+            make_test(
+                template_source_dir,
+                staging_dir / f"{staging_name}_opt_rand1_test",
+                spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
+                binary_manager=binary_manager,
+                derived_from=reference_name,
+                stable_shader=stable_shader,
+                common_spirv_args=common_spirv_args,
+            ),
+            make_test(
+                template_source_dir,
+                staging_dir / f"{staging_name}_opt_rand2_test",
+                spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
+                binary_manager=binary_manager,
+                derived_from=reference_name,
+                stable_shader=stable_shader,
+                common_spirv_args=common_spirv_args,
+            ),
+            make_test(
+                template_source_dir,
+                staging_dir / f"{staging_name}_opt_rand3_test",
+                spirv_opt_args=spirv_opt_util.random_spirv_opt_args(),
+                binary_manager=binary_manager,
+                derived_from=reference_name,
+                stable_shader=stable_shader,
+                common_spirv_args=common_spirv_args,
+            ),
+        ]
 
     for test_dir in test_dirs:
         interrupt_util.interrupt_if_needed()
