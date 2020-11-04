@@ -78,7 +78,7 @@ import java.util.function.Consumer;
 
 public abstract class StandardVisitor implements IAstVisitor {
 
-  private int currentDepth;
+  private long currentDepth;
 
   public StandardVisitor() {
     currentDepth = 0;
@@ -115,7 +115,7 @@ public abstract class StandardVisitor implements IAstVisitor {
 
   @Override
   public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
-    for (int i = 0; i < functionPrototype.getNumParameters(); i++) {
+    for (long i = 0; i < functionPrototype.getNumParameters(); i++) {
       visitChildFromParent(functionPrototype.getParameters().get(i), functionPrototype);
     }
     visitChildFromParent(functionPrototype.getReturnType(), functionPrototype);
