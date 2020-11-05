@@ -12,7 +12,7 @@
 ## Deliverables
 My project revolved around writing samples in Vulkan that would be utilized for the development of the [Android GPU Inspector](https://github.com/google/agi) project. As such, the focus of the project was twofold: efficiently measuring the coverage of the Vulkan API provided by the existing samples, and to add new samples to increase that coverage.
 
-While this was the initial scope of our project, we also spent time building a sample that could be used to study the synchronization between different render passes. This was covered by the new Overlapping Frames sample. We also started work on a sample to combine the graphics and compute capabilities of Vulkan. However, the last one could not be satisfactorily completed in the alloted time.
+While this was the initial scope of our project, we also spent time building a sample that could be used to study the synchronization between different render passes. This was covered by the new Overlapping Frames sample. We also started work on a sample to combine the graphics and compute capabilities of Vulkan. However, the last one could not be satisfactorily completed in the allotted time.
 
 Over the course of the project, code was contributed to two separate repos:
 * [GraphicsFuzz](https://github.com/google/graphicsfuzz/) for Code Coverage Scripts
