@@ -233,6 +233,12 @@ def main() -> None:
         type=int,
     )
 
+    parser.add_argument(
+        "--keep_temp",
+        help="Keep temp directories. Useful for debugging with --iteration_seed.",
+        action="store_true",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     settings_path = Path(parsed_args.settings)
@@ -247,6 +253,7 @@ def main() -> None:
         parsed_args.update_ignored_crash_signatures
     )
     iteration_limit: Optional[int] = parsed_args.iteration_limit
+    keep_temp: bool = parsed_args.keep_temp
 
     # E.g. [GLSL_FUZZ, GLSL_FUZZ, SPIRV_FUZZ] will run glsl-fuzz twice, then spirv-fuzz once, then repeat.
     fuzzing_tool_pattern = get_fuzzing_tool_pattern(
@@ -265,6 +272,7 @@ def main() -> None:
                 active_device_names=active_device_names,
                 update_ignored_crash_signatures_gerrit_cookie=update_ignored_crash_signatures_gerrit_cookie,
                 iteration_limit=iteration_limit,
+                keep_temp=keep_temp,
             )
         except settings_util.NoSettingsFile as exception:
             log(str(exception))
@@ -293,6 +301,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     active_device_names: Optional[List[str]] = None,
     update_ignored_crash_signatures_gerrit_cookie: Optional[str] = None,
     iteration_limit: Optional[int] = None,
+    keep_temp: bool = False,
 ) -> None:
 
     if not fuzzing_tool_pattern:
@@ -461,10 +470,13 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
         else:
             raise AssertionError(f"Unknown fuzzing tool: {fuzzing_tool}")
 
+        if not keep_temp:
+            shutil.rmtree(staging_dir)
+
         if iteration_seed_override is not None:
             log("Stopping due to iteration_seed")
             break
-        shutil.rmtree(staging_dir)
+
         iteration_count += 1
 
 
