@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
 from gfauto import signature_util
 
 # Disable spell-checking for this file.
@@ -74,6 +75,59 @@ Backtrace:
     """
     signature = signature_util.get_signature_from_log_contents(log)
     assert signature == "libvulkan_intelso0x76c9a4"
+
+
+def test_catchsegv_backtrace_nvvm_function_name() -> None:
+    def addr2line_mock(module: Path, address: str) -> str:
+        assert str(module) == "/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100"
+        assert address == "0x4eab81"
+
+        return "_nv004nvvm\n??:?\n"
+
+    # addr2line finds function names that contain "nvvn" in NVIDIA drivers, but these
+    # are useless as signatures. Thus, the offset should be used instead.
+
+    log = """
+Backtrace:
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x4eab81)[0x7f5f3434eb81]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x690978)[0x7f5f344f4978]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x695cc4)[0x7f5f344f9cc4]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x685fb4)[0x7f5f344e9fb4]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x78648a)[0x7f5f345ea48a]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x4fd52f)[0x7f5f3436152f]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x3cf602)[0x7f5f34233602]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(_nv002nvvm+0xa22)[0x7f5f3422b622]
+/lib/x86_64-linux-gnu/libnvidia-glcore.so.440.100(+0x127179e)[0x7f5f3606379e]
+"""
+    signature = signature_util.get_signature_from_log_contents(
+        log, addr2line_mock=addr2line_mock
+    )
+    assert signature == "libnvidiaglvkspirvso4401000x4eab81"
+
+
+def test_catchsegv_backtrace_module_no_sig() -> None:
+    def addr2line_mock(module: Path, address: str) -> str:
+        assert str(module) == "/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100"
+        assert address == "0x35fdfd"
+
+        return "??\n??:0\n"
+
+    # In this case, addr2line returns question marks, so the offset of the
+    # top stack frame should be used as the signature.
+
+    log = """
+Backtrace:
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x35fdfd)[0x7f4440caedfd]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x37ac93)[0x7f4440cc9c93]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x37bbd2)[0x7f4440ccabd2]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x37c1d6)[0x7f4440ccb1d6]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(+0x37c51f)[0x7f4440ccb51f]
+/lib/x86_64-linux-gnu/libnvidia-glvkspirv.so.440.100(_nv008nvvm+0xa6)[0x7f4440d10006]
+"""
+    signature = signature_util.get_signature_from_log_contents(
+        log, addr2line_mock=addr2line_mock
+    )
+    assert signature == "libnvidiaglvkspirvso4401000x35fdfd"
 
 
 def test_catchsegv_backtrace_skip_libc() -> None:
