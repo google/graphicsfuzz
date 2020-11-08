@@ -20,6 +20,7 @@ Functions for handling spirv-fuzz generated tests.
 """
 
 import random
+import shutil
 import subprocess
 from pathlib import Path
 from typing import List, Optional
@@ -276,6 +277,9 @@ def run_reduction_part(
                 shader_job_util.SUFFIX_TRANSFORMATIONS_JSON
             ),
         )
+
+    if not settings.keep_reduction_work:
+        shutil.rmtree(output_dir)
 
     return test_util.get_source_dir(reduction_part_output_dir)
 
