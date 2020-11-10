@@ -97,4 +97,9 @@ message Settings {
   // time while still enhancing the fuzzed test.
   bool spirv_opt_just_o = 19;
 
+  // If true, then preserve the temporary reduction work directories used when performing a reduction.
+  // These directories are useful for debugging reduction issues, but are otherwise not very useful and take up
+  // a lot of space.
+  bool keep_reduction_work = 20;
+
 }

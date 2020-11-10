@@ -21,6 +21,7 @@ Functions for handling GLSL shader job tests.
 
 import random
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -820,6 +821,9 @@ def run_reduction_part(
             reduction_part_output_dir, name_of_shader_to_reduce
         ),
     )
+
+    if not settings.keep_reduction_work:
+        shutil.rmtree(reduction_work_variant_dir)
 
     return test_util.get_source_dir(reduction_part_output_dir)
 
