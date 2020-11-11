@@ -34,7 +34,6 @@ COMMON_TRANSFORMATION_TYPES = {
     "addConstantNull",
     "addConstantScalar",
     "addDeadBlock",
-    "addDeadBreak",
     "addFunction",
     "addGlobalUndef",
     "addGlobalVariable",
@@ -115,6 +114,7 @@ def main() -> None:  # pylint: disable=too-many-locals;
             )
             transformation_types.add(list(keys)[0])
 
+        #print(transformation_types)
         transformation_types -= COMMON_TRANSFORMATION_TYPES
         assert len(transformation_types) > 0
         max_len = max(max_len, len(transformation_types))
