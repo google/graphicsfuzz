@@ -53,6 +53,10 @@ COMMON_TRANSFORMATION_TYPES = {
 }
 
 
+def extract_signature(directory):
+    return str(directory).split(os.sep)[2]
+
+
 def main() -> None:  # pylint: disable=too-many-locals;
     parser = argparse.ArgumentParser(
         description="Classifies spirv-fuzz tests via the set of remaining transformation types."
@@ -83,12 +87,18 @@ def main() -> None:  # pylint: disable=too-many-locals;
     interesting_transformations_to_dirs: List[Tuple[Set[str], List[str]]] = []
     skipped_dirs: Set[str] = set()
 
+    total_dirs = 0
     max_len: int = 0
+    signatures = set()
     for summary_dir in summary_dirs:
+        if "bad_image" in str(summary_dir):
+            continue
         log(f"Checking {summary_dir}")
         transformations_json_file = summary_dir / "reduced_1" / "variant" / "shader.frag.transformations_json"
         if not os.path.isfile(transformations_json_file):
             continue
+        total_dirs += 1
+        signatures.add(extract_signature(summary_dir))
         transformations_json = util.file_read_text(
             transformations_json_file
         )
@@ -120,6 +130,11 @@ def main() -> None:  # pylint: disable=too-many-locals;
         max_len = max(max_len, len(transformation_types))
         dir_to_transformations[summary_dir] = transformation_types
 
+    phase1_reported = set()
+    phase1_distinct_signatures = set()
+
+    print("\nPhase 1:")
+
     seen_transformations: Set[str] = {'a'}
     for i in range(1, max_len + 1):
         for entry in dir_to_transformations:
@@ -127,8 +142,41 @@ def main() -> None:  # pylint: disable=too-many-locals;
             if len(transformations) == i:
                 common = seen_transformations.intersection(transformations)
                 if len(common) == 0:
+                    phase1_reported.add(entry)
+                    phase1_distinct_signatures.add(extract_signature(entry))
                     seen_transformations.update(transformations)
-                    print(str(entry) + ": " + "_".join(transformations))
+                    print(str(entry) + ":\n  " + "_".join(transformations))
+
+    phase2_reported = set()
+    phase2_new_distinct_signatures = set()
+
+    print("\nPhase 2:")
+    for entry in dir_to_transformations:
+        if entry not in phase1_reported:
+            transformations = dir_to_transformations[entry]
+            not_yet_seen = transformations.difference(seen_transformations)
+            if len(not_yet_seen) > 0:
+                phase2_reported.add(entry)
+                signature = extract_signature(entry)
+                if signature not in phase1_distinct_signatures:
+                    phase2_new_distinct_signatures.add(signature)
+                seen_transformations.update(not_yet_seen)
+                print(str(entry) + ":\n  " + "_".join(not_yet_seen) + "\n  " + "_".join(transformations.difference(not_yet_seen)))
+
+    print("Number of reduced bugs: " + str(total_dirs))
+    print("Distinct signatures: " + str(len(signatures)))
+    print()
+    print("Num suggestions phase 1: " + str(len(phase1_reported)))
+    print("Distinct signatures phase 1: " + str(len(phase1_distinct_signatures)))
+    print("Missed signatures phase 1: " + str(len(signatures) - len(phase1_distinct_signatures)))
+    print("Duplicate signatures phase 1: " + str(len(phase1_reported) - len(phase1_distinct_signatures)))
+    print()
+    print("Num suggestions phase 2: " + str(len(phase2_reported)))
+    print("New distinct signatures phase 2: " + str(len(phase2_new_distinct_signatures)))
+    print("Signatures still missed after phase 2: " + str(len(signatures) - (len(phase1_distinct_signatures) + len(phase2_new_distinct_signatures))))
+    print("Duplicate signatures phase 2: " + str(len(phase2_reported) - len(phase2_new_distinct_signatures)))
+
+
     """
 
     signature_to_dirs: Dict[str, List[Path]] = {}
