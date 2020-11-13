@@ -22,7 +22,7 @@ stack trace.
 
 import re
 from pathlib import Path
-from typing import Match, Optional, Pattern
+from typing import Callable, Match, Optional, Pattern
 
 from gfauto import subprocess_util, util
 
@@ -171,10 +171,40 @@ def basic_match(pattern: Pattern[str], log_contents: str) -> Optional[str]:
     return group
 
 
-def get_signature_from_log_contents(  # pylint: disable=too-many-return-statements, too-many-branches, too-many-statements;
-    log_contents: str,
-) -> str:
+def get_function_signature_from_address(
+    module: Path,
+    address: str,
+    addr2line_mock: Optional[Callable[[Path, str], str]] = None,
+) -> Optional[str]:
+    # stdout result can be mocked for testing.
+    stdout: str
+    if addr2line_mock:
+        stdout = addr2line_mock(module, address)
+    else:
+        try:
+            address_tool = util.tool_on_path("addr2line")
+        except util.ToolNotOnPathError:
+            return None
+        result = subprocess_util.run(
+            [str(address_tool), "-e", str(module), address, "-f", "-C"],
+            check_exit_code=False,
+            verbose=True,
+        )
+        if result.returncode != 0:
+            return None
+        stdout = result.stdout
 
+    lines = stdout.splitlines()
+    if not lines:
+        return None
+    if lines[0].startswith("??"):
+        return None
+    return lines[0]
+
+
+def get_signature_from_log_contents(  # pylint: disable=too-many-return-statements, too-many-branches, too-many-statements;
+    log_contents: str, addr2line_mock: Optional[Callable[[Path, str], str]] = None,
+) -> str:
     # noinspection PyUnusedLocal
     match: Optional[Match[str]]
     # noinspection PyUnusedLocal
@@ -308,7 +338,7 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
             return group
 
     if "\nBacktrace:\n" in log_contents:
-        result = get_signature_from_catchsegv_backtrace(log_contents)
+        result = get_signature_from_catchsegv_backtrace(log_contents, addr2line_mock)
         if result:
             return result
 
@@ -336,7 +366,9 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
     return NO_SIGNATURE
 
 
-def get_signature_from_catchsegv_backtrace(log_contents: str) -> Optional[str]:
+def get_signature_from_catchsegv_backtrace(
+    log_contents: str, addr2line_mock: Optional[Callable[[Path, str], str]] = None,
+) -> Optional[str]:
     lines = log_contents.splitlines()
     i = 0
     # Skip to just after "Backtrace:".
@@ -367,14 +399,16 @@ def get_signature_from_catchsegv_backtrace(log_contents: str) -> Optional[str]:
     if group:
         return group
 
-    result = get_signature_from_catchsegv_frame_address(lines[i])
+    result = get_signature_from_catchsegv_frame_address(lines[i], addr2line_mock)
     if result:
         return result
 
     return None
 
 
-def get_signature_from_catchsegv_frame_address(log_contents: str) -> Optional[str]:
+def get_signature_from_catchsegv_frame_address(
+    log_contents: str, addr2line_mock: Optional[Callable[[Path, str], str]] = None,
+) -> Optional[str]:
     match = re.search(PATTERN_CATCHSEGV_STACK_FRAME_ADDRESS, log_contents)
     if not match:
         return None
@@ -382,9 +416,13 @@ def get_signature_from_catchsegv_frame_address(log_contents: str) -> Optional[st
     address = match.group(2)
     function_signature = None
     if module.exists():
-        function_signature = get_function_signature_from_address(module, address)
-    if not function_signature:
+        function_signature = get_function_signature_from_address(
+            module, address, addr2line_mock
+        )
+    if not function_signature or "nvvm" in function_signature:
         # The module does not exist or we could not get any symbols using addr2line.
+        # Or: the function name contains "nvvm", which is seen in NVIDIA drivers but
+        # leads to a poor signature.
         # As a last resort, we can use the module name + offset as the signature.
         return get_hex_signature_from_frame(module, address)
     function_signature = clean_up(function_signature)
@@ -397,22 +435,3 @@ def get_hex_signature_from_frame(module: Path, address: str) -> str:
     signature = clean_up(signature, remove_numbers=False)
     signature = reduce_length(signature)
     return signature
-
-
-def get_function_signature_from_address(module: Path, address: str) -> Optional[str]:
-    try:
-        address_tool = util.tool_on_path("addr2line")
-        result = subprocess_util.run(
-            [str(address_tool), "-e", str(module), address, "-f", "-C"],
-            check_exit_code=False,
-            verbose=True,
-        )
-        if result.returncode != 0:
-            return None
-        stdout: str = result.stdout
-        lines = stdout.splitlines()
-        if not lines:
-            return None
-        return lines[0]
-    except util.ToolNotOnPathError:
-        return None
