@@ -20,11 +20,14 @@ Used to compute the "signature" of a bug, typically using the error message or t
 stack trace.
 """
 
+import argparse
 import re
+import sys
 from pathlib import Path
 from typing import Callable, Match, Optional, Pattern
 
 from gfauto import subprocess_util, util
+from gfauto.gflogging import log
 
 # .* does not match newlines
 # (?:   ) non-group parentheses
@@ -125,6 +128,14 @@ PATTERN_LLVM_ERROR_DIAGNOSIS = re.compile(r"ERROR: LLVM DIAGNOSIS INFO: (.*)")
 
 PATTERN_ADDRESS_SANITIZER_ERROR = re.compile(
     r"SUMMARY: AddressSanitizer: ([a-z\-]+) .* in (.*)"
+)
+
+PATTERN_MESA_NIR_VALIDATION_ERROR = re.compile(
+    r"error: (.*)\(\.\./src/compiler/nir/nir_validate\.c:\d+\)"
+)
+
+PATTERN_MESA_SPIRV_PARSE_ERROR = re.compile(
+    r"SPIR-V parsing FAILED:\s+In file.*\n\s+(.*)"
 )
 
 PATTERN_AMBER_TOLERANCE_ERROR = re.compile(
@@ -232,6 +243,18 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
         group = clean_up(group)
         group = reduce_length(group)
         return group
+
+    # Mesa NIR validation error.
+    if "NIR validation failed" in log_contents:
+        group = basic_match(PATTERN_MESA_NIR_VALIDATION_ERROR, log_contents)
+        if group:
+            return group
+
+    # Mesa SPIR-V parse failure.
+    if "SPIR-V parsing FAILED" in log_contents:
+        group = basic_match(PATTERN_MESA_SPIRV_PARSE_ERROR, log_contents)
+        if group:
+            return group
 
     # glslang error.
     group = basic_match(PATTERN_GLSLANG_ERROR, log_contents)
@@ -435,3 +458,23 @@ def get_hex_signature_from_frame(module: Path, address: str) -> str:
     signature = clean_up(signature, remove_numbers=False)
     signature = reduce_length(signature)
     return signature
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="A tool for extracting a signature from a log file."
+    )
+
+    parser.add_argument(
+        "log_file", help="The log file from which a signature should be extracted.",
+    )
+
+    parsed_args = parser.parse_args(sys.argv[1:])
+
+    log_file: Path = Path(parsed_args.log_file)
+
+    log(get_signature_from_log_contents(util.file_read_text(log_file)))
+
+
+if __name__ == "__main__":
+    main()
