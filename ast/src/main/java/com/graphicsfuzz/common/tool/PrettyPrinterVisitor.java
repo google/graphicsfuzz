@@ -208,8 +208,10 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
     // If uniform variables are being declared and we have a uniform supplier that provides known
     // values for one or more of the uniforms, we emit details of those known values in comments,
-    // one line per uniform.
+    // one line per uniform.  Sampler uniforms are ignored, as they cannot have associated known
+    // values.
     if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)
+        && !(variablesDeclaration.getBaseType().getWithoutQualifiers() instanceof SamplerType)
         && uniformValues.isPresent()) {
       // Find the variable declarations for which we have known uniform values.
       final List<VariableDeclInfo> knownUniforms =
