@@ -59,6 +59,7 @@ def process_chunk(  # pylint: disable=too-many-locals;
                     continue
                 found_bug = True
                 end_line = i + 1
+                break
 
             if not found_bug:
                 continue
