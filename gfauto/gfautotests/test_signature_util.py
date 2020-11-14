@@ -15,6 +15,7 @@
 # limitations under the License.
 
 from pathlib import Path
+
 from gfauto import signature_util
 
 # Disable spell-checking for this file.
