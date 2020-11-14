@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Callable, Match, Optional, Pattern
 
 from gfauto import subprocess_util, util
+from gfauto.gflogging import log
 
 # .* does not match newlines
 # (?:   ) non-group parentheses
@@ -459,18 +460,20 @@ def get_hex_signature_from_frame(module: Path, address: str) -> str:
     return signature
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="A tool for extracting a signature from a log file."
     )
 
     parser.add_argument(
-        "log_file",
-        help="The log file from which a signature should be extracted.",
+        "log_file", help="The log file from which a signature should be extracted.",
     )
 
     parsed_args = parser.parse_args(sys.argv[1:])
-    print(get_signature_from_log_contents(open(parsed_args.log_file, 'r').read()))
+
+    log_file: Path = Path(parsed_args.log_file)
+
+    log(get_signature_from_log_contents(util.file_read_text(log_file)))
 
 
 if __name__ == "__main__":
