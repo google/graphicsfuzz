@@ -66,6 +66,7 @@ public class PrettyPrinterVisitorTest {
         + "layout(set = 0, binding = 0) uniform buf0 { int _GLF_uniform_int_values[2]; };"
         + "layout(set = 0, binding = 1) uniform buf1 { uint _GLF_uniform_uint_values[1]; };"
         + "layout(set = 0, binding = 2) uniform buf2 { float _GLF_uniform_float_values[3]; };"
+        + "layout(set = 0, binding = 3) uniform sampler2D tex;"
         + "void main() { "
         + "int a = _GLF_uniform_int_values[0];"
         + "int b = _GLF_uniform_int_values[1];"
@@ -98,6 +99,8 @@ public class PrettyPrinterVisitorTest {
         + " float _GLF_uniform_float_values[3];\n"
         + "};\n"
 
+        + "layout(set = 0, binding = 3) uniform sampler2D tex;\n\n"
+
         + "void main()\n"
         + "{\n"
 
@@ -116,6 +119,8 @@ public class PrettyPrinterVisitorTest {
         return Optional.of(Arrays.asList("0.0", "22.4", "11.3"));
       } else if (name.equals("_GLF_uniform_uint_values")) {
         return Optional.of(Arrays.asList("72"));
+      } else if (name.equals("tex")) {
+        throw new RuntimeException("The value of a sampler uniform should not be requested.");
       }
       return Optional.empty();
     };
