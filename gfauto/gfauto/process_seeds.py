@@ -82,7 +82,7 @@ def process_chunk(  # pylint: disable=too-many-locals;
             if not found_bug:
                 continue
 
-            failure_log = "\n".join(lines[start_line:end_line])
+            failure_log = "".join(lines[start_line:end_line])
 
             signature = signature_util.get_signature_from_log_contents(failure_log)
 
