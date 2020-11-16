@@ -124,7 +124,6 @@ def main() -> None:  # pylint: disable=too-many-locals;
             )
             transformation_types.add(list(keys)[0])
 
-        #print(transformation_types)
         transformation_types -= COMMON_TRANSFORMATION_TYPES
         assert len(transformation_types) > 0
         max_len = max(max_len, len(transformation_types))
@@ -163,18 +162,32 @@ def main() -> None:  # pylint: disable=too-many-locals;
                 seen_transformations.update(not_yet_seen)
                 print(str(entry) + ":\n  " + "_".join(not_yet_seen) + "\n  " + "_".join(transformations.difference(not_yet_seen)))
 
-    print("Number of reduced bugs: " + str(total_dirs))
-    print("Distinct signatures: " + str(len(signatures)))
+    reductions = total_dirs
+    distinct_signatures = len(signatures)
+    suggestions_1 = len(phase1_reported)
+    distinct_1 = len(phase1_distinct_signatures)
+    missed_1 = distinct_signatures - distinct_1
+    duplicates_1 = suggestions_1 - distinct_1
+    suggestions_2 = len(phase2_reported)
+    distinct_2 = len(phase2_new_distinct_signatures)
+    missed_2 = distinct_signatures - (distinct_1 + distinct_2)
+    duplicates_2 = suggestions_2 - distinct_2
+
+    print("Number of reduced bugs: " + str(reductions))
+    print("Distinct signatures: " + str(distinct_signatures))
     print()
-    print("Num suggestions phase 1: " + str(len(phase1_reported)))
-    print("Distinct signatures phase 1: " + str(len(phase1_distinct_signatures)))
-    print("Missed signatures phase 1: " + str(len(signatures) - len(phase1_distinct_signatures)))
-    print("Duplicate signatures phase 1: " + str(len(phase1_reported) - len(phase1_distinct_signatures)))
+    print("Num suggestions phase 1: " + str(suggestions_1))
+    print("Distinct signatures phase 1: " + str(distinct_1))
+    print("Missed signatures phase 1: " + str(missed_1))
+    print("Duplicate signatures phase 1: " + str(duplicates_1))
     print()
-    print("Num suggestions phase 2: " + str(len(phase2_reported)))
-    print("New distinct signatures phase 2: " + str(len(phase2_new_distinct_signatures)))
-    print("Signatures still missed after phase 2: " + str(len(signatures) - (len(phase1_distinct_signatures) + len(phase2_new_distinct_signatures))))
-    print("Duplicate signatures phase 2: " + str(len(phase2_reported) - len(phase2_new_distinct_signatures)))
+    print("Num suggestions phase 2: " + str(suggestions_2))
+    print("New distinct signatures phase 2: " + str(distinct_2))
+    print("Signatures still missed after phase 2: " + str(missed_2))
+    print("Duplicate signatures phase 2: " + str(duplicates_2))
+
+    print("Latex table entry:")
+    print(' & '.join([str(x) for x in [ reductions, distinct_signatures, suggestions_1, distinct_1, missed_1, duplicates_1, suggestions_2, distinct_2, missed_2, duplicates_2]]))
 
 
     """
