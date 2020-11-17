@@ -168,10 +168,11 @@ def main() -> None:  # pylint: disable=too-many-locals;
     distinct_1 = len(phase1_distinct_signatures)
     missed_1 = distinct_signatures - distinct_1
     duplicates_1 = suggestions_1 - distinct_1
-    suggestions_2 = len(phase2_reported)
-    distinct_2 = len(phase2_new_distinct_signatures)
-    missed_2 = distinct_signatures - (distinct_1 + distinct_2)
-    duplicates_2 = suggestions_2 - distinct_2
+
+    suggestions_1_2 = suggestions_1 + len(phase2_reported)
+    distinct_1_2 = distinct_1 + len(phase2_new_distinct_signatures)
+    missed_1_2 = distinct_signatures - distinct_1_2
+    duplicates_1_2 = suggestions_1_2 - distinct_1_2
 
     print("Number of reduced bugs: " + str(reductions))
     print("Distinct signatures: " + str(distinct_signatures))
@@ -181,13 +182,13 @@ def main() -> None:  # pylint: disable=too-many-locals;
     print("Missed signatures phase 1: " + str(missed_1))
     print("Duplicate signatures phase 1: " + str(duplicates_1))
     print()
-    print("Num suggestions phase 2: " + str(suggestions_2))
-    print("New distinct signatures phase 2: " + str(distinct_2))
-    print("Signatures still missed after phase 2: " + str(missed_2))
-    print("Duplicate signatures phase 2: " + str(duplicates_2))
+    print("Num suggestions phase 1 + 2: " + str(suggestions_1_2))
+    print("Distinct signatures phase 1 + 2: " + str(distinct_1_2))
+    print("Missed after phase 1 + 2: " + str(missed_1_2))
+    print("Duplicate signatures phase 1 + 2: " + str(duplicates_1_2))
 
     print("Latex table entry:")
-    print(' & '.join([str(x) for x in [ reductions, distinct_signatures, suggestions_1, distinct_1, missed_1, duplicates_1, suggestions_2, distinct_2, missed_2, duplicates_2]]))
+    print(' & '.join([str(x) for x in [ reductions, distinct_signatures, suggestions_1, distinct_1, missed_1, duplicates_1, suggestions_1_2, distinct_1_2, missed_1_2, duplicates_1_2]]))
 
 
     """
