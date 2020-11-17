@@ -245,3 +245,85 @@ Shadow bytes around the buggy address:
 """
     signature = signature_util.get_signature_from_log_contents(log)
     assert signature == "useafterpoison_getParent"
+
+
+def test_mesa_error_exec_list_length() -> None:
+    log = """
+*** Aborted
+Register dump:
+
+ RAX: 0000000000000000   RBX: 00007f86645f9380   RCX: 00007f866463bdb1
+ RDX: 0000000000000000   RSI: 00007ffdd626b0e0   RDI: 0000000000000002
+ Trap: 00000000   Error: 00000000   OldMask: 00000000   CR2: 00000000
+
+ XMM14: 00000000000000000000000025252525 XMM15: 00000000000000000000000025252525
+
+Backtrace:
+/lib/x86_64-linux-gnu/libc.so.6(gsignal+0x141)[0x7f866463bdb1]
+/lib/x86_64-linux-gnu/libc.so.6(abort+0x123)[0x7f8664625537]
+/data/Mesa/mesa-20.2/lib/x86_64-linux-gnu/libvulkan_intel.so(+0x5aa709)[0x7f86641fa709]
+/data/Mesa/mesa-20.2/lib/x86_64-linux-gnu/libvulkan_intel.so(+0x101953)[0x7f8663d51953]
+/data/Mesa/mesa-20.2/lib/x86_64-linux-gnu/libvulkan_intel.so(+0x10467e)[0x7f8663d5467e]
+STDERR:
+INTEL-MESA: warning: Performance support disabled, consider sysctl dev.i915.perf_stream_paranoid=0
+
+NIR validation failed after nir_lower_returns
+2 errors:
+shader: MESA_SHADER_FRAGMENT
+inputs: 0
+outputs: 0
+uniforms: 0
+ubos: 1
+error: exec_list_length(&instr->srcs) == state->block->predecessors->entries (../src/compiler/nir/nir_validate.c:766)
+
+    vec1 32 ssa_139 = deref_var &return (function_temp bool)
+    vec1 1 ssa_140 = intrinsic load_deref (ssa_139) (0) /* access=0 */
+    /* succs: block_18 block_19 */
+1 additional errors:
+error: state->ssa_srcs->entries == 0 (../src/compiler/nir/nir_validate.c:1207)
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "exec_list_lengthinstrsrcs_stateblockpredecessorsen"
+
+
+def test_mesa_error_glsl_type_is_struct_or_ifc() -> None:
+    log = """
+*** Segmentation fault
+Register dump:
+
+ RAX: 0000000000000000   RBX: 0000000000000000   RCX: 00007fff214183c0
+ RDX: 000000000000001d   RSI: 0000000001d66ce0   RDI: 0000000001e68b20
+ Trap: 0000000e   Error: 00000004   OldMask: 00000000   CR2: 00000038
+
+ XMM12: 00000000000000000000000000000000 XMM13: 00000000000000000000000000000000
+ XMM14: 00000000000000000000000000000000 XMM15: 00000000000000000000000000000000
+
+Backtrace:
+/data/Mesa/mesa-20.2/lib/x86_64-linux-gnu/libvulkan_intel.so(+0x101316)[0x7f09c0dcc316]
+/data/Mesa/mesa-20.2/lib/x86_64-linux-gnu/libvulkan_intel.so(+0x10467e)[0x7f09c0dcf67e]
+/data/Mesa/mesa-20.2/lib/x86_64-linux-gnu/libvulkan_intel.so(+0x1073fe)[0x7f09c0dd23fe]
+/home/runner/work/gfbuild-amber/gfbuild-amber/amber/b_Debug/../samples/amber.cc:605 (discriminator 2)(main)[0xc4c07f]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xea)[0x7f09c16a1cca]
+/data/binaries/built_in/gfbuild-amber-760076b7c8bf43d6c6cc4928f5129afca16e895e-Linux_x64_Debug/amber/bin/amber(_start+0x29)[0xc49609]
+
+Memory map:
+
+00400000-01704000 r-xp 00000000 fe:01 3802475 /data/binaries/built_in/gfbuild-amber-760076b7c8bf43d6c6cc4928f5129afca16e895e-Linux_x64_Debug/amber/bin/amber
+01904000-01953000 r--p 01304000 fe:01 3802475 /data/binaries/built_in/gfbuild-amber-760076b7c8bf43d6c6cc4928f5129afca16e895e-Linux_x64_Debug/amber/bin/amber
+01953000-01956000 rw-p 01353000 fe:01 3802475 /data/binaries/built_in/gfbuild-amber-760076b7c8bf43d6c6cc4928f5129afca16e895e-Linux_x64_Debug/amber/bin/amber
+7fff21403000-7fff21425000 rw-p 00000000 00:00 0 [stack]
+7fff215a3000-7fff215a7000 r--p 00000000 00:00 0 [vvar]
+7fff215a7000-7fff215a9000 r-xp 00000000 00:00 0 [vdso]
+
+
+STDERR:
+INTEL-MESA: warning: Performance support disabled, consider sysctl dev.i915.perf_stream_paranoid=0
+
+SPIR-V parsing FAILED:
+    In file ../src/compiler/spirv/spirv_to_nir.c:2394
+    glsl_type_is_struct_or_ifc(type)
+    8636 bytes into the SPIR-V binary
+
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "glsl_type_is_struct_or_ifctype"
