@@ -238,7 +238,7 @@ def make_test(
     # and compare the output images.
     # Otherwise, we should just render the variant shader and check for crashes; to do this,
     # we just rename the `reference/` directory to `_reference/` so that the test has no reference shader.
-    if not stable_shader:
+    if not stable_shader and (source_dir / test_util.REFERENCE_DIR).is_dir():
         util.move_dir(
             source_dir / test_util.REFERENCE_DIR,
             source_dir / f"_{test_util.REFERENCE_DIR}",
@@ -536,6 +536,7 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
         tool.ShaderJobNameToShaderOverridesMap
     ] = None,
     preprocessor_cache: Optional[util.CommandCache] = None,
+    stop_after_amber: bool = False,
 ) -> Path:
 
     if not shader_job_shader_overrides:
@@ -698,6 +699,9 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
                     [shader_job_util.EXT_COMP],
                 )
             )
+
+            if stop_after_amber:
+                return output_dir
 
             # noinspection PyTypeChecker
             if device.HasField("host") or device.HasField("swift_shader"):
