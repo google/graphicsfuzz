@@ -43,11 +43,11 @@ jobs:
           pushd ./../.github/actions/
             git clone https://github.com/actions/setup-python.git
             pushd setup-python/
-              git checkout 28a6c1b915d5808acb3da49af7063544ebfbe085
+              git checkout v2
             popd
             git clone https://github.com/actions/checkout.git
             pushd checkout/
-              git checkout 722adc63f1aa60a57ec37892e133b1d319cae598
+              git checkout v2
             popd
           popd
         shell: bash
