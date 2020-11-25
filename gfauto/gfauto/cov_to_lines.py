@@ -58,10 +58,13 @@ def main() -> None:
 
             total_num_lines = 0
             total_num_covered_lines = 0
-            for source_file, line_counts in all_line_counts.items():
-                for line_number, hit_count in line_counts.items():
+
+            # |all_line_counts| maps from source file to another map. We just need the map.
+            for line_counts in all_line_counts.values():
+                # |line_counts| maps from line number to execution count. We just need the execution count.
+                for execution_count in line_counts.values():
                     total_num_lines += 1
-                    if hit_count > 0:
+                    if execution_count > 0:
                         total_num_covered_lines += 1
 
             log(f"{total_num_covered_lines}, {total_num_lines}")

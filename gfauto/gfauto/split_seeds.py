@@ -17,13 +17,11 @@
 """Splits a list of seeds."""
 
 import argparse
-import re
 import sys
 from pathlib import Path
-from typing import List, Set, TextIO
+from typing import List
 
-from gfauto import signature_util, util
-from gfauto.gflogging import log
+from gfauto import util
 from gfauto.util import check
 
 
