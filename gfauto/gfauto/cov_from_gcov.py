@@ -84,6 +84,9 @@ def main() -> None:
     if not parsed_args.gcov_path:
         parser.error("Please provide gcov_path")
 
+    if parsed_args.gcov_functions and not parsed_args.gcov_uses_json:
+        parser.error("Function coverage requires using --gcov_uses_json with gcc 9+.")
+
     gcov_path: str = parsed_args.gcov_path
 
     build_dir = parsed_args.build_dir
@@ -102,9 +105,7 @@ def main() -> None:
 
     data = cov_util.GetLineCountsData(
         gcov_path=gcov_path,
-        gcov_uses_json_output=True
-        if parsed_args.gcov_functions
-        else parsed_args.gcov_uses_json,
+        gcov_uses_json_output=parsed_args.gcov_uses_json,
         build_dir=build_dir,
         gcov_prefix_dir=gcov_prefix_dir,
         num_threads=parsed_args.num_threads,
