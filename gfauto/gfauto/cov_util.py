@@ -27,6 +27,7 @@ from collections import Counter
 from dataclasses import dataclass
 from queue import Queue
 from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import field
 
 from gfauto import util
 
@@ -49,6 +50,7 @@ class GetLineCountsData:  # pylint: disable=too-many-instance-attributes;
     gcno_files_queue: "Queue[DirAndItsFiles]" = dataclasses.field(default_factory=Queue)
     stdout_queue: "Queue[DirAndItsOutput]" = dataclasses.field(default_factory=Queue)
     line_counts: LineCounts = dataclasses.field(default_factory=dict)
+    gcov_json_tags: List[str] = field(default_factory=lambda: ["lines", "line_number", "count"])
 
 
 def _thread_gcov(data: GetLineCountsData) -> None:
@@ -145,9 +147,9 @@ def _process_json_lines(data: GetLineCountsData, lines: typing.TextIO) -> None:
                 file_path = os.path.join(current_working_directory, file_path)
                 file_path = os.path.normpath(file_path)
             file_line_counts = data.line_counts.setdefault(file_path, Counter())
-            for line in file_coverage_info["lines"]:
-                line_number = line["line_number"]
-                line_count = int(line["count"])
+            for line in file_coverage_info[data.gcov_json_tags[0]]:
+                line_number = line[data.gcov_json_tags[1]]
+                line_count = int(line[data.gcov_json_tags[2]])
                 file_line_counts.update({line_number: line_count})
 
 
