@@ -71,13 +71,13 @@ def main() -> None:
         'and the coverage results will be merged. E.g. Given "--gcov_prefix_dir /cov/PROC_ID", the results from '
         "/cov/001 /cov/002 /cov/blah etc. will be computed and the results will be merged.",
     )
-    
+
     parser.add_argument(
         "--gcov_functions",
         help="Pass to indicate that the output measures coverage of functions (instead of lines)."
         "This requires using --gcov_uses_json and you must have gcc 9+.",
         action="store_true",
-    )    
+    )
 
     parsed_args = parser.parse_args(sys.argv[1:])
 
