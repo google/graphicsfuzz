@@ -94,11 +94,17 @@ def main() -> None:
     gcov_prefix_dir = os.path.abspath(gcov_prefix_dir)
     gcov_prefix_dir = os.path.normpath(gcov_prefix_dir)
 
-    gcov_tags = ["functions", "start_line", "execution_count"] if parsed_args.gcov_functions else ["lines", "line_number", "count"]
+    gcov_tags = (
+        ["functions", "start_line", "execution_count"]
+        if parsed_args.gcov_functions
+        else ["lines", "line_number", "count"]
+    )
 
     data = cov_util.GetLineCountsData(
         gcov_path=gcov_path,
-        gcov_uses_json_output=True if parsed_args.gcov_functions else parsed_args.gcov_uses_json,
+        gcov_uses_json_output=True
+        if parsed_args.gcov_functions
+        else parsed_args.gcov_uses_json,
         build_dir=build_dir,
         gcov_prefix_dir=gcov_prefix_dir,
         num_threads=parsed_args.num_threads,
