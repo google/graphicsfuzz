@@ -72,10 +72,20 @@ def main() -> None:
         "/cov/001 /cov/002 /cov/blah etc. will be computed and the results will be merged.",
     )
 
+    parser.add_argument(
+        "--gcov_functions",
+        help="Pass to indicate that the output measures coverage of functions (instead of lines)."
+        "This requires using --gcov_uses_json and you must have gcc 9+.",
+        action="store_true",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     if not parsed_args.gcov_path:
         parser.error("Please provide gcov_path")
+
+    if parsed_args.gcov_functions and not parsed_args.gcov_uses_json:
+        parser.error("Function coverage requires using --gcov_uses_json with gcc 9+.")
 
     gcov_path: str = parsed_args.gcov_path
 
@@ -87,12 +97,19 @@ def main() -> None:
     gcov_prefix_dir = os.path.abspath(gcov_prefix_dir)
     gcov_prefix_dir = os.path.normpath(gcov_prefix_dir)
 
+    gcov_tags = (
+        ["functions", "start_line", "execution_count"]
+        if parsed_args.gcov_functions
+        else ["lines", "line_number", "count"]
+    )
+
     data = cov_util.GetLineCountsData(
         gcov_path=gcov_path,
         gcov_uses_json_output=parsed_args.gcov_uses_json,
         build_dir=build_dir,
         gcov_prefix_dir=gcov_prefix_dir,
         num_threads=parsed_args.num_threads,
+        gcov_json_tags=gcov_tags,
     )
 
     output_coverage_path: str = parsed_args.out
