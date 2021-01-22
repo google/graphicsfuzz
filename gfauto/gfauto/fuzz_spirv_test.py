@@ -79,7 +79,7 @@ def make_test(
     # and compare the output images.
     # Otherwise, we should just render the variant shader and check for crashes; to do this,
     # we just rename the `reference/` directory to `_reference/` so that the test has no reference shader.
-    if not stable_shader:
+    if not stable_shader and (source_dir / test_util.REFERENCE_DIR).is_dir():
         util.move_dir(
             source_dir / test_util.REFERENCE_DIR,
             source_dir / f"_{test_util.REFERENCE_DIR}",
