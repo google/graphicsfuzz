@@ -521,13 +521,6 @@ limitations under the License.
           <groupId>org.antlr</groupId>
           <artifactId>antlr4-maven-plugin</artifactId>
           <version>4.9.1</version>
-          <dependencies>
-            <dependency>
-              <groupId>org.antlr</groupId>
-              <artifactId>antlr4</artifactId>
-              <version>4.9.1</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
