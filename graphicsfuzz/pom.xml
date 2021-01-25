@@ -206,7 +206,7 @@ limitations under the License.
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>javax.servlet</includeGroupIds>
+              <includeGroupIds>javax.annotation,javax.servlet</includeGroupIds>
               <classifier>sources</classifier>
               <failOnMissingClassifierArtifact>true</failOnMissingClassifierArtifact>
               <outputDirectory>${project.build.directory}/sources</outputDirectory>
