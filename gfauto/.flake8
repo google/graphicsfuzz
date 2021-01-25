@@ -76,6 +76,6 @@ inline-quotes = "
 # This will output the full path of files with warnings so they will be clickable from PyCharm's terminal.
 format = abspath
 
-# For flake8-spellcheck. Default is whitelist.txt but using whitelist.dic means
+# For flake8-spellcheck. Default ends in .txt but .dic means
 # we can add the file to PyCharm/IntelliJ.
-whitelist=whitelist.dic
+whitelist=dictionary.dic
