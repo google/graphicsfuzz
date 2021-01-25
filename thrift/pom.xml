@@ -86,7 +86,7 @@ limitations under the License.
                   <sourcefiles path="${thrift-input-file}"/>
                   <targetfiles path="${project.build.directory}/gen-touched.txt"/>
                   <sequential>
-                    <echo message="Running thrift compiler ${thrift-compiler-exec}"/>
+                    <echo level="info" message="Running thrift compiler ${thrift-compiler-exec}"/>
                     <exec dir="${project.build.directory}" executable="${thrift-compiler-exec}">
                       <arg line="-gen java -gen py -gen js -gen cocoa ${thrift-input-file}"/>
                     </exec>

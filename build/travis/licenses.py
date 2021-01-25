@@ -807,6 +807,15 @@ def get_maven_dependencies_populated():
             'license_file': '',
             'skipped': '',
         },
+        'javax.annotation:javax.annotation-api': {
+            'comment': '',
+            'name': 'JavaX Annotation API',
+            'url': 'https://github.com/javaee/javax.annotation',
+            'license_url': 'https://raw.githubusercontent.com/javaee/javax.annotation'
+                           '/624529a8156a7b61ed4f5241455b5c3863579531/LICENSE',
+            'license_file': '',
+            'skipped': '',
+        },
         'net.sourceforge.argparse4j:argparse4j': {
             'comment': '',
             'name': 'Argparse4j',
@@ -824,6 +833,14 @@ def get_maven_dependencies_populated():
                            '/432022fc1ca098f2ab419d6e26a09124a518c345/LICENSE.txt',
             'license_file': '',
             'skipped': '',
+        },
+        'org.antlr:antlr4-runtime': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'Same project as org.antlr:antlr4.',
         },
         'org.apache.commons:commons-lang3': {
             'comment': '',
@@ -962,6 +979,14 @@ def get_maven_dependencies_populated():
             'skipped': 'Same project as jetty-http',
         },
         'org.eclipse.jetty:jetty-util': {
+            'comment': '',
+            'name': '',
+            'url': '',
+            'license_url': '',
+            'license_file': '',
+            'skipped': 'Same project as jetty-http',
+        },
+        'org.eclipse.jetty:jetty-util-ajax': {
             'comment': '',
             'name': '',
             'url': '',
