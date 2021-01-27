@@ -96,7 +96,6 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
     new RemoveImmediateContinueStatements(donatedStmt);
     new RemoveImmediateCaseLabels(donatedStmt);
     new RemoveReturnStatements(donatedStmt);
-    new RemoveDiscardStatements(donatedStmt);
     return donatedStmt;
   }
 
@@ -110,6 +109,9 @@ public class DonateLiveCodeTransformation extends DonateCodeTransformation {
     if (!allowLongLoops) {
       new TruncateLoops(3 + generator.nextInt(5), addPrefix(""), tu);
     }
+    // We get rid of all discard statements from the donor, since if an injected discard is ever
+    // reached it will change the semantics of the shader.
+    new RemoveDiscardStatements(tu);
   }
 
   private boolean isLoopLimiter(String name, Type type) {
