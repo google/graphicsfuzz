@@ -44,7 +44,7 @@ class GetLineCountsData:  # pylint: disable=too-many-instance-attributes;
     gcov_path: str
     gcov_uses_json_output: bool
     build_dir: str
-    gcov_prefix_dir: str
+    gcov_prefix_dir: Optional[str]
     num_threads: int
     gcno_files_queue: "Queue[DirAndItsFiles]" = dataclasses.field(default_factory=Queue)
     stdout_queue: "Queue[DirAndItsOutput]" = dataclasses.field(default_factory=Queue)
@@ -175,28 +175,36 @@ def get_line_counts(data: GetLineCountsData) -> None:
     root: str
     files: List[str]
 
-    # In gcov_prefix_dir, add symlinks to build_dir .gcno files.
-    print("Adding symlinks.")
+    # The directory containing the .gcno and .gcda files.
+    # This is the build directory by default (unless gcov_prefix_dir is set, in which case we overwrite this).
+    gcno_dir = data.build_dir
 
-    # If the symlinks already exist, we will get an error.
-    # os.symlink does not provide an option to overwrite.
-    # We instead create the symlink with a randomized name and then rename it using os.replace, which atomically
-    # overwrites any existing file.
-    random_text = util.get_random_name()[:10]
+    if data.gcov_prefix_dir:
 
-    for root, _, files in os.walk(data.build_dir):
-        gcno_files = [f for f in files if f.endswith(".gcno")]
-        if gcno_files:
-            root_rel = strip_root(root)
-            os.makedirs(os.path.join(data.gcov_prefix_dir, root_rel), exist_ok=True)
-            for file_name in gcno_files:
-                source = os.path.join(root, file_name)
-                dest = os.path.join(data.gcov_prefix_dir, root_rel, file_name)
-                temp = dest + random_text
-                os.symlink(source, temp)
-                os.replace(temp, dest)
+        # In gcov_prefix_dir, add symlinks to build_dir .gcno files.
+        print("Adding symlinks.")
 
-    print("Done.")
+        gcno_dir = os.path.join(data.gcov_prefix_dir, strip_root(data.build_dir))
+
+        # If the symlinks already exist, we will get an error.
+        # os.symlink does not provide an option to overwrite.
+        # We instead create the symlink with a randomized name and then rename it using os.replace, which atomically
+        # overwrites any existing file.
+        random_text = util.get_random_name()[:10]
+
+        for root, _, files in os.walk(data.build_dir):
+            gcno_files = [f for f in files if f.endswith(".gcno")]
+            if gcno_files:
+                root_rel = strip_root(root)
+                os.makedirs(os.path.join(data.gcov_prefix_dir, root_rel), exist_ok=True)
+                for file_name in gcno_files:
+                    source = os.path.join(root, file_name)
+                    dest = os.path.join(data.gcov_prefix_dir, root_rel, file_name)
+                    temp = dest + random_text
+                    os.symlink(source, temp)
+                    os.replace(temp, dest)
+
+        print("Done.")
 
     print("Processing .gcno files.")
 
@@ -206,9 +214,7 @@ def get_line_counts(data: GetLineCountsData) -> None:
     gcovs_thread.start()
     adder_thread.start()
 
-    for root, _, files in os.walk(
-        os.path.join(data.gcov_prefix_dir, strip_root(data.build_dir))
-    ):
+    for root, _, files in os.walk(gcno_dir):
         gcno_files = [f for f in files if f.endswith(".gcno")]
         # TODO: Could split further if necessary.
         if gcno_files:
