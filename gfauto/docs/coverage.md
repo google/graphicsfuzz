@@ -28,10 +28,10 @@ unset GCOV_PREFIX
 # The --gcov_uses_json flag below is needed for GCC 9+.
 
 # Process the .gcda files from run1.
-gfauto_cov_from_gcov --gcov_uses_json --out run1.cov $BUILD_DIR /data/gcda_files/run1 --num_threads 32
+gfauto_cov_from_gcov --gcov_uses_json --out run1.cov $BUILD_DIR --gcov_prefix_dir /data/gcda_files/run1 --num_threads 32
 
 # Process the .gcda files from run2.
-gfauto_cov_from_gcov --gcov_uses_json --out run2.cov $BUILD_DIR /data/gcda_files/run2 --num_threads 32
+gfauto_cov_from_gcov --gcov_uses_json --out run2.cov $BUILD_DIR --gcov_prefix_dir /data/gcda_files/run2 --num_threads 32
 
 # Output just the *newly-covered* lines from run2 into "new.cov".
 gfauto_cov_new run1.cov run2.cov new.cov
@@ -151,12 +151,12 @@ cd $COV_ROOT
 # Process the .gcda files from the dEQP run into "deqp.cov".
 # Do not replace "PROC_ID" with a number; gfauto understands this special
 # directory name.
-gfauto_cov_from_gcov --gcov_uses_json --out deqp.cov $BUILD_DIR $COV_ROOT/prefix_deqp/PROC_ID --num_threads 32
+gfauto_cov_from_gcov --gcov_uses_json --out deqp.cov $BUILD_DIR --gcov_prefix_dir $COV_ROOT/prefix_deqp/PROC_ID --num_threads 32
 
 # Process the .gcda files from the gfauto run into "gfauto.cov".
 # Do not replace "PROC_ID" with a number; gfauto understands this special
 # directory name.
-gfauto_cov_from_gcov --gcov_uses_json --out gfauto.cov $BUILD_DIR $COV_ROOT/prefix_gfauto/PROC_ID --num_threads 32
+gfauto_cov_from_gcov --gcov_uses_json --out gfauto.cov $BUILD_DIR --gcov_prefix_dir $COV_ROOT/prefix_gfauto/PROC_ID --num_threads 32
 
 # Output just the *newly-covered* lines from the gfauto run into "new.cov".
 gfauto_cov_new deqp.cov gfauto.cov new.cov

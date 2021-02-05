@@ -24,6 +24,7 @@ import os
 import pickle
 import shutil
 import sys
+from typing import Optional
 
 from gfauto import cov_util
 
@@ -64,8 +65,9 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "gcov_prefix_dir",
+        "--gcov_prefix_dir",
         type=str,
+        default=None,
         help="The GCOV_PREFIX directory that was used when running the target application. "
         'If the directory ends with "PROC_ID" then "PROC_ID" will be replaced with each directory that exists '
         'and the coverage results will be merged. E.g. Given "--gcov_prefix_dir /cov/PROC_ID", the results from '
@@ -93,9 +95,10 @@ def main() -> None:
     build_dir = os.path.abspath(build_dir)
     build_dir = os.path.normpath(build_dir)
 
-    gcov_prefix_dir = parsed_args.gcov_prefix_dir
-    gcov_prefix_dir = os.path.abspath(gcov_prefix_dir)
-    gcov_prefix_dir = os.path.normpath(gcov_prefix_dir)
+    gcov_prefix_dir: Optional[str] = parsed_args.gcov_prefix_dir
+    if gcov_prefix_dir:
+        gcov_prefix_dir = os.path.abspath(gcov_prefix_dir)
+        gcov_prefix_dir = os.path.normpath(gcov_prefix_dir)
 
     gcov_tags = (
         ["functions", "start_line", "execution_count"]
@@ -115,7 +118,7 @@ def main() -> None:
     output_coverage_path: str = parsed_args.out
 
     # Special case for "PROC_ID".
-    if "PROC_ID" in gcov_prefix_dir:
+    if gcov_prefix_dir and "PROC_ID" in gcov_prefix_dir:
         print("Detected PROC_ID in gcov_prefix_dir")
         if os.path.exists(gcov_prefix_dir):
             raise AssertionError(f"Unexpected file/directory: {gcov_prefix_dir}.")
