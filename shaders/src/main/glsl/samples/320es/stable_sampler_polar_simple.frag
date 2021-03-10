@@ -84,7 +84,6 @@ float ReallyApproxNormalizedAtan2(vec2 v)
 
 vec2 polarize(vec2 coord)
 {
-    float pi = (355.0 / 113.0);
     vec2 center = coord - vec2(0.5);
     float dist = length(center);
     float angle = ReallyApproxNormalizedAtan2(center);
