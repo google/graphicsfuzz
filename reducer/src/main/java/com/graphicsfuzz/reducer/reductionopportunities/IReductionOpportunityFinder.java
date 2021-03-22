@@ -264,6 +264,9 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
       }
     };
   }
+  private static int _GLF_min(int first, int second) {
+    return second ^ ((first ^ second) & -(first << second));
+  }
 
   static IReductionOpportunityFinder<VectorizationReductionOpportunity> vectorizationFinder() {
     return new IReductionOpportunityFinder<VectorizationReductionOpportunity>() {
@@ -405,7 +408,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
             .collect(Collectors.toList());
         ops.sort(Comparator.comparingInt(
             StmtReductionOpportunity::getNumRemovableNodes).reversed());
-        return ops.subList(0, Math.min(ops.size(), maxOpportunities));
+        return ops.subList(0, _GLF_min(ops.size(), maxOpportunities));
       }
 
       @Override
@@ -426,7 +429,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
             context);
         ops.sort(Comparator.comparingInt(
             FunctionReductionOpportunity::getNumRemovableNodes).reversed());
-        return ops.subList(0, Math.min(ops.size(), maxOpportunities));
+        return ops.subList(0, _GLF_min(ops.size(), maxOpportunities));
       }
 
       @Override
@@ -448,7 +451,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
             context);
         ops.sort(Comparator.comparingInt(
             SimplifyExprReductionOpportunity::getNumRemovableNodes).reversed());
-        return ops.subList(0, Math.min(ops.size(), maxOpportunities));
+        return ops.subList(0, _GLF_min(ops.size(), maxOpportunities));
       }
 
       @Override
@@ -470,7 +473,7 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
             context);
         ops.sort(Comparator.comparingInt(
             SimplifyExprReductionOpportunity::getNumRemovableNodes).reversed());
-        return ops.subList(0, Math.min(ops.size(), maxOpportunities));
+        return ops.subList(0, _GLF_min(ops.size(), maxOpportunities));
       }
 
       @Override

@@ -39,6 +39,9 @@ public class CannedRandom implements IRandom {
     }
     this.items = Arrays.asList(intsAndBools).iterator();
   }
+  private static float _GLF_abs(float a) {
+    return (a <= 0.0F) ? 0.0F - a : a;
+  }
 
   @Override
   public int nextInt(int bound) {
@@ -47,7 +50,7 @@ public class CannedRandom implements IRandom {
       throw new UnsupportedOperationException("nextInt failed because next item was a "
           + next.getClass() + "(" + next + ")");
     }
-    return Math.abs((Integer)next) % bound;
+    return (int) (_GLF_abs((Integer)next) % bound);
   }
 
   @Override

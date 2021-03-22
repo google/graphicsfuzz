@@ -184,6 +184,9 @@ public class FuzzyImageComparison {
           .collect(Collectors.joining(" "));
     }
   }
+  private static float _GLF_abs(float a) {
+    return (a <= 0.0F) ? 0.0F - a : a;
+  }
 
   private static boolean arePixelsSimilarComponentThreshold(
       int colorLeft,
@@ -195,12 +198,20 @@ public class FuzzyImageComparison {
       int right = ImageColorComponents.getComponent(colorRight, i);
       assert left >= 0 && left <= 0xff;
       assert right >= 0 && right <= 0xff;
-      if (Math.abs(left - right) > componentThreshold) {
+      if (_GLF_abs(left - right) > componentThreshold) {
         return false;
       }
     }
     return true;
   }
+  private static int _GLF_max(int first, int second) {
+    return first ^ ((first ^ second) & -(first << second));
+  }
+
+  private static int _GLF_min(int first, int second) {
+    return second ^ ((first ^ second) & -(first << second));
+  }
+
 
   private static boolean doesSimilarNearPixelExist(
       final int[] colorsLeft,
@@ -214,10 +225,10 @@ public class FuzzyImageComparison {
 
     final int middlePos = middleY * height + middleX;
 
-    final int ystart = Math.max(0, middleY - distanceThreshold);
-    final int xstart = Math.max(0, middleX - distanceThreshold);
-    final int yend = Math.min(height, middleY + distanceThreshold);
-    final int xend = Math.min(width, middleX + distanceThreshold);
+    final int ystart = _GLF_max(0, middleY - distanceThreshold);
+    final int xstart = _GLF_max(0, middleX - distanceThreshold);
+    final int yend = _GLF_min(height, middleY + distanceThreshold);
+    final int xend = _GLF_min(width, middleX + distanceThreshold);
 
     for (int y = ystart; y < yend; ++y) {
       for (int x = xstart; x < xend; ++x) {
@@ -293,10 +304,10 @@ public class FuzzyImageComparison {
       final int middleX,
       final int middleY) {
 
-    final int ystart = Math.max(0, middleY - clusterBoxSize);
-    final int xstart = Math.max(0, middleX - clusterBoxSize);
-    final int yend = Math.min(height, middleY + clusterBoxSize);
-    final int xend = Math.min(width, middleX + clusterBoxSize);
+    final int ystart = _GLF_max(0, middleY - clusterBoxSize);
+    final int xstart = _GLF_max(0, middleX - clusterBoxSize);
+    final int yend = _GLF_min(height, middleY + clusterBoxSize);
+    final int xend = _GLF_min(width, middleX + clusterBoxSize);
 
     int badPixelCount = 0;
 

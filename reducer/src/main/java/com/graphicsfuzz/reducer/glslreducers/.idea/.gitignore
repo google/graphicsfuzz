@@ -1,0 +1,8 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Datasource local storage ignored files
+/../../../../../../../../../../../../../../../:\Users\SNEH SUMAN\Desktop\gsoc\graphicsfuzz-master\reducer\src\main\java\com\graphicsfuzz\reducer\glslreducers\.idea/dataSources/
+/dataSources.local.xml
+# Editor-based HTTP Client requests
+/httpRequests/

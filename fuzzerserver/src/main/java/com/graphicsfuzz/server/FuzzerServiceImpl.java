@@ -79,6 +79,9 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
   public WorkQueue getClientWorkQueue(String client) {
     return sessions.getWorkQueue(client);
   }
+  private static float _GLF_abs(float a) {
+    return (a <= 0.0F) ? 0.0F - a : a;
+  }
 
   @Override
   public GetWorkerNameResult getWorkerName(String platformInfo, String oldWorker)
@@ -171,9 +174,9 @@ public class FuzzerServiceImpl implements FuzzerService.Iface {
           worker = info.getAsJsonObject("platform_info").get("manufacturer").getAsString();
           worker += "_";
           worker += info.getAsJsonObject("platform_info").get("model").getAsString();
-          worker += String.valueOf(Math.abs(new SecureRandom().nextInt())).substring(0, 4);
+          worker += String.valueOf(_GLF_abs(new SecureRandom().nextInt())).substring(0, 4);
         } else {
-          worker = String.valueOf(Math.abs(new SecureRandom().nextLong()));
+          worker = String.valueOf(_GLF_abs(new SecureRandom().nextLong()));
         }
         worker = worker.replace(' ', '_');
         if (sessions.putIfAbsent(worker, dummy)) {

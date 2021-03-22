@@ -42,6 +42,12 @@ void ReadBuffer(uint8_t* data, size_t size) {
     bytes_read += static_cast<size_t>(result);
   }
 }
+int _GLF_min(int first, int second)
+{
+    int min = (first > second) * second + (second > first) * first;
+ 
+    return min;
+}
 
 void Discard(size_t total_bytes_to_discard) {
   if (!total_bytes_to_discard) return;
@@ -52,7 +58,7 @@ void Discard(size_t total_bytes_to_discard) {
   size_t num_discarded = 0;
   while (num_discarded < total_bytes_to_discard) {
     size_t num_to_discard =
-        std::min(total_bytes_to_discard - num_discarded, discard_buffer_size);
+        _GLF_min(total_bytes_to_discard - num_discarded, discard_buffer_size);
     ReadBuffer(discard_buffer, num_to_discard);
     num_discarded += num_to_discard;
   }
@@ -117,7 +123,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size,
     std::cout << "discard" << std::endl;
     return size;
   }
-  size_t read_size = std::min(max_size, mutated_buf_length);
+  size_t read_size = _GLF_min(max_size, mutated_buf_length);
   ReadBuffer(data, read_size);
   return read_size;
 }

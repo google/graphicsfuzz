@@ -353,6 +353,15 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
       }
     }
   }
+  private static double _GLF_sqrt(int num) {
+    double t;
+    double sqrtroot = num / 2;
+    do {
+      t = sqrtroot;
+      sqrtroot = (t + (num / t)) / 2;
+    } while ((t - sqrtroot) != 0);
+    return sqrtroot;
+  }
 
   private void findFoldZeroSubSomethingOpportunities(IAstNode parent,
                                                      Expr child,
@@ -616,7 +625,7 @@ public final class FoldConstantReductionOpportunities extends SimplifyExprReduct
     }
 
     // Check whether the matrix constructor has the exact form of an identity matrix.
-    final int dim = (int) Math.sqrt(((BasicType) exprType).getNumElements());
+    final int dim = (int) _GLF_sqrt(((BasicType) exprType).getNumElements());
     if (tce.getNumArgs() != dim * dim) {
       return false;
     }

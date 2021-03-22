@@ -147,12 +147,15 @@ public class ConstantExprTemplate extends AbstractExprTemplate {
     final int maxValue = 200000;
     return new UIntConstantExpr(String.valueOf(generator.nextInt(maxValue)) + "u");
   }
+  private int _GLF_max(int first, int second) {
+    return first ^ ((first ^ second) & -(first << second));
+  }
 
   private FloatConstantExpr randomFloatLiteral(IRandom generator) {
     final int maxDigitsEitherSide = 5;
     StringBuilder sb = new StringBuilder();
     sb.append(generator.nextBoolean() ? "-" : "");
-    int digitsBefore = Math.max(1, generator.nextInt(maxDigitsEitherSide));
+    int digitsBefore = _GLF_max(1, generator.nextInt(maxDigitsEitherSide));
     for (int i = 0; i < digitsBefore; i++) {
       int candidate;
       while (true) {

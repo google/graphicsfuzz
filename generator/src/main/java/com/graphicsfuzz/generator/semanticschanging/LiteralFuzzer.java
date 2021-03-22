@@ -35,6 +35,12 @@ public class LiteralFuzzer {
   private static final int INT_MAX = 1 << 17;
 
   private final IRandom generator;
+  private static int _GLF_max(int first, int second) {
+    return first ^ ((first ^ second) & -(first << second));
+  }
+  private static float _GLF_abs(float a) {
+    return (a <= 0.0F) ? 0.0F - a : a;
+  }
 
   public LiteralFuzzer(IRandom generator) {
     this.generator = generator;
@@ -52,7 +58,7 @@ public class LiteralFuzzer {
     }
     if (type == BasicType.UINT) {
       return Optional.of(new UIntConstantExpr(
-          String.valueOf(Math.abs(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN) + "u")));
+          String.valueOf(_GLF_abs(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN) + "u")));
     }
     if (type == BasicType.FLOAT) {
       return Optional.of(new FloatConstantExpr(LiteralFuzzer.randomFloatString(generator)));
@@ -72,7 +78,7 @@ public class LiteralFuzzer {
     final int maxDigitsEitherSide = 5;
     StringBuilder sb = new StringBuilder();
     sb.append(generator.nextBoolean() ? "-" : "");
-    int digitsBefore = Math.max(1, generator.nextInt(maxDigitsEitherSide));
+    int digitsBefore = _GLF_max(1, generator.nextInt(maxDigitsEitherSide));
     for (int i = 0; i < digitsBefore; i++) {
       int candidate;
       while (true) {
