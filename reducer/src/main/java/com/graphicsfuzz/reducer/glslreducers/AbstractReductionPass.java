@@ -24,7 +24,7 @@ public abstract class AbstractReductionPass implements IReductionPass {
 
   private final ReducerContext reducerContext;
   private final IReductionOpportunityFinder<? extends IReductionOpportunity> finder;
-
+//Abstraction
   AbstractReductionPass(ReducerContext reducerContext,
                         IReductionOpportunityFinder<? extends IReductionOpportunity> finder) {
     this.reducerContext = reducerContext;
